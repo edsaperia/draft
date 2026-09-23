@@ -165,7 +165,68 @@ describe('sim regression: dedup off is byte-identical to before the gate existed
   // fresh computations agree: both variants, a second no-gate run, and
   // `Session.replay` of the first
   // (was f4af4c582015e0680e420d78bc409d35990add2279a865e50ae73f3455b445a6).
-  const PINNED = '866c68f245fcf558ed9e179bc83f0c9ea586c7d6739ab748e4d98eac1ef26d63';
+  // Re-pinned 2026-09-17 (Q1439, SPEC §4.2/§8.2 v0.132, R-125/R-126): the
+  // adoption floor counts **approvals** of the leader — its latest judgment
+  // against the current text, preferring it — rather than judgments of it
+  // either way, and no quorum asks for more than half the group. Adoption
+  // timings move throughout this run: a race that met F on judgments against
+  // its own leader now waits for people who prefer it, and the router leads
+  // the unheard with the leader against the current text. Both variants below
+  // produced this hash, a second no-gate run agreed and `Session.replay`
+  // reproduces it — which is the invariant this test defends
+  // (was 866c68f245fcf558ed9e179bc83f0c9ea586c7d6739ab748e4d98eac1ef26d63).
+  // Re-pinned 2026-09-18 (Q1439 rulings s and u, SPEC §4.2/§8.2 v0.133,
+  // R-131): the built-in minimum of ⌈E/3⌉ beneath the floor is gone — F is
+  // max(Q′, min(2, E)), the room's own number with a seconder under it (Ed:
+  // *if the membership want a smaller quorum they should be able to choose
+  // it*, and *the floor is never below two approvals — a proposal needs a
+  // seconder*). The charter scenario settles no quorum, so every race in this
+  // run was held to ⌈E/3⌉ and is now held to two: adoption timings move from
+  // the first race on and the chain differs throughout. Both variants below
+  // produced this hash, a second no-gate run agreed and `Session.replay`
+  // reproduces it — which is the invariant this test defends
+  // (was a5fa29c1a1b97ac7a99fb4dbbfa17f16c5fa4fab47eb0255dfaab4d84adb1827).
+  // Re-pinned 2026-09-18 (Q1440, SPEC §4.4 v0.134, R-132): a proposal that can
+  // never win is closed at the sweep that discovers it, so a losing candidate
+  // leaves the field during the document's life instead of at T=0 — the
+  // retirement is an event in the chain, the field it leaves is smaller for
+  // every fit after it, and the stake comes back to its author's ledger early.
+  // Every race in this run that the room refused now ends when the room has
+  // refused it. Both variants below produced this hash, a second no-gate run
+  // agreed and `Session.replay` reproduces it — which is the invariant this
+  // test defends
+  // (was 31ed038ba2f05a88afb1072d981675881399d7951bd9ffdb3246041ff5f97f15).
+  // Re-pinned 2026-09-18 (Q1452, Ed's addition: *the outcome card says how
+  // many people did not answer in time*): the `adopted` event gains one more
+  // optional number beside the approvals and the floor Q1439 put on it — the
+  // members whose 💤 period had run when the batch decided. **Nothing in this
+  // run moves but that key**, and the evidence is not an argument:
+  // recomputing this very chain with `abstained` deleted from all 77
+  // `adopted` events reproduces the previous pin exactly, so no event was
+  // added, removed, reordered or otherwise changed. The charter scenario
+  // settles no 💤 period, so every one of the 77 carries zero — which is the
+  // field's own rule showing its face: it is written whatever its value, so
+  // **absent** goes on meaning a log from before it existed. Both variants
+  // below produced this hash and `Session.replay` reproduces it — which is
+  // the invariant this test defends
+  // (was 60f8828ba5ac36b06ef972a353123439f51fed81e212e7f074cca9aa810fe20e).
+  // (…that pin was 73e1f486364e05b34ba7ede3339f31cb15ca2ea595501ea76d39af7f6ede7bd0, and the two re-pins met at the merge:)
+  // Re-pinned 2026-09-18 (Q1454, SPEC §7 v0.135, R-133): only a proposal that
+  // passes is refunded, and it is refunded exactly its stake. Two things move
+  // the chain, and nothing else did: every `candidate-retired` and every
+  // `adopted` event carries a `refund` field, so the first exit in this run
+  // hashes differently and the chain after it with it; and wallets are tighter
+  // — a rejected wording used to pay something back, so personas here propose
+  // fewer times and later, which moves what is served and when races reach
+  // their floor. Both variants below produced this hash, a second no-gate run
+  // agreed and `Session.replay` reproduces it — which is the invariant this
+  // test defends
+  // (was 60f8828ba5ac36b06ef972a353123439f51fed81e212e7f074cca9aa810fe20e).
+  // **And pinned a third time the same morning, at the merge of those two**:
+  // Q1452's pin (73e1f486…) and Q1454's (2aee2d31…) were each taken on a branch
+  // that lacked the other's change, so neither is the hash of a tree holding
+  // both. This one is — both variants below produced it, twice over.
+  const PINNED = '66e2eebe398fb8ab8bc068cce1c971b9d7268c3c886305e84d612bb7a2092a31';
 
   const run = (withGate: boolean) =>
     runSession({
@@ -249,6 +310,30 @@ describe('dedup-gate in a full scripted run', () => {
         boutGapMs: 30 * 60_000,
         cardSeconds: 10,
       },
+      // **Three who prefer the clause as it stands** (Q1439). The room used to
+      // be the two drafters alone under a quorum of 99, which held the floor
+      // out of reach so the original stayed live for its twin to meet. No
+      // quorum could ask for more than half then (R-126), so in a room of two the
+      // floor is one and the first approval carries the original away — and
+      // the twin meets nothing. **A race is held open by disagreement now,
+      // not by an unreachable number**, which is the whole of Q1439: these
+      // three sit at the incumbent's own position, so they prefer the clause
+      // as it stands, the two drafters' approvals never reach the floor of
+      // three, and both candidates stay live. They never draft
+      // (`draftiness: 0`), so the duplicate the gate is about is still the
+      // second drafter's.
+      ...[1, 2, 3].map((i) => ({
+        id: `s${i}`,
+        handle: `S${i}`,
+        temperament: 'Test persona.',
+        stances: { meetings: -0.6 },
+        salience: { meetings: 0.8 },
+        noise: 0,
+        draftiness: 0,
+        boutCards: 3,
+        boutGapMs: 30 * 60_000,
+        cardSeconds: 10,
+      })),
     ],
   };
 
@@ -256,32 +341,55 @@ describe('dedup-gate in a full scripted run', () => {
     const lines: string[] = [];
     const { session } = await runSession({
       scenario: dupeScenario,
-      windowMs: 12 * HOURS,
+      windowMs: 24 * HOURS,
       seed: 'dupes',
       makePersona: (profile, rng) => new ScriptedPersona(profile, dupeScenario, rng),
-      // Hold the floor above reach so candidates stay live and the second
-      // persona's twin draft meets a live original. It froze the threshold at
-      // 0.99 until v0.128, when the bar left the adoption test (Q1362, R-117).
-      constitutionOverrides: { quorum: { form: 'count', n: 99 } },
+      // Hold the floor above the two drafters' reach so candidates stay live
+      // and the second persona's twin draft meets a live original. It froze
+      // the threshold at 0.99 until v0.128, when the bar left the adoption
+      // test (Q1362, R-117), and it was a count of 99 until Q1490 (R-139):
+      // the cap is the whole group now, so 99 in a room of five is unanimity
+      // and every candidate closes on the first vote for the clause (§4.4).
+      // Three — the number the old cap produced — is asked for directly.
+      constitutionOverrides: { quorum: { form: 'count', n: 3 } },
       dedupGate: new DedupGate(),
       onProgress: (line) => lines.push(line),
     });
 
-    // Only one candidate ever entered play; its twin was caught.
-    expect(session.allCandidates()).toHaveLength(1);
+    // **The original no longer survives the window** (Q1440): three of the
+    // five prefer the clause as it stands, so the moment all three have said
+    // so the proposal can never be preferred and is closed (SPEC §4.4) — and
+    // a persona with `draftiness: 1` proposes the same wording again, which
+    // the gate lets through because the original it duplicated is no longer
+    // live. Nineteen originals over twelve hours, each one duplicated once.
+    // **That is the dedup gate's answer to the question Q1440 raised**: a
+    // retired candidate blocks nothing, so re-proposing after a domination is
+    // a fresh candidate with a fresh floor — Ed's *the author re-proposes*,
+    // taken literally by a persona that never gets bored. The assertions
+    // below are therefore over the run rather than over one candidate, and
+    // they say exactly what they said before: one merge per live original,
+    // and a repeat of one already merged is skipped.
+    //
+    // **Twelve hours became twenty-four at Q1454**, and nothing else here
+    // moved. A rejected proposal is no longer refunded (SPEC §7), so these two
+    // drafters are wallet-bound rather than time-bound: twelve hours bought
+    // nineteen originals when every retirement paid something back and buys
+    // twelve now, too few for any drafter to meet a live original it already
+    // supports — the one case the *skipped* line is about. The window is the
+    // room the run needs to reach that case, not a loosened assertion: every
+    // expectation below is the one it was, and each still has a witness.
+    const dupes = lines.filter((l) => l.includes('drafts a duplicate of'));
+    expect(dupes.length).toBeGreaterThan(1);
+    expect(dupes.every((l) =>
+      l.endsWith('support merged') || l.endsWith('skipped'))).toBe(true);
+    const mergedOf = (id: string) => dupes.filter((l) =>
+      l.includes(`duplicate of ${id} (edit-distance): support merged`)).length;
+    for (const c of session.allCandidates()) expect(mergedOf(c.id)).toBeLessThanOrEqual(1);
+    expect(dupes.filter((l) => l.endsWith('skipped')).length).toBeGreaterThan(0);
+
     const c1 = session.allCandidates()[0]!;
-
-    // First catch merges support (co-sign), later retries are skipped.
-    const merged = lines.filter((l) =>
-      l.includes(`drafts a duplicate of ${c1.id} (edit-distance): support merged`),
-    );
-    const skipped = lines.filter((l) =>
-      l.includes(`drafts a duplicate of ${c1.id} (edit-distance): skipped`),
-    );
-    expect(merged).toHaveLength(1);
-    expect(skipped.length).toBeGreaterThan(0);
-
-    // Both personas now support the surviving candidate (SPEC §5.1).
+    expect(mergedOf(c1.id)).toBe(1);
+    // Both personas support the candidate whose twin was merged (SPEC §5.1).
     expect([...session.supportersOf(c1.id)].sort()).toEqual(['d1', 'd2']);
 
     // The gate is advisory: the log stays intact and replayable.

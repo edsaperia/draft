@@ -25,13 +25,25 @@ export function pairKey(a: string, b: string): string {
 }
 
 /**
- * Ground-contextual pair key (SPEC §4.4, Q50): edge pairs are keyed to
- * the ground they were judged on, so a material shift re-opens the pair
- * as a fresh question for everyone; diagonals (groundId null) are keyed
- * by the pair alone.
+ * Ground-contextual pair key (SPEC §4.4, Q50): edge pairs are keyed to the
+ * ground they were judged on, so a change to the text they compared re-opens
+ * the pair as a fresh question for everyone; diagonals (groundId null) are
+ * keyed by the pair alone.
+ *
+ * **The incumbent endpoint is not in the key** (Q1441). It used to be, and
+ * that was harmless while the ground was the race's: the two moved together.
+ * A pair's ground is its own now, so a race can widen — changing the
+ * incumbent id every new judgment is cast against — while the pair's ground
+ * stands; keyed by the raw ids, one member's judgment and their own revision
+ * of it would sit under two spellings of *the current text* and neither
+ * supersede the other nor count as served. The candidate ids and the ground
+ * identify the question exactly: `X@g` is *X against the text under X's
+ * lines*, and no other pair can spell itself that way.
  */
 export function contextKey(a: string, b: string, groundId: string | null): string {
-  return groundId === null ? pairKey(a, b) : `${pairKey(a, b)}@${groundId}`;
+  if (groundId === null) return pairKey(a, b);
+  const ids = [a, b].filter((id) => !id.startsWith(INC_PREFIX)).sort();
+  return `${ids.join('|')}@${groundId}`;
 }
 
 /**
@@ -64,12 +76,18 @@ export interface RoutingHost {
   authorOf(candidateId: string): string | undefined;
   usableComparisons(members: string[], incumbentId: string): StoredComparison[];
   fitRaceMembers(members: string[], incumbentId: string): Fit;
-  races(): RaceView[];
+  /** The races as they stand at `t` — the floor rides the clock (Q1439). */
+  races(t: number): RaceView[];
+  /**
+   * A pair's own ground (Q1441): the current text under the lines of the two
+   * wordings it compares. Feed exclusion is keyed on it, so a judged pair
+   * re-opens when the text it compared changes and at no other time.
+   */
+  pairGround(aId: string, bId: string): string;
   eCount(): number;
   salienceFitOver(races: RaceView[]): Fit | null;
   salienceWeightsOver(races: RaceView[], fit: Fit | null): Map<string, number>;
   adoptionThreshold(t: number): number;
-  adoptionFloor(): number;
   constitution(): Constitution;
   logLength(): number;
 }
@@ -80,10 +98,12 @@ export class Routing {
   constructor(private readonly host: RoutingHost) {}
 
   /**
-   * True when a race carries evidence locked by a ground shift or a
-   * rebase confirmation — i.e. the race was re-opened (SPEC §4.4, Q50)
-   * and its live members were judged before on ground that no longer
-   * exists.
+   * True when a race **holds a voided pair** — a judgment cast against text
+   * that has since changed, or one cut off by a rebase confirmation's evidence
+   * reset (SPEC §4.4, Q50). It keys on each judgment's own pair ground since
+   * Q1441, not on the race's whole contested area, so the re-opened boost
+   * lands on a race some of whose evidence really is gone and never on one
+   * that merely gained a rival.
    */
   hasLockedEvidence(race: RaceView): boolean {
     // a walk over every comparison, per race — once per state version (Q1324)
@@ -96,6 +116,9 @@ export class Routing {
     // members' own buckets hold every candidate; one between two members is
     // read twice, harmlessly — the answer is a boolean
     const pool = race.members.flatMap((m) => this.host.edgesByCandidate(m));
+    // one ground per distinct pair for the length of the scan, as
+    // `buildUsableComparisons` does and for the same measured reason
+    const grounds = new Map<string, string>();
     for (const c of pool) {
       if (c.kind !== 'edge') continue;
       const aMember = memberSet.has(c.aId);
@@ -103,7 +126,13 @@ export class Routing {
       const aOk = aMember || c.aId.startsWith(INC_PREFIX);
       const bOk = bMember || c.bId.startsWith(INC_PREFIX);
       if (!aOk || !bOk || (!aMember && !bMember)) continue;
-      if (c.groundId !== race.incumbentId) return true;
+      const key = pairKey(c.aId, c.bId);
+      let ground = grounds.get(key);
+      if (ground === undefined) {
+        ground = this.host.pairGround(c.aId, c.bId);
+        grounds.set(key, ground);
+      }
+      if (c.groundId !== ground) return true;
       for (const [id, isMember] of [
         [c.aId, aMember],
         [c.bId, bMember],
@@ -139,7 +168,8 @@ export class Routing {
         // While the rival gate is closed, rival pairs carry no serving
         // value (SPEC §8.3, Q48).
         if (!rivalGateOpen && a !== incumbentId && b !== incumbentId) continue;
-        if (excludeJudgedBy && this.host.servedOut(excludeJudgedBy, contextKey(a, b, incumbentId))) {
+        if (excludeJudgedBy &&
+          this.host.servedOut(excludeJudgedBy, contextKey(a, b, this.host.pairGround(a, b)))) {
           continue;
         }
         const v = pairValue(fit, a, b);
@@ -186,6 +216,7 @@ export class Routing {
     incumbentId: string,
     participantId: string,
     rivalGateOpen: boolean,
+    leaderFirst: string | null = null,
   ): BestPair | null {
     const ids = [...members, incumbentId];
     const scan = (
@@ -199,13 +230,29 @@ export class Routing {
           if (!include(a, b)) continue;
           // in the scan itself, so both passes see it (R-062, backlog 253)
           if (this.ownIncumbentPair(a, b, incumbentId, participantId)) continue;
-          if (this.host.servedOut(participantId, contextKey(a, b, incumbentId))) continue;
+          if (this.host.servedOut(participantId,
+            contextKey(a, b, this.host.pairGround(a, b)))) continue;
           const v = pairValue(fit, a, b);
           if (best === null || v > best.value) best = { aId: a, bId: b, value: v };
         }
       }
       return best;
     };
+    // **The pair that decides it, first** (Q1439; SPEC §8.2's *the unheard are
+    // asked at the moment their silence would be foreclosed*). Where a race is
+    // short of its floor, the only answer that can move it is *the leader
+    // against the current text* — an approval, now that the floor counts
+    // those — and this member has not given one. Serving anything else first
+    // spends their attention on a question the adoption does not turn on and
+    // lets their period run out meanwhile. The scan's own exclusions still
+    // apply, so an author is not asked about their own text (R-062) and a pair
+    // already judged on this ground is skipped, in which case this falls
+    // through to the ordinary value order below.
+    if (leaderFirst !== null) {
+      const decisive = scan((a, b) =>
+        (a === leaderFirst && b === incumbentId) || (b === leaderFirst && a === incumbentId));
+      if (decisive !== null) return decisive;
+    }
     if (rivalGateOpen) return scan(() => true);
     const isIncumbentPair = (a: string, b: string): boolean =>
       a === incumbentId || b === incumbentId;
@@ -244,7 +291,11 @@ export class Routing {
   private askOnRace(r: RaceView, participantId: string): BestPair | null {
     if (r.deadlocked && !this.deadlockStillAsks(r, participantId)) return null;
     const fit = this.host.fitRaceMembers(r.members, r.incumbentId);
-    return this.bestPairFor(fit, r.members, r.incumbentId, participantId, r.rivalGateOpen);
+    // short of its floor as the batch reads it (Q1439): then the leader
+    // against the current text is the pair that decides it, and it goes first
+    const decisive = r.leaderId !== null && r.approvals < r.floor ? r.leaderId : null;
+    return this.bestPairFor(
+      fit, r.members, r.incumbentId, participantId, r.rivalGateOpen, decisive);
   }
 
   /** The edge card `feed` deals for a pair `askOnRace` found on a race. */
@@ -271,10 +322,15 @@ export class Routing {
    * ask them, an unknown race, or a race of their own text alone (R-062).
    * Pure, like `feed`; blind, like `feed` — the routing value rides the
    * `Card` and the participant API strips it.
+   *
+   * **And it takes a clock since Q1439**: *whether* a pair is left to ask is
+   * still clock-free, but *which* one comes first is not — a race short of its
+   * floor leads with the leader against the current text, and whether it is
+   * short depends on who has abstained by now.
    */
-  askOn(participantId: string, raceId: string): Card | null {
+  askOn(participantId: string, raceId: string, t: number): Card | null {
     this.host.assertActive(participantId);
-    const r = this.host.races().find((x) => x.id === raceId);
+    const r = this.host.races(t).find((x) => x.id === raceId);
     if (!r) return null;
     const best = this.askOnRace(r, participantId);
     return best === null ? null : this.edgeCard(r, best);
@@ -294,19 +350,27 @@ export class Routing {
    */
   feed(participantId: string, n: number, t: number): Card[] {
     this.host.assertActive(participantId);
-    // **One hand per seat per state version** (Q1324). The clock enters the
-    // feed in exactly one place — `adoptionThreshold(t)` divides every race's
-    // value below — and a common divisor moves no race past another, so the
-    // hot order, and with it every card dealt, is the same at every `t` for
-    // one state: the memo is exact, not approximate, and `feed.test.ts`
-    // holds it (*the hand does not depend on the clock*). The page's 4s
-    // poll and `askOn`'s per-race read each took a fresh deal before this.
-    return this.host.derived(`feed|${participantId}|${n}`, () => this.dealFeed(participantId, n, t))
+    // **One hand per seat per state version** (Q1324) — **and per floor**
+    // (Q1439). The clock used to enter the feed in exactly one place,
+    // `adoptionThreshold(t)`, a common divisor that moves no race past
+    // another; since Q1439 it enters in two more — the unheard boost and the
+    // decisive-pair preference both ask *is this race short of its floor*,
+    // and a silence crosses its 💤 period with no event to mark it. So the
+    // answer to that one question rides in the key: the hand is the same at
+    // every `t` that reads the same races as short, which is every `t`
+    // between two abstentions. The memo stays exact rather than approximate,
+    // and it still hits across the page's 4s poll — keying on `t` itself
+    // would miss on every poll and put back the read path the second moon
+    // room measured (91% of a saturated host).
+    const races = this.host.races(t);
+    const short = races.filter((r) => r.approvals < r.floor).map((r) => r.id).join(',');
+    return this.host
+      .derived(`feed|${participantId}|${n}|${short}`,
+        () => this.dealFeed(participantId, n, t, races))
       .slice();
   }
 
-  private dealFeed(participantId: string, n: number, t: number): Card[] {
-    const allRaces = this.host.races();
+  private dealFeed(participantId: string, n: number, t: number, allRaces: RaceView[]): Card[] {
     // a deadlocked race leaves everybody's feed except the members it has
     // never heard from (§8.3b; until Q1283 it left every feed, and the
     // disclosure rule below was only half of the spec's sentence)
@@ -321,7 +385,6 @@ export class Routing {
     const salienceFit = this.host.salienceFitOver(allRaces);
     const weights = this.host.salienceWeightsOver(allRaces, salienceFit);
     const threshold = this.host.adoptionThreshold(t);
-    const floor = this.host.adoptionFloor();
     const constitution = this.host.constitution();
     const judgedRaces = new Set<string>();
     for (const r of races) {
@@ -335,14 +398,15 @@ export class Routing {
     // weight is not an adoption test, and the deletion pass takes the divisor
     // with the rest. Races short of the
     // floor that this participant hasn't judged get the unheard boost
-    // (SPEC §8.2) — short of it as the batch reads it, judges of the leader
-    // (Q1337); ground-shifted races get the re-opened boost until
-    // re-measured (SPEC §4.4, Q50 — near-adoption by construction, so
+    // (SPEC §8.2) — **short of it as the batch reads it**, which since Q1439
+    // is approvals against the race's own floor at this `t`, the two numbers
+    // `clearsFloor` compares; ground-shifted races get the re-opened boost
+    // until re-measured (SPEC §4.4, Q50 — near-adoption by construction, so
     // their fresh pairs price like new-candidate measurement or better).
     const valued = races
       .map((r) => {
         let v = ((r.leaderP ?? 0.5) / threshold) * (weights.get(r.id) ?? 1);
-        if (r.leaderJudges < floor && !judgedRaces.has(r.id)) v *= 1.25;
+        if (r.approvals < r.floor && !judgedRaces.has(r.id)) v *= 1.25;
         if (r.comparisons < r.members.length && this.hasLockedEvidence(r)) {
           v *= constitution.reopenedBoost;
         }
@@ -521,7 +585,8 @@ export class Routing {
       }
     }
     if (!target) return null;
-    const key = contextKey(target.id, target.race.incumbentId, target.race.incumbentId);
+    const key = contextKey(target.id, target.race.incumbentId,
+      this.host.pairGround(target.id, target.race.incumbentId));
     if (this.host.servedOut(participantId, key)) return null;
     return {
       kind: 'exploration',

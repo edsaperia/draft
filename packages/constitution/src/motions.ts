@@ -27,7 +27,7 @@ import { inE, motionElectorateOf } from './populations.js';
 // the departure owing (Q901): one rule over all three routes out, so the
 // carried 🥾 motion's arm calls the same function `remove` and `resign` do.
 // `MotionHost` satisfies `DepartureAudience` by its `members` and `emit`.
-import { oweDeparture } from './owed.js';
+import { oweDeparture, oweHeld } from './owed.js';
 
 /** The settings whose change is the ask-everyone route (SPEC §9.6's test).
  *  Read by the fold's owing as well as by the carry's, so it lives beside
@@ -37,14 +37,35 @@ export const CONSTITUTIONAL: ReadonlySet<SettingId> = new Set(
 );
 
 /**
- * What `openMotion` is handed. The one difference from `MotionPayload` is the
+ * What `openMotion` is handed. Two differences from `MotionPayload`. The
  * invitation: the caller names an **address**, and the session turns it into
  * the person row the event carries (decision 1253) — the email must never
- * reach the log, and the caller has no business minting person ids.
+ * reach the log, and the caller has no business minting person ids. And
+ * `text` is not here at all (Q1433): it is the fold's own record of a pen
+ * amendment (§9.7 rule 8, R-058), written into the record by `text-amended`
+ * rather than opened, so nothing puts one.
  */
 export type MotionInput =
-  | Exclude<MotionPayload, { kind: 'invite' }>
+  | Exclude<MotionPayload, { kind: 'invite' } | { kind: 'text' }>
   | { kind: 'invite'; email: string };
+
+/**
+ * **The five payloads anybody puts** (Q1433), and the refusal for everything
+ * else. `MotionPayload`'s sixth kind, `text`, is the fold's record of the
+ * Founder's pen amendment and reaches `openMotion` by no road inside this
+ * package — so a `text` payload arriving here came off the wire, where it
+ * used to fall through the last `else` below and be opened as an
+ * **admission**: priced at 🪪, routed, and carried toward a `member-admitted`
+ * for an applicant that does not exist. The same `else` took any unknown kind
+ * and any payload that is not a shape at all.
+ *
+ * Asked here rather than in the server's command whitelist because this is
+ * the only door every caller comes through — the sim harness, the fixture and
+ * a replay-free test as well as the wire.
+ */
+const PUT: ReadonlySet<string> = new Set(['set', 'reserve', 'invite', 'remove', 'admit']);
+const notPut = (kind: unknown): Error =>
+  new Error(`'${String(kind)}' is not a motion anybody puts (§9.6)`);
 
 /**
  * The session as the motions see it. Every field is read at the moment it is
@@ -71,6 +92,13 @@ export interface MotionHost {
   /** Does this motion's target sit behind the crown's assent (§9.7)? */
   reservedTarget(rec: MotionRecord): boolean;
   requireEmailFree(email: string): void;
+  /** **Is this person on the membership now?** — `requireEmailFree`'s own
+   *  question, which a carry has to ask again (issue #6, F2): a motion is a
+   *  permission that lands later, and the address it names can be seated by
+   *  another road while it runs. An invitee counts: the seat is theirs. */
+  personSeated(person: PersonId): boolean;
+  /** The person an application is by, for the question above (issue #6, F2). */
+  personOfApplicant(applicant: string): PersonId | null;
   personFor(email: string): PersonId;
   convenorSeatVacant(): boolean;
   afterRosterChange(t: number, cause: 'arrival' | 'departure', member: MemberId): void;
@@ -105,6 +133,11 @@ export function membershipRouteOf(price: Price,
 
 export function openMotion(s: MotionHost, t: number, by: MemberId,
   input: MotionInput, why?: string): MotionId {
+  // the shape before the state (Q1433): a payload nothing puts is refused
+  // whatever the document is doing, and this is also what keeps the reads
+  // below off a payload that is not an object
+  const asked: unknown = (input as { kind?: unknown } | null)?.kind;
+  if (typeof asked !== 'string' || !PUT.has(asked)) throw notPut(asked);
   s.requireOpen('a motion');
   if (s.constitutedT === null) {
     throw new Error('before the start nothing is amended — only set (§9.6a)');
@@ -112,13 +145,21 @@ export function openMotion(s: MotionHost, t: number, by: MemberId,
   const mover = s.members.get(by);
   if (!mover || !inE(mover)) throw new Error(`'${by}' is not an arrived member`);
   let route: MotionRoute;
-  // the invitation's address becomes a person row here, and only the row's
-  // id rides the motion (decision 1253); every other payload is what it was
+  // the invitation's address becomes a person row, and only the row's id
+  // rides the motion (decision 1253); every other payload is what it was.
+  // **The row itself is written once nothing can refuse the motion** (Q1436):
+  // it used to be written here, above the refusals that follow — 🪪 at ✒️,
+  // the twin rule, the one-🏛️-out rule — so a refused press stored an
+  // address nobody had invited and no event named. `personFor` writes
+  // nothing: it answers the row already holding the address, or the id the
+  // next row would take, which is why the id can be settled here and the row
+  // left until the emit.
   let payload: MotionPayload;
+  let row: { person: PersonId; email: string } | null = null;
   if (input.kind === 'invite') {
     s.requireEmailFree(input.email);
     const person = s.personFor(input.email);
-    s.people.set(person, { email: input.email });
+    row = { person, email: input.email };
     payload = { kind: 'invite', person };
   } else payload = input;
   if (payload.kind === 'set') {
@@ -162,8 +203,14 @@ export function openMotion(s: MotionHost, t: number, by: MemberId,
     const target = s.members.get(payload.member);
     if (!target || !inE(target)) throw new Error(`'${payload.member}' is not a member`);
     route = membershipRouteOf(s.priceOf('removal'), 'remove');
-  } else {
+  } else if (payload.kind === 'admit') {
     route = membershipRouteOf(s.priceOf('admission'), 'admit');
+  } else {
+    // unreachable through `PUT` above — `payload` is `never` here, which is
+    // the compiler agreeing — and stated rather than assumed: a seventh kind
+    // added to `MotionPayload` and to `PUT` must not become an admission by
+    // falling off the end of this chain (Q1433)
+    throw notPut((payload as MotionPayload).kind);
   }
   // **An identical motion is refused on either route** (Ed, 2026-09-12,
   // Q1348; SPEC §9.6, R-103): the same payload already running is one
@@ -180,6 +227,10 @@ export function openMotion(s: MotionHost, t: number, by: MemberId,
     throw new Error('one 🏛️ out per member at a time (§9.6)');
   }
   const id = `mo-${s.nextMotionN}`;
+  // the row before the event that names it, and after every refusal (Q1436):
+  // the fold's `notePerson` counts the id off this same event, so the write
+  // and the count still happen in one act
+  if (row !== null) s.people.set(row.person, { email: row.email });
   const e: ConstitutionEvent = { type: 'motion-opened', t, motion: id, by,
     payload, route, stake: route === 'ordinary' ? 1 : 0 };
   if (why !== undefined && why !== '') (e as { why?: string }).why = why;
@@ -241,11 +292,19 @@ export function withdrawMotion(s: MotionHost, t: number, member: MemberId,
  * posture. The event is the same `motion-withdrawn` the log already carries,
  * so a replay reaches this state with no bridge at all (§3.3a: the stake, if
  * one was ever taken, comes back whole).
+ *
+ * **And the mover is told** (Q1447): this is the one withdrawal that is a
+ * failure — they pressed, the wallet was empty or the race would not take the
+ * candidate, and without the card the press simply vanishes. `withdrawMotion`
+ * above owes nothing, because letting go of your own proposal is not news to
+ * you. The owing is emitted after the withdrawal for `settleHeldEffects`'
+ * reason, and `oweHeld` never throws, which is this function's own rule kept.
  */
 export function abandonMotion(s: MotionHost, t: number, motion: MotionId): void {
   const rec = s.motions.get(motion);
   if (!rec || rec.status !== 'running') return;
   s.emit({ type: 'motion-withdrawn', t, motion });
+  oweHeld(s, t, motion, rec.by, rec.payload.kind);
 }
 
 /**
@@ -253,9 +312,16 @@ export function abandonMotion(s: MotionHost, t: number, motion: MotionId): void 
  * engine, the sim, a mock — runs the race and reports the outcome here, a
  * motion carrying when the room prefers it to what stands and the quorum is
  * met; post-368 the caller is an engine-core race over the value.
+ *
+ * **`held-at-close` is the third word, and only the close may say it**
+ * (Q1450, Ed 2026-09-18): the same hold, at T=0, by a clock rather than by
+ * the room. It settles and files exactly as `held` does and differs in one
+ * thing — the mover is told nothing, because an OK is refused on a shut
+ * document and the 🥂 card is what speaks for every motion the close found
+ * running (SURFACE E41).
  */
 export function adjudicateOrdinaryMotion(s: MotionHost, t: number,
-  motion: MotionId, outcome: 'carried' | 'held'): void {
+  motion: MotionId, outcome: 'carried' | 'held' | 'held-at-close'): void {
   s.requireOpen('a motion');
   const rec = s.motions.get(motion);
   if (!rec || rec.status !== 'running') throw new Error('the motion is not running');
@@ -270,7 +336,7 @@ export function adjudicateOrdinaryMotion(s: MotionHost, t: number,
   } else if (after === 'carried') {
     settleCarriedEffects(s, t, rec, /* everyoneHadSay */ false);
   } else if (after === 'held') {
-    settleHeldEffects(s, t, rec);
+    settleHeldEffects(s, t, rec, /* tellTheMover */ outcome !== 'held-at-close');
   }
 }
 
@@ -387,7 +453,26 @@ function runningTwin(s: MotionHost, payload: MotionPayload): MotionId | null {
  * The settle check (v0.48): a constitutional motion carries at the moment
  * every currently active member — E, evaluated live (R-088) — stands
  * at accept or abstain with no keep standing. Re-run on every answer and
- * every roster event; a standing keep blocks but does not kill.
+ * every roster event.
+ *
+ * **And it fails at the moment one of them keeps what stands** (Ed,
+ * 2026-09-19, Q1473; SPEC §9.6, R-138). Until v0.138 a standing keep blocked
+ * and did not kill — the motion ran on, ⏳ for everyone who had answered,
+ * because the keeper might change their mind — and R-021 gave a blocked
+ * motion one way out, the mover's withdrawal. **An application has no mover**
+ * (§9.7½ opens it with `by: null`), so a stranger one member had voted
+ * against was listed under *Applicants*, told nothing, until the clock closed
+ * the document; Ed found one in a live room. One rule for one glyph: every
+ * 🏛️ vote against ends its proposal at once, whatever the proposal is about.
+ *
+ * Two things stay exactly as they were. **Abstention never blocks** — it is
+ * an answer, and the check below reads it as one. **And accept and abstain
+ * stay revisable until the motion settles**: what a keep does is settle it,
+ * so there is nothing left to revise, not a new rule about revision.
+ *
+ * The keep is read over the electorate as it stands, so a keep from somebody
+ * who has since lapsed or gone does not fail anything — the same live-E rule
+ * the carry has always been read by.
  */
 export function maybeSettleMotions(s: MotionHost, t: number): void {
   let settled = true;
@@ -402,7 +487,15 @@ export function maybeSettleMotions(s: MotionHost, t: number): void {
         .filter((m2) => m2.id !== excl);
       if (electorate.length === 0) continue;
       const answers = electorate.map((m) => rec.answers.get(m.id));
-      if (answers.some((a) => a === undefined || a === 'keep')) continue;
+      // the vote against, first, and before the wait for the rest: it needs
+      // no other answer to be final (Q1473)
+      if (answers.some((a) => a === 'keep')) {
+        s.emit({ type: 'motion-held', t, motion: rec.id });
+        settleHeldEffects(s, t, rec);
+        settled = true;
+        break;
+      }
+      if (answers.some((a) => a === undefined)) continue;
       if (!answers.some((a) => a === 'accept')) continue; // nobody consented to anything
       if (s.reservedTarget(rec)) {
         // Reserved is assent at the end of either route (§9.7 v0.49):
@@ -424,12 +517,30 @@ export function maybeSettleMotions(s: MotionHost, t: number): void {
 export function settleCarriedEffects(s: MotionHost, t: number, rec: MotionRecord,
   everyoneHadSay: boolean): void {
   if (rec.payload.kind === 'invite') {
+    // **One address is one member** (issue #6, F2; §9.7½, decision 1253). The
+    // address was free when the motion was put, and a motion is a permission
+    // that lands later: the Founder's ✒️ or an application can have seated
+    // that person in between, and a second row is a second wallet and a
+    // second place in E. The motion still **carried** — the room said yes,
+    // and the record says so — there is simply nothing left for it to do.
+    if (s.personSeated(rec.payload.person)) return;
     const id = `m-${s.nextMemberN}`;
     s.emit({ type: 'member-invited', t, member: id,
       person: rec.payload.person, viaMotion: rec.id });
     // an invitee counts toward nothing until they arrive — no roster follow-ons
   } else if (rec.payload.kind === 'remove') {
     const target = rec.payload.member;
+    // **Nobody leaves twice** (issue #6, F3). Three roads lead out — the
+    // Founder's ❌, this motion and 🌂 — and the subject of a removal
+    // resigning while the room decides is the ordinary case, not a
+    // contrivance. Carrying on top of a departure that already happened
+    // recorded a second one at a later time, overwrote `removedBy` so the
+    // record said the room exiled somebody who had walked out, and owed
+    // every remaining member the 🥾 card about that person again. The
+    // motion **carried** all the same — the room said yes — and there is
+    // nothing left for it to do, which is the invite arm's rule above at
+    // the other door.
+    if (s.members.get(target)!.removed) return;
     const wasInE = inE(s.members.get(target)!);
     s.emit({ type: 'member-removed', t, member: target, viaMotion: rec.id });
     // the room is told, and owes an OK for it (SURFACE E38, Q901) — before
@@ -462,6 +573,10 @@ export function settleCarriedEffects(s: MotionHost, t: number, rec: MotionRecord
     shiftRivals(s, t, rec.payload.setting, rec.id, rec.id);
   }
   if (rec.payload.kind === 'admit') {
+    // the invite arm's rule, at the other door in (issue #6, F2): the
+    // applicant may have been invited by the pen while the room decided
+    const already = s.personOfApplicant(rec.payload.applicant);
+    if (already !== null && s.personSeated(already)) return;
     const id = `m-${s.nextMemberN}`;
     // what they told the door arrives with them (Q1405): ✋ and 🖼️ are asked
     // of a member as *were you ever asked*, and the answers were given
@@ -535,11 +650,46 @@ export function crownSeatVacated(s: MotionHost, t: number): void {
   }
 }
 
-/** Follow-ons of a held motion: a refused application is told so (§9.7½). */
-function settleHeldEffects(s: MotionHost, t: number, rec: MotionRecord): void {
+/**
+ * Follow-ons of a held motion: a refused application is told so (§9.7½), and
+ * **the mover is told their motion failed** (Ed, 2026-09-17, Q1447; SURFACE
+ * E41, R-130). Three callers, which are three of the four roads to a failure:
+ * `adjudicateOrdinaryMotion` with *held* — the engine ran the race and the
+ * value stood — `answerCrownQuestion` with *reject*, the Founder's 🛡️
+ * refusing a motion the room had already carried, and — since Q1473 —
+ * `maybeSettleMotions`, where one member of the electorate kept what stands
+ * and that ends it. The fourth is `abandonMotion`, which calls `oweHeld` for
+ * itself, having no status event of this shape to hang it on.
+ *
+ * **The 🏛️ road reaches both arms** (Q1473). An application refused this way
+ * is refused by the road a rejected application already took, so the applicant
+ * is told exactly as they are at the ✏️ price and may apply again; and a
+ * member's invitation or removal kept this way tells its mover with the same
+ * card the other roads raise.
+ *
+ * The owing goes **after** the status event and before nothing else, which is
+ * where the departure owing sits relative to `member-removed`: the news of an
+ * act beside the act in the log, rather than behind whatever a re-settle
+ * carried.
+ *
+ * Not a road: `crown-failed-closed`, which also lands a motion at `held`.
+ * It is emitted by `runClose` and folded there, reaching this file by no
+ * path at all, so the close owes nothing — which is the answer anyway, an
+ * OK being refused on a shut document.
+ *
+ * **And `tellTheMover` is the close's own arm of that same answer** (Q1450,
+ * Ed 2026-09-18): the ordinary motions `finishClose` holds at T=0 do come
+ * through here, and they are the one case where the follow-on splits — the
+ * applicant is still told their application was refused, because that is a
+ * fact about them and not a task, while the mover is told nothing, the 🥂
+ * card counting every motion the close found running instead.
+ */
+function settleHeldEffects(s: MotionHost, t: number, rec: MotionRecord,
+  tellTheMover = true): void {
   if (rec.payload.kind === 'admit') {
     s.emit({ type: 'application-refused', t, applicant: rec.payload.applicant });
   }
+  if (tellTheMover) oweHeld(s, t, rec.id, rec.by, rec.payload.kind);
 }
 
 /**

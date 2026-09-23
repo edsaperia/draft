@@ -96,7 +96,10 @@
  *   member: `seat-matrix: findings=15 noRule=0 shape=0 errors=0 refused=0 unstood=0 exit=1`
  *   clerk:  `seat-matrix: findings=25 noRule=0 shape=0 errors=0 refused=0 unstood=4 exit=1`
  * (quoted as they were printed; the line gained `filed=` afterwards).
- * Wall time about 8 minutes per hat (the lapse wait is 80–115 s of it); a
+ * Wall time was about 8 minutes per hat when the spell was a minute (the
+ * lapse wait was 80–115 s of it); since Q1453 the shortest spell a document
+ * may state is five minutes, so the `wait-lapsed` step waits that out and the
+ * hat costs about five minutes more. A
  * second member run `--baseline`d against the first reported *no rail
  * differences*, so `mask` folds every volatile field. Seats
  * stood per document: founder, early, lapsed, stranger before 🍾; late and the
@@ -181,7 +184,7 @@ import { writeFile, readFile } from 'node:fs/promises';
 import { chromium } from 'playwright';
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
 import { tableAfter, keysOf } from './lib/surface-tables.mjs';
-import { say, sleep, arg, linkIn, outbox as devOutbox, typeIn, press } from './lib/walk.mjs';
+import { say, sleep, arg, linkIn, outbox as devOutbox, typeIn, press, withWas, landOn as openLink } from './lib/walk.mjs';
 
 /* ---- arguments -------------------------------------------------------- */
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
@@ -197,11 +200,15 @@ if (TO !== null && !EPOCHS.includes(TO)) {
   console.log('FAIL: --to must be one of ' + EPOCHS.join(', ')); process.exit(1);
 }
 const SETTLE_MS = 5000;        // one 4s poll and air — journey's figure
-const LAPSE_WAIT_MS = 240_000; // the bound on waiting for the clock to lapse a seat
-// 💤's spell on this document, in one place: the `lapse-minute` step sets it
+const LAPSE_WAIT_MS = 420_000; // the bound on waiting for the clock to lapse a seat
+// 💤's spell on this document, in one place: the `lapse-floor` step sets it
 // and E22's mail assertion prices the warnings against it (R-097 sends every
-// `WARN_LEADS` lead that fits *inside* the spell, and at a minute none does).
-const LAPSE_AFTER_MS = 60_000;
+// `WARN_LEADS` lead that fits *inside* the spell, and at five minutes none
+// does). **Five minutes is the floor the validator holds** (Q1453, Ed
+// 2026-09-18) — this walk set a minute over the wire until then, which is
+// the very road that ruling shut, so the shortest real spell is what the
+// quiet seat now waits out, and `LAPSE_WAIT_MS` waits the longer for it.
+const LAPSE_AFTER_MS = 5 * 60_000;
 // the bound on waiting for the outbox's sender pass to file a row's mail: it
 // runs on a kick after the commit, so a few hundred ms behind the fold
 const MAIL_WAIT_MS = 20_000;
@@ -383,6 +390,14 @@ const AUDIENCE = {
   // clause is what puts them back inside the audience.
   'the removed member; every member':
     (s, step, ctx, ev) => s.name === ev.removed || isMember(s),
+  // E41, a motion that failed (Q1447, Ed 2026-09-17; read here with the row).
+  // One seat wide, like E38's, and for a related reason: nothing about the
+  // document changed, so there is nobody the room is owed — the news is the
+  // mover's alone. The mover is the seat of the step that **put** the motion
+  // (`ev.author`), never the step that failed it, which here is the founder
+  // refusing at the crown and is emphatically not the audience.
+  '**the mover, and nobody else**: a rejection changes no rule anybody lives under, so it is news to the one person who asked for the change':
+    (s, step, ctx, ev) => s.name === (STEPS[stepIndex(ev.author)] || {}).seat,
 };
 
 /* ---- table 2: the steps ------------------------------------------------ *
@@ -455,15 +470,20 @@ const STEPS = [
   // writes the day count into `S.lapse` (the rung field) and never `S.lapseDays`,
   // so a reloaded founder is asked 💤 again and everything below it in `ORDER`
   // waits (first run, 2026-08-27: `no begin card to hold … rail ["lapse"]`;
-  // a page finding, Q919 — not fixed here). And the one-minute lapse the
-  // `lapsed` seat needs is not expressible on the card (7–365 days). So 💤 is
-  // answered **on the card, after the reload**, which is what the page counts
-  // as seen, and the minute is then set over the wire without a reload. These
+  // a page finding, Q919 — not fixed here). And the short lapse the `lapsed`
+  // seat needs is not expressible on the card the way this walk wants it: the
+  // card took days alone until Q1439 and takes minutes now, but opens on days.
+  // So 💤 is answered **on the card, after the reload**, which is what the page
+  // counts as seen, and the floor is then set over the wire without a reload.
+  // Until Q1453 that wire set a minute, which is what the ruling shut; it is
+  // the five-minute floor now, and the `wait-lapsed` step waits it out. These
   // two rows stand after `ok-shield`: 💤 is below the grants in `ORDER`, so its
   // card is not in the rail until both are acknowledged.
+  // The field is `lapseN` since Q1439 — the number, in the unit the card opens
+  // on, which is days — where it was `lapseDays`, the day count itself.
   { id: 'lapse-card', epoch: 'before', kind: 'card', seat: 'founder', key: 'lapse', setting: 'lapse',
-    pick: { set: 'lapse', val: 'days' }, fields: { lapseDays: '7' }, events: [] },
-  { id: 'lapse-minute', epoch: 'before', kind: 'cmd', seat: 'founder', cmd: 'set-setting',
+    pick: { set: 'lapse', val: 'days' }, fields: { lapseN: '7' }, events: [] },
+  { id: 'lapse-floor', epoch: 'before', kind: 'cmd', seat: 'founder', cmd: 'set-setting',
     args: () => ({ setting: 'lapse', value: { afterMs: LAPSE_AFTER_MS } }), events: [] },
   // 🏛️ is served to a member founder as news once the constitution is settled,
   // and `beginOffered` holds 🍾 until it is acknowledged (first run, 2026-08-27:
@@ -644,17 +664,24 @@ const STEPS = [
     // (C9, Q1344), and no seat here but the founder has pressed one — the
     // assertion's own note says what that buys and what it still holds
     events: [{ id: 'E10', key: (D) => (D.motionIds["judgments-motion"] ? 'mo:' + D.motionIds["judgments-motion"] : null), noKey: 'the motion judgments-motion put came back with no id', at: 'judgments-motion', waitsOn: 'grant-voice' }] },
-  // one keep, and the motion stands running for the rest of the run: a keep
-  // does not settle a 🏛️ motion, it blocks it (§9.6, `maybeSettleMotions`),
-  // which is exactly the state worth snapshotting — two answers on the wire,
-  // neither seat told the other's.
+  // one abstention, and the motion stands running, which is the state worth
+  // snapshotting — two answers on the wire, neither seat told the other's. It
+  // stands that way until `fail-motion` near the foot of the live epoch, which
+  // revises this answer to accept and lets the Founder refuse the carry at the
+  // crown (E41, Q1447).
+  //
+  // **It was a keep until Q1473** (Ed, 2026-09-19): a keep blocked a 🏛️
+  // motion without killing it, so the row could leave one standing and come
+  // back to it. A vote against ends the motion now, so a keep here would
+  // settle it here — and `fail-motion` would find nothing running to carry.
+  // An abstention is the answer that leaves a motion collecting.
   { id: 'judgments-keep', epoch: 'live', kind: 'cmd', seat: 'late', cmd: 'answer-motion', ifHat: 'member',
     args: async (D) => {
       const v = await viewAs(D, 'late');
       const m = (((v || {}).view || {}).motions || []).find((x) => x.status === 'running' &&
         x.route === 'constitutional' && ((x.payload || {}).setting) === 'judgments');
       if (!m) throw new Error("no running 🏛️ motion on `judgments` in the late seat's view — the motion step did not land");
-      return { motion: m.id, answer: 'keep' };
+      return { motion: m.id, answer: 'abstain' };
     },
     events: [] },
   // **A proposal stranded by a text change** (SURFACE E38; Q170, Ed
@@ -683,7 +710,8 @@ const STEPS = [
     args: async (D) => {
       const v = await viewAs(D, 'lapsed');
       return { baseVersion: v.textVersion,
-        hunks: [{ start: 0, end: 1, lines: ['The clubhouse shall be kept open at all hours.'] }],
+        // the wording it replaces, off this seat's own view (Q1463 (1))
+        hunks: withWas(v.text, [{ start: 0, end: 1, lines: ['The clubhouse shall be kept open at all hours.'] }]),
         why: 'the hours are the whole of what people ask me about' };
     },
     events: [] },
@@ -695,7 +723,7 @@ const STEPS = [
     args: async (D) => {
       const v = await viewAs(D, 'founder');
       return { baseVersion: v.textVersion,
-        hunks: [{ start: 0, end: 1, lines: ['The clubhouse shall be kept open on weekdays.'] }],
+        hunks: withWas(v.text, [{ start: 0, end: 1, lines: ['The clubhouse shall be kept open on weekdays.'] }]),
         why: 'the hours were never the club’s to promise' };
     },
     // the key is the entry the author's own page files for it — `mine:<id>`
@@ -731,7 +759,7 @@ const STEPS = [
     args: async (D) => {
       const v = await viewAs(D, 'founder');
       return { baseVersion: v.textVersion,
-        hunks: [{ start: 1, end: 2, lines: ['Every member may bring two guests.'] }],
+        hunks: withWas(v.text, [{ start: 1, end: 2, lines: ['Every member may bring two guests.'] }]),
         why: 'one guest is thin for a clubhouse this size' };
     },
     // the key is learned by asking the document what race the proposal made:
@@ -825,6 +853,29 @@ const STEPS = [
   // (`orDeparted`). The actor is inside the audience like anybody else —
   // only ❌ skips its own actor (Q1358) — so `early`, who moved it, carries
   // the card too.
+  // **A motion that failed** (SURFACE E41; Q1447, Ed 2026-09-17). The room
+  // carries `judgments-motion` — 🏛️ on 👁️, put by `early` twelve rows up and
+  // left running there — and the Founder refuses it at the crown, which is
+  // the road this table takes. The other two are out of reach from here and
+  // are asserted elsewhere: an **ordinary** motion is held the moment no
+  // answer still to come could carry it (Q1440, `engine-bridge.ts`'s `sync`,
+  // walked by `invite-walk`), and the system's own withdrawal
+  // (`abandonMotion`, #26) is raised inside `sync` on a path the wire refuses
+  // at the door instead. **The close is not a road** (Q1450, Ed 2026-09-18):
+  // it holds what it finds running and raises no card, on either route, the
+  // 🥂 card counting them instead — so `ladder-closed` below asserts nothing
+  // of E41's, and `ladder-walk` reads the 🥂 line.
+  //
+  // **Before `carry-removal`**, which is the last live row because it takes a
+  // seat out: this needs every member seat alive to reach unanimity. 🛡️ on
+  // 👁️ is the founder's — 🍾's table kept everything but the Text — so the
+  // carry parks at the crown rather than applying, which is what gives the
+  // refusal something to refuse.
+  { id: 'fail-motion', epoch: 'live', kind: 'fail-motion', seat: 'founder', ifHat: 'member',
+    motion: 'judgments-motion',
+    events: [{ id: 'E41', at: 'fail-motion', author: 'judgments-motion',
+      key: (D) => (D.motionIds['judgments-motion'] ? 'held:' + D.motionIds['judgments-motion'] : null),
+      noKey: 'the motion judgments-motion put came back with no id' }] },
   { id: 'carry-removal', epoch: 'live', kind: 'carry-removal', seat: 'founder', who: 'late', ifHat: 'member',
     events: [{ id: 'E40', key: 'dep:', at: 'carry-removal', removed: 'late', orDeparted: true }] },
   // ---- closed -------------------------------------------------------------
@@ -983,7 +1034,7 @@ const cmdAs = (D, name, op, args) => D.seats[name].page.evaluate(async ([slug, o
   return { status: r.status, body: await r.json().catch(() => null) };
 }, [D.slug, op, args]);
 const landOn = async (page, url) => {
-  await page.goto(url);
+  await openLink(page, url);
   for (let i = 0; i < 40 && !page.url().includes('/d/'); i++) await page.waitForTimeout(500);
   await page.waitForTimeout(2600);
 };
@@ -1018,7 +1069,8 @@ const SETTINGS = [
   ['judgments', { rung: 'after' }],
   ['chamber', { rung: 'closed' }],          // the setting the amendment moves
   // 💤 is not here: it is answered on the card (`lapse-card`) and then set to
-  // one minute over the wire (`lapse-minute`), so the lapsed seat lapses for real
+  // the five-minute floor over the wire (`lapse-floor`), so the lapsed seat
+  // lapses for real
   ['removal', { price: 'proposal' }],
   ['rate', { grant: 4, cap: 8, dripMinutes: 240 }],
   ['machines', { enabled: false, budget: 0 }],
@@ -1160,7 +1212,7 @@ const RUN = {
   seat: async (step, D) => {
     const s = await standUp(D, step.seat);
     if (s.def.role === 'stranger') {
-      await s.page.goto(D.docbase + '/d/' + D.slug);
+      await openLink(s.page, D.docbase + '/d/' + D.slug);
       await s.page.waitForTimeout(2600);
     } else {
       const mail = (await devOutbox(BASE)).find((m) => JSON.stringify(m).includes(s.email));
@@ -1231,6 +1283,47 @@ const RUN = {
       if (!begun) throw new Error('🍾 was held for ' + BEGIN_HOLD_MS + 'ms and the document did not begin');
     }
     return `held ${label} for ${BEGIN_HOLD_MS}ms`;
+  },
+  /**
+   * **A motion fails** (SURFACE E41; Q1447). The room is walked into unanimity
+   * on the motion the step names, which parks it at the crown because the
+   * Founder holds its 🛡️, and then the Founder **refuses** it. Stops as soon
+   * as the 👑 question stands, so no more seats are asked than the settle
+   * needs; refuses if the motion never reaches the crown, since the row's
+   * assertion would then be about nothing.
+   */
+  'fail-motion': async (step, D) => {
+    if (step.ifHat && step.ifHat !== D.hat) return `skipped: the founder is a ${D.hat}`;
+    const motion = D.motionIds[step.motion];
+    if (!motion) throw new Error(`no motion id kept for step ${step.motion} — it did not land`);
+    const crownFor = async () => {
+      const f = await viewAs(D, 'founder');
+      return (((f || {}).view || {}).crownTasks || []).find((t) => t.motion === motion) || null;
+    };
+    const said = [];
+    for (const name of ['founder', 'early', 'late', 'lapsed']) {
+      if (await crownFor()) break;
+      const s = D.seats[name];
+      if (!s || !s.stood || !s.page || s.left) continue;
+      const v = await viewAs(D, name);
+      const m = (((v || {}).view || {}).motions || []).find((x) => x.id === motion);
+      if (!m || m.status !== 'running' || m.myAnswer === 'accept') continue;
+      const r = await cmdAs(D, name, 'answer-motion', { motion, answer: 'accept' });
+      if (r.status !== 200) throw new Error(`answer-motion as ${name} → ${r.status} ${JSON.stringify(r.body)}`);
+      said.push(name);
+    }
+    const q = await crownFor();
+    if (!q) throw new Error(`${motion} never reached the crown after ${said.join(', ') || 'nobody'} accepted — nothing for the Founder to refuse, so E41 has nothing to assert`);
+    const r = await cmdAs(D, 'founder', 'answer-crown-question', { question: q.id, outcome: 'reject' });
+    if (r.status !== 200) throw new Error(`answer-crown-question → ${r.status} ${JSON.stringify(r.body)}`);
+    // a refusal is not a refusal until the module says so: read the status
+    // back, or a row that silently carried would assert the wrong event
+    const after = await viewAs(D, 'early');
+    const mm = (((after || {}).view || {}).motions || []).find((x) => x.id === motion);
+    if (!mm || mm.status !== 'held') {
+      throw new Error(`${motion} stands at ${mm ? mm.status : '(gone)'} after the Founder refused it — expected held`);
+    }
+    return `${motion} carried on ${said.join(', ') || 'the answers already given'} and the Founder refused it at ${q.id}`;
   },
   /**
    * **A text adoption parks** (SURFACE E36, E37): the member seats judge for
@@ -1362,7 +1455,7 @@ const RUN = {
     // date a read did not revive, and the seat stayed lapsed for the rest of
     // the run with its page open, which is the state Ed says never exists.
     s.page = await s.ctx.newPage(); attachNets(D, step.seat, s.page);
-    await s.page.goto(D.docbase + '/d/' + D.slug);
+    await openLink(s.page, D.docbase + '/d/' + D.slug);
     await s.page.waitForTimeout(2600);
     const after = await viewAs(D, 'founder');
     const back = (((after && after.view) || {}).members || []).find((m) => m.email === s.email);
@@ -1378,7 +1471,7 @@ const RUN = {
       body: JSON.stringify({ email: s.email }) });
     const body = await r.json().catch(() => null);
     if (r.status !== 200 || !body || !body.devLink) throw new Error(`the door refused the knock → ${r.status} ${JSON.stringify(body)}`);
-    await s.page.goto(body.devLink);
+    await openLink(s.page, body.devLink);
     await s.page.waitForTimeout(2200);
     // **the seat is read, not assumed** (Q1281): a page that booted as
     // nobody is an unstood seat, and an unstood seat is a red run — this is
@@ -1553,7 +1646,7 @@ async function mailsFor(D, evs, ms = MAIL_WAIT_MS) {
  *  · **The mail.** Inside the audience a seat is owed every warning that fits
  *    inside the spell, then the package (SPEC §9.5a, R-097). The leads are
  *    the module's own and the spell is this table's `LAPSE_AFTER_MS`, so the
- *    count is derived rather than written down: at one minute none of the
+ *    count is derived rather than written down: at five minutes none of the
  *    three (a week, a day, an hour) fits, and E22 here is the package alone.
  *    Outside the audience a seat must have been sent neither.
  *  · **The page.** A keyless row cannot assert an absent entry by looking for
@@ -1810,10 +1903,19 @@ say(`tables     · SURFACE §2 events ${EVENTS.length} rows · seats ${SEATS.len
 // pen kept on the Text at 🍾, a `reserve` behind `lay-down`, and a carry that
 // takes a seat out of the document and so has to stand last in its epoch.
 // **E39 was retired two days later** (Q1404): the row stays in the table,
-// struck through with a dash audience like E23, so the count holds at 40 and
-// its step is gone.
-if (EVENTS.length !== 40) {
-  shape.push(`SURFACE §2 has ${EVENTS.length} event rows, not the 40 this table was written against`);
+// struck through with a dash audience like E23, so the count held at 40 and
+// its step is gone. **E41 joined it on 2026-09-17** (Q1447, a motion that
+// failed), read here with its own `fail-motion` step, so the count is 41.
+// **E42 joined on 2026-09-19** (Q1473, an application the membership
+// refused) and reddened CI's `walks` job on this line for three days before
+// anybody read it (Stage 4 of the convention plan, 2026-09-22). Its audience
+// cell is written — *the applicant, and nobody else* — so it is not a
+// no-rule row; what it has not got is a **step**: this table prices 🪪 at
+// `proposal`, where a refusal is a dominated race (§4.4) and not one vote
+// against, and driving one to that state is a design of its own. The count
+// is 42 and the step is owed — Q1499 asks Ed which road it should take.
+if (EVENTS.length !== 42) {
+  shape.push(`SURFACE §2 has ${EVENTS.length} event rows, not the 42 this table was written against`);
 }
 for (const s of shape) say('  ? ' + s);
 

@@ -81,7 +81,7 @@ function built(rung: Rung, endsAtMs: number | null = 1_000_000):
   s.confirmStartingText(2, 'The clubhouse shall be kept open.');
   for (const [id, v] of Object.entries({
     ending: { endsAtMs }, pace: { shape: 'fixed' }, bar: { pct: 60 },
-    quorum: { form: 'share', n: 60 }, authorship: { rung: 'sealed' },
+    quorum: { form: 'share', n: 40 }, authorship: { rung: 'sealed' },
     judgments: { rung }, chamber: { rung: 'public' },
     applications: { apply: false }, admission: { price: 'assembly' },
     removal: { price: 'consent' }, rate: { grant: 4, cap: 8, dripMinutes: 240 },
@@ -198,24 +198,52 @@ describe('👁️ live · a constitutional motion is the count and my own answer
     it(`under \`${rung}\` a motion serves answeredCount, electorateSize and myAnswer — never another member's`, () => {
       const { s, bo, cy } = built(rung);
       const m = s.openMotion(10, bo, { kind: 'set', setting: 'judgments', value: { rung: other(rung) } });
-      s.answerMotion(11, cy, m, 'keep');
+      // abstain, not keep: since Q1473 a keep settles the motion, and what
+      // this test is about is a motion still **running** (the keep's own
+      // case is the `it` below)
+      s.answerMotion(11, cy, m, 'abstain');
       const mine = view(s, bo).motions.find((x) => x.id === m)!;
       expect(Object.keys(mine).sort()).toEqual(
-        ['answeredCount', 'at', 'electorateSize', 'from', 'id', 'mine', 'moot', 'myAnswer',
-          'payload', 'route', 'status', 'why']);
+        // `heldBy` joined the row for E41 (Q1447) and seals nothing this rule
+        // does: it is null on everything but a settled motion, and how a
+        // settled one failed is what the record card already tells the room
+        ['answeredCount', 'at', 'electorateSize', 'from', 'heldBy', 'id', 'mine', 'moot',
+          'myAnswer', 'payload', 'route', 'status', 'why']);
       expect(mine.route).toBe('constitutional');
       expect(mine.answeredCount).toBe(2);
       expect(mine.electorateSize).toBe(3);
       expect(mine.myAnswer).toBe('accept'); // the mover stands at accept from the open (§9.6, R-021)
-      expect(view(s, cy).motions.find((x) => x.id === m)!.myAnswer).toBe('keep');
+      expect(view(s, cy).motions.find((x) => x.id === m)!.myAnswer).toBe('abstain');
       expect(view(s, 'ada').motions.find((x) => x.id === m)!.myAnswer).toBeNull();
       // the map itself never leaves the session: no `answers` on anybody's wire
       for (const who of ['ada', bo, cy]) {
         expect(JSON.stringify(view(s, who))).not.toContain('"answers"');
       }
-      // and a keep leaves it running rather than settling it: what stands stands
+      // an abstention never blocks and never settles on its own
       expect(s.motionRecords().get(m)!.status).toBe('running');
       expect(s.settingState('judgments').value).toEqual({ rung });
+    });
+
+    it(`under \`${rung}\` a keep ends it and still names nobody (Q1473)`, () => {
+      const { s, bo, cy } = built(rung);
+      const m = s.openMotion(10, bo, { kind: 'set', setting: 'judgments', value: { rung: other(rung) } });
+      s.answerMotion(11, cy, m, 'keep');
+      expect(s.motionRecords().get(m)!.status).toBe('held');
+      expect(s.settingState('judgments').value).toEqual({ rung }); // what stands stands
+      // every seat's projection of the failed motion, and the applicant-free
+      // room's whole view: `members` is the one honest word for it, and no
+      // answer, id or split rides with it
+      for (const who of ['ada', bo, cy]) {
+        const mv = view(s, who).motions.find((x) => x.id === m)!;
+        expect(mv.status).toBe('held');
+        expect(mv.heldBy).toBe('members');
+        expect(JSON.stringify(view(s, who))).not.toContain('"answers"');
+      }
+      // only the keeper's own view says *keep*, as it says their own answer
+      // on any motion
+      expect(view(s, cy).motions.find((x) => x.id === m)!.myAnswer).toBe('keep');
+      expect(view(s, 'ada').motions.find((x) => x.id === m)!.myAnswer).toBeNull();
+      expect(view(s, bo).motions.find((x) => x.id === m)!.myAnswer).toBe('accept');
     });
   }
 
@@ -230,7 +258,9 @@ describe('👁️ live · a constitutional motion is the count and my own answer
   it('at the close a motion nobody finished is kept, and its answers go nowhere', () => {
     const { s, bo, cy } = built('after');
     const m = s.openMotion(10, bo, { kind: 'set', setting: 'judgments', value: { rung: 'never' } });
-    s.answerMotion(11, cy, m, 'keep');
+    // an abstention: a keep would settle it before the clock could find it
+    // running (Q1473)
+    s.answerMotion(11, cy, m, 'abstain');
     s.tick(1_000_000);
     expect(s.motionRecords().get(m)!.status).toBe('kept-at-close');
     expect(s.settingState('judgments').value).toEqual({ rung: 'after' }); // what stood stands
@@ -242,16 +272,23 @@ describe('👁️ live · a constitutional motion is the count and my own answer
   });
 });
 
-describe('👁️ the room of two · the count is its own signature', () => {
-  it('at n = 2 an unfinished motion with everybody answered names the keep, whatever 👁️ says', () => {
+describe('👁️ the count is its own signature', () => {
+  it('a failed motion names its keeper by arithmetic, whatever 👁️ says', () => {
     // **Not a defect: arithmetic.** §9.6 makes a constitutional motion blind
-    // while it runs — the count only — and one standing keep blocks it. The
-    // mover stands at accept from the open (R-021), so in an electorate of two
-    // *2 of 2 have answered* on a motion that has not carried says exactly one
-    // thing: the other member kept it. No setting can make a unanimity rule
-    // non-identifying at n = 2, and 👁️'s copy (*What you preferred stays
-    // yours, permanently*) promises what the arithmetic cannot deliver. SPEC
-    // is silent on it — the session files the question rather than a fix.
+    // while it runs — the count only. The mover stands at accept from the
+    // open (R-021), so in an electorate of two *2 of 2 have answered* on a
+    // motion that did not carry says exactly one thing: the other member
+    // kept it. No setting can make a unanimity rule non-identifying at n = 2,
+    // and 👁️'s copy (*What you preferred stays yours, permanently*) promises
+    // what the arithmetic cannot deliver. SPEC is silent on it — the session
+    // files the question rather than a fix.
+    //
+    // **Q1473 widens it from n = 2 to every room**: a vote against now ends
+    // the motion at once, so the count at the moment it fails names whoever
+    // answered last, and a member watching the count across a 4s poll can
+    // read that off any room's view. It is the same arithmetic, not a new
+    // field — nothing below is a leak the projection could close — and it is
+    // filed for Ed rather than engineered around.
     const s = ConstitutionSession.open({ title: 'T', slug: 't',
       convenor: { id: 'ada', email: 'ada@x.org', isMember: true } }, 0);
     const bo = s.invite(1, 'bo@x.org');
@@ -272,7 +309,8 @@ describe('👁️ the room of two · the count is its own signature', () => {
     expect(mv.electorateSize).toBe(2);
     expect(mv.answeredCount).toBe(2);      // everybody has answered
     expect(mv.myAnswer).toBe('accept');    // and one of the two answers is mine
-    expect(s.motionRecords().get(m)!.status).toBe('running'); // yet it has not carried
+    expect(s.motionRecords().get(m)!.status).toBe('held'); // yet it did not carry
+    expect(mv.heldBy).toBe('members');     // and the projection names no member
     // therefore ada kept it — read off the view alone, by a member who was
     // never told. The finding is the inference, not the fields.
   });

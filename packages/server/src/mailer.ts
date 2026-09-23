@@ -204,6 +204,23 @@ const leadPhrase = (ms: number): string => {
   return `${Math.max(1, Math.round(ms / 60_000))} minutes`;
 };
 
+/**
+ * **The document's own address, in the mail's words** (issue #67 F2): a
+ * magic link runs to some 85 characters and mail clients wrap it, and a link
+ * cut between its token and `&d=` lands on a page that can only say *open
+ * the document's own address — it is in the mail that brought you here*.
+ * Only the creation mail carried it; every mail whose link is a login or an
+ * application now says it too, read off the link's own `d`. Empty for a link
+ * that is the address already.
+ */
+const ownAddress = (link: string): string => {
+  try {
+    const u = new URL(link);
+    const d = u.searchParams.get('d');
+    return d ? `\n\nThe document’s own address is ${u.host}/d/${d}.` : '';
+  } catch { return ''; }
+};
+
 export const MAILS = {
   // Q460: clicking the link IS the creation — the document comes into
   // being at the address promised, and not before
@@ -220,24 +237,39 @@ export const MAILS = {
     subject: `You are invited to “${title}”`,
     text: `You have been invited to become a member of “${title}”.\n\n` +
       `Open your invitation:\n${link}\n\n` +
-      `Your membership begins when you click the link; until then votes may happen without you.`,
+      `Your membership begins when you click the link; until then votes may happen without you.` +
+      ownAddress(link),
     link,
   }),
   applyVerify: (title: string, link: string): Omit<Mail, 'to'> => ({
     subject: `Your application to “${title}”`,
     text: `This address is how “${title}” will know you.\n\n` +
-      `Verify it to continue your application:\n${link}`,
+      `Verify it to continue your application:\n${link}` + ownAddress(link),
     link,
   }),
   admitted: (title: string, link: string): Omit<Mail, 'to'> => ({
     subject: `You are a member of “${title}”`,
     text: `The members of “${title}” have admitted you.\n\n` +
-      `Log in to take your seat:\n${link}`,
+      `Log in to take your seat:\n${link}` + ownAddress(link),
+    link,
+  }),
+  /**
+   * **A refused application is told** (issue #29; SPEC §9.7½: *either way
+   * they are told by mail*). One template for every road — the room's vote
+   * against, a race it could not carry, the close, the Founder's refusal at
+   * the crown — since the event carries no road, so it names no actor and
+   * gives no reason. No login: there is no seat, as `removed`.
+   */
+  applicationRefused: (title: string, link: string): Omit<Mail, 'to'> => ({
+    subject: `Your application to “${title}” was not accepted`,
+    text: `Your application to become a member of “${title}” was not accepted, ` +
+      `and it is now closed.\n\n` +
+      `The document is here, if its visibility lets you read it:\n${link}`,
     link,
   }),
   login: (title: string, link: string): Omit<Mail, 'to'> => ({
     subject: `Log in to “${title}”`,
-    text: `Here is your login link for “${title}”:\n${link}`,
+    text: `Here is your login link for “${title}”:\n${link}` + ownAddress(link),
     link,
   }),
   /**
@@ -248,7 +280,7 @@ export const MAILS = {
     subject: `Your membership of “${title}” is about to lapse`,
     text: `You have been inactive for a while, and your membership of ` +
       `“${title}” will lapse in about ${leadPhrase(leadMs)}. ` +
-      `To prevent your membership from lapsing, click this link:\n${link}`,
+      `To prevent your membership from lapsing, click this link:\n${link}` + ownAddress(link),
     link,
   }),
   /** To the operator (cfg.notifyEmail), never to a member. */
@@ -267,7 +299,7 @@ ${url}`,
 ${link}
 
 ` +
-      `Members may add a closing comment.`,
+      `Members may add a closing comment.` + ownAddress(link),
     link,
   }),
   /**
@@ -284,10 +316,47 @@ ${link}
       `The document is here, if its visibility lets you read it:\n${link}`,
     link,
   }),
+  /**
+   * **A removal the membership carried** (SURFACE E40, Q1498): exactly E31's
+   * tells, the act being the room's rather than the Founder's — `removed`'s
+   * shape and subject, the members named as the actor.
+   */
+  removedByMotion: (title: string, link: string): Omit<Mail, 'to'> => ({
+    subject: `You are no longer a member of “${title}”`,
+    text: `The members of “${title}” have voted to remove you from its membership, ` +
+      `and so you are no longer eligible to vote in it.\n\n` +
+      `The document is here, if its visibility lets you read it:\n${link}`,
+    link,
+  }),
+  /**
+   * **A withdrawn invitation is told to the person it was sent to** (Q1493,
+   * Ed 2026-09-21: *An email when withdrawn*). The convention's own error
+   * log has a withdrawn invitee's old link answered *unknown member 'm-7'*
+   * at 12:43 — a stranger following the only address they had been given
+   * and meeting the machine's own vocabulary. The link lands on the
+   * ordinary door now (`routes-auth`), and this is the other half: the
+   * person hears it from the document rather than from a dead link.
+   *
+   * `removed`'s shape, for `removed`'s reasons — no login link, since a
+   * token would be minted for a seat that no longer exists, but the
+   * document's own address, because where 🌍 lets strangers read they may
+   * still read. **The office, never the name** (SURFACE C10), and no reason,
+   * since withdrawing an invitation takes none. It does not say they may be
+   * invited again: nobody has decided that, and a mail is the wrong place to
+   * promise it.
+   */
+  uninvited: (title: string, link: string): Omit<Mail, 'to'> => ({
+    subject: `Your invitation to “${title}” has been withdrawn`,
+    text: `The invitation to become a member of “${title}” is no longer open, ` +
+      `and the link you were sent will not let you in.\n\n` +
+      `The document is here, if its visibility lets you read it:\n${link}`,
+    link,
+  }),
   lapsed: (title: string, link: string): Omit<Mail, 'to'> => ({
     subject: `Your membership of “${title}” has lapsed`,
     text: `Your membership of “${title}” has lapsed. This means you automatically ` +
-      `abstain on all votes. To re-activate your membership, click this link:\n${link}`,
+      `abstain on all votes. To re-activate your membership, click this link:\n${link}` +
+      ownAddress(link),
     link,
   }),
 } as const;

@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { ConstitutionSession } from '../src/session.js';
+import { LAPSE_MIN_MS } from '../src/values.js';
 import { buildConstituted } from './helpers.js';
+
+/**
+ * **The shortest spell a room can state** (Q1453): five minutes, the floor
+ * `validateValue` holds. The short-spell tests below want a spell that runs
+ * out inside the test, so they take the floor itself and read their clocks
+ * against it.
+ */
+const SPELL = LAPSE_MIN_MS;
 
 describe('lapsing (§9.5a): absence read by the clock', () => {
   it('warns, lapses, and revival is just logging in again', () => {
@@ -27,17 +36,17 @@ describe('lapsing (§9.5a): absence read by the clock', () => {
   // shows the room to somebody the room is not counting. The same for the
   // crown, which lapses like a member (§9.7 rule 6).
   it('a read returns a lapsed member, and a lapsed crown', () => {
-    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 10_000 } });
-    s.setIdentity(9_000, 'ada', { name: 'Ada' });
-    s.setIdentity(9_000, bo, { name: 'Bo' });
-    s.tick(10_500);
+    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: SPELL } });
+    s.setIdentity(SPELL - 1_000, 'ada', { name: 'Ada' });
+    s.setIdentity(SPELL - 1_000, bo, { name: 'Bo' });
+    s.tick(SPELL + 500);
     expect(s.memberRecords().get(cy)!.lapsed).toBe(true);
     expect(s.E()).toBe(2);
-    expect(s.seen(11_000, cy)).toBe(true); // something to commit: the return
+    expect(s.seen(SPELL + 1_000, cy)).toBe(true); // something to commit: the return
     expect(s.memberRecords().get(cy)!.lapsed).toBe(false);
     expect(s.memberRecords().get(cy)!.lapseWarned).toBe(false);
     expect(s.E()).toBe(3);
-    expect(s.seen(11_001, cy)).toBe(false); // and then the hourly stamp as ever
+    expect(s.seen(SPELL + 1_001, cy)).toBe(false); // and then the hourly stamp as ever
     const r = ConstitutionSession.replay([...s.logEntries()]);
     expect(r.memberRecords().get(cy)!.lapsed).toBe(false);
     expect(r.rollingHash()).toBe(s.rollingHash());
@@ -54,13 +63,13 @@ describe('lapsing (§9.5a): absence read by the clock', () => {
   // 97): a lapsed member is in that status by no act of their own, so a rule
   // that no longer puts them there returns them at once.
   it('💤 turned off returns every lapsed member at once — no status a rule cannot produce', () => {
-    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 10_000 } });
-    s.setIdentity(9_000, 'ada', { name: 'Ada' });
-    s.setIdentity(9_000, bo, { name: 'Bo' });
-    s.tick(10_500);
+    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: SPELL } });
+    s.setIdentity(SPELL - 1_000, 'ada', { name: 'Ada' });
+    s.setIdentity(SPELL - 1_000, bo, { name: 'Bo' });
+    s.tick(SPELL + 500);
     expect(s.memberRecords().get(cy)!.lapsed).toBe(true);
     expect(s.E()).toBe(2);
-    s.setSetting(11_000, 'lapse', { afterMs: null }); // the crown's pen
+    s.setSetting(SPELL + 1_000, 'lapse', { afterMs: null }); // the crown's pen
     expect(s.memberRecords().get(cy)!.lapsed).toBe(false);
     expect(s.E()).toBe(3);
     s.tick(50_000_000); // and nothing lapses them again
@@ -68,29 +77,30 @@ describe('lapsing (§9.5a): absence read by the clock', () => {
   });
 
   it('a longer spell returns whoever now falls within it; a shorter one waits for the clock', () => {
-    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 10_000 } });
-    s.setIdentity(9_000, 'ada', { name: 'Ada' });
-    s.setIdentity(9_000, bo, { name: 'Bo' });
-    s.tick(10_500);
+    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: SPELL } });
+    s.setIdentity(SPELL - 1_000, 'ada', { name: 'Ada' });
+    s.setIdentity(SPELL - 1_000, bo, { name: 'Bo' });
+    s.tick(SPELL + 500);
     expect(s.memberRecords().get(cy)!.lapsed).toBe(true);
-    s.setSetting(11_000, 'lapse', { afterMs: 100_000 }); // cy's quiet is now well within the spell
+    // cy's quiet is now well within the spell
+    s.setSetting(SPELL + 1_000, 'lapse', { afterMs: 10 * SPELL });
     expect(s.memberRecords().get(cy)!.lapsed).toBe(false);
     expect(s.memberRecords().get(cy)!.lapseWarned).toBe(false);
     expect(s.E()).toBe(3);
     // shortening moves nobody at the change — the next sweep does, as ever
-    s.setSetting(12_000, 'lapse', { afterMs: 5_000 });
+    s.setSetting(SPELL + 2_000, 'lapse', { afterMs: SPELL });
     expect(s.E()).toBe(3);
-    s.tick(20_000); // cy returned at 11_000 and has been quiet since
+    s.tick(2 * SPELL + 2_000); // cy returned a spell ago and has been quiet since
     expect(s.memberRecords().get(cy)!.lapsed).toBe(true);
   });
 
   it('a lapsed member leaving can complete a motion, like any departure', () => {
-    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 10_000 } });
+    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: SPELL } });
     const m = s.openMotion(3, bo, { kind: 'set', setting: 'bar', value: { pct: 80 } });
-    s.answerMotion(9_000, 'ada', m, 'accept');
-    s.answerMotion(9_500, bo, m, 'accept'); // cy silent since t≈1
+    s.answerMotion(SPELL - 1_000, 'ada', m, 'accept');
+    s.answerMotion(SPELL - 500, bo, m, 'accept'); // cy silent since t≈1
     expect(s.motionRecords().get(m)!.status).toBe('running');
-    s.tick(12_000); // cy lapses out of the electorate
+    s.tick(SPELL + 2_000); // cy lapses out of the electorate
     expect(s.motionRecords().get(m)!.status).toBe('carried');
     // and cy, who had no say, is owed the decision on their return
     expect(s.memberRecords().get(cy)!.okOwed.has('bar')).toBe(true);
@@ -164,23 +174,24 @@ describe('the crown lapses like a member (§9.7 v0.49): automatic assent', () =>
 
 describe('replay sweep: the whole lifecycle re-folds bit-identically', () => {
   it('founding → motions → lapse → revival', () => {
-    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 10_000 } });
+    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: SPELL } });
     const m = s.openMotion(3, bo, { kind: 'set', setting: 'chamber',
       value: { rung: 'closed' } });
     s.answerMotion(4, 'ada', m, 'accept');
     s.answerMotion(5, bo, m, 'accept');
-    s.answerMotion(6, cy, m, 'keep');
-    expect(s.motionRecords().get(m)!.status).toBe('running'); // one keep blocks
-    // keep ada and bo active; cy goes quiet after their keep
-    s.setIdentity(9_000, 'ada', { name: 'Ada' });
-    s.setIdentity(9_000, bo, { name: 'Bo' });
-    // a lapsed member's standing keep leaves with them: the electorate is E,
+    expect(s.motionRecords().get(m)!.status).toBe('running'); // cy still owes
+    // ada and bo stay active; cy never answers at all — since Q1473 a keep
+    // would have ended the motion on the spot, so what a lapse releases is a
+    // silence
+    s.setIdentity(SPELL - 1_000, 'ada', { name: 'Ada' });
+    s.setIdentity(SPELL - 1_000, bo, { name: 'Bo' });
+    // a lapsed member's silence leaves with them: the electorate is E,
     // evaluated live (§9.5, §9.5a, R-088), and a lapsed member is outside it
-    s.tick(12_000);
+    s.tick(SPELL + 2_000);
     expect(s.memberRecords().get(cy)!.lapsed).toBe(true);
     expect(s.motionRecords().get(m)!.status).toBe('carried');
     expect(s.canJudge()).toBe(true); // nothing stops: there is no freeze
-    s.memberReturn(13_000, cy); // revival is logging in again
+    s.memberReturn(SPELL + 3_000, cy); // revival is logging in again
     expect(s.E()).toBe(3);
     const r = ConstitutionSession.replay([...s.logEntries()]);
     expect(r.rollingHash()).toBe(s.rollingHash());

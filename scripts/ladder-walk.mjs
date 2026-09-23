@@ -42,7 +42,7 @@
  */
 import { chromium } from 'playwright';
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
-import { say, arg, onPage } from './lib/walk.mjs';
+import { say, arg, onPage, landOn } from './lib/walk.mjs';
 
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
 const STOP = arg('to');
@@ -101,7 +101,7 @@ async function pressNext() {
 }
 
 say(`ladder-walk against ${BASE}, seed ${SEED}`);
-await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
+await landOn(page, BASE + '/', { waitUntil: 'domcontentloaded' });
 await T(600);
 
 // the seed goes in before the first press, so the walk is reproducible
@@ -148,6 +148,73 @@ async function okThe(key) {
 }
 
 /**
+ * **What 🎩 says about itself once it is locked** (Q1503, Ed's convention
+ * observation 2026-09-22: *both radio options with greyed out radios*). The
+ * session rung is a founder's seat reloaded past 🍾 — the one place every
+ * real visit after the start lands — and the card there read its marked
+ * radio from `S.seen`, a page-local set no reload rebuilds, while the module
+ * has held the fact since Q682. Opens 🎩, reads its two radios, and closes
+ * it by the bin so the rung's other measures see the page they always saw.
+ */
+async function hatCard() {
+  await page.evaluate(() => {
+    document.querySelector('#rail [data-card="hat"], #band [data-tab="hat"]')?.click();
+  });
+  await T(500);
+  const r = await page.evaluate(() => {
+    const picks = [...document.querySelectorAll('.setupcard .choice .pick')];
+    const out = {
+      radios: picks.length,
+      locked: picks.filter((p) => p.querySelector('.lanepick')?.disabled).length,
+      marked: picks.filter((p) => p.classList.contains('on'))
+        .map((p) => (p.querySelector('.opttext')?.textContent ?? '').trim()),
+    };
+    document.querySelector('.setupcard [data-revert]')?.click();
+    return out;
+  });
+  await T(400);
+  return r;
+}
+
+/**
+ * **What the 🥂 card says, and what the rail is not holding beside it**
+ * (Q1450, Ed 2026-09-18). The closed rung is the only place in any walk
+ * where a document shuts with motions still running on both routes — the
+ * session rung leaves an ordinary race on ⏱️, a constitutional question
+ * collecting on 👁️, and two membership motions — so it is the only place
+ * the new line can be read at all.
+ *
+ * Opens the card and presses **nothing**: 🥂's OK is the signature, and a
+ * walk that signed the document would be asserting a different page from
+ * the one every other seat meets.
+ */
+async function closingCard() {
+  await page.evaluate(() => {
+    document.querySelector('#rail [data-card="closing"], #rail li[data-q="closing"], '
+      + '#band [data-tab="closing"]')?.click();
+  });
+  await T(600);
+  return page.evaluate(async () => {
+    const keyOf = (li) => li.dataset.q ||
+      (li.querySelector('[data-card]') ?? { dataset: {} }).dataset.card || '?';
+    // the wire's own answer beside the drawn one: `heldBy: 'close'` is a new
+    // value on a field that was already crossing, so nothing on the live
+    // path was changed to carry it and nothing would have said if it stopped
+    const v = await fetch(location.pathname.replace('/d/', '/api/d/') + '/view')
+      .then((r) => r.json()).catch(() => null);
+    const ms = ((v || {}).view || {}).motions || [];
+    return {
+      batch: (document.querySelector('.batch')?.textContent ?? '').replace(/\s+/g, ' ').trim(),
+      railKeys: [...document.querySelectorAll('#rail li')].map(keyOf),
+      keptAtClose: ms.filter((m) => m.status === 'kept-at-close').length,
+      heldByClose: ms.filter((m) => m.status === 'held' && m.heldBy === 'close').length,
+      heldByRoom: ms.filter((m) => m.status === 'held' && m.heldBy === 'members').length,
+      closeIds: ms.filter((m) => m.heldBy === 'close').map((m) => m.id),
+    };
+  });
+}
+
+/**
  * What is *in* the document at this rung, printed beside the assertions.
  *
  * Nothing here is asserted and nothing here can fail the walk: the counts are
@@ -191,7 +258,17 @@ function measure() {
     clauseTabs: q('.achip'), // the clause tab in the chip-gutter
     beginTask: q('#rail [data-card="begin"], #band [data-tab="begin"]'),
     penTask: q('#rail [data-card="grant-pen"], #band [data-tab="grant-pen"]'),
-    wallet: q('#wallet i'),
+    // **`walletHeld` is wallet render state** (CLAUDE.md's gotchas), and the
+    // socket says which state it is in. Every socket draws its tool at all
+    // times — the not-held branch of `renderWallet` (design/flights.js)
+    // writes the same struck ✏️ into the same `#wallet i` — so counting
+    // tokens only ever said *the navbar exists*, which is true on a page
+    // holding no document at all. It is the class that carries the answer:
+    // `wallet` on a seat that holds ✏️, `wallet notheld` on one that does
+    // not. A count could not be the fix either, because a held wallet with
+    // the drip at zero (`wallet empty`) draws no token and would read red
+    // for the opposite reason.
+    walletClass: document.querySelector('#wallet')?.className ?? null,
     // real people only: `.memrow.nobody` is the empty-list placeholder, so
     // counting every `.memrow` let "the membership is drawn" pass on a
     // membership of nobody (Q757)
@@ -260,8 +337,14 @@ async function assertSurface(rung) {
     check(rung, 'the charter is drawn', m.clauses > 10, `${m.clauses} blocks`);
     check(rung, 'clauses carry their tabs', m.clauseTabs > 5, `${m.clauseTabs}`);
     check(rung, 'the rail has judging to offer', m.railEntries > 0, `${m.railEntries} entries`);
-    check(rung, 'the ✏️ wallet is drawn', m.wallet > 0, `${m.wallet}`);
+    check(rung, 'the ✏️ wallet is drawn and held',
+      m.walletClass !== null && !/\bnotheld\b/.test(m.walletClass),
+      m.walletClass === null ? 'no socket' : `class="${m.walletClass}"`);
     check(rung, 'the membership is drawn', m.members > 1, `${m.members} rows`);
+    // **Q1503**: a reloaded page past 🍾 must say what 🎩 was locked at
+    const hat = await hatCard();
+    check(rung, '🎩 is locked, with its answer marked', hat.radios === 2 && hat.locked === 2 && hat.marked.length === 1,
+      `${hat.radios} radios, ${hat.locked} locked, marked: ${JSON.stringify(hat.marked)}`);
   }
   if (rung === 'closing') {
     check(rung, 'the clock is counting down', /m|min|hour|h\b/i.test(m.clockText), m.clockText);
@@ -269,5 +352,32 @@ async function assertSurface(rung) {
   if (rung === 'closed') {
     check(rung, 'the page is the closed one', m.closedPage > 0);
     check(rung, 'the signatures are on it', m.signatures > 0);
+    // **Q1450**: the ladder's session rung leaves motions running on both
+    // routes, so the close finds them — and the only place that is said is
+    // the 🥂 card's own line. Beside it, the card the close used to raise:
+    // an OK is refused on a shut document, so a `held:` entry in this rail
+    // would be a task nobody can ever answer.
+    const close = await closingCard();
+    const said = /(\d+) motions? (?:was|were) still open and did not pass/.exec(close.batch);
+    check(rung, '🥂 counts the motions the clock found still running', said !== null,
+      close.batch || 'the closing card drew no batch');
+    // the drawn number against the wire's own: a constitutional motion the
+    // close kept and an ordinary one it held are one count on the card and
+    // two shapes on the view, and `heldBy: 'close'` is a new value on a field
+    // that was already crossing — nothing would have said if it stopped
+    check(rung, 'and it is the wire’s own count, both routes',
+      said !== null && Number(said[1]) === close.keptAtClose + close.heldByClose,
+      `the card said ${said ? said[1] : '(nothing)'} · the wire has `
+        + `${close.keptAtClose} kept and ${close.heldByClose} held by the close, `
+        + `beside ${close.heldByRoom} the room held while it was open`);
+    // **Only the close's own**: a motion the room held while the document was
+    // open owes its mover a card by E41 and may still be unacknowledged when
+    // the clock runs out (Q1440's road, which this ruling did not touch), so
+    // a bare `held:` in the rail is not the defect. The defect is a card for
+    // a motion the *close* held, which nobody could ever press.
+    check(rung, 'and the close raises no *did not pass* card',
+      !close.railKeys.some((k) => close.closeIds.includes(k.replace(/^held:/, ''))
+        && /^held:/.test(k)),
+      `${JSON.stringify(close.closeIds)} in ${JSON.stringify(close.railKeys)}`);
   }
 }

@@ -221,6 +221,29 @@ export class DocStore {
     return [...fresh];
   }
 
+  /**
+   * **A command the store could not write does not stand** (issue #79). The
+   * command was applied in memory before `persist` threw, so every other
+   * seat was already reading what the member was told had failed — and the
+   * next commit that landed flushed it after all, so the member's retry put
+   * it in the document twice. This takes the document back to what the
+   * store holds: the persisted prefix of its own log, re-folded, which is
+   * exactly what a boot would read. `persisted` is the cursor of what was
+   * written, so nothing is read back from a store that is failing.
+   *
+   * `cs` is replaced, never mutated: a command applied to the old session
+   * while this one's write was in flight is undone with it, and `commit`
+   * tells that command so by the identity of the session it applied to.
+   * The person rows stay as they are (an orphan row is harmless, and the
+   * dirty set still names it for the next persist).
+   */
+  rewind(doc: LoadedDoc): void {
+    const kept = doc.cs.logEntries().slice(0, doc.persisted)
+      .map((entry) => structuredClone(entry));
+    doc.cs = ConstitutionSession.replay(kept, doc.people);
+    doc.relayed = Math.min(doc.relayed, doc.persisted);
+  }
+
   private register(doc: LoadedDoc): void {
     this.docs.set(doc.id, doc);
     for (const slug of doc.cs.slugs) this.slugIndex.set(slug, doc.id);

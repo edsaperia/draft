@@ -36,7 +36,9 @@ function fixture(): { s: ConstitutionSession; bo: string; cy: string; dee: strin
   }
   const values = {
     pace: { shape: 'fixed' },
-    quorum: { form: 'share', n: 60 },
+    // half, the most any quorum may ask since Q1439 (R-126); it was 60, and
+    // the floor this walk is written around is the same 3 at either value
+    quorum: { form: 'share', n: 50 },
     authorship: { rung: 'sealed' },
     judgments: { rung: 'after' },
     applications: { apply: false },
@@ -69,7 +71,7 @@ say('\n== motion-race: an ordinary motion is the race machinery whole (Q390) =='
   eq(bridge.engine.document(), 'The clubhouse shall be kept open.',
     'the engine holds the starting text');
   eq(bridge.engine.adoptionFloor(), 3,
-    'F = max(⌈60%×5⌉, min(⌈5/3⌉, 12)) — the quorum rides the floor (§4.2)');
+    'F = max(⌈50%×5⌉, min(⌈5/3⌉, 12)) — the quorum rides the floor (§4.2)');
 
   say('  t=10  bo moves the close to t=2,000,000 — an ordinary motion, raced');
   const a = bridge.openSetMotion(10, bo, 'ending', { endsAtMs: 2_000_000 },
@@ -100,7 +102,8 @@ say('\n== motion-race: an ordinary motion is the race machinery whole (Q390) =='
     'the new standing flowed back as ground');
   eq(bridge.engine.constitution.windowEndMs, 2_000_000,
     'the engine constitution was amended in flight (§9.6/Q328)');
-  check(bridge.engine.balance(bo, 22) > 3, 'the stake refunded on performance');
+  eq(bridge.engine.balance(bo, 22), 4,
+    'the motion carried, so the stake came back — and just the stake (§7)');
   eq(bridge.engine.balance(dee, 22), 4,
     'the close moved and nobody’s wallet did — the drip is real minutes (Q353)');
   eq(s.motionRecords().get(b.motion)!.status, 'running',

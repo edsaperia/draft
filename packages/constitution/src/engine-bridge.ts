@@ -29,12 +29,16 @@
  * Admit motions (§9.7½ v0.56, Q397): each is its own one-candidate race
  * against `the membership as it stands` — a synthetic per-applicant
  * setting (`admit:<id>`, standing {member: false}), which is what makes
- * two applicants structurally unable to share a race. The author is the
- * seconder under `proposed` (their ✏️ the stake, their why the rationale)
- * or the applicant themself under `apply` — added as a voice for exactly
- * this one act and suspended in the same breath, so they author their own
- * admission (§3.3's author-preference is truly theirs) while counting
- * toward no E, no quorum and no floor.
+ * two applicants structurally unable to share a race. **The author is the
+ * applicant themself**: an application is a stranger proposing their own
+ * invitation (entry 94), so the motion opens with no mover and the applicant
+ * is added as a voice for exactly this one act and suspended in the same
+ * breath — they author their own admission (§3.3's author-preference is
+ * truly theirs) while counting toward no E, no quorum and no floor. The old
+ * second — a member staking a ✏️ to propose an applicant — went with the
+ * `proposed` rung, which is why `enterAdmitRace` still takes a `by` that
+ * nothing passes; the `application-proposed` fold arm and the status stay
+ * for replay.
  */
 
 import { Session as EngineSession } from '../../engine-core/src/session.js';
@@ -150,15 +154,15 @@ export class EngineBridge {
    * card like any other command refusal (SURFACE Y25) — no new copy. Nothing
    * is opened, so unlike the `sync` path there is nothing to compensate.
    *
-   * Every kind comes through, and three of them are priced. `set` is
-   * `openSetMotion`'s, which does its own pricing because only it can say
-   * what a *value* routes as. `reserve` is always constitutional, and a
-   * constitutional motion is free — an empty wallet prices a race and not a
-   * decision — as is `text`, which is a folded record of the pen and never a
-   * press at all. `invite` is priced here although the invitation race is not
-   * built yet (#6 F1): its `motion-opened` already records `stake: 1`, so the
-   * log's own claim is what is being made true, and the guard is standing
-   * when the race lands.
+   * Every kind anybody puts comes through, and three of them are priced.
+   * `set` is `openSetMotion`'s, which does its own pricing because only it
+   * can say what a *value* routes as. `reserve` is always constitutional, and
+   * a constitutional motion is free — an empty wallet prices a race and not a
+   * decision. `invite` is priced here for the same reason as the other two:
+   * at 🪪 *members must vote* it is a race (`enterInviteRace`, issue #6 F1)
+   * and its `motion-opened` has always recorded `stake: 1`. **`text` is not a
+   * kind anybody puts** (Q1433): the pen's amendment is folded, never opened,
+   * and the module refuses the payload before this door has priced anything.
    */
   openMotion(t: number, by: MemberId, input: MotionInput, why?: string): MotionId {
     this.sync(t);
@@ -324,6 +328,25 @@ export class EngineBridge {
         } else if (this.engine.getCandidate(e.id).state === 'awaiting-assent') {
           this.engine.assent(t, e.id, 'accept');
         }
+        continue;
+      }
+      if (e.type === 'candidate-retired' && e.reason === 'dominated') {
+        // **A motion the room can no longer carry is held now** (Q1440; SPEC
+        // §4.4 → why: R-132). The engine has closed the candidate; this is
+        // the only place that turns that into the constitution's word for
+        // it, and it is the same word `finishClose` uses at T=0 — *held*,
+        // the value standing — so Q1447's card reaches the mover on a
+        // document that is still open and its OK can actually be pressed.
+        //
+        // A text retirement has no motion and falls through, as an adopting
+        // text race does. `running` is re-checked because a shield refusal
+        // and the close reach `candidate-retired` by their own roads, and
+        // `adjudicateOrdinaryMotion` throws on anything else.
+        if (this.cs.closed) continue;
+        const held = this.motionOfCandidate.get(e.id);
+        if (held === undefined) continue;
+        if (this.cs.motionRecords().get(held)?.status !== 'running') continue;
+        this.cs.adjudicateOrdinaryMotion(t, held, 'held');
         continue;
       }
       if (e.type !== 'adopted') continue;
@@ -499,6 +522,13 @@ export class EngineBridge {
    * With the engine already closed: hold every ordinary motion whose
    * candidate did not carry in the final batch (the value stood), relay
    * the ground, and close the constitution at the engine's own T=0.
+   *
+   * **The hold here is the close's, and says so** (Q1450, Ed 2026-09-18).
+   * This is the one caller that holds a motion at T=0, and the word it uses
+   * — `held-at-close` rather than `held` — is what keeps E41's card off a
+   * document where no OK can be pressed. Everything else is unchanged: the
+   * record files its grey ✖, a refused application is still told, and the
+   * count these motions make is the 🥂 card's one new line.
    */
   private finishClose(): void {
     const at = this.engine.closedAt!;
@@ -506,7 +536,8 @@ export class EngineBridge {
     for (const [cand, motion] of this.motionOfCandidate) {
       const rec = this.cs.motionRecords().get(motion);
       if (!rec || rec.status !== 'running') continue;
-      this.cs.adjudicateOrdinaryMotion(at, motion, carried.has(cand) ? 'carried' : 'held');
+      this.cs.adjudicateOrdinaryMotion(at, motion,
+        carried.has(cand) ? 'carried' : 'held-at-close');
     }
     this.sync(at);
     if (!this.cs.closed) this.cs.close(at);
@@ -651,8 +682,42 @@ export class EngineBridge {
   }
 
   /**
+   * **An invitation at 🪪 *members must vote* is a race like the other two**
+   * (issue #6, F1). The route is the price (`membershipRouteOf`), and at
+   * `proposal` it is ordinary — which in this layer means *a race*, and
+   * nothing else: `answerMotion` refuses an ordinary motion outright, and
+   * `runClose` keeps only constitutional ones. Until this existed the
+   * `motion-opened` arm below entered `admit` and `remove` and walked past
+   * `invite`, so the motion had no candidate anywhere — nobody could judge
+   * it, nobody could answer it, it outlived the close, and the twin rule
+   * then refused that address to everybody who tried again. A room at that
+   * price could invite **nobody**.
+   *
+   * The shape is `enterRemovalRace`'s, mirrored: one candidate against the
+   * membership as it stands — *this person is a member* against *they are
+   * not* — on the synthetic `invite:<person>` setting, so it races against
+   * nothing else (§9.7½, Q397/Q401a). **The person, not the address**: the
+   * id is what the payload carries (decision 1253) and what the member view
+   * already serves, so the page finds the race from the record it is
+   * already holding. A carry reaches `adjudicateOrdinaryMotion('carried')`
+   * through `reportAdoptions` as the other two do, which emits
+   * `member-invited` — the same arrival, and the same mail, a direct ✉️
+   * makes — and `finishClose` holds one the room never judged.
+   */
+  private enterInviteRace(
+    t: number,
+    motion: MotionId,
+    person: string,
+    by: MemberId,
+    why: string | undefined,
+  ): void {
+    this.enterOrAbandon(t, motion, () => this.enterMembershipRace(t, motion,
+      `invite:${person}`, { member: false }, { member: true }, by, why ?? ''));
+  }
+
+  /**
    * **A membership race the engine will not take does not stop the walk**
-   * (issue #26). The two races above are entered from inside `sync`, which is
+   * (issue #26). The three races above are entered from inside `sync`, which is
    * the one place in this class where a throw is not a refusal somebody reads
    * but a **document that stops answering**: `sync` runs at the head of every
    * command, of every tick and of every login, and it walks the cs log from a
@@ -706,6 +771,8 @@ export class EngineBridge {
             this.enterAdmitRace(t, e.motion, e.payload.applicant, e.by, e.why);
           } else if (e.payload.kind === 'remove' && e.route === 'ordinary' && e.by) {
             this.enterRemovalRace(t, e.motion, e.payload.member, e.by, e.why);
+          } else if (e.payload.kind === 'invite' && e.route === 'ordinary' && e.by) {
+            this.enterInviteRace(t, e.motion, e.payload.person, e.by, e.why);
           }
           break;
         case 'member-removed':

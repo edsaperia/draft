@@ -99,7 +99,22 @@ describe('the meaning family', () => {
     for (let e = 1; e <= 12; e++) {
       const room: Room = { e, endsAtMs: NOW + DAYS3, nowMs: NOW };
       for (const v of QUORUMS(e)) {
-        expect(meaningOf('quorum', v, room), `quorum ${JSON.stringify(v)} e=${e}`).toMatch(/membership of/);
+        // **(x of y), which is the dependence named in four characters**
+        // (Q1439 ruling m, Ed 2026-09-17: *wherever we show a % of
+        // membership, we should have (x of y) after showing the actual
+        // numbers*). It read *in a membership of n* until then; a room of one
+        // still says so in words, there being no *x of y* worth printing.
+        //
+        // **The count form names no room**, and that is Ed's own sentence
+        // (ruling t, 2026-09-18): *…preferred by at least 5 members* is not a
+        // share of anything, so there is no share for the numbers to follow.
+        const said = meaningOf('quorum', v, room)!;
+        if (e === 1) expect(said, `quorum ${JSON.stringify(v)} e=1`).toMatch(/membership of one/);
+        else if (v.form === 'share') {
+          expect(said, `quorum ${JSON.stringify(v)} e=${e}`).toMatch(new RegExp(` of ${e}\\)`));
+        } else {
+          expect(said, `quorum ${JSON.stringify(v)} e=${e}`).toMatch(/ members\./);
+        }
       }
       // ⏱️ names the window it is measured over…
       for (const v of RATES) {
@@ -114,25 +129,59 @@ describe('the meaning family', () => {
     }
   });
 
-  it('👥’s arithmetic is `quorumCount`’s, and every branch ends in the floor (Q1196)', () => {
+  /**
+   * **Ed's own sentence** (Q1439, ruling t, 2026-09-18): *A proposal cannot
+   * pass until it is preferred by at least 50% of the membership (5 of 10).*
+   * It read *At least 50% (5 of 10) of the membership must prefer a proposal
+   * before it can be adopted* for a day (ruling p), and before that *must have
+   * voted on a change before it can pass*. Two rulings are in the shape: the
+   * quorum counts approvals (R-125), so it says *preferred by* and not *voted
+   * on by*; and the verb is **pass**, which is STYLE T8's, with the emphasis
+   * on the bar rather than on the membership.
+   *
+   * **Nothing on the surface prints these** since Ed's 01:40 ruling the same
+   * day — the meaning lines went, all three — so this is the module's own
+   * sentence, and `design/copy.js`'s `quorumRule` is the page's.
+   */
+  it('👥 says what Ed’s sentence says, with the true share and (x of y) (Q1439)', () => {
     const room: Room = { e: 9, endsAtMs: null, nowMs: NOW };
     const share: QuorumValue = { form: 'share', n: 34 };
     expect(quorumCount(share, 9)).toBe(4);
     expect(meaningOf('quorum', share, room))
-      .toBe('34% of a membership of 9 is 4: at least 4 of you must have voted on a change before it can pass.');
-    const count: QuorumValue = { form: 'count', n: 9 };
-    expect(quorumCount(count, 9)).toBe(9);
+      .toBe('A proposal cannot pass until it is preferred by at least 34% of the membership (4 of 9).');
+    const count: QuorumValue = { form: 'count', n: 4 };
     expect(meaningOf('quorum', count, room))
-      .toBe('In a membership of 9, all 9 of you must have voted on a change before it can pass.');
-    // a quorum of one waits for nobody, and says so
-    expect(meaningOf('quorum', { form: 'count', n: 1 }, room))
-      .toBe('In a membership of 9, one vote is enough for a change to pass, so nothing waits for anybody else.');
-    // …and a count larger than the room says so rather than pretending
+      .toBe('A proposal cannot pass until it is preferred by at least 4 members.');
+    // the shape holds at the shipped preset, which is the sentence Ed wrote
+    expect(meaningOf('quorum', { form: 'share', n: 50 }, { e: 10, nowMs: NOW }))
+      .toBe('A proposal cannot pass until it is preferred by at least 50% of the membership (5 of 10).');
+    // **a quorum may ask for everybody** (Q1490, R-139, reversing R-126): a
+    // count of 9 in a room of 9 is 9, and the note that explained the old cap
+    // at half went with the cap
+    expect(meaningOf('quorum', { form: 'count', n: 9 }, room))
+      .toBe('A proposal cannot pass until it is preferred by at least 9 members.');
+    expect(meaningOf('quorum', { form: 'share', n: 100 }, room))
+      .toBe('A proposal cannot pass until it is preferred by at least 100% of the membership (9 of 9).');
+    for (const n of [1, 2, 4, 9, 12]) {
+      expect(meaningOf('quorum', { form: 'count', n }, room)).not.toMatch(/more than half/);
+    }
+    // …and a count larger than the room is read against the room, not a
+    // promise that nothing can pass until more members arrive (R-088)
     expect(meaningOf('quorum', { form: 'count', n: 12 }, room))
-      .toMatch(/nothing can pass until more members arrive\.$/);
+      .toMatch(/at least 9 members\./);
+    expect(meaningOf('quorum', { form: 'count', n: 12 }, room))
+      .not.toMatch(/more members arrive/);
+    // a membership of one is its own reading: there is no *x of y* to print
+    expect(meaningOf('quorum', { form: 'count', n: 1 }, { e: 1, nowMs: NOW }))
+      .toBe('In a membership of one, your own vote is the whole quorum.');
     // there is no freeze (R-088), and no branch of the sentence names one
     for (const n of [1, 2, 4, 9, 12]) {
       expect(meaningOf('quorum', { form: 'count', n }, room)).not.toMatch(/freez|still here/);
+    }
+    // and the seconder under the number (ruling u) is the mechanism's, not
+    // this setting's: no branch of the sentence mentions it
+    for (const n of [1, 2, 4]) {
+      expect(meaningOf('quorum', { form: 'count', n }, room)).not.toMatch(/second|two approvals/);
     }
   });
 
@@ -141,7 +190,14 @@ describe('the meaning family', () => {
     expect(meaningOf('lapse', { afterMs: 14 * 86400000 })).toMatch(/for two weeks /);
     expect(meaningOf('lapse', { afterMs: 30 * 86400000 })).toMatch(/for a month /);
     expect(meaningOf('lapse', { afterMs: 90 * 86400000 })).toMatch(/for 90 days /);
-    expect(meaningOf('lapse', { afterMs: null })).toBe('Nobody ever drops out of the count, however long they are away.');
+    // **and the second job, in every branch** (Q1439 ruling c): one period,
+    // two consequences — silent on everything and a membership lapses, silent
+    // on one proposal and the member abstains on it
+    expect(meaningOf('lapse', { afterMs: 7 * 86400000 }))
+      .toMatch(/a proposal stops waiting for anyone who has not voted on it in that time/);
+    expect(meaningOf('lapse', { afterMs: null }))
+      .toBe('Nobody ever drops out of the count, and a proposal waits for everyone ' +
+        'however long they are away.');
     const room: Room = { e: 5, endsAtMs: NOW + 3 * 3600000, nowMs: NOW };
     expect(meaningOf('rate', { grant: 4, cap: 6, dripMinutes: 30 }, room))
       .toBe('Over a session of 3 hours, about 10 proposals each — 4 to start with and one more every 30 minutes, never more than 6 in hand.');

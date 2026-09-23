@@ -402,14 +402,22 @@ window.FIXTURE_SESSION = (function () {
       rationale: 'The joke about Hollis is lovely and it is not a rule. Charters that wink at people age badly, and whoever inherits this will not know who Hollis was.'
     },
     {
-      id: 'quick-books', kind: 'quick', keys: ['books'], state: 'needs',
+      // **The three depths of the pile** (`queue-card-stack`, Q1462): this
+      // entry, the Workshop one below it and § The Shed's stand within a
+      // screen of each other in the rail, so the fixture shows one more
+      // beneath, three, and five-or-more side by side. `beneath` is what the
+      // live page counts in `itemsFromView` — the rivals on this race the
+      // seat has still to be asked about — and the rail caps the drawing at
+      // five edges (Ed, 2026-09-19; three before), so the 8 there draws the
+      // pile a 5 would.
+      id: 'quick-books', kind: 'quick', keys: ['books'], state: 'needs', beneath: 1,
       qLabel: '§ The Library Corner', urgency: 0.31,
       pct: 40, cap: 'two of the fourteen have voted — quorum is 5',
       marked: 'Books belonging to a member and left in the Corner become the house’s after <del>a year</del> <ins>two years</ins>, unless the member says otherwise in the book on the shelf.',
       rationale: 'A year is one long absence. Two years still clears the shelves of anything genuinely abandoned, without swallowing the library of somebody who spent a winter abroad.'
     },
     {
-      id: 'quick-powertools', kind: 'quick', keys: ['powertools'], state: 'needs',
+      id: 'quick-powertools', kind: 'quick', keys: ['powertools'], state: 'needs', beneath: 3,
       qLabel: '§ The Workshop', urgency: 0.47,
       pct: 60, cap: 'three of the fourteen have voted — quorum is 5',
       marked: 'Power tools are not used when the member is alone in the house<ins>, unless another member knows they are there and when they expect to finish</ins>, and not after the beginning of quiet hours.',
@@ -421,7 +429,7 @@ window.FIXTURE_SESSION = (function () {
     // document render dropped every heading before it reached the branch that
     // emits a card, so this one opened nothing at all.
     {
-      id: 'quick-shedhead', kind: 'quick', keys: ['shedhead'], state: 'needs',
+      id: 'quick-shedhead', kind: 'quick', keys: ['shedhead'], state: 'needs', beneath: 8,
       qLabel: '§ The Shed, the Cellar and the Space Under the Stairs', urgency: 0.24,
       pct: 20, cap: 'one of the fourteen has voted — quorum is 5',
       marked: 'The <del>Shed, the Cellar and the Space Under the Stairs</del> <ins>Outdoor Stores</ins>',
@@ -534,7 +542,18 @@ window.FIXTURE_SESSION = (function () {
       qLabel: '§ Guests — a member being in', urgency: 0,
       pct: 100, cap: 'sealed — adopted · the charter changed here',
       won: 'b',
-      decided: { outcome: 'adopted', when: 'Tuesday, 11:20', p: 0.81, judges: 9 },
+      // **the record says how many preferred it** (Q1439, ruling a): the
+      // quorum counts approvals, so nine weighing in and six preferring it is
+      // what carried this one over a floor of five. The other records here
+      // carry no `approvals` on purpose — that is the shape of a decision
+      // taken before the rule changed, and the line has to read without it.
+      // **And how many did not answer in time** (Q1452): of the five of the
+      // fourteen who never weighed in, four had run out 💤's period by the
+      // time it carried and one still had time — so the group was ten, the
+      // floor five, and six approvals took it. The one record on the page
+      // that says so; the rest ran out nobody's clock.
+      decided: { outcome: 'adopted', when: 'Tuesday, 11:20', p: 0.81, judges: 9, approvals: 6,
+        abstained: 4 },
       optionA: 'Friends of the house are welcome.',
       optionB: 'Friends of the house are welcome whenever a member is in.',
       rationale: 'As it stood it invited people to a house with nobody in it. The guest is a member’s guest, and the member should be here.'
@@ -628,7 +647,10 @@ window.FIXTURE_SESSION = (function () {
       rationale: 'You often do not know the day you lost it. "As soon as they know" is the honest version and does not make a rule nobody can keep.'
     },
     {
-      id: 'quick-arrears', kind: 'quick', keys: ['arrears'], state: 'needs',
+      // 🔥 carries a pile too (Q1462), and it is the one the phone sees: the
+      // task drawer holds only what asks you, so the flame is where a crowded
+      // clause shows itself at 390 (design/MOBILE.md, Q1351).
+      id: 'quick-arrears', kind: 'quick', keys: ['arrears'], state: 'needs', beneath: 2,
       qLabel: '§ Arrears',
       urgency: 0.97,
       pct: 80, cap: 'four of the fourteen have voted — quorum is 5',

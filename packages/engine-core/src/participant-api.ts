@@ -12,6 +12,7 @@ import { INC_PREFIX } from './session.js';
 import type { JudgmentView, Session } from './session.js';
 import type { Candidate, Card, Constitution, EdgeSubtype } from './types.js';
 import type { PatchSet, Span } from './text/types.js';
+import { checkAttestation } from './text/attest.js';
 
 /**
  * **The one reveal rule** (SPEC §3.5a, Q770 and entry 31). Every reader of
@@ -133,6 +134,24 @@ export interface OutcomeEntry {
    * of the arithmetic (STYLE §1, §2).
    */
   cappedFit?: { iterations: number; gradMax: number };
+  /**
+   * **What the floor tested, at the moment it was met** (Q1439): how many
+   * members had preferred the winner to the current text, and the floor that
+   * decision was taken against. Both move with the clock while a race runs
+   * (§8.2), so the record carries the adoption's own pair off the `adopted`
+   * event rather than re-deriving today's. Absent on an adoption older than
+   * the rule — an optional pair, so a log from before it folds unchanged.
+   */
+  approvals?: number;
+  floor?: number;
+  /**
+   * **And how many never answered** (Q1452): the members of E whose 💤 period
+   * on the winner's pair had run at the moment the batch decided — the third
+   * of the decision's own numbers, off the same event and absent on the same
+   * older logs. The card prints it as *n did not answer in time*, and says
+   * nothing where it is zero.
+   */
+  abstained?: number;
 }
 
 /** The largest routing value in a hand — what every `urgency` is a fraction of. */
@@ -189,13 +208,15 @@ export class ParticipantApi {
    * caller's own `nextCards` arguments or the two are priced against
    * different tops.
    *
-   * No clock in the *pair*: unlike the feed, which prices races against
-   * the threshold now, whether a pair is left to ask does not depend on
-   * the time — and neither does the top, the threshold being a common
-   * divisor that moves no race past another (see `feed`'s memo).
+   * **Whether** a pair is left to ask still does not depend on the clock —
+   * and neither does the top, the threshold being a common divisor that moves
+   * no race past another (see `feed`'s memo). **Which** pair comes first does,
+   * since Q1439: a race short of its floor leads with the leader against the
+   * current text, and whether it is short depends on who has abstained by now.
+   * So `now` goes to the per-race read as well as to the hand.
    */
   askOn(raceId: string, n: number, now: number): CardView | null {
-    const card = this.session.askOn(this.participantId, raceId);
+    const card = this.session.askOn(this.participantId, raceId, now);
     if (card === null) return null;
     const top = handTop(this.session.feed(this.participantId, n, now));
     return this.renderCard(card, relativeUrgency(card.value, top));
@@ -240,6 +261,18 @@ export class ParticipantApi {
       .filter((j) => j.participantId === this.participantId);
   }
 
+  /**
+   * Propose (SPEC §3.3). **A text proposal must say what it is replacing**
+   * (SPEC §2.1, §2.4 → why: R-136): every replacement hunk carries `was` and
+   * every pure insertion `after`, and a patch carrying neither is refused
+   * here — this being the participant boundary, which a sim persona and a
+   * personal AI speak exactly as a human client does. `attest()` fills them
+   * from the text the draft was written against.
+   *
+   * **The version guard speaks first** where it applies: a patch against a
+   * version that is no longer current is stale in the older, plainer way,
+   * and *targets version N* is the truer sentence for it.
+   */
   submit(
     now: number,
     input: {
@@ -248,6 +281,11 @@ export class ParticipantApi {
       rationale: string;
     },
   ): { id: string } {
+    if (input.patch && input.patch.baseVersion === this.session.currentVersion()) {
+      // the lines the session holds, never the text split back (Q1491)
+      checkAttestation(this.session.linesAt(this.session.currentVersion()),
+        input.patch.hunks, { required: true });
+    }
     const { id } = this.session.submitCandidate(now, {
       author: this.participantId,
       ...(input.patch ? { patch: input.patch } : {}),
@@ -342,7 +380,11 @@ export class ParticipantApi {
           version: c.patch ? Math.max(0, ev.newVersion - 1) : ev.newVersion,
           // spread conditionally, as `reason` is: the key is absent, never
           // `undefined`, because absent is what means converged (R-051)
-          ...(ev.cappedFit ? { cappedFit: ev.cappedFit } : {}) });
+          ...(ev.cappedFit ? { cappedFit: ev.cappedFit } : {}),
+          // the decision's own numbers (Q1439, Q1452), absent on an older log
+          ...(typeof ev.approvals === 'number' ? { approvals: ev.approvals } : {}),
+          ...(typeof ev.floor === 'number' ? { floor: ev.floor } : {}),
+          ...(typeof ev.abstained === 'number' ? { abstained: ev.abstained } : {}) });
       } else if (ev.type === 'candidate-retired') {
         const c = this.session.getCandidate(ev.id);
         out.push({ t: ev.t, candidateId: ev.id, outcome: 'retired',

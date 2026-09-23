@@ -21,6 +21,7 @@
  *   node design/tools/card-audit.mjs --walk=charter,founding
  *   node design/tools/card-audit.mjs --width=1280 --height=900 --out=b.json
  *   node design/tools/card-audit.mjs --baseline=b.json   # keep only what both sizes saw
+ *   node design/tools/card-audit.mjs --strict     # …and exit 1 if anything is left
  *
  * **Two harness rules it encodes**, both learned here already: one window
  * size and scroll 0 on every run — a restored scroll position reads as a
@@ -31,6 +32,17 @@
  * changes nothing, and a geometry finding it reports is a candidate until it
  * has been re-run at a second window size (findings that move with the
  * viewport are layout facts, not defects).
+ *
+ * **And the exit code says so**: 0 whatever the run finds, which is what CI
+ * reads. `--strict` is the other reading, for a caller who wants a verdict
+ * rather than a report — exit 1 while anything is left in the list. Nothing
+ * a lens excuses ever reaches that list: the power tabs' ✒️ and 🛡️, the
+ * lifecycle marks and 📧 are exempted where G2 counts, a motion wearing its
+ * host's glyph counts as its host (SURFACE E10, M18), the hostless
+ * paragraphs are named in P8, and under `--baseline` a finding that moved
+ * with the window is dropped as a layout fact. So a strict red is a card
+ * nobody has excused, and the flag exists so that the gotchas naming this
+ * instrument can be given a guard that goes red the day that is wanted.
  */
 import { createServer } from 'node:http';
 import { readFile, writeFile, stat } from 'node:fs/promises';
@@ -46,6 +58,8 @@ const arg = (name, dflt) => {
   return hit ? hit.split('=').slice(1).join('=') : dflt;
 };
 const AS_JSON = process.argv.includes('--json');
+/** a verdict instead of a report — see the header. The default exit never moves. */
+const STRICT = process.argv.includes('--strict');
 const VIEWPORT = { width: +arg('width', 1600), height: +arg('height', 1000) };
 const OUT = arg('out', join(DESIGN, 'tools', 'card-audit.json'));
 const BASELINE = arg('baseline', null);
@@ -588,6 +602,17 @@ const IN_PAGE = () => {
         // 270 of them would drown the numbers this instrument exists for
         ...(window.__CA_SPEC ? { spec: specimen(card, key) } : {}),
         strings: strings(card),
+        // a judgment card (Q1500): a charter card whose lanes are radios and
+        // which is not the Text's 👑 question — the kinds that carry no 🗑️
+        // a grant (Q1501, Q1502): the commit's word as the glyphs read, and the
+        // hue its own tab wears in the card's strip
+        grant: /^(grant-(pen|shield|voice)|canpropose|canjudge)$/.test(key) ? {
+          accept: ((b) => (b ? window.CARDS.glyphTextOf(b).replace(/\s+/g, ' ').trim() : null))(card.querySelector('[data-ok]')),
+          tabHue: ((t) => (t ? ((t.getAttribute('style') || '').match(/--lc-([a-z]+)/) || [])[1] || null : null))(
+            card.querySelector('.chipcol [data-chip="' + CSS.escape(key) + '"]')),
+        } : null,
+        judgment: card.matches('.sugg:not(.setupcard)') && !!card.querySelector('[data-v]') &&
+          !card.querySelector('[data-act^="crown-"]'),
         buttons: buttons(card),
         radios: radios(card),
         helpers: helpers(card),
@@ -620,6 +645,18 @@ const IN_PAGE = () => {
         // glyph in its head — a grant card's head is the Founded line, which
         // wears 👑 for a different reason entirely
         tabGlyph: openTab ? (txt(openTab) || '').replace(/\s/g, '').slice(0, 3) : null,
+        // **Whose card this is, where the card is not its own subject.** A
+        // motion is its own tab and its own entry since Q1367, and it wears
+        // its **host's** glyph by design (SURFACE E10, M18) — the motion on
+        // 🌍 is a 🌍 card. Nothing in `mo:<id>` says so, and the identity
+        // lens below reads glyphs against keys, so it saw every running
+        // motion as a second card claiming its host's glyph. The host names
+        // itself at the front of the strip: the rule's own tab is the first
+        // chip of its pile and of its strip (P8, Q1299/Q1320).
+        host: /^mo:/.test(key)
+          ? (() => { const f = card.querySelector('.chipcol .achip');
+              return (f && (f.dataset.chip || f.dataset.tab)) || null; })()
+          : null,
         tab: { closed: before && before.tab, open: rect(openTab), front: !!(before && before.front),
                onRow: !!(before && before.onRow),
                closedW: before && before.tabW, openW: openTab ? Math.round(openTab.getBoundingClientRect().width * 100) / 100 : null,
@@ -838,9 +875,29 @@ function rulesFor(card, tok) {
     const bl = card.buttons.filter((b) => b.r);
     const substantive = bl.filter((b) => !/^OK$/.test((b.label || '').trim()) && !/chill/.test(b.cls));
     const first = bl[0];
-    if (substantive.length && first && !/🗑/.test(first.label || '')) {
+    // …but never on a judgment card (Q1500, Ed 2026-09-22): quick · insert ·
+    // race · patch · diagonal · the ⏳ judged pair carry no 🗑️ at all
+    if (card.judgment) {
+      const bin = bl.find((b) => /🗑/.test(b.label || ''));
+      if (bin) at('CP7', 'pattern', 'no 🗑️ on a judgment card (Q1500)', 'the row carries “' + (bin.label || bin.cls) + '”');
+    } else if (substantive.length && first && !/🗑/.test(first.label || '')) {
       at('CP7', 'pattern', '🗑️ leads every commit row (C4; Y20 by shape)',
         'the row opens with “' + ((first.label || first.cls) + '').slice(0, 40) + '”');
+    }
+  }
+  // GA1 — a grant not yet accepted says so (Q1501, Q1502, Ed 2026-09-22):
+  // its commit reads *Accept* and the power it hands you (🏛️: *Activate*),
+  // and its tab wears the *yours* hue; once accepted it is grey like any
+  // settled card and its OK only closes
+  if (card.grant) {
+    const WORD = { 'grant-pen': 'Accept ✒️', 'grant-shield': 'Accept 🛡️', 'grant-voice': 'Activate 🏛️',
+      canpropose: 'Accept ✏️', canjudge: 'Accept ⚖️' };
+    const g = card.grant;
+    if (g.accept !== null && g.accept !== WORD[card.key]) {
+      at('GA1', 'pattern', 'a grant not yet accepted commits with ' + WORD[card.key], 'the commit reads “' + g.accept + '”');
+    }
+    if (g.accept !== null && g.tabHue !== 'yours') {
+      at('GA1', 'pattern', 'a grant not yet accepted wears the yours hue on its tab', 'its tab wears ' + g.tabHue);
     }
   }
   // CP2 — the radio names the register (re-ruled 2026-08-31): a dotted radio
@@ -1195,7 +1252,16 @@ function crossCard(cards) {
     // 📧 may be used twice — your own email card and the stranger's login
     // (Ed, pass 4 F-F, 2026-08-31: the exemption, not a new glyph)
     if (g === '📧') continue;
-    const key = c.key.replace(/^(ans|str)[-:]?/, '');
+    // **A motion is not a second subject** (SURFACE E10, M18; Q1367). One
+    // motion is one tab and one entry, keyed `mo:<id>`, standing in its
+    // host's own pile and wearing the host's glyph — the motion on 🌍 is a
+    // 🌍 card, and that is the rule rather than a breach of it. Counted by
+    // its key it was a second card claiming the glyph, so every running
+    // setting motion the `settled` walk seeds filed a G2 against the very
+    // setting it belongs to, three of them on every run. It counts as its
+    // host, which keeps the lens able to see the real defect: a motion
+    // wearing a glyph that is not its host's still lands in the wrong set.
+    const key = (c.host || c.key).replace(/^(ans|str)[-:]?/, '');
     if (!glyphOf.has(g)) glyphOf.set(g, new Set());
     glyphOf.get(g).add(key);
   }
@@ -1518,7 +1584,49 @@ async function walkSettled(page, base, cards, errors, seat, switches, piles) {
    * Seeded **before the seat switch**, so the `seat:` walks measure the record
    * from a member's chair too, where the mover is the sealed string.
    */
-  const seeded = await page.evaluate(() => {
+  /**
+   * **The page's own field goes with the module, or the instrument seeds the
+   * defect it then reports.** The 🌍 set below is made in the module, and the
+   * founder's settled ladder is drawn from `S` — the page's provisional layer
+   * — which no module call touches. `ladderView` blanks the rung that stands
+   * (Q1293), so a page whose `S.chamber` still held the founding's answer drew
+   * that answer lit beneath a standing block saying the opposite, and F6 —
+   * *nothing is pre-answered* — was red on `settled·chamber` on every run,
+   * against a page with nothing wrong with it. A finding nobody can act on is
+   * a finding everybody learns to scroll past, which costs the lens the one
+   * thing it has.
+   *
+   * So the page's half of the set is made the way a founder makes it: the
+   * rung is pressed on the card. Only the **commit** stays the module's, since
+   * a founder's post-🍾 commit on a held setting is the ✒️ hold and this
+   * instrument owns no pointer that holds. Pressed **before** the module's
+   * set, because `rungOpt` omits whatever stands — once the module has moved,
+   * the rung that would bring `S` into line is no longer drawn.
+   */
+  const chamberTo = await page.evaluate(() =>
+    (((window.cs && window.cs.settingState('chamber').value) || {}).rung === 'link' ? 'closed' : 'link'));
+  await page.evaluate(() => {
+    const el = document.querySelector('#band [data-tab="chamber"], #band [data-card="chamber"]');
+    if (el) el.click();
+  });
+  await wait(page, 350);
+  const rungPressed = await page.evaluate((val) => {
+    const b = document.querySelector('.setupcard [data-set="chamber"][data-val="' + val + '"]');
+    if (!b) return false;
+    b.click();
+    return true;
+  }, chamberTo);
+  if (!rungPressed) errors.push(walk + ': 🌍 offered no ' + chamberTo + ' rung to press before the seed');
+  await wait(page, 250);
+  // closed again, because every card in the loop below is measured against its
+  // own closed baseline
+  await page.evaluate(() => {
+    const mark = document.querySelector('.setupcard .chipcol .achip.wmark') ||
+      document.querySelector('.setupcard .chipcol .achip');
+    if (mark) mark.click();
+  });
+  await wait(page, 250);
+  const seeded = await page.evaluate((chamberTo) => {
     try {
       const cs = window.cs;
       if (!cs || cs.constitutedAtT === null) return { error: 'no constituted session on the page' };
@@ -1554,8 +1662,9 @@ async function walkSettled(page, base, cards, errors, seat, switches, piles) {
       // leaves in the founder's hand (a carried motion on a delegated
       // setting lands in the document; only a reserved one parks). The set
       // fires E5's news first; the motion then parks at the 👑.
-      const cv = (cs.settingState('chamber').value || {}).rung;
-      cs.setSetting(tick(), 'chamber', { rung: cv === 'link' ? 'closed' : 'link' },
+      // the rung the page was already pressed on, above — the two halves of
+      // one act, so the card's ladder and the module agree afterwards
+      cs.setSetting(tick(), 'chamber', { rung: chamberTo },
         'Readers who are not members should see what we are building.');
       const cv2 = (cs.settingState('chamber').value || {}).rung;
       const m3 = cs.openMotion(tick(), mover,
@@ -1586,7 +1695,7 @@ async function walkSettled(page, base, cards, errors, seat, switches, piles) {
         running: [m4, cs.motionRecords().get(m4).status],
         ordinary: [m5, cs.motionRecords().get(m5).status] };
     } catch (e) { return { error: String((e && e.message) || e) }; }
-  });
+  }, chamberTo);
   if (seeded.error) errors.push(walk + ': the motion seed failed — ' + seeded.error);
   else {
     if (seeded.carried[1] !== 'carried') errors.push(walk + ': the seeded ' + seeded.carried[0] + ' is ' + seeded.carried[1] + ', not carried');
@@ -1738,6 +1847,157 @@ async function walkDoor(page, doors, errors, walk) {
   const after = await box(DOOR);
   doors.push({ walk, before, commit, doorWhileEditing, editing, after, short, restored, restoredHidden });
 }
+
+/**
+ * **The queue card stack, against the entry it is drawn on** (R1, Q1462).
+ *
+ * The pile is a hint and nothing else: pressing the entry opens the same
+ * pair, and **the entry's own button keeps its size and its left edge**. Since
+ * Ed's note of 2026-09-19 (*cards beneath them should be commensurately
+ * further away so you can see the stack*) the pile **does** take room: the
+ * `li` carries its depth as padding, which is what `layoutQueue` measures, so
+ * the entry beneath stands that much lower. So the measurement is a
+ * comparison: the same entries read twice, once as the fixture serves them
+ * and once with `beneath` deleted and the rail re-rendered — a piled entry's
+ * button must be the same size at the same left edge, and must stand within
+ * the piles' own depth of where it stood bare — lower where a pile above took
+ * room, or **higher** where the entry is held against the foot of the pinned
+ * band and the only room for its pile is upward (the fixture's 🔥).
+ * The second half is the count — `min(beneath, 5)` edges drawn, Ed's cap
+ * (three on 2026-09-18, five on 2026-09-19).
+ *
+ * Edges are box-shadow layers, so they are counted off the computed style:
+ * the pile's are the only layers with no blur, `--shadow-sm`'s two both
+ * carrying one — and an edge is two of them, its face and its rule.
+ */
+async function walkRail(page, rails, walk) {
+  const read = () => page.evaluate(() => {
+    const R2 = (x) => Math.round(x * 100) / 100;
+    // split a box-shadow list on its top-level commas — a layer's own colour
+    // carries commas of its own inside parentheses
+    const layers = (s) => {
+      const out = []; let depth = 0, cur = '';
+      for (const ch of s) {
+        if (ch === '(') depth++;
+        if (ch === ')') depth--;
+        if (ch === ',' && depth === 0) { out.push(cur.trim()); cur = ''; } else cur += ch;
+      }
+      if (cur.trim()) out.push(cur.trim());
+      return out;
+    };
+    return [...document.querySelectorAll('#rail .qitem')].map((li) => {
+      const b = li.querySelector('button');
+      if (!b) return null;
+      const r = b.getBoundingClientRect();
+      const anchor = li.dataset.site || '';
+      return { q: li.dataset.q, anchor, pile: +(li.dataset.pile || 0),
+        box: [R2(r.left), R2(r.top + window.scrollY), R2(r.width), R2(r.height)],
+        // a layer reads `<colour> 0px <y>px 0px 0px`: no blur and no spread is the
+        // pile's alone, and an edge is two of them — its face and its rule
+        edges: layers(getComputedStyle(b).boxShadow).filter((l) => / 0px \d+px 0px 0px$/.test(l)).length / 2 };
+    }).filter(Boolean);
+  });
+  const withPile = await read();
+  // **the stranded entry is red** (R2, Q1484, Ed 2026-09-21: *Red entry,
+  // words unchanged*). Its ground is a wash of the surface's one red and its
+  // ↻ is painted the same; the channels are read back off `:root` rather than
+  // written down here, so the audit cannot disagree with the palette about
+  // what red is. Asked which entry is stranded rather than told: a check that
+  // cannot find its subject has not run, and says so.
+  const stranded = await page.evaluate(() => {
+    const red = getComputedStyle(document.documentElement).getPropertyValue('--lc-wrong').trim();
+    const mine = (window.SESSION.SUGGS || []).filter((s) => s.mine && s.stranded);
+    const out = [];
+    for (const s of mine) {
+      const li = document.querySelector('#rail .qitem[data-q="' + String(s.id).replace(/["\\]/g, '\\$&') + '"]');
+      const b = li && li.querySelector('button');
+      const mk = li && li.querySelector('.qmark .mk, .mk');
+      out.push({ id: s.id, there: !!b,
+        wash: b ? getComputedStyle(b).getPropertyValue('--washcol').trim().replace(/\s+/g, ' ') : null,
+        ink: mk ? getComputedStyle(mk).color : null, mk: mk ? mk.className : null });
+    }
+    return { red, rows: out };
+  });
+  const beneath = await page.evaluate(() =>
+    Object.fromEntries(window.SESSION.SUGGS.filter((s) => s.beneath).map((s) => [s.id, s.beneath])));
+  // the same rail with the field off, so the comparison is this page's own
+  // geometry rather than a remembered number
+  const saved = await page.evaluate(() => {
+    const keep = window.SESSION.SUGGS.filter((s) => s.beneath).map((s) => [s.id, s.beneath]);
+    for (const s of window.SESSION.SUGGS) delete s.beneath;
+    window.SESSION.refreshRail();
+    return keep;
+  });
+  await wait(page, 250);
+  const without = await read();
+  await page.evaluate((keep) => {
+    const by = new Map(keep);
+    for (const s of window.SESSION.SUGGS) if (by.has(s.id)) s.beneath = by.get(s.id);
+    window.SESSION.refreshRail();
+  }, saved);
+  await wait(page, 250);
+  rails.push({ walk, withPile, without, beneath, stranded });
+}
+function railRules(rails) {
+  const out = [];
+  const file = (rule, said, saw, note) => out.push({ rule, lens: 'positioning', said, saw, note });
+  for (const r of rails) {
+    // R2 — the stranded entry's ground and its ↻, both the surface's one red
+    const st = r.stranded || { red: '', rows: [] };
+    const chans = String(st.red).split(',').map((x) => x.trim()).filter(Boolean);
+    if (chans.length !== 3) {
+      file('R2', 'the palette states a red in channel form, so a wash can be made of it (Q1484)',
+        '`--lc-wrong` on :root reads ' + JSON.stringify(st.red), r.walk);
+    } else if (!st.rows.length) {
+      file('R2', 'the fixture carries a stranded proposal, so the red is measured at all (Q1484)',
+        'no item on the charter is `mine && stranded`', r.walk);
+    } else {
+      const want = 'rgb(' + chans.join(', ') + ')';
+      for (const e of st.rows) {
+        if (!e.there) { file('R2', 'a stranded proposal of yours has a rail entry', e.id + ' has none', r.walk); continue; }
+        if (!String(e.wash).startsWith('rgba(' + chans.join(', ') + ',')) {
+          file('R2', 'a stranded entry’s ground is a wash of the surface’s one red (Q1484, Ed 2026-09-21: *Red entry, words unchanged*)',
+            e.id + ' washes ' + e.wash + ', where --lc-wrong is ' + chans.join(', '), r.walk);
+        }
+        if (e.ink !== want) {
+          file('R2', 'a stranded entry’s ↻ is painted that same red (Q1484)',
+            e.id + '’s ' + e.mk + ' is ' + e.ink + ', wanted ' + want, r.walk);
+        }
+      }
+    }
+    const drawn = r.withPile.filter((e) => e.pile > 0);
+    if (!Object.keys(r.beneath).length) {
+      file('R1', 'the fixture carries queue card stacks, so the pile is measured at all (Q1462)',
+        'no rail entry on the charter carried `beneath`', r.walk);
+      continue;
+    }
+    // matched on both fields rather than on a joined key: an id and a site
+    // are member-written strings, and a separator is a thing to get wrong
+    const bareOf = (e) => r.without.find((x) => x.q === e.q && x.anchor === e.anchor);
+    for (const e of drawn) {
+      const want = Math.min(5, r.beneath[e.q] || 0);
+      if (e.edges !== want) {
+        file('R1', 'a queue card stack draws min(beneath, 5) edges and no more — depth hints, capped at five, no number (Q1462, Ed 2026-09-19)',
+          e.q + ' says beneath ' + r.beneath[e.q] + ' and draws ' + e.edges + ' edge(s)', r.walk);
+      }
+      const was = bareOf(e);
+      if (!was) { file('R1', 'an entry keeps its place when its pile is taken away', e.q + ' left the rail when `beneath` was deleted', r.walk); continue; }
+      if (was.edges !== 0) file('R1', 'no pile is drawn where there is nothing beneath', e.q + ' still drew ' + was.edges + ' edge(s) with no `beneath`', r.walk);
+      // left, width and height to the pixel; the top within every pile on the
+      // rail put together (3px an edge), either way — down under a pile above
+      // it, up where the band's foot holds it
+      const room = 3 * drawn.reduce((n, x) => n + x.pile, 0);
+      const same = [0, 2, 3].every((i) => Math.abs(e.box[i] - was.box[i]) <= 0.5);
+      const drop = e.box[1] - was.box[1];
+      if (!same || Math.abs(drop) > room + 0.5) {
+        file('R1', 'a piled entry keeps its own button — the size it would be with no pile, at the same left edge — and moves by no more than the piles take (Q1462, Ed 2026-09-19)',
+          e.q + ' is ' + e.box.join(',') + ' piled and ' + was.box.join(',') + ' bare', r.walk);
+      }
+    }
+  }
+  return out;
+}
+
 function doorRules(doors) {
   const out = [];
   const same = (a, b) => !!a && !!b && a.r.every((v, i) => Math.abs(v - b.r[i]) <= 0.5);
@@ -1774,7 +2034,7 @@ function doorRules(doors) {
   return out;
 }
 
-async function walkCharter(page, base, cards, errors, { closed, doors } = {}) {
+async function walkCharter(page, base, cards, errors, { closed, doors, rails } = {}) {
   await page.goto(base + '/session-view.html?fixture=session' + (closed ? '&closed=1&band=1' : ''));
   await page.waitForFunction(() => !!(window.SESSION && window.SESSION.SUGGS.length && document.querySelector('.qitem')),
     null, { timeout: 20_000 });
@@ -1846,6 +2106,9 @@ async function walkCharter(page, base, cards, errors, { closed, doors } = {}) {
   }
   // the floating 📝 (D1): the live session only — a closed document draws no door
   if (!closed && doors) await walkDoor(page, doors, errors, walk);
+  // the rail's own pile (R1, Q1462)  the live charter only; a closed page
+  // asks nothing of anybody, so nothing on it stands for a race still running
+  if (!closed && rails) await walkRail(page, rails, walk);
   if (closed) {
     // **The backlog's own records, checked rather than re-opened** (Q1339).
     // A backlog paragraph is keyed `U:<raceId>` **as a block of the document**
@@ -1892,6 +2155,7 @@ async function main() {
   const switches = [];
   const piles = [];
   const doors = [];
+  const rails = [];
   const t0 = Date.now();
   const run = async (name, fn) => {
     if (!WALKS.includes(name)) return;
@@ -1926,7 +2190,7 @@ async function main() {
       if (cards.length === n) errors.push('seat:' + seat + ' offered no cards — nothing was measured for it');
     }
   });
-  await run('charter', () => walkCharter(page, base, cards, errors, { doors }));
+  await run('charter', () => walkCharter(page, base, cards, errors, { doors, rails }));
   await run('closed', () => walkCharter(page, base, cards, errors, { closed: true }));
 
   const tok = await page.evaluate(() => window.__CA.tokens());
@@ -1934,7 +2198,7 @@ async function main() {
   server.close();
 
   for (const c of cards) c.findings = rulesFor(c, tok);
-  const cross = [...crossCard(cards), ...switchRules(switches), ...pileRules(piles), ...doorRules(doors)];
+  const cross = [...crossCard(cards), ...switchRules(switches), ...pileRules(piles), ...doorRules(doors), ...railRules(rails)];
   /**
    * **The rollup is the finding; the card is where it shows.** A stylesheet
    * fact — `.headclause` padded 6px, an OK label at --t-cap — is one defect
@@ -1998,10 +2262,30 @@ async function main() {
   const payload = {
     meta: { viewport: VIEWPORT, walks: WALKS, cards: cards.length, seconds: Math.round((Date.now() - t0) / 100) / 10,
       ...(BROWSER === 'chromium' ? {} : { browser: BROWSER, browserVersion: version }) },
-    tokens: tok, cards, switches, doors, rollup, cross, errors,
+    tokens: tok, cards, switches, doors, rails, rollup, cross, errors,
   };
 
-  if (AS_JSON) { console.log(JSON.stringify(payload, null, 1)); return; }
+  /**
+   * **The verdict, under `--strict` only.** Read off the same list the summary
+   * prints — the `stable !== false` half, so a finding `--baseline` says moved
+   * with the window is not held against the tree. Set as an exit **code**
+   * rather than an exit: the payload is still written and the summary still
+   * printed, because a red verdict with nothing to read it against is the one
+   * shape of failure this instrument must not have.
+   */
+  const verdict = () => {
+    if (!STRICT) return;
+    const left = [...rollup, ...cross].filter((f) => f.stable !== false);
+    if (!AS_JSON) {
+      console.log('\n--strict: ' + (left.length
+        ? left.length + ' finding' + (left.length === 1 ? '' : 's') + ' nothing exempts — ' +
+          [...new Set(left.map((f) => f.rule))].sort().join(', ')
+        : 'nothing left in the list'));
+    }
+    process.exitCode = left.length ? 1 : 0;
+  };
+
+  if (AS_JSON) { console.log(JSON.stringify(payload, null, 1)); verdict(); return; }
 
   await writeFile(OUT, JSON.stringify(payload, null, 1));
   const per = new Map();
@@ -2025,6 +2309,7 @@ async function main() {
   if (errors.length) { console.log('\nerrors:'); for (const e of errors.slice(0, 20)) console.log('  ' + e); }
   console.log('\npayload → ' + OUT);
   if (SPECIMENS) console.log('specimens → ' + SPECIMENS + ' (' + specs.length + ')');
+  verdict();
 }
 
 main().catch((e) => { console.error(e); process.exit(2); });

@@ -21,7 +21,12 @@ function open(
   return Session.open(
     {
       text: TEXT,
-      roster: roster(3),
+      // **Five, since Q1439** (R-126): no quorum asks for more than half, so
+      // the count of 3 below reads as ⌈3/2⌉ = 2 in a room of three, and the
+      // second approval on a race would carry it away mid-test. At five the
+      // same count is under the cap and holds every race here open — which is
+      // what these tests are about: what a race can still *ask*.
+      roster: roster(5),
       constitution: makeConstitution({
         windowStartMs: 0,
         windowEndMs: 10 * HOUR,

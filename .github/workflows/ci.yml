@@ -20,6 +20,30 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    # **No job stands for ever** (plan-ci-speed.md Stage 1: one run stood for
+    # seventy hours with no limit on any job). Fifteen minutes is four times
+    # the gates; a push to main also carries the deploy, whose own poll may
+    # wait twenty-five minutes (thirteen when paused), so that run gets
+    # forty-five — a timeout cancels the job, and a cancelled job does not
+    # run the pause-lifting step below, so the limit must never fall inside
+    # the deploy's own budget.
+    timeout-minutes: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && 45 || 15 }}
+    # **One deploy at a time** (issue #8, F3). The deploy is a step of this
+    # job, so two pushes in quick succession ran two of them side by side:
+    # on 2026-09-12 runs 34687139656 and 34687164564 overlapped, the first
+    # went red after 27 minutes at *never became 435bf8e*, and which commit
+    # was live afterwards was decided by which hook Render answered last.
+    # A push to main takes one named group and waits its turn; every other
+    # run (a pull request, a re-run) gets a group of its own and is not
+    # serialised. **`cancel-in-progress: false`**: a deploy in flight is
+    # never cancelled — it has already paused the live host, and killing it
+    # is how a room stays paused for fifteen minutes. GitHub's default queue
+    # holds one pending run, so a third quick push cancels the *pending*
+    # second; its changes then deploy with the third, which is exactly what
+    # F1's base handles, the range being the host's rather than the push's.
+    concurrency:
+      group: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'deploy-main' || format('ci-{0}', github.run_id) }}
+      cancel-in-progress: false
     # Stage 6: the Postgres backend is tested against the same major the
     # local container pins (17), or the migration is tested only on one
     # machine. The server's whole HTTP walk runs a second time over it.
@@ -59,7 +83,7 @@ jobs:
       - name: the server walk again, over Postgres (stage 6)
         run: DRAFT_TEST_STORE=pg npm test -w @draft/server
       - run: npm run build
-      - name: boot smoke — refuse half-configured, serve configured, no dev routes
+      - name: boot smoke — refuse half-configured, serve configured, no dev routes, come up on Postgres
         run: |
           # the prod artifact refuses to boot without its secrets (defect 9)
           ( node dist/server.mjs || true ) 2>&1 | grep -q 'refuses to boot'
@@ -79,6 +103,63 @@ jobs:
           wait "$SMOKE_PID" || true
           grep -q "closed cleanly" smoke.log
 
+          # **And once over Postgres, which is what production runs** (issue
+          # #17, F3). Everything above is the artifact on the file store, and
+          # docs.vote has served from Postgres since 2026-08-20
+          # (docs/OPERATING.md §7) — so the one configuration this gate never
+          # booted was the live one. The suite covers `PgPersistence`
+          # thoroughly and through `tsx`; what it cannot cover is the
+          # *bundle* reaching it, and that seam has broken before and in
+          # exactly this way: `pg` is CommonJS and `require`s node builtins,
+          # which esbuild's ESM shim answers with a throw, and the cure in
+          # build-server.mjs's banner was "found by running the artifact, not
+          # the tests". A boot is the only thing that asks the question.
+          #
+          # The database is the job's own `postgres:17-alpine` service, the
+          # same one the pg suite above uses; `PgPersistence.open` migrates
+          # on connect, so an empty `public` schema is all it needs. A fresh
+          # data dir because nothing here should read the file smoke's disk —
+          # on Postgres the directory is for the secret and the outbox alone,
+          # and this run has neither.
+          #
+          # **Polled, never slept**: this step sits inside the deploy gate,
+          # where a fixed wait is either slow on every push or flaky on the
+          # one that matters.
+          DRAFT_STORE=pg DATABASE_URL="$DRAFT_TEST_DATABASE_URL" \
+            DRAFT_DATA_DIR="$RUNNER_TEMP/pgdata" PORT=8198 \
+            DRAFT_SECRET=ci-smoke DRAFT_BASE_URL=https://smoke.invalid \
+            RESEND_API_KEY=ci-smoke DRAFT_TRUST_PROXY=0 \
+            node dist/server.mjs > smoke-pg.log 2>&1 &
+          PG_PID=$!
+          # and a process that has already died is not waited on for thirty
+          # seconds: a store it cannot reach throws out of `PgPersistence.open`
+          # before anything listens, which is the likeliest way this fails
+          for i in $(seq 1 60); do
+            if curl -fsS -m 5 http://localhost:8198/healthz -o pg-health.json; then pgup=1; break; fi
+            if ! kill -0 "$PG_PID" 2>/dev/null; then break; fi
+            sleep 0.5
+          done
+          if [ -z "$pgup" ]; then
+            echo "the artifact never answered /healthz over Postgres — its log follows"
+            cat smoke-pg.log
+            exit 1
+          fi
+          # what `store` says, and that the store answered at all: `documents`
+          # is `[...store.all()].length`, so a number there is a boot that
+          # migrated, connected and replayed — an empty database included
+          node -e '
+            const h = JSON.parse(require("fs").readFileSync("pg-health.json", "utf8"));
+            const bad = [];
+            if (h.ok !== true) bad.push(`ok reads ${JSON.stringify(h.ok)}`);
+            if (h.store !== "pg") bad.push(`store reads ${JSON.stringify(h.store)}, not pg`);
+            if (typeof h.documents !== "number") bad.push(`documents reads ${JSON.stringify(h.documents)}, which is not a number`);
+            if (bad.length) { console.error("the Postgres boot: " + bad.join("; ")); process.exit(1); }
+            console.log(`the artifact is up on Postgres, ${h.documents} documents loaded`);
+          '
+          kill -TERM "$PG_PID"
+          wait "$PG_PID" || true
+          grep -q "closed cleanly" smoke-pg.log
+
       # Deploy on green (stage 4, decision 432): auto-deploy is off at the
       # platform, so this workflow is the single gate — nothing reaches the
       # service that has not linted, typechecked, tested, built and booted.
@@ -90,6 +171,11 @@ jobs:
         env:
           HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
           BASE: ${{ vars.DRAFT_BASE_URL }}
+          # **Two keys since #10** (Ed's P1 batch, 2026-09-22): the admin
+          # key pauses, resumes and uploads a surface; the bot key reads the
+          # bot outbox alone and is here only for verify-deploy, which checks
+          # that the bot key is refused at the surface route
+          ADMIN_KEY: ${{ secrets.DRAFT_ADMIN_KEY }}
           BOT_KEY: ${{ secrets.DRAFT_BOT_KEY }}
           BEFORE: ${{ github.event.before }}
           GH_TOKEN: ${{ github.token }}
@@ -97,42 +183,113 @@ jobs:
           if [ -z "$HOOK" ]; then
             echo "no RENDER_DEPLOY_HOOK secret — skipping deploy"; exit 0
           fi
-          # **What did this push touch?** (Q1347, Ed 2026-09-12: *only
-          # deploys to the engine should break a document, not changes to
-          # the surface*). The compare API lists the files between the
-          # previous head and this one (the checkout is one commit deep).
-          # Three lanes: files outside design/ and the documents → the
-          # full deploy below, paused; only design/ (and documents) → the
-          # served page files are packed and uploaded to the running host,
-          # which serves them at once and states this commit in x-build —
-          # no restart, no pause, no document leaves memory; only
-          # documents → nothing to deploy at all.
+          # **What is the host actually running?** (issue #8, F1.) Ask it
+          # before anything else: `/healthz` names the commit the process
+          # booted with — `booted`, which no page upload can move — and the
+          # commit whose page files were last uploaded on top of it,
+          # `surface`. The body is kept as `before.json`, which the two
+          # verifications below read as their own baseline (F5).
+          hostBase=""; pageBase=""
+          if [ -n "$BASE" ] && curl -fsS -m 20 "$BASE/healthz" -o before.json; then
+            hostBase=$(node -p 'const h=JSON.parse(require("fs").readFileSync("before.json","utf8")); h.booted ?? ""')
+            pageBase=$(node -p 'const h=JSON.parse(require("fs").readFileSync("before.json","utf8")); h.surface ?? h.booted ?? ""')
+            echo "the live host: engine ${hostBase:-unreported}, page ${pageBase:-unreported}"
+          else
+            rm -f before.json
+            echo "the live host did not answer /healthz — the lane falls back to this push's own range"
+          fi
+          # **The lane is what the host is missing, not what this push
+          # carries** (issue #8, F1). It was worked out from
+          # `github.event.before`, which says only what the *previous push*
+          # touched — so when a server push went red and never deployed, the
+          # design-only fix-up behind it compared clean, took the surface
+          # lane, and put the new page on the old engine while x-build swore
+          # to the new commit. A real applicant sat unadmitted for forty
+          # minutes (design/DECISIONS.md:6907). The base is now the host's
+          # own `booted`, so an undeployed commit stays in the range until
+          # it is deployed, and a red run followed by a docs-only push still
+          # takes the full lane.
+          #
+          # A base that cannot be read — no answer, or a host from before
+          # this field existed — leaves `github.event.before` standing,
+          # which is the old behaviour and errs towards deploying more.
+          if [ -z "$hostBase" ]; then hostBase="$BEFORE"; fi
+          if [ -z "$pageBase" ]; then pageBase="$BEFORE"; fi
+          # every path between a base and this commit; non-zero if the base
+          # is not a commit this repository can be compared against
+          compare() {
+            case "$1" in '' | 0000000000000000000000000000000000000000) return 1;; esac
+            gh api "repos/$GITHUB_REPOSITORY/compare/$1...$GITHUB_SHA" --paginate --jq '.files[].filename' 2>/dev/null
+          }
+          # Three lanes (Q1347, Ed 2026-09-12: *only deploys to the engine
+          # should break a document, not changes to the surface*): anything
+          # the host has not got outside design/ and the documents → the
+          # full deploy below, paused; served page files the host has not
+          # got → they are packed and uploaded to the running host, which
+          # serves them at once and states this commit in x-build, no
+          # restart and no document out of memory; nothing either way →
+          # nothing to deploy at all.
+          #
+          # **The page's base is `surface ?? booted`**, never `booted`
+          # alone: after any surface upload the host's page is ahead of its
+          # engine, and comparing against the engine would re-upload the
+          # same files — and every open page would reload — on a push that
+          # changed no page at all.
+          #
+          # **And a served file is not any file under design/** (issue #8,
+          # F2). The filter was `^design/`, so DECISIONS.md, STYLE.md and
+          # everything under design/tools/ took the surface lane: files the
+          # host does not serve and the tar below does not carry, uploaded
+          # as a no-op whose only effect was to move x-build and make every
+          # open page reload itself (run 35033587227 changed one file,
+          # design/tools/toc-travel.mjs, and reloaded the room). The set is
+          # SURFACE_NAME in packages/server/src/surface.ts — the pattern the
+          # host itself refuses an upload by — restated here as an ERE.
+          # **packages/server/test/surface.test.ts asserts the two agree**,
+          # by reading this line, so the copy cannot drift from its source.
+          SURFACE_ERE='^design/(fonts/)?[A-Za-z0-9][A-Za-z0-9._-]*\.(js|css|html|svg|png|woff2?|txt)$'
           lane=full
-          if [ -n "$BEFORE" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ]; then
-            changed=$(gh api "repos/$GITHUB_REPOSITORY/compare/$BEFORE...$GITHUB_SHA" --paginate --jq '.files[].filename' 2>/dev/null || echo "?")
-            if [ "$changed" != "?" ] && [ -n "$changed" ]; then
-              host=$(printf '%s\n' "$changed" | grep -vE '^(design/|docs/|[^/]+\.md$|QUESTIONS\.md$)' || true)
-              surface=$(printf '%s\n' "$changed" | grep -E '^design/' || true)
-              if [ -z "$host" ] && [ -n "$surface" ]; then lane=surface; fi
-              if [ -z "$host" ] && [ -z "$surface" ]; then lane=docs; fi
+          if changed=$(compare "$hostBase"); then
+            host=$(printf '%s\n' "$changed" | grep -vE '^(design/|docs/|[^/]+\.md$|QUESTIONS\.md$)' || true)
+            if [ -z "$host" ]; then
+              lane=docs
+              if pageChanged=$(compare "$pageBase"); then
+                served=$(printf '%s\n' "$pageChanged" | grep -E "$SURFACE_ERE" || true)
+                if [ -n "$served" ]; then lane=surface; fi
+              else
+                # the page's own base is unreadable: upload rather than skip
+                lane=surface
+              fi
             fi
           fi
-          echo "lane: $lane"
+          echo "lane: $lane (engine base ${hostBase:-none}, page base ${pageBase:-none})"
           if [ "$lane" = docs ]; then
             echo "documents only — the host is untouched"; exit 0
           fi
-          if [ "$lane" = surface ] && [ -n "$BASE" ] && [ -n "$BOT_KEY" ]; then
+          # the pre-deploy reading, where there is one, is what both
+          # verifications compare against (F1's booted commit, F5's store
+          # and counts)
+          VERIFY_BEFORE=""
+          if [ -f before.json ]; then VERIFY_BEFORE="--before=before.json"; fi
+          if [ "$lane" = surface ] && [ -n "$BASE" ] && [ -n "$ADMIN_KEY" ]; then
             # the served set: the page files at the top of design/, and the
             # document's face under design/fonts/ with its licence (Q1402),
             # as routes-surface.ts's asset rows and surface.ts's SURFACE_NAME allow
             tar --format=ustar -czf surface.tgz $(ls design/*.html design/*.js design/*.css design/*.svg design/*.png design/*.woff design/*.woff2 design/*.txt design/fonts/*.woff2 design/fonts/OFL.txt 2>/dev/null)
             if curl -fsS -X POST "$BASE/api/admin/surface?sha=$GITHUB_SHA" \
-                 -H "authorization: Bearer $BOT_KEY" -H 'content-type: application/gzip' \
+                 -H "authorization: Bearer $ADMIN_KEY" -H 'content-type: application/gzip' \
                  --data-binary @surface.tgz -o surface.json; then
               echo "surface reloaded: $(node -e 'console.log(JSON.parse(require("fs").readFileSync("surface.json","utf8")).files.length)') files"
               live=$(curl -s -D - -o /dev/null "$BASE/" | tr -d '\r' | awk 'tolower($1)=="x-build:"{print $2}')
               if [ "$live" != "$GITHUB_SHA" ]; then echo "x-build reads ${live:-none}, not $GITHUB_SHA"; exit 1; fi
-              node scripts/verify-deploy.mjs "$BASE"
+              # `--booted=same`: the page moved, the *server* must not have
+              # (issue #8, F1) — an upload that restarted the host, or a
+              # deploy that landed under it, is not the lane we took.
+              # `--store=pg`: docs.vote has served from Postgres since
+              # 2026-08-20 (docs/OPERATING.md §7), and a host that came up
+              # on `file` would pass every other check here while serving
+              # an empty disk (issue #8, F5)
+              node scripts/verify-deploy.mjs "$BASE" $VERIFY_BEFORE --booted=same --store=pg
               exit $?
             else
               echo "the host did not take the surface — falling back to a full deploy"
@@ -143,17 +300,55 @@ jobs:
           # pinned to the old one by keep-alive would go on writing to a log
           # the new one has loaded. Paused, the old instance persists
           # nothing and every page shows the modal until the new one
-          # answers. Needs the DRAFT_BOT_KEY secret (the same key as on the
+          # answers. Needs the DRAFT_ADMIN_KEY secret (the same key as on the
           # host); without it the deploy still runs, unpaused, and says so.
-          if [ -n "$BASE" ] && [ -n "$BOT_KEY" ]; then
-            curl -fsS -X POST "$BASE/api/admin/pause" -H "authorization: Bearer $BOT_KEY" \
-              -H 'content-type: application/json' -d '{}' -o /dev/null \
-              && echo "live host paused" || echo "the live host did not accept the pause — deploying anyway"
+          #
+          # **And a pause this step made is this step's to lift** (issue #8,
+          # F4). PAUSED goes into the job's environment, and the step below
+          # this one resumes on any failure from here on — a deploy that
+          # never lands used to leave the room paused until the host's own
+          # fifteen-minute lift, with the job long since red and nobody
+          # watching.
+          if [ -n "$BASE" ] && [ -n "$ADMIN_KEY" ]; then
+            if curl -fsS -X POST "$BASE/api/admin/pause" -H "authorization: Bearer $ADMIN_KEY" \
+                 -H 'content-type: application/json' -d '{}' -o /dev/null; then
+              echo "PAUSED=1" >> "$GITHUB_ENV"
+              # the poll's own budget, measured from the pause rather than
+              # counted in attempts: PauseState.MAX_MS is fifteen minutes
+              # (packages/server/src/write-path.ts), and the old poll ran
+              # 100 × 15 s = twenty-five, so it spent its last ten minutes
+              # watching an instance that had quietly lifted its own pause
+              # and gone back to writing. Thirteen minutes, on the clock
+              # rather than in attempts, so a slow curl cannot push the
+              # total past the lift — the deadline is read before the sleep,
+              # so the loop can overrun it by one attempt, and the slack
+              # covers that with minutes to spare. The full lane has landed
+              # at three to four and a half.
+              waitSeconds=$(( 13 * 60 ))
+              echo "live host paused"
+            else
+              echo "the live host did not accept the pause — deploying anyway"
+            fi
           else
-            echo "no DRAFT_BOT_KEY secret or DRAFT_BASE_URL — deploying without a pause (Q1345)"
+            echo "no DRAFT_ADMIN_KEY secret or DRAFT_BASE_URL — deploying without a pause (Q1345)"
           fi
-          curl -fsS -X POST "$HOOK" -o /dev/null
-          echo "deploy triggered; waiting for $GITHUB_SHA to be the build that answers"
+          # unpaused, nothing is waiting on us and the old budget stands
+          if [ -z "$waitSeconds" ]; then waitSeconds=$(( 25 * 60 )); fi
+          # **The hook is told which commit** (issue #8, F3). Bare, it
+          # deploys whatever `main`'s head is when Render gets to it, so a
+          # push landing during the build deployed a commit this run never
+          # tested — and the poll below, which waits for the pushed SHA,
+          # then fails on a deploy that worked. Render's deploy hook takes a
+          # `ref` query parameter, "either a full or short commit SHA"
+          # (render.com/docs/deploys, *Deploying a specific commit*); the
+          # hook URL already carries its own `?key=`, and the case below
+          # holds if it ever does not.
+          case "$HOOK" in
+            *\?*) HOOK_REF="$HOOK&ref=$GITHUB_SHA" ;;
+            *) HOOK_REF="$HOOK?ref=$GITHUB_SHA" ;;
+          esac
+          curl -fsS -X POST "$HOOK_REF" -o /dev/null
+          echo "deploy triggered for $GITHUB_SHA; waiting for it to be the build that answers"
           if [ -z "$BASE" ]; then
             echo "no DRAFT_BASE_URL variable — deployed, not verified"; exit 0
           fi
@@ -161,19 +356,66 @@ jobs:
           # old instance keeps answering 200 for the minutes a deploy takes
           # to build, so "it is up" would verify the build we just replaced.
           # The service states its commit in x-build (see config.buildSha).
-          for i in $(seq 1 100); do
+          #
+          # **Do not re-send the pause while waiting** (issue #8, F4): once
+          # traffic has moved it would pause the *new* instance, which is
+          # the room, not the deploy.
+          #
+          # **One sighting is not a cutover** (2026-09-22, the convention
+          # batch's deploy, a9ca8e8): attempt 5 read the new build on `/`,
+          # and five seconds later verify-deploy's /healthz was answered by
+          # the old instance still draining behind Render's balancer —
+          # `booted 5929a6e, expected a9ca8e8` on a deploy that had landed.
+          # The two instances overlap for a while and the balancer is not
+          # atomic across requests, so the new build has to answer on both
+          # `/` (x-build) and `/healthz` (booted) three attempts running
+          # before the verifier is trusted to meet only the new one.
+          deadline=$(( $(date +%s) + waitSeconds ))
+          i=0; streak=0
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            i=$(( i + 1 ))
             sleep 15
-            live=$(curl -s -D - -o /dev/null "$BASE/" | tr -d '\r' \
+            live=$(curl -s -m 10 -D - -o /dev/null "$BASE/" | tr -d '\r' \
               | awk 'tolower($1)=="x-build:"{print $2}')
-            echo "  attempt $i: ${live:-none}"
-            if [ "$live" = "$GITHUB_SHA" ]; then deployed=1; break; fi
+            booted=$(curl -s -m 10 "$BASE/healthz" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(JSON.parse(s).booted||"")}catch{console.log("")}})')
+            if [ "$live" = "$GITHUB_SHA" ] && [ "$booted" = "$GITHUB_SHA" ]; then streak=$(( streak + 1 )); else streak=0; fi
+            echo "  attempt $i: x-build ${live:-none} · booted ${booted:-none} · streak $streak"
+            if [ "$streak" -ge 3 ]; then deployed=1; break; fi
           done
           if [ -z "$deployed" ]; then
-            echo "the deployed build never became $GITHUB_SHA — refusing to"
-            echo "report a verification of bytes we did not deploy"
+            echo "the deployed build never became $GITHUB_SHA in ${waitSeconds}s — refusing"
+            echo "to report a verification of bytes we did not deploy"
             exit 1
           fi
-          node scripts/verify-deploy.mjs "$BASE"
+          # and x-build is not enough on its own (issue #8, F1): a surface
+          # upload sets it too, so the engine is asserted by name — and with
+          # it the store and the counts against the pre-deploy reading
+          # (issue #8, F5), since a restart is where a store is lost and a
+          # document is quarantined
+          node scripts/verify-deploy.mjs "$BASE" $VERIFY_BEFORE --booted="$GITHUB_SHA" --store=pg
+
+      # **A pause this job made, this job lifts** (issue #8, F4). Everything
+      # above can fail after the pause has landed — the hook refused, the
+      # build never becoming this commit, the verification red — and the
+      # step that failed does not come back to tidy up. Until now the room
+      # then waited on the host's own fifteen-minute lift with a red job
+      # beside it, which is a room paused by nobody for as long as the
+      # deploy's own budget. PAUSED is written to the environment only by
+      # the pause that actually answered, so this runs exactly when there is
+      # something to lift. `resume` is idempotent (routes-admin.ts) and the
+      # new instance boots unpaused, so lifting a pause the deploy already
+      # ended costs nothing; and this step never fails the job, which is
+      # already red — it reports, so the log says whether the room is free.
+      - name: lift the pause if the deploy did not
+        if: failure() && env.PAUSED == '1'
+        env:
+          BASE: ${{ vars.DRAFT_BASE_URL }}
+          ADMIN_KEY: ${{ secrets.DRAFT_ADMIN_KEY }}
+        run: |
+          curl -fsS -X POST "$BASE/api/admin/resume" -H "authorization: Bearer $ADMIN_KEY" \
+            -H 'content-type: application/json' -d '{}' -o /dev/null \
+            && echo "the pause is lifted — the live host is writing again" \
+            || echo "the resume was refused: lift it by hand (docs/OPERATING.md §3) or wait out PauseState.MAX_MS"
 
   # The design probes, headless (Q504(b), 2026-08-21). A probe nobody runs
   # rots silently — the setup reference had drifted 200 diffs from HEAD
@@ -203,6 +445,7 @@ jobs:
   # change needs no re-freeze — only a page change does (Q914).
   probe:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -223,26 +466,24 @@ jobs:
       - if: steps.browser.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
       - run: npm run probe -- --strict
-      # the copy golden (entry 128): every card's strings on every walk, keyed
-      # by walk and card key, against design/tools/card-copy.golden.json. A
-      # STYLE.md pass is a snapshot and nothing pinned a card's words between
-      # passes, so the next change silently undid the last audit; now a copy
-      # change is red here until `npm run copy-freeze`, and that freeze's diff
-      # is what the next pass reads. **Expect red after an intentional copy
-      # change** — that is the point, not a defect. ~3 min of headless walking,
-      # which is why it is in this job and not in `ci`, and `if: always()` for
-      # the same reason as its neighbours (Q913).
-      - run: npm run copy-check -- --walk
-        if: always()
+      # (`copy-check --walk` stood here until plan-ci-speed.md Stage 2; it is
+      # the `copy-walk` job below now, on its own runner.)
+      #
       # which cards the setup-probe actually opens (Q914 (9), Q915). --strict
       # cannot do this job: a dead step needs a *miss*, and a card nobody
       # tries to open produces none — a grant blocks nothing in ORDER, so the
       # founding runs straight past an unacknowledged one. The hole is
       # structural, and it swallowed three cards in five days: 🖼️ (Q732, an
       # emoji face at 7px for four days with every check green), 🪪 (Q910,
-      # which took thirteen steps down with it) and 🛡️ (Q914). Coverage is
-      # 24 of 24 now, so a card added to ORDER without a probe step reddens
-      # the build here rather than surfacing weeks later as a bug.
+      # which took thirteen steps down with it) and 🛡️ (Q914). The rule it
+      # holds is **every card in ORDER is opened or exempt with a reason**,
+      # which today reads *23 cards opened … in ORDER (23)*: 22 opened and
+      # one exempt, 📝, which is a card with two modes and never a
+      # `data-setupcard` (backlog 204, K31). So a card added to ORDER
+      # without a probe step reddens the build here rather than surfacing
+      # weeks later as a bug. The count is the tool's own output, not a
+      # number kept by hand here — it read *24 of 24* until 2026-09-17
+      # (issue #17, F1), which is neither the cards nor the coverage.
       - run: npm run probe-coverage
         if: always()
       # the contents rail: every click lands clear of the topbar (M17), and since
@@ -264,6 +505,74 @@ jobs:
       # about the first three and nothing after the fourth.
       - run: npm run picture-walk
         if: always()
+      # **The rail follows the text as each face lands** (2026-09-21, the
+      # session-probe's 43 rail differences read): the page re-laid its rail
+      # only when the last pending face was in, so with Bold a second behind
+      # Regular every entry stood a line off its clause for that second. Holds
+      # one face back and times how long the rail stays stale.
+      - run: npm run rail-font-walk
+        if: always()
+      # **The take-back** (Q1318, Ed 2026-09-11: *I should be able to choose
+      # a value to take it back with ✒️, but I wasn't able to do that here*):
+      # hand a setting to the membership, then reclaim it with the pen and a
+      # value in one act — the card's radios before the press, the module's
+      # holder after it, the clause no longer waiting, the founder's own
+      # answer card gone from the rail, and 🍾 beginning with nothing left
+      # delegated. Two shapes, because the defect had three causes and they
+      # do not show on one card: 🤝, whose value and holder are separate
+      # fields and is Ed's own case, and 🌍, where they are the same field.
+      #
+      # They are here rather than in `walks` because `founding-walk.mjs`
+      # **starts its own server** — it serves `design/` itself and takes no
+      # base URL, like `founder-answers` beside it, so it needs nothing this
+      # job has not already got. About 27 s each.
+      #
+      # Like `powers-walk` in the job below, these ran in **no CI job**
+      # until 2026-09-17 (issue #17, F2) while CLAUDE.md named them as
+      # Q1318's guard — *red on the pre-fix page* is worth nothing if
+      # nothing runs the page.
+      - run: node scripts/founding-walk.mjs --takeback=applications
+        if: always()
+      - run: node scripts/founding-walk.mjs --takeback=chamber
+        if: always()
+
+  # The copy golden (entry 128): every card's strings on every walk, keyed by
+  # walk and card key, against design/tools/card-copy.golden.json. A STYLE.md
+  # pass is a snapshot and nothing pinned a card's words between passes, so
+  # the next change silently undid the last audit; now a copy change is red
+  # here until `npm run copy-freeze`, and that freeze's diff is what the next
+  # pass reads. **Expect red after an intentional copy change** — that is the
+  # point, not a defect. ~3 min of headless walking, which is why it is not
+  # in `ci`; the static half (`copy-check` with no flag) is.
+  #
+  # **Its own job since plan-ci-speed.md Stage 2**: it was the longest step
+  # left in `probe` once toc-travel stopped waiting on a literal, and alone
+  # it keeps `probe` under five minutes. Same setup as `probe`, same
+  # standing: in parallel with `ci`, gating nothing, a red X on the commit.
+  copy-walk:
+    name: probe (copy-check --walk)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: playwright version, for the browser cache key
+        id: pw
+        run: echo "v=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        id: browser
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ steps.pw.outputs.v }}
+      - if: steps.browser.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+      - if: steps.browser.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+      - run: npm run copy-check -- --walk
 
   # **Last green on `main`: 2026-09-16** (run 143, `fba9d3e` — every step, the
   # seat matrix at both hats included). **First green: 2026-09-07** (run 104,
@@ -313,8 +622,28 @@ jobs:
   # job with `needs: [ci, probe, walks]`, which is a separate decision and
   # wants the walks' flake rate measured first; per push, ungated, is that
   # measurement.
+  #
+  # **In parallel since plan-ci-speed.md Stage 1** (Ed, 2026-09-22 evening:
+  # *our current test/walk/guard regime is very slow*). Twenty steps in
+  # series on one runner took 43 minutes and decided every push; the job is
+  # now a matrix over five groups, each on its own runner with its own dev
+  # server, and `scripts/ci-walks.sh <group>` holds which walk runs where,
+  # why each is there, and how each server is booted — the per-walk notes
+  # that stood here moved into it beside the lines they describe. Q917 (a)'s
+  # `if: always()` guarantee is kept by the script (every walk runs, each
+  # prints a verdict line, the group is red at the end if any walk was), and
+  # `fail-fast: false` keeps it across groups: one red group cancels none of
+  # the others. The seat matrix runs one hat per group, and its exit 3 still
+  # reddens its group (Q1354).
   walks:
+    name: walks (${{ matrix.group }})
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        # repros since Stage 4: the guards CLAUDE.md named and no job ran
+        group: [seat-member, seat-clerk, journey, motions, doors, repros]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -337,157 +666,19 @@ jobs:
         run: npx playwright install --with-deps chromium
       - if: steps.browser.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
-
-      # Five variables and one absence. DRAFT_DATA_DIR keeps the log out of
-      # packages/server/data; DRAFT_BASE_URL must name 127.0.0.1 rather than
-      # the default localhost, because the magic links the outbox hands back
-      # are built from cfg.baseUrl and the walks attach at 127.0.0.1 — a link
-      # on the other origin lands the page on a different origin from the one
-      # the walk started at, which is the cookie trap applicants-walk's
-      # DOCBASE comment describes. DRAFT_BUILD_SHA names the commit in
-      # x-build; nothing reads it today, but a walk that refuses a server
-      # whose x-build is not the tree's HEAD is coming, and a job that did not
-      # set it would go red the day it lands. And **no RESEND_API_KEY**: its
-      # absence is what selects the dev outbox and makes devMail true, and the
-      # ladder bar's ⏭ exists only then.
-      - name: boot a dev server for the walks, and reserve slug-walk's address
-        run: |
-          export PORT=8161
-          export DRAFT_DATA_DIR="$RUNNER_TEMP/walk-data"
-          export DRAFT_BASE_URL="http://127.0.0.1:$PORT"
-          export DRAFT_BUILD_SHA="$GITHUB_SHA"
-          npm run server > "$RUNNER_TEMP/walk-server.log" 2>&1 &
-          echo "WALK_PID=$!" >> "$GITHUB_ENV"
-          echo "WALK_BASE=$DRAFT_BASE_URL" >> "$GITHUB_ENV"
-          # poll rather than sleep: a fixed wait is either slow or flaky
-          for i in $(seq 1 60); do
-            if curl -fsS -o /dev/null "$DRAFT_BASE_URL/healthz"; then up=1; break; fi
-            sleep 0.5
-          done
-          if [ -z "$up" ]; then
-            echo "the server never answered /healthz — its log follows"
-            cat "$RUNNER_TEMP/walk-server.log"
-            exit 1
-          fi
-          # slug-walk asserts what happens when an address is *taken*, so one
-          # has to be taken first — the curl its own header documents. -fsS,
-          # so a refusal fails this step and names itself rather than
-          # surfacing later as a walk that cannot find its collision.
-          curl -fsS -o /dev/null -X POST "$DRAFT_BASE_URL/api/docs" \
-            -H 'content-type: application/json' \
-            -d '{"title":"Test Charter","slug":"test-charter","email":"a@b.com"}'
-
-      # room-walk gets a server of its own, with the adoption cooldown at 0:
-      # phase A adopts twice in one document, and the second adoption cannot
-      # wait a real cooldown out inside a CI walk. The shared server above
-      # keeps the default, because the ladder's seeded history was built
-      # under it and a different cooldown would re-time its whole past.
-      - name: boot a second dev server for room-walk, cooldown 0
-        run: |
-          export PORT=8162
-          export DRAFT_DATA_DIR="$RUNNER_TEMP/room-walk-data"
-          export DRAFT_BASE_URL="http://127.0.0.1:$PORT"
-          export DRAFT_BUILD_SHA="$GITHUB_SHA"
-          export DRAFT_COOLDOWN_MS=0
-          npm run server > "$RUNNER_TEMP/room-server.log" 2>&1 &
-          echo "ROOM_PID=$!" >> "$GITHUB_ENV"
-          echo "ROOM_BASE=$DRAFT_BASE_URL" >> "$GITHUB_ENV"
-          for i in $(seq 1 60); do
-            if curl -fsS -o /dev/null "$DRAFT_BASE_URL/healthz"; then up=1; break; fi
-            sleep 0.5
-          done
-          if [ -z "$up" ]; then
-            echo "the room-walk server never answered /healthz — its log follows"
-            cat "$RUNNER_TEMP/room-server.log"
-            exit 1
-          fi
-
-      # `if: always()` for the same reason as probe's neighbours (Q913): one
-      # walk's failure must not hide the next one's. They share the one
-      # server, which is fine because each founds its own document under its
-      # own title, and each takes the base URL as an argument — the form all
-      # four read first, ahead of any fallback port of their own.
-      - run: npm run journey -- "$WALK_BASE"
-        if: always()
-      # the founder answering their own delegated question, alone in the
-      # room, and 🍾 refusing to begin on one voice (R-015, R-045) — the one
-      # mood no other walk drives. Self-starting: it serves design/ itself
-      # and takes no base URL (Q1177, Ed 2026-09-14: in CI, beside journey)
-      - run: npm run founder-answers
-        if: always()
-      - run: npm run applicants-walk -- "$WALK_BASE"
-        if: always()
-      # 🪪's other two prices: the walk's three assertions are one per price
-      # (proposal above, then the 🏛️ assembly hold, then the founder's pen)
-      - run: npm run applicants-walk -- "$WALK_BASE" --price=assembly
-        if: always()
-      - run: npm run applicants-walk -- "$WALK_BASE" --price=pen
-        if: always()
-      # a member's page across 🍾 when every power is laid down (Q1364, the
-      # lab-2026 room): no phantom answer cards, the resolved questions' news
-      # servable, ✉️ composing at 🪪's price — on the polled page and on a
-      # fresh load
-      - run: npm run after-begin-walk -- "$WALK_BASE"
-      # a member's invitation motion on the surface (Q1370): the ✏️ commit at
-      # 🪪 proposal, the mover's ✏️ entry, the *proposed* invitee, the twin
-      # refusal naming no id
-      - run: npm run invite-walk -- "$WALK_BASE"
-        if: always()
-      # a member arrives while the founder has left 🎩 unanswered and delegated ⏱️ 👥
-      # (Q1365, Q1372): 🏛️ served at arrival on the Founded line, no question until
-      # its OK, then the questions in order whatever the founder has not reached
-      - run: npm run member-questions-walk -- "$WALK_BASE"
-        if: always()
-      - run: npm run slug-walk -- "$WALK_BASE" test-charter
-        if: always()
-      - run: npm run ladder -- "$WALK_BASE"
-        if: always()
-      # the whole loop: propose → every member served → vote → adopt, twice,
-      # then the 🛡️ park-and-crown path on a ladder document (Q1178)
-      - run: npm run room-walk -- "$ROOM_BASE"
-        if: always()
-      # **The seat matrix joins the walks** (Q1205, Ed 2026-09-14: *fix 1282,
-      # then the harness joins CI*). Seven seats × three epochs, asserting
-      # SURFACE §2's Audience column per seat per step — the only guard over
-      # that column anywhere, and the instrument that found Q1280–Q1282. Both
-      # hats, because green means both: the clerk document stops at 🍾 (Q920)
-      # and its rows are asserted up to there. It is the long one — about ten
-      # minutes, of which the `lapsed` seat's real one-minute lapse is a
-      # couple — so it stands last of the walks.
-      #
-      # **Exit 3 reddens the job** (Q1354, Ed 2026-09-14: *a cell nobody has
-      # written a rule for reddens the job until it is read*). A §2 cell the
-      # harness cannot read is *no rule*, and since Q1356 so is a row that
-      # passed over an empty audience — red on purpose and still distinct
-      # from a failure in the code, so a reader can tell the two apart, but no
-      # longer forgiven here. Until this date the step translated 3 into 0,
-      # because three rows stood unread (E22 on both hats, E11 on the member
-      # hat) and no run could reach 0; Ed read all three the same day (Q1355,
-      # Q1356), the harness's green line is 0 from then on, and a 3 means
-      # somebody must read a cell — never invent a predicate in the script.
-      # So the step fails on anything but 0: a finding, a page error, a
-      # refused command, a seat that could not be stood, a server that is not
-      # this tree, or an unread cell. The payload goes to the artifact below
-      # rather than into the tree, where it is gitignored by design (*a run is
-      # snapshots, not an artifact*), so a red run can be read seat by seat.
-      - name: the seat matrix, both hats
-        if: always()
-        run: npm run seat-matrix -- "$WALK_BASE" --hat=both --out="$RUNNER_TEMP/seat-matrix.json"
+      - name: the ${{ matrix.group }} walks
+        run: bash scripts/ci-walks.sh "${{ matrix.group }}"
 
       # The server's side of the story, beside the walk's: a red walk with
-      # only the walk's stdout is the one-hour hunt Q911 describes.
-      - name: stop the server
-        if: always()
-        run: |
-          kill -TERM "$WALK_PID" || true
-          kill -TERM "$ROOM_PID" || true
-          pkill -f 'src/main.ts' || true
+      # only the walk's stdout is the one-hour hunt Q911 describes. One
+      # artifact per group, named for it; the seat groups carry their
+      # matrix payload, gitignored in the tree by design (*a run is
+      # snapshots, not an artifact*), so a red run can be read seat by seat.
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: walk-server-log
+          name: walks-${{ matrix.group }}
           path: |
-            ${{ runner.temp }}/walk-server.log
-            ${{ runner.temp }}/room-server.log
-            ${{ runner.temp }}/seat-matrix.json
+            ${{ runner.temp }}/walk-server-*.log
+            ${{ runner.temp }}/seat-matrix-*.json
           if-no-files-found: warn

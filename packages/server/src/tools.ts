@@ -39,10 +39,11 @@
  *                                        gone (Q1322). The id is typed twice.
  *                                        Tokens, stashes and queued mail are
  *                                        keyed by other things and stay.
- *   errors <dataDir> [n]                 the last n (50) lines of the error
- *                                        log, newest first (Q1330); a file in
- *                                        the data directory under either
- *                                        store, so a Postgres URL is refused.
+ *   errors <store> [n]                   the last n (50) lines of the error
+ *                                        log, newest first (Q1330):
+ *                                        `errors.jsonl` in a data directory,
+ *                                        the `errors` table under a
+ *                                        Postgres URL (plan stage 5a).
  *
  * `<store>` is a data directory, or a `postgres://` URL.
  *
@@ -87,7 +88,6 @@ import type { MaintainablePersistence } from './persistence.js';
 import { PgPersistence } from './pg-persistence.js';
 import { copyStore, verifyStores } from './copy-store.js';
 import type { CopyReport } from './copy-store.js';
-import { errorTail } from './error-log.js';
 
 /** The one flag the wipe accepts, spelled out in full so it cannot be typed by habit. */
 export const WIPE_FLAG = '--i-understand-this-deletes-every-document';
@@ -104,12 +104,12 @@ const USAGE = `usage:
   draft-tools erase  <store> <docId> <personId>
   draft-tools wipe   <store> ${WIPE_FLAG}=<name>
   draft-tools delete <store> <docId> ${DELETE_FLAG}=<docId>
-  draft-tools errors <dataDir> [n]
+  draft-tools errors <store> [n]
     <store> is a data directory or a postgres:// URL; <name> is the data
     directory's basename or the database's name, typed in full; <docId> is
     the document's id (d-…), typed twice; errors prints the last n (50)
-    lines of the error log (Q1330), newest first — a file in the data
-    directory under either store`;
+    lines of the error log (Q1330), newest first — from whichever store it
+    is given`;
 
 const say = (line: string): void => console.log(line);
 
@@ -218,26 +218,28 @@ export async function main(argv: readonly string[]): Promise<number> {
   }
   if (verb === 'errors') {
     // **The error log's tail** (Q1330), for a host with no dev route: one
-    // line per event, newest first, the file's own fields. A file under
-    // either store, so a Postgres URL is the wrong address and says so.
-    if (isPgUrl(a)) {
-      console.error('errors: the error log is a file in the data directory, under either store ' +
-        '(docs/OPERATING.md §11) — pass the directory, not the database');
-      return 2;
-    }
-    const dir = resolve(a);
-    if (!existsSync(dir)) { console.error(`no data directory at ${dir}`); return 2; }
-    const n = b0 === undefined ? 50 : Number(b0);
-    const rows = errorTail(dir, Number.isFinite(n) && n > 0 ? n : 50) as Array<Record<string, unknown>>;
-    if (rows.length === 0) { say(`${dir}: no errors logged`); return 0; }
-    say(`${dir}: the last ${rows.length} of the error log, newest first`);
-    for (const r of rows) {
-      const when = typeof r.at === 'number' ? new Date(r.at).toISOString() : '—';
-      const where = [r.slug ?? r.doc, r.seat].filter((x) => x !== undefined && x !== null).join(' · ');
-      say(`  ${when}  ${String(r.kind ?? '?')} ${String(r.status ?? '')}  ${String(r.method ?? '')} ${String(r.path ?? '')}` +
-        `${where ? '  [' + where + ']' : ''}${r.cmd ? '  ' + String(r.cmd) + ' ' + String(r.args ?? '') : ''}` +
-        `\n      ${String(r.reason ?? '')}`);
-    }
+    // line per event, newest first, the line's own fields. **Either store
+    // since plan stage 5a** — `errors.jsonl` in a data directory, the
+    // `errors` table under a Postgres URL — because on docs.vote the data
+    // dir is the ephemeral disk and the file went with every deploy.
+    const store = await openStore(a);
+    try {
+      const n = b0 === undefined ? 50 : Number(b0);
+      const rows = await store.p.readErrors(Number.isFinite(n) && n > 0 ? n : 50) as
+        unknown as Array<Record<string, unknown>>;
+      if (rows.length === 0) { say(`${store.shown}: no errors logged`); return 0; }
+      say(`${store.shown}: the last ${rows.length} of the error log, newest first`);
+      for (const r of rows) {
+        const when = typeof r.at === 'number' ? new Date(r.at).toISOString() : '—';
+        const where = [r.slug ?? r.doc, r.seat].filter((x) => x !== undefined && x !== null).join(' · ');
+        // a page error names its file and line where a refusal names its command
+        const what = r.cmd ? '  ' + String(r.cmd) + ' ' + String(r.args ?? '')
+          : r.source ? '  ' + String(r.source) + ':' + String(r.line ?? '?') : '';
+        say(`  ${when}  ${String(r.kind ?? '?')} ${String(r.status ?? '')}  ${String(r.method ?? '')} ${String(r.path ?? '')}` +
+          `${where ? '  [' + where + ']' : ''}${what}` +
+          `\n      ${String(r.reason ?? '')}`);
+      }
+    } finally { await store.close(); }
     return 0;
   }
   if (b0 === undefined) {

@@ -133,7 +133,11 @@ import { CATALOGUE, type SettingId } from '../src/catalogue.js';
 import { DOORS, holderOf, type PowerKey } from '../src/types.js';
 import { DEFAULT_TUNING, toEngineConstitution } from '../src/adapter.js';
 import { view } from '../src/view.js';
+import { LAPSE_MIN_MS } from '../src/values.js';
 import { buildConstituted } from './helpers.js';
+
+/** The shortest spell a room can state (Q1453): five minutes. */
+const SPELL = LAPSE_MIN_MS;
 
 const MANAGED: SettingId[] = CATALOGUE
   .filter((e) => e.kind !== 'personal' && e.id !== 'startingText')
@@ -163,7 +167,7 @@ function penEverything(s: ConstitutionSession, t: number, skip: SettingId[] = []
     ending: { endsAtMs: 1_000_000 },
     bar: { pct: 60 },
     pace: { shape: 'fixed' },
-    quorum: { form: 'share', n: 60 },
+    quorum: { form: 'share', n: 40 },
     authorship: { rung: 'sealed' },
     judgments: { rung: 'after' },
     chamber: { rung: 'public' },
@@ -300,20 +304,21 @@ describe('delegated: the blind question opens and the room\'s answer binds', () 
     s.answer(1, bo, 'chamber', { rung: 'public' });
     expect(s.settingState('chamber').collecting).toBe(true);
     expect(s.readiness().holds).toContainEqual({ setting: 'chamber', why: 'invitation-open' });
-    // ---- finding 5 ----
-    // §9.6a's own remedy, quoted in `maybeResolve` (session.ts:1387): *an
-    // invitation that will never be opened can simply be withdrawn*. It does
-    // not release the question. `uninvite` calls `afterRosterChange` — and so
-    // `maybeResolveAll` — only `if (wasInE)`, and an invitee is in E only once
+    // ---- finding 5, ruled and cured (Q1482) ----
+    // §9.6a's own remedy, quoted in `maybeResolve`: *an invitation that will
+    // never be opened can simply be withdrawn*. It used not to release the
+    // question — `uninvite` called `afterRosterChange`, and so
+    // `maybeResolveAll`, only `if (wasInE)`, and an invitee is in E only once
     // they have arrived (`populations.ts`), so withdrawing the one thing that
-    // was blocking the resolution runs no resolution check at all.
+    // was blocking the resolution ran no resolution check at all and the
+    // founder was left reading *n of n answered* under a 🍾 that refused. It
+    // resolves on the withdrawal now: the gate that moved is the invitations
+    // in flight, and it is a gate whether or not E moved with it.
     s.uninvite(1, cy);
-    expect(s.settingState('chamber').collecting).toBe(true);
-    expect(s.settingState('chamber').settledBy).toBeNull();
-    expect(s.readiness().holds).toContainEqual({ setting: 'chamber', why: 'collecting' });
-    // any later event nudges it through — here a member re-stating their answer
-    s.answer(1, bo, 'chamber', { rung: 'public' });
+    expect(s.settingState('chamber').collecting).toBe(false);
     expect(s.settingState('chamber').settledBy).toBe('ceremony');
+    expect(s.settingState('chamber').value).toEqual({ rung: 'public' });
+    expect(s.readiness().holds.some((h) => h.setting === 'chamber')).toBe(false);
   });
 
   it('the founder cannot answer for the room — they must reclaim, and that clears the answers', () => {
@@ -381,7 +386,7 @@ describe('delegated: the blind question opens and the room\'s answer binds', () 
     // one-way (X10): the road back is the room's, never the founder's
     expect(thrown(() => s.reclaim(3, 'lapse')))
       .toBe('reclaiming is pre-start only — after the start it is a motion (§9.6a)');
-    expect(thrown(() => s.setSetting(3, 'lapse', { afterMs: 60_000 })))
+    expect(thrown(() => s.setSetting(3, 'lapse', { afterMs: SPELL })))
       .toBe("'lapse' is the members' — not the convenor's to set (§9.7)");
     s.delegate(3, 'lapse'); // idempotent: already theirs
     expect(s.settingState('lapse').holder).toBe('members');
@@ -453,8 +458,8 @@ describe('the pen and the shield mean what §9.7\'s table says (entry 34, built)
   });
 
   it('a crown that has lapsed grants its own assent — nothing changes hands (§9.7 rule 6)', () => {
-    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 60_000 } });
-    const t = 60_100;
+    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: SPELL } });
+    const t = SPELL + 100;
     s.tick(t); // everybody goes quiet past the rule, the founder included
     expect(s.crowned()).toBe(true); // the powers are still theirs…
     s.memberReturn(t, bo);          // …the members log back in, the founder does not
@@ -637,7 +642,7 @@ describe('relinquishing: revisable before 🍾, one-way after it (R-048, X10)', 
 describe('what the room is told when the holder moves', () => {
   it('a constitutional set by the pen is owed to every arrived member but the founder', () => {
     const { s, bo } = buildConstituted();
-    s.setSetting(3, 'lapse', { afterMs: 60_000 });
+    s.setSetting(3, 'lapse', { afterMs: SPELL });
     expect(s.memberRecords().get(bo)!.okOwed.has('lapse')).toBe(true);
     expect(s.memberRecords().get('ada')!.okOwed.has('lapse')).toBe(false);
   });
@@ -746,7 +751,7 @@ describe('what the room is told when the holder moves', () => {
 
   it('the OK clears the batch for one member, is silent on one not owed, and leaves `okOwed` alone', () => {
     const { s, bo, cy } = buildConstituted();
-    s.setSetting(3, 'lapse', { afterMs: 60_000 });   // a value-news OK to guard
+    s.setSetting(3, 'lapse', { afterMs: SPELL });   // a value-news OK to guard
     s.relinquish(3, 'removal', 'assent');
     const batch = [...s.memberRecords().get(bo)!.releasesOwed].at(-1)!;
     const owedBefore = new Set(s.memberRecords().get(bo)!.okOwed);

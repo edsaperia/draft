@@ -8,9 +8,12 @@
  */
 
 import {
-  ConstitutionSession, view, constitutionBlock,
+  ConstitutionSession, view, constitutionBlock, LAPSE_MIN_MS,
 } from '../../constitution/src/index.js';
 import { say, check, eq, finish } from './evidence-log.js';
+
+/** The shortest spell a room can state (Q1453): five minutes. */
+const SPELL = LAPSE_MIN_MS;
 
 /* ========================================================================= */
 say('\n== founding-8: a staggered ceremony with a never holdout ==============');
@@ -108,7 +111,8 @@ say('\n== founding-8: a staggered ceremony with a never holdout ==============')
 
   say('  t=9   quorum (share), the bar, lapse, machines, applications, rate');
   for (const m of everybody) {
-    s.answer(9, m, 'quorum', { form: 'share', n: m === fay ? 75 : 50 });
+    // 50 is the top of the scale since Q1439 (R-126), and 34 is under it
+    s.answer(9, m, 'quorum', { form: 'share', n: m === fay ? 50 : 34 });
     s.answer(9, m, 'bar', { pct: m === hex ? 82 : 66 });
     s.answer(9, m, 'lapse', { afterMs: m === gus ? null : 90 * 86_400_000 });
     s.answer(9, m, 'machines', { enabled: false, budget: 0 });
@@ -121,8 +125,8 @@ say('\n== founding-8: a staggered ceremony with a never holdout ==============')
     // and cap are fixed at 3 for new documents, and generosity is the drip
     s.answer(9, m, 'rate', { grant: 3, cap: 3, dripMinutes: m === bo ? 60 : 240 });
   }
-  eq(s.settingState('quorum').value, { form: 'share', n: 75 },
-    'quorum: the highest stated minimum binds (fay wanted 75%)');
+  eq(s.settingState('quorum').value, { form: 'share', n: 50 },
+    'quorum: the highest stated minimum binds (fay wanted half, the most any quorum may ask)');
   eq(s.settingState('bar').value, { pct: 82 },
     'the bar: hex needed 82, so 82 it is');
   eq(s.settingState('lapse').value, { afterMs: null },
@@ -229,17 +233,29 @@ say('\n== motions, constitutional route: unanimity over the live electorate ==='
   check(s.motionRecords().get(m)!.answers.get(bo) === 'accept',
     'and bo stands at accept from the open — proposers prefer their own proposals (v0.49)');
   s.answerMotion(4, 'ada', m, 'accept');
-  s.answerMotion(5, cy, m, 'keep');
-  check(s.motionRecords().get(m)!.status === 'running',
-    'a standing keep blocks but does not kill');
-  eq(s.settingState('bar').value, { pct: 66 }, 'until it settles, what stands stands');
-  const blind = view(s, 'ada').motions.find((x) => x.id === m)!;
-  check(blind.answeredCount === 3 && JSON.stringify(blind).indexOf('keep') < 0,
+  // read by cy, who has not answered: their own answer is the one thing a
+  // view ever carries, so the seat that shows blindness is a silent one
+  const blind = view(s, cy).motions.find((x) => x.id === m)!;
+  check(blind.answeredCount === 2 && JSON.stringify(blind).indexOf('accept') < 0,
     'while it runs, only the count shows — no split, no names');
-  s.answerMotion(6, cy, m, 'abstain');
+  eq(s.settingState('bar').value, { pct: 66 }, 'until it settles, what stands stands');
+  s.answerMotion(5, cy, m, 'abstain');
   check(s.motionRecords().get(m)!.status === 'carried',
-    'cy stands down to abstain and it carries — everyone at accept-or-abstain, zero keep');
+    'cy abstains and it carries — everyone at accept-or-abstain, zero keep');
   eq(s.settingState('bar').value, { pct: 80 }, 'the amendment applied in the fold');
+
+  // **a vote against ends it** (Ed, 2026-09-19, Q1473; R-138), where until
+  // v0.138 a standing keep blocked and did not kill, and only a withdrawal
+  // could end a blocked motion
+  const back = s.openMotion(6, bo, { kind: 'set', setting: 'bar', value: { pct: 66 } });
+  s.answerMotion(7, cy, back, 'keep');
+  check(s.motionRecords().get(back)!.status === 'held',
+    'one member keeps what stands and the proposal ends there (§9.6)');
+  eq(s.settingState('bar').value, { pct: 80 }, 'and what stands stands');
+  check(view(s, 'ada').motions.find((x) => x.id === back)!.heldBy === 'members',
+    'the record says the membership held it, and names nobody');
+  check(s.memberRecords().get(bo)!.heldOwed.has(back),
+    'and the mover is owed the news of it (SURFACE E41)');
 
   say('  an arrival mid-motion joins the electorate — no snapshot (v0.48)');
   const inv = s.openMotion(8, bo, { kind: 'invite', email: 'dee@example.org' }, 'dee kept our minutes for a year');
@@ -291,9 +307,9 @@ say('\n== the crown: reserved is assent, not silence =========================='
 /* ========================================================================= */
 say('\n== the crown, v0.49: assent ends either route; a lapsed crown assents by itself ==');
 {
-  const { s, bo, cy } = threeRoom({ lapse: { afterMs: 10_000 } });
+  const { s, bo, cy } = threeRoom({ lapse: { afterMs: SPELL } });
   const m = s.openMotion(3, bo, { kind: 'set', setting: 'quorum',
-    value: { form: 'share', n: 80 } });
+    value: { form: 'share', n: 50 } });
   say('  bo moves the reserved quorum — constitutional by kind, reservation adds assent');
   s.answerMotion(4, 'ada', m, 'accept');
   s.answerMotion(5, cy, m, 'accept');
@@ -301,21 +317,21 @@ say('\n== the crown, v0.49: assent ends either route; a lapsed crown assents by 
     'unanimity carries the change to the crown, not into the document');
   const q = view(s, 'ada').crownTasks[0]!;
   s.answerCrownQuestion(6, q.id, 'accept');
-  eq(s.settingState('quorum').value, { form: 'share', n: 80 }, 'assent applies it');
+  eq(s.settingState('quorum').value, { form: 'share', n: 50 }, 'assent applies it');
 
   say('  ada goes quiet; the members stay active; the §9.5a clock runs');
   const m2 = s.openMotion(7_000, bo, { kind: 'set', setting: 'rate',
     value: { grant: 6, cap: 10, dripMinutes: 120 } });
-  s.setIdentity(9_000, bo, { name: 'Bo' });
-  s.setIdentity(9_000, cy, { name: 'Cy' });
-  s.tick(16_500);
+  s.setIdentity(SPELL - 1_000, bo, { name: 'Bo' });
+  s.setIdentity(SPELL - 1_000, cy, { name: 'Cy' });
+  s.tick(SPELL + 6_500);
   check(s.crownLapsed, 'the crown lapsed with its member');
-  s.adjudicateOrdinaryMotion(16_800, m2, 'carried');
+  s.adjudicateOrdinaryMotion(SPELL + 6_800, m2, 'carried');
   check(s.motionRecords().get(m2)!.status === 'carried',
     'lapse is automatic abstention: assent grants itself, the change applies');
   check(s.settingState('title').holder === 'convenor',
     'and nothing changes hands — every reserved setting stays reserved');
-  s.memberReturn(17_000, 'ada');
+  s.memberReturn(SPELL + 7_000, 'ada');
   check(!s.crownLapsed, 'revival is logging in: the assent requirement resumes');
 }
 
@@ -373,7 +389,7 @@ function threeRoom(opts: { lapse?: { afterMs: number | null }; ending?: number }
   s.setSetting(2, 'rate', { grant: 4, cap: 8, dripMinutes: 240 });
   for (const [id, v] of Object.entries({
     pace: { shape: 'fixed' },
-    quorum: { form: 'share', n: 60 },
+    quorum: { form: 'share', n: 40 },
     authorship: { rung: 'sealed' },
     judgments: { rung: 'after' },
     applications: { apply: false },

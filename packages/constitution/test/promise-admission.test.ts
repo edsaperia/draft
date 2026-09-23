@@ -83,13 +83,47 @@ describe('🪪/🤝 promise 1: at assembly nobody joins without everyone’s con
     expect(rec.route).toBe('constitutional');
     expect(rec.by).toBeNull();
     expect(rec.answers.size).toBe(0);
-    // one keep blocks: two accepts out of three settle nothing
+    // two accepts settle nothing while the third member is still to answer
     s.answerMotion(6, 'ada', rec.id, 'accept');
     s.answerMotion(7, bo, rec.id, 'accept');
-    s.answerMotion(8, cy, rec.id, 'keep');
     expect(s.motionRecords().get(rec.id)!.status).toBe('running');
     expect(s.applicantRecords().get(ap)!.status).toBe('submitted');
     expect(s.E()).toBe(3);
+    void cy;
+  });
+
+  /**
+   * **And one vote against refuses the application there and then** (Ed,
+   * 2026-09-19, Q1473; R-138). Until v0.138 the keep blocked and did not
+   * kill, and an application — which has no mover, so nobody could withdraw
+   * it — sat under *Applicants* until the document closed. Ed found one in a
+   * live room. The refusal is the road a rejected application already took at
+   * the ✏️ price: `application-refused` and the applicant's own status.
+   */
+  it('a single keep refuses the application at once, and they may apply again (Q1473)', () => {
+    const { s, bo, cy } = buildConstituted({
+      applications: { apply: true }, admission: { price: 'assembly' } });
+    const ap = s.startApplication(3, 'dee@example.org');
+    s.verifyApplication(4, ap);
+    s.submitApplication(5, ap, { words: 'I bake.' });
+    const mo = s.applicantRecords().get(ap)!.motion!;
+    s.answerMotion(6, 'ada', mo, 'accept');
+    s.answerMotion(7, cy, mo, 'keep');
+    expect(s.motionRecords().get(mo)!.status).toBe('held');
+    expect(s.applicantRecords().get(ap)!.status).toBe('refused');
+    expect(s.E()).toBe(3); // nobody joined
+    // nobody is owed a card: an application has no mover (§9.6a, R-130)
+    for (const id of ['ada', bo, cy]) {
+      expect(s.memberRecords().get(id)!.heldOwed.size).toBe(0);
+    }
+    // the door is not barred: a refused application is not one underway
+    const again = s.startApplication(8, 'dee@example.org');
+    expect(again).not.toBe(ap);
+    expect(s.applicantRecords().get(again)!.status).toBe('started');
+    // and the log re-folds to the same state
+    const r = ConstitutionSession.replay([...s.logEntries()], s.people);
+    expect(r.rollingHash()).toBe(s.rollingHash());
+    expect(r.applicantRecords().get(ap)!.status).toBe('refused');
   });
 });
 
@@ -113,6 +147,44 @@ describe('🪪/🤝 promise 2: at proposal each application is its own one-candi
     for (const r of admitRaces) expect(r.members).toHaveLength(1);
     // and the applicant's own voice is suspended in the same breath (X11),
     // so a wallet-less voice is never its own mover toward the floor
+    expect(s.E()).toBe(3);
+  });
+
+  // **And so is each invitation** (issue #6, F1). The price is one price for
+  // every road in (entry 94), so at *proposal* an invitation is an ordinary
+  // motion — which in this layer means a race and nothing else: `answerMotion`
+  // refuses an ordinary motion, and `runClose` keeps only constitutional ones.
+  // `sync` raced `admit` and `remove` and walked past `invite`, so the motion
+  // had no candidate anywhere and no invitation at that price could ever
+  // carry; the twin rule then held the address against everybody who tried
+  // again. Red on the pre-fix bridge at `race` undefined.
+  it('at proposal an invitation is its own one-candidate race, and carries into an invitee', () => {
+    const { s, bo, cy } = buildConstituted({
+      admission: { price: 'proposal' }, quorum: { form: 'count', n: 2 } });
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'invite-race' });
+    const m = s.openMotion(4, bo, { kind: 'invite', email: 'dee@example.org' });
+    expect(s.motionRecords().get(m)!.route).toBe('ordinary');
+    bridge.sync(5);
+    const race = bridge.engine.races()
+      .find((r) => String(r.settingId).startsWith('invite:'))!;
+    expect(race).toBeDefined();
+    // the person, never the address (decision 1253) — one candidate, and it
+    // is raced against the membership as it stands and nothing else
+    const payload = s.motionRecords().get(m)!.payload as { kind: 'invite'; person: string };
+    expect(race.settingId).toBe(`invite:${payload.person}`);
+    expect(race.members).toHaveLength(1);
+    // the mover's own voice is the author's derived preference (§3.3), so one
+    // more judge reaches the floor of two and the motion carries
+    bridge.judge(20, cy, race.members[0]!, race.incumbentId, 'a');
+    expect(s.motionRecords().get(m)!.status).toBe('carried');
+    // …into an invitee: a member row that has not arrived, which is exactly
+    // what a direct ✉️ makes, and what the write path mails
+    const invitee = [...s.memberRecords().values()]
+      .find((r) => r.email === 'dee@example.org')!;
+    expect(invitee).toBeDefined();
+    expect(invitee.arrivedAtT).toBeNull();
+    expect(invitee.arrival).toEqual({ via: 'invitation', by: 'members' });
+    // an invitee counts toward nothing until they arrive
     expect(s.E()).toBe(3);
   });
 });

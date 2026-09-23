@@ -22,12 +22,13 @@ import { SCHEMA_VERSION, INC_PREFIX } from './types.js';
 import type { Hunk, PatchSet, Span } from './text/types.js';
 import type { Comparison, Fit, Outcome } from './ranking/types.js';
 import { applyPatch, footprint, footprintsConflict, validateHunks } from './text/patch.js';
-import { splitLines, joinLines } from './text/diff.js';
+import { checkAttestation, stripAttestation } from './text/attest.js';
+import { splitLines, joinLines, normalizeLines } from './text/diff.js';
 import { rebaseHunks } from './text/rebase.js';
 import { fitDavidson } from './ranking/davidson.js';
 import { chainHash, sha256Hex, stableStringify } from './hash.js';
 import { Routing, contextKey, pairKey, type RoutingHost } from './routing.js';
-import { Races, candidateNum, type RacesHost } from './races.js';
+import { Races, candidateNum, floorFor, type RacesHost } from './races.js';
 import { smoothstep } from './adoption-threshold.js';
 import {
   balanceAt,
@@ -36,7 +37,7 @@ import {
   credit,
   materialize,
   openLedger,
-  performanceRefund,
+  exitRefund,
   rephaseDrip,
   spend,
   type Ledger,
@@ -132,7 +133,7 @@ export interface StoredComparison {
    * answer was known in advance. So everything asking "what does the room
    * prefer, and how many voices are in?" counts it, and everything asking
    * "have we measured this enough?" — the deadlock test, the rival-pair gate,
-   * the performance a refund pays on — does not.
+   * the peak that ranks the graveyard — does not.
    */
   derived?: true;
 }
@@ -161,7 +162,36 @@ interface RosterEntry {
   /** Response-time samples within bouts, for c_p (SPEC §8.1). */
   latencies: number[];
   lastActionT: number | null;
+  /**
+   * **When they arrived, and when they last came back** (Q1439): a member's
+   * 💤 period on a candidate cannot start before they were there to be asked
+   * (§8.2), so the awaited set needs both — `participant-added` (or the open),
+   * and the latest `participant-resumed` where they have lapsed and returned.
+   */
+  arrivedT: number;
+  resumedT: number | null;
 }
+
+/**
+ * **The events that can move a race's ground** (Q1439; SPEC §4.4). A ground is
+ * the hash of the text on the contested spans, or of a setting's standing, so
+ * it changes when the text changes, when a standing is set, or when the field
+ * itself changes — a candidate joining, leaving, being rebased or being
+ * parked. `apply` records the moment each new ground first stood, and a
+ * member's period on a pair runs from it (`answerableSince`), so a ground
+ * shift restarts every period rather than abstaining the people who had
+ * already answered.
+ *
+ * A `comparison` is deliberately not here: a judgment cannot change what is
+ * racing or what the text says, and this is the hot path the moon room's
+ * measurement is about (Q1324) — one race build per judgment, not two.
+ */
+const GROUND_MOVERS: ReadonlySet<Event['type']> = new Set<Event['type']>([
+  'candidate-submitted', 'candidate-withdrawn', 'candidate-retired',
+  'candidate-undecided', 'candidate-confirmed', 'candidate-rebased',
+  'rebase-failed', 'candidate-awaiting-assent', 'co-signed', 'adopted',
+  'text-decreed', 'standing-set',
+]);
 
 // the incumbent pseudo-id's prefix is types.ts's since routing.ts reads it
 // too; re-exported here so its importers need not move
@@ -190,27 +220,43 @@ export class Session {
   private comparisons: StoredComparison[] = [];
   /**
    * **Edge judgments indexed as they land** (the moon room, 2026-09-11): by
-   * the ground they were cast on, and by each candidate they touch. Both
-   * per-race scans below — the usable set behind every fit, and the
-   * locked-evidence test the feed asks per race — walked every judgment in
-   * the room once per race per state version, which at a hundred races
-   * over thousands of judgments was a quarter of a saturated host and the
-   * whole of a command's fold (the fold reads `races()` uncached). A race's
-   * usable judgments all share its incumbent as ground, and a locked one
-   * touches one of its members, so each scan reads its own bucket alone.
+   * each candidate they touch. Both per-race scans below — the usable set
+   * behind every fit, and the locked-evidence test the feed asks per race —
+   * walked every judgment in the room once per race per state version, which
+   * at a hundred races over thousands of judgments was a quarter of a
+   * saturated host and the whole of a command's fold (the fold reads
+   * `races()` uncached). A judgment usable in a race touches one of its
+   * members, so each scan reads its members' own buckets and nothing else.
    * Comparisons only ever append, in `apply`, so the buckets are exact.
+   *
+   * **The ground-keyed bucket went with the race-wide ground** (Q1441): a
+   * judgment's ground is its own pair's now, so a race and its judgments
+   * share no key — the candidate index is the whole of the lookup, and it
+   * always held every judgment the ground bucket did.
    */
-  private edgesByGround = new Map<string, StoredComparison[]>();
   private edgesByCandidate = new Map<string, StoredComparison[]>();
   /**
-   * Contextual pair keys already judged, per participant (feed
-   * exclusion only — revision stays open, SPEC §4.4). Edge keys carry
-   * the ground id, so a ground shift re-opens the pair to everyone,
-   * including participants who judged the old ground.
+   * Contextual pair keys already judged, per participant (feed exclusion
+   * only — revision stays open, SPEC §4.4). Edge keys carry the **pair's**
+   * ground since Q1441, so a change to the text that pair compared re-opens
+   * it to everyone, and a rival joining the race re-opens nothing.
    */
   private judgedPairs = new Map<string, Set<string>>();
   /** Comparisons at seq < evidenceSince[id] are dead for candidate id (SPEC §2.4). */
   private evidenceSince = new Map<string, number>();
+  /** When each of those resets landed (Q1439): the period on the pair restarts. */
+  private evidenceSinceT = new Map<string, number>();
+  /**
+   * **When each ground first stood** (Q1439; SPEC §4.4, §8.2). Written by
+   * `apply` at every `GROUND_MOVERS` event and never read back by the write
+   * that records it, so a fold cannot ask after a ground it is in the middle
+   * of creating; a ground the map has not heard of reads as *now*, which is
+   * the right answer for one being created and the safe answer for anything
+   * else — a period that has only just started abstains nobody. A ground id
+   * that recurs (text changed and changed back) keeps its first moment,
+   * which is also when the judgments cast on it became usable again.
+   */
+  private groundSinceT = new Map<string, number>();
   private edgeCount = 0;
   private lastAdoptionT: number | null = null;
   private closedFlag = false;
@@ -401,11 +447,30 @@ export class Session {
     if (event.t < this.lastT) throw new Error('timestamps must be non-decreasing');
     try {
       this.applyEvent(event, seq);
+      // **The grounds, recorded as they appear** (Q1439): after the arm, so
+      // the field is what this event left, and here rather than in twelve arms
+      // so no future arm can move a ground and forget to date it. Both roads
+      // in — `emit` and `replay` — come through `apply`, which is what makes
+      // the map fold identically.
+      if (GROUND_MOVERS.has(event.type)) this.noteGrounds(event.t);
     } finally {
       // the fold touches as it goes (Q1326); this is the net under it, so a
       // mutation that forgot cannot outlive the event that made it
       this.touch();
     }
+  }
+
+  /**
+   * Date any ground this event brought into being (Q1439). `groundIds()` asks
+   * only the grouping and the text, so it cannot read the map it is about to
+   * fill; and a ground already dated keeps its date.
+   */
+  private noteGrounds(t: number): void {
+    let added = false;
+    for (const g of this.raceRules.groundIds()) {
+      if (!this.groundSinceT.has(g)) { this.groundSinceT.set(g, t); added = true; }
+    }
+    if (added) this.touch();
   }
 
   private applyEvent(event: Event, seq: number): void {
@@ -432,6 +497,8 @@ export class Session {
             ledger: openLedger(event.constitution, event.t),
             latencies: [],
             lastActionT: null,
+            arrivedT: event.t,
+            resumedT: null,
           });
         }
         this.touch();
@@ -445,6 +512,8 @@ export class Session {
           ledger: openLedger(this.constitutionValue, event.t),
           latencies: [],
           lastActionT: null,
+          arrivedT: event.t,
+          resumedT: null,
         });
         this.touch();
         break;
@@ -463,7 +532,11 @@ export class Session {
       }
       case 'participant-resumed': {
         const entry = this.roster.get(event.participantId);
-        if (entry) entry.suspended = false;
+        if (entry) {
+          entry.suspended = false;
+          // back in the room, and awaited afresh on everything (Q1439, §8.2)
+          entry.resumedT = event.t;
+        }
         this.touch();
         break;
       }
@@ -477,6 +550,7 @@ export class Session {
             ? { patch: event.patch, footprint: footprint(event.patch.hunks) }
             : { footprint: [] }),
           ...(event.setting ? { setting: event.setting } : {}),
+          submittedT: event.t,
           state: 'live',
           stakePaid: this.constitutionValue.stake,
           peakW: 0,
@@ -506,7 +580,11 @@ export class Session {
         // whole rebuild of every race gone from every judgment; the fit
         // `updatePeaks` needs is a different question and is taken fresh.
         const race = event.kind === 'edge' ? this.raceOfPair(event.aId, event.bId) : null;
-        const groundId = race === null ? null : race.incumbentId;
+        // **The pair's own ground, not the race's** (Q1441; SPEC §4.4 → why:
+        // R-129): the current text under the lines of the two wordings being
+        // compared. A rival joining or leaving the race changes no text, so it
+        // changes no stamp and voids nothing.
+        const groundId = race === null ? null : this.raceRules.pairGround(event.aId, event.bId);
         const stored: StoredComparison = {
           seq,
           t: event.t,
@@ -519,8 +597,6 @@ export class Session {
         };
         this.comparisons.push(stored);
         if (event.kind === 'edge' && groundId !== null) {
-          const g = this.edgesByGround.get(groundId);
-          if (g) g.push(stored); else this.edgesByGround.set(groundId, [stored]);
           for (const id of [event.aId, event.bId]) {
             if (id.startsWith(INC_PREFIX)) continue;
             const b = this.edgesByCandidate.get(id);
@@ -585,7 +661,11 @@ export class Session {
         c.awaiting = { raceId: event.raceId, p: event.p, threshold: event.threshold,
           // the cap mark rides the park with the numbers (R-051); absent
           // stays absent, so a log written before it existed folds the same
-          ...(event.cappedFit ? { cappedFit: event.cappedFit } : {}) };
+          ...(event.cappedFit ? { cappedFit: event.cappedFit } : {}),
+          // and so does what the room decided on (Q1458), on the same terms:
+          // a park written before the field carries none, and the accept it
+          // is answered by adopts with none, exactly as it did before
+          ...(event.decided ? { decided: event.decided } : {}) };
         this.fitCache.clear();
         this.touch();
         break;
@@ -616,7 +696,8 @@ export class Session {
           this.versions.push(applyPatch(this.currentLines(), winner.patch.hunks));
         }
         winner.state = 'adopted';
-        const refund = performanceRefund(winner.stakePaid, winner.peakW);
+        // it passed, so the stake comes back whole and nothing more (§7, Q1454)
+        const refund = exitRefund(winner.stakePaid, 'passed');
         winner.exit = { t: event.t, cause: 'adopted', refund };
         const author = this.roster.get(winner.author);
         if (author) credit(author.ledger, this.constitutionValue, event.t, refund);
@@ -628,7 +709,7 @@ export class Session {
       case 'text-decreed': {
         // ✒️ on the Text (R-058). Everything `candidate-submitted` does about
         // money is deliberately absent — no `spend`, no `credit`, no
-        // `performanceRefund`: nothing was staked, so nothing is refunded, and
+        // `exitRefund`: nothing was staked, so nothing is refunded, and
         // `stakePaid: 0` is what keeps a later reader from computing one.
         // Everything `adopted` does about the *document* is present, because
         // the document really did change: the version, `lastAdoptionT` (the
@@ -640,6 +721,7 @@ export class Session {
           rationale: event.rationale,
           patch: event.patch,
           footprint: footprint(event.patch.hunks),
+          submittedT: event.t,
           state: 'adopted',
           stakePaid: 0,
           peakW: 0,
@@ -683,6 +765,9 @@ export class Session {
         // Evidence resets: pre-confirmation comparisons no longer speak
         // for this candidate (SPEC §2.4).
         this.evidenceSince.set(event.id, seq);
+        // and when it landed (Q1439): the pair became answerable afresh, so
+        // every member's 💤 period on it restarts here (§8.2)
+        this.evidenceSinceT.set(event.id, event.t);
         this.fitCache.clear();
         this.touch();
         break;
@@ -946,9 +1031,24 @@ export class Session {
   }
 
   documentAt(version: number): string {
+    return joinLines(this.linesAt(version) as string[]);
+  }
+
+  /**
+   * **The lines a version holds — the one line array** (Q1491). A patch is
+   * line numbers and wording against a version, so everything that checks a
+   * patch is asking about *these*, and `splitLines(documentAt(v))` is not
+   * reliably the same array: the round trip through one string normalises
+   * any line ending a line turns out to contain, and a text written before
+   * the doors normalised could hold one. Four callers asked the round trip
+   * and three asked the session, which is exactly how the participant
+   * boundary came to refuse wording the session itself would have taken.
+   * Ask this instead, and the two cannot disagree again.
+   */
+  linesAt(version: number): readonly string[] {
     const lines = this.versions[version];
     if (!lines) throw new Error(`unknown version ${version}`);
-    return joinLines(lines);
+    return lines;
   }
 
   /**
@@ -968,30 +1068,36 @@ export class Session {
   }
 
   /**
-   * F = max(Q, min(ceil(E/3), F_max)) — SPEC §4.2: the room's quorum
-   * riding on the statistical minimum. A share-quorum is re-derived from
-   * current E on every call, so it tracks the roster (§9.3).
+   * **The floor over the whole of E** — F as it stands for a race nobody has
+   * left waiting: `max(Q′, min(2, E))` with the group equal to E, which is
+   * what it is at the moment a candidate is submitted and everybody is still
+   * awaited. The arithmetic, the cap and the seconder are `floorFor` in
+   * `races.ts` (SPEC §4.2; Q1439 → why: R-125, R-126, R-131), and the
+   * constitution layer keeps its own copy of the same line (`populations.ts`)
+   * because it derives F without a Session; `floor-agreement.test.ts` holds
+   * the two equal.
    *
-   * The share is ⌈n·E/100⌉, **the product before the quotient** (issue #24):
-   * `(n / 100) * E` is not the same number — `0.56` is not representable in
-   * binary and 56 % of 25 landed a hair above 14, holding that room to 15
-   * judges where the card promised 14. Twenty-seven (share, E) pairs read one
-   * too many that way, all at E ≥ 25. The constitution layer keeps its own
-   * copy of this line (`populations.ts`, `quorumCount`) because the engine
-   * derives F from the engine's roster and never asks it; the two move
-   * together or not at all.
+   * **The number that decides an adoption is the race's own** (`RaceView.floor`),
+   * not this one: Q1439's quorum is read against the group, and the group
+   * shrinks as silences abstain. This stays for the readers that want the
+   * room's number rather than a particular race's — the host's view, the
+   * sim's evidence, the record's *quorum was n* line.
    */
   adoptionFloor(): number {
     const e = this.eCount();
-    const q = this.constitutionValue.quorum;
-    const quorumN =
-      q === null ? 0 : q.form === 'count' ? q.n : Math.ceil((q.n * e) / 100);
-    return Math.max(quorumN, Math.min(Math.ceil(e / 3), this.constitutionValue.adoptionFloorMax));
+    return floorFor(this.constitutionValue, e, e);
   }
 
   /** E (SPEC §8.2): arrived, non-removed, non-lapsed — engine-side. */
   private eCount(): number {
-    return [...this.roster.values()].filter((r) => !r.removed && !r.suspended).length;
+    return this.eMembers().length;
+  }
+
+  /** E by id (SPEC §8.2), which is who a candidate can still be waiting on. */
+  private eMembers(): string[] {
+    return this.derived('eMembers', () => [...this.roster.entries()]
+      .filter(([, r]) => !r.removed && !r.suspended)
+      .map(([id]) => id));
   }
 
   /**
@@ -1079,7 +1185,10 @@ export class Session {
         const race = candidates.length > 0 ? raceOfMember.get(candidates[0]!) : undefined;
         locked =
           race === undefined ||
-          race.incumbentId !== c.groundId ||
+          // **its own pair's ground** (Q1441): the text the two wordings
+          // displaced, not the race's whole contested area — a rival joining
+          // locks nobody's judgment
+          this.raceRules.pairGround(c.aId, c.bId) !== c.groundId ||
           candidates.some((id) => {
             if (!race.members.includes(id)) return true;
             const since = this.evidenceSince.get(id);
@@ -1137,6 +1246,34 @@ export class Session {
     this.emit({ type: 'participant-resumed', t, participantId });
   }
 
+  /**
+   * **A carriage return never enters the text** (Q1491, the nh2026
+   * convention). A hunk's `lines` are what the version array is built out of,
+   * so this is the last place a line ending inside one of them can be caught:
+   * past here a "line" holding a `\r` is a line the document cannot represent
+   * — `document()` joins with '\n' and every reader that splits the text back
+   * gets a different array from the one the session holds, which is how
+   * fifteen proposals came to be told the wording they replaced was not the
+   * wording they replaced.
+   *
+   * **At the command, never in the fold.** Every road into the version array
+   * comes through `submitCandidate`, `decreeText` or `confirmRebase`, and
+   * each normalises what it is given before it validates it; `apply` does
+   * not, so a log written before this rule replays exactly as it was written.
+   * The same object comes back where nothing moves, so nothing else is
+   * touched either.
+   */
+  private normalizedPatch(patch: PatchSet): PatchSet {
+    let moved = false;
+    const hunks = patch.hunks.map((h) => {
+      const lines = normalizeLines(h.lines);
+      if (lines === h.lines) return h;
+      moved = true;
+      return { ...h, lines: lines as string[] };
+    });
+    return moved ? { ...patch, hunks } : patch;
+  }
+
   submitCandidate(
     t: number,
     input: {
@@ -1166,14 +1303,21 @@ export class Session {
         `rationale exceeds ${this.constitutionValue.rationaleMaxChars} chars`,
       );
     }
-    if (input.patch) {
-      if (input.patch.baseVersion !== this.currentVersion()) {
+    const patch = input.patch ? this.normalizedPatch(input.patch) : undefined;
+    if (patch) {
+      if (patch.baseVersion !== this.currentVersion()) {
         throw new Error(
-          `patch targets version ${input.patch.baseVersion}; current is ${this.currentVersion()}`,
+          `patch targets version ${patch.baseVersion}; current is ${this.currentVersion()}`,
         );
       }
-      if (input.patch.hunks.length === 0) throw new Error('empty patch');
-      validateHunks(this.currentLines().length, input.patch.hunks);
+      if (patch.hunks.length === 0) throw new Error('empty patch');
+      validateHunks(this.currentLines().length, patch.hunks);
+      // **Checked where it is given, required where the act enters** (R-136).
+      // The participant boundaries — `ParticipantApi.submit` and the host's
+      // three text commands — refuse a patch that carries no attestation;
+      // here it is honoured wherever it is present and never demanded, so
+      // the library's own callers and every replay are untouched.
+      checkAttestation(this.currentLines(), patch.hunks, { required: false });
     } else if (input.setting) {
       // Q390: values are simpler than prose in exactly one way — equality
       // is decidable — so §5's dedup gate collapses to it (SPEC v0.53).
@@ -1205,7 +1349,10 @@ export class Session {
       t,
       id,
       author: input.author,
-      ...(input.patch ? { patch: input.patch } : {}),
+      // **The attestation is validation, not record** (R-136): it is stripped
+      // here, at the one door that writes a submission, so an event's shape
+      // does not move and every log on disk replays byte for byte.
+      ...(patch ? { patch: { ...patch, hunks: stripAttestation(patch.hunks) } } : {}),
       ...(input.setting ? { setting: input.setting } : {}),
       rationale: input.rationale,
       ...(input.machineAuthored ? { machineAuthored: true } : {}),
@@ -1266,13 +1413,16 @@ export class Session {
     if (input.rationale.length > this.constitutionValue.rationaleMaxChars) {
       throw new Error(`rationale exceeds ${this.constitutionValue.rationaleMaxChars} chars`);
     }
-    if (input.patch.baseVersion !== this.currentVersion()) {
+    const given = this.normalizedPatch(input.patch);
+    if (given.baseVersion !== this.currentVersion()) {
       throw new Error(
-        `patch targets version ${input.patch.baseVersion}; current is ${this.currentVersion()}`,
+        `patch targets version ${given.baseVersion}; current is ${this.currentVersion()}`,
       );
     }
-    if (input.patch.hunks.length === 0) throw new Error('empty patch');
-    validateHunks(this.currentLines().length, input.patch.hunks);
+    if (given.hunks.length === 0) throw new Error('empty patch');
+    validateHunks(this.currentLines().length, given.hunks);
+    // the pen's patch attests like anybody's where it carries one (R-136)
+    checkAttestation(this.currentLines(), given.hunks, { required: false });
     // **§4.2's park rule reaching the second door** (R-058, narrowed by
     // R-100). The sweep adopts no text across a parked span, and since R-100
     // `rebaseOthers` does rebase a parked patch — but only where the rebase
@@ -1290,16 +1440,18 @@ export class Session {
     }
     const id = `c${++this.candidateCounter}`;
     const newVersion = this.currentVersion() + 1;
+    // stripped before it is written, as a submission's is (R-136)
+    const patch = { ...given, hunks: stripAttestation(given.hunks) };
     this.emit({
       type: 'text-decreed',
       t,
       id,
       author: input.author,
-      patch: input.patch,
+      patch,
       rationale: input.rationale,
       newVersion,
     });
-    this.rebaseOthers(t, id, input.patch.hunks, newVersion);
+    this.rebaseOthers(t, id, patch.hunks, newVersion);
     return { id };
   }
 
@@ -1356,8 +1508,9 @@ export class Session {
     if (c.state !== 'live' && c.state !== 'rebase-pending') {
       throw new Error(`candidate ${candidateId} is not in play (${c.state})`);
     }
-    // Withdrawals refund fully (SPEC §7).
-    this.emit({ type: 'candidate-withdrawn', t, id: candidateId, refund: c.stakePaid });
+    // Withdrawals refund fully, at any time (SPEC §7, §3.3a; Q1454 answer 2).
+    this.emit({ type: 'candidate-withdrawn', t, id: candidateId,
+      refund: exitRefund(c.stakePaid, 'handed-back') });
   }
 
   retire(t: number, candidateId: string): void {
@@ -1369,7 +1522,8 @@ export class Session {
       t,
       id: candidateId,
       raceId: this.raceIdOf(candidateId),
-      refund: performanceRefund(c.stakePaid, c.peakW),
+      // a proposal that did not pass returns nothing (§7, Q1454)
+      refund: exitRefund(c.stakePaid, 'failed'),
     });
   }
 
@@ -1383,9 +1537,14 @@ export class Session {
    * decided, not at the convenor's convenience. The cap mark (R-051) replays
    * with them, being a fact about that same moment and that same fit — the
    * shielded adoption is the likeliest of all to be read afterwards, and is
-   * not the one receipt allowed to lie by omission. Everything downstream of
-   * `adopted` — the version bump, the rebase of the field, the performance
-   * refund, `lastAdoptionT`, the fit cache — runs unchanged.
+   * not the one receipt allowed to lie by omission. **And so do the
+   * membership's own three numbers** (Q1458, Ed 2026-09-18): approvals, floor
+   * and silences, recorded at the park and copied here, so the record of a
+   * shielded adoption states *n of E weighed in* like every other adoption's
+   * — and states it as it stood when the vote carried, whatever the room did
+   * while the answer was awaited. Everything downstream of
+   * `adopted` — the version bump, the rebase of the field, the refund of the
+   * stake, `lastAdoptionT`, the fit cache — runs unchanged.
    *
    * **refuse** retires it as a failed proposal at **refund 0**: a stake
    * that came back would price a refusal as a withdrawal. The reason is
@@ -1402,10 +1561,11 @@ export class Session {
     const before = this.log.length;
     if (outcome === 'accept') {
       this.adopt(t, candidateId, parked.p, parked.threshold, parked.raceId,
-        parked.cappedFit);
+        parked.cappedFit, parked.decided);
     } else {
       this.emit({ type: 'candidate-retired', t, id: candidateId,
-        raceId: parked.raceId, refund: 0, ...(reason ? { reason } : {}) });
+        raceId: parked.raceId, refund: exitRefund(c.stakePaid, 'failed'),
+        ...(reason ? { reason } : {}) });
     }
     return this.log.slice(before).map((e) => e.event);
   }
@@ -1425,7 +1585,9 @@ export class Session {
       const own = this.candidate(withdrawOwnCandidateId);
       if (own.author !== participantId) throw new Error('can only fold in your own candidate');
       if (own.state !== 'live') throw new Error('own candidate is not live');
-      refund = own.stakePaid; // co-signs refund fully (SPEC §7)
+      // a candidate folded into the one its author co-signs is handed back,
+      // not beaten: it refunds fully (SPEC §7)
+      refund = exitRefund(own.stakePaid, 'handed-back');
     }
     this.emit({
       type: 'co-signed',
@@ -1441,21 +1603,25 @@ export class Session {
    * After a failed rebase the author confirms (or revises) against the
    * new text; evidence resets (SPEC §2.4).
    */
-  confirmRebase(t: number, candidateId: string, patch: PatchSet, rationale?: string): void {
+  confirmRebase(t: number, candidateId: string, given: PatchSet, rationale?: string): void {
     this.assertOpen();
     const c = this.candidate(candidateId);
     if (c.state !== 'rebase-pending') {
       throw new Error(`candidate ${candidateId} is not awaiting confirmation`);
     }
+    const patch = this.normalizedPatch(given);
     if (patch.baseVersion !== this.currentVersion()) {
       throw new Error('confirmation must target the current version');
     }
     if (patch.hunks.length === 0) throw new Error('empty patch');
     validateHunks(this.currentLines().length, patch.hunks);
+    // a re-made proposal attests like a fresh one where it carries one (R-136)
+    checkAttestation(this.currentLines(), patch.hunks, { required: false });
     // **Revising is one of §2.4's three roads**, so the reason may be rewritten
     // with the wording (Q170). Optional and omitted where it is unchanged, so a
     // log written before this existed replays byte for byte.
-    this.emit({ type: 'candidate-confirmed', t, id: candidateId, patch,
+    this.emit({ type: 'candidate-confirmed', t, id: candidateId,
+      patch: { ...patch, hunks: stripAttestation(patch.hunks) },
       ...(rationale === undefined ? {} : { rationale }) });
   }
 
@@ -1506,14 +1672,33 @@ export class Session {
    * objects and are read, never written. `askOn`, `feed`, `judgments` and
    * the host's view all read this, so one judgment costs one rebuild
    * however many seats poll between it and the next.
+   *
+   * **And it takes a clock** (Q1439): the floor is read against the group the
+   * leader is waiting on, and a silence leaves that group when 💤's period
+   * runs — with no event to mark it. `t` defaults to the last event's time,
+   * which is the only default a pure fold can honestly have (a replay, a
+   * post-close query and a test all mean *as the log left it*); a live caller
+   * passes its own now, and the server's view path does.
    */
-  races(): RaceView[] {
-    return this.raceRules.races();
+  races(t: number = this.lastT): RaceView[] {
+    return this.raceRules.races(t);
+  }
+
+  /**
+   * **One member's own abstention deadline on one race** (Q1460): the moment
+   * their silence stops counting toward the group (§8.2), in engine ms, or
+   * null where 💤 is *never*, where they are not awaited on the race's
+   * approval pair, or where the race is not live. A fact about this seat
+   * alone, saying nothing about anybody else, so it crosses §3.5 untouched.
+   * Clock-free: the caller compares it with its own now.
+   */
+  abstainDeadline(raceId: string, participantId: string): number | null {
+    return this.raceRules.abstainDeadline(raceId, participantId);
   }
 
   /** The live race holding a candidate; throws if it is not in one. */
-  raceOf(candidateId: string): RaceView {
-    return this.raceRules.raceOf(candidateId);
+  raceOf(candidateId: string, t: number = this.lastT): RaceView {
+    return this.raceRules.raceOf(candidateId, t);
   }
 
   /** A race's Davidson fit over its usable comparisons (SPEC §4.1). */
@@ -1567,11 +1752,13 @@ export class Session {
     // The pinned bar (R-117): nothing gates on it, and `adopted` and
     // `candidate-awaiting-assent` still record it, so no event shape moves.
     const threshold = this.adoptionThreshold(t);
-    const floor = this.adoptionFloor();
-    const ready = this.races()
+    // **The batch reads the races at its own moment** (Q1439): who has
+    // abstained, and so what each floor is, depends on `t` — which is why the
+    // metronome's own tick can release a batch that no judgment did.
+    const ready = this.races(t)
       // `clearsFloor` is the test, shared with `races()`'s `blockedByPark`
       // (R-100). What it asks, and why:
-      .filter((r) => this.raceRules.clearsFloor(r, floor))
+      .filter((r) => this.raceRules.clearsFloor(r))
           // The top of the field and the floor, and then the helper's last
           // clause, whose reason is long enough to keep here beside the batch
           // it governs.
@@ -1614,12 +1801,21 @@ export class Session {
       // `converged` is false in exactly one circumstance — the iteration cap
       // running out with the gradient still above tolerance — which is why
       // the record's word is *cap* and not *gradient*.
-      .map((r): { leaderId: string; p: number;
+      .map((r): { leaderId: string; p: number; approvals: number; floor: number;
+        abstained: number;
         cappedFit?: { iterations: number; gradMax: number } } => {
         const fit = this.raceRules.fitRaceMembers(r.members, r.incumbentId);
         return {
           leaderId: r.leaderId as string,
           p: r.leaderP as number,
+          // the three numbers the batch decided on, snapshotted with the fit
+          // and carried to the record (Q1439; Q1452; SPEC §8.2) — all three
+          // move with the clock, so the snapshot is the only honest moment to
+          // read them: by the time anybody opens the record the room has gone
+          // on, and *n did not answer in time* is a fact about the decision
+          approvals: r.approvals,
+          floor: r.floor,
+          abstained: r.abstained,
           // absent means converged, all the way out to the log (R-051)
           ...(fit.converged
             ? {}
@@ -1649,26 +1845,77 @@ export class Session {
     // it `blockedByPark`, and it is looked at again next batch. Everything
     // else parks beside the standing parks, each its own 👑 question, oldest
     // race first as always.
-    for (const { leaderId, p, cappedFit } of ready) {
+    for (const { leaderId, p, approvals, floor, abstained, cappedFit } of ready) {
       const c = this.candidate(leaderId);
       if (c.state !== 'live') continue;
+      const decided = { approvals, floor, abstained };
       // a setting race is untouched by any of this (Q390): it carries no
       // patch, changes no text, and adopts in the same batch as before —
       // but it was decided by the same fit and takes the same mark (R-051)
       if (c.patch === undefined) {
-        this.adopt(t, leaderId, p, threshold, undefined, cappedFit); continue;
+        this.adopt(t, leaderId, p, threshold, undefined, cappedFit, decided); continue;
       }
       // read fresh each time: a park made earlier in this batch is in the
       // set by its fold, and an adoption earlier in this batch has moved
       // every standing park's offsets through `rebaseOthers`
       if (this.raceRules.overlapsPark(c.footprint, this.raceRules.parkedFootprints())) continue;
       if (this.constitutionValue.textAssent) {
+        // the membership's three numbers ride the park beside `p` and the
+        // cap mark (Q1458, Ed 2026-09-18): the park is the moment the vote
+        // carried, and all three move with the clock, so recording them
+        // here is the only way the adoption the convenor's accept produces
+        // can state what the room actually decided on rather than what a
+        // re-derivation at accept time would find
         this.emit({ type: 'candidate-awaiting-assent', t, id: leaderId,
           raceId: this.raceIdOf(leaderId), p, threshold,
-          ...(cappedFit ? { cappedFit } : {}) });
+          ...(cappedFit ? { cappedFit } : {}), decided });
         continue;
       }
-      this.adopt(t, leaderId, p, threshold, undefined, cappedFit);
+      this.adopt(t, leaderId, p, threshold, undefined, cappedFit, decided);
+    }
+    this.retireDominated(t);
+  }
+
+  /**
+   * **A proposal that can never win is closed** (Q1440, Ed 2026-09-18; SPEC
+   * §4.4 → why: R-132). The test is `races.ts`'s and is time-free; this is
+   * the moment it is acted on — **the adoption batch**, so that what carried
+   * and what closed are decided together and a reader sees one movement of
+   * the document rather than two.
+   *
+   * **After the adoptions, and on the state they left**, not off the snapshot
+   * the batch was decided on. An adoption changes the text under its own
+   * lines, which locks every judgment cast against the old wording (§4.4) —
+   * so a rival on those lines has a = o = 0 and the whole of E still to
+   * answer the moment the batch lands, and is by construction not dominated.
+   * Reading the dominations before the batch would retire it on counts the
+   * adoption had just voided, which is the one way this rule could take away
+   * a proposal nobody had refused.
+   *
+   * Oldest first, one event each, off one reading: a retirement shrinks its
+   * race and could in principle change what is dominated behind it, and the
+   * next sweep is where that is looked at. `state !== 'live'` is the only
+   * re-check, for a candidate an earlier event in this same pass took out.
+   */
+  private retireDominated(t: number): void {
+    if (this.closedFlag) return;
+    const doomed: string[] = [];
+    for (const r of this.races(t)) for (const d of r.dominated) doomed.push(d.id);
+    if (doomed.length === 0) return;
+    doomed.sort((a, b) => candidateNum(a) - candidateNum(b));
+    for (const id of doomed) {
+      const c = this.candidate(id);
+      if (c.state !== 'live') continue;
+      this.emit({
+        type: 'candidate-retired',
+        t,
+        id,
+        raceId: this.raceIdOf(id),
+        // nothing, as at any failure (§7, Q1454): a wording no answer still
+        // to come could carry did not pass, and only passing is refunded.
+        refund: exitRefund(c.stakePaid, 'failed'),
+        reason: 'dominated',
+      });
     }
   }
 
@@ -1696,10 +1943,13 @@ export class Session {
    * and deserves the same honesty.
    */
   private adopt(t: number, candidateId: string, p: number, threshold: number,
-    raceIdIn?: string, cappedFit?: { iterations: number; gradMax: number }): void {
+    raceIdIn?: string, cappedFit?: { iterations: number; gradMax: number },
+    decided?: { approvals: number; floor: number; abstained: number }): void {
     const winner = this.candidate(candidateId);
     const raceId = raceIdIn ?? this.raceIdOf(candidateId);
-    const mark = cappedFit ? { cappedFit } : {};
+    // the cap mark and the three numbers the batch decided on (R-051; Q1439;
+    // Q1452), both absent rather than `undefined` where the caller has none
+    const mark = { ...(cappedFit ? { cappedFit } : {}), ...(decided ?? {}) };
     if (!winner.patch) {
       // A setting race carried (Q390): the verdict is recorded and the
       // stake refunded; the value lands via setStanding, host-called,
@@ -1942,15 +2192,16 @@ export class Session {
       }
       return { text: this.document(), applied, appliedSettings };
     }
+    // as the log stands (Q1439): on a live session this is a projection, and
+    // the real final batch runs at the close's own `t` through `sweepAdoptions`
     const races = this.races();
-    const floor = this.adoptionFloor();
     const winners: Candidate[] = [];
     const appliedSettings: Array<{ settingId: string; candidateId: string }> = [];
     for (const r of races) {
-      // the batch's own test (Q1337, R-114): the top of the field, F judges of
-      // the leader, and the room having judged it — the close renders nothing
-      // the sweep would not
-      if (!this.raceRules.clearsFloor(r, floor)) continue;
+      // the batch's own test (Q1337, R-114; Q1439, R-125): the top of the
+      // field, F approvals of the leader, and the room having judged it — the
+      // close renders nothing the sweep would not
+      if (!this.raceRules.clearsFloor(r)) continue;
       if (r.settingId !== undefined) {
         appliedSettings.push({ settingId: r.settingId, candidateId: r.leaderId! });
         continue;
@@ -2019,8 +2270,8 @@ export class Session {
   }
 
   /** The pair a race can still ask this participant, dealt or not (Q1202). */
-  askOn(participantId: string, raceId: string): Card | null {
-    return this.routing.askOn(participantId, raceId);
+  askOn(participantId: string, raceId: string, t: number = this.lastT): Card | null {
+    return this.routing.askOn(participantId, raceId, t);
   }
 
   /** A participant's feed (SPEC §8.3): one hand per seat per state version. */
@@ -2046,12 +2297,12 @@ export class Session {
         this.raceRules.usableComparisons(members, incumbentId),
       fitRaceMembers: (members, incumbentId) =>
         this.raceRules.fitRaceMembers(members, incumbentId),
-      races: () => this.races(),
+      races: (t) => this.races(t),
+      pairGround: (aId, bId) => this.raceRules.pairGround(aId, bId),
       eCount: () => this.eCount(),
       salienceFitOver: (races) => this.salienceFitOver(races),
       salienceWeightsOver: (races, fit) => this.salienceWeightsOver(races, fit),
       adoptionThreshold: (t) => this.adoptionThreshold(t),
-      adoptionFloor: () => this.adoptionFloor(),
       constitution: () => this.constitutionValue,
       logLength: () => this.log.length,
     };
@@ -2063,13 +2314,29 @@ export class Session {
       derived: (key, compute) => this.derived(key, compute),
       candidates: () => this.candidates,
       candidate: (id) => this.candidate(id),
-      edgesByGround: (incumbentId) => this.edgesByGround.get(incumbentId) ?? [],
+      edgesByCandidate: (id) => this.edgesByCandidate.get(id) ?? [],
       evidenceSince: (id) => this.evidenceSince.get(id),
-      suspended: (id) => this.roster.get(id)?.suspended === true,
+      evidenceSinceT: (id) => this.evidenceSinceT.get(id),
+      // **out of E is removed or lapsed** (SPEC §8.2, §9.5; issue #65 F1): the
+      // interface said both and this read one, so a member who resigned or was
+      // removed went on approving the proposal they left behind
+      suspended: (id) => {
+        const r = this.roster.get(id);
+        return r?.removed === true || r?.suspended === true;
+      },
+      eMembers: () => this.eMembers(),
+      // the later of arriving and coming back (Q1439, §8.2): before either,
+      // nobody could have been asked. `-Infinity` for somebody off the roster
+      // — `eMembers` never names one, so this is a floor and not a case.
+      arrivalT: (id) => {
+        const r = this.roster.get(id);
+        return r === undefined ? -Infinity : Math.max(r.arrivedT, r.resumedT ?? -Infinity);
+      },
+      // a ground the fold has not dated yet is one being created now
+      groundSince: (groundId) => this.groundSinceT.get(groundId) ?? this.lastT,
       settingStanding: (settingId) => this.settingsMap.get(settingId),
       currentLines: () => this.currentLines(),
       constitution: () => this.constitutionValue,
-      adoptionFloor: () => this.adoptionFloor(),
       fitCache: () => this.fitCache,
       maxPairValue: (fit, members, incumbentId, excludeJudgedBy, rivalGateOpen) =>
         this.routing.maxPairValue(fit, members, incumbentId, excludeJudgedBy, rivalGateOpen),

@@ -190,7 +190,12 @@ function drawFor(id: SettingId, valueType: string, rungs: readonly string[] | un
     // come back, and the `default` below is the right answer until it does.
     case 'quorum': // 👥 — never above the roster, or the document freezes at 🍾
       return rnd() < 0.5
-        ? { form: 'share', n: between(rnd, 30, 55) }
+        // never above half — **not the validator's bound any more** (Q1490,
+        // R-139 opened it to 0–100), but the ladder's own: a draw of 51–55
+        // stalled it at *constitution* on one seed in five (seed 320609
+        // reddened CI's `walks` on 2026-09-18), and a rung that asks for
+        // near-unanimity walks a document that never adopts
+        ? { form: 'share', n: between(rnd, 30, 50) }
         : { form: 'count', n: between(rnd, 4, 8) };
     case 'rate': // ⏱️ — enough ✏️ for thirty proposals, a drip in real minutes
       return { grant: between(rnd, 5, 9), cap: between(rnd, 12, 18),
@@ -808,15 +813,30 @@ async function motions(host: LadderHost, doc: LoadedDoc, bridge: EngineBridge,
       'Two more ✏️ to start with — the first hour is the busy one.');
   });
 
-  // constitutional, still collecting: three quarters have answered
+  // constitutional, still collecting: three quarters have answered.
+  // **No keep among them** (Q1473, Ed 2026-09-19): a vote against now ends a
+  // constitutional motion the moment it is cast, so one `keep` in this mix
+  // settled the motion and the next answer threw *the motion is not
+  // running* — the stale-generator shape of 2026-09-18's quorum range. A
+  // rung that wants a motion still collecting casts only the two answers
+  // that leave it collecting.
   say('a constitutional motion on 👁️, still collecting', () => {
     const mover = cast[3]!;
     const m = cs.openMotion(pen.next(), mover, { kind: 'set', setting: 'judgments',
       value: otherRung('judgments') },
       'Let the room see the judging once it can no longer be swayed.');
     for (const who of cast.slice(0, Math.floor(cast.length * 0.75))) {
-      if (who !== mover) cs.answerMotion(pen.next(), who, m, rnd() < 0.8 ? 'accept' : 'keep');
+      if (who !== mover) cs.answerMotion(pen.next(), who, m, rnd() < 0.8 ? 'accept' : 'abstain');
     }
+  });
+
+  // and one a member voted against, so the rung shows that ✖ record too (Q1473)
+  say('a constitutional motion a member voted against', () => {
+    const mover = cast[9]!;
+    const m = cs.openMotion(pen.next(), mover, { kind: 'set', setting: 'authorship',
+      value: otherRung('authorship') },
+      'Let a proposer put their name to it if they want to.');
+    cs.answerMotion(pen.next(), cast[10]!, m, 'keep');
   });
 
   say('a constitutional motion carried', () => {

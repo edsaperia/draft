@@ -2,6 +2,7 @@
 // door: what is the applicant's page served, and do its cards commit? Also: a
 // member's ✉️ once every founder power is laid down.
 import { chromium } from 'playwright';
+import { landOn } from '../lib/walk.mjs';
 
 const BASE = process.argv[2] || 'http://127.0.0.1:8181';
 const run = Date.now().toString(36);
@@ -78,7 +79,7 @@ page.on('console', (m) => { if (m.type() !== 'log') logs.push(`${m.type()}: ${m.
 page.on('pageerror', (e) => logs.push(`PAGEERROR ${e.message}`));
 const sent = [];
 page.on('request', (r) => { if (/\/cmd$/.test(r.url()) && r.method() === 'POST') sent.push(r.postData()); });
-await page.goto(apMail.link, { waitUntil: 'networkidle' });
+await landOn(page, apMail.link, { waitUntil: 'networkidle' });
 await page.waitForTimeout(2000);
 say(`m2 landed at ${page.url()}`);
 const dump = async (label) => {
@@ -137,7 +138,7 @@ const p2 = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
 const sent2 = [];
 p2.on('request', (r) => { if (/\/cmd$/.test(r.url()) && r.method() === 'POST') sent2.push(r.postData()); });
 const login = await (await post(`/api/d/${SLUG}/login`, { email: m1 })).json();
-await p2.goto(login.devLink, { waitUntil: 'networkidle' });
+await landOn(p2, login.devLink, { waitUntil: 'networkidle' });
 await p2.waitForTimeout(1500);
 const inv = await p2.evaluate(async () => {
   const tab = document.querySelector('[data-tab="invite"]'); if (!tab) return 'no invite tab';

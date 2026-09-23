@@ -462,7 +462,8 @@ export class ConstitutionSession {
    * only once the text confirmed — are both retired. What replaces them is
    * one gate on the setting rather than two on the calendar: a setting nobody
    * has set has nothing to hand over, and the text's own confirmation is one
-   * setting's value among nineteen rather than the whole document's clock.
+   * setting's value among the catalogue's eighteen (SPEC §9.7.1) rather than
+   * the whole document's clock.
    */
   relinquish(t: number, setting: PowerKey, power: Power): void {
     this.requireOpen('giving up a power');
@@ -608,6 +609,7 @@ export class ConstitutionSession {
     // rather than behind whatever a re-settle carried
     this.oweDeparture(t, member, this.convenor.id); // ❌ is the convenor's act (Q1358)
     if (wasInE) this.afterRosterChange(t, 'departure', member);
+    else this.maybeResolveAll(t);                   // Q1482: E did not move, a gate did
   }
 
   /**
@@ -636,6 +638,7 @@ export class ConstitutionSession {
     this.emit({ type: 'member-removed', t, member, by: 'self' });
     this.oweDeparture(t, member);   // Q901, `remove`'s rule and its placing
     if (wasInE) this.afterRosterChange(t, 'departure', member);
+    else this.maybeResolveAll(t);   // Q1482: E did not move, a gate did
     // after the roster's own follow-ons, never inside them: the seat this
     // may have just vacated is R-060's vacancy however it arose, and the
     // auto-pass is the last word on a settled roster rather than a step in
@@ -655,6 +658,7 @@ export class ConstitutionSession {
     const wasInE = inE(m);
     this.emit({ type: 'member-uninvited', t, member });
     if (wasInE) this.afterRosterChange(t, 'departure', member);
+    else this.maybeResolveAll(t);   // Q1482: E did not move, a gate did
   }
 
   arrive(t: number, member: MemberId): void {
@@ -762,6 +766,25 @@ export class ConstitutionSession {
       electorate: electorate.map((m) => m.id).sort() });
   }
 
+  /**
+   * **Somebody leaving is not the only thing a departure changes** (Q1482;
+   * Ed, the nh2026 convention 2026-09-20: *why can't I begin?* under *12 out
+   * of 12 of the membership have voted*).
+   *
+   * `afterRosterChange` is the road for a departure out of **E** — the
+   * electorate moved, so the ground shifted, the floor is re-read and
+   * everything is asked again. Somebody who never arrived was never in E, so
+   * that road was skipped entirely; but the *other* gate `maybeResolve` holds
+   * a blind question on is **invitations in flight** (Q413 (b)), and
+   * withdrawing an unopened invitation is exactly the thing that lifts it.
+   * The hold went and nobody looked again, so the question the withdrawal was
+   * meant to free went on collecting for ever and 🍾 went on refusing —
+   * §9.6a's own remedy for a veto by one unopened email, and it did nothing.
+   *
+   * So every road out of the roster ends here, whether or not E moved. It
+   * emits nothing of its own, which is why it is safe on a road that changed
+   * no ground: a question either resolves or it does not.
+   */
   private maybeResolveAll(t: number): void {
     for (const id of MANAGED) this.maybeResolve(t, id);
   }
@@ -1103,6 +1126,13 @@ export class ConstitutionSession {
     owed.ackDeparture(this.owedState(), t, member, departed);
   }
 
+  /** The OK on one failed motion of your own (SURFACE E41, Q1447). The owing
+   *  has no delegate beside it: every road to a failure is inside
+   *  `motions.ts`, which calls `oweHeld` through its own host. */
+  ackHeld(t: number, member: MemberId, motion: MotionId): void {
+    owed.ackHeld(this.owedState(), t, member, motion);
+  }
+
   resendInvite(t: number, member: MemberId, by: MemberId): void {
     owed.resendInvite(this.owedState(), t, member, by);
   }
@@ -1172,6 +1202,8 @@ export class ConstitutionSession {
       priceOf: (id) => this.priceOf(id),
       reservedTarget: (rec) => this.reservedTarget(rec),
       requireEmailFree: (email) => this.requireEmailFree(email),
+      personSeated: (person) => this.personSeated(person),
+      personOfApplicant: (applicant) => this.applicants.get(applicant)?.person ?? null,
       personFor: (email) => this.personFor(email),
       convenorSeatVacant: () => this.convenorSeatVacant(),
       afterRosterChange: (t, cause, member) => this.afterRosterChange(t, cause, member),
@@ -1200,7 +1232,7 @@ export class ConstitutionSession {
   }
 
   adjudicateOrdinaryMotion(t: number, motion: MotionId,
-    outcome: 'carried' | 'held'): void {
+    outcome: 'carried' | 'held' | 'held-at-close'): void {
     motions.adjudicateOrdinaryMotion(this.motionHost(), t, motion, outcome);
   }
 
@@ -1474,6 +1506,15 @@ export class ConstitutionSession {
     if (!a || a.status !== 'verified') {
       throw new Error('an application is verified by magic link before it can be submitted (§9.7½)');
     }
+    // **One address is one member** (issue #6, F2): verifying is not
+    // submitting, and between the two the Founder's ✒️ can have invited this
+    // very address. Submitting would open an admit motion on somebody who
+    // already holds a seat, and its carry would mint a second one. The
+    // sentence is `requireEmailFree`'s, because it is the same refusal: your
+    // road in is already open, so log in by the link you were sent.
+    if (this.personSeated(a.person)) {
+      throw new Error('that address is already on the membership — log in instead (§9.7½)');
+    }
     // the name and picture to the row, the words to the log (decision 1253;
     // free text is stage 12's second part and stays in the event)
     // **The submission is the whole of the identity it gives** (Q1366, Ed
@@ -1666,14 +1707,27 @@ export class ConstitutionSession {
   private requireEmailFree(email: string): void {
     const person = this.people.byEmail(email);
     if (person === null) return;
-    for (const m of this.members.values()) {
-      if (!m.removed && m.person === person) {
-        throw new Error('that address is already on the membership — log in instead (§9.7½)');
-      }
-    }
-    if (this.convenor.person === person && this.members.has(this.convenor.id)) {
+    if (this.personSeated(person)) {
       throw new Error('that address is already on the membership — log in instead (§9.7½)');
     }
+  }
+
+  /**
+   * **Is this person on the membership now?** — the question `requireEmailFree`
+   * was, split out because a *carry* must ask it too (issue #6, F2). Every
+   * road in checked the address where it started and nowhere else, and a
+   * motion is not an act but a permission that lands later: while it ran, the
+   * Founder's ✒️ could invite the same address, or that person could apply, and
+   * the carry then minted a second member row for one person — a second
+   * wallet, a second place in E, and a second voice in every quorum and every
+   * unanimity after it. An **invitee counts**: they hold a seat waiting for
+   * them, and re-inviting them is not a second seat but a second link.
+   */
+  personSeated(person: PersonId): boolean {
+    for (const m of this.members.values()) {
+      if (!m.removed && m.person === person) return true;
+    }
+    return this.convenor.person === person && this.members.has(this.convenor.id);
   }
 
   /** The row holding this address, or the next id to hold it (minted, not yet written). */

@@ -434,31 +434,35 @@ describe('🥾 re-priced mid-motion: the route is fixed, the electorate is not (
 });
 
 describe('🥾 whatever the rung: what a departure takes with it (§9.3)', () => {
-  it('a standing `keep` leaves with the member, and the motion it blocked carries in the same beat', () => {
+  // **What leaves with a member is a standing answer or a silence** — never
+  // a keep, which since Q1473 (Ed, 2026-09-19) has already ended the motion
+  // it was cast on. These two asserted the keep; the promise they are about
+  // is unchanged, and is read here off an abstention and off a silence.
+  it('a standing answer leaves the count with the member, and the record keeps it', () => {
     const { s, bo, cy } = buildConstituted({
       doors: { remove: { unilateral: true, assent: false } } });
     const m1 = s.openMotion(3, bo, { kind: 'set', setting: 'bar', value: { pct: 80 } });
-    s.answerMotion(4, 'ada', m1, 'accept');
-    s.answerMotion(5, cy, m1, 'keep');
-    expect(s.motionRecords().get(m1)!.status).toBe('running');
-    s.remove(6, cy); // ❌'s pen
-    expect(s.motionRecords().get(m1)!.status).toBe('carried');
+    s.answerMotion(4, cy, m1, 'abstain');
+    expect(s.motionRecords().get(m1)!.status).toBe('running'); // ada still owes
+    s.remove(5, cy); // ❌'s pen
+    expect(s.motionRecords().get(m1)!.status).toBe('running'); // and still does
     // **the record keeps what was said**: the electorate filter is the promise,
     // not the erasure of the answer
-    expect(s.motionRecords().get(m1)!.answers.get(cy)).toBe('keep');
+    expect(s.motionRecords().get(m1)!.answers.get(cy)).toBe('abstain');
+    s.answerMotion(6, 'ada', m1, 'accept');
+    expect(s.motionRecords().get(m1)!.status).toBe('carried');
   });
 
-  it('and the same by a carried `assembly` removal, not only by the pen', () => {
+  it('and a silence leaves too, by a carried `assembly` removal and not only by the pen', () => {
     const { s, bo, cy } = buildConstituted({ removal: { price: 'assembly' } });
     const m1 = s.openMotion(3, bo, { kind: 'set', setting: 'bar', value: { pct: 80 } });
-    s.answerMotion(4, 'ada', m1, 'accept');
-    s.answerMotion(5, cy, m1, 'keep');
+    s.answerMotion(4, 'ada', m1, 'accept'); // cy never answers m1
+    expect(s.motionRecords().get(m1)!.status).toBe('running');
     // one 🏛️ out per member at a time, so the removal is ada's to put
     const m2 = s.openMotion(6, 'ada', { kind: 'remove', member: cy });
     s.answerMotion(7, bo, m2, 'accept');
     expect(s.motionRecords().get(m2)!.status).toBe('carried');
     expect(s.motionRecords().get(m1)!.status).toBe('carried');
-    expect(s.motionRecords().get(m1)!.answers.get(cy)).toBe('keep');
   });
 
   it('a founding answer goes too: uninvited pre-start, the question resolves on the rest', () => {
@@ -469,6 +473,49 @@ describe('🥾 whatever the rung: what a departure takes with it (§9.3)', () =>
     expect(s.settingState('chamber').value).toBeNull(); // cy still owes
     s.uninvite(3, cy);
     expect(s.settingState('chamber').value).toEqual({ rung: 'link' });
+  });
+});
+
+/**
+ * **A removal outlived its subject** (issue #6, F3). There are three roads
+ * out — the Founder's ❌, a carried 🥾 motion and 🌂 — and nothing stopped a
+ * motion on one of them from carrying after another had already taken the
+ * person. Somebody resigning while the room decides whether to remove them is
+ * the ordinary case, not a contrivance: it is exactly what one does when that
+ * motion is put. The carry then recorded a **second** departure at a later
+ * time, overwrote `removedBy` so the record said the room exiled somebody who
+ * had walked out, and owed every remaining member a 🥾 news card about the
+ * same person a second time.
+ */
+describe('🥾 a removal that carries after its subject has already gone (issue #6, F3)', () => {
+  it('records one departure, keeps `self`, and owes the news once', () => {
+    const { s, bo, cy } = buildConstituted({ removal: { price: 'assembly' } });
+    const m = s.openMotion(3, bo, { kind: 'remove', member: cy });
+    // …and cy walks out while the room is answering, which is free and asks
+    // nobody (🌂, always at ✒️)
+    s.resign(4, cy);
+    expect(s.departures().map((d) => d.member)).toEqual([cy]);
+    // the motion settles on the electorate cy has just left
+    s.answerMotion(5, 'ada', m, 'accept');
+    expect(s.motionRecords().get(m)!.status).toBe('carried');
+    // one departure, and it is the one that happened
+    expect(s.departures()).toHaveLength(1);
+    expect(s.departures()[0]!.by).toBe('self');
+    // and the room is told once — the 🥾 card is keyed by who left, so a
+    // second owing is a second card about a departure that did not happen
+    expect(view(s, 'ada').owedDepartures).toEqual([cy]);
+    expect(view(s, bo).owedDepartures).toEqual([cy]);
+  });
+
+  it('the Founder’s ❌ and a carried motion on the same member are one departure too', () => {
+    const { s, bo, cy } = buildConstituted({ removal: { price: 'assembly' },
+      doors: { remove: { unilateral: true, assent: false } } });
+    const m = s.openMotion(3, bo, { kind: 'remove', member: cy });
+    s.remove(4, cy); // the pen gets there first
+    s.answerMotion(5, 'ada', m, 'accept');
+    expect(s.motionRecords().get(m)!.status).toBe('carried');
+    expect(s.departures()).toHaveLength(1);
+    expect(s.departures()[0]!.by).toBe('convenor');
   });
 });
 

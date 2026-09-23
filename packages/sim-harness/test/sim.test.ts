@@ -79,13 +79,37 @@ describe('scripted simulation', () => {
     expect(metrics.diagonalComparisons).toBe(0);
   }, 30_000);
 
-  it('respects the token economy: drafting is bounded by grants', async () => {
-    const { metrics } = await run('economy');
+  it('respects the token economy: nobody mints tokens', async () => {
+    const { session, metrics } = await run('economy');
     for (const [, p] of Object.entries(metrics.participation)) {
-      // grant 4 + up to 10 drip - stakes + refunds; nobody mints tokens.
       expect(p.tokensLeft).toBeGreaterThanOrEqual(0);
-      expect(p.drafts).toBeLessThanOrEqual(14);
     }
+    // **The bound on drafts is not the grant, and since Q1440 it is nowhere
+    // near one** (2026-09-18). This test asserted `drafts <= 14` — grant 4
+    // plus up to ten drips — on the reasoning that a stake leaves the wallet
+    // and only some of it comes back. It came back on performance until Q1454
+    // (`stake × min(w/0.5, 1.5)`, paid at every exit), and before Q1440 that
+    // hardly mattered, because a losing candidate stayed in the field until
+    // T=0 and its author's token stayed in it; closed the moment the room has
+    // refused it, the stake came back and the same persona proposed again.
+    // 413 candidates on this run, 412.11 of the 413 staked ✏️ refunded.
+    //
+    // **Q1454 answers half of that and not the other half** (same day): only a
+    // pass is refunded now, and 342 candidates come out of this run, of which
+    // 234 adopt — every refund is an adoption, and 108 stakes stay spent.
+    // Nobody mints tokens and no ledger goes negative, which is §7's own
+    // invariant; but this room adopts most of what it proposes, so the drip
+    // and the passes together still pay for far more drafting than the grant
+    // would. The finding stands for the record and the numbers are not pinned;
+    // what is asserted is the invariant, and — since Q1454 — that every ✏️
+    // handed back belongs to a candidate that left by a door §7 pays for.
+    const all = session.allCandidates();
+    expect(all.length).toBeGreaterThan(14);
+    const refunded = all.reduce((a, c) => a + (c.exit?.refund ?? 0), 0);
+    const paidFor = all.filter((c) =>
+      c.state === 'adopted' || c.state === 'withdrawn' || c.state === 'merged');
+    expect(refunded).toBe(paidFor.reduce((a, c) => a + c.stakePaid, 0));
+    expect(refunded).toBeLessThan(all.length); // and something did not pass
   }, 30_000);
 });
 

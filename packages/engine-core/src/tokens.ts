@@ -107,7 +107,28 @@ export function balanceAt(ledger: Ledger, constitution: Constitution, t: number)
   return creditedAt(ledger, constitution, t).balance;
 }
 
-/** refund = stake × min(peakW / 0.5, 1.5) (SPEC §7). */
-export function performanceRefund(stake: number, peakW: number): number {
-  return stake * Math.min(peakW / 0.5, 1.5);
+/**
+ * How a candidate left its race, for the one purpose of pricing the exit.
+ *
+ * - `passed` — the room carried it (§4.2), the convenor's assent included.
+ * - `handed-back` — the author took it back rather than being beaten: a
+ *   withdrawal (§3.3a), a candidate folded into the one its author co-signs
+ *   (§5.1), a patch handed back by a failed rebase (§2.4).
+ * - `failed` — every other ending: rejected, closed early as dominated
+ *   (§4.4), refused by the Founder's 🛡️ (§9.7 rule 8), still undecided at
+ *   the close (§4.6).
+ */
+export type CandidateExit = 'passed' | 'handed-back' | 'failed';
+
+/**
+ * What a candidate's stake gets back when it leaves (SPEC §7, Q1454).
+ *
+ * **Only a proposal that passes is refunded, and it returns exactly what it
+ * staked** — no more, so proposing well is free and never profitable. A
+ * failure returns nothing: a cost a failure hands back is not a cost, and the
+ * stake exists to make proposing cost something. What the author takes back
+ * themselves is theirs either way.
+ */
+export function exitRefund(stake: number, exit: CandidateExit): number {
+  return exit === 'failed' ? 0 : stake;
 }

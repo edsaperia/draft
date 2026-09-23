@@ -28,17 +28,18 @@ import type { Persistence } from './persistence.js';
 import { PgPersistence } from './pg-persistence.js';
 import { Stash } from './stash.js';
 import { makeMailer } from './mailer.js';
-import { logError } from './error-log.js';
+import { logError, newRaceCounts } from './error-log.js';
 import { MailOutbox } from './outbox.js';
 import { asEngineDoc, resumeBridge } from './engine-host.js';
 import type { Mailer } from './mailer.js';
-import { PauseState, WritePath } from './write-path.js';
+import { NotSavedError, PauseState, WritePath } from './write-path.js';
 import { json, makeReq, pathOf, routeMatches, sweepBuckets } from './routes.js';
 import type { Route, RouteContext } from './routes.js';
 import { devLadderTable, devMailTable } from './routes-dev.js';
 import { healthTable, operatorTable } from './routes-admin.js';
 import { authTable } from './routes-auth.js';
 import { memberTable } from './routes-member.js';
+import { feedTable } from './routes-feed.js';
 import { surfaceTable } from './routes-surface.js';
 
 /**
@@ -62,6 +63,10 @@ const ROUTES: Route[] = [
   ...devLadderTable,
   ...authTable,
   ...memberTable,
+  // the spectator feed (Q1466): its paths are one segment longer than any row
+  // below claims, so where it stands among them is free — beside the member
+  // read it is the sibling of
+  ...feedTable,
   ...surfaceTable,
 ];
 
@@ -124,7 +129,14 @@ export async function createDraftServer(cfg: ServerConfig,
    */
   const errors = { total: 0, request: 0, tick: 0, outbox: 0,
     last: null as null | { at: number; where: string; kind: string } };
-  const noteError = (where: 'request' | 'tick' | 'outbox', e: unknown): void => {
+  // **and beside them, the refusals nobody did anything wrong to meet**
+  // (Q1493 (a)): a judgment on a pair that closed, a proposal pressed in the
+  // second after somebody else's adoption. The page answers both itself, so
+  // they are counted here and kept out of the error log — see `raceRefusal`.
+  const races = newRaceCounts();
+  const noteError = (where: 'request' | 'tick' | 'outbox', thrown: unknown): void => {
+    // a save the store refused (issue #79) is counted as the store's error
+    const e = thrown instanceof NotSavedError && thrown.cause !== undefined ? thrown.cause : thrown;
     errors.total += 1;
     errors[where] += 1;
     const code = (e as { code?: unknown }).code;
@@ -192,8 +204,8 @@ export async function createDraftServer(cfg: ServerConfig,
    * static family and `/healthz` must see the move.
    */
   const ctx: RouteContext = {
-    cfg, store, auth, mailer, outbox, stash, commits, writes, pause,
-    errors, bootedAtMs, httpsOn,
+    cfg, store, persistence, auth, mailer, outbox, stash, commits, writes, pause,
+    errors, races, bootedAtMs, httpsOn,
     designDir: cfg.designDir,
     buildSha: cfg.buildSha,
     surfaceSha: null,
@@ -223,25 +235,31 @@ export async function createDraftServer(cfg: ServerConfig,
       // module and validation errors are written for members and pass
       // through; anything carrying a system code (fs, net) is internal
       // and says nothing about itself (stage 3, defect 9)
-      const internal = typeof (e as { code?: unknown }).code === 'string';
+      // …and a save the store refused (issue #79) is internal too, counted by
+      // its store error, but its own sentence is the one the member reads
+      const notSaved = e instanceof NotSavedError;
+      const cause = notSaved && e.cause !== undefined ? e.cause : e;
+      const internal = notSaved || typeof (e as { code?: unknown }).code === 'string';
       if (internal) {
-        noteError('request', e);
+        noteError('request', cause);
         console.error(`internal error (#${errors.total}) ${req.method ?? '-'} `
-          + `${(req.url ?? '/').split('?')[0]}:`, e);
+          + `${(req.url ?? '/').split('?')[0]}:`, cause);
       }
       const message = e instanceof Error ? e.message : String(e);
+      const reason = cause instanceof Error ? cause.message : String(cause);
       // **and every request that failed lands in the error log** (Q1330) —
       // a refusal the cmd route already wrote carries `logged`; everything
       // else is written here with what the catch knows: the path, the
       // status and the reason. The 500's reason is the full message, which
       // the wire never gets (stage 3, defect 9) and the operator's file may.
       if (!(e as { logged?: boolean }).logged) {
-        logError(cfg.dataDir, { kind: internal ? 'failed' : 'refused',
+        logError(persistence, { kind: internal ? 'failed' : 'refused',
           status: internal ? 500 : 400, method: req.method ?? '-', path: pathOf(req),
-          reason: message });
+          reason: notSaved ? reason : message });
       }
       if (!res.headersSent) {
-        if (internal) json(res, 500, { error: 'something went wrong' });
+        if (notSaved) json(res, 500, { error: message, notSaved: true });
+        else if (internal) json(res, 500, { error: 'something went wrong' });
         else json(res, 400, { error: message });
       }
     });
@@ -267,7 +285,11 @@ export async function createDraftServer(cfg: ServerConfig,
     // pipeline — these directives bite without breaking it
     res.setHeader('x-content-type-options', 'nosniff');
     // which bytes are answering (see cfg.buildSha): CI polls this after a
-    // deploy so that "verified" is a statement about the new build
+    // deploy so that "verified" is a statement about the new build. **A
+    // surface upload moves it** (Q1347), which is what makes an open page
+    // reload — so this header names the page's commit, not the process's.
+    // Which *process* is running is `booted` in `/healthz` (issue #8, F1),
+    // and that is the field the deploy lane compares against.
     if (ctx.buildSha !== null) res.setHeader('x-build', ctx.buildSha);
     // tokens, views and interstitials must never sit in a cache
     // (review #1, finding 10)

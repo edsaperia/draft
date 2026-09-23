@@ -17,6 +17,20 @@ export interface Hunk {
   start: number;
   end: number;
   lines: string[];
+  /**
+   * **What this hunk believes it is replacing** (SPEC §2.1 → why: R-136):
+   * the exact lines of `baseVersion` at [start, end), so
+   * `was.length === end - start`. A replacement carries it; a pure
+   * insertion carries `after` instead. Required at every participant
+   * boundary and **never written to the log** — `text/attest.ts` fills it,
+   * checks it and strips it before anything is emitted.
+   */
+  was?: string[];
+  /**
+   * A pure insertion's attestation (`start === end`): the exact line
+   * immediately before the insertion point, `null` only at `start === 0`.
+   */
+  after?: string | null;
 }
 
 /** A candidate's transformation of the document (SPEC §2.1). */

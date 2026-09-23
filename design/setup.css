@@ -132,18 +132,31 @@
      there is a different state of one kind of thing; a setup rail is the
      reverse — one state, many kinds — so it marks subject instead. The two sets
      never share a column. */
-  .queue.stack .ql { display: flex; align-items: baseline; gap: var(--s1); }
-  .queue.stack .ql .subj { font-size: 1.05em; line-height: 1; }
+  .queue.stack .ql { display: flex; align-items: baseline; }
+  /* **The subject glyph stands in the mark's own box** (Ed's screenshot,
+     2026-09-17): `.qmark`'s fixed width and its 6px margin (system.css, his
+     ruling of 2026-08-17 — *a margin belongs to the thing it follows and
+     travels with it into either layout*), which `.subj` never took. It had the
+     row's 4px `gap` where the row was a flex and nothing at all where a
+     one-line entry sets the row to `display: block` — so a waiting ⏳ touched
+     its title — while the charter's marks had margin *and* gap, 10px. One box,
+     one margin, no row gap: the titles start in one column on every entry. */
+  .queue.stack .ql .subj {
+    flex: none; font-size: var(--t-small); line-height: 1.35;
+    width: 1.15em; display: inline-flex; justify-content: center; align-items: baseline;
+    margin-right: 6px;
+  }
   /* the person's face on an entry about them (Q1375): the speaker line's own
-     18px disc, centred on the line rather than hung off a baseline it has none of */
-  .queue.stack .ql .qface { align-self: center; margin-top: 0; }
+     18px disc, centred on the line rather than hung off a baseline it has none of;
+     the space before the name is the face's own, the row having no gap */
+  .queue.stack .ql .qface { align-self: center; margin-top: 0; margin-right: 6px; }
   .queue.stack .ql > .qt { flex: 1; min-width: 0; }
   /* wait/yours/done entries used to wear session-view's .deciding, whose
      meaning there is *you already judged it* (drift fix, 2026-08-18):
      same quiet one-line look, honest name */
   .queue button.qwait { padding: var(--s1) 10px; color: var(--muted); }
   .queue button.qwait .ql { display: block; white-space: nowrap; overflow: hidden;
-    text-overflow: ellipsis; font-weight: 500; font-size: var(--t-small); }
+    text-overflow: ellipsis; font-weight: 500; }   /* the title's size is every entry's (Q1448) */
   .queue button.qwait .ql .qv { display: inline; margin: 0; font-weight: 400; }
 
 /* ---------------------------------------------------------------------------
@@ -187,10 +200,18 @@
   .choice + .eyebrow.fieldlab { margin-top: var(--s4); }
   .pick .exp { display: block; color: var(--muted); font-size: var(--t-small);
     margin-top: var(--s1); padding-left: 2px; max-width: 58ch; }
-  /* a rung whose sentence is written by the keystroke (`data-meaning`) keeps
-     its slot in the DOM while it has nothing to say, and collapses to nothing
-     rather than reserving a line — `.meaning:empty`'s rule, same reason */
+  /* a rung whose explainer has nothing to say keeps its slot in the DOM and
+     collapses to nothing rather than reserving a line (it carried the
+     keystroke's own meaning sentence until that line left the surface —
+     Q1439, 2026-09-18) */
   .pick .exp:empty { display: none; }
+  /* **👥's own sentence sits inside the option's text** (Q1490, R-139), under
+     the rule it is about rather than under the whole block, because it is a
+     gloss on the number in that very clause. It is not clause text, so it
+     takes the chrome face back off `.opttext` (T46's second half) while
+     keeping every other `.exp` rule — the muted colour, the small size and
+     the collapse when there is nothing to say. */
+  .pick .opttext .exp { font-family: var(--font-ui); line-height: 1.5; }
   /* **The option block** (CP1, Q1096, 2026-08-31): the option's text stands
      above its radio as text to be read, and the radio beneath is the same
      *Prefer this / Preferred* pill on every card — what you read is the
@@ -231,8 +252,12 @@
   .pick .opttext .numin.datein { width: auto; max-width: 16rem; }
   /* ⏱️'s unit dropdown is a word in its sentence too (Ed's QA, 2026-09-02
      pm): a select inherits no font by default, so it is told to — the whole
-     `font`, not just the size — and takes only the box its word needs. */
-  select.dripunit, .pick .opttext .numin.dripunit { font: inherit; width: auto; }
+     `font`, not just the size — and takes only the box its word needs.
+     💤 takes the same control since Q1439 (minutes · hours · days), so the
+     class is the treatment's name rather than ⏱️'s: `.dripunit` was the one
+     picker's own word, and two pickers share one word only if nothing in it
+     names the first. */
+  select.unitsel, .pick .opttext .numin.unitsel { font: inherit; width: auto; }
   /* ❌'s member picker is a decision in its own right, not a form field, so
      it reads at clause size rather than the browser's own cramped control
      (Ed, card review round 3, 2026-09-05, A11). */
@@ -448,14 +473,11 @@
      blindnote beneath it, and deliberately no hot colour and no glyph: grey
      means nothing is being asked of you, and this asks nothing */
 
-  /* what choosing this value would do, in this room (entry 167) — a note
-     under a number field, so it takes the `.exp` treatment a rung's own
-     explanation has rather than the ceiling note's smaller cap size: it sits
-     beside controls, not under the whole card. Grey and asking nothing (T19),
-     and empty until there is a value, which is why it collapses to nothing
-     rather than reserving a line. */
-  .meaning { font-size: var(--t-small); color: var(--muted); margin-top: var(--s2); }
-  .meaning:empty { display: none; }
+  /* `.meaning` — what choosing this value would do, in this room (entry 167),
+     a grey note under 👥's, ⏱️'s and 💤's number fields — **left the surface
+     on 2026-09-18** (Ed, Q1439: *the meaning lines go, all three*). Each rule
+     sentence stands alone now, `meaningOf` is engine-side only, and the rules
+     went with the last elements that carried the class. */
 
   /* `.methodnote` — the one place the method was named, and the link out
      to /pairwise (entry 163) — went with 🌡️ on 2026-09-15 (Q1362). No card

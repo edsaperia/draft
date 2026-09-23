@@ -35,10 +35,17 @@
  *
  * **The cooldown must be 0** and the walk refuses a server where it is not:
  * the second adoption of phase A would otherwise wait out a real cooldown
- * (§4.2 allows up to 5 minutes), which no CI walk can sit through. CI boots
- * this walk its own server for exactly that reason — the shared walk server
- * keeps the default cooldown because the ladder's seeded history was built
- * under it.
+ * (§4.2 allows up to 5 minutes), which no CI walk can sit through. The host
+ * default *is* 0 (`HOST_COOLDOWN_MS`, config.ts, R-086), so the line above
+ * states what a bare `npm run server` already does; it is written out
+ * because the refusal is on the value `/healthz` reports, not on the
+ * variable, and a default that moves must not take this walk with it.
+ *
+ * CI boots this walk its own server, and **not for the cooldown** (issue
+ * #17, F1: this sentence claimed otherwise until 2026-09-17). It is for
+ * isolation: phase A drives a fifteen-member room and phase B a whole
+ * ladder document with its twenty-strong cast, which is not a thing to
+ * build on the process nine other walks are founding documents on.
  *
  * The sweep runs at every judgment on a cooldown-0 server, so the race
  * resolves the moment floor and bar are both crossed — usually before the
@@ -47,7 +54,7 @@
  * phase B: parked), and asserts the resolution instead.
  */
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
-import { say, post as postTo, followLink } from './lib/walk.mjs';
+import { say, post as postTo, followLink, withWas } from './lib/walk.mjs';
 
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
 const SEED = Number((process.argv.find((a) => a.startsWith('--seed=')) || '').split('=')[1] || 11);
@@ -114,7 +121,8 @@ async function proposeAndVote({ author, seats, pick, newLine, why, resolved, ins
   // itself untouched — what moves every record below it (Q1333)
   const p = await cmd(author, 'propose-text', {
     baseVersion: v.textVersion,
-    hunks: [{ start: li, end: insertBefore ? li : li + 1, lines: [newLine] }],
+    // the wording it replaces, off the very view the line was picked from (Q1463 (1))
+    hunks: withWas(v.text, [{ start: li, end: insertBefore ? li : li + 1, lines: [newLine] }]),
     why,
   });
   const cid = p.id;
@@ -190,7 +198,7 @@ say(`  invited and arrived ${members.length} members`);
 await cmd('founder', 'set-setting', { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
 for (const [setting, value] of Object.entries({
   pace: { shape: 'fixed' },
-  quorum: { form: 'share', n: 60 },
+  quorum: { form: 'share', n: 40 },
   authorship: { rung: 'sealed' },
   judgments: { rung: 'after' },
   applications: { apply: true },
@@ -346,6 +354,14 @@ if (park === null) {
   const rec = (after.records ?? []).find((r) => r.candidateId === cidB
     || r.field?.some((f) => f.candidateId === cidB));
   must(rec?.outcome === 'adopted', `a record with outcome 'adopted' exists for the parked candidate`);
+  // **and it states the membership's numbers** (Q1458, Ed 2026-09-18): the
+  // three ride the park and the accept copies them, so the passed card on a
+  // shielded adoption says how many weighed in exactly as any other does.
+  // Until this they were the one adoption's record that stated none of them.
+  must(typeof rec?.approvals === 'number' && typeof rec?.floor === 'number'
+    && typeof rec?.abstained === 'number',
+    `the parked adoption's record carries the numbers the room decided on `
+    + `(approvals ${rec?.approvals}, floor ${rec?.floor}, did not answer ${rec?.abstained})`);
   const mine = (after.mine ?? []).find((c) => c.id === cidB);
   must(mine && mine.state !== 'live', `the author's own entry left 'live' (${mine?.state})`);
 }

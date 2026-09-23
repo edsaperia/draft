@@ -6,7 +6,7 @@
  * asset route and states the new commit in `x-build` and `/healthz`; and a
  * stranger's POST is 404 without the key, 401 with a wrong one.
  */
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { AddressInfo } from 'node:net';
@@ -17,17 +17,22 @@ import { createDraftServer } from '../src/server.js';
 import type { DraftServer } from '../src/server.js';
 import { SURFACE_NAME, packTar, readTarGz } from '../src/surface.js';
 
+/** The three commits `/healthz` reports (issue #8, F1). */
+interface Health { build: string | null; surface: string | null; booted: string | null }
+
 const tmp = () => mkdtempSync(join(tmpdir(), 'draft-surface-'));
 const booted: DraftServer[] = [];
 afterAll(async () => { for (const d of booted) await d.close(); });
 
-async function boot(botKey: string | null): Promise<{ base: string; dataDir: string }> {
+/** The admin key guards the surface (issue #10); the bot key defaults to it
+ *  so a case about the surface alone need name one key. */
+async function boot(adminKey: string | null, botKey: string | null = adminKey): Promise<{ base: string; dataDir: string }> {
   const dataDir = tmp();
   const cfg = {
     port: 0, dataDir, baseUrl: 'http://127.0.0.1',
     designDir: join(import.meta.dirname, '..', '..', '..', 'design'),
     resendApiKey: null, mailFrom: 'test <t@example.org>', mailOff: false,
-    botKey,
+    botKey, adminKey,
     secret: 'test-secret', store: 'file' as const, databaseUrl: null,
     trustProxy: false, buildSha: 'aaaaaaa', notifyEmail: null,
   };
@@ -42,6 +47,24 @@ const page = '<meta charset="utf-8"><title>surface test</title><p>a new surface<
 const upload = (base: string, sha: string, body: Buffer, key = 'test-key') =>
   fetch(`${base}/api/admin/surface?sha=${sha}`, { method: 'POST',
     headers: { 'content-type': 'application/gzip', authorization: `Bearer ${key}` }, body });
+
+/**
+ * **The page is replaced on the admin key alone** (issue #10; Ed, 2026-09-22,
+ * option 1): the surface route installs and serves whatever page it is sent,
+ * so the key to it is the key to every member's page — and it was the bot
+ * key, typed on command lines and declared on the public dev host. The bot
+ * key is refused here now, and the admin key refused at the bot outbox.
+ */
+describe('the surface takes the admin key and no other (issue #10)', () => {
+  it('refuses the bot key and accepts the admin key', async () => {
+    const { base } = await boot('admin-key', 'bot-key');
+    const body = gzipSync(packTar([{ name: 'design/session-view.html', data: Buffer.from(page) }]));
+    const withBot = await upload(base, 'bbbbbbb', body, 'bot-key');
+    expect(withBot.status).toBe(401);
+    const withAdmin = await upload(base, 'bbbbbbb', body, 'admin-key');
+    expect(withAdmin.status, await withAdmin.clone().text()).toBe(200);
+  });
+});
 
 describe('the tar reader', () => {
   it('reads what the writer packs, and refuses what is not a page file', () => {
@@ -70,6 +93,40 @@ describe('the tar reader', () => {
   });
 });
 
+/**
+ * **The lane's copy of the served set, against the host's own** (issue #8,
+ * F2). CI decides whether a push takes the surface lane by grepping the
+ * changed paths, and it grepped `^design/` — so design/DECISIONS.md and
+ * design/tools/ took the lane, uploading nothing the host serves and
+ * reloading every open page for it. The filter is `SURFACE_NAME` restated
+ * as an ERE in the workflow, and a restatement drifts unless something
+ * reads both: this asserts the two are the same pattern, character for
+ * character, and the comment above the workflow's line names this test.
+ */
+describe('the deploy lane\'s surface filter', () => {
+  it('is SURFACE_NAME, restated (issue #8)', () => {
+    const yml = readFileSync(join(import.meta.dirname, '..', '..', '..',
+      '.github', 'workflows', 'ci.yml'), 'utf8');
+    const lines = [...yml.matchAll(/^\s*SURFACE_ERE='(.*)'\s*$/gm)].map((m) => m[1]!);
+    expect(lines.length, 'the workflow states SURFACE_ERE exactly once').toBe(1);
+    // the one licensed difference: a literal in a regex escapes its slashes
+    // because a slash ends the literal, and an ERE in single quotes does not
+    expect(lines[0]).toBe(SURFACE_NAME.source.replace(/\\\//g, '/'));
+    // and the pattern is the one an upload is refused by, so what the lane
+    // selects is exactly what the host would take
+    for (const served of ['design/session-view.html', 'design/cards.js', 'design/system.css',
+                          'design/fluent-glyphs.svg', 'design/fonts/CharisSIL-Regular.woff2',
+                          'design/fonts/OFL.txt']) {
+      expect(new RegExp(lines[0]!).test(served), served).toBe(true);
+    }
+    for (const notServed of ['design/DECISIONS.md', 'design/STYLE.md', 'design/MOBILE.md',
+                             'design/tools/toc-travel.mjs', 'design/reference/session.js',
+                             'design/spec-pass/pass-6.md', 'docs/OPERATING.md', 'SPEC.md']) {
+      expect(new RegExp(lines[0]!).test(notServed), notServed).toBe(false);
+    }
+  });
+});
+
 describe('the surface route', () => {
   it('is an unknown path without the key and refuses a wrong one', async () => {
     const bare = await boot(null);
@@ -83,6 +140,9 @@ describe('the surface route', () => {
     const before = await fetch(`${base}/`);
     expect(before.headers.get('x-build')).toBe('aaaaaaa');
     expect(await before.text()).not.toContain('a new surface');
+    const health = async (): Promise<Health> =>
+      (await (await fetch(`${base}/healthz`)).json()) as Health;
+    expect(await health()).toMatchObject({ build: 'aaaaaaa', surface: null, booted: 'aaaaaaa' });
 
     const bad = await upload(base, 'not a sha', gzipSync(packTar([])));
     expect(bad.status).toBe(400);
@@ -120,9 +180,15 @@ describe('the surface route', () => {
     }
     expect(await (await fetch(`${base}/`)).text()).toContain('a new surface');
     expect(await (await fetch(`${base}/system.css`)).text()).toBe('body{color:red}');
-    const h = (await (await fetch(`${base}/healthz`)).json()) as { build: string; surface: string | null };
+    // **and the booted commit stands still** (issue #8, F1): `build` is what
+    // `x-build` says and a page upload moves it, `surface` is the upload's
+    // own commit — `booted` is the process, which no upload touches. CI
+    // reads this field to tell a host running the pushed engine from a host
+    // merely serving the pushed page (design/DECISIONS.md:6907).
+    const h = await health();
     expect(h.build).toBe('bbbbbbb');
     expect(h.surface).toBe('bbbbbbb');
+    expect(h.booted).toBe('aaaaaaa');
     // a file the upload did not carry is gone with the old directory
     expect((await fetch(`${base}/setup.js`)).status).toBe(404);
   });

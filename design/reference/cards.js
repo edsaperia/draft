@@ -54,6 +54,14 @@ window.CARDS = (function () {
   // A proposal that removes the text **entirely** would come out of here as an
   // empty string, and blank is the one rendering that cannot be told from
   // unchanged — so that case says so in words (Ed, 274).
+  //
+  // The empty block is what an **editing** lane wants: a line you can still put
+  // a caret in, saying what it is through a pseudo-element so there is nothing
+  // for `readLane` to read back into the candidate (system.css,
+  // `.lp.empty::before`). A lane that is only *read* wants the opposite —
+  // `removedHtml` below — so this returns the empty block and `laneHtml` is
+  // what a reading site calls.
+  const EMPTY_LP = '<div class="lp empty"><br></div>';
   function resultOnly(marked) {
     const out = marked
       .replace(/\s*<del>[\s\S]*?<\/del>\s*/g, ' ')          // a cut leaves one space behind…
@@ -62,8 +70,23 @@ window.CARDS = (function () {
       .replace(/\s{2}/g, ' ')
       .trim();
     return out.replace(/<[^>]*>/g, '').trim()
-      ? out : '<div class="lp empty"><br></div>';
+      ? out : EMPTY_LP;
   }
+
+  // **A deletion's card draws a sentence** (Q1412, Ed 2026-09-17, from the
+  // proposal-shapes walk's C6: *the head shows the clause and the proposal
+  // block is empty — the card that asks you to delete a clause says nothing*).
+  // One muted note, in the lane's own place, wherever a candidate with no
+  // wording is read: the pair card against the incumbent, a pair of two
+  // deletions, your own proposed deletion, and the record's field. It is real
+  // content, not a pseudo-element, because a reading lane is never serialised
+  // back — which is also what makes it legible to a walk and to a reader.
+  const removedHtml = () => '<div class="lp removed">' + esc(G.lane.removed) + '</div>';
+  // the reading of a marked wording: what would stand, or the removal note
+  const laneHtml = (marked) => {
+    const out = resultOnly(marked);
+    return out === EMPTY_LP ? removedHtml() : out;
+  };
 
   const stripTags = (h) => String(h).replace(/<[^>]+>/g, '');
 
@@ -579,7 +602,8 @@ window.CARDS = (function () {
   // heading in it lost its rank.
   function mdBlocksHtml(oldText, newText, force) {
     const src = String(newText ?? '');
-    if (!src.trim()) return '<div class="lp empty"><br></div>';
+    // nothing would stand here: a deletion, and it says so (Q1412)
+    if (!src.trim()) return removedHtml();
     let pieces = oldText == null ? [[mdMask(src), null]] : mdDiffPieces(oldText, src, false);
     if (oldText != null && !force) {
       let same = 0, all = 0;
@@ -629,20 +653,21 @@ window.CARDS = (function () {
   // **A marker previews as it will land** (Q1294, Ed 2026-09-10): a block
   // whose text begins `# ` or `- ` wears the heading or bullet treatment
   // here, with the marker itself dimmed in a `.mdmark` span — still text, so
-  // the caret counts it and `htmlToMd` writes it back: what is proposed is the
-  // source, and the engine's `blocksOf` reads the same prefix on landing.
+  // the caret counts it: what is proposed is the source, and the engine's
+  // `blocksOf` reads the same prefix on landing.
   // **And the marker is the only thing that ranks a block** (Q1403, Ed
   // 2026-09-16): the lane holds the candidate's markdown exactly — an
   // existing heading arrives with its `# ` as real text (`sourceTextFor`), a
   // block whose marker is deleted is a paragraph, a typed marker makes a
   // heading. Until Q1403 a `kinds` argument re-applied the origin's rank to
-  // a marker-less block, which is what made a heading's rank uneditable. In
-  // markdown mode nothing is dressed at all.
-  function laneBlocks(text, oldText, raw) {
-    // `raw` is markdown mode: the characters as they are, monospace, nothing
-    // rendered — which is the whole point of the mode, since it exists to let
-    // somebody check that their edit is exactly what they meant.
-    const render = raw ? esc : mdToHtml;
+  // a marker-less block, which is what made a heading's rank uneditable.
+  // **The lane is the source and nothing else** (Q1467, Ed 2026-09-19): the
+  // inline marks stand as the characters `**`, `*` and backticks rather than
+  // as bold, italic and code, so the lane and the candidate hold the same
+  // string and no caret is ever converted between two readings of it. The
+  // block still wears its rank, which is what a marker is for.
+  function laneBlocks(text, oldText) {
+    const render = esc;
     // Result-only (274): the diff marks what a proposal adds and never what it
     // cut, in the lane exactly as on the card.
     const pieces = oldText == null ? [[String(text), null]] : diffPieces(oldText, text, false);
@@ -656,11 +681,11 @@ window.CARDS = (function () {
     }
     // An emptied block keeps its `<br>` — it is still a line you can put a
     // caret in — and says what it is through a pseudo-element, so the helper is
-    // drawn without being *content*: nothing for `htmlToMd` to serialise back
-    // into the candidate, and nothing for the caret to land after.
+    // drawn without being *content*: nothing to read back into the candidate,
+    // and nothing for the caret to land after.
     return blocks.map((ps) => {
       const src = ps.map(([t]) => t).join('');
-      const typed = raw ? null : mdBlock(src);
+      const typed = mdBlock(src);
       // the marker's characters come off the front of the pieces, whatever
       // the diff made of them — a marker is never marked green
       let lead = typed ? typed.marker.length : 0;
@@ -745,9 +770,11 @@ window.CARDS = (function () {
     }).join('');
   }
   const mdLine = (src) => linkifyHtml(mdToHtml(src));
-  // …and back. Walks what the browser made of the lane and writes the markdown
-  // for it, so editing rich never silently drops the marks it is showing.
-  // `<ins>`/`<del>` are the diff's own wrappers and contribute nothing.
+  // …and back. Walks what the browser made of a rendered editable and writes
+  // the markdown for it, so editing rendered never silently drops the marks it
+  // is showing. `<ins>`/`<del>` are the diff's own wrappers and contribute
+  // nothing. Since Q1467 its one caller is the founder's pre-🍾 column
+  // (`edit-mode.js`), which is rendered while it is read.
   function htmlToMd(node) {
     let out = '';
     for (const n of node.childNodes) {
@@ -767,27 +794,20 @@ window.CARDS = (function () {
   const mdStrip = (src) => String(src).replace(MD_RX, (m) =>
     m.startsWith('**') ? m.slice(2, -2) : m.slice(1, -1));
 
-  // A caret offset does **not** mean the same thing in the two views: markdown
-  // mode shows the syntax characters and rich mode does not, so the same place
-  // in the text is a different number of characters along. Switching view
-  // therefore converts rather than assuming — otherwise the caret drifts by two
-  // characters for every bold word above it, which is exactly the class of bug
-  // the mode exists to help somebody catch.
+  // A caret offset does **not** mean the same thing in a rendered block and in
+  // its source: the source shows the syntax characters and the rendering does
+  // not, so the same place in the text is a different number of characters
+  // along. A surface that shows both therefore converts rather than assuming —
+  // otherwise the caret drifts by two characters for every bold word above it.
+  // Since Q1467 that is the founder's own column alone, which is rendered
+  // while it is read and source while it is edited; the charter's lanes are
+  // source at all times and convert nothing (`richToSource` went with the
+  // `[]` toggle).
   const MD_ONE = /^(\*\*[^*\n]+\*\*|\*[^*\n]+\*|`[^`\n]+`)$/;
   const mdLead = (p) => (p.startsWith('**') ? 2 : 1);
   const mdInner = (p) => (p.startsWith('**') ? p.slice(2, -2) : p.slice(1, -1));
   const mdParts = (src) => String(src).split(MD_RX).filter((p) => p !== '' && p != null);
 
-  function richToSource(src, off) {
-    let s = 0, r = 0;
-    for (const part of mdParts(src)) {
-      const mark = MD_ONE.test(part);
-      const inner = mark ? mdInner(part) : part;
-      if (off <= r + inner.length) return s + (mark ? mdLead(part) : 0) + (off - r);
-      r += inner.length; s += part.length;
-    }
-    return String(src).length;
-  }
   function sourceToRich(src, off) {
     let s = 0, r = 0;
     for (const part of mdParts(src)) {
@@ -800,22 +820,43 @@ window.CARDS = (function () {
     }
     return mdStrip(src).length;
   }
-  const originText = (site) => site.origin.map((o) => o.text).join('\n');
+  // What a site's lane is diffed against — the green marking's base. **The
+  // wording you started from where ✏️ gave you one** (Ed, 228), and the
+  // document's own blocks otherwise; the two stopped being the same field in
+  // Q1483, because the origin is also what says where the site still belongs
+  // (`misaimed`, `followSites`) and a rival's wording is nowhere in the
+  // document.
+  const originText = (site) => (site.seed != null ? site.seed : site.origin.map((o) => o.text).join('\n'));
   // Read back whatever the browser made of the editing: blocks separated by
   // newlines, however they ended up nested.
-  // Read the lane back as **markdown source**, which is what a candidate is.
-  // In markdown mode the visible characters already are the source; in rich
-  // mode the marks are real elements and have to be written back out, so that
-  // editing rendered never silently drops the emphasis it is showing you.
+  // The lane's visible characters **are** the candidate's markdown source
+  // (Q1467), so reading it back is reading its text — nothing is serialised
+  // out of elements and no emphasis can be dropped on the way.
+  // **A block the member made is a line they made** (issue #78): Enter at the
+  // lane's end makes an empty last block, and until #78 the trailing strip
+  // read it as no change at all — the lane was redrawn without it, the caret
+  // came back to line one and the next sentence was glued onto the last with
+  // no separator, into the adopted text. So each block's own trailing break (a
+  // `<br>` the browser keeps in it) comes off the block, and an empty **last**
+  // block of two or more is kept as the lane's final newline; runs of blank
+  // lines still collapse, a blank line being no line the column holds
+  // (`blocksOf`). What goes out drops that last empty line again: `sentText`.
   function readLane(el) {
-    const raw = el.classList.contains('md');
     const blocks = [...el.children].filter((c) => c.classList && c.classList.contains('lp'));
-    const src = blocks.length
-      ? blocks.map((b) => (raw ? b.innerText : htmlToMd(b))).join('\n')
-      : (raw ? el.innerText : htmlToMd(el));
+    const clean = (s) => s.replace(/ /g, ' ').replace(/\r/g, '');
+    if (blocks.length) {
+      const lines = blocks.map((b) => clean(b.innerText).replace(/\n$/, ''));
+      const joined = lines.join('\n').replace(/\n{2,}/g, '\n');
+      return lines.length > 1 && lines[lines.length - 1] === '' ? joined : joined.replace(/\n$/, '');
+    }
+    const src = el.innerText;
     return src.replace(/ /g, ' ').replace(/\r/g, '')
       .replace(/\n{2,}/g, '\n').replace(/\n$/, '');
   }
+  // What a site sends, and what counts as a change: its text without the
+  // empty last line an Enter at the lane's end leaves standing for the caret
+  // (#78). The lane keeps that line; the proposal never carries it.
+  const sentText = (site) => String(site.text == null ? '' : site.text).replace(/\n+$/, '');
 
   // ---- pure card sub-builders ---------------------------------------------
 
@@ -847,6 +888,37 @@ window.CARDS = (function () {
     }
     return seed(s.src, stripTags(resultOnly(s.marked)), s.keys);
   }
+  /* **A lane's name is the wording beside it** (Q1395 (a), Ed 2026-09-18).
+     CP1 puts the option's name on the block and leaves the button saying only
+     *Prefer this*, which is right for the eye and leaves a screen reader
+     hearing the same four words for both rival wordings. The block cannot
+     move onto the button without undoing CP1, so the button borrows it:
+     `aria-labelledby` naming the block's own text **and the button itself**.
+     The self-reference is what carries the state word correctly — the name
+     computation skips whichever of `.off`/`.on` CSS is hiding, so the name
+     reads *‹wording› Prefer this* while the lane rests and *‹wording›
+     Preferred* once it is chosen, instead of carrying both at once as the
+     bare text content does. It also keeps WCAG 2.5.3 Label in Name, which
+     naming the block alone fails: axe reports `label-content-name-mismatch`,
+     serious, the moment a control's visible word is not in its name.
+
+     The ids have to be unique on a page where two of a patch's cards are open
+     at once, and identical on every re-render, or the probes' html hashes go
+     non-deterministic — so they are derived from the card, its site and the
+     lane's own value, never minted from a counter. The value can be a
+     member-typed setting on a motion lane, so it is reduced to id-safe
+     characters rather than trusted. */
+  const idPart = (v) => String(v == null ? '' : v).replace(/[^A-Za-z0-9_-]+/g, '-');
+  const laneStem = (s, key, v) => idPart(s && s.id) + '-' + idPart(key) + '-' + idPart(v);
+  /** the element holding a lane's wording — a `.rtext`, or a composer block's `.opttext` */
+  const laneNameId = (s, key, v) => 'lw-' + laneStem(s, key, v);
+  /** the lane radio itself, so its own visible word joins its name */
+  const laneBtnId = (s, key, v) => 'lb-' + laneStem(s, key, v);
+  /** the clause at the head: the head lane's wording, and the group's name */
+  const laneHeadId = (s, key) => 'lh-' + idPart(s && s.id) + '-' + idPart(key);
+  /** what a card carrying lanes wears, so its options are one group rather than three loose radios */
+  const laneGroupAttrs = (s, key) =>
+    ' role="radiogroup" aria-labelledby="' + laneHeadId(s, key) + '"';
   const laneProposeHtml = (s, lane, key) =>
     '<button class="lanepropose" data-propose-from="' + s.id + '|' + lane + '|' + (key || '') +
     '" title="' + G.proposeEdit.title + '">' +
@@ -854,6 +926,128 @@ window.CARDS = (function () {
     // starts is a *proposal*, and "edit this" promises an edit — which is the
     // one thing this surface never lets you do to the charter directly.
     glyphify(G.proposeEdit.label) + '</button>';
+
+  /* ---- the abstention clock (Q1460, Ed 2026-09-18) ------------------------
+     *We should have small indicator on the right side of decision cards in
+     the indifferent row giving a countdown for when not voting will count as
+     a lapse* — 💤's period on this pair (SPEC §8.2, R-127), as hours and
+     minutes.
+
+     **Rounded up, never down**, which is the opposite of the session-clock's
+     rule and for the same reason: that clock must never promise time the
+     document does not have, and this one must never say 00:00 while a vote
+     would still be counted.
+
+     **Past a day it counts in days** (Q1460 (f)): *3 days & 04:12*, whole
+     days and then the hours and minutes left over, *1 day* in the singular.
+     Under twenty-four hours it is the hh:mm alone.
+
+     **And once the moment is behind us the spot stays and reads *abstained***
+     (Q1460 (a), Ed's own pick): the seat's silence has been counted, and a
+     line that vanished at zero took the one fact the reader needed with it.
+     Casting a late vote clears it, exactly as answering in time does — the
+     view stops serving the moment the instant the pair is answered.
+
+     **The number is its own element.** The sentence is one string in copy.js,
+     so the site of the time inside it is found by rendering the string around
+     a sentinel the copy cannot contain, and only that element's text is
+     patched as it counts (`tickAbstain`). Nothing around it is rebuilt, which
+     is what lets the line tick under a press and between polls alike — and
+     the flip to *abstained* rewrites that one span, once, since the words in
+     front of the figures are not the same words. The sentinel is ␟ and
+     deliberately **not** a NUL, which is the separator the charter key uses:
+     a NUL in a source file makes git call it binary and every diff of this
+     file a whole-file diff.
+
+     **Two forms, one renderer** (Q1460 (e)): the card's sentence, and the
+     rail's glyph-and-figures, which is drawn only inside the last day —
+     `railTooFar` is that rule and lives here, with the words. */
+  const ABS_DAY = 86_400_000;
+  const pad2 = (n) => String(n).padStart(2, '0');
+  function abstainHhmm(msLeft) {
+    if (!(msLeft > 0)) return null;
+    const mins = Math.ceil(msLeft / 60000);
+    return pad2(Math.floor(mins / 60)) + ':' + pad2(mins % 60);
+  }
+  /** The whole of what is left, in the card's units: hh:mm, or n days & hh:mm. */
+  function abstainLeft(msLeft) {
+    if (!(msLeft > 0)) return null;
+    const mins = Math.ceil(msLeft / 60000);
+    const days = Math.floor(mins / 1440);
+    if (days < 1) return abstainHhmm(msLeft);
+    const rest = mins % 1440;
+    return String(G.commit.abstainDays(days, pad2(Math.floor(rest / 60)) + ':' + pad2(rest % 60)));
+  }
+  /** The two forms: the card's sentence around the figures, the rail's glyph and figures. */
+  const ABS_FORMS = {
+    card: { parts: String(G.commit.abstainIn('␟')).split('␟'), cls: '', left: abstainLeft,
+      railTooFar: () => false },
+    rail: { parts: String(G.commit.abstainShort('␟')).split('␟'), cls: ' qab',
+      // the rail's figures are always hh:mm, because it is drawn only in the
+      // last day; the card's own line is untouched by that and shows at any
+      // distance (Q1460 (e))
+      left: abstainHhmm, railTooFar: (msLeft) => msLeft >= ABS_DAY },
+    // **A third form, and it is not about abstaining** (Q1486 (E), Ed
+    // 2026-09-21: *dark, with ✏️ hh:mm countdown … the same anywhere you would
+    // want to press the button but you have no ✏️s*). The words differ and the
+    // deadline is the wallet's next drip rather than a race's; everything else
+    // is this family — one absolute moment in an attribute, one 1 s timer
+    // patching the figures in place, never a render. At zero it prints
+    // nothing: the ✏️ has arrived and the button beside it has woken, which
+    // says it better than any sentence could. `zero` is what makes that
+    // possible, and is why the flip is not hard-coded to *abstained*.
+    drip: { parts: String(G.commit.dripIn('␟')).split('␟'), cls: ' pdrip',
+      left: abstainHhmm, railTooFar: () => false, zero: () => '' },
+  };
+  const absForm = (form) => ABS_FORMS[form] || ABS_FORMS.card;
+  /** What the note holds: the sentence around the figures, or what its form says at zero. */
+  function abstainInnerHtml(atMs, form) {
+    const f = absForm(form);
+    const left = f.left(atMs - Date.now());
+    if (left === null) return f.zero ? f.zero() : glyphify(esc(String(G.commit.abstained)));
+    return glyphify(esc(f.parts[0] || '')) + '<span class="abst">' + esc(left) + '</span>' +
+      glyphify(esc(f.parts[1] || ''));
+  }
+  /** The line, or nothing at all: no deadline, or one the rail is too far from. */
+  function abstainNoteHtml(atMs, form) {
+    const at = Number(atMs);
+    if (!Number.isFinite(at)) return '';
+    const f = absForm(form);
+    const msLeft = at - Date.now();
+    if (f.railTooFar(msLeft)) return '';
+    return '<span class="absnote' + f.cls + '" data-abstain-at="' + at + '"' +
+      (form ? ' data-absform="' + esc(form) + '"' : '') +
+      (msLeft > 0 ? '' : ' data-abstained="1"') + '>' +
+      abstainInnerHtml(at, form) + '</span>';
+  }
+  /**
+   * One pass over every countdown on the page: the figures patched where they
+   * changed, and the line flipped to *abstained* once — and only once — at
+   * zero. Called on a timer, never from a render: a countdown that waited for
+   * the 4s poll would jump four seconds at a time, and one that forced a
+   * render would rebuild the control under the reader's pointer.
+   */
+  function tickAbstain(root) {
+    const scope = root || (typeof document === 'undefined' ? null : document);
+    if (!scope || !scope.querySelectorAll) return;
+    scope.querySelectorAll('.absnote[data-abstain-at]').forEach((el) => {
+      const form = el.getAttribute('data-absform') || 'card';
+      const left = absForm(form).left(Number(el.getAttribute('data-abstain-at')) - Date.now());
+      if (left === null) {
+        // the words in front of the figures are not the words the form says
+        // at zero, so this one is a rewrite of the note rather than a patch
+        // of its number — done once, guarded by its own flag
+        if (el.getAttribute('data-abstained') !== '1') {
+          const f = absForm(form);
+          el.setAttribute('data-abstained', '1');
+          el.innerHTML = f.zero ? f.zero() : glyphify(esc(String(G.commit.abstained)));
+        }
+        return;
+      }
+      const n = el.querySelector('.abst');
+      if (n && n.textContent !== left) n.textContent = left;
+    });
+  }
 
   const initials = (n) => String(n).trim().split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
 
@@ -1075,23 +1269,21 @@ window.CARDS = (function () {
   // ---- the lane controls (Q1294 (b), Ed 2026-09-10) -------------------------
   // **One strip for the whole column**, at the top right of the text's card
   // in edit mode: B and I act on the selection in whichever editing lane
-  // holds the caret (and are disabled while none does), `[]` flips every
-  // clause and every open lane between rendered and source, its pressed-ness
-  // carrying the state. Drawn by the column's host beside the column, never
-  // inside the contenteditable (a button inside one becomes harvested text),
-  // and never per lane — a patch with three sites has one strip.
+  // holds the caret, and are disabled while none does. Drawn by the column's
+  // host beside the column, never inside the contenteditable (a button
+  // inside one becomes harvested text), and never per lane — a patch with
+  // three sites has one strip.
   // The italic button is a **serif capital I** (Ed, 2026-08-17): a sans
   // italic I is a slash with no serifs on it — it reads as punctuation rather
   // than as a letter. The serifs are what make it an I while it is still
-  // leaning. `[]` is one button, not a pair (Ed, 2026-08-17): off by default,
-  // pressed for markdown.
-  function laneCtlHtml(raw) {
+  // leaning.
+  // **`[]` went with Q1467** (Ed, 2026-09-19): edit mode is the source, so
+  // there is no second view for it to flip to.
+  function laneCtlHtml() {
     return '<div class="lanectl" data-editctl="1">' +
       '<button class="lfmt" data-fmt="bold" disabled title="' + G.fmt.bold + '"><b>B</b></button>' +
       '<button class="lfmt" data-fmt="italic" disabled title="' + G.fmt.italic + '">' +
       '<span class="ital">I</span></button>' +
-      '<button class="lmode" data-act="col-mode" data-mode="' + (raw ? 'rich' : 'md') + '"' +
-      ' aria-pressed="' + !!raw + '" title="' + G.fmt.mdMode + '">[]</button>' +
       '</div>';
   }
 
@@ -1111,7 +1303,6 @@ window.CARDS = (function () {
       washFor: () => '',
       ownChip: () => '',
       speakerTitle: '',   // falsy → speakerHtml's own default wording
-      laneRaw: () => false,
       currentTextFor: () => '',
       valAttr: 'data-v',
       root: () => document,
@@ -1139,8 +1330,14 @@ window.CARDS = (function () {
     }, env0 || {});
 
     // The pick control. Two labels rather than one rewritten in JS, so the
-    // existing `choose()` — which only ever flips aria-pressed — keeps working
-    // untouched across every card a patch is showing on.
+    // existing `choose()` — which only ever flips the chosen attribute — keeps
+    // working untouched across every card a patch is showing on.
+    //
+    // **It is a radio, and it says which** (Q1395 (a)): `role="radio"` with
+    // `aria-checked`, and the name borrowed from the block beside it through
+    // `o.nameId`. `aria-pressed` goes with the role — `aria-pressed` on a
+    // `radio` is `aria-allowed-attr`, critical — so the chosen state lives in
+    // `aria-checked` on these lanes, and the stylesheet answers to both.
     function laneBarHtml(s, v, opts) {
       const o = opts || {};
       // the register is the caller's (CP2): a judgment's lane prefers; a
@@ -1150,9 +1347,13 @@ window.CARDS = (function () {
       // default, the current text's included** (Q1362 (a)): the field has no
       // privileged member, so it can have no privileged register.
       const w = o.words || { off: G.lane.prefer, on: G.lane.preferred, title: G.lane.pickTitle };
+      const bid = laneBtnId(s, o.key, v);
       return '<div class="lanebar">' +
         '<button class="lanepick" type="button" ' + env.valAttr + '="' + esc(String(v)) + '"' +
-        ' aria-pressed="' + (env.pickOf(s) === v) + '"' + (env.lockedOf(s) ? ' disabled' : '') +
+        ' id="' + bid + '" role="radio"' +
+        ' aria-checked="' + (env.pickOf(s) === v) + '"' +
+        (o.nameId ? ' aria-labelledby="' + o.nameId + ' ' + bid + '"' : '') +
+        (env.lockedOf(s) ? ' disabled' : '') +
         ' title="' + esc(w.title) + '">' +
         '<i class="dot" aria-hidden="true"></i>' +
         '<span class="off">' + esc(w.off) + '</span><span class="on">' + esc(w.on) + '</span></button>' +
@@ -1174,6 +1375,7 @@ window.CARDS = (function () {
     // the card feel like the clause opening rather than something replacing it.
     function clauseHeadHtml(s, o) {
       const opt = !!o.v;
+      const headId = laneHeadId(s, o.key);
       // **The strip does not reorder** (Ed, 2026-08-17: *when I click between tabs
       // on a card, they shouldn't move around*). The card's own tab used to be
       // prepended, so every switch dealt the column again and the tab you were
@@ -1213,13 +1415,19 @@ window.CARDS = (function () {
           : o.wash === false ? '' : env.washFor(s, o.key)) + '>' + marks +
         // `html` for the one head built of several paragraphs: a composer site is
         // a run of clauses joined into one piece of text (225)
+        //
+        // **The head's text is named twice over** (Q1395 (a)): it is what the
+        // head's own lane is about, and it is what the whole card is about, so
+        // the card's `radiogroup` borrows the same id. One id, so a reader who
+        // enters the group hears the clause once and then each option by its
+        // own wording.
         (o.html !== undefined
-          ? '<div class="rtext">' + o.html + '</div>'
+          ? '<div class="rtext" id="' + headId + '">' + o.html + '</div>'
           : o.text === null
-          ? '<div class="rtext none">' + esc(o.nothing != null ? o.nothing : G.head.noText) + '</div>'
+          ? '<div class="rtext none" id="' + headId + '">' + esc(o.nothing != null ? o.nothing : G.head.noText) + '</div>'
           // the clause in blocks (Q1406): a run of paragraphs keeps its
           // breaks, a heading in it its rank — `o.text` is the source
-          : '<div class="rtext">' + (String(o.text).trim() ? mdBlocksHtml(null, o.text) : esc(o.text)) + '</div>') +
+          : '<div class="rtext" id="' + headId + '">' + (String(o.text).trim() ? mdBlocksHtml(null, o.text) : esc(o.text)) + '</div>') +
         '</div>' +
         // **The head's lane is a lane like any other** (Q1362 (a), 2026-09-15):
         // the current text is a candidate in the field, authored by nobody and
@@ -1228,7 +1436,7 @@ window.CARDS = (function () {
         // What says it is the current text is the head's label above it. The
         // lane **id** stays `keep`: that is the value `judge()` sends and the
         // server reads, and only the words were ever the asymmetry.
-        (opt ? laneBarHtml(s, o.v, { lane: 'keep', key: o.key, edit: o.edit }) : '') +
+        (opt ? laneBarHtml(s, o.v, { lane: 'keep', key: o.key, edit: o.edit, nameId: headId }) : '') +
         '</div>';
     }
 
@@ -1237,13 +1445,18 @@ window.CARDS = (function () {
     // `by` is a name the reveal rule has already allowed (a signed proposal,
     // or one made under `public` — Q770): the speaker is revealed, and the
     // sealed title does not apply to it.
-    const proposalHtml = (s, o) =>
-      '<div class="propblock">' +
-      (o.tag ? '<div class="rtag">' + o.tag + '</div>' : '') +
-      '<div class="rtext">' + o.html + '</div>' +
-      speakerHtml(o.why, o.by ? undefined : env.speakerTitle, o.by || undefined) +
-      (o.v ? laneBarHtml(s, o.v, { lane: o.lane || o.v, key: o.key, edit: o.edit }) : '') +
-      '</div>';
+    // **A block with a lane names it** (Q1395 (a)): the wording is the option,
+    // so `.rtext` takes an id and the lane beneath borrows it. A block with no
+    // lane — the 👑 card's, a record's — takes none, because nothing points at it.
+    const proposalHtml = (s, o) => {
+      const nameId = o.v ? laneNameId(s, o.key, o.v) : '';
+      return '<div class="propblock">' +
+        (o.tag ? '<div class="rtag">' + o.tag + '</div>' : '') +
+        '<div class="rtext"' + (nameId ? ' id="' + nameId + '"' : '') + '>' + o.html + '</div>' +
+        speakerHtml(o.why, o.by ? undefined : env.speakerTitle, o.by || undefined) +
+        (o.v ? laneBarHtml(s, o.v, { lane: o.lane || o.v, key: o.key, edit: o.edit, nameId }) : '') +
+        '</div>';
+    };
 
     function commitRowHtml(s, extra) {
       // **Indifference is a full option block** (CP4, Q1099, 2026-08-31 —
@@ -1264,9 +1477,8 @@ window.CARDS = (function () {
       // locked or not — the block keeps the vin radio in the same column as
       // the lanes' own.
       //
-      // **🗑️ joins the row** (CP7, Q1102 — C4 wins over the old table rows):
-      // far left, always live; it clears an uncommitted choice and closes,
-      // and a cast vote stays, the bin putting back un-actioned input only.
+      // **…and no 🗑️** (Q1500, retiring CP7's bin on a judgment): see
+      // `commitBarHtml`.
       return vinBlockHtml(s) + commitBarHtml(s, extra);
     }
     // **The two halves of the commit row** (Q1382, Ed 2026-09-15: *the vote
@@ -1278,20 +1490,36 @@ window.CARDS = (function () {
     // the bar takes a class of its own to wear there.
     function vinBlockHtml(s) {
       const pick = env.pickOf(s);
+      // **The third option is a radio like the two above it** (Q1395 (a)), and
+      // the one whose name needs no borrowing: a textless block's radio already
+      // names the act, so *Indifferent* is both what it shows and what it says.
       return '<div class="pick vinblock">' +
         '<button class="lanepick vin" type="button" ' + env.valAttr + '="indifferent"' +
-        ' aria-pressed="' + (pick === 'indifferent') + '"' + (env.lockedOf(s) ? ' disabled' : '') +
+        ' role="radio" aria-checked="' + (pick === 'indifferent') + '"' +
+        (env.lockedOf(s) ? ' disabled' : '') +
         ' title="' + (s.kind === 'diagonal' ? G.commit.vinDiagonal : G.commit.vinPair) + '">' +
         '<i class="dot" aria-hidden="true"></i>' +
-        '<span class="off">' + G.commit.indifferent + '</span><span class="on">' + G.commit.indifferent + '</span></button></div>';
+        '<span class="off">' + G.commit.indifferent + '</span><span class="on">' + G.commit.indifferent + '</span></button>' +
+        // **And what silence here will come to mean** (Q1460, Ed 2026-09-18):
+        // the seat's own abstention clock, at the right of the same row, in
+        // the size, face and colour of the *propose edit* text — his own
+        // placing. The card carries the deadline only while there is one to
+        // carry: an unjudged pair, a 💤 that is not *never*, a moment still
+        // ahead. The block becomes the row that holds them both.
+        abstainNoteHtml(s.abstainAt) +
+        '</div>';
     }
     function commitBarHtml(s, extra, cls) {
       const pick = env.pickOf(s);
       const insists = env.isTopUrgent(s) && env.stateOf(s) === 'needs';
       return '<div class="race-mid commitrow' + (cls ? ' ' + cls : '') + '"' +
         (cls ? ' data-patchrow="' + s.id + '"' : '') + '>' +
-        '<button class="btn glyphbtn" data-act="clear-close" title="' +
-        (env.lockedOf(s) ? G.commit.binLocked : G.commit.bin) + '">' + glyphHtml('🗑️') + '</button>' +
+        // **No 🗑️ on a judgment** (Q1500, Ed 2026-09-22, reading (b)): a
+        // member read it as *skip* and it only closed, a judgment's one unsent
+        // state being a radio you can move or leave. A choice is undone by
+        // choosing another or Indifferent, and the card closes by a click
+        // outside. The slot keeps its place so the commit stays at the right.
+        '<span class="binslot" aria-hidden="true"></span>' +
         (extra || '') +
         // The two acts on this card share the right-hand corner, in the order you
         // would reach for them: ❄️ first because it is the one that says *not now*,
@@ -1376,22 +1604,21 @@ window.CARDS = (function () {
       // **No controls of its own since Q1294 (b)** (Ed, 2026-09-10: *top right
       // of the edit box, identical to the existing composer control. You can
       // put bold and italic there too*): the lane is the text and nothing
-      // else. B, I and `[]` are one strip at the top right of the lifted
-      // column — `laneCtlHtml` below, drawn by session.js beside the column —
-      // so a patch with three sites has one strip, not three, and
-      // `env.laneRaw()` is the one view state read here.
+      // else. B and I are one strip at the top right of the lifted column —
+      // `laneCtlHtml` below, drawn by session.js beside the column — so a
+      // patch with three sites has one strip, not three.
       return '<div class="lanebox' + (blank ? ' blanklane' : '') + '">' +
         (blank
           // the blank lane is the clause as the column draws it in edit mode
-          // (Q1403): its marker shown and uncounted, the first keystroke
-          // opening the real lane where the marker is text
+          // (Q1403), which since Q1467 is `laneBlocks` itself: the source
+          // line, its marker ordinary text and counted, the first keystroke
+          // opening the real lane at the offset the caret already holds
           ? '<div class="editlane" contenteditable="true" data-deadlane data-key="' + blank +
-            '" spellcheck="false"><div class="lp">' +
-            (env.markerFor(blank) ? '<span class="nocaret mdmark" contenteditable="false">' + esc(env.markerFor(blank)) + '</span>' : '') +
-            esc(env.currentTextFor(blank)) + '</div></div>'
-          : '<div class="editlane' + (env.laneRaw() ? ' md' : '') + '" contenteditable="true" data-lane="' +
+            '" spellcheck="false">' +
+            laneBlocks(env.markerFor(blank) + env.currentTextFor(blank), null) + '</div>'
+          : '<div class="editlane" contenteditable="true" data-lane="' +
             site.keys[0] + '" spellcheck="false">' +
-            laneBlocks(site.text, originText(site), env.laneRaw()) + '</div>') +
+            laneBlocks(site.text, originText(site)) + '</div>') +
         // …and the face on it is **what everybody else will see**, not what you
         // know (K30, backlog 255). One place decides it, because `setDraftSigned`
         // patches the same element in place when the sign choice flips.
@@ -1620,14 +1847,15 @@ window.CARDS = (function () {
   }
 
   return {
-    esc, resultOnly, stripTags, pct, plainLabel, URG_LO, URG_HI,
+    esc, resultOnly, laneHtml, removedHtml, stripTags, pct, plainLabel, URG_LO, URG_HI,
     RULES, clauseOf, clauseRungs,
     TICK, ARROW_OUT, PAUSE, VS16, MARK, DRAWN, mkHtml, markHtml,
     GLYPH, glyphKey, glyphHtml, glyphify, glyphTextOf,
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks, mdDiffPieces, mdPiecesHtml, mdDiffHtml, mdBlocksHtml,
     originText, MD_RX, mdToHtml, htmlToMd, mdStrip, mdBlock, linkify, linkifyHtml, mdLine,
-    MD_ONE, mdLead, mdInner, mdParts, richToSource, sourceToRich, readLane,
-    laneSeed, laneProposeHtml, laneCtlHtml, speakerHtml, railSpeakerHtml, secToggleHtml, fieldHtml, fieldOf, groundNote,
+    MD_ONE, mdLead, mdInner, mdParts, sourceToRich, readLane, sentText,
+    abstainHhmm, abstainLeft, abstainNoteHtml, tickAbstain,
+    laneSeed, laneProposeHtml, laneCtlHtml, laneNameId, laneGroupAttrs, speakerHtml, railSpeakerHtml, secToggleHtml, fieldHtml, fieldOf, groundNote,
     initials, PERSON, avHtml,
     headOnlyHeight, cardBody, COLLAPSE_MS, EXPAND_MS,
     make,

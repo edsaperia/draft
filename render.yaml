@@ -55,7 +55,19 @@ services:
       # string, same region) and is safe to set at any time; DRAFT_STORE is
       # the cutover — absent or 'file' serves from the disk, 'pg' from the
       # database — and is set only after the importer has run and its hash
-      # assertions have passed. Unsetting DRAFT_STORE is the rollback.
+      # assertions have passed.
+      #
+      # **Unsetting DRAFT_STORE is no longer a rollback** (issue #8; the
+      # retraction is docs/OPERATING.md §7). It was one on 2026-08-20, while
+      # the disk still held every document and was still being written to.
+      # The cutover ran that night and the disk is gone, so unsetting it now
+      # points the service at an empty directory — a service that has lost
+      # every document rather than one that has rolled back, and it looks
+      # from outside exactly like the real thing. What it is today is a
+      # refusal to boot into an empty service by accident. The restore path
+      # is Render's database backups and docs/runbooks/; the deploy's own
+      # verification asserts `store` is still `pg`, so a service that came
+      # up on the disk is red rather than quietly empty (issue #8, F5).
       - key: DATABASE_URL
         sync: false
       - key: DRAFT_STORE
@@ -65,8 +77,19 @@ services:
       # outbox, served at GET /api/bots/outbox to the bearer of this key
       # (room-bots --key). Unset, the route is a 404 like any unknown path.
       # Set in the dashboard; rotate by changing it. A leaked key acts as
-      # the bots in bot rooms and nothing more (docs/OPERATING.md §10).
+      # the bots in bot rooms and nothing more (docs/OPERATING.md §10) —
+      # true again since issue #10, when the pause and the surface reload
+      # moved to DRAFT_ADMIN_KEY below.
       - key: DRAFT_BOT_KEY
+        sync: false
+      # Issue #10 (Ed, 2026-09-22, option 1): the key to POST
+      # /api/admin/pause, /resume and /surface — whoever holds it can freeze
+      # every room or replace the page every member runs. Here and in CI's
+      # DRAFT_ADMIN_KEY secret, nowhere else: never on draft-dev, never in a
+      # room-bots user's hands. Unset, the three routes are 404s, CI's pause
+      # is refused and every push takes the full, unpaused lane
+      # (docs/OPERATING.md §3).
+      - key: DRAFT_ADMIN_KEY
         sync: false
 
   # The dev host — dev.docs.vote (Ed, 2026-09-01): the *dev path* at a
@@ -107,8 +130,9 @@ services:
       # the dev path defaults trust-proxy off; Render terminates TLS
       - key: DRAFT_TRUST_PROXY
         value: '1'
-      # the same key as production's (Q1310): a dev server files a bot's
-      # mail in the public dev outbox AND the keyed bot outbox, so
-      # room-bots works here with or without --key. Optional.
+      # a bot key for this host (Q1310): a dev server files a bot's mail in
+      # the public dev outbox AND the keyed bot outbox, so room-bots works
+      # here with or without --key. Optional. **Never DRAFT_ADMIN_KEY** —
+      # this host is public and auto-deploying (issue #10).
       - key: DRAFT_BOT_KEY
         sync: false

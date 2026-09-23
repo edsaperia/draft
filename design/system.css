@@ -71,7 +71,10 @@
     /* --- ink and ground ------------------------------------------- */
     --bg: #FFFFFF;
     --fg: #212529;
-    --muted: #6C757D;
+    /* one step a channel under Bootstrap's #6C757D, which read 4.45:1 on
+       --light against WCAG AA's 4.5; this is the lightest that clears it,
+       4.51:1 (Q1398 (a), Ed 2026-09-18) */
+    --muted: #6B747C;
     --border: #DEE2E6;
     --light: #F8F9FA;
 
@@ -142,6 +145,20 @@
        Green enters the margin as a *wash* only, never as --ok itself (Q264). */
     --lc-changed: 25, 135, 84;    /* ✔ green — the charter moved here  */
     --lc-yours: 13, 110, 253;     /* ✏️ blue — yours, and still yours  */
+    /* **Red means *this needs you because something went wrong*** (Q1484, Ed
+       2026-09-21, in his own words: *make the card a colour that suggests
+       something needs to be done (red?)*, then *Red entry, words unchanged*).
+       The fourth hue, and the narrowest: it paints the **stranded** row of
+       §6's alphabet and nothing else — a proposal of yours the text moved out
+       from under, which is out of every race, waiting on an act of yours, and
+       wore the ordinary `yours` blue that says nothing has gone wrong. It is
+       the surface's one red, `--slash`, in channel form so the two cannot
+       drift; its two existing uses — the strike on a tool your role does not
+       hold, the phone drawer's count — are unchanged and say the same thing.
+       Colour is the only signal here by Ed's choice: he was told beforehand
+       that it says nothing to a colour-blind member and that the entry still
+       reads only its heading, and chose *words unchanged*. */
+    --lc-wrong: 142, 33, 22;      /* ↻ red — yours, and it went wrong  */
     --stuck-ink: #8A6D00;         /* the one caption that instructs    */
     /* **New wording is highlighter yellow, not green** (Ed, 2026-09-14, Q264):
        green means *decided* and only that (--ok); an added word inside a
@@ -259,7 +276,7 @@
        where the fact being stated is only that this is not your tool. Dark
        enough to sit as ink rather than as an alarm, and still unmistakably red.
        `?slash=muted` keeps the greyed version reachable for comparison. */
-    --slash: #8e2116;
+    --slash: rgb(var(--lc-wrong));
 
     /* --- the three columns ---------------------------------------- */
     /* How long a lifecycle colour takes to become another one. A wash change
@@ -277,7 +294,10 @@
     --rail-right: 290px;
     --nav-h: 58px;
   }
-  :root[data-slash="muted"] { --slash: var(--muted); }
+  /* the comparison switch takes the channels too, since Q1484 gave the red a
+     second reader: one override, or the strike would grey and the stranded
+     entry stay red */
+  :root[data-slash="muted"] { --lc-wrong: 107, 116, 124; --slash: var(--muted); }
   * { box-sizing: border-box; }
   body {
     background: var(--bg);
@@ -702,13 +722,14 @@
      it wears the filed grey: grey means nothing is asked of you (Ed, Q612,
      2026-08-22). Blue is for your own work, and a ground shift is not that. */
   .mk-shifted { color: var(--muted); }
-  /* ...and the same ↻ in blue where what the ground moved under was a proposal
-     of your own (Ed, 2026-09-14, Q170). It is asking — re-make it here, or
-     withdraw it — and everything of yours that still has an act on it is blue,
-     so the glyph says what happened and the hue says whose it is. This pair is
-     why ↻ staying a character is load-bearing and not merely historical: one
-     shape in two colours needs a shape a colour can reach. */
-  .mk-stranded { color: rgb(var(--lc-yours)); }
+  /* ...and the same ↻ in **red** where what the ground moved under was a
+     proposal of your own (Q1484, Ed 2026-09-21: *Red entry, words unchanged*;
+     blue under Q170 until then). It is asking — re-make it here, or withdraw
+     it — and blue says only *yours*, which is exactly what a proposer told us
+     they could not read off it. This pair is why ↻ staying a character is
+     load-bearing and not merely historical: one shape in two colours needs a
+     shape a colour can reach. */
+  .mk-stranded { color: rgb(var(--lc-wrong)); }
   /* a drawn glyph has no plate to give it width, so at the two small sizes it
      needs a little of its own or the marks sit on top of each other */
   .tocmarks .mk { font-size: 1.15em; letter-spacing: 0.06em; }
@@ -761,6 +782,82 @@
      rule as its card, and the rail and the card now say "open" the same way */
   .queue button[aria-current="true"] { box-shadow: var(--shadow-xl); }
 
+  /* **The queue card stack** (Q1462, Ed 2026-09-18: *a "queue card stack" …
+     that hints that there are other rivals beneath the current one*). The
+     engine deals one pair per race at a time (SPEC §8.3, Q1312), so a clause
+     carrying twenty rival wordings reaches the rail as one entry. The entry is
+     drawn as a pile: up to **five** card edges beneath it, **depth only — no
+     number and no words**.
+
+     **The edges are the entry's own width, and the pile takes its room**
+     (Ed, 2026-09-19, from the residency room: *queue cards in the queue card
+     stack should be the same width as other queue cards (like the tabs in the
+     tab stack are the same width as other tabs) … more offset (1.5x what they
+     are now). Cards beneath them should be commensurately further away so you
+     can see the stack … limit them at 5 instead of 3*). The first cut drew
+     each edge 10px narrower a side, peeking 2px, inside the 8px the rail
+     leaves between entries, so that nothing beneath a pile moved; a pile that
+     has to fit in the gap cannot be seen, which was the note. So each edge is
+     now a full-width card peeking **3px** — 2px of its face and a 1px rule,
+     the rule being what tells one edge from the next at one width — and the
+     `li` carries the pile's depth as `padding-bottom`, which is what
+     `layoutQueue` measures and what the drawer's `gap` adds to: the entry
+     beneath stands that much further off, in either layout. The entry's own
+     button keeps the box it always had.
+
+     Still box-shadow, for what that buys: the edges cannot be clicked or
+     reached by the keyboard, follow the button's own corner radius, and are
+     not clipped by its `overflow: hidden`. The colours are **opaque** mixes
+     of the entry's lifecycle hue into the ground (`--pilecol`, set per entry
+     by `renderQueue`): the layers lie over one another, and a translucent
+     face would darken toward the entry as they piled up.
+
+     The hue falls back to transparent, because an unset custom property
+     inside a shorthand invalidates the **whole** declaration — a pile with no
+     hue would take the entry's own lift with it rather than simply not
+     drawing. */
+  .qitem[data-pile] {
+    --pilefill: color-mix(in srgb, var(--pilecol, transparent) 28%, var(--bg));
+    --pileline: color-mix(in srgb, var(--pilecol, transparent) 62%, var(--bg));
+  }
+  .qitem[data-pile="1"] {
+    padding-bottom: 3px;
+    --pile: 0 2px 0 0 var(--pilefill), 0 3px 0 0 var(--pileline);
+  }
+  .qitem[data-pile="2"] {
+    padding-bottom: 6px;
+    --pile: 0 2px 0 0 var(--pilefill), 0 3px 0 0 var(--pileline),
+            0 5px 0 0 var(--pilefill), 0 6px 0 0 var(--pileline);
+  }
+  .qitem[data-pile="3"] {
+    padding-bottom: 9px;
+    --pile: 0 2px 0 0 var(--pilefill), 0 3px 0 0 var(--pileline),
+            0 5px 0 0 var(--pilefill), 0 6px 0 0 var(--pileline),
+            0 8px 0 0 var(--pilefill), 0 9px 0 0 var(--pileline);
+  }
+  .qitem[data-pile="4"] {
+    padding-bottom: 12px;
+    --pile: 0 2px 0 0 var(--pilefill), 0 3px 0 0 var(--pileline),
+            0 5px 0 0 var(--pilefill), 0 6px 0 0 var(--pileline),
+            0 8px 0 0 var(--pilefill), 0 9px 0 0 var(--pileline),
+            0 11px 0 0 var(--pilefill), 0 12px 0 0 var(--pileline);
+  }
+  .qitem[data-pile="5"] {
+    padding-bottom: 15px;
+    --pile: 0 2px 0 0 var(--pilefill), 0 3px 0 0 var(--pileline),
+            0 5px 0 0 var(--pilefill), 0 6px 0 0 var(--pileline),
+            0 8px 0 0 var(--pilefill), 0 9px 0 0 var(--pileline),
+            0 11px 0 0 var(--pilefill), 0 12px 0 0 var(--pileline),
+            0 14px 0 0 var(--pilefill), 0 15px 0 0 var(--pileline);
+  }
+  /* the lift stays in front of the pile, as the front card's own shadow falls
+     across the ones behind it; each rule repeats its own lift rather than the
+     three above being refactored, so an entry with no pile keeps the exact
+     declaration it has always had */
+  .qitem[data-pile] > button { box-shadow: var(--shadow-sm), var(--pile); }
+  .qitem[data-pile] > button:hover { box-shadow: var(--shadow-md), var(--pile); }
+  .qitem[data-pile] > button[aria-current="true"] { box-shadow: var(--shadow-xl), var(--pile); }
+
   /* The wash is the progress bar (Ed, 105/116): how far the fill reaches is
      closeness to resolution — since Q1362 (c), how far the room has got
      toward the quorum — how strong the colour is is urgency, and the hue is
@@ -776,6 +873,28 @@
      behind, which would need a stacking context on the button. */
   .queue button:not(.sealdot) { position: relative; overflow: hidden; }
   .queue button:not(.sealdot) > * { position: relative; z-index: 1; }
+  /* **An unaccepted grant sparkles** (Q1501, Ed 2026-09-22 — his word): a
+     narrow band of light crosses the entry once every 3.2 s and rests between
+     sweeps, under the text, never on an accepted grant (setup.js draws the
+     span only in `news`). The phase is written by the page from the clock, so
+     a rebuilt rail carries on mid-sweep. Under reduced motion it is still: a
+     soft ring in the entry's own hue, which says the same without moving. */
+  .queue button:not(.sealdot) > .sparkle {
+    position: absolute; inset: 0; z-index: 0; pointer-events: none; border-radius: inherit;
+    background: linear-gradient(105deg, transparent 42%, rgba(255, 255, 255, 0.7) 50%, transparent 58%);
+    background-size: 260% 100%; background-repeat: no-repeat; background-position: 130% 0;
+    animation: sparkleSweep 3200ms ease-in-out infinite;
+  }
+  @keyframes sparkleSweep {
+    0% { background-position: 130% 0; }
+    40%, 100% { background-position: -30% 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .queue button:not(.sealdot) > .sparkle {
+      animation: none; background: none;
+      box-shadow: inset 0 0 0 2px rgba(var(--lc-yours), 0.45);
+    }
+  }
   /* The bar's leading edge is drawn a second time in its own colour, so it
      composites to roughly double alpha and stays a crisp datum (Ed, 285). Once
      the whole card carries a ground in the same hue, a low-urgency bar — 0.07
@@ -793,6 +912,15 @@
      the compression ladder is gone (Ed, 2026-08-16 — see the rail's own note on
      what urgency now decides). */
   .queue .ql { font-weight: 600; font-size: var(--t-ui); display: flex; }
+  /* **The abstention clock at the end of the title row** (Q1460 (e)): the
+     entry's own last day, in the rail's caption type, pushed to the right
+     edge by `auto` so it lands where a count or a date would. `flex: none` and
+     `nowrap` keep it whole; the baseline is the title's, so it reads as part
+     of that line rather than as a second one — nothing below the row moves
+     when it appears. Drawn inside a washed button, so it takes the entry's
+     own muted ink like every other quiet thing in the rail. */
+  .queue .ql > .qab { margin-left: auto; padding-left: 8px; flex: none;
+    align-self: baseline; font-weight: 400; }
   .queue .qs { font-size: var(--t-cap); color: var(--muted); display: flex; gap: 6px; align-items: baseline; }
   .queue .qv { display: block; font-size: var(--t-cap); color: var(--muted); margin-top: 1px; }
 
@@ -804,11 +932,17 @@
     display: inline; margin: 0; font-weight: 400;
   }
   .queue button.deciding { color: var(--muted); }
-  .queue button.deciding .ql { font-weight: 500; font-size: var(--t-small); }
+  /* **One title size on every entry, `--t-ui`** (Ed, 2026-09-18, Q1448 (b)).
+     A one-line entry used to drop to `--t-small`, so a rail mixing asks and
+     one-liners alternated two sizes down the column and read as a defect. What
+     tells *not asked of you* apart is the weight, the colour and the single
+     line — three signals already — and size was a fourth nobody needed. The
+     mark keeps its own size: it is a fixed box, not a title (`.qmark`). */
+  .queue button.deciding .ql { font-weight: 500; }
   .queue button.deciding.shifted .ql { color: var(--muted); }
   /* a decision you have not acknowledged is quiet, not unimportant, and stays
      pinned until you deal with it (Ed, 112) */
-  .queue button.unread .ql { font-weight: 600; font-size: var(--t-small); color: var(--fg); }
+  .queue button.unread .ql { font-weight: 600; color: var(--fg); }
   /* A filed line is the **same object, quieter** (Ed, 2026-08-17). It is not a
      different kind of entry from an unacknowledged one — it is the same entry
      after you have dealt with it — so it keeps the shape and gives up the
@@ -819,9 +953,15 @@
      flex rather than one truncating line: the title takes what is left and
      ellipses, and the time never gets eaten by a long one. It is also the only
      thing on a sealed entry the reader is scanning *down* a column for. */
-  .queue button.unread .ql { display: flex; align-items: baseline; gap: 6px; }
+  /* **No `gap` on a title row** (Ed's screenshot, 2026-09-17: the distance from
+     the mark to the title ran 0 · 4 · 6 · 10 · 12px by kind of entry). The
+     space after the mark is the mark's own margin (the ruling at `.qmark`
+     below), and a row `gap` lands between the mark and the title as well as
+     where it was wanted, so it stacked on that margin — here 6 + 6. What this
+     gap was *for* is the time, so the time carries it. */
+  .queue button.unread .ql { display: flex; align-items: baseline; }
   .queue button.unread .qt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .queue button.unread .qv.when { margin-left: auto; flex: none; }
+  .queue button.unread .qv.when { margin-left: auto; padding-left: 6px; flex: none; }
   .queue button.unread .qv { color: var(--muted); }
   /* a deadlocked race states its unusual ask in full, and its caption is an
      instruction rather than a progress note (Ed, 166) */
@@ -839,7 +979,7 @@
   .queue button.yours { padding: var(--s1) 10px; }
   .queue button.yours .ql {
     display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    font-weight: 600; font-size: var(--t-small);
+    font-weight: 600;
   }
   .queue button.yours .qv { display: inline; margin: 0; font-weight: 400; }
   .queue button.yours.drafting { padding: var(--s2) 10px; }
@@ -908,6 +1048,13 @@
     -webkit-line-clamp: 4; line-clamp: 4;
   }
   .queue button.mosturgent .qwhy.spoke .qsaid { -webkit-line-clamp: 5; line-clamp: 5; }
+  /* **⏳ Begin names who is still to answer** (issue #76): one face and name
+     per member owed an answer, at the rail's 18px, wrapping — no clamp, since
+     a name cut off is a person left out */
+  .qwhy.qdues { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s3); -webkit-line-clamp: none; line-clamp: none; }
+  .qdue { display: inline-flex; align-items: center; gap: var(--s1); }
+  .qdue .av { width: 18px; height: 18px; font-size: 8px; }
+  .qdue .emojiface { font-size: 18px; line-height: 18px; }
   .qface { display: flex; align-items: flex-start; justify-content: center; width: 18px; flex: none; margin-top: 1px; }
   .qface .av { width: 18px; height: 18px; font-size: 8px; }
   .qface .emojiface { font-size: 18px; line-height: 18px; }
@@ -1297,20 +1444,18 @@
     color: var(--muted); pointer-events: none; user-select: none;
   }
   .doc .bullet:has(+ .bullet), .lp.bullet:has(+ .lp.bullet) { margin-bottom: var(--s1); }
-  /* the marker itself, where the source is shown: in the column in edit mode
-     — rendered or with `[]` pressed, since Q1403 — put back before the block
-     in a `.nocaret` span; in a lane, the characters the author typed, dimmed
-     and still text (`laneBlocks`) — and where they stand the dot does not */
+  /* the marker itself, wherever the source is shown — the charter's column and
+     every lane in edit mode (Q1467), the founder's own column while it is
+     edited — dimmed and still ordinary text, so a caret stands anywhere in it
+     (`blockHtml`, `laneBlocks`); and where it stands the bullet's dot does not.
+     The founder's column carries no span, its blocks being typed into in
+     place, so the source view answers for it by the column's own class. */
   .mdmark { color: var(--muted); }
   .lp.bullet:has(.mdmark) { padding-left: 0; }
   .lp.bullet:has(.mdmark)::before, .doc .bullet:has(> .mdmark)::before { content: none; }
   .doc .bullet:has(> .mdmark) { padding-left: 0; }
-  /* source mode is the whole column at once: the same monospace the lane's
-     markdown mode wears, so the two never disagree about what a character is */
-  .doc .prose.mdsrc, .doc .prose.mdsrc .docline {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: var(--t-small); line-height: 1.6;
-  }
+  .doc .prose.mdsrc .bullet::before { content: none; }
+  .doc .prose.mdsrc .bullet { padding-left: 0; }
   /* **An empty document has one clause, and it is empty** (Q649 (a), Ed
      2026-08-22). The block keeps a line's height so it can be clicked, and
      its sentence is drawn out of the text flow — as inline content it would
@@ -1776,16 +1921,24 @@
     transition: border-color 120ms ease, box-shadow 120ms ease;
   }
   /* both labels are in the markup and CSS picks one, so choosing stays a
-     single attribute flip on every card a patch is open on */
+     single attribute flip on every card a patch is open on.
+
+     **Two attributes say the same thing, and the reason is ARIA's** (Q1395
+     (a), 2026-09-18). A decision card's lanes are `role="radio"` and carry
+     `aria-checked`; the founder's setting cards and the composer's own sign
+     control are buttons and carry `aria-pressed`, and `aria-pressed` on a
+     `radio` is an `aria-allowed-attr` failure, so neither can be made to
+     stand for both. Every rule below therefore names both, and the two never
+     appear on one element. */
   .lanepick .on { display: none; }
-  .lanepick[aria-pressed="true"] .on { display: inline; }
-  .lanepick[aria-pressed="true"] .off { display: none; }
+  .lanepick[aria-pressed="true"] .on, .lanepick[aria-checked="true"] .on { display: inline; }
+  .lanepick[aria-pressed="true"] .off, .lanepick[aria-checked="true"] .off { display: none; }
   .lanepick:hover { color: var(--primary); border-color: var(--primary); background: var(--bg); }
   .lanepick:hover .dot { border-color: var(--primary); }
-  .lanepick[aria-pressed="true"] {
+  .lanepick[aria-pressed="true"], .lanepick[aria-checked="true"] {
     color: #fff; background: var(--primary); border-color: var(--primary); font-weight: 600;
   }
-  .lanepick[aria-pressed="true"] .dot {
+  .lanepick[aria-pressed="true"] .dot, .lanepick[aria-checked="true"] .dot {
     border-color: #fff; background: #fff; box-shadow: inset 0 0 0 3px var(--primary);
   }
   .lanepick[disabled] { opacity: 0.55; cursor: default; }
@@ -1794,8 +1947,8 @@
      2026-08-17). Greying the whole trio said *you cannot change this*, which is
      true, and dimmed the record of what you said, which is not what a lock
      means. The unchosen options fade; your answer does not. */
-  .lanepick[disabled][aria-pressed="true"] { opacity: 1; }
-  .lanepick[disabled][aria-pressed="true"]:hover {
+  .lanepick[disabled][aria-pressed="true"], .lanepick[disabled][aria-checked="true"] { opacity: 1; }
+  .lanepick[disabled][aria-pressed="true"]:hover, .lanepick[disabled][aria-checked="true"]:hover {
     color: #fff; background: var(--primary); border-color: var(--primary);
   }
   @media (prefers-reduced-motion: reduce) { .lanepick, .lanepick .dot { transition: none; } }
@@ -1988,6 +2141,34 @@
   .vinblock {
     border-top: 1px solid var(--border); margin-top: var(--s3); padding-top: var(--s3);
   }
+  /* **And the abstention clock at its right** (Q1460, Ed 2026-09-18: *put the
+     indifferent countdown on the right side of the column, same size and font
+     and place as the "propose edit" text*). The block becomes the row holding
+     both: the radio keeps its own left edge and its own height, so the line
+     appearing moves nothing — `.lanebar` above it is the same arrangement,
+     and this is the same two positions on the block below them.
+     `align-items: center` rather than baseline, because the radio is a pill
+     whose own text sits well above the block's bottom edge. */
+  .vinblock { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); }
+  /* **And a motion's Indifferent block is the same row** (Q1460 (c), Ed
+     2026-09-18: *every ordinary motion* wears it). A motion composes with the
+     setting's own control rather than with `vinBlockHtml`, so its textless
+     block is an ordinary `.pick` — the class is put on only where the note is
+     drawn, and it says the same two positions as `.vinblock` above and
+     nothing else, the block's own hairline and rhythm staying `.pick + .pick`'s. */
+  .pick.absrow { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); }
+  /* The propose-edit treatment exactly: caption size, muted, the card's own
+     face. It says something rather than doing something, so unlike the ✏️ it
+     never takes the accent on hover and is not a control at all. */
+  .absnote { font-size: var(--t-cap); color: var(--muted); white-space: nowrap; }
+  /* **✏️ hh:mm beside a dark commit** (Q1486 (E), Ed 2026-09-21: *dark, with
+     ✏️ hh:mm countdown*). The abstention clock's own note, standing in the
+     floating propose row and on a composer's commit: a reading and not a
+     control, so it never takes a press meant for the button beside it — the
+     row is `pointer-events: none` throughout and only its buttons are live,
+     and on a card this says the same thing in a place that is not. Tabular
+     figures, so the row does not twitch as the minutes fall. */
+  .pdrip { font-variant-numeric: tabular-nums; pointer-events: none; margin-right: var(--s2); flex: none; }
   /* The deadlock card's one raised voice: on every other card a line like this
      is a caveat at the foot, and here it is the reason the card exists, so it
      sits directly under the clause in the band the field would otherwise start.
@@ -2248,31 +2429,29 @@
     transition: box-shadow 140ms ease;
   }
   .editctl.detached .lanectl { box-shadow: var(--shadow-md); }
-  /* markdown mode: the characters, exactly, and nothing rendered */
-  .lanebox .editlane.md {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: var(--t-small); line-height: 1.6;
-  }
-  .lfmt, .lmode {
+  /* (the monospace markdown mode went with the `[]` toggle, Q1467: a lane is
+     the source at all times and is set in the document's own face, since the
+     block it shows keeps the rank it will land at) */
+  .lfmt {
     appearance: none; font: inherit; font-size: var(--t-cap); line-height: 1;
     background: none; border: 0; color: var(--muted); cursor: pointer;
     padding: 3px 6px; border-radius: var(--r-sm);
   }
-  /* **A strip of three controls is one object, so they are one size**
+  /* **A strip's controls are one object, so they are one size**
      (housekeeping pass, 2026-08-17). They were 26x20, 26x**23** and 26x20: the
      italic button was three pixels taller than the bold one beside it and sat
      two pixels higher, because the height was coming from whatever the glyph
      *inside* each button happened to be — B at --t-ui, the serif I at 1.05rem —
      and a button sized by its content is a button whose size is a coincidence.
      A fixed box, centred, so an optical adjustment to a glyph can never move the
-     control around it again. */
-  .lfmt, .lmode {
+     control around it again. (Three became two with `[]`, Q1467.) */
+  .lfmt {
     width: 26px; height: 22px; padding: 0;
     display: inline-flex; align-items: center; justify-content: center;
   }
-  .lfmt:hover, .lmode:hover { background: var(--light); color: var(--fg); }
+  .lfmt:hover { background: var(--light); color: var(--fg); }
   /* B and I are acts on a selection: quiet while no editing lane holds the
-     caret (Q1294 (b)); `[]` needs no lane and is never disabled */
+     caret (Q1294 (b)) */
   .lfmt:disabled { opacity: 0.35; cursor: default; }
   .lfmt:disabled:hover { background: none; color: var(--muted); }
   .lfmt b { font-size: var(--t-ui); }
@@ -2281,13 +2460,6 @@
     font-family: Georgia, "Times New Roman", serif; font-style: italic;
     font-size: 1.05rem; font-weight: 500;
   }
-  /* one button, off by default, its own pressed-ness carrying the state */
-  .lmode {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: var(--t-ui); letter-spacing: -0.05em;
-  }
-  .lmode[aria-pressed="true"] { background: var(--primary); color: #fff; font-weight: 600; }
-  .lmode[aria-pressed="true"]:hover { background: var(--primary-hover); color: #fff; }
   .lanebox .editlane code {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 0.9em; background: var(--light); padding: 0 3px; border-radius: 3px;
@@ -2570,6 +2742,10 @@
     color: var(--ok); margin-bottom: var(--s3);
   }
   .rechead .sub { color: var(--muted); text-transform: none; letter-spacing: 0; font-weight: 500; }
+  /* the counts, printed under the head (Q1452): tucked up under it by the
+     head's own bottom margin less one step, and giving that margin back
+     beneath, so the head and its counts read as one block */
+  .rsub.reccounts { margin-top: calc(var(--s1) - var(--s3)); margin-bottom: var(--s3); }
   .ranked {
     border: 1px solid var(--border); border-radius: var(--r-md);
     padding: var(--s3) 14px; margin-bottom: var(--s2);

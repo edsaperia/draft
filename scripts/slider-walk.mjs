@@ -3,40 +3,48 @@
  * member delegates 👥, is served their own answer card, and answers it with
  * the control a member actually uses.
  *
- * **It was two questions and it is one.** 🌡️ was the other, and this walk
- * drove its three rungs and its number box until the card left the surface on
- * 2026-09-15 (Q1362) with the bar it set. The three assertions are unchanged
- * and 👥 carries all of them; no control on the surface is a track any more,
- * so *slider* is the name of the walk and nothing else.
+ * **It was two questions and it is one, and it was a track and it is two
+ * number boxes.** 🌡️ was the other question, and this walk drove its rungs
+ * until the card left the surface on 2026-09-15 (Q1362) with the bar it set.
+ * The control went first: Ed's card review of 2026-09-02 retired the consent
+ * slider (Q1162), and 👥 has answered in two option blocks ever since — a
+ * share block and a count block, each the rule as it would stand with its
+ * number inline, the form chosen by the block. **Nothing here drags**, and
+ * nothing on the surface is a track any more, so *slider* is the name of the
+ * walk and nothing else.
  *
  *   node scripts/slider-walk.mjs        # npm run slider-walk
  *
- * It exists because the two defects it guards are both invisible to every
- * other walk here. `founding-walk.mjs` fills a card's inputs by assignment and
- * skips `type=range` outright, so it never touches a slider; nothing at all
- * drags one. And a dispatched `input` event is not a drag: the page answered
- * one correctly the whole time it was broken.
+ * It exists because what it checks is invisible to every other walk here.
+ * `founding-walk.mjs` and `card-audit.mjs` both answer a card by writing a
+ * value into every empty box on it, which is the one thing that can never
+ * see a box born carrying one — a filler reads *empty* and *anchored* the
+ * same way round. This walk reads the card before it touches it, and it
+ * touches exactly one box, so what the other blocks do about it is readable.
  *
- * So both assertions are about a **pointer**:
+ * So the assertions are about the **two blocks**:
  *
- *  1. **Born untouched.** Before the first press the control carries no value
- *     — `.cs.unset`, the readout *Drag to answer*, no fill and a dark commit.
- *     A blind collection that paints a thumb somewhere is offering an anchor,
- *     which is the one thing it exists not to do.
- *  2. **The thumb follows the pointer to the end of the track.** Drag to the
- *     left edge and the value is `min`; drag to the right edge and it is
- *     `max`. This is the assertion a re-render under the press fails: the
- *     first step moves the thumb, the render replaces the element the pointer
- *     is capturing, and every move after that goes nowhere.
- *  3. **The track is the question's own range.** The ends and the step read
- *     off the DOM against what `ANSWER` states (`BOUNDS` below): what a blind
- *     control can express is half of what the setting promises, and nothing
- *     else here reads those literals.
+ *  1. **Two blocks, share first, each the rule with its number inline**
+ *     (Q1137's pattern) — the shape Q1162 put in the slider's place, read off
+ *     the card rather than taken on trust.
+ *  2. **Born untouched.** Before anything is typed neither block is chosen,
+ *     both boxes are empty and the ✓ is dark. A blind collection that shows a
+ *     number somewhere is offering an anchor, which is the one thing it
+ *     exists not to do; this is Q779's defect transposed to the control that
+ *     replaced the one it was found on.
+ *  3. **Typing into a block's box chooses that block**, wakes the ✓, and the
+ *     ✓ files the answer. The form is part of the answer since Q1162, so the
+ *     number and the block it stands in are one act; a box that took a number
+ *     without choosing its own block would collect half an answer.
+ *  4. **The box is the question's own range.** The ends read off the DOM
+ *     against what `ANSWER` states (`BOUNDS` below): what a blind control can
+ *     express is half of what the setting promises, and nothing else here
+ *     reads those literals.
  *
  * Like every walk here it drives the fixture, because what it checks is pure
- * page logic — the same `slider()` and the same `input` handler serve the live
- * path — and the fixture is the only place a founding can be walked from blank
- * without a server, a mailbox and a real address.
+ * page logic — the same `ANSWER.quorum` blocks and the same `input` handler
+ * serve the live path — and the fixture is the only place a founding can be
+ * walked from blank without a server, a mailbox and a real address.
  */
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
@@ -188,24 +196,31 @@ const walkTo = async (stop, delegate) => {
 // fold's own range, and it is asserted nowhere else — `ANSWER` in setup.js is
 // one literal per bound and a typo in it is silent.
 //
-// **The count form is not walked**, and cannot cheaply be: `slider(A,
-// 'quorum', 1, E, …)` is bounded at E, the walk's founding has one arrived
-// member, and a track whose min and max are both 1 has no drag in it. The
-// count form's bounds are locked in the fold instead
+// **The count form's range is not walked**, and cannot cheaply be: its box is
+// `box('count', 1, Math.max(1, E))` in `ANSWER.quorum`, the walk's founding
+// has one arrived member, and a box whose min and max are both 1 states the
+// only number there is. The count form's bounds are locked in the fold instead
 // (`packages/constitution/test/promise-quorum.test.ts`).
+//
+// **The top end moved to 50** (Q1439, ruling a, Ed 2026-09-17) and **back to
+// 100 at Q1490** (R-139, Ed 2026-09-21: *I think we should allow for quorums
+// up to 100%, and let the lapse mechanic compensate*), **with the bottom at
+// one member** the same afternoon. So the box offers the whole scale, and
+// what it refuses is only what is off it — the ✓ stays dark on a number typed
+// outside the range (`shareOutOfRange` in session-view.html).
 const BOUNDS = {
-  quorum: { min: 5, max: 100, step: 5 },
+  quorum: { min: 1, max: 100, step: 5 },
 };
 
 /* ---- 👥: two blocks, the form part of the answer (Q1162) ----------------
    The consent slider retired with Ed's card review of 2026-09-02: the member
    states a **form as well as a number** — a share block and a count block,
    each the rule as it would stand with its number inline (Q1137's pattern).
-   What is asserted is the same three promises transposed: **born untouched**
-   (no block on, boxes empty, dark ✓), **typing into a block's box chooses
-   that block** (F6's rule reaching the answer rungs), and **the range is the
-   question's own** (5–100 on the share box, where the track's ends used to
-   be read). */
+   What is asserted is the same promises transposed: **born untouched** (no
+   block on, boxes empty, dark ✓), **typing into a block's box chooses that
+   block** (F6's rule reaching the answer rungs), and **the range is the
+   question's own** (1–100 on the share box since Q1490, where the track's
+   ends used to be read). */
 for (const key of ['quorum']) {
   const want = 'ans-' + key;
   console.log('\n' + want);
@@ -239,8 +254,16 @@ for (const key of ['quorum']) {
   if (!born || !born.picks.length) { check(want + ' has the two blocks', false); continue; }
   check('two blocks, share first', born.picks.map((p) => p.val).join(',') === 'share,count',
     born.picks.map((p) => p.val).join(','));
+  // Ed's own sentence since Q1439 (ruling t, 2026-09-18, re-wording ruling
+  // p): the quorum counts the members who *prefer* the proposal to the
+  // current text, so *must vote on* is gone — and the verb is **pass**,
+  // STYLE T8's, with the emphasis on the bar. The share block ends in *of the
+  // membership*, the count block in *members*, so the assertion is the shared
+  // opening and then each block's own ending.
   check('each block is the rule with its number inline',
-    born.picks.every((p) => p.box && /must vote on a proposal ✏️ before anything changes/.test(p.label)),
+    born.picks.every((p) => p.box &&
+      /^A proposal ✏️ cannot pass until it is preferred by at least/.test(p.label) &&
+      (p.val === 'share' ? /of the membership\.$/ : /members\.$/).test(p.label)),
     born.picks.map((p) => p.label.slice(0, 50)).join(' | '));
   check('born untouched', !born.picks.some((p) => p.on) &&
     born.picks.every((p) => p.box.value === ''),
@@ -250,6 +273,31 @@ for (const key of ['quorum']) {
   check('the share box is the range the question offers',
     !!share && share.box.min === BOUNDS[key].min && share.box.max === BOUNDS[key].max,
     share ? share.box.min + '…' + share.box.max : '');
+
+  // **101 is refused** (Q1439, ruling a; the end moved to 100 at Q1490,
+  // R-139). Two halves, and the second is the one that bites: the box's own
+  // `max` (asserted above) stops the spinner, and a number typed past it
+  // leaves the ✓ dark — otherwise a share the module will reject arms the
+  // commit and the refusal arrives at the far end of the act.
+  await page.evaluate(() => {
+    const p = [...document.querySelectorAll('.setupcard .pick')]
+      .find((x) => (x.querySelector('[data-ans]') || { dataset: {} }).dataset.ansval === 'share');
+    const box = p && p.querySelector('[data-ansnum]');
+    if (box) { box.value = '101';
+      for (const e of ['input', 'change']) box.dispatchEvent(new Event(e, { bubbles: true })); }
+  });
+  await page.waitForTimeout(400);
+  const over = await page.evaluate(() => {
+    const c = document.querySelector('.setupcard');
+    const p = [...c.querySelectorAll('.pick')]
+      .find((x) => (x.querySelector('[data-ans]') || { dataset: {} }).dataset.ansval === 'share');
+    const box = p && p.querySelector('[data-ansnum]');
+    const commit = c.querySelector('[data-confirm]');
+    return { value: box ? box.value : null, overflow: !!(box && box.validity.rangeOverflow),
+      commitOff: !commit || commit.disabled };
+  });
+  check('101 is over the share box’s own end', over.overflow, 'value: ' + over.value);
+  check('the ✓ stays dark on a share above 100', over.commitOff);
 
   // typing into the share block's box chooses that block and wakes the ✓
   await page.evaluate(() => {
@@ -265,6 +313,38 @@ for (const key of ['quorum']) {
     typed.picks.filter((p) => p.on).map((p) => p.val).join(',') === 'share',
     typed.picks.filter((p) => p.on).map((p) => p.val).join(','));
   check('the ✓ wakes', !typed.commitOff);
+  // **(x of y) follows the share, and follows the keystroke** (Q1439, ruling
+  // m): the numbers are repainted in place, so they are there without the
+  // card having been rebuilt. This founding has one arrived member, so 40%
+  // of it is one of one.
+  const sh = typed.picks.find((p) => p.val === 'share');
+  check('the share says what it comes to in this membership',
+    !!sh && /\(1 of 1\)/.test(sh.label), sh ? sh.label.slice(0, 60) : '');
+
+  // **The bracket prints the floor the engine applies** (Ed, 2026-09-21,
+  // Q1490: *print the real floor*) — `max(⌈n·E/100⌉, min(2, E))`, so in a
+  // membership of two or more no 👥 bracket can read *(1 of*. This founding is
+  // a membership of one, so the writers every site prints a share through
+  // are asked directly, over the whole scale and memberships of 2 to 40,
+  // against the module's own `adoptionFloor`. And the other half of the same
+  // ruling: `quorumNote` must go on reading the **bare** share, or the
+  // *minimum quorum is 2* sentence falls silent exactly where it is owed.
+  const floors = await page.evaluate(() => {
+    const U = window.SETUP, M = window.CONSTITUTION, bad = [];
+    for (let E = 2; E <= 40; E += 1) for (let pct = 1; pct <= 100; pct += 1) {
+      const want = M.adoptionFloor(M.quorumCount({ form: 'share', n: pct }, E), E);
+      for (const [name, s] of [['shareTail', U.shareTail(pct, E)], ['shareWords', U.shareWords(pct, E)]]) {
+        if (/\(1 of/.test(s) || !s.includes('(' + want + ' of ' + E + ')')) bad.push(name + ' ' + pct + '% of ' + E + ': ' + s);
+      }
+    }
+    return { bad, note: U.quorumNote('share', 1, 12), floorMin: window.COPY.page.quorumFloorMin,
+      tail: U.shareTail(1, 12) };
+  });
+  check('no bracket reads (1 of … in a membership of two or more',
+    floors.bad.length === 0, floors.bad.slice(0, 3).join(' · '));
+  check('1% of twelve reads (2 of 12)', /\(2 of 12\)/.test(floors.tail), floors.tail);
+  check('…and the minimum-quorum sentence still stands beside it',
+    !!floors.note && floors.note === floors.floorMin, floors.note);
 
   await clickIn('.setupcard [data-confirm]');
   await page.waitForTimeout(400);

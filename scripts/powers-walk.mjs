@@ -52,7 +52,7 @@
  */
 import { chromium } from 'playwright';
 import { assertServerBuild } from './lib/assert-server.mjs';
-import { say, sleep as T, arg, pageGesture as gestureOf, outbox as devOutbox } from './lib/walk.mjs';
+import { say, sleep as T, arg, pageGesture as gestureOf, outbox as devOutbox, landOn } from './lib/walk.mjs';
 
 // argv first, then the environment the server itself was started with, then
 // the historical default. Under plan-queue every slot carries its own
@@ -226,7 +226,7 @@ const runDocument = async (hat) => {
     }
     born = r.devLink;
   }
-  await page.goto(born);
+  await landOn(page, born);
   for (let i = 0; i < 40 && !page.url().includes('/d/'); i++) await T(500);
   await T(1800);
   const SLUG = (page.url().match(/\/d\/([^/?#]+)/) || [])[1];
@@ -283,7 +283,11 @@ const runDocument = async (hat) => {
     // what consumes it (stage 3, defect 6), and consuming it is the arrival.
     // A plain fetch here left the roster empty and 🍾 refused *roster must
     // not be empty*, which reads as a product defect and is this walk's own.
-    const u = new URL((inv[inv.length - 1].link) || linkIn(inv[inv.length - 1]));
+    // **Newest first** (`outboxTail`): this read took the last entry, which
+    // is the *oldest* match — the shape that cost applicants-walk a run
+    // against a used data dir. This run's title is its own, so only one mail
+    // matches here; a re-send would have made two.
+    const u = new URL((inv[0].link) || linkIn(inv[0]));
     await fetch(u.href);
     await fetch(u.origin + u.pathname, {
       method: 'POST',
@@ -322,7 +326,7 @@ const runDocument = async (hat) => {
   // constitution over the wire never meets the two grant cards. Pressing them
   // is not scenery — without it every ✒️ on the page is dark for the right
   // reason and this walk would prove nothing.
-  await page.goto(DOCBASE + '/d/' + SLUG);
+  await landOn(page, DOCBASE + '/d/' + SLUG);
   await T(2400);
   for (const g of ['grant-pen', 'grant-shield']) {
     if (!(await openCard(g))) { fail('no ' + g + ' card to accept'); continue; }
@@ -359,7 +363,7 @@ const runDocument = async (hat) => {
     ' and on 📝 · ⏰ keeps its pen');
 
   /* ---- pre-start: the release is a promise, and the control is correct -- */
-  await page.goto(DOCBASE + '/d/' + SLUG);
+  await landOn(page, DOCBASE + '/d/' + SLUG);
   await T(2200);
   await openCard('title');
   // the title's ✒️ is `commitReady`, which is *the lane differs from what
@@ -403,7 +407,7 @@ const runDocument = async (hat) => {
     fail('begin → ' + begun0.status + ' ' + JSON.stringify((begun0.body || {}).error || '').slice(0, 200));
     await page.close(); return;
   }
-  await page.goto(DOCBASE + '/d/' + SLUG);
+  await landOn(page, DOCBASE + '/d/' + SLUG);
   await T(2400);
   const begun = await page.evaluate(() => !!document.querySelector('.doc.begun'));
   say('🍾         · ' + (begun ? 'begun' : 'FAIL: the page does not read as begun'));
@@ -443,7 +447,7 @@ const runDocument = async (hat) => {
    * own settledness is `S.emailVerified` — page state a reload cannot rebuild
    * — and pre-start it blocks the order ahead of them. 🎩 needs no press at
    * all on this side of 🍾: `constituted()` settles it (Q682). */
-  await page.goto(DOCBASE + '/d/' + SLUG);
+  await landOn(page, DOCBASE + '/d/' + SLUG);
   await T(2400);
   const order = [];
   for (const k of ['myname', 'mypic']) {
@@ -522,7 +526,7 @@ const runDocument = async (hat) => {
    * not a member, so their card keeps the pen alone and says why.
    * It fails on the pre-change page at *⏰ · one commit where there should be
    * two* (member) and at *⏰ · no sentence saying why* (clerk). */
-  await page.goto(DOCBASE + '/d/' + SLUG);
+  await landOn(page, DOCBASE + '/d/' + SLUG);
   await T(2400);
   if (!(await openCard('ending'))) fail('no ⏰ tab after 🍾 — the pair has nowhere to stand');
   else if (hat === 'clerk') {
@@ -574,6 +578,13 @@ const runDocument = async (hat) => {
     const label = await press(3600, '[data-putmotion]');
     if (!label) bad.push('the second commit would not press');
     await T(1200);
+    // **and the card closes on the put** (L5; Q1485 (D), the nh2026
+    // convention 2026-09-20). The handler ended `return render()` where every
+    // neighbour `closeThen`s, so the card stayed open and redrew as if
+    // untouched — the typed value back to what stands and ✏️ dark, which
+    // reads as a press that did nothing.
+    const shut = await page.evaluate(() => !document.querySelector('.setupcard'));
+    if (!shut) bad.push('the card is still open after the put (Q1485 (D))');
     const running = await page.evaluate(async (slug) => {
       const b = await (await fetch(`/api/d/${slug}/view`)).json().catch(() => null);
       const ms = (b && b.view && b.view.motions) || [];
@@ -595,6 +606,39 @@ const runDocument = async (hat) => {
     // page's *nothing commits* sweep is about cards, not about a live race
     for (const m of running) await cmd('withdraw-motion', { motion: m.id });
     await T(600);
+    /* ---- ⏰ · the pen carries its reason (issue #34 F1) ----------------
+     * The Founder types *Why are you changing this?* and presses ✒️: the
+     * live `setSetting` took no reason, so the request carried no `why`, the
+     * module recorded none, and every member read *No reason given.* under a
+     * Founder's change to a rule. Red on the pre-#34 page at `setWhy: null`. */
+    const WHY = 'The cohort asked for one more week.';
+    if (await page.evaluate(() => !document.querySelector('.setupcard'))) await openCard('ending');
+    const later = new Date(Date.now() + 86_400_000 + 7_200_000);
+    const local2 = later.getFullYear() + '-' + pad(later.getMonth() + 1) + '-' + pad(later.getDate()) +
+      'T' + pad(later.getHours()) + ':' + pad(later.getMinutes());
+    await page.evaluate((v) => {
+      const el = document.querySelector('.setupcard [data-txt="endsAt"]');
+      if (el) { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); }
+    }, local2);
+    await T(500);
+    // half the reason, one 4s poll, then the rest: a poll's render under the
+    // lane took the caret (found building #34), so the walk makes one land
+    // there on purpose rather than by luck
+    const HALF = 14;
+    const typed = await typeIn('.setupcard [data-setwhy]', WHY.slice(0, HALF));
+    await T(4800);
+    if (typed) await page.keyboard.type(WHY.slice(HALF), { delay: 8 });
+    const penned = typed ? await press(1250) : null;
+    await T(1500);
+    const whyNow = await page.evaluate(async (slug) => {
+      const b = await (await fetch(`/api/d/${slug}/view`)).json().catch(() => null);
+      const row = b && b.view && (b.view.settings || []).find((s) => s.setting === 'ending');
+      return row ? row.setWhy : undefined;
+    }, SLUG);
+    const whyOk = typed && !!penned && whyNow === WHY;
+    if (!whyOk) fail('⏰ reason · ' + JSON.stringify({ typed, penned, setWhy: whyNow }));
+    say('  ⏰ reason    · ' + (whyOk ? 'the ✒️ carries the typed reason to the module — PASS'
+      : 'FAIL — ' + JSON.stringify({ typed, penned, setWhy: whyNow })));
   }
   await clickIn('.setupcard [data-revert]');
 
@@ -615,7 +659,7 @@ const runDocument = async (hat) => {
     return !!(b && b.view && b.view.closed);
   }, SLUG);
   for (let i = 0; i < 45 && !(await shutNow()); i++) await T(2_000);
-  await page.goto(DOCBASE + '/d/' + SLUG);
+  await landOn(page, DOCBASE + '/d/' + SLUG);
   await T(2600);
   const shut = await page.evaluate(() => !!document.querySelector('#doc.closedpage'));
   if (!shut) {

@@ -10,10 +10,19 @@
  * dependence (*in a membership of 5*, never a bare *4 of 5*): when a sixth
  * member arrives, the reader can see what moved and why.
  *
- * The labels live here rather than page-side because there are three readers of
- * them — the founder's card, the member's blind answer card and the
+ * The labels lived here rather than page-side because there were three readers
+ * of them — the founder's card, the member's blind answer card and the
  * distribution strip — and *one label per rung everywhere* (STYLE T5, Q620) is
  * a rule a shared list keeps and three literals do not.
+ *
+ * **Nothing on the surface reads them since 2026-09-18** (Ed, Q1439: *the
+ * meaning lines go — all three*). The grey line under 👥's, ⏱️'s and 💤's
+ * number boxes is gone and each rule sentence stands alone, so `meaningLine`
+ * and every page call of `meaningOf` went with it. What is left is engine-side
+ * — this module's own callers and `meaning.test.ts` — and it is kept rather
+ * than deleted because a sentence saying what a number would do to *this* room
+ * is the kind of thing a sim or a later surface asks for; the session decides
+ * its fate.
  *
  * `meaningOf` is deliberately one function over `(setting, value, room)` rather
  * than a helper per card: every other ladder on the surface wants the same
@@ -72,7 +81,6 @@ export interface Room {
 export function roomPhrase(e: number): string {
   return e <= 1 ? 'one' : String(Math.floor(e));
 }
-const roomOf = roomPhrase;
 
 /**
  * **A sentence that will not fit is no sentence.** card-audit's H4 caps a
@@ -139,37 +147,63 @@ function spellPhrase(afterMs: number): string {
 }
 
 /* ---- 👥 -----------------------------------------------------------------
-   Two shapes of the same sentence. The **count** form leads with the room,
-   like 🌡️'s; the **share** form leads with the arithmetic, because a share
-   is the one answer whose consequence the reader cannot do in their head —
-   *34% of a room of 5 is 2* is the whole of what a share is asking them to
-   agree to, and it moves when somebody joins.
+   **Ed's own sentence** (Q1439, ruling t, 2026-09-18): *A proposal cannot pass
+   until it is preferred by at least 50% of the membership (5 of 10).* It read
+   *At least 50% (5 of 10) of the membership must prefer a proposal before it
+   can be adopted* between ruling p and this one, and two things moved: the
+   verb is **pass**, which is STYLE T8's word and not *adopted*, and the
+   emphasis sits on the bar rather than on the membership.
 
-   Every branch ends in the floor and nothing else (Ed, 2026-09-06, Q1196;
-   R-088). Until v0.99 three of them ended in *the document freezes*, which
-   was 👥's other job; there is no freeze now, so the one consequence each
-   sentence states (T37) is the only one the setting has — how many must
-   have voted on a change before it can pass. */
-function quorumBody(q: number, n: number): string {
-  if (q > n) {
-    return q + ' of you must have voted before a change can pass, so nothing can pass ' +
-      'until more members arrive.';
-  }
-  if (n === 1) return 'your own vote is the whole quorum, and nothing waits on anybody else.';
-  if (q >= n) return 'all ' + n + ' of you must have voted on a change before it can pass.';
-  if (q <= 1) return 'one vote is enough for a change to pass, so nothing waits for anybody else.';
-  return 'at least ' + q + ' of you must have voted on a change before it can pass.';
+   **It says *preferred by*** — the quorum counts approvals (R-125), not
+   judgments either way, so *voted on by* was no longer what the number means:
+   a member who voted against the proposal has voted, and does not count
+   toward it.
+
+   **Every share carries its own (x of y)** (ruling m: *wherever we show a %
+   of membership, we should have (x of y) after showing the actual numbers*),
+   which is also rule 1 — a meaning names its own dependence — done in four
+   characters instead of a clause. `x` is ⌈n·y/100⌉, the product before the
+   quotient (issue #24).
+
+   **And the share shown is the true one** (ruling a, R-126, as amended by
+   Q1490's R-139): a count above the membership is still restated as the
+   number the room will actually be held to, since E moves under a count; the
+   half cap and the note that explained it went with the scale on 2026-09-21,
+   a share now running to 100% and ⌈n·E/100⌉ never exceeding E.
+
+   **The number is the whole of what the room chose** since v0.133 (ruling s →
+   why: R-131): ⌈E/3⌉ used to sit under it, unsaid on any card, which is the
+   disagreement Q1449 named. What sits there now is a seconder (ruling u), a
+   flat two the sentence does not state — it is not this setting's, and a card
+   that named it would be describing the mechanism rather than the choice.
+
+   **Nothing on the surface prints this** since Ed's 01:40 ruling of the same
+   day: the grey meaning line under every number box has gone, and each rule
+   sentence stands alone. What is left here reads the same for the module's own
+   callers — the sims, and `meaning.test.ts` — and the page's copy of these
+   sentences is `design/copy.js`'s `quorumRule`.
+
+   Every branch still ends in the floor and nothing else (Ed, 2026-09-06,
+   Q1196; R-088): one consequence per value (T37), and there is no freeze. */
+function quorumBody(q: number, n: number, form: 'count' | 'share', pct: number): string {
+  if (n === 1) return 'In a membership of one, your own vote is the whole quorum.';
+  return form === 'share'
+    ? 'A proposal cannot pass until it is preferred by at least ' + pct +
+      '% of the membership (' + q + ' of ' + n + ').'
+    : 'A proposal cannot pass until it is preferred by at least ' + q + ' members.';
 }
 
 function quorumMeaning(v: QuorumValue, room: Room): string | null {
   if (typeof v.n !== 'number' || !Number.isFinite(v.n)) return null;
   const n = Math.max(1, Math.floor(room.e));
-  const q = quorumCount(v, n);
-  if (!Number.isFinite(q)) return null;
-  const body = quorumBody(q, n);
-  return fit(v.form === 'share'
-    ? Math.round(v.n) + '% of a membership of ' + roomOf(n) + ' is ' + q + ': ' + body
-    : 'In a membership of ' + roomOf(n) + ', ' + body);
+  const asked = quorumCount(v, n);
+  if (!Number.isFinite(asked)) return null;
+  // the number the room is actually held to (R-139); the seconder under it is
+  // the mechanism's and not this setting's (R-131), so the sentence is silent
+  // about it exactly as it was about ⌈E/3⌉
+  const q = Math.min(asked, n);
+  const pct = Math.round(v.n);
+  return fit(quorumBody(q, n, v.form, pct));
 }
 
 /* ---- ⏱️ -----------------------------------------------------------------
@@ -214,11 +248,26 @@ function rateMeaning(v: RateValue, room: Room): string | null {
    lapse depends on is the spell and nothing else, and a false dependence is
    as wrong as a missing one. */
 function lapseMeaning(v: LapseValue): string | null {
-  if (v.afterMs === null) return fit('Nobody ever drops out of the count, however long they are away.');
+  if (v.afterMs === null) {
+    // **the second job, in the *never* branch too** (Q1439 ruling c): with no
+    // period nothing is imputed from silence, so a proposal waits for
+    // everybody however long they are away
+    return fit('Nobody ever drops out of the count, and a proposal waits for everyone ' +
+      'however long they are away.');
+  }
   if (typeof v.afterMs !== 'number' || !Number.isFinite(v.afterMs) || v.afterMs <= 0) return null;
-  return fit('A member who says nothing for ' + spellPhrase(v.afterMs) +
-    ' drops out of the count — the document can go on without them, and they are back the ' +
-    'moment they log in.');
+  const spell = spellPhrase(v.afterMs);
+  // **One period, two jobs** (Q1439, Ed: *if they're silent on everything they
+  // lapse, if they're silent on individual motions they abstain*). Both are
+  // consequences of the one span, so both are in the one sentence — T37's
+  // *one consequence per value* is about one *value*, and this value does
+  // exactly these two things. The shorter fallback keeps the second job,
+  // which is the new half a reader cannot guess.
+  const whole = 'A member who says nothing for ' + spell + ' drops out of the count, and a ' +
+    'proposal stops waiting for anyone who has not voted on it in that time. They are back ' +
+    'the moment they log in.';
+  return fit(whole) ?? fit('A member who says nothing for ' + spell + ' drops out of the ' +
+    'count, and a proposal stops waiting for them.');
 }
 
 /**
@@ -226,13 +275,12 @@ function lapseMeaning(v: LapseValue): string | null {
  * nothing true to say — in which case the card prints no line at all rather
  * than an approximation.
  *
- * *by the end* on 🌡️ because the number is the bar at the close, where the
- * ramp has finished rising; *when voting opens* on 🪜 because that is the one
- * moment its start describes.
- *
- * **Five settings, and every other one returns `null`** — 👤 👁️ 🌍 🪪 🥾 🤝
- * 🤖 ⏰, the personal cards and the text, whose own rung sentences say what
- * they mean without arithmetic. `null` is what makes this safe to call from a
+ * **Three settings — 👥 ⏱️ 💤 — and every other one returns `null`**: 👤 👁️
+ * 🌍 🪪 🥾 🤝 🤖 ⏰, the personal cards and the text, whose own rung sentences
+ * say what they mean without arithmetic. It was five until 2026-09-15, when
+ * 🌡️ and 🪜 left the surface with the bar itself (Q1362 (b), R-117) and took
+ * `barMeaning` and `paceMeaning` with them — so nothing here says *by the
+ * end* or *when voting opens* any more. `null` is what makes this safe to call from a
  * generic rung builder: a caller that gets one prints nothing and never falls
  * back to a sentence of its own.
  */

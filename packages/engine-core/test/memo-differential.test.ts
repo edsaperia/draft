@@ -1,7 +1,14 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { Session, makeConstitution } from '../src/session.js';
 import { makeRng, type Rng } from '../src/rng.js';
 import type { Participant } from '../src/types.js';
+
+// Every case here is synchronous and the file runs for a minute and a half on
+// a slow machine; vitest's worker answers its own heartbeat on the event loop,
+// and a file that never yields fails the run with *Timeout calling
+// "onTaskUpdate"* though every test passed (2026-09-21). One tick between
+// cases lets the heartbeat through.
+afterEach(() => new Promise<void>((done) => { setTimeout(done, 0); }));
 
 /**
  * **The memo against no memo, step for step** (Q1326, Ed 2026-09-14: *build
@@ -37,7 +44,7 @@ const TEXT =
   Array.from({ length: LINES }, (_, i) => `Clause ${i + 1}: the club does a thing.`).join('\n') +
   '\n';
 
-function open(seed: string): Session {
+function open(seed: string, overrides: Record<string, unknown> = {}): Session {
   return Session.open(
     {
       text: TEXT,
@@ -53,6 +60,7 @@ function open(seed: string): Session {
         tokenDripMinutes: 20,
         cooldownMs: 30 * 60_000,
         quorum: { form: 'count', n: 2 },
+        ...overrides,
       }),
       settings: { s1: { n: 1 }, s2: { n: 2 } },
     },
@@ -166,9 +174,13 @@ function picture(s: Session, t: number): unknown {
     entries: s.log.length,
     document: s.document(),
     version: s.currentVersion(),
-    races: s.races(),
+    // **at `t`, not at the last event** (Q1439): the floor is read against the
+    // group, and a silence leaves the group when 💤's period runs — with no
+    // event to mark it. So the picture is taken at the clock the step is at,
+    // which is what puts the time-free half of the memo under test.
+    races: s.races(t),
     judgments: s.judgments(),
-    // peakW rides here, and it is what a refund is computed from
+    // peakW rides here, and it is what the graveyard's ranking is taken from
     candidates: s.allCandidates(),
     floor: s.adoptionFloor(),
     edges: s.totalEdgeComparisons,
@@ -182,8 +194,8 @@ function picture(s: Session, t: number): unknown {
       try { balance = s.balance(p.id, t); } catch (e) { balance = (e as Error).message; }
       let hand: unknown;
       try { hand = s.feed(p.id, 8, t); } catch (e) { hand = (e as Error).message; }
-      const asks = s.races().map((r) => {
-        try { return s.askOn(p.id, r.id); } catch (e) { return (e as Error).message; }
+      const asks = s.races(t).map((r) => {
+        try { return s.askOn(p.id, r.id, t); } catch (e) { return (e as Error).message; }
       });
       return { balance, hand, asks };
     }),
@@ -205,6 +217,13 @@ interface RunOut {
   entries: number;
   acts: number;
   refusals: number;
+  /**
+   * **Proposals the room closed inside the script** (Q1440). The domination
+   * test is derived state read inside the sweep and acted on with an event,
+   * which is exactly the shape a memo can get wrong, so the scripts below
+   * assert that they contain some rather than hoping they do.
+   */
+  dominations: number;
 }
 
 /**
@@ -212,9 +231,13 @@ interface RunOut {
  * performed on both; after every step both are asked for everything they
  * publish, and the two answers must be the same object.
  */
-function differential(seed: string, steps: number): RunOut {
-  const a = cold(() => open(seed)); // memo off throughout
-  const b = open(seed); // memo live
+function differential(
+  seed: string,
+  steps: number,
+  overrides: Record<string, unknown> = {},
+): RunOut {
+  const a = cold(() => open(seed, overrides)); // memo off throughout
+  const b = open(seed, overrides); // memo live
   const rng = makeRng(`differential/${seed}`);
   let t = 1000;
   let acts = 0;
@@ -235,10 +258,44 @@ function differential(seed: string, steps: number): RunOut {
   const replayWarm = Session.replay([...b.log]);
   expect(b.rollingHash()).toBe(a.rollingHash());
   expect(replayWarm.rollingHash()).toBe(a.rollingHash());
-  expect(replayWarm.races()).toEqual(cold(() => replayCold.races()));
+  expect(replayWarm.races(t)).toEqual(cold(() => replayCold.races(t)));
   expect(replayWarm.allCandidates()).toEqual(cold(() => replayCold.allCandidates()));
-  return { hash: a.rollingHash(), entries: a.log.length, acts, refusals };
+  return { hash: a.rollingHash(), entries: a.log.length, acts, refusals,
+    dominations: a.log.filter((e) => e.event.type === 'candidate-retired'
+      && (e.event as { reason?: string }).reason === 'dominated').length };
 }
+
+/**
+ * **A load allowance, not a performance budget** (Q1439). These scripts run in
+ * about 1.4 s each alone and have twice timed out at vitest's default five
+ * under full-suite load on this machine, which reddens `ci` and so holds a
+ * push; the budget is the before/after measurement Q1441 asks for, not this
+ * number. Each script is 120 steps × two sessions, one of them deriving
+ * everything afresh, with the whole published picture of both compared at
+ * every step, and the warm side runs under `memo.audit`, which recomputes
+ * *and serialises* every cache hit. Nothing about the assertions is relaxed.
+ *
+ * **Raised from 30 s to 120 s on 2026-09-19** (Ed: *you decide*). Measured the
+ * same night on this machine, alone and with nothing else running: *moon* 24 s,
+ * *oak* 25.5 s, *clerk* 18 s, the abstaining script 12 s — and *moon* timed out
+ * at 30 s twice in a full-suite run. **That is seventeen times the 1.4 s this
+ * comment records**, so the allowance is no longer the interesting number: the
+ * scripts got slow somewhere between Q1439 and today, and whether that is the
+ * test's own cold side or the engine under a busy room is an open finding
+ * (QUESTIONS, beside Q1441's before/after measurement), not something a
+ * timeout settles. The limit is raised so the finding cannot hold a push.
+ */
+const SCRIPT_MS = 120_000;
+
+/**
+ * **How many proposals the scripts closed** (Q1440), filled as they run and
+ * read at the end. The domination test is derived state consulted inside the
+ * sweep and acted on with an event — the shape a memo is likeliest to get
+ * wrong — so the coverage is asserted rather than assumed. It is a total over
+ * the scripts and not a per-seed floor, because whether a given seed's random
+ * room ever refuses a wording hard enough is the seed's business.
+ */
+const closings: number[] = [];
 
 describe('the fold-live memo derives what no memo derives (Q1326)', () => {
   for (const seed of ['moon', 'oak', 'clerk']) {
@@ -247,8 +304,44 @@ describe('the fold-live memo derives what no memo derives (Q1326)', () => {
       // the script has to actually exercise the engine, or agreement is cheap
       expect(out.acts).toBeGreaterThan(70);
       expect(out.entries).toBeGreaterThan(90);
-    });
+      closings.push(out.dominations);
+    }, SCRIPT_MS);
   }
+
+  /**
+   * **Time passing is a state change the log never records** (Q1439): 💤's
+   * period turns a silence into an abstention with no event to mark it, so the
+   * group — and the floor read against it — moves while nothing else does.
+   * That is the one thing the memo cannot hold, and this is the case that says
+   * so: a period short enough that most steps cross one, the picture taken at
+   * each step's own clock, and the cold session deriving everything afresh.
+   */
+  it('a session whose silences abstain as the clock moves agrees at every step', () => {
+    const out = differential('abstain', 120, { abstainAfterMs: 4 * 60_000 });
+    // the bound only guards that the script did something. It ran above 70
+    // until v0.133's seconder (Q1439 ruling u) held more races open, which
+    // changes which scripted acts are legal and lands this run at 68. The
+    // step-by-step differential is the assertion; this is its floor.
+    expect(out.acts).toBeGreaterThan(60);
+    closings.push(out.dominations);
+  }, SCRIPT_MS);
+
+  it('the races read at two clocks on one state differ only in the floor they were read at', () => {
+    const s = open('two-clocks', { abstainAfterMs: 5 * 60_000 });
+    s.submitCandidate(1000, { author: 'p1', rationale: 'r',
+      patch: { baseVersion: 0, hunks: [{ start: 0, end: 1, lines: ['Clause 1: changed.'] }] } });
+    const early = s.races(2000)[0]!;
+    const late = s.races(1000 + 5 * 60_000 + 1)[0]!;
+    // nothing in the log moved between the two reads
+    expect(late.leaderJudges).toBe(early.leaderJudges);
+    expect(late.approvals).toBe(early.approvals);
+    // and everything that rides the clock did
+    expect(early.group).toBe(SEATS);
+    expect(late.group).toBe(1);
+    // the memo holds the time-free half, so a cold read agrees with both
+    expect(cold(() => s.races(2000)[0]!)).toEqual(early);
+    expect(audited(() => s.races(1000 + 5 * 60_000 + 1)[0]!)).toEqual(late);
+  });
 
   it('the close, and everything after it, agrees too', () => {
     const a = cold(() => open('closing'));
@@ -267,6 +360,11 @@ describe('the fold-live memo derives what no memo derives (Q1326)', () => {
     expect(b.closed).toBe(true);
     expect(audited(() => picture(b, closeT))).toEqual(cold(() => picture(a, closeT)));
     expect(audited(() => b.finalRender())).toEqual(cold(() => a.finalRender()));
+  }, SCRIPT_MS);
+
+  it('the scripts above closed proposals the room could no longer pass (Q1440)', () => {
+    expect(closings.length).toBe(4);
+    expect(closings.reduce((a, x) => a + x, 0)).toBeGreaterThan(0);
   });
 
   it('both switches are off once the tests have had them', () => {

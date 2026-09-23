@@ -118,7 +118,11 @@ describe('amendments and the anchor (SPEC §4.3, §9.6, 367b)', () => {
 
   it('an amended quorum re-derives the floor from current E (SPEC §4.2)', () => {
     const s = openS();
-    expect(s.adoptionFloor()).toBe(1); // ceil(2/3)
+    expect(s.adoptionFloor()).toBe(2); // no quorum settled: the seconder, min(2, E)
+    // **and no quorum asks for more than half** (Q1439, R-126): a count of 2
+    // in a room of 2 is everybody, which is 🏛️'s rung and not ✏️'s, so it
+    // reads as ⌈2/2⌉ = 1 — and the seconder (ruling u) puts a room of two back
+    // at unanimity anyway, so the floor does not move
     s.amend(1 * HOUR, { quorum: { form: 'count', n: 2 } });
     expect(s.adoptionFloor()).toBe(2);
   });
@@ -127,39 +131,48 @@ describe('amendments and the anchor (SPEC §4.3, §9.6, 367b)', () => {
    * The engine keeps its **own** copy of §4.2's share arithmetic
    * (`adoptionFloor()`, over its own `eCount()`), so the rounding defect
    * `packages/constitution/test/promise-quorum.test.ts` files lives here
-   * too and had to be fixed in both places at once (issue #24). Twenty-five
-   * participants, a quorum of 56 %: the promise is *the share, rounded up*
-   * — ⌈56 × 25 / 100⌉ = 14 — and `Math.ceil((56 / 100) * 25)` gave 15,
-   * because 0.56 is not representable in binary and the product lands a
-   * hair above 14. Multiplying before dividing keeps the promise.
+   * too and had to be fixed in both places at once (issue #24). The promise
+   * is *the share, rounded up* — ⌈n × E / 100⌉ — and `Math.ceil((n / 100) * E)`
+   * gave one more, because most integer shares are not representable in
+   * binary and the product lands a hair above the whole number.
+   *
+   * **The worked case moved with Q1439** (R-126): it used to be 56 % of 25,
+   * and no quorum may ask for more than half now, so a share above 50 is
+   * refused at validation and the engine would cap it anyway. 28 % of **50**
+   * is the case that still bites — 14 by the promise, 15 by the old
+   * expression, with the half of 25 above both, so nothing else in the formula
+   * masks it. Since v0.133 nothing could: the statistical term that did the
+   * masking has gone (Q1439 ruling s, R-131).
    */
-  const bigRoom = () =>
+  const bigRoom = (size = 50) =>
     Session.open(
       {
         text: 'One line.\n',
-        roster: Array.from({ length: 25 }, (_, i) => ({ id: `p${i + 1}`, handle: `P${i + 1}` })),
+        roster: Array.from({ length: size }, (_, i) => ({ id: `p${i + 1}`, handle: `P${i + 1}` })),
         constitution: makeConstitution({ windowStartMs: 0, windowEndMs: 10 * HOUR, rngSeed: 's' }),
       },
       0,
     );
 
-  it('a quorum of 56 % of 25 is 14, and the engine floor holds the room to 14', () => {
+  it('a quorum of 28 % of 50 is 14, and the engine floor holds the room to 14', () => {
     const s = bigRoom();
-    s.amend(1 * HOUR, { quorum: { form: 'share', n: 56 } });
-    expect(Math.ceil((56 * 25) / 100)).toBe(14); // the promise, in exact arithmetic
+    s.amend(1 * HOUR, { quorum: { form: 'share', n: 28 } });
+    expect(Math.ceil((28 * 50) / 100)).toBe(14); // the promise, in exact arithmetic
+    expect(Math.ceil((28 / 100) * 50)).toBe(15); // the old expression, one too many
     expect(s.adoptionFloor()).toBe(14);          // and what it holds them to
   });
 
-  it('at 28 % of 25 the same defect was masked by ⌈E/3⌉, which is why it could sit undetected', () => {
-    // Q was wrong by one there too — 8 where the promise is 7 — but the
-    // statistical term ⌈25/3⌉ = 9 is above both readings, so F is 9 either
-    // way. The defect only ever reached a race where Q cleared the term,
-    // which is the 56 % case above.
-    const s = bigRoom();
+  it('at 28 % of 25 the same defect used to be masked by ⌈E/3⌉ — and is not now', () => {
+    // Q was wrong by one there too — 8 where the promise is 7 — and the
+    // statistical term ⌈25/3⌉ = 9 sat above both readings, so F was 9 either
+    // way and the defect only ever reached a race where Q cleared the term.
+    // **With the term gone** (v0.133, Q1439 ruling s, R-131) the room's own
+    // number is the floor at every size, so the promise is read straight.
+    const s = bigRoom(25);
     s.amend(1 * HOUR, { quorum: { form: 'share', n: 28 } });
     expect(Math.ceil((28 / 100) * 25)).toBe(8); // the old expression
     expect(Math.ceil((28 * 25) / 100)).toBe(7); // the promise
-    expect(s.adoptionFloor()).toBe(9);
+    expect(s.adoptionFloor()).toBe(7);
   });
 
   it('the two copies of the formula agree with each other, and now with the promise', () => {
@@ -168,9 +181,9 @@ describe('amendments and the anchor (SPEC §4.3, §9.6, 367b)', () => {
     // there; the engine derives F from the engine's roster and never asks
     // the constitution, so the two had to be corrected in one commit.
     const s = bigRoom();
-    s.amend(1 * HOUR, { quorum: { form: 'share', n: 56 } });
+    s.amend(1 * HOUR, { quorum: { form: 'share', n: 28 } });
     expect(s.adoptionFloor()).toBe(
-      Math.max(Math.ceil((56 * 25) / 100), Math.min(Math.ceil(25 / 3), 12)));
+      Math.max(Math.min(Math.ceil((28 * 50) / 100), Math.ceil(50 / 2)), Math.min(2, 50)));
   });
 
   it('an amended drip re-phases without retro-credit (SPEC §7)', () => {

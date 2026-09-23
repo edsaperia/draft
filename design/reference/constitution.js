@@ -32,6 +32,7 @@ var CONSTITUTION = (() => {
     ERASED: () => ERASED,
     InMemoryPeople: () => InMemoryPeople,
     JUDGE_GATES: () => JUDGE_GATES,
+    LAPSE_MIN_MS: () => LAPSE_MIN_MS,
     MEANING_MAX: () => MEANING_MAX,
     PEOPLE_SCHEMA_VERSION: () => PEOPLE_SCHEMA_VERSION,
     SCHEMA_VERSION: () => SCHEMA_VERSION,
@@ -256,6 +257,7 @@ var CONSTITUTION = (() => {
   var isObj = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
   var isFiniteNum = (v) => typeof v === "number" && Number.isFinite(v);
   var isInt = (v) => Number.isInteger(v);
+  var LAPSE_MIN_MS = 5 * 6e4;
   function validateValue(type, v) {
     if (!isObj(v)) return `${type}: value must be an object`;
     switch (type) {
@@ -278,17 +280,17 @@ var CONSTITUTION = (() => {
         if (v.form !== "count" && v.form !== "share") return "quorum: form must be 'count' or 'share'";
         if (v.form === "count")
           return isInt(v.n) && v.n >= 0 ? null : "quorum: count n must be an integer ≥ 0";
-        return isFiniteNum(v.n) && v.n >= 0 && v.n <= 100 ? null : "quorum: share n must be 0–100";
+        return isFiniteNum(v.n) && v.n >= 0 && v.n <= 100 ? null : "quorum: share n must be 0–100 (Q1490)";
       case "ladder":
         return typeof v.rung === "string" ? null : "ladder: { rung: string } required";
       case "rate":
         if (!isInt(v.grant) || v.grant < 0) return "rate: grant must be an integer ≥ 0";
         if (!isInt(v.cap) || v.cap < 1) return "rate: cap must be an integer ≥ 1";
         if (v.cap < v.grant) return "rate: cap must be ≥ grant";
-        return isFiniteNum(v.dripMinutes) && v.dripMinutes > 0 ? null : "rate: dripMinutes must be a positive number of real minutes (Q353)";
+        return isInt(v.dripMinutes) && v.dripMinutes >= 1 ? null : "rate: dripMinutes must be a whole number of real minutes, at least 1 (Q353)";
       case "lapse":
         if (v.afterMs === null) return null;
-        return isFiniteNum(v.afterMs) && v.afterMs > 0 ? null : "lapse: afterMs must be null (never) or a positive duration";
+        return isFiniteNum(v.afterMs) && v.afterMs >= LAPSE_MIN_MS ? null : "lapse: afterMs must be null (never) or at least five minutes (Q1453)";
       case "machines":
         if (typeof v.enabled !== "boolean") return "machines: enabled must be a boolean";
         return isInt(v.budget) && v.budget >= 0 ? null : "machines: budget must be an integer ≥ 0";
@@ -308,6 +310,26 @@ var CONSTITUTION = (() => {
   }
   function eqValue(a, b) {
     return stableStringify(a) === stableStringify(b);
+  }
+
+  // src/populations.ts
+  function inE(m) {
+    return m.arrivedAtT !== null && !m.removed && !m.lapsed;
+  }
+  function eOf(members) {
+    return [...members].filter(inE);
+  }
+  function motionElectorateOf(members) {
+    return eOf(members);
+  }
+  function quorumCount(quorum, E) {
+    return quorum.form === "count" ? quorum.n : Math.ceil(quorum.n * E / 100);
+  }
+  function adoptionFloorTerm(E) {
+    return Math.ceil(E / 3);
+  }
+  function adoptionFloor(quorumN, E) {
+    return Math.max(Math.min(quorumN, E), Math.min(2, E));
   }
 
   // src/catalogue.ts
@@ -433,7 +455,7 @@ var CONSTITUTION = (() => {
         ask: "the lowest quorum you will accept — a share of the membership or a fixed count",
         order: (a, b, ctx) => {
           const e = Math.max(1, ctx && ctx.e || 1);
-          const demand = (v) => v.form === "count" ? v.n : Math.ceil(v.n / 100 * e);
+          const demand = (v) => quorumCount(v, e);
           const d = demand(a) - demand(b);
           return d !== 0 ? d : a.n - b.n;
         }
@@ -829,6 +851,19 @@ var CONSTITUTION = (() => {
     if (!m.departuresOwed.has(departed)) return;
     s.emit({ type: "departure-ok", t, member, departed });
   }
+  function oweHeld(s, t, motion, mover, kind) {
+    if (mover === null || kind === "admit") return;
+    const m = s.members.get(mover);
+    if (!m || m.removed || m.arrivedAtT === null) return;
+    s.emit({ type: "held-owed", t, motion, member: mover });
+  }
+  function ackHeld(s, t, member, motion) {
+    s.requireOpen("acknowledging");
+    const m = s.members.get(member);
+    if (!m) throw new Error(`unknown member '${member}'`);
+    if (!m.heldOwed.has(motion)) return;
+    s.emit({ type: "held-ok", t, motion, member });
+  }
   function resendInvite(s, t, member, by) {
     s.requireOpen("re-sending an invitation");
     const m = s.members.get(member);
@@ -837,31 +872,19 @@ var CONSTITUTION = (() => {
     s.emit({ type: "mail-resent", t, member, by });
   }
 
-  // src/populations.ts
-  function inE(m) {
-    return m.arrivedAtT !== null && !m.removed && !m.lapsed;
-  }
-  function eOf(members) {
-    return [...members].filter(inE);
-  }
-  function motionElectorateOf(members) {
-    return eOf(members);
-  }
-  function quorumCount(quorum, E) {
-    return quorum.form === "count" ? quorum.n : Math.ceil(quorum.n / 100 * E);
-  }
-  function adoptionFloorTerm(E) {
-    return Math.ceil(E / 3);
-  }
-  function adoptionFloor(quorumN, E, fMax) {
-    return Math.max(quorumN, Math.min(adoptionFloorTerm(E), fMax));
-  }
-
   // src/motions.ts
   var CONSTITUTIONAL = new Set(
     CATALOGUE.filter((e) => e.kind === "constitutional").map((e) => e.id)
   );
+  var PUT = /* @__PURE__ */ new Set(["set", "reserve", "invite", "remove", "admit"]);
+  var notPut = (kind) => new Error(`'${String(kind)}' is not a motion anybody puts (§9.6)`);
+  function membershipRouteOf(price, kind) {
+    if (kind === "remove") return price === "proposal" ? "ordinary" : "constitutional";
+    return price === "assembly" ? "constitutional" : "ordinary";
+  }
   function openMotion(s, t, by, input, why) {
+    const asked = input?.kind;
+    if (typeof asked !== "string" || !PUT.has(asked)) throw notPut(asked);
     s.requireOpen("a motion");
     if (s.constitutedT === null) {
       throw new Error("before the start nothing is amended — only set (§9.6a)");
@@ -870,10 +893,11 @@ var CONSTITUTION = (() => {
     if (!mover || !inE(mover)) throw new Error(`'${by}' is not an arrived member`);
     let route;
     let payload;
+    let row = null;
     if (input.kind === "invite") {
       s.requireEmailFree(input.email);
       const person = s.personFor(input.email);
-      s.people.set(person, { email: input.email });
+      row = { person, email: input.email };
       payload = { kind: "invite", person };
     } else payload = input;
     if (payload.kind === "set") {
@@ -908,13 +932,15 @@ var CONSTITUTION = (() => {
     } else if (payload.kind === "invite") {
       const price = s.priceOf("admission");
       if (price === "pen") throw new Error("admission is at ✒️ — invite directly, nothing to propose (§9.7½)");
-      route = price === "assembly" ? "constitutional" : "ordinary";
+      route = membershipRouteOf(price, "invite");
     } else if (payload.kind === "remove") {
       const target = s.members.get(payload.member);
       if (!target || !inE(target)) throw new Error(`'${payload.member}' is not a member`);
-      route = s.priceOf("removal") === "proposal" ? "ordinary" : "constitutional";
+      route = membershipRouteOf(s.priceOf("removal"), "remove");
+    } else if (payload.kind === "admit") {
+      route = membershipRouteOf(s.priceOf("admission"), "admit");
     } else {
-      route = s.priceOf("admission") === "assembly" ? "constitutional" : "ordinary";
+      throw notPut(payload.kind);
     }
     const twin = runningTwin(s, payload);
     if (twin !== null) {
@@ -924,6 +950,7 @@ var CONSTITUTION = (() => {
       throw new Error("one 🏛️ out per member at a time (§9.6)");
     }
     const id = `mo-${s.nextMotionN}`;
+    if (row !== null) s.people.set(row.person, { email: row.email });
     const e = {
       type: "motion-opened",
       t,
@@ -965,6 +992,12 @@ var CONSTITUTION = (() => {
     if (rec.by !== member) throw new Error("only the mover withdraws a motion");
     s.emit({ type: "motion-withdrawn", t, motion });
   }
+  function abandonMotion(s, t, motion) {
+    const rec = s.motions.get(motion);
+    if (!rec || rec.status !== "running") return;
+    s.emit({ type: "motion-withdrawn", t, motion });
+    oweHeld(s, t, motion, rec.by, rec.payload.kind);
+  }
   function adjudicateOrdinaryMotion(s, t, motion, outcome) {
     s.requireOpen("a motion");
     const rec = s.motions.get(motion);
@@ -990,7 +1023,13 @@ var CONSTITUTION = (() => {
         false
       );
     } else if (after === "held") {
-      settleHeldEffects(s, t, rec);
+      settleHeldEffects(
+        s,
+        t,
+        rec,
+        /* tellTheMover */
+        outcome !== "held-at-close"
+      );
     }
   }
   function answerCrownQuestion(s, t, question, outcome) {
@@ -1057,7 +1096,13 @@ var CONSTITUTION = (() => {
         const electorate = motionElectorateOf(s.members.values()).filter((m2) => m2.id !== excl);
         if (electorate.length === 0) continue;
         const answers = electorate.map((m) => rec.answers.get(m.id));
-        if (answers.some((a) => a === void 0 || a === "keep")) continue;
+        if (answers.some((a) => a === "keep")) {
+          s.emit({ type: "motion-held", t, motion: rec.id });
+          settleHeldEffects(s, t, rec);
+          settled = true;
+          break;
+        }
+        if (answers.some((a) => a === void 0)) continue;
         if (!answers.some((a) => a === "accept")) continue;
         if (s.reservedTarget(rec)) {
           s.emit({
@@ -1078,6 +1123,7 @@ var CONSTITUTION = (() => {
   }
   function settleCarriedEffects(s, t, rec, everyoneHadSay) {
     if (rec.payload.kind === "invite") {
+      if (s.personSeated(rec.payload.person)) return;
       const id = `m-${s.nextMemberN}`;
       s.emit({
         type: "member-invited",
@@ -1088,6 +1134,7 @@ var CONSTITUTION = (() => {
       });
     } else if (rec.payload.kind === "remove") {
       const target = rec.payload.member;
+      if (s.members.get(target).removed) return;
       const wasInE = inE(s.members.get(target));
       s.emit({ type: "member-removed", t, member: target, viaMotion: rec.id });
       oweDeparture(s, t, target);
@@ -1107,6 +1154,8 @@ var CONSTITUTION = (() => {
       shiftRivals(s, t, rec.payload.setting, rec.id, rec.id);
     }
     if (rec.payload.kind === "admit") {
+      const already = s.personOfApplicant(rec.payload.applicant);
+      if (already !== null && s.personSeated(already)) return;
       const id = `m-${s.nextMemberN}`;
       s.emit({
         type: "member-admitted",
@@ -1129,10 +1178,11 @@ var CONSTITUTION = (() => {
       }
     }
   }
-  function settleHeldEffects(s, t, rec) {
+  function settleHeldEffects(s, t, rec, tellTheMover = true) {
     if (rec.payload.kind === "admit") {
       s.emit({ type: "application-refused", t, applicant: rec.payload.applicant });
     }
+    if (tellTheMover) oweHeld(s, t, rec.id, rec.by, rec.payload.kind);
   }
   function samePayload(a, b) {
     if (a.kind !== b.kind) return false;
@@ -1450,6 +1500,8 @@ var CONSTITUTION = (() => {
             rec.mailGaveUp = prev.mailGaveUp;
             rec.departuresOwed = prev.departuresOwed;
             rec.departuresGiven = prev.departuresGiven;
+            rec.heldOwed = prev.heldOwed;
+            rec.heldGiven = prev.heldGiven;
             rec.lastActivityT = prev.lastActivityT;
           } else {
             rec.lastActivityT = Math.max(rec.lastActivityT, s.convenor.lastActivityT);
@@ -1492,7 +1544,8 @@ var CONSTITUTION = (() => {
             status: "carried",
             answers: /* @__PURE__ */ new Map(),
             settledAtT: event.t,
-            moot: null
+            moot: null,
+            heldAtClose: false
           });
           s.penFrom.set(id, wasValue);
         }
@@ -1552,7 +1605,8 @@ var CONSTITUTION = (() => {
           status: "carried",
           answers: /* @__PURE__ */ new Map(),
           settledAtT: event.t,
-          moot: null
+          moot: null,
+          heldAtClose: false
         });
         break;
       }
@@ -1714,6 +1768,17 @@ var CONSTITUTION = (() => {
         touch(s, event.member, event.t);
         break;
       }
+      case "held-owed": {
+        s.members.get(event.member).heldOwed.add(event.motion);
+        break;
+      }
+      case "held-ok": {
+        const m = s.members.get(event.member);
+        m.heldOwed.delete(event.motion);
+        m.heldGiven.add(event.motion);
+        touch(s, event.member, event.t);
+        break;
+      }
       case "mail-gave-up": {
         if (!s.mailGiveUpBatches.has(event.batch)) {
           s.mailGiveUpBatches.set(
@@ -1770,9 +1835,11 @@ var CONSTITUTION = (() => {
           status: "running",
           answers: /* @__PURE__ */ new Map(),
           settledAtT: null,
-          moot: null
+          moot: null,
+          heldAtClose: false
         });
         s.nextMotionN += 1;
+        if (event.payload.kind === "invite") notePerson(s, event.payload.person);
         if (event.payload.kind === "admit") {
           s.applicants.get(event.payload.applicant).motion = event.motion;
         }
@@ -1838,11 +1905,18 @@ var CONSTITUTION = (() => {
         }
         break;
       }
+      case "motion-held": {
+        const rec = s.motions.get(event.motion);
+        rec.status = "held";
+        rec.settledAtT = event.t;
+        break;
+      }
       case "motion-adjudicated": {
         const rec = s.motions.get(event.motion);
         rec.settledAtT = event.t;
-        if (event.outcome === "held") {
+        if (event.outcome === "held" || event.outcome === "held-at-close") {
           rec.status = "held";
+          rec.heldAtClose = event.outcome === "held-at-close";
         } else if (reservedTarget(s, rec)) {
           rec.status = "awaiting-crown";
           rec.settledAtT = null;
@@ -2080,6 +2154,8 @@ var CONSTITUTION = (() => {
       mailGaveUp: false,
       departuresOwed: /* @__PURE__ */ new Set(),
       departuresGiven: /* @__PURE__ */ new Set(),
+      heldOwed: /* @__PURE__ */ new Set(),
+      heldGiven: /* @__PURE__ */ new Set(),
       invitationExpired: false,
       closingAck: null
     };
@@ -2526,7 +2602,8 @@ var CONSTITUTION = (() => {
       apply(this.fold, event, seq);
     }
     /** What an act on the membership costs, as the document stands — unset
-     *  reads as the most protective rung. */
+     *  reads as the most protective rung. Public since #26: the bridge asks it
+     *  to price a press before the motion is opened. */
     priceOf(id) {
       const st = this.settings.get(id);
       const v = st ? st.value : null;
@@ -2675,7 +2752,8 @@ var CONSTITUTION = (() => {
      * only once the text confirmed — are both retired. What replaces them is
      * one gate on the setting rather than two on the calendar: a setting nobody
      * has set has nothing to hand over, and the text's own confirmation is one
-     * setting's value among nineteen rather than the whole document's clock.
+     * setting's value among the catalogue's eighteen (SPEC §9.7.1) rather than
+     * the whole document's clock.
      */
     relinquish(t, setting, power) {
       this.requireOpen("giving up a power");
@@ -2795,6 +2873,7 @@ var CONSTITUTION = (() => {
       this.emit({ type: "member-removed", t, member, by: "convenor" });
       this.oweDeparture(t, member, this.convenor.id);
       if (wasInE) this.afterRosterChange(t, "departure", member);
+      else this.maybeResolveAll(t);
     }
     /**
      * Resignation (entry 94): free, immediate, refusable by nobody — a
@@ -2822,6 +2901,7 @@ var CONSTITUTION = (() => {
       this.emit({ type: "member-removed", t, member, by: "self" });
       this.oweDeparture(t, member);
       if (wasInE) this.afterRosterChange(t, "departure", member);
+      else this.maybeResolveAll(t);
       this.crownSeatVacated(t);
     }
     uninvite(t, member) {
@@ -2835,6 +2915,7 @@ var CONSTITUTION = (() => {
       const wasInE = inE(m);
       this.emit({ type: "member-uninvited", t, member });
       if (wasInE) this.afterRosterChange(t, "departure", member);
+      else this.maybeResolveAll(t);
     }
     arrive(t, member) {
       if (this.closedFlag) throw new Error("the document has closed; there is nothing left to join, only to read (§4.6)");
@@ -2907,6 +2988,25 @@ var CONSTITUTION = (() => {
         electorate: electorate.map((m) => m.id).sort()
       });
     }
+    /**
+     * **Somebody leaving is not the only thing a departure changes** (Q1482;
+     * Ed, the nh2026 convention 2026-09-20: *why can't I begin?* under *12 out
+     * of 12 of the membership have voted*).
+     *
+     * `afterRosterChange` is the road for a departure out of **E** — the
+     * electorate moved, so the ground shifted, the floor is re-read and
+     * everything is asked again. Somebody who never arrived was never in E, so
+     * that road was skipped entirely; but the *other* gate `maybeResolve` holds
+     * a blind question on is **invitations in flight** (Q413 (b)), and
+     * withdrawing an unopened invitation is exactly the thing that lifts it.
+     * The hold went and nobody looked again, so the question the withdrawal was
+     * meant to free went on collecting for ever and 🍾 went on refusing —
+     * §9.6a's own remedy for a veto by one unopened email, and it did nothing.
+     *
+     * So every road out of the roster ends here, whether or not E moved. It
+     * emits nothing of its own, which is why it is safe on a road that changed
+     * no ground: a question either resolves or it does not.
+     */
     maybeResolveAll(t) {
       for (const id of MANAGED) this.maybeResolve(t, id);
     }
@@ -3154,6 +3254,12 @@ var CONSTITUTION = (() => {
     ackDeparture(t, member, departed) {
       ackDeparture(this.owedState(), t, member, departed);
     }
+    /** The OK on one failed motion of your own (SURFACE E41, Q1447). The owing
+     *  has no delegate beside it: every road to a failure is inside
+     *  `motions.ts`, which calls `oweHeld` through its own host. */
+    ackHeld(t, member, motion) {
+      ackHeld(this.owedState(), t, member, motion);
+    }
     resendInvite(t, member, by) {
       resendInvite(this.owedState(), t, member, by);
     }
@@ -3234,6 +3340,8 @@ var CONSTITUTION = (() => {
         priceOf: (id) => this.priceOf(id),
         reservedTarget: (rec) => this.reservedTarget(rec),
         requireEmailFree: (email) => this.requireEmailFree(email),
+        personSeated: (person) => this.personSeated(person),
+        personOfApplicant: (applicant) => this.applicants.get(applicant)?.person ?? null,
         personFor: (email) => this.personFor(email),
         convenorSeatVacant: () => this.convenorSeatVacant(),
         afterRosterChange: (t, cause, member) => this.afterRosterChange(t, cause, member),
@@ -3249,6 +3357,11 @@ var CONSTITUTION = (() => {
     }
     withdrawMotion(t, member, motion) {
       withdrawMotion(this.motionHost(), t, member, motion);
+    }
+    /** The host could not enter the race this motion needs (#26): the
+     *  compensating withdrawal, which is nobody's act and never throws. */
+    abandonMotion(t, motion) {
+      abandonMotion(this.motionHost(), t, motion);
     }
     adjudicateOrdinaryMotion(t, motion, outcome) {
       adjudicateOrdinaryMotion(this.motionHost(), t, motion, outcome);
@@ -3480,6 +3593,9 @@ var CONSTITUTION = (() => {
       if (!a || a.status !== "verified") {
         throw new Error("an application is verified by magic link before it can be submitted (§9.7½)");
       }
+      if (this.personSeated(a.person)) {
+        throw new Error("that address is already on the membership — log in instead (§9.7½)");
+      }
       this.people.set(a.person, { name: fields.name ?? null, picture: fields.picture ?? null });
       const e = { type: "application-submitted", t, applicant };
       if (fields.words !== void 0) e.words = fields.words;
@@ -3663,14 +3779,26 @@ var CONSTITUTION = (() => {
     requireEmailFree(email) {
       const person = this.people.byEmail(email);
       if (person === null) return;
-      for (const m of this.members.values()) {
-        if (!m.removed && m.person === person) {
-          throw new Error("that address is already on the membership — log in instead (§9.7½)");
-        }
-      }
-      if (this.convenor.person === person && this.members.has(this.convenor.id)) {
+      if (this.personSeated(person)) {
         throw new Error("that address is already on the membership — log in instead (§9.7½)");
       }
+    }
+    /**
+     * **Is this person on the membership now?** — the question `requireEmailFree`
+     * was, split out because a *carry* must ask it too (issue #6, F2). Every
+     * road in checked the address where it started and nowhere else, and a
+     * motion is not an act but a permission that lands later: while it ran, the
+     * Founder's ✒️ could invite the same address, or that person could apply, and
+     * the carry then minted a second member row for one person — a second
+     * wallet, a second place in E, and a second voice in every quorum and every
+     * unanimity after it. An **invitee counts**: they hold a seat waiting for
+     * them, and re-inviting them is not a second seat but a second link.
+     */
+    personSeated(person) {
+      for (const m of this.members.values()) {
+        if (!m.removed && m.person === person) return true;
+      }
+      return this.convenor.person === person && this.members.has(this.convenor.id);
     }
     /** The row holding this address, or the next id to hold it (minted, not yet written). */
     personFor(email) {
@@ -3893,7 +4021,6 @@ var CONSTITUTION = (() => {
   function roomPhrase(e) {
     return e <= 1 ? "one" : String(Math.floor(e));
   }
-  var roomOf = roomPhrase;
   var MEANING_MAX = 200;
   var fit = (s) => s.length <= MEANING_MAX ? s : null;
   function spanPhrase(ms) {
@@ -3920,22 +4047,18 @@ var CONSTITUTION = (() => {
     if (days !== null && days >= 28 && days <= 31) return "a month";
     return spellWords(ms);
   }
-  function quorumBody(q, n) {
-    if (q > n) {
-      return q + " of you must have voted before a change can pass, so nothing can pass until more members arrive.";
-    }
-    if (n === 1) return "your own vote is the whole quorum, and nothing waits on anybody else.";
-    if (q >= n) return "all " + n + " of you must have voted on a change before it can pass.";
-    if (q <= 1) return "one vote is enough for a change to pass, so nothing waits for anybody else.";
-    return "at least " + q + " of you must have voted on a change before it can pass.";
+  function quorumBody(q, n, form, pct) {
+    if (n === 1) return "In a membership of one, your own vote is the whole quorum.";
+    return form === "share" ? "A proposal cannot pass until it is preferred by at least " + pct + "% of the membership (" + q + " of " + n + ")." : "A proposal cannot pass until it is preferred by at least " + q + " members.";
   }
   function quorumMeaning(v, room) {
     if (typeof v.n !== "number" || !Number.isFinite(v.n)) return null;
     const n = Math.max(1, Math.floor(room.e));
-    const q = quorumCount(v, n);
-    if (!Number.isFinite(q)) return null;
-    const body = quorumBody(q, n);
-    return fit(v.form === "share" ? Math.round(v.n) + "% of a membership of " + roomOf(n) + " is " + q + ": " + body : "In a membership of " + roomOf(n) + ", " + body);
+    const asked = quorumCount(v, n);
+    if (!Number.isFinite(asked)) return null;
+    const q = Math.min(asked, n);
+    const pct = Math.round(v.n);
+    return fit(quorumBody(q, n, v.form, pct));
   }
   function rateMeaning(v, room) {
     const { grant, cap, dripMinutes } = v;
@@ -3955,9 +4078,13 @@ var CONSTITUTION = (() => {
     return fit(whole) ?? fit("Over a session of " + spanPhrase(windowMs) + ", about " + total + " proposals each.");
   }
   function lapseMeaning(v) {
-    if (v.afterMs === null) return fit("Nobody ever drops out of the count, however long they are away.");
+    if (v.afterMs === null) {
+      return fit("Nobody ever drops out of the count, and a proposal waits for everyone however long they are away.");
+    }
     if (typeof v.afterMs !== "number" || !Number.isFinite(v.afterMs) || v.afterMs <= 0) return null;
-    return fit("A member who says nothing for " + spellPhrase(v.afterMs) + " drops out of the count — the document can go on without them, and they are back the moment they log in.");
+    const spell = spellPhrase(v.afterMs);
+    const whole = "A member who says nothing for " + spell + " drops out of the count, and a proposal stops waiting for anyone who has not voted on it in that time. They are back the moment they log in.";
+    return fit(whole) ?? fit("A member who says nothing for " + spell + " drops out of the count, and a proposal stops waiting for them.");
   }
   function meaningOf(setting, value, room = { e: 1 }) {
     if (!value) return null;
@@ -3978,7 +4105,8 @@ var CONSTITUTION = (() => {
   function view(s, member) {
     const me = s.memberRecords().get(member) ?? null;
     const isConvenor = member === s.convenorRecord().id;
-    const electorateSize = s.motionElectorate().length;
+    const eIds = new Set(s.motionElectorate());
+    const electorateSize = eIds.size;
     const questions = [];
     const resolutions = [];
     const settings = [];
@@ -4024,7 +4152,6 @@ var CONSTITUTION = (() => {
       const retired = entry.retiredAnswer !== void 0;
       if (st.collecting && !retired) {
         const answerable = entry.deps.every((d) => s.settingState(d).settledBy !== null);
-        const eIds = new Set(s.motionElectorate());
         let answered = 0;
         for (const id of st.answers.keys()) if (eIds.has(id)) answered += 1;
         questions.push({
@@ -4046,6 +4173,10 @@ var CONSTITUTION = (() => {
       }
     }
     const motions = [];
+    const crownRefused = /* @__PURE__ */ new Set();
+    for (const q of s.crownQuestionRecords().values()) {
+      if (q.status === "rejected" && q.motion !== null) crownRefused.add(q.motion);
+    }
     let myHeldMotion = null;
     for (const rec of s.motionRecords().values()) {
       if ((rec.status === "running" || rec.status === "awaiting-crown") && rec.route === "constitutional" && rec.by === member) {
@@ -4062,10 +4193,17 @@ var CONSTITUTION = (() => {
         why: rec.why,
         status: rec.status,
         moot: rec.moot,
+        heldBy: rec.status === "withdrawn" ? "system" : rec.status !== "held" ? null : rec.heldAtClose ? "close" : crownRefused.has(rec.id) ? "crown" : "members",
         mine: rec.by === member,
         at: rec.settledAtT,
         from: s.amendedFrom(rec.id),
-        answeredCount: rec.route === "constitutional" ? rec.answers.size : 0,
+        // …and the same set here (issue #6, F4). An answer stays on the record
+        // after its author has gone, so the raw size counted people the settle
+        // check no longer waits for: a motion the room could not carry read
+        // *2 of 2 have answered* while a present member had not answered it.
+        // A blind question's count has been read this way since it was written;
+        // a motion's had not.
+        answeredCount: rec.route === "constitutional" ? [...rec.answers.keys()].filter((id) => eIds.has(id)).length : 0,
         electorateSize,
         myAnswer: rec.answers.get(member) ?? null
       });
@@ -4157,6 +4295,16 @@ var CONSTITUTION = (() => {
       // name, the moment and whose act it was for every one of them — a second
       // copy is a second truth, and the card reads the register's own row
       owedDepartures: me ? departures.filter((d) => me.departuresOwed.has(d.id)).map((d) => d.id) : [],
+      // the failed motions still owed your OK (SURFACE E41; Q1447), oldest
+      // first: the ids alone, because `motions` already carries the payload,
+      // the route, the reason and the moment for every one of them — a second
+      // copy is a second truth. A motion whose record cannot be found is
+      // **skipped** rather than served bare, exactly as `owedAmendments` skips
+      // an amendment whose record is gone
+      owedHeld: me ? [...me.heldOwed].flatMap((id) => {
+        const rec = s.motionRecords().get(id);
+        return rec ? [{ id, at: rec.settledAtT ?? rec.openedAtT }] : [];
+      }).sort((a, b) => a.at - b.at).map((x) => x.id) : [],
       // newest last, so the rail meets the acts in the order they happened; a
       // seat with no member record gets [], exactly as `owedOks` does
       owedReleases: me ? [...s.releaseBatchRecords().values()].filter((b) => me.releasesOwed.has(b.id)).sort((a, b) => a.t - b.t).map((b) => ({ id: b.id, at: b.t, releases: b.releases.map((r) => ({ ...r })) })) : [],

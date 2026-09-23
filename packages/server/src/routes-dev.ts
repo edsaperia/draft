@@ -22,7 +22,6 @@
  */
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { join } from 'node:path';
-import { errorTail } from './error-log.js';
 import { outboxTail } from './mailer.js';
 import { cookieSession, json, readJson, setCookie } from './routes.js';
 import type { Route } from './routes.js';
@@ -63,15 +62,16 @@ DEV: devMailTable.push(
   {
     /* **The error log's tail** (Q1330), the way the outbox's is served:
        newest first, dev only, dropped bodily from the production artifact
-       with the rest of this label — on docs.vote the file is read on the
-       host (`draft-tools errors <dataDir>`, docs/OPERATING.md §11). */
+       with the rest of this label — on docs.vote the log is read on the
+       host (`draft-tools errors <store>`, docs/OPERATING.md §11). Through
+       the store since plan stage 5a, so this answers under either backend. */
     name: 'GET the error log tail',
     method: 'GET',
     match: '/api/dev/errors',
-    handler: (ctx, r) => {
+    handler: async (ctx, r) => {
       if (r.devOff()) return true;
       r.res.setHeader('cache-control', 'no-store');
-      json(r.res, 200, { errors: errorTail(ctx.cfg.dataDir) });
+      json(r.res, 200, { errors: await ctx.persistence.readErrors() });
       return true;
     },
   },

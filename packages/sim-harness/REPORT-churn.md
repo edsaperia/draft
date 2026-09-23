@@ -155,3 +155,186 @@ And the bot-room QA (ruling (e)) should be watched for exactly the seed above: o
 One glossary bullet under **Tooling**, beside `alpha-preset` and `soak-harness`. Not placed by this build — `CLAUDE.md` was not edited.
 
 - `churn-study` [symbol] — **does a peer status quo oscillate** (`packages/sim-harness/src/churn.ts`, `npm run churn -w @draft/sim-harness`): `flips` and `reversions` read off the engine's log, a room of fifteen over the three shapes' windows. The bar arm is a pinned null result and a guard; the floor is the brake. Findings: `packages/sim-harness/REPORT-churn.md`. Q1362 stage 5.
+
+---
+
+# Addendum — the approval floor · Q1439 · 2026-09-18
+
+**Date:** 2026-09-18 · **Engine:** SPEC **v0.132** as built by Q1439 stages 1–3 on the `q1439-sims` worktree, cut from `2ba1510` · **Mode:** scripted personas only — deterministic, no network, no LLM calls.
+
+**Reproduce:** `npm run churn -w @draft/sim-harness` (`-- --seeds N --out <file>` for a per-seed CSV). **The room, the twin, the seeds and the alpha preset are unchanged**, so every number here is comparable seed for seed with a number above it. Sections 1–3 of the run are the study above, re-run under the new rule; sections 4 and 5 are new.
+
+## The question, and why it is being asked again
+
+Ed ruled the floor counts **approvals** rather than judges (Q1439, 2026-09-17), and made the churn re-run a condition of shipping — ruling (f). Then, at 00:20 on the 18th, he removed the built-in statistical minimum as well: *if the membership want a smaller quorum they should be able to choose it.* So there are two rules to report, not one, and he needs the answer before Sunday's live room. He asked three things, and this addendum is organised around them: **does the room still move, does it oscillate more or less, and does abstention end the deadlock it exists to end.**
+
+**The baseline is quoted, not re-run.** The engine that produced §§1–3 above no longer exists in the tree; resurrecting it would be a bigger and less trustworthy job than reading the numbers it printed. The rows marked *baseline (2026-09-15)* below are lifted verbatim from the tables above.
+
+**One new measure and one correction to an old one.**
+
+- **stranded** — races the window ran out on with the leader **on top of the field and short of F**: the room prefers it to the text that stands and it never gathered the approvals. That is the deadlock, and it is read off `races()` **one instant before the close**, at the close's own `t`, because the close's final batch is the last thing that could have carried it and there are no live races after it. Every 💤 period has long run by then, so that batch sees the smallest group and the lowest floor the run will ever have: a stranded race is one that even the most generous moment refused. Beside the count the run prints the diagnosis — `approvals`, `floor`, `judges`, `group`, and the leader's age — because *asked and refused* and *never asked* are different failures and only one of them is the engine's fault.
+- **sites** — one per drafting site that ever adopted, which is `adoptions − flips`. It is here because **`adoptions` is not progress**: two arms with the same ten sites and wildly different adoption counts have written the same document a different number of times. It saturates in this scenario — ten contested clauses, and almost every arm moves all ten — so the pace measure beside it, **all** (simulated minutes until every site had moved once), is the one that discriminates.
+- **approvals min / mean / ≤2** — the approvals each adoption actually carried on, read from the `adopted` event's own `approvals` field (new in stage 1), pooled over the cell's seeds. *How thin did it ever get* is a question a mean cannot answer, so the minimum is reported and so is the count of adoptions carried by two people or fewer.
+
+**One thing the harness does not do**, stated because it bounds every abstention number below: `runSession` never calls `tick`. An adoption that only an expiring 💤 period would release therefore lands at the **next persona action anywhere in the room**, or at the close's final batch — not at the instant the period runs out. In a room of fifteen acting every few minutes the lag is small, but a real host ticks every minute and would be marginally quicker. The direction of the bias is toward *fewer* abstention-released adoptions, so the abstention arms below understate rather than overstate.
+
+---
+
+## 6. The rule as Q1439 built it — the third still in
+
+`F = max(Q′, min(⌈E/3⌉, 12))`, `Q′` the settled quorum read against the group the leader waits on and capped at half of it. At E = 15 the third is **5**, so the floor is `max(Q′, 5)` and only a quorum above a third can raise it.
+
+Mean ±sd (min–max) over the same 20 seeds. *1st* is time to the first adoption; *all* is time until every site had moved once; both in simulated minutes.
+
+| arm | window | floor | alive | adoptions | sites | 1st | all | flips | reversions | stranded | thinnest | welfare |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| **baseline (2026-09-15)** | meeting | 5 | 100% | 18.1 ±3.4 (11–24) | 10.0 | — | — | 8.1 ±3.4 (1–14) | 5.5 ±3.0 (0–11) | — | — | 0.979 |
+| **baseline (2026-09-15)** | conference | 5 | 100% | 24.1 ±8.8 (11–44) | 10.0 | — | — | 14.1 ±8.8 (1–34) | 11.6 ±8.4 (0–31) | — | — | 0.992 |
+| no quorum · 💤 never | meeting | 5 | 100% | 14.6 ±1.9 (11–18) | 9.9 | 10 ±3 | 86 ±17 | 4.7 ±2.0 (1–8) | 2.4 ±1.3 (0–4) | 0.3 ±0.5 | 5 | 0.989 |
+| no quorum · 💤 40 min | meeting | 5 | 100% | 14.6 ±1.9 (11–18) | 9.9 | 10 ±3 | 86 ±17 | 4.7 ±2.0 (1–8) | 2.4 ±1.3 (0–4) | 0.3 ±0.5 | 5 | 0.989 |
+| quorum 33% · 💤 never | meeting | 5 | 100% | 14.6 ±1.9 (11–18) | 9.9 | 10 ±3 | 86 ±17 | 4.7 ±2.0 (1–8) | 2.4 ±1.3 (0–4) | 0.3 ±0.5 | 5 | 0.989 |
+| quorum 50% · 💤 never | meeting | 8 | 100% | 12.0 ±1.1 (10–14) | 9.8 | 15 ±5 | 132 ±34 | 2.3 ±1.1 (0–4) | 0.3 ±0.6 (0–2) | 0.5 ±0.6 | 5 | 0.980 |
+| quorum 50% · 💤 40 min | meeting | 8 | 100% | 13.0 ±1.0 (11–15) | 10.0 | 15 ±5 | 118 ±21 | 3.0 ±1.0 (1–5) | 0.8 ±0.8 (0–3) | 0.3 ±0.5 | 5 | 0.993 |
+| **quorum 50% · 💤 15 min** | meeting | 8 | 100% | 14.7 ±2.0 (11–19) | 9.9 | 15 ±4 | **92 ±24** | 4.7 ±2.1 (1–9) | 2.4 ±1.7 (0–6) | 0.4 ±0.5 | 5 | 0.991 |
+| no quorum · 💤 never | conference | 5 | 100% | 16.8 ±5.5 (11–34) | 9.9 | 10 ±3 | 86 ±17 | 6.8 ±5.6 (1–24) | 4.6 ±5.0 (0–21) | 0.0 ±0.0 | 5 | 0.991 |
+| no quorum · 💤 12 h | conference | 5 | 100% | 16.8 ±5.5 (11–34) | 9.9 | 10 ±3 | 86 ±17 | 6.8 ±5.6 (1–24) | 4.6 ±5.0 (0–21) | 0.0 ±0.0 | 5 | 0.991 |
+| quorum 50% · 💤 never | conference | 8 | 100% | 12.9 ±2.3 (10–18) | 9.8 | 15 ±5 | 132 ±34 | 3.1 ±2.5 (0–9) | 1.1 ±2.0 (0–7) | 0.1 ±0.4 | 5 | 0.984 |
+| quorum 50% · 💤 12 h | conference | 8 | 100% | 12.9 ±2.3 (10–18) | 9.8 | 15 ±5 | 132 ±34 | 3.1 ±2.5 (0–9) | 1.1 ±2.0 (0–7) | 0.1 ±0.4 | 5 | 0.984 |
+
+*(**ongoing** repeats **conference** exactly in every arm of this section, seed for seed, as it did in 2026-09-15's §1. The `25%` and `33%` arms are `no quorum`'s row: at fifteen they are ⌈E/3⌉ under another name.)*
+
+**Reading.**
+
+9. **The approval floor cuts churn by roughly two-thirds and costs the document nothing.** At the conference window, same seeds: adoptions 24.1 → 16.8, flips 14.1 → **6.8**, reversions 11.6 → **4.6**, welfare 0.992 → 0.991. At the meeting window: flips 8.1 → 4.7, reversions 5.5 → 2.4. And **`sites` is 10.0 in the baseline and 9.9 now** — the baseline's 24.1 adoptions and today's 16.8 move the same ten clauses. The whole of the difference is the document changing its mind fewer times. This is the single most important number in the addendum: *the churn went, the work stayed.*
+
+10. **Nothing collapsed, and the router is reaching people.** `alive` is 100% in every cell, first adoption at 10 minutes (15 at a 50% quorum), and every stranded race in this section had been **judged more often than its floor asks** — at the conference window's 50% quorum, `judges 15.0`, the entire room, on a leader that had stood for **70 hours**. Those three races are not deadlock: six members preferred the change, seven preferred the text, and the floor said no. That is the rule doing exactly what Ed asked it to do, and it is the answer to the worry that a judgment *against* something used to help it pass.
+
+11. **Below a 50% quorum, 💤 changes nothing at all, and that is arithmetic rather than measurement.** The floor is `max(Q′, 5)`; abstention moves only the group `Q′` is read against; where no quorum was asked, or where `Q′` is under 5, the third is the floor and there is nothing for the period to move. The run asserts this on the no-quorum arms. **Where 💤 does bite it is worth having**: at the meeting window at a 50% quorum, a 15-minute period takes *all sites* from 132 minutes to **92** — the whole pace the strict quorum costs, handed back — at a price of 2.1 more reversions. 40 minutes buys about a third of that.
+
+12. **A period of a sixth of the window is useless at every shape but the shortest.** 12 hours (conference) and 5 days (ongoing) produce rows identical to *never*, seed for seed. The reason is §1's finding 3: the room does its work in the first two or three hours whatever the window is, so a period scaled to the window has not run before the room has finished. **💤 has to be scaled to the room's pace, not to the document's life** — which is what makes Ed's 15 minutes on Sunday the right order of magnitude and a "sixth of the window" the wrong rule.
+
+---
+
+## 7. The rule as ruled at 00:20 — the third removed
+
+`F = max(Q′, 1)`, the quorum alone. Measured with `adoptionFloorMax: 1`, which makes the engine's `min(⌈E/3⌉, adoptionFloorMax)` term the constant 1 at every E — so `floorFor` computes exactly the ruled rule, *never below one* included, with no engine change and nothing assumed. (`adoptionFloorMax: 0` would drop that half and let a room with no quorum adopt on nobody's approval.) At fifteen the shares below are floors of **1 · 2 · 3 · 5 · 8**.
+
+| arm | window | floor | alive | adoptions | sites | 1st | all | flips | reversions | stranded | thinnest | on ≤2 | welfare |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| no quorum · 💤 never | meeting | 1 | 100% | 28.6 ±4.2 (16–35) | 10.0 | 5 ±2 | 69 ±15 | 18.6 ±4.2 (6–25) | 14.1 ±3.6 (3–21) | 0.0 | 1 | 513/573 | 0.970 |
+| quorum 10% · 💤 never | meeting | 2 | 100% | 24.4 ±4.4 (15–31) | 10.0 | 5 ±2 | 67 ±13 | 14.3 ±4.4 (5–21) | 11.0 ±3.7 (3–19) | 0.3 | 2 | 429/487 | 0.991 |
+| quorum 20% · 💤 never | meeting | 3 | 100% | 19.0 ±3.4 (12–23) | 10.0 | 7 ±3 | 71 ±16 | 9.0 ±3.4 (2–13) | 6.3 ±2.9 (0–10) | 0.5 | 3 | 0/380 | 0.990 |
+| quorum 30% · 💤 never | meeting | 5 | 100% | 14.2 ±2.3 (10–18) | 9.9 | 9 ±3 | 85 ±19 | 4.2 ±2.4 (0–8) | 2.1 ±1.7 (0–5) | 0.2 | **4** | 0/283 | 0.988 |
+| quorum 50% · 💤 never | meeting | 8 | 100% | 12.0 ±1.1 (10–14) | 9.8 | 15 ±5 | 132 ±34 | 2.3 ±1.1 (0–4) | 0.3 ±0.6 (0–2) | 0.5 | 5 | 0/240 | 0.980 |
+| quorum 30% · 💤 15 min | meeting | 5 | 100% | 16.6 ±2.8 (11–21) | 9.9 | 9 ±3 | 77 ±23 | 6.7 ±2.8 (1–11) | 4.2 ±2.7 (0–8) | 0.3 | 2 | 24/332 | 0.980 |
+| quorum 50% · 💤 15 min | meeting | 8 | 100% | 16.6 ±3.5 (12–28) | 10.0 | 15 ±4 | 87 ±26 | 6.6 ±3.5 (2–18) | 3.9 ±3.1 (0–14) | 0.2 | 1 | 28/332 | 0.993 |
+| **no quorum · 💤 never** | conference | 1 | 100% | **281.8 ±74.0 (61–374)** | 10.0 | 5 ±2 | 69 ±15 | **271.8 ±74.0 (51–364)** | **265.9 ±73.1 (48–356)** | 0.0 | 1 | 5192/5635 | 0.972 |
+| quorum 10% · 💤 never | conference | 2 | 100% | 46.1 ±25.7 (17–103) | 10.0 | 5 ±2 | 67 ±13 | 36.1 ±25.7 (7–93) | 32.6 ±25.2 (6–89) | 0.0 | 2 | 792/922 | 0.990 |
+| quorum 20% · 💤 never | conference | 3 | 100% | 26.3 ±11.1 (12–52) | 10.0 | 7 ±3 | 71 ±16 | 16.3 ±11.1 (2–42) | 13.5 ±10.7 (0–38) | 0.0 | 3 | 0/525 | 0.990 |
+| quorum 30% · 💤 never | conference | 5 | 100% | 15.6 ±5.0 (10–33) | 9.9 | 9 ±3 | 85 ±19 | 5.7 ±5.0 (0–23) | 3.6 ±4.4 (0–20) | 0.0 | 4 | 0/312 | 0.987 |
+| quorum 50% · 💤 never | conference | 8 | 100% | 12.9 ±2.3 (10–18) | 9.8 | 15 ±5 | 132 ±34 | 3.1 ±2.5 (0–9) | 1.1 ±2.0 (0–7) | 0.1 | 5 | 0/258 | 0.984 |
+| **no quorum · 💤 never** | ongoing | 1 | 100% | **904.0 ±551.6 (61–2062)** | 10.0 | 5 ±2 | 69 ±15 | **894.0 ±551.6** | **888.0 ±551.4 (48–2046)** | 0.0 | 1 | 16680/18081 | 0.989 |
+| quorum 10% · 💤 never | ongoing | 2 | 100% | 46.1 ±25.7 (17–103) | 10.0 | 5 ±2 | 67 ±13 | 36.1 ±25.7 (7–93) | 32.6 ±25.2 (6–89) | 0.0 | 2 | 792/922 | 0.990 |
+
+*(💤 arms are omitted where they print their parent row to the digit, which is every conference and ongoing arm — finding 12 again. The meeting window's 💤 rows are given for the two quorums where they move.)*
+
+**Reading.**
+
+13. **Removing the third re-opens the low end of the floor curve, and churn there is catastrophic.** At a floor of 1 the conference window runs **282 adoptions, 272 flips and 266 reversions** per seed, against a 2026-09-15 baseline of 24 / 14 / 12 and today's floor-5 rule of 17 / 7 / 5. A floor of 2 is 46 / 36 / 33. The old study's finding 6 — *the floor is the brake, and the cooldown is not* — is confirmed from the other side: the brake was doing more work than anybody had seen, because the third had never let the room get below 5.
+
+14. **And at a floor of 1 the document never reaches a fixed point.** §1's finding 3 was that a perpetual document is not a document that churns for ever — the month-long window ran the same session as the three-day one, adoption for adoption. **That stops being true at a floor of 1**: 282 adoptions over three days become **904 over a month**, worst seed 2062, still climbing when the window closed. At a floor of 2 the fixed point returns (46.1 at both windows, identical). So the property Ed was shown in September is a property of floors of two and above, and one room setting now switches it off.
+
+15. **The loosening is visible in what the room was holding when it acted.** At a floor of 1, **513 of 573** meeting-window adoptions and **5,192 of 5,635** conference-window adoptions carried on **two approvals or fewer**, in a room of fifteen; the thinnest carried on one. At a floor of 3 the count at ≤ 2 is **zero**. The mean approval count at a floor of 1 is 1.8 — the author and, usually, one other person.
+
+16. **A quorum that asks for a third is no longer a floor of a third.** The check in the run makes this explicit, and it is the whole difference the ruling makes. At fifteen a share of 30% is ⌈E/3⌉ exactly, so *no third · 30%* and the old *third alone* both start at 5 — but **the third is read on E, which does not move, and Q′ is read on the group, which shrinks** whenever somebody answers *Indifferent*, leaves, or abstains. The no-third arm's thinnest adoption is **4 approvals at every window**, against 5 where the third holds the floor. With 💤 at 15 minutes it falls to **2**. So *at least 30% of the membership* becomes, in practice, *at least 30% of whoever was still in the group when the batch ran*, and a room told the first will experience the second.
+
+17. **Nothing in this section is a deadlock finding, at any floor.** `alive` is 100% everywhere, first adoption is *faster* at low floors (5 minutes against 15), all ten sites move in every arm, and `stranded` is at most 0.5 races per run. The stranded races at floors of 2 and 3 have `judges 1.2–1.9` and leaders **2–7 minutes old** — proposals made at the buzzer, not proposals the room was stuck on. **The problem the ruling creates is the opposite of the one it was written to solve.**
+
+18. **Welfare says nothing, again, and more loudly than before.** 0.97–0.99 across every arm in both sections, including the 904-adoption month. §1's finding 9 stands and should be treated as a rule: **any guard on churn has to count flips, not score documents.**
+
+---
+
+## What this says to the three questions
+
+- **Does the room still move?** **Yes, in every arm measured, and the approval floor did not cost it anything.** All ten contested clauses move in essentially every seed under both rules; the baseline's extra nine adoptions per run at the conference window were all flips and reversions, not new ground. The only thing the approval floor slows is the *pace* at a strict quorum — all ten sites in 132 minutes at a 50% quorum against 86 at the third — which is what a strict quorum is for, and which 💤 at 15 minutes gives back.
+- **Does it oscillate more or less?** **Much less under the rule as built; catastrophically more if the third is removed and the room does not set a quorum.** Reversions per run at the conference window: 11.6 baseline → 4.6 under the approval floor with the third → 266 at a floor of 1 → 33 at a floor of 2 → 13.5 at 3 → 3.6 at 5 → 1.1 at 8. The floor is the brake, the curve is steep, and the third was the only thing keeping a fifteen-person room off the steep part of it.
+- **Does abstention end the deadlock it is meant to end?** **There was no deadlock for it to end, and where the floor bit it did the job it was designed for.** The stranded races under the rule as built were refusals by a fully-polled room (judges 15.0 of 15), which no period can or should rescue — once everybody has answered there is nobody left to abstain. Where members had *not* answered, at the meeting window at a 50% quorum, a 15-minute period recovered the entire pace cost of the quorum. **But it is inert below a 50% quorum at fifteen** (the third is the floor there), and inert entirely at a period scaled to the window rather than to the room.
+
+## Findings, as a list
+
+Continuing the numbering above; these want project numbers and it is the merging session's to claim them — this build has not touched `QUESTIONS.md`.
+
+19. **A floor of 1 is reachable and ruinous, and it is what a founder gets for answering 👥 with nothing.** Without the third, *no quorum* means `max(0, 1)` = one approval. 904 adoptions in a month, 888 of them reversions. If the third goes, **the no-quorum answer needs a floor of its own, or 👥 needs to stop being optional.** *(wants a Q number — it is a gap the ruling opens, not a tuning choice.)*
+20. **Removing the third makes every stated share smaller than it sounds**, because Q′ rides a shrinking group while the third rode E. Finding 16's numbers. Ruling (m)'s *(x of y)* sentence on the surface will show `y` as the membership, and the number the engine used will often be smaller. *(wants a Q number — it is a copy correctness question as much as a mechanism one.)*
+21. **💤 must be scaled to the room's pace, not the document's window.** Finding 12. A "sixth of the window" rule would be inert at two of the three shapes. 15 minutes at the meeting shape is the measured working value. *(wants a Q number if 💤 ever gets a suggested default.)*
+22. **§1's *a perpetual document is not a document that churns for ever* is now conditional**, and holds only at a floor of 2 or more. Finding 14. *(a correction to a statement in this report, above.)*
+23. **`quorum 80%` in `churn.ts` had been a 50% share since Q1439 stage 2 (`84f8ae3`) with its label unchanged** — the value was corrected there, the label was not, so §3's table above reported floor 12 for a cell that would now run at floor 8. Replaced here with a **count of twelve**, which is the same number asked the only way the surface still allows, and which prints the engine's half-the-group cap doing its work (floor 8, identical to the 50% share). **The 2026-09-15 `quorum 80% · floor 12` row is not reproducible on this engine at all**: R-126 caps both forms at half the group, so the strictest floor a room of fifteen can ask for is 8, where that row measured 12. The lowest-churn arm in the study above is no longer available to a founder.
+24. **The clubhouse personas re-propose from a fixed menu** — §1's finding 6, and it bites hardest here. At a floor of 1 the room can re-propose a displaced wording almost for free, so the 904-adoption figure is an **upper bound on a human room**. The *ordering across arms* is the finding, and the ordering is unambiguous.
+
+## Recommendation
+
+**Ship the approval floor as stage 1–3 built it.** It does what it was for: churn down by two-thirds, the same document reached, no race left stuck that the room had not been asked about, and a judgment against a proposal can no longer help it pass.
+
+**Do not ship the removal of the third without a floor under the no-quorum answer.** The measurement is not close: one room setting, left at its arrival value, takes a fifteen-person document from five reversions a session to several hundred. Ed's reason for the ruling — *if the membership want a smaller quorum they should be able to choose it* — is met at a floor of 3 (a 20% share here) with reversions at 13.5 and every clause still moving; it is the floor of 1 that has no defensible room behind it. The cheapest shapes, in the order this report would try them: keep a small absolute minimum (2 or 3) in place of ⌈E/3⌉, so the *choose it* half of the ruling survives and the cliff does not; or make 👥 a required founding answer with no *no quorum* rung.
+
+**For Sunday:** the room is a meeting shape at fifteen. On the rule as built, a 50% quorum with 💤 at 15 minutes is the arm to found at — 14.7 adoptions, all ten clauses moved in 92 minutes, 2.4 reversions, no race stranded that the room had not been asked about — and it is close to the fastest arm measured as well as one of the calmest.
+
+## What was added to sim-harness for this addendum
+
+- `src/metrics.ts` — `StrandedRace` and `strandedAtClose(session, t)` (the deadlock measure, a pure read); `Metrics.stranded`; `Metrics.approvalsAtAdoption` and `approvals`/`floor` carried onto `SiteAdoption`, read from the `adopted` event's new optional fields.
+- `src/runner.ts` — the stranded snapshot taken one instant before `session.close`, and handed to `computeMetrics`. No event, no state change: the log is byte-identical to a run without it.
+- `src/churn.ts` — sections 4 and 5; `sites`, time-to-first-adoption, time-until-every-site-moved and the thin-adoption columns; the `quorum 80%` mislabel corrected (finding 23); two new assertions — that 💤 is inert where no quorum was asked, and that a 30%-no-third floor adopts on fewer approvals than a third-held floor of the same nominal size.
+
+---
+
+## 8. Domination — Q1440, measured 2026-09-18
+
+**Date:** 2026-09-18 · **Engine:** SPEC **v0.134** as built by Q1440 on the `q1440-dominated` worktree, cut from `87bcf63` · **Mode:** scripted personas, deterministic, no network · **Seeds: 2, not 20** — a single ongoing-window run is now some seventy times longer than it was this morning (3,300 adoptions where there were 46), and twenty seeds of the whole file would take more than a day. The spread columns are therefore ±½ a range rather than a standard deviation worth reading; **the orders of magnitude are the finding and they are not close.**
+
+**Reproduce:** `npm run churn -w @draft/sim-harness -- --seeds 2`. Section 5 of the run is this table; sections 1–4 are the study above re-run under the new rule.
+
+**The control is section 7 above**, taken the same morning on the engine before this rule: the same room, the same twenty seeds, the same alpha preset, and the same floors. Four of its five quorums reproduce exactly here — a share is read on the group and capped at half of it either way, so 10% → 2, 20% → 3, 30% → 5, 50% → 8 — and only its *no quorum* row, which ran at a floor of one, is unreachable now. So every row below but that one is **a clean A/B on Q1440 alone**.
+
+*adoptions / flips / reversions*, mean per run, 💤 *never*. `put` is every wording anybody proposed and `closed` is how many the room shut before the clock did.
+
+| window | floor | §7: no domination | **§8: domination** | put | closed |
+|---|---|---|---|---|---|
+| meeting (4 h) | 2 | 24.4 / 14.3 / 11.0 | **29.0 / 19.0 / 15.5** | 44 | 10 |
+| meeting | 3 | 19.0 / 9.0 / 6.3 | **19.0 / 9.0 / 6.0** | 39 | 16 |
+| meeting | 5 | 14.2 / 4.2 / 2.1 | **14.5 / 4.5 / 2.5** | 34 | 14 |
+| meeting | 8 | 12.0 / 2.3 / 0.3 | **12.5 / 2.5 / 0.5** | 33 | 12 |
+| conference (72 h) | 2 | 46.1 / 36.1 / 32.6 | **368.0 / 358.0 / 350.5** | 697 | 276 |
+| conference | 3 | 26.3 / 16.3 / 13.5 | **172.0 / 162.0 / 157.5** | 570 | 359 |
+| conference | 5 | 15.6 / 5.7 / 3.6 | **87.0 / 77.0 / 75.0** | 481 | 362 |
+| conference | 8 | 12.9 / 3.1 / 1.1 | **48.5 / 38.5 / 36.5** | 444 | 371 |
+| ongoing (1 month) | 2 | 46.1 / 36.1 / 32.6 | **3313.5 / 3303.5 / 3295.0** | 6764 | 2962 |
+| ongoing | 3 | 26.3 / 16.3 / 13.5 | **1698.0 / 1688.0 / 1682.0** | 5554 | 3500 |
+| ongoing | 5 | 15.6 / 5.7 / 3.6 | **880.0 / 870.0 / 868.0** | 4863 | 3692 |
+| ongoing | 8 | 12.9 / 3.1 / 1.1 | **393.5 / 383.5 / 381.5** | 4354 | 3826 |
+
+*(§7's ongoing rows are its conference rows: the month was the three days, seed for seed. `sites` is 10.0 in every cell of both sections, and welfare is 0.93–1.00 throughout — finding 18 again.)*
+
+**Reading.**
+
+25. **The rule costs a short room nothing, and it costs a long one everything.** At the meeting window — four hours, the shape Ed's live rooms are founded at — the two columns are the same numbers: 19.0/9.0/6.0 against 19.0/9.0/6.3 at a floor of three, 14.5/4.5/2.5 against 14.2/4.2/2.1 at five. The room closes ten to sixteen wordings per run and nothing else moves. At the conference window the same floors run **six to eight times** the adoptions and **eleven times** the reversions. The difference between the two is time to re-propose: in four hours a room that loses a wording does not get round to writing another one, and in three days it writes forty.
+
+26. **And a perpetual document no longer stops.** §1's finding 3 and this file's own assertion were that the month-long window ran the same session as the three-day one, adoption for adoption — the room reached a fixed point inside three days. **That is over at every floor**, not only at the bottom of the curve: 368 → 3,314 at a floor of two, 87 → 880 at five, 48.5 → 393.5 at eight, still climbing when the window closed. The assertion has been replaced by a printed line, because it is now a finding rather than an invariant.
+
+27. **Two mechanisms, and only one of them is the ruling.** The first is the ruling: a wording the room refused leaves, and its author writes another — 697 wordings put over three days where the field used to hold a few dozen. The second is not, and is the more serious of the two: **a retirement takes its judgments out of the fit with it.** A comparison naming a candidate that is no longer live is dropped from its race's usable set, so closing a rival raises the fitted strength of everything that lost to it, and the survivor can cross the current text on evidence that has simply disappeared. That is exactly the defect **R-122** named in withdrawal — *the leader withdrawn, the race dropping to three comparisons and a new leader with nothing locked and no fresh pairs served* — which Ed deferred to §13's ledger on 2026-09-17 as several days' work, on the reasoning that real withdrawals are rare. **Q1440 makes retirement the ordinary end of a losing proposal**, so the deferred work is now on this rule's critical path. Unmeasured here, and the first thing to measure next: the same table with a closed candidate's comparisons frozen into its race's fit rather than deleted from it.
+
+28. **Re-proposing is free, which is the third of the pressure.** §7's performance refund pays a stake back whole or better wherever the room ever rated the wording above the current text (`stake × min(w/0.5, 1.5)`), and the dedup gate (§5) compares a new draft against **live** candidates only — so a wording closed by domination may be put again at once, by anybody, at no cost. In the charter scenario (a different room, 72 hours) the whole of a run's 413 stakes came back: 412.11 tokens refunded on 413 staked. Ed's *the author re-proposes* is that, taken literally by personas that never get bored; a human room would do less of it, so **these numbers are an upper bound on the ordering rather than a prediction of the count**. The ordering across arms is what to trust, and it is unambiguous.
+
+29. **The cooldown is a brake now, where it was not before.** §3's finding — quoted into SPEC §4.2 as *cooldowns of one, five and fifteen minutes are indistinguishable* — is false on this engine: at the conference window the same seeds run 368 · 318 · 230 · 144 adoptions at 1 · 5 · 15 · 30 minutes. It brakes because a longer cooldown gives the domination pass, which rides the batch, fewer chances to fire, and gives a closed wording's author less of the window to re-propose in. **A room that wants this rule and not its churn has a dial it did not have yesterday**, and it is the operator's (`DRAFT_COOLDOWN_MS`), not the document's.
+
+30. **`stranded` is unmoved, and was never going to move.** 0.0–1.5 races per run in every arm, against 0.0–0.5 in §7. A leader short of its floor with members who have never answered it is *not* dominated — those members could still approve — so the rule cannot close the races Q1439 built `stranded` to watch. It closes the ones the room has answered and refused, which were never stranded in the first place.
+
+## What this says
+
+**The rule is right for a meeting and wrong for a month, as built.** Nothing here argues against Ed's sentence — a proposal the room has refused should not sit in the rail until T=0, and at the shape his rooms actually run at that is all this rule does. What the long windows expose is that the engine is not ready for retirement to be a common event, and the reason is R-122, which was already known and already deferred.
+
+The order this report would take them in:
+
+1. **Freeze a closed candidate's comparisons into its race's fit** rather than dropping them (R-122's deferred design, narrowed to retirement). It is the cause of the largest term and it is the one fix that is about correctness rather than about pace.
+2. **Refuse a re-proposal of a wording the room closed** — the dedup gate already knows how to recognise it and currently looks only at live candidates.
+3. **Refund nothing on a domination**, as R-056 already does for the Founder's refusal, on the same argument: a stake that comes back prices the room's refusal as a withdrawal.
+4. **Or, if none of those before Sunday: raise `DRAFT_COOLDOWN_MS`.** Finding 29 is the cheapest lever in the list and costs one environment variable.

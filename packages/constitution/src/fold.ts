@@ -237,6 +237,10 @@ export function apply(s: FoldState, event: ConstitutionEvent, _seq: number): voi
           // and the departure news with them, for the same reason (Q901)
           rec.departuresOwed = prev.departuresOwed;
           rec.departuresGiven = prev.departuresGiven;
+          // and the mover's failed motions, for the same reason (Q1447): the
+          // proposal was theirs whichever seat they were sitting in
+          rec.heldOwed = prev.heldOwed;
+          rec.heldGiven = prev.heldGiven;
           rec.lastActivityT = prev.lastActivityT;
         } else {
           rec.lastActivityT = Math.max(rec.lastActivityT, s.convenor.lastActivityT);
@@ -300,6 +304,7 @@ export function apply(s: FoldState, event: ConstitutionEvent, _seq: number): voi
           answers: new Map(),
           settledAtT: event.t,
           moot: null,
+          heldAtClose: false,
         });
         s.penFrom.set(id, wasValue);
       }
@@ -370,6 +375,7 @@ export function apply(s: FoldState, event: ConstitutionEvent, _seq: number): voi
         answers: new Map(),
         settledAtT: event.t,
         moot: null,
+        heldAtClose: false,
       });
       // **The owing is not done here** (Q1034, and see `oweAmendment`).
       // `replay` calls `apply` directly while `emit` pushes to the log, so
@@ -588,6 +594,21 @@ export function apply(s: FoldState, event: ConstitutionEvent, _seq: number): voi
       touch(s, event.member, event.t);
       break;
     }
+    case 'held-owed': {
+      // nothing is minted here, for `departure-owed`'s reason: the event
+      // carries the id of the motion it is about, and the motion record
+      // below holds the payload, the reason and when it settled (SURFACE
+      // E41; Q1447)
+      s.members.get(event.member)!.heldOwed.add(event.motion);
+      break;
+    }
+    case 'held-ok': {
+      const m = s.members.get(event.member)!;
+      m.heldOwed.delete(event.motion);
+      m.heldGiven.add(event.motion);
+      touch(s, event.member, event.t);
+      break;
+    }
     case 'mail-gave-up': {
       // the batch is minted by its first sighting, exactly as a release
       // batch is, so a replay rebuilds the counter without it being written
@@ -663,6 +684,7 @@ function applyLifecycle(s: FoldState, event: ConstitutionEvent): void {
         answers: new Map(),
         settledAtT: null,
         moot: null,
+        heldAtClose: false,
       });
       s.nextMotionN += 1;
       // **An invitation motion mints a person id when it opens** (issue #2),
@@ -772,11 +794,28 @@ function applyLifecycle(s: FoldState, event: ConstitutionEvent): void {
       // membership payloads apply through their follow-on events
       break;
     }
+    case 'motion-held': {
+      // **A vote against ends it** (Ed, 2026-09-19, Q1473; R-138). The same
+      // grey ✖ an ordinary motion the room rejected files, by the same
+      // fields: `held`, dated, and `heldAtClose` left false, because the
+      // membership decided it and the clock did not. Nothing of the payload
+      // applies — what stands stands — and the answers stay on the record, as
+      // they do on every settled motion.
+      const rec = s.motions.get(event.motion)!;
+      rec.status = 'held';
+      rec.settledAtT = event.t;
+      break;
+    }
     case 'motion-adjudicated': {
       const rec = s.motions.get(event.motion)!;
       rec.settledAtT = event.t;
-      if (event.outcome === 'held') {
+      if (event.outcome === 'held' || event.outcome === 'held-at-close') {
+        // One status for both (Q1450): the record is the same grey ✖ wherever
+        // the hold came from, and `heldAtClose` is the only thing that says
+        // the clock did it — which is what the 🥂 card counts and what E41
+        // reads to stay silent.
         rec.status = 'held';
+        rec.heldAtClose = event.outcome === 'held-at-close';
       } else if (reservedTarget(s, rec)) {
         // Reserved is assent, not silence (§9.7): the carried change goes
         // to the convenor as a 👑 question rather than applying.
@@ -1060,6 +1099,7 @@ function freshMember(s: FoldState, id: MemberId, person: PersonId, invitedAtT: n
     amendmentsOwed: new Set(), amendmentsGiven: new Set(),
     mailGaveUpOwed: new Set(), mailGaveUpGiven: new Set(), mailGaveUp: false,
     departuresOwed: new Set(), departuresGiven: new Set(),
+    heldOwed: new Set(), heldGiven: new Set(),
     invitationExpired: false, closingAck: null,
   };
   return withPerson(s, state);

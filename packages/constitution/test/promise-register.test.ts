@@ -33,6 +33,10 @@ import { ConstitutionSession } from '../src/session.js';
 import { view } from '../src/view.js';
 import { buildConstituted } from './helpers.js';
 import { Session as EngineSession, makeConstitution } from '../../engine-core/src/session.js';
+import { LAPSE_MIN_MS } from '../src/values.js';
+
+/** The shortest spell a room can state (Q1453): five minutes. */
+const SPELL = LAPSE_MIN_MS;
 
 const crownQuestionFor = (s: ConstitutionSession, motion: string) =>
   [...s.crownQuestionRecords().values()]
@@ -152,18 +156,18 @@ describe('promise 2 — while the founder keeps 🛡️ on a door, a carried adm
   });
 
   it('a sleeping crown grants assent and does not act: a carried removal passes, an exile at will is refused', () => {
-    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 10_000 },
+    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: SPELL },
       removal: { price: 'assembly' },
       doors: { remove: { unilateral: true, assent: true } } });
     const m = s.openMotion(3, bo, { kind: 'remove', member: cy });
     s.answerMotion(4, 'ada', m, 'accept'); // everyone but the subject
     expect(s.motionRecords().get(m)!.status).toBe('awaiting-crown');
-    s.setIdentity(9_000, bo, { name: 'Bo' });
-    s.tick(10_500); // the crown goes quiet — abstaining grants (§9.7 v0.49)
+    s.setIdentity(SPELL - 1_000, bo, { name: 'Bo' });
+    s.tick(SPELL + 500); // the crown goes quiet — abstaining grants (§9.7 v0.49)
     expect(s.crownLapsed).toBe(true);
     expect(s.memberRecords().get(cy)!.removed).toBe(true);
     // and the pen it still holds does nothing while it sleeps (`doorPen`)
-    expect(() => s.remove(10_600, bo)).toThrow(/removal at will needs ❌'s ✒️/);
+    expect(() => s.remove(SPELL + 600, bo)).toThrow(/removal at will needs ❌'s ✒️/);
   });
 });
 
@@ -339,12 +343,16 @@ describe('promise 6 — when the founding cannot go on, 🍾 says why (Q826, F19
 // ---------------------------------------------------------------------------
 
 describe('promise 7 — exile and resignation are immediate, and standing answers leave with them (rule 9)', () => {
-  it('a resigner’s standing keep stops blocking the moment they go', () => {
+  // **what a departure releases is a silence** since Q1473 (Ed, 2026-09-19):
+  // a keep no longer stands on a running motion at all, having ended it, so
+  // the promise these two assert — the electorate is live, and somebody who
+  // has gone is no longer waited on — is read off the member who never
+  // answered
+  it('a resigner’s silence stops holding the motion up the moment they go', () => {
     const { s, bo, cy } = buildConstituted();
     const m = s.openMotion(3, bo, { kind: 'set', setting: 'bar', value: { pct: 80 } });
     s.answerMotion(4, 'ada', m, 'accept');
-    s.answerMotion(5, cy, m, 'keep'); // the sole refuser
-    expect(s.motionRecords().get(m)!.status).toBe('running');
+    expect(s.motionRecords().get(m)!.status).toBe('running'); // cy has not answered
     s.resign(6, cy);
     expect(s.motionRecords().get(m)!.status).toBe('carried');
   });
@@ -353,8 +361,7 @@ describe('promise 7 — exile and resignation are immediate, and standing answer
     const { s, bo, cy } = buildConstituted({ removal: { price: 'assembly' } });
     const stuck = s.openMotion(3, bo, { kind: 'set', setting: 'chamber', value: { rung: 'public' } });
     s.answerMotion(4, 'ada', stuck, 'accept');
-    s.answerMotion(4, cy, stuck, 'keep');
-    expect(s.motionRecords().get(stuck)!.status).toBe('running');
+    expect(s.motionRecords().get(stuck)!.status).toBe('running'); // waiting on cy
     // a second 🏛️ is not bo's to open (§9.6), so the removal is ada's
     const boot = s.openMotion(5, 'ada', { kind: 'remove', member: cy });
     s.answerMotion(5, bo, boot, 'accept');
@@ -412,17 +419,17 @@ describe('promise 7 — exile and resignation are immediate, and standing answer
 
 describe('promise 8 — a lapsed member stops blocking and stops counting, but is still a member (§9.5a, Y10)', () => {
   it('they are still in the members list, marked lapsed, and can still sign the close', () => {
-    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 10_000 } });
-    s.setIdentity(9_000, 'ada', { name: 'Ada' });
-    s.setIdentity(9_000, bo, { name: 'Bo' });
-    s.tick(10_500);
+    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: SPELL } });
+    s.setIdentity(SPELL - 1_000, 'ada', { name: 'Ada' });
+    s.setIdentity(SPELL - 1_000, bo, { name: 'Bo' });
+    s.tick(SPELL + 500);
     expect(s.memberRecords().get(cy)!.lapsed).toBe(true);
     expect(s.E()).toBe(2);
     const row = view(s, bo).members.find((r) => r.id === cy);
     expect(row).toBeDefined();
     expect(row!.lapsed).toBe(true);
-    s.close(11_000);
-    expect(() => s.acknowledgeClose(11_100, cy, 'I was away, and I sign')).not.toThrow();
+    s.close(SPELL + 1_000);
+    expect(() => s.acknowledgeClose(SPELL + 1_100, cy, 'I was away, and I sign')).not.toThrow();
     expect(s.closingSignatures().map((x) => x.member)).toContain(cy);
   });
 

@@ -158,15 +158,33 @@ describe('threshold anchors (§4.3, v0.48)', () => {
 describe('populations (§4.2, §8.2, v0.48: one E, three uses)', () => {
   it('quorum: a fixed count, or ⌈share × E⌉', () => {
     expect(quorumCount({ form: 'count', n: 5 }, 14)).toBe(5);
-    expect(quorumCount({ form: 'share', n: 60 }, 14)).toBe(9); // ⌈8.4⌉
-    expect(quorumCount({ form: 'share', n: 100 }, 7)).toBe(7);
+    expect(quorumCount({ form: 'share', n: 40 }, 14)).toBe(6); // ⌈5.6⌉
+    expect(quorumCount({ form: 'share', n: 50 }, 7)).toBe(4);  // ⌈3.5⌉
+    // and the whole scale since Q1490 (R-139), `values.ts` accepting 0–100
+    expect(quorumCount({ form: 'share', n: 100 }, 14)).toBe(14);
+    expect(quorumCount({ form: 'share', n: 1 }, 14)).toBe(1);  // ⌈0.14⌉
   });
 
-  it('F = max(Q, min(⌈E/3⌉, F_max)) — the room’s number rides the minimum', () => {
+  it('F = max(Q′, min(2, E)) — the room’s number, with a seconder under it', () => {
+    // **the built-in third has gone** (Ed, 2026-09-18, Q1439 ruling s →
+    // why: R-131, reversing R-073): ⌈E/3⌉ rode under Q′ and could only raise
+    // it. `adoptionFloorTerm` survives for `floor-recomputed`'s field alone.
+    // **What rides under it now is a seconder** (ruling u): two approvals,
+    // the author and one other member.
     expect(adoptionFloorTerm(14)).toBe(5);
-    expect(adoptionFloor(3, 14, 12)).toBe(5);  // formula floor wins
-    expect(adoptionFloor(9, 14, 12)).toBe(9);  // the room raises it
-    expect(adoptionFloor(2, 100, 12)).toBe(12); // F_max caps the formula, not Q
-    expect(adoptionFloor(20, 100, 12)).toBe(20);
+    expect(adoptionFloor(3, 14)).toBe(3);  // the room asked for three: three
+    expect(adoptionFloor(7, 14)).toBe(7);  // and for seven, which is half
+    // **and never past the membership** (Q1490, R-139, reversing R-126's cap
+    // at half): a quorum of 9 in a room of 14 is 9, and one of 99 is 14
+    expect(adoptionFloor(9, 14)).toBe(9);
+    expect(adoptionFloor(99, 14)).toBe(14);
+    expect(adoptionFloor(2, 100)).toBe(2); // ⌈100/3⌉ clamped to 12 used to sit here
+    expect(adoptionFloor(20, 100)).toBe(20);
+    expect(adoptionFloor(80, 100)).toBe(80);
+    expect(adoptionFloor(100, 100)).toBe(100); // unanimity, asked for
+    expect(adoptionFloor(1, 100)).toBe(2); // the seconder, where the room asked for one
+    expect(adoptionFloor(0, 100)).toBe(2); // and where it asked for nothing
+    expect(adoptionFloor(0, 2)).toBe(2);   // at E = 2 the seconder is unanimity
+    expect(adoptionFloor(0, 1)).toBe(1);   // and at E = 1 the sole member is the room
   });
 });

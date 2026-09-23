@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ConstitutionSession } from '../src/session.js';
 import type { ConstitutionEvent } from '../src/types.js';
+import { LAPSE_MIN_MS } from '../src/values.js';
 
 /**
  * The founding (SPEC §9.0a–§9.6a, v0.48): the pre-start free hand, blind
@@ -40,7 +41,7 @@ const settleAllReserved = (s: ConstitutionSession, t: number,
     ending: { endsAtMs: 1_000_000 },
     bar: { pct: 78 },
     pace: { shape: 'ramp', startPct: 55 },
-    quorum: { form: 'share', n: 60 },
+    quorum: { form: 'share', n: 40 },
     authorship: { rung: 'sealed' },
 
     judgments: { rung: 'after' },
@@ -186,7 +187,7 @@ describe('blind collection and the consent rule live (§9.0a)', () => {
     s.answer(2, 'ada', 'ending', { endsAtMs: 500_000 });
     s.answer(3, bo, 'ending', { endsAtMs: null });
     expect(s.settingState('ending').value).toEqual({ endsAtMs: null });
-    s.answer(4, 'ada', 'lapse', { afterMs: 1_000 });
+    s.answer(4, 'ada', 'lapse', { afterMs: LAPSE_MIN_MS });
     s.answer(5, bo, 'lapse', { afterMs: null });
     expect(s.settingState('lapse').value).toEqual({ afterMs: null });
   });
@@ -195,7 +196,7 @@ describe('blind collection and the consent rule live (§9.0a)', () => {
     const s = openDelegated();
     s.setQuorumForm(1, 'count');
     // the old refusal of a form other than the convenor's is gone
-    s.answer(2, 'ada', 'quorum', { form: 'share', n: 60 });
+    s.answer(2, 'ada', 'quorum', { form: 'share', n: 40 });
     s.answer(3, 'ada', 'quorum', { form: 'count', n: 2 });
   });
 
@@ -308,7 +309,7 @@ describe('📯 is reachable (§9.7 v0.51)', () => {
     s.confirmStartingText(1, 'x');
     const answers = {
       ending: { endsAtMs: 1_000_000 }, bar: { pct: 66 },
-      quorum: { form: 'share', n: 60 },
+      quorum: { form: 'share', n: 40 },
       authorship: { rung: 'sealed' },
       judgments: { rung: 'after' }, chamber: { rung: 'link' },
       applications: { apply: false },

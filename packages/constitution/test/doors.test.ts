@@ -8,7 +8,11 @@
 import { describe, expect, it } from 'vitest';
 import { ConstitutionSession } from '../src/session.js';
 import { view } from '../src/view.js';
+import { LAPSE_MIN_MS } from '../src/values.js';
 import { buildConstituted } from './helpers.js';
+
+/** The shortest spell a room can state (Q1453): five minutes. */
+const SPELL = LAPSE_MIN_MS;
 
 const crownQuestionFor = (s: ReturnType<typeof buildConstituted>['s'], motion: string) =>
   [...s.crownQuestionRecords().values()]
@@ -50,6 +54,72 @@ describe('✉️ — the invite door', () => {
     expect(() => held.invite(3, 'dee@example.org')).not.toThrow();
   });
 
+  /**
+   * **One address is one member** (issue #6, F2; §9.7½, decision 1253). Every
+   * road in checks the address when it *starts* — `requireEmailFree` at the
+   * invitation, at the motion and at the door — and nothing checked it again
+   * when a motion carried, which can be hours later. Two roads open at once
+   * on the same person is an ordinary thing in a live room: a motion running
+   * while the Founder's ✒️ invites the same address, a motion running while
+   * that person applies. The second arrival minted a second member row, and
+   * a second row is a second wallet, a second place in E and a second voice
+   * in every unanimity and every quorum from then on.
+   */
+  it('a carried invitation whose address was seated meanwhile seats nobody twice', () => {
+    const { s, bo, cy } = buildConstituted({
+      doors: { invite: { unilateral: true, assent: false } } });
+    const m = s.openMotion(3, bo, { kind: 'invite', email: 'dee@example.org' });
+    // …and while the room is answering, the Founder's own ✒️ invites her
+    const direct = s.invite(4, 'dee@example.org');
+    s.answerMotion(5, 'ada', m, 'accept');
+    s.answerMotion(6, cy, m, 'accept');
+    // the motion carried — the room said yes, and that is what the record says
+    expect(s.motionRecords().get(m)!.status).toBe('carried');
+    // …but it seats nobody, because she is already seated
+    const rows = [...s.memberRecords().values()].filter((r) => r.email === 'dee@example.org');
+    expect(rows.map((r) => r.id)).toEqual([direct]);
+    expect(s.E()).toBe(3); // an invitee counts toward nothing until they arrive
+  });
+
+  /**
+   * **The third pair, at the other door in** (issue #6, F2). The carry arms
+   * are two, and the guard above covers one of them: an *application* is
+   * verified before it is submitted, and the pen can invite that address in
+   * between — refused at the door, the test below — but it can equally
+   * invite it while the room is deciding the admission it opened, which
+   * nothing refuses and nothing can. So the `admit` arm asks the same
+   * question at its own carry (`personOfApplicant` → `personSeated`), and
+   * this is what says so: red on the pre-fix arm at a second row and at
+   * E=4, the applicant having been seated twice for one person.
+   */
+  it('a carried admission whose applicant was seated meanwhile seats nobody twice', () => {
+    const { s } = buildConstituted({ applications: { apply: true },
+      admission: { price: 'proposal' },
+      doors: { invite: { unilateral: true, assent: false } } });
+    const ap = s.startApplication(3, 'dee@example.org');
+    s.verifyApplication(4, ap);
+    s.submitApplication(5, ap, { name: 'Dee' });
+    const motion = s.applicantRecords().get(ap)!.motion!;
+    // …and while the room is judging it, the Founder's own ✒️ invites her
+    const direct = s.invite(6, 'dee@example.org');
+    s.adjudicateOrdinaryMotion(7, motion, 'carried');
+    expect(s.motionRecords().get(motion)!.status).toBe('carried');
+    const rows = [...s.memberRecords().values()].filter((r) => r.email === 'dee@example.org');
+    expect(rows.map((r) => r.id)).toEqual([direct]);
+    expect(s.E()).toBe(3); // her seat is the invitation's, and waits for her
+  });
+
+  it('a submitted application whose address was seated meanwhile is refused at the door', () => {
+    const { s } = buildConstituted({
+      applications: { apply: true }, admission: { price: 'assembly' },
+      doors: { invite: { unilateral: true, assent: false } } });
+    const ap = s.startApplication(3, 'dee@example.org');
+    s.verifyApplication(4, ap);
+    s.invite(5, 'dee@example.org'); // the Founder's pen gets there first
+    expect(() => s.submitApplication(6, ap, { name: 'Dee' }))
+      .toThrow(/already on the membership/);
+  });
+
   it('the view serves both doors’ pairs', () => {
     const { s, bo } = buildConstituted({
       doors: { invite: { unilateral: true, assent: false } } });
@@ -68,7 +138,8 @@ describe('❌ — the remove door', () => {
     const m = s.openMotion(3, bo, { kind: 'set', setting: 'bar', value: { pct: 80 } });
     s.answerMotion(4, 'ada', m, 'accept');
     s.answerMotion(5, bo, m, 'accept');
-    s.answerMotion(6, cy, m, 'keep'); // the sole refuser
+    // cy is the one who has not answered — since Q1473 a keep would end the
+    // motion outright, so what an exile releases is a silence
     expect(s.motionRecords().get(m)!.status).toBe('running');
     s.remove(7, cy);
     expect(s.memberRecords().get(cy)!.removed).toBe(true);
@@ -335,17 +406,17 @@ describe('a vacated seat auto-passes a motion-backed 👑 question too (Q1033)',
 
 describe('lapse counts as abstaining (ruling 5)', () => {
   it('a running 🏛️ does not wait on a lapsed member, and logging in puts them back', () => {
-    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 10_000 } });
+    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: SPELL } });
     const m = s.openMotion(3, bo, { kind: 'set', setting: 'bar', value: { pct: 80 } });
-    s.setIdentity(9_000, 'ada', { name: 'Ada' });
-    s.setIdentity(9_000, bo, { name: 'Bo' });
-    s.answerMotion(9_100, 'ada', m, 'accept');
-    s.answerMotion(9_200, bo, m, 'accept');
+    s.setIdentity(SPELL - 1_000, 'ada', { name: 'Ada' });
+    s.setIdentity(SPELL - 1_000, bo, { name: 'Bo' });
+    s.answerMotion(SPELL - 900, 'ada', m, 'accept');
+    s.answerMotion(SPELL - 800, bo, m, 'accept');
     expect(s.motionRecords().get(m)!.status).toBe('running'); // cy owes
-    s.tick(10_500); // cy lapses — and the motion no longer waits on them
+    s.tick(SPELL + 500); // cy lapses — and the motion no longer waits on them
     expect(s.memberRecords().get(cy)!.lapsed).toBe(true);
     expect(s.motionRecords().get(m)!.status).toBe('carried');
-    s.memberReturn(11_000, cy);
+    s.memberReturn(SPELL + 1_000, cy);
     expect(s.memberRecords().get(cy)!.lapsed).toBe(false);
     expect(s.E()).toBe(3);
   });

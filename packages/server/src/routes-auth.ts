@@ -16,6 +16,7 @@ import { ConstitutionSession, mayApply, sha256Hex } from '../../constitution/src
 import type { ApplicationsValue } from '../../constitution/src/index.js';
 import { magicLink } from './auth.js';
 import { LIMITS, cap, emailOk } from './commands.js';
+import { logError } from './error-log.js';
 import { MAILS } from './mailer.js';
 import { slugify, uniqueSlug } from './store.js';
 import { admissionPrice } from './views.js';
@@ -27,6 +28,9 @@ import type { Req, RouteContext, Route } from './routes.js';
  *  (Q1288, Ed 2026-09-08: *we should allow one character addresses*) —
  *  the floor of three that stood from Q460 was never ruled. */
 const SLUG_OK = /^[a-z0-9][a-z0-9-]*$/;
+
+/** What `auth.mintToken` makes: `randomBytes(24)` as base64url (issue #67 F2). */
+const TOKEN_SHAPE = /^[A-Za-z0-9_-]{32}$/;
 
 /** Free if no document holds it and no live pending creation has
  *  reserved it (Q462b). */
@@ -53,7 +57,11 @@ export const authTable: Route[] = [
     match: ({ seg }) => seg[0] === 'api' && seg[1] === 'slug' && seg.length === 3,
     handler: async (ctx, r) => {
       const { res, seg, nowMs } = r;
-      if (r.tooMany('slug', 120)) return true;
+      // twenty founders on one venue address, each trying addresses until
+      // one is free: 120 was 6 tries each (issue #69). **Twenty phones'
+      // worth** (Ed, 2026-09-19) — and a refusal here dead-ends 📍, so the
+      // budget has to outlast the typing.
+      if (r.tooMany('slug', 600)) return true;
       const slug = decodeURIComponent(seg[2]!);
       if (!SLUG_OK.test(slug) || slug.length > LIMITS.slug) {
         json(res, 200, { available: false, legal: false });
@@ -78,7 +86,10 @@ export const authTable: Route[] = [
     handler: async (ctx, r) => {
       const { req, res, nowMs } = r;
       const { cfg, stash, auth, mailer, writes } = ctx;
-      if (r.tooMany('docs')) return true;
+      // the limiter's default 20 put twenty founders on one venue address
+      // exactly at the cap, with every 📨 resend counting against it (issue
+      // #69). **Twenty phones' worth** (Ed, 2026-09-19): three sends each.
+      if (r.tooMany('docs', 60)) return true;
       const body = await readJson(req);
       const title = cap(expectString(body, 'title'), LIMITS.title, 'the title');
       const email = emailOk(expectString(body, 'email'));
@@ -98,6 +109,20 @@ export const authTable: Route[] = [
       const givenId = typeof body.pendingId === 'string' && body.pendingId !== ''
         ? body.pendingId : null;
       const mine = givenId === null ? null : sha256Hex(givenId);
+      /* **A creation already made is told so** (issue #38 F3, #40): 📨 from
+         the birth tab left open beside the document carried a claimed
+         stash's pendingId, which the reservation no longer honours — so it
+         was told its own address was taken and offered `<slug>-2`, a twin
+         with the same Founder. The pendingId is the capability, so only its
+         holder learns this: no token, no mail, no cookie. */
+      if (mine !== null) {
+        const pend = await stash.pendingOf(mine, nowMs);
+        const made = pend?.docId === undefined ? null : ctx.store.byId(pend.docId);
+        if (made) {
+          json(res, 200, { ok: true, created: true, slug: made.cs.slug });
+          return true;
+        }
+      }
       // the founder chooses the address before the email (Q460); absent
       // (older clients, the tests' shorthand) it is suggested from the title
       let slug: string;
@@ -127,11 +152,11 @@ export const authTable: Route[] = [
       // first send opens one. renew() is the truth of it, so a stash swept
       // between the check and here still falls back to a fresh creation.
       const renewed = givenId !== null && mine !== null &&
-        await stash.renew(mine, expMs, slug, nowMs);
+        await stash.renew(mine, expMs, slug, nowMs, email);
       const pendingId = renewed && givenId !== null
         ? givenId : randomBytes(18).toString('base64url');
       const stashKey = sha256Hex(pendingId);
-      if (!renewed) await stash.open(stashKey, expMs, slug);
+      if (!renewed) await stash.open(stashKey, expMs, slug, email);
       const token = await auth.mintToken(
         { kind: 'create', email, pending: { title, slug, email, isMember, stashKey } }, nowMs);
       const link = magicLink(cfg.baseUrl, 'create', token, slug);
@@ -148,11 +173,26 @@ export const authTable: Route[] = [
     match: '/api/docs/pending',
     handler: async (ctx, r) => {
       const { req, res, nowMs } = r;
-      if (r.tooMany('pending', 120)) return true;
+      // the founder's typing is stashed as they type, so 120 was ~6 stashes
+      // each for twenty founders on one venue address and then silence
+      // (issue #69). **Twenty phones' worth** (Ed, 2026-09-19).
+      if (r.tooMany('pending', 600)) return true;
       const body = await readJson(req);
       const pendingId = expectString(body, 'pendingId');
       const text = cap(expectString(body, 'text'), LIMITS.text, 'the text');
-      if (!(await ctx.stash.update(sha256Hex(pendingId), text, nowMs))) {
+      const key = sha256Hex(pendingId);
+      if (!(await ctx.stash.update(key, text, nowMs))) {
+        // **a claimed stash is not an expired one** (issue #38 F4, #40): the
+        // birth tab typing after the save met the same 404 as a dead draft,
+        // which nothing read — so the page is told where the document is,
+        // and stops sending what no longer reaches it
+        const pend = await ctx.stash.pendingOf(key, nowMs);
+        const made = pend?.docId === undefined ? null : ctx.store.byId(pend.docId);
+        if (made) {
+          json(res, 409, { error: 'that document has already been created',
+            created: true, slug: made.cs.slug });
+          return true;
+        }
         json(res, 404, { error: 'that draft has expired' });
         return true;
       }
@@ -174,7 +214,11 @@ export const authTable: Route[] = [
       const token = url.searchParams.get('token') ?? '';
       // a link a mail client wrapped across two lines arrives without its
       // token, and that is the same dead end by another road (2026-09-17)
-      if (token === '') {
+      // **…and so is one cut anywhere else** (issue #67 F2): a mint is
+      // exactly 32 base64url characters (auth.ts), so a token of any other
+      // shape was truncated in transit — read as cut, and spent nowhere,
+      // rather than as a link somebody used
+      if (!TOKEN_SHAPE.test(token)) {
         spentPage(ctx, r, PAGE.cut, path.slice(6) as 'create' | 'login' | 'apply');
         return true;
       }
@@ -201,8 +245,15 @@ export const authTable: Route[] = [
     handler: async (ctx, r) => {
       const { req, res, nowMs } = r;
       const { cfg, store, stash, auth, writes, commits } = ctx;
-      if (r.tooMany('auth', 60)) return true;
-      const token = await readTokenBody(req);
+      // One bucket, `auth:<ip>`, shared by /auth/create, /auth/login and
+      // /auth/apply: 60 was twenty arrivals on one venue address with a
+      // rehearsal in the same window taking it to forty (issue #69).
+      // **Twenty phones' worth** (Ed, 2026-09-19), the login door's own 200
+      // (Q1341). The brake reads the token first so a refusal can hand it
+      // back on a page (`busyDoor`) rather than as raw JSON — the body is
+      // capped at 10 KB, so nothing is spent by reading it.
+      const token = await tokenOrEmpty(req);
+      if (r.tooMany('auth', 200, () => { busyDoor(ctx, r, token); })) return true;
       if (pausedDoor(ctx, r, token)) return true;
       const rec = await auth.useToken(token, nowMs);
       if (!rec || rec.kind !== 'create' || !rec.pending) {
@@ -218,24 +269,50 @@ export const authTable: Route[] = [
          the document, logging the founder in. This holds however the address
          moved in between, because the claim is on the creation rather than
          on a name. */
-      const madeId = p.stashKey === undefined ? null : await stash.claimedBy(p.stashKey, nowMs);
-      const made = madeId === null ? null : store.byId(madeId);
+      const pend = p.stashKey === undefined ? null : await stash.pendingOf(p.stashKey, nowMs);
+      const made = pend?.docId === undefined ? null : store.byId(pend.docId);
       if (made) {
+        // **…to the founder it names** (issue #38 F1): a link minted to a
+        // mistyped 📧 and followed after the corrected one founded the
+        // document was a stranger's 90-day Founder cookie. It is refused as
+        // a used link — never falling through, which would found a twin
+        const founder = made.cs.convenorRecord().email?.toLowerCase();
+        if (founder !== p.email.toLowerCase()) {
+          spentPage(ctx, r, PAGE.used, 'create');
+          return true;
+        }
         setCookie(res, made.id, auth.cookieFor(made.id, made.cs.convenorRecord().id, nowMs), ctx.httpsOn);
         redirect(res, `/d/${made.cs.slug}`);
         return true;
       }
+      /* **…and an unclaimed creation to the address it was last sent to**
+         (issue #38 F5): the resend renewed the pending creation whatever the
+         address, so a link to the mistyped one, followed first, founded the
+         document with a stranger as its Founder and the pasted charter in
+         it. A stash opened before migration 7 holds no address, and cannot
+         be asked. */
+      if (pend?.email !== undefined && pend.email.toLowerCase() !== p.email.toLowerCase()) {
+        spentPage(ctx, r, PAGE.used, 'create');
+        return true;
+      }
+      /* **The address is the creation's, not the link's** (issue #38 F2):
+         each send mints its own token with the address asked for then, while
+         the resend moves the one reservation onto the address asked for now
+         — so an earlier link followed first founded at the address the
+         founder had moved off, and the one they chose never existed. The
+         stashless token keeps its own. */
+      const want = pend?.slug ?? p.slug;
       /* …and the same for a link minted before the stash carried its claim:
          the address it promised already holds a document this very founder
          made, so it forwards there rather than founding a twin beside it. */
-      const twin = store.bySlug(p.slug);
+      const twin = store.bySlug(want);
       if (twin && twin.cs.convenorRecord().email?.toLowerCase() === p.email.toLowerCase()) {
         setCookie(res, twin.id, auth.cookieFor(twin.id, twin.cs.convenorRecord().id, nowMs), ctx.httpsOn);
-        redirect(res, `/d/${p.slug}`);
+        redirect(res, `/d/${want}`);
         return true;
       }
-      const slug = store.slugTaken(p.slug)
-        ? uniqueSlug(p.title, (s) => store.slugTaken(s)) : p.slug;
+      const slug = store.slugTaken(want)
+        ? uniqueSlug(p.title, (s) => store.slugTaken(s)) : want;
       const id = `d-${randomBytes(5).toString('hex')}`;
       // on the chain (review #1, finding 9): the birth's persist must not
       // interleave with a first command's commit
@@ -280,15 +357,18 @@ export const authTable: Route[] = [
       // Two buckets on this door (Q1341, Ed 2026-09-12). Per IP, 200 in ten
       // minutes: a convention room shares one venue wifi and so one address,
       // and twenty logins were what a room of twenty spends arriving. Per
-      // email, 5 in ten minutes: a scripted attack on one address is the
-      // thing the old cap actually stopped, and it is keyed on the address,
-      // not the socket. Both numbers are guesses; revisit them after a real
-      // convention. The per-email check runs before the roster lookup so a
-      // known and an unknown address are refused identically.
+      // email, **10** in ten minutes: a scripted attack on one address is
+      // the thing this cap actually stops, and it is keyed on the address,
+      // not the socket. Q1341 set it at 5 and called the number a guess —
+      // and 5 is one impatient member pressing 📧 while the mail is slow,
+      // which is the ordinary case in a room that is all arriving at once
+      // (issue #69). **Ed, 2026-09-19: 10.** The per-email check runs
+      // before the roster lookup so a known and an unknown address are
+      // refused identically.
       if (r.tooMany('login', 200)) return true;
       const body = await readJson(req);
       const email = emailOk(expectString(body, 'email'));
-      if (rateLimited(`login-email:${email}`, nowMs, 5)) {
+      if (rateLimited(`login-email:${email}`, nowMs, 10)) {
         json(res, 429, { error: 'too many requests — try again shortly' });
         return true;
       }
@@ -318,7 +398,12 @@ export const authTable: Route[] = [
       const { cfg, store, auth, mailer, writes } = ctx;
       const doc = r.docOr404(store.bySlug(seg[2]!));
       if (!doc) return true;
-      if (r.tooMany('apply')) return true;
+      // the knock beside the login door kept the limiter's default 20 when
+      // Q1341 raised the door to 200: keyed `apply:<ip>`, global across
+      // documents, every retype burning one, so a room of twenty was at the
+      // cap on arrival (issue #69). **Twenty phones' worth** (Ed,
+      // 2026-09-19), the login door's own number.
+      if (r.tooMany('apply', 200)) return true;
       const body = await readJson(req);
       const email = emailOk(expectString(body, 'email'));
       // the same refusals the module makes at startApplication, made
@@ -376,8 +461,9 @@ export const authTable: Route[] = [
     handler: async (ctx, r) => {
       const { req, res, nowMs } = r;
       const { store, auth, writes } = ctx;
-      if (r.tooMany('auth', 60)) return true;
-      const token = await readTokenBody(req);
+      // the shared `auth:<ip>` bucket, answered as a page (issue #69, F3)
+      const token = await tokenOrEmpty(req);
+      if (r.tooMany('auth', 200, () => { busyDoor(ctx, r, token); })) return true;
       if (pausedDoor(ctx, r, token)) return true;
       const rec = await auth.useToken(token, nowMs);
       if (!rec || rec.kind !== 'apply' || rec.docId === undefined) {
@@ -387,30 +473,52 @@ export const authTable: Route[] = [
       const doc = r.docOr404(store.byId(rec.docId));
       if (!doc) return true;
       const t = writes.tOf(doc);
-      // the log's first applicant entry lands here, after the address has
-      // proved it works (stage 3, defect 8); the module re-checks policy
-      // and membership, so a world that changed since the mail refuses
-      const applicantId = rec.applicantId ?? doc.cs.startApplication(t, rec.email);
-      // a re-entry link (Q439(a)) lands on a seat that is already verified,
-      // or has an application sitting with the room: there is nothing to
-      // verify and nothing to write — the link's whole job is the cookie
-      if (doc.cs.applicantRecords().get(applicantId)?.status === 'started') {
-        doc.cs.verifyApplication(t, applicantId);
-      }
-      // **Under `open` the link is the joining** (backlog 73, Q894). The rung
-      // says so in as many words — *anyone with the link becomes a member the
-      // moment they open it* — and the module agrees, `submitApplication`
-      // auto-admitting with no motion in the way. But this handler only ever
-      // verified, so the visitor was left at `verified` for ever: no UI
-      // submits for them (the page renders an `open` applicant no rail at all,
-      // believing landing already admitted them), so `open` membership was
-      // unreachable by any road. An empty application is a real application
-      // (§9.7½), which is what makes the admit here honest. Open is 🤝 yes
-      // with 🪪 at ✒️ (entry 94); the other prices land verify-only and
-      // keep their later submit and their motion.
-      if (admissionPrice(doc.cs) === 'pen' && !doc.cs.closed &&
-          doc.cs.applicantRecords().get(applicantId)?.status === 'verified') {
-        doc.cs.submitApplication(t, applicantId);
+      // **A refusal here is a page, and it is logged** (issue #35 F2, F3;
+      // absorbing #53). The token is already spent, and the module refuses
+      // ordinary states — invitation-only, an address already on the
+      // membership, an application already underway (two knocks, two
+      // links) — whose throw fell to the central catch: raw JSON rendered
+      // as the interstitial's navigation, the link dead. The three module
+      // calls are caught together; `commit` stays outside, so a store
+      // failure is still a 500 and never a 410 page.
+      let applicantId: string;
+      try {
+        // the log's first applicant entry lands here, after the address has
+        // proved it works (stage 3, defect 8); the module re-checks policy
+        // and membership, so a world that changed since the mail refuses
+        applicantId = rec.applicantId ?? doc.cs.startApplication(t, rec.email);
+        // a re-entry link (Q439(a)) lands on a seat that is already verified,
+        // or has an application sitting with the room: there is nothing to
+        // verify and nothing to write — the link's whole job is the cookie
+        if (doc.cs.applicantRecords().get(applicantId)?.status === 'started') {
+          doc.cs.verifyApplication(t, applicantId);
+        }
+        // **Under `open` the link is the joining** (backlog 73, Q894). The rung
+        // says so in as many words — *anyone with the link becomes a member the
+        // moment they open it* — and the module agrees, `submitApplication`
+        // auto-admitting with no motion in the way. But this handler only ever
+        // verified, so the visitor was left at `verified` for ever: no UI
+        // submits for them (the page renders an `open` applicant no rail at all,
+        // believing landing already admitted them), so `open` membership was
+        // unreachable by any road. An empty application is a real application
+        // (§9.7½), which is what makes the admit here honest. Open is 🤝 yes
+        // with 🪪 at ✒️ (entry 94); the other prices land verify-only and
+        // keep their later submit and their motion.
+        if (admissionPrice(doc.cs) === 'pen' && !doc.cs.closed &&
+            doc.cs.applicantRecords().get(applicantId)?.status === 'verified') {
+          doc.cs.submitApplication(t, applicantId);
+        }
+      } catch (err) {
+        // whatever the module emitted before refusing is real (review #1,
+        // finding 6), so it is committed like any other write
+        await writes.commit(doc, nowMs);
+        const reason = err instanceof Error ? err.message : String(err);
+        // the row the central catch used to write by accident, now on
+        // purpose and with the document named (Y25: every refusal is logged)
+        logError(ctx.persistence, { kind: 'refused', status: 410, method: 'POST',
+          path: r.path, doc: doc.id, slug: doc.cs.slug, reason });
+        spentPage(ctx, r, refusedSentence(reason), 'apply');
+        return true;
       }
       await writes.commit(doc, nowMs);
       // an admitted visitor holds a member's seat, not an applicant's — the
@@ -430,8 +538,9 @@ export const authTable: Route[] = [
     handler: async (ctx, r) => {
       const { req, res, nowMs } = r;
       const { store, auth, writes } = ctx;
-      if (r.tooMany('auth', 60)) return true;
-      const token = await readTokenBody(req);
+      // the shared `auth:<ip>` bucket, answered as a page (issue #69, F3)
+      const token = await tokenOrEmpty(req);
+      if (r.tooMany('auth', 200, () => { busyDoor(ctx, r, token); })) return true;
       if (pausedDoor(ctx, r, token)) return true;
       const rec = await auth.useToken(token, nowMs);
       if (!rec || rec.kind !== 'login' || rec.docId === undefined ||
@@ -443,10 +552,35 @@ export const authTable: Route[] = [
       if (!doc) return true;
       const t = writes.tOf(doc);
       const m = doc.cs.memberRecords().get(rec.memberId);
-      // membership begins at first arrival (§9.6a); revival is logging in
-      if (m && m.arrivedAtT === null) doc.cs.arrive(t, rec.memberId);
-      else if (m && m.lapsed) doc.cs.memberReturn(t, rec.memberId);
+      // **A seat that is gone lands on the ordinary door** (Q1493, Ed
+      // 2026-09-21). The convention's error log has a withdrawn invitee's
+      // old link answered *unknown member 'm-7'* at 12:43: `arrive` throws
+      // those words for a row marked removed, and a stranger following the
+      // one address they had been given met the machine's own vocabulary.
+      // They are told by mail that the invitation was withdrawn
+      // (`MAILS.uninvited`); the link itself simply opens the document, with
+      // no cookie and so no seat — which is the stranger's door, and says
+      // nothing about the withdrawal because the mail has said it already.
+      //
+      // **…and so does an invitation the close expired** (issue #35 F1, SPEC
+      // X14): `arrive` refuses a closed document, and the throw came after
+      // the token was spent — raw JSON and a dead link. No cookie without a
+      // seat: `acknowledgeClose` admits any unremoved member, so a cookie
+      // would let somebody the close excluded sign the record.
+      //
+      // **A clerk is a seat** (found building #35): a founder who is not a
+      // member has no row in `memberRecords`, and reading that absence as a
+      // withdrawn seat opened a clerk's own login link seatless.
+      const clerk = !m && rec.memberId === doc.cs.convenorRecord().id;
+      const noSeat = !clerk && (!m || m.removed || (doc.cs.closed && m.arrivedAtT === null));
+      // membership begins at first arrival (§9.6a); revival is logging in —
+      // though never into a closed log, which `memberReturn` does not check
+      if (!noSeat && m && m.arrivedAtT === null) doc.cs.arrive(t, rec.memberId);
+      else if (!noSeat && m && m.lapsed && !doc.cs.closed) doc.cs.memberReturn(t, rec.memberId);
+      // committed before the early return: `tOf` can close the document on
+      // this very request, and what it folded must not wait in memory
       await writes.commit(doc, nowMs);
+      if (noSeat) { redirect(res, `/d/${doc.cs.slug}`); return true; }
       setCookie(res, doc.id, auth.cookieFor(doc.id, rec.memberId, nowMs), ctx.httpsOn);
       redirect(res, `/d/${doc.cs.slug}`);
       return true;
@@ -477,6 +611,12 @@ const shell = (body: string): string =>
  */
 const PAGE = {
   continue: 'Continue',
+  /** What the press does, on the page a link opens (issue #67 F1). */
+  proceed: {
+    create: 'Press Continue to create your document.',
+    login: 'Press Continue to log in.',
+    apply: 'Press Continue to confirm your address.',
+  },
   /** The two ways a link can fail before it seats anybody. */
   used: 'This link has already been used, or it has expired.',
   cut: 'That link is not complete — it may have been cut short on its way to you.',
@@ -490,6 +630,11 @@ const PAGE = {
   paused: 'docs.vote is having a moment of quick maintenance.',
   pausedKept: 'Your link is still good — nothing has been used. Wait about a minute, then try it again.',
   pausedRetry: 'Try the link again',
+  /** The arrival door's own brake, met on a link (issue #69). The same
+   *  promise the pause makes, for the same reason: the limiter stands
+   *  before the token is spent, so the link in hand is still good. */
+  busy: 'docs.vote is busy — a lot of people are arriving at once.',
+  busyKept: 'Your link is still good — nothing has been used. Wait a few minutes, then try it again.',
   /** The door's own answer, and not an oracle either way (`design/door.js`). */
   sentLogin: 'If that address is on the membership, a link is on its way.',
   sentApply: 'A link is on its way — follow it to continue your application.',
@@ -499,15 +644,22 @@ const PAGE = {
   unmade: 'Nothing stands at that address yet. Name the document again to create it:',
 } as const;
 
-/** The magic-link interstitial (stage 3, defect 6) — it exists for
- *  milliseconds. The action carries `d` so the POST it makes still knows
- *  the document when the token it spends turns out to be spent already. */
+/** The magic-link interstitial (stage 3, defect 6). The action carries `d`
+ *  so the POST it makes still knows the document when the token it spends
+ *  turns out to be spent already.
+ *
+ *  **It waits for a press** (issue #67 F1): it made the GET prefetch-safe and
+ *  then spent the token itself with `forms[0].submit()`, so anything that
+ *  *renders* a link — a mail scanner detonating it in a headless browser —
+ *  took the seat, and the member read *already used*. One sentence and a real
+ *  button, `busyDoor`'s shape: only a person's press spends the link. */
 function interstitial(action: string, token: string): string {
+  const door = action.slice(6).split('?')[0] as 'create' | 'login' | 'apply';
   return shell(
+    '<p>' + e(PAGE.proceed[door] ?? PAGE.proceed.login) + '</p>' +
     '<form method="post" action="' + e(action) + '">' +
     '<input type="hidden" name="token" value="' + e(token) + '">' +
-    '<noscript><button type="submit">Continue</button></noscript></form>' +
-    '<script>document.forms[0].submit()</script>');
+    '<button type="submit" style="padding: .4rem .8rem">' + e(PAGE.continue) + '</button></form>');
 }
 
 /**
@@ -548,6 +700,47 @@ function pausedDoor(ctx: RouteContext, r: Req, token: string): boolean {
 }
 
 /**
+ * **A refused arrival is a page too, and the link it carried is still good**
+ * (issue #69, F3). The three doors below share one bucket, `auth:<ip>`, and
+ * a venue NATs a whole room onto one address — so the room spending it was
+ * always going to happen, and what the person met was the limiter's JSON
+ * rendered raw by the browser the interstitial had just auto-submitted
+ * into: no shell, no retry, no way back, and a live magic link behind it.
+ * Live, because the limiter stands **before** `useToken`, exactly as the
+ * pause does: the token is unspent and the same link works a few minutes
+ * later. So this says so, in `pausedDoor`'s own shape and for its own
+ * reasons — the token re-posted by a form, `referrer-policy: same-origin`
+ * so the retry is not read as a cross-site attack, `retry-after` saying in
+ * a header what the sentence says in words. The status stays the limiter's
+ * 429; only the medium changes.
+ */
+/**
+ * **The brake counts a body it cannot read** (issue #89). The three
+ * `/auth/*` doors read the token above `tooMany` so a refusal can hand it
+ * back (`busyDoor`), and `readTokenBody` throws on a body past 10 KB or on
+ * malformed JSON — which, uncaught, skipped the bucket entirely and wrote a
+ * row to the error log for every one. An unreadable body is an empty token:
+ * counted like any arrival, and past the brake it meets the spent-link page.
+ */
+async function tokenOrEmpty(req: Req['req']): Promise<string> {
+  try { return await readTokenBody(req); } catch { return ''; }
+}
+
+function busyDoor(ctx: RouteContext, r: Req, token: string): void {
+  const d = r.url.searchParams.get('d') ?? '';
+  const action = d === '' ? r.path : `${r.path}?d=${encodeURIComponent(d)}`;
+  r.res.setHeader('referrer-policy', 'same-origin');
+  r.res.setHeader('retry-after', '300');
+  html(r.res, shell(
+    '<p>' + e(PAGE.busy) + '</p>' +
+    '<p>' + e(PAGE.busyKept) + '</p>' +
+    '<form method="post" action="' + e(action) + '">' +
+    '<input type="hidden" name="token" value="' + e(token) + '">' +
+    '<button type="submit" style="padding: .4rem .8rem">' +
+    e(PAGE.pausedRetry) + '</button></form>'), 429);
+}
+
+/**
  * **A dead link is answered with a page, not with JSON** (the readiness
  * pass, 2026-09-17). Every road here is ordinary — a double click, a mail
  * forwarded to a colleague, a scanner that runs the interstitial's
@@ -567,6 +760,13 @@ function pausedDoor(ctx: RouteContext, r: Req, token: string): boolean {
  * **410, not 400.** The request is perfectly well formed; what it names is
  * gone, and single-use means gone for good.
  */
+/** A module refusal said as Y25 says it on a card (issue #35 F2): *That was
+ *  refused: …*, the module's own `(§…)` pointer dropped, and one full stop. */
+function refusedSentence(reason: string): string {
+  const said = reason.replace(/\s*\(§[^)]*\)/g, '').trim().replace(/[.\s]+$/, '');
+  return `That was refused: ${said}.`;
+}
+
 function spentPage(ctx: RouteContext, r: Req, lead: string,
   kind: 'create' | 'login' | 'apply'): void {
   const asked = r.url.searchParams.get('d') ?? '';

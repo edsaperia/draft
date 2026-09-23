@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import type { Event as EngineEvent } from '../../engine-core/src/types.js';
 import { EngineBridge } from '../src/engine-bridge.js';
 import { DEFAULT_TUNING } from '../src/adapter.js';
+import { view } from '../src/view.js';
 import { buildConstituted } from './helpers.js';
 
 describe('an ordinary motion, raced end to end', () => {
@@ -136,6 +137,54 @@ describe('a carried amendment binds a race in flight (§9.6/Q328)', () => {
   });
 });
 
+/**
+ * **💤's period reaches the engine, and moves when the room moves it** (Q1439
+ * ruling c, Ed 2026-09-17; SPEC §9.5a → why: R-127). The engine has never
+ * heard of a lapse — that arrives as `participant-suspended` — but it needs
+ * the *span*, because silence on one candidate for that long is an abstention
+ * on it (§8.2). It rides `engineFieldsFor('lapse', …)` like 👥's quorum, so
+ * the birth carries it and the bridge's standing diff carries every change.
+ */
+describe('💤’s period crosses to the engine (Q1439)', () => {
+  it('the birth carries it, and a change after the start reaches the engine', () => {
+    const HOUR = 3_600_000;
+    const { s, bo, cy } = buildConstituted({ lapse: { afterMs: 6 * HOUR } });
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'lapse-period' });
+    expect(bridge.engine.constitution.abstainAfterMs).toBe(6 * HOUR);
+
+    // the room moves it: 💤 is constitutional, so unanimity settles it and the
+    // standing diff in `sync` hands the new span over
+    // 💤 is the founder's in this fixture, so the room's unanimity parks
+    // behind the 🛡️ and the crown's answer is what carries it (§9.7 rule 6)
+    const carry = (t: number, value: unknown): void => {
+      const m = s.openMotion(t, bo, { kind: 'set', setting: 'lapse', value: value as never });
+      expect(s.motionRecords().get(m)!.route).toBe('constitutional');
+      s.answerMotion(t + 1, 'ada', m, 'accept');
+      s.answerMotion(t + 2, cy, m, 'accept');
+      if (s.motionRecords().get(m)!.status === 'awaiting-crown') {
+        const q = s.logEntries().map((e) => e.event)
+          .find((e) => e.type === 'crown-question-opened' && e.motion === m) as { question: string };
+        s.answerCrownQuestion(t + 3, q.question, 'accept');
+      }
+      expect(s.motionRecords().get(m)!.status).toBe('carried');
+    };
+    carry(10, { afterMs: 2 * HOUR });
+    bridge.sync(20);
+    expect(bridge.engine.constitution.abstainAfterMs).toBe(2 * HOUR);
+
+    // and *never* is null all the way through, which imputes nothing
+    carry(30, { afterMs: null });
+    bridge.sync(40);
+    expect(bridge.engine.constitution.abstainAfterMs).toBe(null);
+  });
+
+  it('a document whose 💤 says never carries null, not a missing field', () => {
+    const { s } = buildConstituted(); // the fixture's own 💤 is never
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'lapse-never' });
+    expect(bridge.engine.constitution.abstainAfterMs).toBe(null);
+  });
+});
+
 describe('the close (Q390: winners carry, the rest are held)', () => {
   it('adjudicates every raced motion at the close', () => {
     const { s, bo } = buildConstituted();
@@ -146,6 +195,32 @@ describe('the close (Q390: winners carry, the rest are held)', () => {
     expect(render.appliedSettings).toEqual([]);
     expect(s.motionRecords().get(motion)!.status).toBe('held');
     expect(s.settingState('ending').value).toEqual({ endsAtMs: 1_000_000 });
+  });
+
+  /**
+   * **And tells nobody about it** (Ed, 2026-09-18, Q1450). The close is the
+   * one hand that holds a motion on a document where an OK is refused, so
+   * E41's card would be pinned for ever; `finishClose` says `held-at-close`
+   * instead, and the 🥂 card — the only card a shut document asks anybody to
+   * press — counts what the clock found running, either route.
+   */
+  it('and tells its mover nothing, the 🥂 card speaking for it (Q1450)', () => {
+    const { s, bo, cy } = buildConstituted();
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'close-silent' });
+    // one of each route, both running when the clock runs out
+    const { motion } = bridge.openSetMotion(10, bo, 'ending', { endsAtMs: 3_000_000 });
+    const kept = bridge.openMotion(11, cy, { kind: 'set', setting: 'chamber',
+      value: { rung: 'closed' } });
+    bridge.close(1_000_000);
+    expect(s.motionRecords().get(motion)!.status).toBe('held');
+    expect(s.motionRecords().get(motion)!.heldAtClose).toBe(true);
+    expect(s.motionRecords().get(kept)!.status).toBe('kept-at-close');
+    for (const who of [bo, cy, 'ada']) {
+      expect(s.memberRecords().get(who)!.heldOwed.size).toBe(0);
+      expect(view(s, who).owedHeld).toEqual([]);
+    }
+    // the ordinary one still files its grey ✖, and says what stopped it
+    expect(view(s, bo).motions.find((m) => m.id === motion)!.heldBy).toBe('close');
   });
 });
 
@@ -161,7 +236,11 @@ describe('roster truth flows cs → engine', () => {
     // different mechanism, so here we assert the relay path with the
     // engine's own commands instead.
     bridge.engine.suspendParticipant(10, bo);
-    expect(bridge.engine.adoptionFloor()).toBe(2); // max(ceil(0.6×2)=2, ceil(2/3)=1)
+    // **A room of two is held to unanimity** (Q1439): ⌈0.6 × 2⌉ = 2 is
+    // everybody and no quorum may ask for more than half (R-126), so the
+    // quorum reads ⌈2/2⌉ = 1 — and the seconder, min(2, E), puts it back to
+    // two, which in a room of two is both of them (ruling u)
+    expect(bridge.engine.adoptionFloor()).toBe(2);
     bridge.engine.resumeParticipant(11, bo);
     expect(bridge.engine.adoptionFloor()).toBe(2);
   });
@@ -261,6 +340,115 @@ describe('an admit motion is its own race (§9.7½ v0.56, Q397)', () => {
     // and the document goes on answering, minute after minute
     expect(() => bridge.tick(14)).not.toThrow();
     expect(() => bridge.tick(15)).not.toThrow();
+  });
+});
+
+/**
+ * **An invitation at 🪪 *members must vote* is a race like the other two**
+ * (issue #6, F1). One price prices every road in (entry 94), so *proposal*
+ * routes an invitation ordinary — and in this layer ordinary means a race and
+ * nothing else. `sync` entered `admit` and `remove` and walked past `invite`,
+ * so the motion had no candidate anywhere: `answerMotion` refused it as an
+ * ordinary motion, no judgment could reach it, it outlived the close, and the
+ * twin rule then held the address against everybody who tried again. A room at
+ * that price could invite **nobody**.
+ */
+describe('an invitation is its own race at ✏️ (issue #6, §9.7½)', () => {
+  const withPrice = (price: 'proposal' | 'assembly') =>
+    buildConstituted({ bar: 55, quorum: { form: 'count', n: 2 },
+      admission: { price } });
+  /** The person the invitation carries — the address is the row's (1253). */
+  const personOf = (s: ReturnType<typeof withPrice>['s'], motion: string) =>
+    (s.motionRecords().get(motion)!.payload as { kind: 'invite'; person: string }).person;
+
+  it('at ✏️: the mover authors it, the stake is taken, and the carry makes an invitee', () => {
+    const { s, bo, cy } = withPrice('proposal');
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'invite-race' });
+    const motion = bridge.openMotion(10, bo, { kind: 'invite', email: 'dee@example.org' },
+      'she chairs the other committee');
+    // the race is entered on the walk of the log, as the other two are —
+    // which on the server is `driveBridge` at the tail of the same commit
+    bridge.sync(11);
+    const race = bridge.engine.races()
+      .find((r) => r.settingId === `invite:${personOf(s, motion)}`)!;
+    expect(race).toBeDefined();
+    // one candidate, against the membership as it stands and nothing else
+    expect(race.members).toHaveLength(1);
+    const cand = bridge.engine.log.map((e) => e.event).find((e) =>
+      e.type === 'candidate-submitted' && e.id === race.members[0]) as
+      { author: string; rationale: string };
+    expect(cand.author).toBe(bo);          // the mover, never asked their own (§3.3)
+    expect(cand.rationale).toBe('she chairs the other committee');
+    expect(bridge.engine.balance(bo, 10)).toBe(3); // the stake left the wallet (§7)
+
+    // floor 2: bo's derived author-preference plus one judge
+    bridge.judge(20, cy, race.members[0]!, race.incumbentId, 'a');
+    expect(s.motionRecords().get(motion)!.status).toBe('carried');
+    // `member-invited` is what the write path mails, and it names the motion
+    const invited = s.logEntries().map((e) => e.event).filter((e) =>
+      e.type === 'member-invited').at(-1) as { member: string; viaMotion?: string };
+    expect(invited).toBeDefined();
+    expect(invited.viaMotion).toBe(motion);
+    expect(s.memberRecords().get(invited.member)!.email).toBe('dee@example.org');
+    // an invitee counts toward nothing until they arrive
+    expect(s.memberRecords().get(invited.member)!.arrivedAtT).toBeNull();
+    expect(s.E()).toBe(3);
+  });
+
+  it('at 🏛️: the invitation collects consent in the module and never enters the engine', () => {
+    const { s, bo } = withPrice('assembly');
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'invite-assembly' });
+    const motion = bridge.openMotion(10, bo, { kind: 'invite', email: 'dee@example.org' });
+    expect(s.motionRecords().get(motion)!.route).toBe('constitutional');
+    expect(bridge.engine.races().some((r) => String(r.settingId).startsWith('invite:')))
+      .toBe(false);
+    expect(bridge.engine.balance(bo, 10)).toBe(4); // a decision is not priced
+  });
+
+  it('the close holds an invitation the room never judged, and nobody is invited', () => {
+    const { s, bo } = withPrice('proposal');
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'invite-close' });
+    const motion = bridge.openMotion(10, bo, { kind: 'invite', email: 'dee@example.org' });
+    bridge.close(1_000_000);
+    expect(s.motionRecords().get(motion)!.status).toBe('held');
+    expect([...s.memberRecords().values()].some((m) => m.email === 'dee@example.org'))
+      .toBe(false);
+  });
+
+  /**
+   * **And a document that already holds a stuck one is left exactly as it
+   * is** (issue #6, the rollout). `sync` walks the cs log from a persisted
+   * cursor (`BridgeState.cursor`, which `resumeBridge` hands back), so an
+   * entry the pre-fix code walked is never re-read: the deploy cannot enter
+   * a race the persisted engine log does not hold, and the document loads
+   * and answers as before. The old motion stays `running` with the address
+   * held against everybody by the twin rule — until the mover withdraws it,
+   * or the close holds it. This is the whole of the migration, and it is
+   * nothing.
+   */
+  it('a resumed document does not race an invitation the pre-fix code walked past', () => {
+    const { s, bo } = withPrice('proposal');
+    // the document as it stood before the deploy: a bridge, and a motion the
+    // arm above did not exist to enter — `sync` walked the entry and only
+    // moved its cursor
+    const before = new EngineBridge(s, { t: 3, rngSeed: 'invite-resume' });
+    const motion = s.openMotion(10, bo, { kind: 'invite', email: 'dee@example.org' });
+    const asPersisted = { log: [...before.engine.log],
+      cursor: s.logEntries().length, motionCandidates: { ...before.state().motionCandidates } };
+
+    // today's code resumes it, and the walk starts after that entry
+    const today = new EngineBridge(s, { t: 11, rngSeed: 'invite-resume', resume: asPersisted });
+    today.sync(12);
+    expect(today.engine.races().some((r) => String(r.settingId).startsWith('invite:')))
+      .toBe(false);
+    expect(s.motionRecords().get(motion)!.status).toBe('running');
+    // …and the document is in every other way alive: a fresh invitation put
+    // after the deploy is raced as it should be
+    const after = today.openMotion(13, bo, { kind: 'invite', email: 'eve@example.org' });
+    today.sync(14);
+    expect(today.engine.races().some((r) => String(r.settingId).startsWith('invite:')))
+      .toBe(true);
+    expect(s.motionRecords().get(after)!.status).toBe('running');
   });
 });
 
@@ -472,5 +660,55 @@ describe("the host's pacing is ground (R-086, Ed 2026-09-05)", () => {
         e.type === 'constitution-amended');
     expect(fresh).toHaveLength(1);
     expect(Object.keys(fresh[0]!.changes)).toEqual(['cooldownMs']);
+  });
+});
+
+/**
+ * **A motion the room can no longer carry is held during the document's life**
+ * (Q1440, Ed 2026-09-18; SPEC §4.4 → why: R-132).
+ *
+ * Before this an ordinary motion could only fail at T=0, through
+ * `finishClose` — so Q1447's card for its mover was raised on a document that
+ * had just shut, where an OK is refused and the card sits unanswerable for
+ * ever (R-130's own note). The engine closes the candidate now, and this is
+ * the seam that turns that into the constitution's word for it.
+ */
+describe('an ordinary motion the engine closes (Q1440)', () => {
+  it('is held, and owes its mover the card, while the document still runs', () => {
+    const { s, bo, cy } = buildConstituted();
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'dominated-motion' });
+    const { motion, candidate } = bridge.openSetMotion(
+      10, bo, 'ending', { endsAtMs: 2_000_000 }, 'a week is not enough');
+    const race = bridge.engine.races().find((r) => r.settingId === 'ending')!;
+    expect(s.motionRecords().get(motion)!.status).toBe('running');
+    // both of the others prefer the ending as it stands: a = 1, o = 2, w = 0,
+    // and no answer still to come could put it above what stands
+    bridge.judge(20, cy, candidate!, race.incumbentId, 'b');
+    bridge.judge(21, 'ada', candidate!, race.incumbentId, 'b');
+    expect(bridge.engine.getCandidate(candidate!).state).toBe('retired');
+    expect(bridge.engine.getCandidate(candidate!).exit?.cause).toBe('dominated');
+    // the constitution's side: held by the membership, the value untouched,
+    // and the mover — and nobody else — owed the card (SURFACE E41)
+    expect(s.motionRecords().get(motion)!.status).toBe('held');
+    expect(s.settingState('ending').value).toEqual({ endsAtMs: 1_000_000 });
+    expect(s.memberRecords().get(bo)!.heldOwed).toEqual(new Set([motion]));
+    expect(s.memberRecords().get(cy)!.heldOwed.size).toBe(0);
+    // and the stake comes back on performance, as at any retirement (§7)
+    expect(bridge.engine.balance(bo, 30)).toBeGreaterThanOrEqual(3);
+  });
+
+  it('releases the twin rule, so the same thing can be put again (R-103)', () => {
+    const { s, bo, cy } = buildConstituted();
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'dominated-twin' });
+    const first = bridge.openSetMotion(10, bo, 'ending', { endsAtMs: 2_000_000 });
+    const race = bridge.engine.races().find((r) => r.settingId === 'ending')!;
+    bridge.judge(20, cy, first.candidate!, race.incumbentId, 'b');
+    bridge.judge(21, 'ada', first.candidate!, race.incumbentId, 'b');
+    expect(s.motionRecords().get(first.motion)!.status).toBe('held');
+    // the twin rule holds only against a motion that is *running*, so the
+    // same value is proposable again the moment the first one is decided
+    const again = bridge.openSetMotion(30, cy, 'ending', { endsAtMs: 2_000_000 });
+    expect(s.motionRecords().get(again.motion)!.status).toBe('running');
+    expect(again.candidate).not.toBe(first.candidate);
   });
 });

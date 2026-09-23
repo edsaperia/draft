@@ -30,8 +30,10 @@ list, annotated, is `docs/OPERATING.md` §5):
 Two files live in the data directory and are **not** part of a copy, because
 no store writes them through the persistence seam: `outbox.jsonl` (the dev
 inbox — every magic link ever minted locally) and `bots-outbox.jsonl`
-(`docs/OPERATING.md` §10). `errors.jsonl` (§11) and `secret.txt` are the
-deployment's, not the data's, and are likewise not copied.
+(`docs/OPERATING.md` §10). The error log (§11) and `secret.txt` are the
+deployment's, not the data's, and are likewise not copied — the log is on
+the persistence seam as of stage 5a and the copiers still pass it over on
+purpose, a record of defects here being no part of a restore somewhere else.
 
 **A backup directory is as sensitive as the room.** `people.json` carries
 every address and `log.jsonl` every founding answer in plaintext — the
@@ -118,7 +120,10 @@ The dry run names the torn line and confirms the intact prefix replays.
 every byte kept — and writes the intact prefix in its place. A line that
 fails to parse anywhere but at the end, or a prefix that does not replay,
 is **refused**: that is corruption, not a torn tail, and no tool here
-shortens a history. Restart the service after a repair.
+shortens a history. Restart the service after a repair — and if that service
+is ever the live one, `docs/OPERATING.md` §3's *Restarting the live host*
+first: `repair-tail` must not be run against a store a service is serving
+from at all, and the pause is what makes "serving from" false.
 
 ## Deleting a quarantined document
 
@@ -142,7 +147,22 @@ Prints one `export: SKIPPED <id> — <reason>` line per quarantined document,
 then the count, then `export: N documents SKIPPED …`, and **exits 1** —
 which is the export working, not failing. Write the ids down.
 
-**2 — delete each one, by id, typed twice.**
+**2 — pause the host, before the tool runs.** `delete` removes rows the
+running server still holds in memory, and a commit that *touches* a person
+writes that person's row straight back (`StorePeople.takeDirty`,
+`store.ts`; `docs/OPERATING.md` §5), so the pause here is a data step and
+not the courtesy it is before an ordinary restart. Paused, the write path
+persists nothing at all, refuses every command with 503, and every open
+page draws the maintenance modal rather than meeting an error.
+
+    curl -fsS -X POST -H "authorization: Bearer $DRAFT_BOT_KEY" \
+      -H 'content-type: application/json' -d '{}' \
+      https://docs.vote/api/admin/pause
+
+It lifts itself after fifteen minutes, so run steps 3 and 4 without a
+break (`docs/OPERATING.md` §3, *Restarting the live host*).
+
+**3 — delete each one, by id, typed twice.**
 
     node dist/draft-tools.mjs delete "$DATABASE_URL" <docId> --i-understand-this-deletes-the-document=<docId>
 
@@ -157,12 +177,18 @@ and bridge state. It does **not** remove tokens, stashes or queued mail
 that named it; those are keyed by other things, expire on their own, and a
 magic link into a document that is gone simply fails to resolve.
 
-**3 — restart, so the running server forgets it.** Render → **Manual
+**4 — restart, so the running server forgets it.** Render → **Manual
 Deploy → Restart**. A running server holds what it loaded until it
-reloads, and the quarantine list is part of that. Then check `/healthz`:
-`documentsQuarantined` must now read 0.
+reloads, and the quarantine list is part of that. The restart lifts the
+pause with the old process; if you stop short of it, lift the pause by hand
+(`POST /api/admin/resume`, same key). Then check `/healthz`:
+`documentsQuarantined` must now read 0, `paused` must read `null`, and
+**read `surface` too** — a restart drops any surface upload the host was
+serving and falls back to the artifact's own `design/`
+(`docs/OPERATING.md` §3, *Restarting the live host*), so a `null` there
+after a surface-lane push means the page has gone back a commit.
 
-**4 — re-run the export and the drill, and read the exit codes.**
+**5 — re-run the export and the drill, and read the exit codes.**
 
     node dist/draft-tools.mjs export "$DATABASE_URL" /tmp/drill-src
     node dist/draft-tools.mjs drill  /tmp/drill-src "$DATABASE_URL"
@@ -173,7 +199,7 @@ ending `— every hash identical` and the drill ending
 followed by `drill: dropped schema drill_… and /tmp/…`. Record the date
 and the counts in PRODUCTION.md (stages 11 and 16).
 
-**5 — delete the export directories. This is not optional.**
+**6 — delete the export directories. This is not optional.**
 
     rm -rf /tmp/before-delete /tmp/drill-src
 

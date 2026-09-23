@@ -30,7 +30,11 @@ export function motionElectorateOf<M extends MemberState>(members: Iterable<M>):
 }
 
 /**
- * The room's quorum as a count (§4.2): a fixed count, or ⌈share × E⌉.
+ * The room's quorum as a count (§4.2): a fixed count, or ⌈share × E⌉ — **the
+ * number the room asked for, before the half-the-room cap** (Q1439, R-126),
+ * which `adoptionFloor` below applies. The two are separate because the raw
+ * number is what the log records (`floor-recomputed`'s `quorumN`) and what a
+ * card's own control holds, while the capped one is what a race is held to.
  *
  * **The product before the quotient** (issue #24): `Math.ceil((n / 100) * E)`
  * is not ⌈n·E/100⌉, because `n / 100` is not representable in binary for most
@@ -43,12 +47,45 @@ export function quorumCount(quorum: QuorumValue, E: number): number {
   return quorum.form === 'count' ? quorum.n : Math.ceil((quorum.n * E) / 100);
 }
 
-/** The statistical half of the adoption floor (§4.2, §8.2). */
+/**
+ * The statistical minimum that **used** to be half of F (§4.2 before v0.133).
+ *
+ * **It enters no floor since Q1439 ruling s** (Ed, 2026-09-18, R-131,
+ * reversing R-073): the card's number is the only number. What keeps the
+ * function alive is the log — `floor-recomputed` carries a `floorTerm` on
+ * every roster change and has since v0.48, so the field is written for as long
+ * as old logs must fold beside new ones. Nothing reads it back.
+ */
 export function adoptionFloorTerm(E: number): number {
   return Math.ceil(E / 3);
 }
 
-/** F = max(Q, min(⌈E/3⌉, F_max)) — §4.2, the room's number riding the minimum. */
-export function adoptionFloor(quorumN: number, E: number, fMax: number): number {
-  return Math.max(quorumN, Math.min(adoptionFloorTerm(E), fMax));
+/**
+ * F = max(Q′, min(2, E)) — §4.2. **The room's number, and a seconder under it**
+ * (Q1439, Ed 2026-09-18 → why: R-131). Ruling s took the built-in third away —
+ * *if the membership want a smaller quorum they should be able to choose it* —
+ * so the card's number is what the room is held to at every size; ruling u,
+ * out of the churn re-run the same day, put **two approvals** under it, which
+ * is the author and one other member. One is no floor at all, the author's own
+ * derived preference being the one, and the sims measured a room of fifteen
+ * making 904 adoptions in a month at a floor of 1, 888 of them reversions.
+ * `min(2, E)` because at E = 1 the sole member is the room and at E = 2 it is
+ * unanimity.
+ *
+ * **And a quorum may ask for everybody** (Q1490, Ed 2026-09-21 → why: R-139,
+ * reversing R-126's cap at half): a share runs to 100% and a count to the
+ * whole population the quorum is read against. What is left of the cap binds
+ * the **count** form alone, which the population moves under — however few
+ * are left, the quorum never outgrows them (§9.5a, R-088) — a share being
+ * refused above 100 at validation (`values.ts`) and ⌈n·E/100⌉ never exceeding
+ * E anyway.
+ *
+ * `E` here is the population the quorum is read against. The engine reads it
+ * against **the group a candidate is waiting on** (`races.ts`'s `floorFor`,
+ * the copy that decides adoptions); this one is the room's own number over
+ * the whole of E, which is what the group is before anybody has abstained.
+ * The two move together or not at all — `floor-agreement.test.ts`.
+ */
+export function adoptionFloor(quorumN: number, E: number): number {
+  return Math.max(Math.min(quorumN, E), Math.min(2, E));
 }

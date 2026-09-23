@@ -103,6 +103,17 @@ the lawful-basis section both need rewriting.]]`
   their retention periods and state them here — see *Who else handles your
   data*.]]`
 
+- **Error reports from the page you are on.** When something goes wrong in
+  your browser, the page tells us the error message, the file and line it
+  came from, the address of the page (without anything after the `?`), which
+  document you were in, your seat in it and which version of the site served
+  you — and nothing else. **None of the text you write is ever sent**, and we
+  accept only a few of these a minute from any one person. We use them to
+  find and fix faults, and for nothing else. `[[PLACEHOLDER: retention period
+  for the error log. It is kept until an operator deletes it, which is not a
+  period a policy can state; decide one and state it in *How long we keep
+  things*.]]`
+
 ### Things we do not collect
 
 No analytics, no advertising, no tracking pixels, no third-party scripts, no

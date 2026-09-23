@@ -1,6 +1,6 @@
 {
   "entries": 68,
-  "rollingHash": "bff05415d9a44d78a8520020bb07b509523ec93fb9c02f31aa6c42f4fd8143a9",
+  "rollingHash": "218fc8a6bc1e559beb2a11f931add40e588827dd6f9f98226363c4ba933f3662",
   "chainVerifies": true,
   "constitutedAtT": 8,
   "E": 3,
@@ -113,7 +113,7 @@
     "quorum": {
       "value": {
         "form": "share",
-        "n": 60
+        "n": 40
       },
       "holder": "convenor",
       "powers": {

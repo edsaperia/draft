@@ -18,6 +18,7 @@ import type { Persistence } from '../src/persistence.js';
 import { PgPersistence } from '../src/pg-persistence.js';
 import { asEngineDoc, resumeBridge } from '../src/engine-host.js';
 import { LIMITS } from '../src/commands.js';
+import { attestBody } from './attest-wire.js';
 import { SCHEMA_VERSION, chainHash } from '../../constitution/src/index.js';
 import type { ConstitutionEvent } from '../../constitution/src/index.js';
 
@@ -31,12 +32,17 @@ type Hunk = { start: number; end: number; lines: string[] };
 type CandidateOutcome = { candidateId: string; outcome: string; p: number | null;
   threshold: number | null; hunks: Hunk[]; rationale: string; judgedByMe: boolean;
   author?: { id: string; name: string | null; picture: string | null };
+  /** why it ended, where anybody said: the Founder's 🛡️, or `dominated` (Q1440) */
+  reason?: string;
   madeUnder?: string; signed?: boolean };
 type RaceRecord = { raceId: string; candidateId: string; outcome: string; when: number;
   p: number | null; threshold: number | null; version: number; footprint: unknown;
   /** the span in the current text — the lines that descend from what it decided (Q1333) */
   at: { start: number; end: number };
-  displaced: string[]; judges: number; judgedByMe: boolean; field: CandidateOutcome[] };
+  displaced: string[]; judges: number; judgedByMe: boolean; field: CandidateOutcome[];
+  /** the author's early row for a wording closed while its clause still races
+   *  (Q1451): their own candidate, and none of the numbers */
+  early?: true };
 type CardOption = { id: string; incumbent?: true;
   setting?: { settingId: string; value: { endsAtMs?: number } } };
 type MemberViewPayload = {
@@ -51,13 +57,18 @@ type MemberViewPayload = {
     members: Array<{ id: string; name: string | null; arrived: boolean;
       owed: number; answered: number }> };
   text: string; textVersion: number; floor: number;
-  settingRaces: Array<{ id: string; settingId: string; judged: boolean; askable: boolean; ask: unknown }>;
+  settingRaces: Array<{ id: string; settingId: string; judged: boolean; askable: boolean;
+    ask: unknown;
+    /** this seat's own 💤 deadline on the race, while it has one (Q1460) */
+    abstainAt?: number }>;
   wallet: number | null;
   walletInfo: { balance: number; nextDripInMs: number | null; dripIntervalMs: number | null;
     cap: number | null } | null;
   clauses: Array<{ id: string; contested: Array<{ start: number; end: number }>;
     incumbentId: string; deadlocked: boolean; closeness: number; judges: number; floor: number;
     judged: boolean; shifted: boolean;
+    /** this seat's own 💤 deadline on the race, while it has one (Q1460) */
+    abstainAt?: number;
     candidates: Array<{ id: string; mine: boolean; rationale: string; hunks: Hunk[];
       author?: { id: string; name: string | null; picture: string | null } }> }>;
   mine: Array<{ id: string; state: string; rationale: string; patch: unknown; footprint: unknown;
@@ -71,7 +82,7 @@ type MemberViewPayload = {
     signatures: Array<{ member: string; name: string | null; comment: string; t: number }> };
   view: {
     questions: Array<{ setting: string; answered: number; answeredCount: number; myAnswer: unknown }>;
-    members: Array<{ id: string; email: string; name: string | null }>;
+    members: Array<{ id: string; email: string; name: string | null; arrived: boolean }>;
     applicants: Array<{ id: string; email: string; name: string | null }>;
     motions: Array<{ id: string; route: string; status: string; payload: unknown }>;
     crownTasks: Array<{ id: string; motion: string | null;
@@ -175,14 +186,20 @@ const cookieOf = (res: Response): string => {
   return header!.split(';')[0]!;
 };
 
-const post = (base: string, path: string, body: unknown, cookie?: string) =>
+// **A text proposal states the wording it replaces** (Q1463 (1), R-136), and
+// the host refuses one that does not. Every post in this file goes through
+// here, so `attestBody` fills `was` / `after` from the view the post is about
+// — leaving alone anything the caller attested itself, and anything against a
+// version that is not the one standing, which is what keeps the stale-version
+// and the bot-style-stale tests saying exactly what they said before.
+const post = async (base: string, path: string, body: unknown, cookie?: string) =>
   fetch(base + path, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
       ...(cookie ? { cookie } : {}),
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify(await attestBody(base, path, body, cookie)),
   });
 
 /** Follow a magic link the way a browser does: GET the interstitial,
@@ -302,7 +319,7 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     await cmd(ada, 'set-setting',
       { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
     const values: Record<string, unknown> = {
-      quorum: { form: 'share', n: 60 },
+      quorum: { form: 'share', n: 40 },
       authorship: { rung: 'sealed' },
       judgments: { rung: 'after' },
       applications: { apply: true },
@@ -529,6 +546,19 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     // the judges of the candidate that carried (Q1337): ada's judgment and
     // bo's own voice for it — two, and cy, who authored the rival, is not one
     expect(rec.judges).toBe(2);
+    // …and what the floor actually tested (Q1439): how many *preferred* it, and
+    // the floor that decision was taken against — the two numbers the engine
+    // stamps on `adopted`, carried to the record so the page's *n preferred it ·
+    // quorum was m* line states the decision's own numbers and not today's
+    // …and, since Q1452, how many never answered in time: the third of the
+    // batch's own numbers, which the card prints as *n did not answer in
+    // time*. Nobody's 💤 period runs inside this walk, so it is zero — and
+    // the key is there saying so, absent meaning an older log and nothing else
+    const recQ = rec as unknown as { approvals?: number; floor?: number; abstained?: number };
+    expect(typeof recQ.approvals).toBe('number');
+    expect(typeof recQ.floor).toBe('number');
+    expect(recQ.approvals!).toBeGreaterThanOrEqual(recQ.floor!);
+    expect(recQ.abstained).toBe(0);
     // one record per race: the adopted rival and the retired one do not file twice
     expect(done.records.filter((r) => r.raceId === r1.raceId)).toHaveLength(1);
 
@@ -921,6 +951,47 @@ describe('review #1 hardening', () => {
     expect(await after.json()).toMatchObject({ stranger: true });
     expect(JSON.stringify(await (await fetch(`${base}/api/d/${created.slug}/view`,
       { headers: { cookie: leaver } })).json())).not.toContain('.org');
+
+    // an invitation withdrawn before it was followed: the kept link lands on
+    // the document's door, seatless — never *unknown member 'm-…'* in a
+    // stranger's browser (issue #35 F1, Q1493)
+    await post(base, `/api/d/${created.slug}/cmd`,
+      { cmd: 'invite', args: { email: 'kept@example.org' } }, g);
+    const keptLink = (await lastMailTo(dataDir, 'kept@example.org')).link!;
+    const gv2 = await (await fetch(`${base}/api/d/${created.slug}/view`,
+      { headers: { cookie: g } })).json() as MemberViewPayload;
+    const keptId = gv2.view.members.find((m) => m.email === 'kept@example.org')!.id;
+    await post(base, `/api/d/${created.slug}/cmd`,
+      { cmd: 'uninvite', args: { member: keptId } }, g);
+    const kept = await consume(keptLink);
+    expect(kept.status).toBe(302);
+    expect(kept.headers.get('location')).toBe(`/d/${created.slug}`);
+    expect(kept.headers.get('set-cookie'), 'no seat, so no cookie').toBeNull();
+  });
+
+  // **A clerk is seated by the login door** (found building issue #35): a
+  // founder who is not a member has no row in `memberRecords`, and Q1493's
+  // *a seat that is gone* read that absence as a withdrawn invitation — so a
+  // clerk's own login link opened the document seatless, the stranger's
+  // door, with no way in at all.
+  it('a clerk founder’s login link seats them', async () => {
+    const { base, dataDir } = await boot();
+    const created = await (await post(base, '/api/docs', {
+      title: 'Clerked', email: 'clerk@example.org',
+    })).json() as { devLink: string; slug: string };
+    const c = cookieOf(await consume(created.devLink));
+    const set = await post(base, `/api/d/${created.slug}/cmd`,
+      { cmd: 'set-convenor-membership', args: { isMember: false } }, c);
+    expect(set.status, await set.clone().text()).toBe(200);
+    const asked = await post(base, `/api/d/${created.slug}/login`, { email: 'clerk@example.org' });
+    expect(asked.status).toBe(200);
+    const again = await consume((await lastMailTo(dataDir, 'clerk@example.org')).link!);
+    expect(again.status).toBe(302);
+    const cookie = again.headers.get('set-cookie');
+    expect(cookie, 'the clerk is seated').toBeTruthy();
+    const v = await (await fetch(`${base}/api/d/${created.slug}/view`,
+      { headers: { cookie: cookie!.split(';')[0]! } })).json() as { stranger?: boolean };
+    expect(v.stranger).toBeUndefined();
   });
 });
 
@@ -967,12 +1038,14 @@ describe('the surface is served', () => {
  * The limiter behind a proxy (defect 3, re-fixed after staging caught the
  * first answer being wrong on 2026-08-20). What must hold is one sentence:
  * a client cannot change which bucket it lands in by sending headers.
- * /auth/login is the door to hammer — its limiter runs before anything
- * else, and a bad token neither mails nor writes to a log.
+ * /auth/login is the door to hammer — nothing but the 10 KB token read
+ * stands above its limiter, and a bad token neither mails nor writes to a
+ * log. The shared `auth` bucket is 200 since issue #69, so the first
+ * refusal is the two-hundred-and-first request.
  */
 describe('rate limiting reads the client the proxy states', () => {
   const flood = async (base: string,
-                       headers: (i: number) => Record<string, string>, n = 62) => {
+                       headers: (i: number) => Record<string, string>, n = 202) => {
     let limited = 0;
     for (let i = 0; i < n && limited === 0; i++) {
       const res = await fetch(`${base}/auth/login`, {
@@ -993,7 +1066,7 @@ describe('rate limiting reads the client the proxy states', () => {
       'cf-connecting-ip': '198.51.100.7',
       'x-forwarded-for': `203.0.113.${i}, 198.51.100.7, 10.7.${i}.${i}`,
     }));
-    expect(limited).toBe(61);
+    expect(limited).toBe(201);
   });
 
   it('gives two clients two buckets', async () => {
@@ -1007,7 +1080,7 @@ describe('rate limiting reads the client the proxy states', () => {
     const limited = await flood(base, (i) => ({
       'x-forwarded-for': `10.0.0.${i}, 198.51.102.9`,
     }));
-    expect(limited).toBe(61);
+    expect(limited).toBe(201);
   });
 });
 
@@ -1245,6 +1318,77 @@ describe('the address is chosen before the email, and reserved on send (Q460/462
       { available: boolean }).available).toBe(true);
     expect((await lastMailTo(dataDir, 'ada@example.org')).link).toBeTruthy();
   });
+
+  /**
+   * **The pending creation is read one way** (issue #38, absorbing #40):
+   * `Stash.pendingOf`, by all three handlers. A founder mistypes 📧,
+   * corrects it and presses 📨; the link opens in a new tab and the birth tab
+   * stays open beside the document.
+   */
+  it('one pending creation, read one way: the address it moved to, the founder it names, the tab left behind', async () => {
+    const { base } = await boot({ trustProxy: true });
+    const send = async (body: Record<string, unknown>) => {
+      const res = await fetch(base + '/api/docs', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'cf-connecting-ip': '198.51.103.38' },
+        body: JSON.stringify({ title: 'Stash', ...body }),
+      });
+      return { status: res.status, body: await res.json() as { slug?: string; pendingId?: string;
+        devLink?: string; created?: boolean; suggestion?: string; error?: string } };
+    };
+
+    // F2: the address was corrected on the resend, and the earlier link is
+    // the one followed first — it founds where the creation now points, not
+    // where its own token was minted
+    const a = await send({ slug: 'corr-a', email: 'ada@example.org' });
+    const b = await send({ slug: 'corr-b', email: 'ada@example.org', pendingId: a.body.pendingId });
+    expect(b.status).toBe(200);
+    const early = await consume(a.body.devLink!);
+    expect(early.status).toBe(302);
+    expect(early.headers.get('location')).toBe('/d/corr-b');
+    expect((await fetch(`${base}/api/d/corr-a/view`)).status).toBe(404);
+
+    // F1: a mistyped address, corrected on the resend; the good link founds,
+    // and the typo's link — followed afterwards — seats nobody
+    const typo = await send({ slug: 'typo', email: 'a@exmaple.org' });
+    const good = await send({ slug: 'typo', email: 'a@example.org', pendingId: typo.body.pendingId });
+    const founded = await consume(good.body.devLink!);
+    expect(founded.headers.get('location')).toBe('/d/typo');
+    const stray = await consume(typo.body.devLink!);
+    expect(stray.status, 'the typo link names a founder the document does not have').toBe(410);
+    expect(stray.headers.get('set-cookie')).toBeNull();
+
+    // F4: the birth tab left open after the save — its keystrokes are told
+    // where the document is, not a 404 nothing reads
+    const one = await send({ slug: 'stale-tab', email: 'bo@example.org' });
+    await consume(one.body.devLink!);
+    const typed = await post(base, '/api/docs/pending', { pendingId: one.body.pendingId, text: 'x' });
+    expect(typed.status).toBe(409);
+    expect(await typed.json()).toMatchObject({ created: true, slug: 'stale-tab' });
+    // …and a stash nobody holds stays the plain 404
+    expect((await post(base, '/api/docs/pending', { pendingId: 'no-such', text: 'x' })).status).toBe(404);
+
+    // F3: 📨 from that tab is told the document exists — never *that address
+    // is taken* with a twin at `stale-tab-2` — and gets no token and no mail
+    const again = await send({ slug: 'stale-tab', email: 'bo@example.org', pendingId: one.body.pendingId });
+    expect(again.status).toBe(200);
+    expect(again.body).toMatchObject({ created: true, slug: 'stale-tab' });
+    expect(again.body.devLink).toBeUndefined();
+    expect(again.body.suggestion).toBeUndefined();
+
+    // F5: the other order — the typo's link followed *before* the corrected
+    // one. The stash holds the address the creation was last sent to, so the
+    // typo's link founds nothing, seats nobody, and the good link still founds
+    const typo2 = await send({ slug: 'typo-first', email: 'b@exmaple.org' });
+    const good2 = await send({ slug: 'typo-first', email: 'b@example.org', pendingId: typo2.body.pendingId });
+    const first = await consume(typo2.body.devLink!);
+    expect(first.status, 'a link to an address the founder corrected founds nothing').toBe(410);
+    expect(first.headers.get('set-cookie')).toBeNull();
+    expect((await fetch(`${base}/api/d/typo-first/view`)).status).toBe(404);
+    const second = await consume(good2.body.devLink!);
+    expect(second.status).toBe(302);
+    expect(second.headers.get('location')).toBe('/d/typo-first');
+  });
 });
 
 describe('the clock closes the document (SPEC §4.6, Q467)', () => {
@@ -1300,6 +1444,9 @@ describe('the clock closes the document (SPEC §4.6, Q467)', () => {
     ] as const) {
       for (const cookie of [ada, bo, cy]) await cmd(cookie, 'answer', { setting, value });
     }
+    // an invitation nobody follows until after the close (issue #35 F1)
+    await cmd(ada, 'invite', { email: 'dee@example.org' });
+    const deeInvite = (await lastMailTo(dataDir, 'dee@example.org')).link!;
     await cmd(ada, 'begin', {}); // 🍾
     expect((await viewOf(ada)).constitutedAtT).not.toBeNull();
 
@@ -1366,16 +1513,46 @@ describe('the clock closes the document (SPEC §4.6, Q467)', () => {
     expect(signed.record!.signatures.map((s) => [s.name, s.comment]))
       .toEqual([['Bo', 'I still think daily.'], ['Cy', '']]);
 
+    // -- and a signature must not empty the record on everybody else's page
+    // (issue #30 finding 1). Every 🥂 OK is a write, so the next 4s poll on
+    // every other open page is a *slim* view: it already holds the sealed
+    // records and asks for them to be left out. The record is built from the
+    // same outcomes, so skipping them left the closed document reading as
+    // nothing adopted and nothing in the backlog — at the one moment the
+    // whole room is looking at it.
+    const h = closed as MemberViewPayload & { recordsKey: number };
+    const polled = await (await fetch(`${base}/api/d/${slug}/view?since=${h.seq}.${h.eseq}` +
+      `&tv=${h.textVersion}&rk=${h.recordsKey}`, { headers: { cookie: bo } }))
+      .json() as MemberViewPayload & { slim: string[] };
+    expect(polled.slim).toContain('records');
+    expect(polled.record!.undecided.map((u) => u.raceId)).toEqual(rec.undecided.map((u) => u.raceId));
+
     // -- the mail: every member and invitee, once, and not again next minute
     const closedMails = () => readFileSync(join(dataDir, 'outbox.jsonl'), 'utf8')
       .split('\n').filter((l) => l.length > 0)
       .map((l) => JSON.parse(l) as { to: string; subject: string; link?: string })
       .filter((m) => m.subject === '“Night Watch Rota” has closed');
     expect(closedMails().map((m) => m.to).sort())
-      .toEqual(['ada@example.org', 'bo@example.org', 'cy@example.org']);
-    expect(closedMails()[0]!.link).toBe(`${base}/d/${slug}`);
+      .toEqual(['ada@example.org', 'bo@example.org', 'cy@example.org', 'dee@example.org']);
+    // **a member's closing mail logs them in** (issue #35 F4): the bare
+    // address met a member with no cookie at the stranger's page. An
+    // invitation never followed keeps the bare address — the close expired
+    // it (X14), and the login door would seat nobody
+    const closeLink = (to: string) => closedMails().find((m) => m.to === to)!.link!;
+    for (const to of ['ada@example.org', 'bo@example.org', 'cy@example.org']) {
+      expect(closeLink(to), to).toContain('/auth/login?token=');
+    }
+    expect(closeLink('dee@example.org')).toBe(`${base}/d/${slug}`);
     await draft.tick(ends + 61_000);
-    expect(closedMails()).toHaveLength(3);
+    expect(closedMails()).toHaveLength(4);
+
+    // **an invitation link followed after the close lands on the closed
+    // document** (issue #35 F1): `arrive` refuses a closed document, and the
+    // throw came after the token was spent — raw JSON, the link dead
+    const late = await consume(deeInvite);
+    expect(late.status).toBe(302);
+    expect(late.headers.get('location')).toBe(`/d/${slug}`);
+    expect(late.headers.get('set-cookie'), 'the close excluded them, so no seat').toBeNull();
   });
 });
 
@@ -1752,9 +1929,12 @@ describe("the stranger's door (Q452/455/456)", () => {
     expect(k.body.members.list).toEqual([{ name: 'Ada Lovell', picture: null, erased: false }]);
     expect(k.body.text).toBe('# The orchard\nThe apples are shared at harvest.');
 
-    // the poll's short answer works for a stranger too
+    // the poll's short answer works for a stranger too — the seqs, the word
+    // that says there is no view under them, and the host's two flags, which
+    // a caught-up page has no other way of hearing (issue #11, F5)
     const quiet = await fetch(`${base}/api/d/${slug}/view?since=${k.body.seq}.${k.body.eseq}`);
-    expect(Object.keys(await quiet.json() as object).sort()).toEqual(['eseq', 'seq']);
+    expect(Object.keys(await quiet.json() as object).sort())
+      .toEqual(['eseq', 'paused', 'seq', 'short', 'stalled']);
 
     // a command still needs a seat
     const refused = await post(base, `/api/d/${slug}/cmd`, { cmd: 'set-identity', args: { name: 'x' } });
@@ -2034,6 +2214,63 @@ describe('👤 authorship on the wire (SPEC §3.5a)', () => {
     // and nothing was proposed — the refusal left no candidate behind
     expect((await sealed.viewOf(sealed.cy)).mine).toEqual([]);
   });
+  /**
+   * **The hole Q1463 (1) closes, over the wire** (Ed, 2026-09-19; SPEC §2.4 →
+   * why: R-136). A bot, a personal AI or any outside client holds line numbers
+   * and re-reads the version; when a line is adopted *above* its draft the
+   * numbers go stale while the version it quotes is **current**, so the
+   * engine's *targets version N* guard has nothing to fire on and the proposal
+   * silently rewrites the wrong clause.
+   *
+   * On the tree before this ruling all three posts below were accepted, and
+   * the second landed a candidate to replace the rota clause with wording
+   * written for the clubhouse one. The attestation is what tells them apart.
+   */
+  it('refuses a bot-style stale patch whose version is current (Q1463 (1), R-136)', async () => {
+    const el = await foundAt('anonymous');
+    // **raw**, straight past `post`'s helper: every body here is written by
+    // hand precisely because it is what an outside client would send
+    const send = (cookie: string, args: unknown) => fetch(`${el.base}/api/d/${el.slug}/cmd`, {
+      method: 'POST', headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify({ cmd: 'propose-text', args }),
+    });
+    const v = await el.viewOf(el.cy);
+    const lines = v.text.split('\n');
+    expect(lines).toEqual(['The clubhouse is open all week.', 'The rota is weekly.']);
+
+    // 1 · no attestation at all — refused at the door, whatever the numbers say
+    const bare = await send(el.cy, { baseVersion: v.textVersion,
+      hunks: [{ start: 1, end: 2, lines: ['The rota is fortnightly.'] }], why: 'less often' });
+    expect(bare.status).toBe(400);
+    expect(((await bare.json()) as { error: string }).error).toMatch(/carries no 'was'/);
+
+    // 2 · **the stale hunk**: a draft written against line 0 and sent at line
+    //     1, the version current. Today's engine takes it; the attestation
+    //     refuses it, because line 1 is not the wording it was written against
+    const misaimed = await send(el.cy, { baseVersion: v.textVersion,
+      hunks: [{ start: 1, end: 2, lines: ['The clubhouse is open on Sundays too.'],
+        was: ['The clubhouse is open all week.'] }], why: 'Sundays' });
+    expect(misaimed.status).toBe(400);
+    expect(((await misaimed.json()) as { error: string }).error)
+      .toMatch(/the text at lines 2–2 is not what this proposal replaces/);
+
+    // 3 · the same wording aimed where it belongs is taken
+    const right = await send(el.cy, { baseVersion: v.textVersion,
+      hunks: [{ start: 0, end: 1, lines: ['The clubhouse is open on Sundays too.'],
+        was: ['The clubhouse is open all week.'] }], why: 'Sundays' });
+    expect(right.status).toBe(200);
+
+    // and the two refusals left nothing behind: one candidate, the right one
+    const mine = (await el.viewOf(el.cy)).mine;
+    expect(mine).toHaveLength(1);
+    // an insertion states the line it follows, and the top of the document null
+    const ins = await send(el.cy, { baseVersion: v.textVersion,
+      hunks: [{ start: 0, end: 0, lines: ['A preamble.'], after: 'not the top' }], why: 'first' });
+    expect(ins.status).toBe(400);
+    expect(((await ins.json()) as { error: string }).error)
+      .toMatch(/is not what this proposal was written after/);
+  });
+
   // the file's budget, on the describe: each of these founds a real document
   // over HTTP, and five of the seven timed out at the 5 s default under load
   // in batch Q (B32/B34)
@@ -2538,6 +2775,15 @@ describe('🥾 exile, resignation and the shut door say so (Q901, E31–E33)', (
     expect(room.departures).toHaveLength(1);
     expect(room.departures[0]).toMatchObject({ id: boId, name: 'Bo Marlowe', by: 'convenor' });
     expect(JSON.stringify(room.departures)).not.toContain('bo@example.org');
+    // **A departure is an absence, on every seat** (issue #11, F2). The served
+    // membership is the whole of it — there is no departed row carrying a
+    // flag — so a page that keeps a row the list no longer holds is a page
+    // listing somebody who has gone. Pinned from every living seat, because
+    // the row the founder went on drawing was the row every member drew too.
+    for (const [who, cookie] of [['the founder', ada], ['a member', cy]] as const) {
+      const ids = (await viewOf(cookie)).view.members.map((m) => m.id);
+      expect(ids, `${who} is still served the removed member's row`).not.toContain(boId);
+    }
 
     // -- resignation: no mail, the same door sentence -----------------------
     await cmd(cy, 'resign', {});
@@ -2552,6 +2798,8 @@ describe('🥾 exile, resignation and the shut door say so (Q901, E31–E33)', (
     expect(cyDoor.departed).toMatchObject({ by: 'self' });
     expect(((await viewOf(ada)).view as unknown as { departures: Array<{ id: string; by: string }> })
       .departures.map((d) => [d.id, d.by])).toEqual([[boId, 'convenor'], [cyId, 'self']]);
+    // …and a resignation is the same absence as an exile (issue #11, F2)
+    expect((await viewOf(ada)).view.members.map((m) => m.id)).not.toContain(cyId);
 
     // -- where 🌍 lets a stranger read the register, the departures ride it --
     await cmd(ada, 'set-setting', { setting: 'chamber', value: { rung: 'link' } });
@@ -2652,6 +2900,87 @@ describe('🥾 exile, resignation and the shut door say so (Q901, E31–E33)', (
     expect(await owed(ada)).toEqual([]);
     // and a departure nobody owes you is ignored rather than refused
     await cmd(ada, 'ack-departure', { member: deeId });
+  }, 60_000);
+
+  /**
+   * **A failed motion tells its mover, and nobody else** (Ed, 2026-09-17,
+   * Q1447; SURFACE E41). Over the wire: a 🏛️ motion the room carries onto a
+   * setting whose 🛡️ the Founder kept parks at the crown; the Founder refuses
+   * it; the mover's `owedHeld` names it, every other seat's is empty, `heldBy`
+   * says which hand refused it so the card can use the Founder's own word
+   * (STYLE T8), and `ack-held` clears it on that seat and no other.
+   */
+  it('a failed motion owes its mover an OK, and ack-held clears it', async () => {
+    const { base, dataDir } = await boot();
+    const created = await (await post(base, '/api/docs', {
+      title: 'Refusal Charter', email: 'ada@example.org',
+    })).json() as { ok: boolean; slug: string; devLink: string };
+    const ada = cookieOf(await consume(created.devLink));
+    const slug = created.slug;
+    const cmd = async (cookie: string, name: string, args: unknown) => {
+      const res = await post(base, `/api/d/${slug}/cmd`, { cmd: name, args }, cookie);
+      const body = await res.json() as { ok?: boolean; error?: string; result?: unknown };
+      expect(body.error, `${name}: ${body.error}`).toBeUndefined();
+      return body.result;
+    };
+    const viewOf = async (cookie: string) => (await (await fetch(
+      `${base}/api/d/${slug}/view`, { headers: { cookie } })).json()) as MemberViewPayload;
+    const owed = async (cookie: string) => ((await viewOf(cookie)).view as unknown as
+      { owedHeld: string[] }).owedHeld;
+    const seat = async (email: string) => {
+      await cmd(ada, 'invite', { email });
+      return cookieOf(await consume((await lastMailTo(dataDir, email)).link!));
+    };
+    await cmd(ada, 'confirm-starting-text', { text: 'The Founder keeps the last word on names.' });
+    const bo = await seat('bo@example.org');
+    const cy = await seat('cy@example.org');
+    await cmd(ada, 'set-setting',
+      { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
+    const values: Record<string, unknown> = {
+      ending: { endsAtMs: null },
+      quorum: { form: 'count', n: 1 }, chamber: { rung: 'closed' },
+      authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
+      applications: { apply: false }, admission: { price: 'assembly' },
+      removal: { price: 'assembly' },
+      machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
+    };
+    for (const [setting, value] of Object.entries(values)) {
+      await cmd(ada, 'reclaim', { setting });
+      await cmd(ada, 'set-setting', { setting, value });
+    }
+    // 🍾 keeps every power it is not told to lay down, 👁️'s 🛡️ among them —
+    // which is what puts the carried motion at the crown's door rather than
+    // straight into the document
+    await cmd(ada, 'begin', {});
+    expect(await owed(bo)).toEqual([]);
+
+    // bo puts it, the room carries it, the Founder refuses it
+    const m = await cmd(bo, 'open-motion', { payload:
+      { kind: 'set', setting: 'judgments', value: { rung: 'never' } },
+      why: 'how I judged should stay mine' }) as string;
+    for (const c of [ada, cy]) await cmd(c, 'answer-motion', { motion: m, answer: 'accept' });
+    const q = ((await viewOf(ada)).view as unknown as
+      { crownTasks: Array<{ id: string; motion: string | null }> })
+      .crownTasks.find((x) => x.motion === m)!;
+    expect(q, 'the carried motion did not reach the crown').toBeTruthy();
+    await cmd(ada, 'answer-crown-question', { question: q.id, outcome: 'reject' });
+    const asBo = await viewOf(bo);
+    expect(asBo.view.motions.find((x) => x.id === m)!.status).toBe('held');
+    expect((asBo.view.motions.find((x) => x.id === m) as unknown as
+      { heldBy: string }).heldBy).toBe('crown');
+
+    // the mover, and nobody else — the Founder who refused it least of all
+    expect(await owed(bo)).toEqual([m]);
+    expect(await owed(cy)).toEqual([]);
+    expect(await owed(ada)).toEqual([]);
+    // the body names the motion and the whitelist injects whose OK it is, so
+    // another seat's press is silently nothing rather than a refusal
+    await cmd(cy, 'ack-held', { motion: m });
+    expect(await owed(bo)).toEqual([m]);
+    await cmd(bo, 'ack-held', { motion: m });
+    expect(await owed(bo)).toEqual([]);
+    // and once given, a second press is ignored rather than refused
+    await cmd(bo, 'ack-held', { motion: m });
   }, 60_000);
 
   it('an applicant’s view says whether the door is still open, and flips when 🤝 shuts', async () => {
@@ -2830,6 +3159,113 @@ describe('the applicant is served the door plus their application (Q1281)', () =
 });
 
 /**
+ * **Everybody the document turns away is told** (issue #29, and Q1498 riding
+ * it). SPEC §9.7½ ends its admissions paragraph *either way they are told by
+ * mail*, and the 🪪 card promises it — but `relay` had no arm for
+ * `application-refused`, so a refused applicant heard nothing on any road.
+ * And SURFACE E40 gives a member removed by a carried 🥾 motion *exactly
+ * E31's tells*, the mail among them, while the arm mailed exile alone.
+ */
+describe('a refusal and a carried removal are mailed (issue #29, Q1498)', () => {
+  const mailsTo = (dataDir: string, to: string) => readFileSync(join(dataDir, 'outbox.jsonl'), 'utf8')
+    .split(/\r?\n/).filter((l) => l.length > 0)
+    .map((l) => JSON.parse(l) as { to: string; subject: string; text: string; link?: string })
+    .filter((m) => m.to === to);
+  async function room(prices: { admission: string; removal?: string }, ends: number | null) {
+    const b = await boot();
+    const created = await (await post(b.base, '/api/docs', {
+      title: 'Door Charter', email: 'ada@example.org',
+    })).json() as { ok: boolean; slug: string; devLink: string };
+    const ada = cookieOf(await consume(created.devLink));
+    const slug = created.slug;
+    const cmd = async (cookie: string, name: string, args: unknown) => {
+      const res = await post(b.base, `/api/d/${slug}/cmd`, { cmd: name, args }, cookie);
+      const body = await res.json() as { ok?: boolean; error?: string; result?: unknown };
+      expect(body.error, `${name}: ${body.error}`).toBeUndefined();
+      return body.result;
+    };
+    const seat = async (email: string) => {
+      await cmd(ada, 'invite', { email });
+      return cookieOf(await consume((await lastMailTo(b.dataDir, email)).link!));
+    };
+    await cmd(ada, 'confirm-starting-text', { text: 'The door is answered by whoever is nearest.' });
+    const bo = await seat('bo@example.org');
+    const cy = await seat('cy@example.org');
+    await cmd(ada, 'set-setting', { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
+    const values: Record<string, unknown> = {
+      ending: { endsAtMs: ends },
+      quorum: { form: 'count', n: 1 }, chamber: { rung: 'link' },
+      authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
+      applications: { apply: true }, admission: { price: prices.admission },
+      ...(prices.removal ? { removal: { price: prices.removal } } : {}),
+      machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
+    };
+    for (const [setting, value] of Object.entries(values)) {
+      await post(b.base, `/api/d/${slug}/cmd`, { cmd: 'reclaim', args: { setting } }, ada);
+      await cmd(ada, 'set-setting', { setting, value });
+    }
+    await cmd(ada, 'set-convenor-membership', { isMember: true });
+    // the doors' powers laid down, so a carried act lands without the crown
+    await cmd(ada, 'begin', { laidDown: [
+      { setting: 'door:invite', power: 'unilateral' }, { setting: 'door:invite', power: 'assent' },
+      { setting: 'door:remove', power: 'unilateral' }, { setting: 'door:remove', power: 'assent' },
+    ] });
+    const knock = async (email: string, name: string) => {
+      const k = await (await post(b.base, `/api/d/${slug}/apply`, { email })).json() as { devLink: string };
+      const c = cookieOf(await consume(k.devLink));
+      await cmd(c, 'submit-application', { name });
+      return c;
+    };
+    const viewOf = async (cookie: string) => (await (await fetch(
+      `${b.base}/api/d/${slug}/view`, { headers: { cookie } })).json()) as MemberViewPayload;
+    return { ...b, slug, ada, bo, cy, cmd, knock, viewOf };
+  }
+  /** Every mail to this address but the verification the knock sent. */
+  const toldTo = (dataDir: string, to: string) =>
+    mailsTo(dataDir, to).filter((m) => !/\/auth\/apply/.test(m.link ?? ''));
+
+  it('an application one member votes against at 🏛️ is refused, and the applicant is mailed', async () => {
+    const { dataDir, draft, ada, cmd, knock, viewOf } = await room({ admission: 'assembly' }, null);
+    await knock('dee@example.org', 'Dee');
+    const motion = (await viewOf(ada)).view.motions.find((m) => (m.payload as { kind: string }).kind === 'admit')!;
+    await cmd(ada, 'answer-motion', { motion: motion.id, answer: 'keep' }); // Q1473: this ends it
+    await draft.outbox.drain();
+    const told = toldTo(dataDir, 'dee@example.org');
+    expect(told, 'the refusal, beside the verification mail').toHaveLength(1);
+    expect(told[0]!.subject).toContain('Door Charter');
+    // no seat, so no login: the document's own address, as exile's mail
+    expect(told[0]!.link).not.toContain('token=');
+    expect(told[0]!.text).not.toContain('token=');
+  }, 60_000);
+
+  it('an application the close finds still running at ✏️ is refused, and the applicant is mailed', async () => {
+    const ends = Date.now() + 3_600_000;
+    const { dataDir, draft, knock } = await room({ admission: 'proposal' }, ends);
+    await knock('eve@example.org', 'Eve');
+    await draft.tick(ends + 1_000); // nobody judged it: the close holds the motion
+    await draft.outbox.drain();
+    const told = toldTo(dataDir, 'eve@example.org');
+    // the close's own mail goes to members and invitees, never an applicant,
+    // so the one mail here is the refusal
+    expect(told).toHaveLength(1);
+    expect(told[0]!.subject).toContain('Door Charter');
+  }, 60_000);
+
+  it('a member removed by a carried 🥾 motion is mailed, the membership named as the actor (E40)', async () => {
+    const { dataDir, draft, ada, cy, cmd, viewOf } = await room({ admission: 'assembly', removal: 'assembly' }, null);
+    const boId = (await viewOf(ada)).view.members.find((m) => m.email === 'bo@example.org')!.id;
+    const motion = await cmd(cy, 'open-motion', { payload: { kind: 'remove', member: boId }, why: 'moved away' });
+    await cmd(ada, 'answer-motion', { motion, answer: 'accept' });
+    await draft.outbox.drain();
+    const told = mailsTo(dataDir, 'bo@example.org').filter((m) => /no longer a member/.test(m.subject));
+    expect(told, 'the removed member hears it from the document').toHaveLength(1);
+    expect(told[0]!.text, 'the room removed them, not the Founder').not.toContain('The Founder');
+    expect(told[0]!.text).toMatch(/members/);
+    expect(told[0]!.link).not.toContain('token=');
+  }, 60_000);
+});
+
+/**
  * **A shape on the send is ignored** (Q1363, Ed 2026-09-15): 🧭 left the
  * birth, so `/api/docs` no longer reads `shape` — a row's name, `custom` or
  * nonsense alike births an unshaped document, every setting unset in the
@@ -2895,12 +3331,20 @@ describe('the pair deck and the judged-pairs ledger (Q1200, Q1201)', () => {
       `${base}/api/d/${slug}/view`, { headers: { cookie } })).json()) as unknown as Deck;
 
     await cmd(ada, 'confirm-starting-text', { text: 'The clubhouse is open.\nThe rota is weekly.' });
-    for (const who of ['bo', 'cy', 'dee']) await cmd(ada, 'invite', { email: `${who}@example.org` });
+    // **Five seats, not four, since Q1439** (R-126): no quorum may ask for
+    // more than half, so the count of 4 below is read as ⌈4/2⌉ = 2 in a room
+    // of four and the race would carry on dee's first vote. At five it reads
+    // 3, above the two approvals this walk can produce — which is what the
+    // note above means by *the quorum is set above the number of judges*.
+    for (const who of ['bo', 'cy', 'dee', 'eve']) {
+      await cmd(ada, 'invite', { email: `${who}@example.org` });
+    }
     const follow = async (email: string): Promise<string> =>
       cookieOf(await consume((await lastMailTo(dataDir, email)).link!));
     const bo = await follow('bo@example.org');
     const cy = await follow('cy@example.org');
     const dee = await follow('dee@example.org');
+    await follow('eve@example.org'); // arrives, so E counts them (§9.6a)
     await cmd(ada, 'set-setting', { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
     const ends = Date.now() + 3600_000;
     const values: Record<string, unknown> = {
@@ -3039,12 +3483,17 @@ describe('askable races and the pair that rides the view (Q1202)', () => {
 
     const LINES = Array.from({ length: 11 }, (_, i) => `Clause ${i + 1} stands.`);
     await cmd(ada, 'confirm-starting-text', { text: LINES.join('\n') });
-    for (const who of ['bo', 'cy', 'dee']) await cmd(ada, 'invite', { email: `${who}@example.org` });
+    // five seats, so the count of 4 below is under the half-the-room cap
+    // (Q1439, R-126) and dee's one vote does not carry a race away mid-test
+    for (const who of ['bo', 'cy', 'dee', 'eve']) {
+      await cmd(ada, 'invite', { email: `${who}@example.org` });
+    }
     const follow = async (email: string): Promise<string> =>
       cookieOf(await consume((await lastMailTo(dataDir, email)).link!));
     const bo = await follow('bo@example.org');
     const cy = await follow('cy@example.org');
     const dee = await follow('dee@example.org');
+    await follow('eve@example.org'); // arrives, so E counts them (§9.6a)
     await cmd(ada, 'set-setting', { setting: 'rate', value: { grant: 6, cap: 8, dripMinutes: 240 } });
     const values: Record<string, unknown> = {
       quorum: { form: 'count', n: 4 },
@@ -3276,7 +3725,7 @@ describe('the people split (decision 1253): identity beside the log, never in it
 
 describe('the slim view (the moon room, 2026-09-11): a poll that says what it holds is answered without it', () => {
   it('leaves out the text, the records and the projection the page already has, and names them', async () => {
-    const { base } = await boot();
+    const { base, dataDir } = await boot();
     const created = await (await post(base, '/api/docs', {
       title: 'Slim Charter', email: 'ada@example.org',
     })).json() as { ok: boolean; slug: string; devLink: string };
@@ -3300,10 +3749,15 @@ describe('the slim view (the moon room, 2026-09-11): a poll that says what it ho
     expect(reborn.slim).toEqual([]);
     expect(reborn.text).toBe('The latch lifts from inside.');
     await ok('set-setting', { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
+    // **A second seat, since Q1439** (R-126, R-063): the proposal below has to
+    // stay live, and a quorum of two in a room of one no longer holds it —
+    // no quorum may ask for more than half, so at E = 1 the floor is one and
+    // the sole member's own preference is both the floor and the room. With
+    // bo here the room has not measured it, so it waits as before.
+    await ok('invite', { email: 'bo@example.org' });
+    await consume((await lastMailTo(dataDir, 'bo@example.org')).link!);
     const values: Record<string, unknown> = {
       ending: { endsAtMs: null },
-      // a quorum of two in a room of one: the proposal below stays live
-      // (E = 1 would adopt it on the author's own preference at once)
       quorum: { form: 'count', n: 2 }, chamber: { rung: 'link' },
       authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
       applications: { apply: false }, admission: { price: 'proposal' },
@@ -3533,6 +3987,25 @@ describe('🥾 at ✏️: a mover with no ✏️ is refused, and the document go
     expect(after.seq).toBe(seqBefore);
     expect(after.view.motions.filter((m) => m.status === 'running')).toEqual([]);
 
+    // -- the other payload the door used to let through (Q1433) -----------
+    // `text` is `MotionPayload`'s record of a pen amendment and nothing a
+    // member puts, so the wire is the only place it can come from — and it
+    // fell through `openMotion`'s last `else` and was opened as an
+    // **admission**, at 🪪's price, for an applicant that does not exist. The
+    // refusal is the module's rather than this whitelist's, so the harness
+    // and every other caller meet it too. Any unknown kind takes the same
+    // sentence, since the same `else` took them all.
+    for (const payload of [{ kind: 'text', candidateId: 'c1', summary: 'x' },
+      { kind: 'banana' }]) {
+      const no = await send(ada, 'open-motion', { payload });
+      expect(no.status).toBe(400);
+      expect((await no.json() as { error: string }).error)
+        .toBe(`'${payload.kind}' is not a motion anybody puts (§9.6)`);
+    }
+    const stillNothing = await viewOf(ada);
+    expect(stillNothing.seq).toBe(seqBefore);
+    expect(stillNothing.view.motions).toEqual([]);
+
     // -- and the document is not frozen -----------------------------------
     // every one of these answered 400 before the fix, the log stalled behind
     // a bridge that threw on the way to the store
@@ -3555,5 +4028,500 @@ describe('🥾 at ✏️: a mover with no ✏️ is refused, and the document go
     const replayed = await (await fetch(`${again.base}/api/d/${slug}/view`,
       { headers: { cookie: ada } })).json() as MemberViewPayload;
     expect(replayed.view.motions.map((m) => m.id)).toEqual([opened]);
+  });
+});
+
+/**
+ * **A room priced *members must vote* could invite nobody** (issue #6, F1).
+ * One price prices every road in (entry 94), so at 🪪 *proposal* an invitation
+ * is an ordinary motion — and in this layer ordinary means *a race*. The
+ * bridge raced `admit` and `remove` and walked past `invite`, so the motion
+ * had no candidate anywhere: no member was ever served it, `answer-motion`
+ * refused it as an ordinary motion, it outlived the close, and the twin rule
+ * then held the address against everybody who tried again.
+ *
+ * The HTTP half of `bridge.test.ts`'s *an invitation is its own race at ✏️*:
+ * what a member's blind view actually carries about it, that the mover is
+ * never asked their own (§3.3), and that the carry ends where a direct ✉️
+ * ends — an invitee with a login link in their inbox.
+ */
+describe('🪪 at ✏️: an invitation is raced, judged and mailed (#6)', () => {
+  it('the room is served the race, the mover is not, and the carry invites', async () => {
+    const { base, dataDir } = await boot();
+    const created = await (await post(base, '/api/docs', {
+      title: 'Invite Race Charter', email: 'ada@example.org',
+    })).json() as { ok: boolean; slug: string; devLink: string };
+    const ada = cookieOf(await consume(created.devLink));
+    const slug = created.slug;
+    const cmd = async (cookie: string, name: string, args: unknown) => {
+      const body = await (await post(base, `/api/d/${slug}/cmd`,
+        { cmd: name, args }, cookie)).json() as { error?: string; result?: unknown };
+      expect(body.error, `${name}: ${body.error}`).toBeUndefined();
+      return body.result;
+    };
+    const viewOf = async (cookie: string) => (await (await fetch(
+      `${base}/api/d/${slug}/view`, { headers: { cookie } })).json()) as MemberViewPayload;
+    const seat = async (email: string) => {
+      await cmd(ada, 'invite', { email });
+      return cookieOf(await consume((await lastMailTo(dataDir, email)).link!));
+    };
+    await cmd(ada, 'confirm-starting-text', { text: 'The clubhouse shall be kept open.' });
+    const bo = await seat('bo@example.org');
+    const cy = await seat('cy@example.org');
+    const values: Record<string, unknown> = {
+      rate: { grant: 4, cap: 8, dripMinutes: 240 },
+      ending: { endsAtMs: null },
+      quorum: { form: 'count', n: 1 }, chamber: { rung: 'closed' },
+      authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
+      applications: { apply: false },
+      admission: { price: 'proposal' }, // 🪪 — members must vote on every joiner
+      removal: { price: 'consent' },
+      machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
+    };
+    for (const [setting, value] of Object.entries(values)) {
+      await cmd(ada, 'reclaim', { setting });
+      await cmd(ada, 'set-setting', { setting, value });
+    }
+    // ✉️'s pair laid down at the door itself (§9.7 rule 9), so the carry
+    // lands without a 👑 question standing between it and the invitation
+    for (const power of ['unilateral', 'assent']) {
+      await cmd(ada, 'relinquish', { setting: 'door:invite', power });
+    }
+    await cmd(ada, 'begin', {});
+
+    // -- a member proposes an invitation, and pays the stake ---------------
+    const motion = await cmd(bo, 'open-motion',
+      { payload: { kind: 'invite', email: 'dee@example.org' }, why: 'she keeps the rota' }) as string;
+    expect((await viewOf(bo)).wallet).toBe(3);
+    const rec = (await viewOf(bo)).view.motions.find((m) => m.id === motion)!;
+    expect(rec.route).toBe('ordinary');
+    expect(rec.status).toBe('running');
+
+    // -- the room is served it as a race, blind ----------------------------
+    const raceOf = (v: MemberViewPayload) =>
+      v.settingRaces.find((r) => r.settingId.startsWith('invite:'));
+    const cyRace = raceOf(await viewOf(cy));
+    expect(cyRace, 'no invite race was served to the room').toBeTruthy();
+    // the race is keyed by the person, never the address (decision 1253)
+    expect(cyRace!.settingId).toBe(`invite:${(rec.payload as { person: string }).person}`);
+    expect(cyRace!.judged).toBe(false);
+    expect(cyRace!.askable).toBe(true);
+    // …and the mover is never asked their own (§3.3, Q1340): the row is
+    // there, because the meter under their entry is the room's progress,
+    // and there is nothing on it for them to answer
+    expect(raceOf(await viewOf(bo))!.askable).toBe(false);
+
+    // -- one judgment carries it ------------------------------------------
+    const cyView = await viewOf(cy);
+    const card = cyView.raceCards.find((c) =>
+      (c.a.setting?.settingId ?? '').startsWith('invite:') ||
+      (c.b.setting?.settingId ?? '').startsWith('invite:'))
+      ?? (cyRace!.ask as { a: CardOption; b: CardOption } | null);
+    expect(card, 'the room was given no pair to judge with').toBeTruthy();
+    const yes = (card!.a.setting?.settingId ?? '').startsWith('invite:') &&
+      !card!.a.id.startsWith('inc:') ? 'a' : 'b';
+    await cmd(cy, 'judge-race', { a: card!.a.id, b: card!.b.id, outcome: yes });
+
+    const after = await viewOf(ada);
+    expect(after.view.motions.find((m) => m.id === motion)!.status).toBe('carried');
+    const dee = after.view.members.find((m) => m.email === 'dee@example.org');
+    expect(dee, 'the carry seated nobody').toBeTruthy();
+    // an invitee counts toward nothing until they arrive (§9.6a)
+    expect(dee!.arrived).toBe(false);
+    expect(after.electorateSize).toBe(3);
+    // and it ends where a direct ✉️ ends: a login link in their inbox
+    expect((await lastMailTo(dataDir, 'dee@example.org')).link).toContain('/auth/login');
+  });
+});
+
+/**
+ * **A proposal that can never win is closed** (Q1440, Ed 2026-09-18; SPEC
+ * §4.4 → why: R-132), over the wire: the record's own word for it, the card
+ * its mover is owed, and the address it lets go of.
+ */
+describe('a proposal the room can no longer pass is closed (Q1440)', () => {
+  it('the record names the reason, and no record stands while the race runs', async () => {
+    const { base, dataDir } = await boot();
+    const created = await (await post(base, '/api/docs', {
+      title: 'Dominated Charter', email: 'ada@example.org',
+    })).json() as { slug: string; devLink: string };
+    const slug = created.slug;
+    const ada = cookieOf(await consume(created.devLink));
+    const cmd = async (cookie: string, name: string, args: unknown) => {
+      const body = await (await post(base, `/api/d/${slug}/cmd`,
+        { cmd: name, args }, cookie)).json() as { error?: string; result?: unknown };
+      expect(body.error, `${name}: ${body.error}`).toBeUndefined();
+      return body.result;
+    };
+    const viewOf = async (cookie: string) => (await (await fetch(
+      `${base}/api/d/${slug}/view`, { headers: { cookie } })).json()) as MemberViewPayload;
+    const follow = async (email: string): Promise<string> =>
+      cookieOf(await consume((await lastMailTo(dataDir, email)).link!));
+
+    await cmd(ada, 'confirm-starting-text',
+      { text: 'The clubhouse is open.\nThe rota is weekly.' });
+    await cmd(ada, 'invite', { email: 'bo@example.org' });
+    await cmd(ada, 'invite', { email: 'cy@example.org' });
+    const bo = await follow('bo@example.org');
+    const cy = await follow('cy@example.org');
+    const values: Record<string, unknown> = {
+      rate: { grant: 4, cap: 8, dripMinutes: 240 },
+      quorum: { form: 'count', n: 1 }, chamber: { rung: 'closed' },
+      authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
+      applications: { apply: false }, admission: { price: 'assembly' },
+      removal: { price: 'consent' },
+      machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
+      ending: { endsAtMs: null },
+    };
+    for (const [setting, value] of Object.entries(values)) {
+      await cmd(ada, 'reclaim', { setting });
+      await cmd(ada, 'set-setting', { setting, value });
+    }
+    await cmd(ada, 'begin', {});
+
+    // -- bo proposes a wording, and a rival stands beside it ---------------
+    const mine = await cmd(bo, 'propose-text', { baseVersion: 0, hunks: [
+      { start: 1, end: 2, lines: ['The rota is daily.'] }], why: 'daily is better',
+    }) as { id: string };
+    const rival = await cmd(cy, 'propose-text', { baseVersion: 0, hunks: [
+      { start: 1, end: 2, lines: ['The rota is monthly.'] }], why: 'monthly is enough',
+    }) as { id: string };
+
+    // -- ada and cy both prefer the rota as it stands ----------------------
+    // a = 1 (bo's own preference), o = 2, w = 0: no answer still to come
+    // could put it above the line it rewrites, so it is closed
+    const inc = (await viewOf(ada)).clauses
+      .find((r) => r.candidates.some((c) => c.id === mine.id))!.incumbentId;
+    await cmd(cy, 'judge-race', { a: mine.id, b: inc, outcome: 'b' });
+    expect((await viewOf(bo)).mine.find((m) => m.id === mine.id)!.state).toBe('live');
+    await cmd(ada, 'judge-race', { a: mine.id, b: inc, outcome: 'b' });
+    // the engine holds it as retired, and the page's own filter is what takes
+    // the *yours* line away (`state !== 'live'`, live.js)
+    expect((await viewOf(bo)).mine.find((m) => m.id === mine.id)!.state)
+      .toBe('retired');
+
+    // -- and no record is served while the rival is still racing -----------
+    // (SURFACE C12: a live race may not say which way the room has gone)
+    const running = await viewOf(ada);
+    expect(running.records).toEqual([]);
+    expect(running.clauses.some((r) => r.candidates.some((c) => c.id === rival.id)))
+      .toBe(true);
+
+    // -- the rival goes the same way, and the record says why --------------
+    const inc2 = (await viewOf(ada)).clauses
+      .find((r) => r.candidates.some((c) => c.id === rival.id))!.incumbentId;
+    await cmd(bo, 'judge-race', { a: rival.id, b: inc2, outcome: 'b' });
+    await cmd(ada, 'judge-race', { a: rival.id, b: inc2, outcome: 'b' });
+    const done = await viewOf(bo);
+    expect(done.clauses).toEqual([]);
+    const closed = done.records.flatMap((r) => r.field)
+      .find((f) => f.candidateId === mine.id)!;
+    expect(closed.outcome).toBe('retired');
+    expect(closed.reason).toBe('dominated');
+  });
+
+  it('the record still waits after an adoption above it has moved the clause', async () => {
+    // A closed candidate's footprint is frozen in the lines of the version it
+    // retired on; the live race's spans are in today's. Two lines adopted
+    // above the clause move one and not the other, and a hold-back that
+    // compared them raw let the record out beside the race it was waiting for.
+    const { base, dataDir } = await boot();
+    const created = await (await post(base, '/api/docs', {
+      title: 'Dominated And Moved', email: 'ada@example.org',
+    })).json() as { slug: string; devLink: string };
+    const slug = created.slug;
+    const ada = cookieOf(await consume(created.devLink));
+    const cmd = async (cookie: string, name: string, args: unknown) => {
+      const body = await (await post(base, `/api/d/${slug}/cmd`,
+        { cmd: name, args }, cookie)).json() as { error?: string; result?: unknown };
+      expect(body.error, `${name}: ${body.error}`).toBeUndefined();
+      return body.result;
+    };
+    const viewOf = async (cookie: string) => (await (await fetch(
+      `${base}/api/d/${slug}/view`, { headers: { cookie } })).json()) as MemberViewPayload;
+    const follow = async (email: string): Promise<string> =>
+      cookieOf(await consume((await lastMailTo(dataDir, email)).link!));
+
+    await cmd(ada, 'confirm-starting-text',
+      { text: 'The clubhouse is open.\nThe rota is weekly.' });
+    await cmd(ada, 'invite', { email: 'bo@example.org' });
+    await cmd(ada, 'invite', { email: 'cy@example.org' });
+    const bo = await follow('bo@example.org');
+    const cy = await follow('cy@example.org');
+    const values: Record<string, unknown> = {
+      rate: { grant: 4, cap: 8, dripMinutes: 240 },
+      quorum: { form: 'count', n: 1 }, chamber: { rung: 'closed' },
+      authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
+      applications: { apply: false }, admission: { price: 'assembly' },
+      removal: { price: 'consent' },
+      machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
+      ending: { endsAtMs: null },
+    };
+    for (const [setting, value] of Object.entries(values)) {
+      await cmd(ada, 'reclaim', { setting });
+      await cmd(ada, 'set-setting', { setting, value });
+    }
+    await cmd(ada, 'begin', {});
+
+    const mine = await cmd(bo, 'propose-text', { baseVersion: 0, hunks: [
+      { start: 1, end: 2, lines: ['The rota is daily.'] }], why: 'daily is better',
+    }) as { id: string };
+    const rival = await cmd(cy, 'propose-text', { baseVersion: 0, hunks: [
+      { start: 1, end: 2, lines: ['The rota is monthly.'] }], why: 'monthly is enough',
+    }) as { id: string };
+    const above = await cmd(ada, 'propose-text', { baseVersion: 0, hunks: [
+      { start: 0, end: 1, lines: ['Preamble.', 'Who we are.', 'The clubhouse is open.'] }],
+      why: 'a preamble',
+    }) as { id: string };
+    const incOf = async (id: string) => (await viewOf(ada)).clauses
+      .find((r) => r.candidates.some((c) => c.id === id))!.incumbentId;
+
+    // bo's wording is closed on the rota line, as in the test above
+    const inc = await incOf(mine.id);
+    await cmd(cy, 'judge-race', { a: mine.id, b: inc, outcome: 'b' });
+    await cmd(ada, 'judge-race', { a: mine.id, b: inc, outcome: 'b' });
+    expect((await viewOf(bo)).mine.find((m) => m.id === mine.id)!.state).toBe('retired');
+
+    // the preamble is seconded and adopted: the rota line is now line 3
+    await cmd(bo, 'judge-race', { a: above.id, b: await incOf(above.id), outcome: 'a' });
+    const moved = await viewOf(ada);
+    expect(moved.text.split('\n')).toEqual(
+      ['Preamble.', 'Who we are.', 'The clubhouse is open.', 'The rota is weekly.']);
+
+    // the rival still races there, and bo's closed wording still says nothing
+    const racing = moved.clauses.find((r) => r.candidates.some((c) => c.id === rival.id))!;
+    expect(racing.contested).toEqual([{ start: 3, end: 4 }]);
+    expect(moved.records.flatMap((r) => r.field).map((f) => f.candidateId))
+      .not.toContain(mine.id);
+  });
+
+  it('holds the motion, owes its mover the card, and lets the address go', async () => {
+    const { base, dataDir } = await boot();
+    const created = await (await post(base, '/api/docs', {
+      title: 'Dominated Invitation', email: 'ada@example.org',
+    })).json() as { slug: string; devLink: string };
+    const slug = created.slug;
+    const ada = cookieOf(await consume(created.devLink));
+    const cmd = async (cookie: string, name: string, args: unknown) => {
+      const body = await (await post(base, `/api/d/${slug}/cmd`,
+        { cmd: name, args }, cookie)).json() as { error?: string; result?: unknown };
+      expect(body.error, `${name}: ${body.error}`).toBeUndefined();
+      return body.result;
+    };
+    const viewOf = async (cookie: string) => (await (await fetch(
+      `${base}/api/d/${slug}/view`, { headers: { cookie } })).json()) as
+      MemberViewPayload & { view: { owedHeld: string[] } };
+    const follow = async (email: string): Promise<string> =>
+      cookieOf(await consume((await lastMailTo(dataDir, email)).link!));
+
+    await cmd(ada, 'confirm-starting-text', { text: 'The clubhouse shall be kept open.' });
+    await cmd(ada, 'invite', { email: 'bo@example.org' });
+    await cmd(ada, 'invite', { email: 'cy@example.org' });
+    const bo = await follow('bo@example.org');
+    const cy = await follow('cy@example.org');
+    const values: Record<string, unknown> = {
+      rate: { grant: 4, cap: 8, dripMinutes: 240 },
+      quorum: { form: 'count', n: 1 }, chamber: { rung: 'closed' },
+      authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
+      applications: { apply: false },
+      admission: { price: 'proposal' }, // 🪪 — members must vote on every joiner
+      removal: { price: 'consent' },
+      machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
+      ending: { endsAtMs: null },
+    };
+    for (const [setting, value] of Object.entries(values)) {
+      await cmd(ada, 'reclaim', { setting });
+      await cmd(ada, 'set-setting', { setting, value });
+    }
+    for (const power of ['unilateral', 'assent']) {
+      await cmd(ada, 'relinquish', { setting: 'door:invite', power });
+    }
+    await cmd(ada, 'begin', {});
+
+    const motion = await cmd(bo, 'open-motion', {
+      payload: { kind: 'invite', email: 'dee@example.org' }, why: 'she keeps the rota',
+    }) as string;
+    const judgeNo = async (cookie: string) => {
+      const v = await viewOf(cookie);
+      const r = v.settingRaces.find((x) => x.settingId.startsWith('invite:'))!;
+      // dealt into the hand, or handed over as `ask` (Q1202) — the same blind
+      // pair either way, and a seat may already be holding it
+      const card = v.raceCards.find((c) =>
+        (c.a.setting?.settingId ?? '').startsWith('invite:') ||
+        (c.b.setting?.settingId ?? '').startsWith('invite:'))
+        ?? (r.ask as { a: CardOption; b: CardOption } | null)!;
+      const no = card.a.id.startsWith('inc:') ? 'a' : 'b';
+      await cmd(cookie, 'judge-race', { a: card.a.id, b: card.b.id, outcome: no });
+    };
+    await judgeNo(cy);
+    expect((await viewOf(ada)).view.motions.find((m) => m.id === motion)!.status)
+      .toBe('running');
+    await judgeNo(ada);
+
+    // held by the membership, nobody invited, and the mover alone is owed
+    const after = await viewOf(bo);
+    expect(after.view.motions.find((m) => m.id === motion)!.status).toBe('held');
+    expect(after.view.members.some((m) => m.email === 'dee@example.org')).toBe(false);
+    expect(after.view.owedHeld).toEqual([motion]);
+    expect((await viewOf(cy)).view.owedHeld).toEqual([]);
+    expect((await viewOf(ada)).view.owedHeld).toEqual([]);
+
+    // and the address is free again: the twin rule holds only against a
+    // motion that is running (R-103), so the room may put it a second time
+    const again = await cmd(cy, 'open-motion', {
+      payload: { kind: 'invite', email: 'dee@example.org' }, why: 'ask again',
+    }) as string;
+    expect((await viewOf(cy)).view.motions.find((m) => m.id === again)!.status)
+      .toBe('running');
+  });
+
+  /**
+   * **And its author alone is told at once** (Q1451, Ed 2026-09-18: *you
+   * should know the outcome of things you propose*). The hold-back above is a
+   * rule about what a live race may say to the room; it is not a reason to
+   * leave the one person whose wording it was with a *yours* line that simply
+   * vanished. So the author is served a row of their own the moment it closes
+   * — their candidate, the clause, the reason — and the numbers the hold-back
+   * exists to withhold never leave the server.
+   */
+  const roomOfThree = async () => {
+    const { base, dataDir } = await boot();
+    const created = await (await post(base, '/api/docs', {
+      title: 'Told At Once', email: 'ada@example.org',
+    })).json() as { slug: string; devLink: string };
+    const slug = created.slug;
+    const ada = cookieOf(await consume(created.devLink));
+    const cmd = async (cookie: string, name: string, args: unknown) => {
+      const body = await (await post(base, `/api/d/${slug}/cmd`,
+        { cmd: name, args }, cookie)).json() as { error?: string; result?: unknown };
+      expect(body.error, `${name}: ${body.error}`).toBeUndefined();
+      return body.result;
+    };
+    const viewOf = async (cookie: string) => (await (await fetch(
+      `${base}/api/d/${slug}/view`, { headers: { cookie } })).json()) as MemberViewPayload;
+    const follow = async (email: string): Promise<string> =>
+      cookieOf(await consume((await lastMailTo(dataDir, email)).link!));
+
+    await cmd(ada, 'confirm-starting-text',
+      { text: 'The clubhouse is open.\nThe rota is weekly.' });
+    await cmd(ada, 'invite', { email: 'bo@example.org' });
+    await cmd(ada, 'invite', { email: 'cy@example.org' });
+    const bo = await follow('bo@example.org');
+    const cy = await follow('cy@example.org');
+    const values: Record<string, unknown> = {
+      rate: { grant: 4, cap: 8, dripMinutes: 240 },
+      quorum: { form: 'count', n: 1 }, chamber: { rung: 'closed' },
+      authorship: { rung: 'sealed' }, judgments: { rung: 'after' },
+      applications: { apply: false }, admission: { price: 'assembly' },
+      removal: { price: 'consent' },
+      machines: { enabled: false, budget: 0 }, lapse: { afterMs: null },
+      ending: { endsAtMs: null },
+    };
+    for (const [setting, value] of Object.entries(values)) {
+      await cmd(ada, 'reclaim', { setting });
+      await cmd(ada, 'set-setting', { setting, value });
+    }
+    await cmd(ada, 'begin', {});
+    return { ada, bo, cy, cmd, viewOf };
+  };
+
+  it('tells the author at once, and the numbers stay behind', async () => {
+    const { ada, bo, cy, cmd, viewOf } = await roomOfThree();
+    const mine = await cmd(bo, 'propose-text', { baseVersion: 0, hunks: [
+      { start: 1, end: 2, lines: ['The rota is daily.'] }], why: 'daily is better',
+    }) as { id: string };
+    const rival = await cmd(cy, 'propose-text', { baseVersion: 0, hunks: [
+      { start: 1, end: 2, lines: ['The rota is monthly.'] }], why: 'monthly is enough',
+    }) as { id: string };
+    const inc = (await viewOf(ada)).clauses
+      .find((r) => r.candidates.some((c) => c.id === mine.id))!.incumbentId;
+    await cmd(cy, 'judge-race', { a: mine.id, b: inc, outcome: 'b' });
+    await cmd(ada, 'judge-race', { a: mine.id, b: inc, outcome: 'b' });
+
+    // -- the author has a row, and nobody else has one --------------------
+    const boV = await viewOf(bo);
+    expect(boV.records).toHaveLength(1);
+    const early = boV.records[0]!;
+    expect(early.early).toBe(true);
+    expect(early.outcome).toBe('retired');
+    // their own wording alone: the rival is still racing and is not on it
+    expect(early.field.map((f) => f.candidateId)).toEqual([mine.id]);
+    expect(early.field[0]!.reason).toBe('dominated');
+    expect(early.field[0]!.rationale).toBe('daily is better');
+    // the clause it was written for, so the card can stand beside it
+    expect(early.displaced).toEqual(['The rota is weekly.']);
+    expect(early.at).toEqual({ start: 1, end: 2 });
+    // …and none of the numbers. Read off the keys rather than the values:
+    // a withheld number is an absent key, not a null (SPEC §3.5)
+    const keys = Object.keys(early as unknown as Record<string, unknown>);
+    for (const k of ['judges', 'approvals', 'floor', 'abstained', 'judgedByMe']) {
+      expect(keys, `the early row carries ${k}`).not.toContain(k);
+    }
+    expect(early.p).toBeNull();
+    const fieldKeys = Object.keys(early.field[0] as unknown as Record<string, unknown>);
+    expect(fieldKeys).not.toContain('author');
+    expect(early.field[0]!.p).toBeNull();
+    // everybody else still waits for the race to end
+    expect((await viewOf(ada)).records).toEqual([]);
+    expect((await viewOf(cy)).records).toEqual([]);
+
+    // -- and when the race ends, everybody gets the whole record ----------
+    const inc2 = (await viewOf(ada)).clauses
+      .find((r) => r.candidates.some((c) => c.id === rival.id))!.incumbentId;
+    await cmd(bo, 'judge-race', { a: rival.id, b: inc2, outcome: 'b' });
+    await cmd(ada, 'judge-race', { a: rival.id, b: inc2, outcome: 'b' });
+    // (two records, not one: a race is named for its lowest-numbered member
+    // and is renamed when that member is the one that goes, so each closed
+    // wording ends up under a race id of its own — the same reason the first
+    // test in this block reads the field rather than the row)
+    for (const seat of [ada, bo, cy]) {
+      const v = await viewOf(seat);
+      expect(v.records.map((r) => r.early)).toEqual([undefined, undefined]);
+      expect(v.records.flatMap((r) => r.field).map((f) => f.candidateId).sort())
+        .toEqual([mine.id, rival.id].sort());
+      for (const r of v.records) expect(typeof r.judges).toBe('number');
+    }
+  });
+
+  it('the author’s early row survives an adoption above it', async () => {
+    // the hold-back's own trap (the test above this pair): a closed
+    // candidate's footprint is frozen in the version it retired on, and two
+    // lines adopted above move the live race and not it. The early row takes
+    // the same walk, so its clause travels with the text.
+    const { ada, bo, cy, cmd, viewOf } = await roomOfThree();
+    const mine = await cmd(bo, 'propose-text', { baseVersion: 0, hunks: [
+      { start: 1, end: 2, lines: ['The rota is daily.'] }], why: 'daily is better',
+    }) as { id: string };
+    const rival = await cmd(cy, 'propose-text', { baseVersion: 0, hunks: [
+      { start: 1, end: 2, lines: ['The rota is monthly.'] }], why: 'monthly is enough',
+    }) as { id: string };
+    const above = await cmd(ada, 'propose-text', { baseVersion: 0, hunks: [
+      { start: 0, end: 1, lines: ['Preamble.', 'Who we are.', 'The clubhouse is open.'] }],
+      why: 'a preamble',
+    }) as { id: string };
+    const incOf = async (id: string) => (await viewOf(ada)).clauses
+      .find((r) => r.candidates.some((c) => c.id === id))!.incumbentId;
+    await cmd(cy, 'judge-race', { a: mine.id, b: await incOf(mine.id), outcome: 'b' });
+    await cmd(ada, 'judge-race', { a: mine.id, b: await incOf(mine.id), outcome: 'b' });
+    await cmd(bo, 'judge-race', { a: above.id, b: await incOf(above.id), outcome: 'a' });
+
+    const boV = await viewOf(bo);
+    expect(boV.text.split('\n')).toEqual(
+      ['Preamble.', 'Who we are.', 'The clubhouse is open.', 'The rota is weekly.']);
+    // the preamble's own record is there too, adopted; the early row is the
+    // one to read, and the rota line is line 3 now
+    const early = boV.records.find((r) => r.early)!;
+    expect(early, 'no early row for the author').toBeTruthy();
+    expect(early.field.map((f) => f.candidateId)).toEqual([mine.id]);
+    expect(early.at).toEqual({ start: 3, end: 4 });
+    // the rival still races on the same line, and still says nothing to
+    // anybody else
+    expect(boV.clauses.some((r) => r.candidates.some((c) => c.id === rival.id))).toBe(true);
+    for (const seat of [ada, cy]) {
+      const v = await viewOf(seat);
+      expect(v.records.some((r) => r.early)).toBe(false);
+      expect(v.records.flatMap((r) => r.field).map((f) => f.candidateId))
+        .not.toContain(mine.id);
+    }
   });
 });

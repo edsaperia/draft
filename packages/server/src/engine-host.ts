@@ -91,6 +91,33 @@ export async function resumeBridge(persistence: Persistence, doc: LoadedDoc,
 }
 
 /**
+ * **The engine's half of a rewind** (issue #79): after `DocStore.rewind`
+ * has re-folded the document, the bridge is rebuilt the way `resumeBridge`
+ * rebuilds it at boot — from the prefix of the engine log already written
+ * and the bridge state as last written — over the new session. Nothing is
+ * read back from the store: the two cursors are what was written. An engine
+ * with nothing written is no engine yet, and the next commit births it; the
+ * resumed bridge's next sync walks the document forward from its cursor,
+ * which is a boot's own recovery (issue #28's residue included).
+ */
+export function rewindEngine(doc: LoadedDoc, tuning?: Partial<EngineTuning>): void {
+  const d = asEngineDoc(doc);
+  if (d.bridge === null) return;
+  if (d.enginePersisted === 0 || d.bridgeSerialized === null) {
+    d.bridge = null; d.enginePersisted = 0; d.bridgeSerialized = null;
+    return;
+  }
+  const log = structuredClone((d.bridge.engine.log as unknown as EngineLogEntry[])
+    .slice(0, d.enginePersisted));
+  const state = JSON.parse(d.bridgeSerialized) as BridgeState;
+  d.bridge = new EngineBridge(doc.cs, {
+    t: doc.cs.constitutedAtT!, rngSeed: doc.id,
+    ...(tuning ? { tuning: { ...DEFAULT_TUNING, ...tuning } } : {}),
+    resume: { log: log as never, ...state },
+  });
+}
+
+/**
  * Keep the bridge abreast of the document: born the moment the
  * constitution settles, synced after every command (roster truth and
  * ground shifts, §9.6/Q328), closed when a windowed document's ending

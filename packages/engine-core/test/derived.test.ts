@@ -20,7 +20,12 @@ function open(over: Record<string, unknown> = {}): Session {
   return Session.open(
     {
       text: TEXT,
-      roster: roster(4),
+      // **Eight, since Q1439** (R-126): no quorum asks for more than half, so
+      // a count of 4 in a room of four is read as 2 and the second approval
+      // on any race carries it — these tests need a race that survives the
+      // judgment whose invalidation they are about. At eight the same count
+      // of 4 is under the cap and still out of reach of two voices.
+      roster: roster(8),
       constitution: makeConstitution({
         windowStartMs: 0,
         windowEndMs: 10 * HOUR,
@@ -125,7 +130,7 @@ describe('derived state is computed once per state version (Q1324)', () => {
     // own push: the ground before it (the incumbent the judgment was cast
     // against), the fit after it (`updatePeaks`). Before the push nobody but
     // the author has spoken for this candidate, and an author is not the
-    // room — so the peak a refund is paid on is still nothing.
+    // room — so the peak the graveyard is ranked on is still nothing.
     expect(s.getCandidate(cand).peakW).toBe(0);
     s.judge(2000, 'p4', card.a.id, card.b.id, card.a.id === cand ? 'a' : 'b');
     // and it moved, which only a read taken after the push could have done

@@ -38,3 +38,97 @@ DRAFT_DATA_DIR=<fresh> npm run server`) unless it says docs.vote.
   node scripts/repro/found-tim.mjs
   node scripts/room-bots.mjs https://docs.vote/d/tims-birthday --key=<DRAFT_BOT_KEY> --theme=scripts/repro/birthday-theme.json
   ```
+
+## 2026-09-18 — the residency room: crowded races
+
+- `found-residency.mjs` — `found-tim.mjs` with the constants changed: a bot founds *The
+  Residency Charter* at `/d/residency-charter` from `residency-text.md`, invites fourteen more
+  bots and Ed **before 🍾**, delegates 👥 ⏱️ 👤 🌍 for the blind founding, holds 💤 at fifteen
+  minutes, closes Saturday 19 September 23:59 London, and presses 🍾 once every answer is in.
+  The document must exist before room-bots will start, so found first. A trial runs against a
+  dev server started with a `DRAFT_BOT_KEY` of its own: `DRAFT_BASE_URL` and `DRAFT_BOT_KEY`
+  in the environment, and `--no-people` so nobody real is invited.
+- `residency-theme.json` — a theme with **`rivals`**: three groups of hand-written rival
+  wordings (open licence · AI tools · whose money), each wording with its own rationale, keyed
+  to its clause by a regex *or by being one of the group's wordings*, so the pile follows the
+  clause through an adoption. `--pile` (default 0.8) is how often a proposal lands on one.
+  The trial at a 3–10 s pace put 25 candidates in one race inside two minutes.
+
+  ```
+  node scripts/repro/found-residency.mjs
+  node scripts/room-bots.mjs https://docs.vote/d/residency-charter --key=<DRAFT_BOT_KEY> --theme=scripts/repro/residency-theme.json --seed=residency --min 20s --max 2m --heat 0.7
+  ```
+
+## 2026-09-19 — a vote against ends a 🏛️ proposal (Q1473)
+
+- `admit-keep.mjs` — **asserting, unlike everything above**: it exits 1 on a failure, so it
+  is a guard and not a print-out. A document at 🪪 🏛️ with three members and somebody at the
+  door; one member accepts, one votes against, and four things are read where a member reads
+  them — the motion `held` and the applicant `refused`; the applicant's own 🪪 card saying the
+  membership did not agree, naming nobody and counting nothing; the other member's rail with
+  no admit entry left to press and *Applicants* empty; and the same address free to apply
+  again. Red on the pre-Q1473 module at *the application ends on that one vote*, the keep
+  having left the motion running. `node scripts/repro/admit-keep.mjs http://127.0.0.1:8270`
+
+## 2026-09-19 — a closed document asks nothing but the signature (Q1479 (a))
+
+- `closed-unacked.mjs` — **asserting**, like `admit-keep.mjs`: exit 1 on the defect, 2 on a
+  set-up that never got there. A ladder document at `closed`, read from a seat the rung left
+  unsigned — chosen by the wire's own signatures, never by name — in a **fresh** browser
+  context, because an empty `localStorage` is exactly what the closing mail's link produces
+  on a second device. It asserts no clause still says *being decided*, no greyed tab that
+  opens nothing, one `rec:` rail entry per record on the wire, that one of them opens its
+  card, and that 🥂 still signs. Red on the pre-fix page at the first four (issue #30
+  findings 2–3): `withheld` held every record behind an ⚖️ OK the closed page has nowhere
+  to give. `node scripts/repro/closed-unacked.mjs http://127.0.0.1:8341`
+
+## 2026-09-20 — a draft sends only the places that changed (issue #43, Q1479 (b))
+
+- `untouched-place.mjs` — **asserting**, like the two above: exit 1 on the defect, 2 on a
+  set-up that never got there. An untouched place in a draft survives on purpose (Q1382), and
+  the row beside it counts only the places that *changed* — but `hunksOf` sent every site, so
+  a member who typed into two paragraphs and put one back proposed both, and the untouched
+  clause joined the candidate's footprint and the race running there. Four cases, each on its
+  own document and each holding **two** sites so the filter is exercised rather than bypassed:
+  `two-places` (one clause changed, one put back — one hunk on the wire, carrying its own
+  `was`, and a footprint that does not cover the other clause), `deletion` (Q1415's emptied
+  clause still sends `lines: []`), `gap` (a sentence in the trailing gap still goes as a pure
+  insertion), `pen` (the Founder's ✒️ road, one hunk). Red on the pre-fix page at *exactly one
+  hunk goes over the wire* in all four.
+  `node scripts/repro/untouched-place.mjs http://127.0.0.1:8360`
+
+## 2026-09-20 — the rehearsal, the night before the room
+
+- `rehearsal.mjs` — **asserting, like `admit-keep.mjs`**: a whole document's life driven
+  headless, so the room is walked before anybody real is in it. A bot Founder founds a
+  short-lived charter with every setting held and set (nothing delegated, so 🍾 is ready at
+  once), presses 🍾 laying every power down **except 🛡️ on the Text**, and then keeps the
+  three posts a person would keep in a live room until the clock closes it: the Founder's
+  Accept on every 👑 park (the third refused, so both roads are walked), the spectator feed
+  polled exactly as `design/feed.js` polls it, and `/healthz` with the round trips beside
+  it. At the close the Founder signs and the record is read twice — once full, once on a
+  **slim** poll (issue #30 finding 1). It starts no bots; it prints the `room-bots` line.
+  There is no default `--base`: docs.vote is never reached by forgetting an argument.
+
+  ```
+  node scripts/repro/rehearsal.mjs --base http://127.0.0.1:8350 --minutes 25 --bots 8
+  node scripts/room-bots.mjs http://127.0.0.1:8350/d/<slug> --key=$DRAFT_BOT_KEY --seed=rehearsal --min 10s --max 40s --heat 0.6 --motions 0.05
+  ```
+
+## 2026-09-23 — the P1 batch (plan-p1-batch.md, Stage 1)
+
+Guards rather than room replays: each asserts, exits 1 on a failure, and was seen red on the
+pre-fix page before its fix landed.
+
+- `lane-enter.mjs <design base>` — issue #78: Enter at the end of a lane you are drafting in
+  makes a second line; four cases on the fixture (end · bare · middle · twice). Needs
+  `npm run design`, not a dev server.
+- `refused-acts.mjs <dev server>` — issue #37: a refused judgment is un-filed, a double ✓
+  sends one, a refused withdrawal puts the proposal and the ✏️ back, a command that never
+  answers does not hold the next one.
+- `crown-rail.mjs <dev server>` — issue #32 (built as Q1475): a change the membership
+  carried and the Founder's 🛡️ holds asks the Founder — member or clerk — on the `adm:` and
+  `mo:` entries, and waits on them everywhere else.
+- `feed-scroll-hold.mjs` — issue #87 F2: the spectator feed, scrolled back, holds the entry
+  being read still when an entry leaves above it (a rules motion voted down) and when one
+  arrives. No server — `design/feed.html` served from disk with a fabricated feed answer.

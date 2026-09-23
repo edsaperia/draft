@@ -45,7 +45,7 @@
  */
 import { chromium } from 'playwright';
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
-import { say, sleep as T, arg, followLink, linkIn, outbox as devOutbox, post as postTo } from './lib/walk.mjs';
+import { say, sleep as T, arg, followLink, linkIn, outbox as devOutbox, post as postTo, landOn } from './lib/walk.mjs';
 
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
 const PRICE = arg('price', 'proposal');
@@ -134,7 +134,7 @@ const newPage = async () => {
     refused.push(r.status() + ' ' + String(r.request().postData() || '').slice(0, 120)); } });
   return page;
 };
-const land = async (page, url) => { await page.goto(url, { waitUntil: 'networkidle' }); await page.waitForTimeout(1500); };
+const land = async (page, url) => { await landOn(page, url, { waitUntil: 'networkidle' }); await page.waitForTimeout(1500); };
 // the rail as the member sees it, and the readout beside it
 const state = (page) => page.evaluate(() => {
   const f = window.__founding ? window.__founding() : null;

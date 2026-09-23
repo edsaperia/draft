@@ -19,8 +19,9 @@ export class Stash {
 
   /** Open a stash; with a slug it also reserves that address (Q460/462b)
    *  for as long as the stash lives — claimed by take(), swept at expiry. */
-  async open(key: string, expMs: number, slug?: string): Promise<void> {
-    await this.persistence.putStash(key, { text: '', expMs, ...(slug === undefined ? {} : { slug }) });
+  async open(key: string, expMs: number, slug?: string, email?: string): Promise<void> {
+    await this.persistence.putStash(key, { text: '', expMs, ...(slug === undefined ? {} : { slug }),
+      ...(email === undefined ? {} : { email }) });
   }
 
   /** Re-send: the same pending creation speaking again (Ed's QA, 2026-08-21
@@ -29,11 +30,13 @@ export class Stash {
    *  text has been pasted into it — while its reservation moves to the
    *  address now asked for and its life is renewed against the new link's.
    *  False if the stash never existed or has expired, in which case the
-   *  caller opens a fresh one. */
-  async renew(key: string, expMs: number, slug: string, nowMs: number): Promise<boolean> {
+   *  caller opens a fresh one. The address moves with it (issue #38 F5):
+   *  the one this send goes to is the founder's, whatever the last said. */
+  async renew(key: string, expMs: number, slug: string, nowMs: number,
+    email?: string): Promise<boolean> {
     const rec = await this.persistence.getStash(key);
     if (rec === null || rec.expMs < nowMs || rec.docId !== undefined) return false;
-    await this.persistence.putStash(key, { ...rec, expMs, slug });
+    await this.persistence.putStash(key, { ...rec, expMs, slug, ...(email === undefined ? {} : { email }) });
     return true;
   }
 
@@ -71,9 +74,26 @@ export class Stash {
     return rec.expMs >= nowMs ? rec.text : '';
   }
 
+  /**
+   * **The pending creation, read one way** (issue #38, absorbing #40): the
+   * address it now reserves, and the document it became once claimed — or
+   * null for a stash that never existed or has expired. Three handlers read
+   * this record, and each read it differently: the create link founded from
+   * its own token's snapshot rather than the address the resend had moved
+   * to, and a claimed stash counted as no stash at all, so the birth tab's
+   * keystrokes met a 404 and its 📨 was told its own address was taken.
+   */
+  async pendingOf(key: string, nowMs: number):
+  Promise<{ slug?: string; email?: string; docId?: string } | null> {
+    const rec = await this.persistence.getStash(key);
+    if (rec === null || rec.expMs < nowMs) return null;
+    return { ...(rec.slug === undefined ? {} : { slug: rec.slug }),
+      ...(rec.email === undefined ? {} : { email: rec.email }),
+      ...(rec.docId === undefined ? {} : { docId: rec.docId }) };
+  }
+
   /** The document a pending creation became, or null while it is unclaimed. */
   async claimedBy(key: string, nowMs: number): Promise<string | null> {
-    const rec = await this.persistence.getStash(key);
-    return rec !== null && rec.expMs >= nowMs && rec.docId !== undefined ? rec.docId : null;
+    return (await this.pendingOf(key, nowMs))?.docId ?? null;
   }
 }

@@ -21,12 +21,12 @@ import { ConstitutionSession, view } from '../../constitution/src/index.js';
 import type { ApplicantRecord } from '../../constitution/src/index.js';
 import { ParticipantApi } from '../../engine-core/src/participant-api.js';
 import { LIMITS, cap, runCommand } from './commands.js';
-import { logError } from './error-log.js';
+import { PAGE_ERRORS_PER_MINUTE, logError, noteRace, pageErrorOf, raceRefusal } from './error-log.js';
 import { asEngineDoc } from './engine-host.js';
 import type { LoadedDoc } from './store.js';
 import { raceView, strangerView } from './views.js';
 import { PauseState } from './write-path.js';
-import { cookieSession, expectString, json, pathOf, readJson } from './routes.js';
+import { cookieSession, expectString, ipOf, json, pathOf, rateLimited, readJson } from './routes.js';
 import type { Route } from './routes.js';
 
 export const memberTable: Route[] = [
@@ -38,7 +38,7 @@ export const memberTable: Route[] = [
       (seg[3] === 'view' || seg[3] === 'cmd'),
     handler: async (ctx, r) => {
       const { req, res, url, seg, nowMs } = r;
-      const { cfg, store, auth, mailer, pause, writes } = ctx;
+      const { store, auth, mailer, pause, writes } = ctx;
       const doc = r.docOr404(store.bySlug(seg[2]!));
       if (!doc) return true;
       const session = cookieSession(auth, req, doc.id);
@@ -52,13 +52,29 @@ export const memberTable: Route[] = [
           // (venue Wi-Fi): a stranger's page polls every 4s, 150 in the
           // ten-minute window, so 240 fell to two phones in eight minutes
           // and the page died of the 429 it took for a view (Ed's phone,
-          // 2026-09-12). Ten phones' worth — still a brake on a scraper.
-          if (r.tooMany('stranger', 1500)) return true;
+          // 2026-09-12). 1500 was ten phones' worth, and twenty spent it in
+          // five minutes on one venue address (issue #69, reproduced
+          // 2026-09-19) — so the room sawtoothed, five minutes alive and
+          // five dead. **Twenty phones' worth** (Ed, 2026-09-19): forty
+          // polling pages for a full window, still a brake on a scraper.
+          if (r.tooMany('stranger', 6000)) return true;
           const seq = doc.cs.logEntries().length;
           const engineDoc0 = asEngineDoc(doc);
           const eseq = engineDoc0.bridge === null ? 0 : engineDoc0.bridge.engine.log.length;
           if (url.searchParams.get('since') === seq + '.' + eseq) {
-            json(res, 200, { seq, eseq });
+            // **The door's short answer is a short answer, and says so**
+            // (issue #11, F5). The page reads the two host flags off every
+            // answer before it reads anything else, and `short` is what tells
+            // it there is no view underneath — so a door answer carrying
+            // neither read as a full view with no pause and no stall in it,
+            // and every quiet poll at the door cleared the maintenance modal
+            // and the stall flag a moment after the previous answer raised
+            // them. A stranger watching a document through a deploy saw the
+            // modal blink at four-second intervals. The member's short
+            // answer at the foot of this handler has carried all three since
+            // Q1345/Q1346; this is the same three words.
+            json(res, 200, { seq, eseq, short: true,
+              paused: pause.payload(nowMs), stalled: !!doc.stalled });
             return true;
           }
           json(res, 200, { seq, eseq, devMail: mailer.dev, ...strangerView(doc, nowMs, pause.payload(nowMs), session) });
@@ -89,7 +105,12 @@ export const memberTable: Route[] = [
         // presence exactly as it was.
         let ladderClock = false;
         DEV: { ladderClock = mailer.dev && doc.cs.slug.startsWith('ladder-'); }
-        if (applicantId === null && !ladderClock &&
+        // **and a document whose saves are failing is read, not stamped**
+        // (issue #79): a failed save rewinds the document, so every poll
+        // would stamp presence again, fail, re-fold the whole log and answer
+        // 500 — and the view is the one place the red flag can be read. The
+        // stamp waits for a save that lands, which clears `stalled`.
+        if (applicantId === null && !ladderClock && !doc.stalled &&
             doc.cs.seen(writes.tOf(doc), memberId)) {
           await writes.commit(doc, nowMs);
         }
@@ -120,6 +141,10 @@ export const memberTable: Route[] = [
         // and `slim` names them so the page keeps its own. A client that says
         // nothing gets everything, as before.
         const pageSeq = since === null ? null : Number(since.split('.')[0]);
+        // the second half of `since` is the engine seq the page holds, which
+        // is 0 for as long as it has never been served a view with an engine
+        // behind it (Q1477, below)
+        const pageEseq = since === null ? null : Number(since.split('.')[1]);
         const pageTv = url.searchParams.get('tv');
         const pageRk = url.searchParams.get('rk');
         // **An applicant is a stranger who has knocked** (Q1281, 2026-09-07):
@@ -204,7 +229,23 @@ export const memberTable: Route[] = [
             // the founder's text still changes (confirm-starting-text), so
             // neither the text nor the records are ever left out then —
             // journey's *paste ✒️* step held a stale column otherwise
-            const versioned = ed.bridge !== null;
+            //
+            // **…and not for the page's last poll before it either** (Q1477,
+            // the nh2026 convention 2026-09-20). It is not enough that *this*
+            // document is versioned: what `tv` claims has to have been served
+            // under a version too. `textVersion` reads 0 on both sides of the
+            // cork — over the founder's unversioned text before it, over the
+            // engine's document at version 0 after — and 🍾 confirms whatever
+            // the column holds (R-081), which draws no paragraph for a blank
+            // line. So the first answer after the cork left the text out of
+            // every page that had been polling through it, each completed it
+            // from the text it already had, and the room read the document in
+            // a line space two lines out of step with the engine's until the
+            // first adoption moved the version. The page's own engine seq is
+            // the one thing that tells the two zeroes apart: it is 0 until
+            // there is an engine to count.
+            const sawEngine = pageEseq !== null && pageEseq > 0;
+            const versioned = ed.bridge !== null && sawEngine;
             const keepRecords = versioned && pageRk !== null && Number(pageRk) === rkNow;
             const rv = raceView(doc, memberId, nowMs, { records: !keepRecords });
             const out: Record<string, unknown> = { ...rv };
@@ -236,9 +277,20 @@ export const memberTable: Route[] = [
         // the seat as its id — never the address — the command, its
         // arguments and the reason, so a refusal a member met on the page
         // can be looked up on the host afterwards
-        const refused = (status: number, reason: string): void => logError(cfg.dataDir, {
-          kind: 'refused', status, method: 'POST', path: pathOf(req),
-          doc: doc.id, slug: doc.cs.slug, seat: applicantId ?? memberId, cmd, args, reason });
+        // **…except the ones nobody did anything wrong to meet** (Q1493 (a),
+        // Ed 2026-09-21: *The page handles both*). A judgment on a pair that
+        // closed since the card was drawn, and a proposal pressed in the
+        // second after somebody else's adoption, are races with the 4 s poll
+        // rather than anything a member got wrong — the page answers both
+        // itself now, so they are tallied on `/healthz` and kept out of a
+        // log whose whole use is that an operator reads every line of it.
+        const refused = (status: number, reason: string): void => {
+          const race = raceRefusal(cmd, reason);
+          if (race !== null) { noteRace(ctx.races, race, nowMs); return; }
+          logError(ctx.persistence, {
+            kind: 'refused', status, method: 'POST', path: pathOf(req),
+            doc: doc.id, slug: doc.cs.slug, seat: applicantId ?? memberId, cmd, args, reason });
+        };
         // an applicant's two acts: submit, and the OK on a door that shut
         // under them (SURFACE E33, Q901) — nothing else speaks for them
         if (applicantId !== null && cmd !== 'submit-application' && cmd !== 'ack-apply-shut') {
@@ -313,6 +365,57 @@ export const memberTable: Route[] = [
       await ctx.store.setProvisional(doc,
         cap(expectString(body, 'text'), LIMITS.text, 'the text'));
       json(res, 200, { ok: true });
+      return true;
+    },
+  },
+  {
+    /**
+     * **The page reports its own uncaught errors** (plan stage 5b, after
+     * the nh2026 convention): the surface's `error` and `unhandledrejection`
+     * handlers post here, and the line joins the host's error log as
+     * `kind: 'page'` (docs/OPERATING.md §11). A refusal has been written
+     * down since Q1330 and a page error nowhere at all — the swallowed boot
+     * error of Q1281 was found by hand months after it started.
+     *
+     * **A production route**, outside the `DEV:` label, because the errors
+     * worth reading are the ones a room met. What it accepts is `error-log.ts`'s
+     * `pageErrorOf` and nothing else; what it adds — the seat, the document,
+     * the build — is the host's own knowledge, never the client's word.
+     *
+     * **No document is needed.** The birth is at `/` and throws there too,
+     * so the slug is optional: with one, the line carries the document and
+     * the seat that cookie stands for; without, the path alone.
+     *
+     * Two brakes. The per-IP one is the cheap outer guard, taken before the
+     * body is read; the per-seat one is the plan's *a few a minute*, and a
+     * seatless page is keyed by its address, which is the only name it has.
+     */
+    name: 'POST /api/page-error — what the surface caught',
+    method: 'POST',
+    match: ({ seg }) => seg[0] === 'api' && seg[1] === 'page-error' && seg.length === 2,
+    handler: async (ctx, r) => {
+      const { req, res, nowMs } = r;
+      if (r.tooMany('page-error', 60)) return true;
+      const body = await readJson(req);
+      const doc = typeof body.slug === 'string' ? ctx.store.bySlug(body.slug) : null;
+      const session = doc === null ? null : cookieSession(ctx.auth, req, doc.id);
+      const seat = session === null ? null : session.memberId;
+      if (rateLimited(`page-error:${seat ?? ipOf(req, ctx.cfg)}`, nowMs,
+        PAGE_ERRORS_PER_MINUTE, 60_000)) {
+        json(res, 429, { error: 'too many requests — try again shortly' });
+        return true;
+      }
+      const row = pageErrorOf(body, { seat, doc: doc?.id ?? null, slug: doc?.cs.slug ?? null,
+        // the commit this process is serving the page from: a surface
+        // upload moves it without restarting, so the upload's is the truer
+        // answer where there is one (Q1347)
+        build: ctx.surfaceSha ?? ctx.buildSha });
+      if (row === null) { json(res, 400, { error: 'a page error needs a message' }); return true; }
+      logError(ctx.persistence, row, nowMs);
+      // nothing to say back: the page is not waiting and must not be given
+      // anything to get wrong about its own failure
+      res.statusCode = 204;
+      res.end();
       return true;
     },
   },

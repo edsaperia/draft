@@ -102,11 +102,13 @@ recorded here as they are made, so Ed can flip any of them cheaply.
   2026-08-21: *🤝 also needs ✒️ and 🛡️*). `ApplicationsValue` is the join
   policy alone; `registerPowers()` reads `settings.get('applications').powers`,
   so the v0.54 corner above (two pairs on one card) is gone and the reserve
-  motion on `applications` is now ordinary machinery. **Migration in the
-  fold, not the log**: a legacy value carrying `holder` still validates,
-  keeps its bytes, and `foldApplications` maps the holder onto the powers
-  and strips it from what stands — an old log replays to the same state a
-  fresh session reaches the new way (test). The golden state was re-frozen
+  motion on `applications` is now ordinary machinery. **No migration is left**
+  (Q1329, Ed 2026-09-11: *we are still in alpha — there are no old
+  documents*): the fold that mapped a legacy `holder` onto the powers is
+  gone, `ApplicationsValue` is `{ apply }` and nothing else, and a value
+  carrying `holder` is refused at `readValue` — the host quarantines such a
+  log at boot rather than half-reading it (`values.ts`, `session.ts` *No
+  legacy fold*). The golden state was re-frozen
   for exactly this derived change (`founding.jsonl` is byte-identical; only
   the applications entry of `founding.state.json` moved). The Q395 holder
   tiebreak in the consent order went with the field: the blind question
@@ -140,8 +142,10 @@ text adoption needing assent at T=0 therefore lands as carried-but-unassented:
 the engine applied it to its own document, but the room never assented, so
 `closeRecord()` lists it under `carriedButUnassented`. The shield is held
 only when the room has handed it back by a `reserve` motion: **the start lays
-the founder's hand off the Text** (CLAUDE.md `🍾 Begin`) — `maybeConstitute`
-emits `power-relinquished` for each power still held, so post-start the
+the founder's hand off the Text** (CLAUDE.md `🍾 Begin`) — 🍾 carries the
+batch on the `constituted` event itself, `begin(t, laidDown?)` naming each
+power the founder chose not to keep (`maybeConstitute` is gone, below), so
+unless 🍾 was told to keep one the post-start
 default is neither, and `reportAdoptions` opens a 👑 question only under a
 reserved shield. **Migration note**: a log constituted before 2026-08-21 holds
 no such events, so on replay its founder still holds both powers on the Text
@@ -202,8 +206,9 @@ The calls above that were later reversed or retired, gathered here on 2026-09-07
   the one-sentence reading this commits to.
 
 - ~~**`applications.holder` is the convenor's frame, not part of the consent**~~
-  — **superseded by Q506 (below)**; a legacy `holder` still validates and
-  folds onto the powers (`values.ts`, `session.ts` *the legacy holder*). As it
+  — **superseded by Q506 (below)**; a legacy `holder` is no longer read at
+  all — a value carrying one is refused and the log is quarantined at boot
+  (Q1329, Ed 2026-09-11; `values.ts`, `session.ts` *No legacy fold*). As it
   stood:
   the delegated question collects the join-policy rung; the holder (the crown
   choice) is consented by joining, the way §9.7 says — so the consent order

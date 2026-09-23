@@ -1,5 +1,6 @@
 /**
- * Core domain types for the draft engine (SPEC v0.12).
+ * Core domain types for the draft engine (SPEC.md, whose own header carries
+ * the version — a number pinned here rots the moment the spec is amended).
  *
  * The engine is an event-sourced, deterministic state machine: commands
  * (with caller-supplied timestamps) produce events; events append to a
@@ -28,18 +29,37 @@ export interface Constitution {
   adoptionThresholdStart: number;
   adoptionThresholdEnd: number;
   /**
-   * F = max(Q, min(ceil(E/3), adoptionFloorMax)) distinct movers per race
-   * (SPEC §4.2, v0.48): the statistical minimum, which the room's quorum
-   * can raise but never lower.
+   * The cap the statistical minimum ⌈E/3⌉ was held under while there was one.
+   *
+   * **Read by nothing since v0.133** (Q1439 ruling s, Ed 2026-09-18 → why:
+   * R-131, reversing R-073): the built-in minimum has gone and F is
+   * `max(1, Q′)` **approvals** of the leader (SPEC §4.2), so this number
+   * enters no formula. It stays for one release exactly as the pinned
+   * threshold's two fields above do — every live log carries it in
+   * `session-created`, and the golden logs must fold unedited — and the
+   * deletion pass takes it.
    */
   adoptionFloorMax: number;
   /**
    * The room's settled quorum (SPEC §4.2, §9.0a): a fixed count, or a
-   * share of E (share × E, rounded up), re-derived from current E so a
-   * share-quorum tracks the roster. null = no quorum settled (Q = 0),
-   * which leaves the statistical minimum governing alone.
+   * share — **of the group the leader is waiting on** since Q1439 (R-126),
+   * rounded up — and in either form never more than the whole of that group
+   * (Q1490, R-139: the cap at half went, a share running to 100%).
+   * null = no quorum settled (Q′ = 0), which leaves the statistical minimum
+   * governing alone.
    */
   quorum: { form: 'count' | 'share'; n: number } | null;
+  /**
+   * 💤's period as the engine sees it (SPEC §9.5a; Q1439 ruling c, R-127,
+   * R-128): **one period doing two jobs** — silent on everything for that
+   * long and a membership lapses (which reaches the engine only as
+   * `participant-suspended`); silent on one candidate for that long and the
+   * member abstains on it, leaving the group its floor is read against (§8.2).
+   * `null` is *never*, and so is the field being absent — every log written
+   * before it existed — so nothing is imputed from silence there, exactly as
+   * R-089 had it.
+   */
+  abstainAfterMs?: number | null;
   /** Deadlock requires at least this many comparisons in the race. */
   deadlockMinComparisons: number;
   /** Max pair value below which a race counts as deadlocked. */
@@ -119,6 +139,13 @@ export interface ConstitutionAmendment {
   authorshipVisibility?: Constitution['authorshipVisibility'];
   quorum?: Constitution['quorum'];
   /**
+   * 💤 moving is a real amendment binding races in flight (§4.3, §9.5a;
+   * Q1439): the period is what turns a silence into an abstention, so a
+   * shorter one lets a leader carry sooner and *never* puts every silence
+   * back in the group. It re-rates nothing already adopted.
+   */
+  abstainAfterMs?: number | null;
+  /**
    * 🛡️ on the Text moving is a real amendment binding races in flight
    * (§4.3, R-056): reserving the shield changes what clearing the bar
    * means. The host reports *whether assent is owed*, never the raw
@@ -181,9 +208,17 @@ export interface Candidate {
   setting?: { settingId: string; value: unknown };
   /** Footprint on the version the patch currently targets; [] for settings. */
   footprint: Span[];
+  /**
+   * When it was submitted (Q1439). The pair *this against the current text*
+   * cannot be answered before the candidate exists, so this is one of the
+   * three moments a member's 💤 period on it can start from (§8.2) — the
+   * others being an evidence reset on revision (§2.4) and the ground the race
+   * now stands on (§4.4).
+   */
+  submittedT: number;
   state: CandidateState;
   stakePaid: number;
-  /** Peak modeled P(beats incumbent) — refund basis (SPEC §7). */
+  /** Peak modeled P(beats incumbent) — the graveyard's ranking (SPEC §8). */
   peakW: number;
   /** Informed redrafts consumed by this position (SPEC §6.2). */
   redrafts: number;
@@ -211,10 +246,26 @@ export interface Candidate {
    * the room's confidence at the moment it decided, not the convenor's
    * convenience — and the close records the park's own race. The cap mark
    * (R-051) rides here for the same reason: it is a fact about the same
-   * moment and the same fit, and absent still means converged.
+   * moment and the same fit, and absent still means converged. So do the
+   * membership's own three numbers (Q1458) — approvals, floor and silences —
+   * which is what lets the record of a shielded adoption say *n of E weighed
+   * in* like any other; absent means a log written before the field.
    */
   awaiting?: { raceId: string; p: number; threshold: number;
-    cappedFit?: { iterations: number; gradMax: number } };
+    cappedFit?: { iterations: number; gradMax: number };
+    decided?: { approvals: number; floor: number; abstained: number } };
+}
+
+/**
+ * **A live candidate that can no longer win** (SPEC §4.4, Q1440 → why:
+ * R-132), and which of the two clauses closed it: `incumbent` — no answer
+ * still to come could put it above the text that stands, or carry it to its
+ * floor; `rival` — no answer still to come could put it above another wording
+ * in its own race. Retired at the next adoption batch.
+ */
+export interface Domination {
+  id: string;
+  by: 'incumbent' | 'rival';
 }
 
 /**
@@ -250,6 +301,46 @@ export interface RaceView {
    * 0 while there is no leader.
    */
   leaderJudges: number;
+  /**
+   * **The floor's own number since Q1439** (SPEC §4.2, §8.2 → why: R-125):
+   * members who have **approved** the leader — whose latest usable comparison
+   * of it *against the current text* prefers it, the leader's own author among
+   * them by their derived preference (§3.3). A judgment of the leader against
+   * a rival approves neither, *Indifferent* approves nothing, and a judgment
+   * cast before its author left E keeps counting (§9.5a). This, not
+   * `leaderJudges`, is what `clearsFloor` tests: a judgment *against* the
+   * leader can never help it reach its floor.
+   */
+  approvals: number;
+  /**
+   * **The group the leader is waiting on** (SPEC §8.2 → why: R-126, R-127),
+   * at the time the view was taken: its approvers and its opposers, plus the
+   * members of E who have not answered and whose 💤 period has not run out.
+   * *Indifferent* leaves it at once; silence leaves it a period after the
+   * pair as it stands became answerable, or never where 💤 is *never*. A
+   * share-form quorum is a share of **this**, and neither form may ask for
+   * more than the whole of it (Q1490, R-139).
+   */
+  group: number;
+  /**
+   * **Who did not answer in time** (Q1452, Ed 2026-09-18; SPEC §8.2), at the
+   * time the view was taken: the members of E awaited on the leader-against-
+   * the-current-text pair whose 💤 period **has** run — the complement, out of
+   * the awaited set, of the silences still counted in `group`. Zero where 💤
+   * is *never*, nothing being imputed from silence then (R-089's letter).
+   * The 👥 clause goes on naming the whole membership, so this is the number
+   * that makes a proposal carried by two of ten legible: the outcome card
+   * prints it as *n did not answer in time*.
+   */
+  abstained: number;
+  /**
+   * **F, at the time the view was taken** (SPEC §4.2): `max(Q′, min(2, E))`,
+   * the quorum read against `group` and capped at the whole of it (R-139),
+   * the seconder read against the whole of E. It moves with the clock
+   * as well as with the log, because an abstention needs no event — which is
+   * why `races()` takes a `t`.
+   */
+  floor: number;
   /**
    * Measured (non-derived) usable comparisons touching the leader — the
    * room's own judgments of X, R-063's line drawn at the winner: a race is
@@ -301,6 +392,14 @@ export interface RaceView {
    * rival-vs-rival pairs for ordinary value-based sampling.
    */
   rivalGateOpen: boolean;
+  /**
+   * **The members of this race that can no longer win** (SPEC §4.4, Q1440 →
+   * why: R-132), oldest first, empty on almost every race. Time-free, like
+   * the counts it is read off — a domination needs no clock and no event, and
+   * one arrives only when a judgment does. The sweep retires them with the
+   * adoption batch; nothing else in the engine gates on it.
+   */
+  dominated: Domination[];
   /**
    * **Waiting behind a park** (SPEC §4.2, R-100; Q1179): the leader is ready
    * to carry — the sweep's own readiness test, one function for both — and
@@ -405,6 +504,13 @@ export type Event =
        * refusal under 🛡️ on the Text is what its author reads on their
        * sealed record. Absent on an ordinary retirement, which has no
        * reason beyond the incumbent holding.
+       *
+       * **One reserved value** (Q1440): `'dominated'`, the engine's own — the
+       * proposal could no longer win (§4.4). Everything else here is the
+       * host's prose, and the surface prints it as it stands; the reserved
+       * token is mapped to a sentence at the page's edge, the engine having
+       * never heard of a language. Optional, as it always was, so every log
+       * written before the rule folds unedited.
        */
       reason?: string;
     }
@@ -432,6 +538,23 @@ export type Event =
        * receipt that lies by omission. Absent means the fit converged.
        */
       cappedFit?: { iterations: number; gradMax: number };
+      /**
+       * **What the room decided on, held over the park** (Q1458, Ed
+       * 2026-09-18): the approvals the winner held, the floor it met and the
+       * silences 💤 had already taken, snapshotted by the batch exactly as
+       * `p` and `threshold` are. `assent`'s accept copies them onto the
+       * `adopted` event, so a shielded adoption's record states the
+       * membership's numbers like any other — and states **the numbers that
+       * stood when the vote carried**, not the ones a re-derivation at the
+       * convenor's convenience would find. All three move with the clock
+       * (§8.2), so the park is the only honest moment to read them.
+       *
+       * One optional object rather than three optional fields, because the
+       * three are one snapshot of one moment and are never separately known;
+       * optional on `cappedFit`'s own terms — absent, never `undefined`, so
+       * every log written before the field existed folds byte for byte.
+       */
+      decided?: { approvals: number; floor: number; abstained: number };
     }
   | {
       /**
@@ -491,6 +614,28 @@ export type Event =
        * ordinary case.
        */
       cappedFit?: { iterations: number; gradMax: number };
+      /**
+       * **What the batch decided on** (Q1439; SPEC §8.2's *the winner's
+       * approvals and its floor*): the approvals the winner held and the floor
+       * it met, at the moment the ready set was snapshotted. Optional for the
+       * same compatibility reason as `cappedFit` above — absent on every log
+       * written before the field existed, so the golden logs fold unedited —
+       * and never written as `undefined`.
+       */
+      approvals?: number;
+      floor?: number;
+      /**
+       * **And how many never answered** (Q1452, Ed 2026-09-18): the members
+       * of E awaited on the winner-against-the-current-text pair whose 💤
+       * period had run at the batch's `t` — the silences the group had
+       * already lost, snapshotted with the other two because it moves with
+       * the clock exactly as they do. Optional on the same terms and for the
+       * same reason: absent on every log written before the field existed,
+       * never written as `undefined`, and **written as `0`** on every
+       * adoption since — so absent means an older log and nothing else,
+       * where zero means a room in which nobody ran out of time.
+       */
+      abstained?: number;
     }
   | {
       /**

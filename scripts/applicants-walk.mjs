@@ -50,7 +50,7 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import { chromium } from 'playwright';
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
-import { say, sleep as T, linkIn, outbox as devOutbox, onPage } from './lib/walk.mjs';
+import { say, sleep as T, linkIn, outbox as devOutbox, onPage, landOn } from './lib/walk.mjs';
 
 // The card's words come from `design/copy.js`, read here the way copy-check
 // reads it — evaluated in a bare context, so the assertion is the file's own
@@ -78,6 +78,10 @@ const stuck = [];
 // end, and the founder's rail is read for the 🥾 entry that names them
 let guestResign = null;
 let guestSeat = null;
+// the applicant's own 🪪 card, read on the page they already hold (issue #29)
+let guestApplyCard = null;
+// …and what their own page says once the seat is gone (issue #11, F2)
+let guestDoor = null;
 let closeGuest = async () => {};
 
 // Q911: a walk on a default port will drive whatever process is listening,
@@ -175,7 +179,7 @@ if (!mails.length) {
   process.exit(1);
 }
 const link = linkIn(mails[mails.length - 1]);
-await page.goto(link);
+await landOn(page, link);
 for (let i = 0; i < 40 && !page.url().includes('/d/'); i++) await T(500);
 await T(1800);
 const SLUG = (page.url().match(/\/d\/([^/?#]+)/) || [])[1];
@@ -248,12 +252,50 @@ if (knock.status !== 200 || !knock.body || !knock.body.devLink) {
   const guestCtx = await browser.newContext({ viewport: { width: 1200, height: 900 } });
   const guest = await guestCtx.newPage();
   guest.on('pageerror', (e) => errors.push('applicant: ' + String(e)));
-  await guest.goto(knock.body.devLink);
+  /* **A door tab whose cookie becomes a member's is a different page**
+   * (issue #11, F1). The second tab is the ordinary one: a phone at the
+   * document's address while the magic link is opened from the mail beside
+   * it — one cookie jar, two pages, and only the one that followed the link
+   * knows anything happened. The other is at the door, and its poll is
+   * answered with a member's payload. It used to seat itself at roster
+   * index 0, which is the founder: the tab reported `amFounder` on somebody
+   * else's cookie. Opened before the link is followed so the door page is
+   * genuinely a stranger's first, and read after the link so what is under
+   * test is the handover rather than the boot. */
+  const doorPage = await guestCtx.newPage();
+  doorPage.on('pageerror', (e) => errors.push('door tab: ' + String(e)));
+  await landOn(doorPage, DOCBASE + '/d/' + SLUG);
+  await T(2500);
+  await landOn(guest, knock.body.devLink);
   await T(2200);
   // **At ✒️ the link is the joining** (Q894–Q896): `/auth/apply` admits the
   // visitor on arrival, so there is no application left to submit and the
   // command is rightly refused. They have given no name either, which is why
   // the news card names them by the address they knocked with.
+  // the door tab, two polls later: whatever the cookie became, it is not the
+  // founder, and at ✒️ — where the link is the joining — it is the new
+  // member's own seat (issue #11, F1)
+  await T(7000);
+  const doorAfter = await doorPage.evaluate(() => (window.__founding ? window.__founding() : null))
+    .catch((e) => ({ threw: String(e && e.message).split('\n')[0] }));
+  say('door tab   · ' + JSON.stringify(doorAfter && { viewer: doorAfter.viewer, amFounder: doorAfter.amFounder }));
+  if (!doorAfter || doorAfter.threw) {
+    say('FAIL: the door tab\'s readout threw — ' + JSON.stringify(doorAfter && doorAfter.threw));
+    stuck.push('the door tab');
+  } else if (doorAfter.amFounder) {
+    say('FAIL: a door tab whose cookie became somebody else\'s reports the founder\'s seat — viewer ' +
+      JSON.stringify(doorAfter.viewer) + ' (issue #11, F1)');
+    stuck.push('the door tab\'s seat');
+  } else if (PRICE === 'pen' && !(typeof doorAfter.viewer === 'number' && doorAfter.viewer !== 0)) {
+    say('FAIL: at ✒️ the door tab should be the new member\'s own seat, saw viewer ' +
+      JSON.stringify(doorAfter.viewer) + ' (issue #11, F1)');
+    stuck.push('the door tab\'s member seat');
+  } else if (PRICE !== 'pen' && doorAfter.viewer !== 'applicant') {
+    say('FAIL: at 🪪 ' + PRICE + ' the door tab should follow its cookie to the applicant seat, saw viewer ' +
+      JSON.stringify(doorAfter.viewer) + ' (issue #11, F1)');
+    stuck.push('the door tab\'s applicant seat');
+  }
+  await doorPage.close();
   if (PRICE === 'pen') {
     say('applicant  · ' + APPLICANT + ' opened the link and was admitted on arrival');
   } else {
@@ -355,6 +397,15 @@ if (knock.status !== 200 || !knock.body || !knock.body.devLink) {
       say('FAIL: the Apply card does not read as submitted: ' + JSON.stringify(cardSays.slice(0, 160)));
       stuck.push('the Apply card reads Submitted');
     } else {
+      // **the card names the route at its price** (issue #29 F3): the ✏️
+      // sentence stood at every price, *sure enough* over a unanimous vote
+      // (the glyph is drawn, so the words are what the text holds)
+      const route = PRICE === 'assembly' ? 'every member agrees' : 'members as a proposal (';
+      if (!cardSays.includes(route)) {
+        say('FAIL: at 🪪 ' + PRICE + ' the Apply card should say ' + JSON.stringify(route) + ': ' +
+          JSON.stringify(cardSays.slice(0, 200)));
+        stuck.push('the Apply card names its route');
+      }
       say('applicant  · ' + NAME + ' verified and submitted on the surface · ' +
         JSON.stringify((cardSays.match(/Submitted\.[^—]*/) || [''])[0].trim()));
     }
@@ -431,12 +482,20 @@ if (knock.status !== 200 || !knock.body || !knock.body.devLink) {
     });
     return r.status;
   }, SLUG);
+  // what the resigned seat's own page has become, read after the act (issue
+  // #11, F2): the door's one sentence, and the rows it is drawing
+  guestDoor = () => guest.evaluate(() => {
+    const h = document.getElementById('holding');
+    return { holding: !!h && !h.hidden,
+      sentence: h ? (h.textContent || '').trim().slice(0, 60) : null,
+      rows: document.querySelectorAll('.memrow .mn').length };
+  }).catch((e) => ({ threw: String(e && e.message).split('\n')[0] }));
   // the seat the admitted applicant is served (Q1405): by the seat mail's
   // link where one is given — it swaps the `app:` cookie for the member's, as
   // the returning section's invitation does — else the page they already hold
   guestSeat = async (link) => {
     if (link) {
-      await guest.goto(link);
+      await landOn(guest, link);
       for (let i = 0; i < 40 && !guest.url().includes('/d/'); i++) await T(500);
     } else await guest.reload({ waitUntil: 'load' });
     await T(2500);
@@ -450,6 +509,18 @@ if (knock.status !== 200 || !knock.body || !knock.body.devLink) {
       };
     });
   };
+  guestApplyCard = async () => {
+    await guest.reload({ waitUntil: 'load' });
+    await T(2500);
+    await guest.evaluate(() => { const b = document.querySelector('#rail [data-card="apply"]'); if (b) b.click(); });
+    await T(600);
+    return guest.evaluate(() => {
+      const c = document.querySelector('.setupcard');
+      const li = document.querySelector('#rail [data-card="apply"]');
+      return { card: c ? (c.textContent || '').replace(/\s+/g, ' ').trim() : '',
+        entry: li ? (li.closest('li') || li).textContent.replace(/\s+/g, ' ').trim() : '' };
+    });
+  };
   closeGuest = () => guestCtx.close();
 }
 // who the surface should name: the name they gave, or — where arrival was the
@@ -457,7 +528,46 @@ if (knock.status !== 200 || !knock.body || !knock.body.devLink) {
 const CALLED = PRICE === 'pen' ? APPLICANT : NAME;
 
 /* ---- what the founder is served -------------------------------------- */
-await page.goto(DOCBASE + '/d/' + SLUG);
+/* **One 429 on the first view used to be a blank page for ever** (issue #11,
+ * F3). The 4s poll is started at the foot of a successful boot, so a boot
+ * that fails never starts one: the reader gets an empty column, an empty
+ * rail and no second attempt — on venue Wi-Fi, where a room of phones shares
+ * one address and the door's budget is per address, that is the ordinary
+ * arrival. Driven once, at 🪪 proposal alone (one price is enough for a
+ * page-wide fact, and the other two have their own slow work): the first
+ * view answers 429, the rest go through untouched, and the page must come
+ * back inside the back-off — the founder's seat, clauses in the column,
+ * rows in the register — **without navigating**, which the marker set on the
+ * page after load is the test of. */
+if (PRICE === 'proposal') {
+  let blocked = false;
+  await page.route('**/api/d/*/view*', async (route) => {
+    if (blocked) return route.continue();
+    blocked = true;
+    await route.fulfill({ status: 429, contentType: 'application/json',
+      body: JSON.stringify({ error: 'too many' }) });
+  });
+  await landOn(page, DOCBASE + '/d/' + SLUG);
+  await page.evaluate(() => { window.__noReload = true; });
+  await T(6500);
+  const back = await page.evaluate(() => ({
+    kept: window.__noReload === true,
+    viewer: window.__founding ? window.__founding().viewer : '(no readout)',
+    clauses: document.querySelectorAll('#charter .prose p, #prose p').length,
+    rows: document.querySelectorAll('.memrow').length,
+  })).catch((e) => ({ threw: String(e && e.message).split('\n')[0] }));
+  say('boot 429   · ' + JSON.stringify(back));
+  if (back.threw || back.viewer !== 0 || !back.clauses || !back.rows) {
+    say('FAIL: a 429 on the first view left the page blank — it must try again ' +
+      'and draw the document (issue #11, F3)');
+    stuck.push('the boot’s retry');
+  } else if (!back.kept) {
+    say('FAIL: the page recovered by navigating; the boot retries in place (issue #11, F3)');
+    stuck.push('the boot’s retry in place');
+  }
+  await page.unroute('**/api/d/*/view*');
+}
+await landOn(page, DOCBASE + '/d/' + SLUG);
 await T(2500);
 
 // **A task waits behind the grant its main action needs** (Q1328, Q1344). At
@@ -688,7 +798,35 @@ if (admEntry) {
     await T(5000); // >4s: a poll lands carrying the judged race
     const now = await entryNow();
     say('entry      · after voting ' + JSON.stringify(now));
-    if (!now || now.st !== 'st-wait' || now.mark !== 'glass') {
+    /* **Whose turn it is decides between the two** (Q1475, Ed 2026-09-19).
+     * Where the room is still deciding, the entry waits under ⏳ — the vote
+     * is cast and the answer is other people's. But this walk's founder is
+     * the whole membership, so their own vote carries the race at once, and
+     * ✉️'s 🛡️ is born held: the admission **parks on their own assent**, and
+     * the entry that waited on nobody but them read ⏳ and said so to nobody.
+     * It asks now, and its card is the 👑 pair. Which of the two this run
+     * meets depends on the engine's cooldown, so it is read off the view
+     * rather than assumed. */
+    const parkedQ = await page.evaluate(async (slug) => {
+      const v = await (await fetch(`/api/d/${slug}/view`)).json();
+      return ((v.view && v.view.crownTasks) || []).length > 0;
+    }, SLUG);
+    if (parkedQ) {
+      const pcard = await page.evaluate(() => {
+        const c = document.querySelector('.setupcard');
+        return c ? { crownq: [...c.querySelectorAll('[data-crownq]')].map((b) => b.dataset.crownq),
+          radios: c.querySelectorAll('.lanepick:not([disabled])').length } : null;
+      });
+      say('👑 parked  · the founder\'s own vote carried it, and ✉️\'s 🛡️ holds it · ' + JSON.stringify(pcard));
+      if (!now || now.st !== 'st-ask') {
+        say('FAIL: a parked admission should ask the founder, saw ' + JSON.stringify(now));
+        stuck.push('the parked entry asks');
+      }
+      if (!pcard || pcard.crownq.join('|') !== 'reject|accept' || pcard.radios !== 0) {
+        say('FAIL: the parked ✏️-priced card should carry the 👑 pair and no vote');
+        stuck.push('the parked ✏️ card');
+      }
+    } else if (!now || now.st !== 'st-wait' || now.mark !== 'glass') {
       say('FAIL: after the vote the admit entry should wait under ⏳, saw ' + JSON.stringify(now));
       stuck.push('the entry waits');
     }
@@ -748,27 +886,87 @@ if (admEntry) {
     const held = chose && await press(1600);
     if (!held) { say('FAIL: could not consent to the admission on the 🏛️ card'); stuck.push('the consent'); }
     else {
-      await T(1500);
+      await T(5000);
       // **the door's 🛡️ is born held** (SPEC §9.7 rule 9): a carried
-      // admission parks behind the founder's assent, so the crown question
-      // is answered over the wire as the founding's settings were — the
-      // crown card is journey's to walk, not this one's
+      // admission parks behind the founder's assent, so the module opens a
+      // 👑 question. **And the page had nowhere to put it** (Q1475, Ed
+      // 2026-09-19, the founder of a live room: *I did have founder veto but
+      // I wasn't served a queue card for it*) — this walk answered it over
+      // the wire and so never met the gap. It is walked on the page now: the
+      // entry asks, the card is the passed pair with the two powers on it and
+      // no vote left to cast, and ✒️ is what admits.
       const founderView = await page.evaluate(async (slug) =>
         (await (await fetch(`/api/d/${slug}/view`)).json()), SLUG);
       const crown = ((founderView.view && founderView.view.crownTasks) || [])[0];
       if (!crown) { say('FAIL: the carried admission raised no crown question for the founder\'s 🛡️'); stuck.push('the crown question'); }
       else {
-        const assent = await cmd('answer-crown-question', { question: crown.id, outcome: 'accept' });
-        say('🛡️ assent · ' + crown.id + ' → ' + assent.status);
-        if (assent.status !== 200) stuck.push('the crown\'s assent');
-        await T(1500);
+        const parked = await page.evaluate((k) => {
+          const li = document.querySelector('#rail .qitem[data-q="' + k + '"]');
+          const b = li && li.querySelector('button');
+          return b ? { st: (b.className.match(/st-\w+/) || [''])[0] } : null;
+        }, admEntry.k);
+        say('👑 entry   · ' + JSON.stringify(parked));
+        if (!parked || parked.st !== 'st-ask') {
+          say('FAIL: the parked admission should ask the founder, saw ' + JSON.stringify(parked));
+          stuck.push('the 👑 entry asks the founder');
+        }
+        await open(admEntry.k);
+        const pc = await page.evaluate(() => {
+          const c = document.querySelector('.setupcard');
+          if (!c) return null;
+          return {
+            crownq: [...c.querySelectorAll('[data-crownq]')].map((b) => b.dataset.crownq),
+            // nothing left to press: the one radio on a parked card is the
+            // membership's own choice, marked and disabled
+            radios: c.querySelectorAll('.lanepick:not([disabled])').length,
+            chosen: [...c.querySelectorAll('.pick.on .lanepick[disabled]')]
+              .map((b) => (b.textContent || '').trim()),
+            confirm: c.querySelectorAll('[data-confirm], [data-admitgo]').length,
+            text: (c.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 200),
+          };
+        });
+        say('👑 card    · ' + JSON.stringify(pc));
+        const pcOk = !!pc && pc.crownq.join('|') === 'reject|accept' && pc.radios === 0 &&
+          pc.confirm === 0 && pc.chosen.join('') === 'Chosen by the membership' &&
+          pc.text.includes(NAME);
+        if (!pcOk) {
+          say('FAIL: the parked card should carry the 👑 pair, the membership\'s choice and no vote');
+          stuck.push('the 👑 card');
+        }
+        const pressed = await page.evaluate(() => {
+          const b = document.querySelector('.setupcard [data-crownq="accept"]');
+          if (!b) return false;
+          b.click();
+          return true;
+        });
+        say('👑 ✒️      · ' + (pressed ? 'pressed on the page' : 'FAIL: no ✒️ to press'));
+        if (!pressed) stuck.push('the 👑 accept');
+        await T(5000);
+      }
+      // **the applicant's own page says it was yes** (issue #29 F2): read on
+      // the `app:` seat they still hold, before the seat mail swaps it — the
+      // card said *Submitted — the members are deciding* after they had
+      if (guestApplyCard) {
+        const own = await guestApplyCard();
+        say('admitted   · their 🪪 · ' + JSON.stringify(own.entry.slice(0, 90)) + ' · ' + JSON.stringify(own.card.slice(0, 120)));
+        if (/members are deciding/.test(own.entry + own.card) || !/admitted you/.test(own.card)) {
+          say('FAIL: the admitted applicant\'s own card does not say they were admitted (issue #29)');
+          stuck.push('the admitted card');
+        }
       }
       // the seat mail lands on the outbox's next sender pass, not on the
-      // commit that raised it, so it is polled for rather than read once
+      // commit that raised it, so it is polled for rather than read once.
+      // **The outbox answers newest first** (`outboxTail`), and this took
+      // `.pop()` — the *oldest* match: a second run against the same
+      // `DRAFT_DATA_DIR` therefore followed the previous run's link, which
+      // that run had already consumed, and the walk failed at *the seat mail
+      // did not seat the admitted applicant* with nothing wrong with the
+      // product at all. The address is the same every run, so the filter
+      // cannot tell the two mails apart; the end of the list can.
       let seatLink = null;
       for (let i = 0; i < 40 && !seatLink; i++) {
         const seatMail = (await devOutbox(BASE))
-          .filter((m) => m.to === APPLICANT && /\/auth\/login/.test(linkIn(m) || '')).pop();
+          .filter((m) => m.to === APPLICANT && /\/auth\/login/.test(linkIn(m) || ''))[0];
         seatLink = seatMail ? linkIn(seatMail) : null;
         if (!seatLink) await T(500);
       }
@@ -828,7 +1026,10 @@ if (admEntry) {
 if (PRICE !== 'pen') {
   const RETURNING = 'returning-' + Date.now().toString(36) + '@example.org'; // one address per run: the outbox is shared
   const inv = await cmd('invite', { email: RETURNING });
-  const invMail = (await devOutbox(BASE)).filter((m) => m.to === RETURNING).pop();
+  // newest first, like the seat mail above: this address is this run's own,
+  // so only one mail can match today — but the end the read takes is the one
+  // that stays right when it is not
+  const invMail = (await devOutbox(BASE)).filter((m) => m.to === RETURNING)[0];
   const invLink = invMail && linkIn(invMail);
   if (inv.status !== 200 || !invLink) {
     say('FAIL: no invitation reached ' + RETURNING + ' → ' + inv.status);
@@ -836,7 +1037,7 @@ if (PRICE !== 'pen') {
   } else {
     const memCtx = await browser.newContext({ viewport: { width: 1200, height: 900 } });
     const mem = await memCtx.newPage();
-    await mem.goto(invLink);
+    await landOn(mem, invLink);
     for (let i = 0; i < 40 && !mem.url().includes('/d/'); i++) await T(500);
     const memCmd = (op, args) => mem.evaluate(async ([slug, op2, args2]) => {
       const r = await fetch(`/api/d/${slug}/cmd`, {
@@ -866,7 +1067,7 @@ if (PRICE !== 'pen') {
         const backCtx = await browser.newContext({ viewport: { width: 1200, height: 900 } });
         const back = await backCtx.newPage();
         back.on('pageerror', (e) => errors.push('returning applicant: ' + String(e)));
-        await back.goto(again.body.devLink);
+        await landOn(back, again.body.devLink);
         await T(2200);
         const served = await back.evaluate(async () => {
           const v = await (await fetch(location.origin + '/api/d/' + location.pathname.split('/')[2] + '/view')).json();
@@ -929,6 +1130,40 @@ if (PRICE === 'pen' && guestResign) {
   say('leave      · resign → ' + left);
   if (left !== 200) stuck.push('the resignation');
   else {
+    /* **A departure reaches the open page, not only the reloaded one**
+     * (issue #11, F2). The founder's page is still open on the register when
+     * somebody resigns, and the served membership simply stops carrying
+     * them — there is no departed row with a flag on it to iterate. The row
+     * therefore stayed, face and all, under *Members*, for as long as
+     * nobody reloaded. Read one poll after the act and before the reload
+     * below, which would rebuild the rows from the module and pass either
+     * way. */
+    await T(4500);
+    const listed = await page.evaluate(() => [...document.querySelectorAll('.memrow .mn')]
+      .map((r) => (r.textContent || '').replace(/\s+/g, ' ').trim()));
+    const stillThere = listed.filter((t) => t.toLowerCase().includes('rowan'));
+    say('the poll   · register reads ' + JSON.stringify(listed));
+    if (stillThere.length) {
+      say('FAIL: the member who resigned is still listed on the open page — ' +
+        JSON.stringify(stillThere) + ' (issue #11, F2)');
+      stuck.push('the departed row on the open page');
+    }
+    /* **And the page that resigned is the door** — the other side of the same
+     * poll, and the one F2's splice has to be safe on. A seat that dies
+     * mid-session becomes the door, and the payload that says so moves the
+     * viewer to `'stranger'` *before* `syncFromCs` runs, so the splice finds
+     * no row of its own to take out and the reader is never left indexed at
+     * -1. Read on the guest's own page, which is still open, and worth its
+     * own line because a throw here would be swallowed by the poll's catch
+     * and leave a page that has simply stopped: the door's one sentence is
+     * the proof it re-drew rather than died. */
+    const doorNow = guestDoor ? await guestDoor() : { threw: 'no guest page' };
+    say('the seat   · the page that resigned reads ' + JSON.stringify(doorNow));
+    if (!doorNow || doorNow.threw || !doorNow.holding) {
+      say('FAIL: the seat that died mid-session did not become the door — ' +
+        JSON.stringify(doorNow) + ' (issue #11, F2)');
+      stuck.push('the resigned seat at the door');
+    }
     await page.reload({ waitUntil: 'load' });
     await T(2500);
     const dep = await page.evaluate(() => {
@@ -951,6 +1186,84 @@ if (PRICE === 'pen' && guestResign) {
         stuck.push('the departure tooltip');
       }
     }
+  }
+}
+/* ---- issue #36: the door joins, and says when it could not ----------- *
+ * **An open door is joined from the page** (F1; Q509 (a)): at 🤝 yes with
+ * 🪪 at ✒️ the door offered Log In alone, which mails a stranger nothing,
+ * and every knock this walk made went by `fetch` (F4), so no guard had ever
+ * pressed the door's own 📧. And **sent means the host took it** (F2): the
+ * card read *Sent to …* before the knock was posted, whatever came back —
+ * so a stubbed 429, on the Join card and on Log In, must read as refused. */
+if (PRICE === 'pen') {
+  const JOINER = 'juniper@example.org';
+  const stranger = async () => {
+    const c = await browser.newContext({ viewport: { width: 1200, height: 900 } });
+    const p = await c.newPage();
+    p.on('pageerror', (e) => errors.push('door: ' + String(e)));
+    await landOn(p, DOCBASE + '/d/' + SLUG);
+    await T(3000);
+    return { c, p };
+  };
+  const sendFrom = async (p, k, email) => {
+    await p.evaluate((kk) => { const b = document.querySelector('#rail [data-card="' + kk + '"]'); if (b) b.click(); }, k);
+    await T(700);
+    const field = await p.$('.setupcard [data-stremail]');
+    if (!field) return { card: '(no email field)' };
+    await field.click();
+    await p.keyboard.type(email, { delay: 5 });
+    await T(200);
+    await p.click('.setupcard [data-strsend]');
+    await T(2000);
+    return p.evaluate(() => ({
+      card: ((document.querySelector('.setupcard') || {}).textContent || '').replace(/\s+/g, ' ').trim(),
+      errline: !!document.getElementById('errline'),
+    }));
+  };
+  const { c: jc, p: jp } = await stranger();
+  const rail = await jp.evaluate(() => [...document.querySelectorAll('#rail [data-card]')]
+    .map((b) => ({ k: b.dataset.card, t: (b.closest('li') || b).textContent.replace(/\s+/g, ' ').trim() })));
+  say('join       · the door\'s rail ' + JSON.stringify(rail));
+  const joinCard = rail.find((r) => r.k === 'strapply');
+  if (!joinCard || !joinCard.t.includes(COPY.page.strjoin.title)) {
+    say('FAIL: an open door offers no Join card (issue #36 F1)');
+    stuck.push('the Join card');
+  } else {
+    const sent = await sendFrom(jp, 'strapply', JOINER);
+    if (!sent.card.includes(COPY.page.strjoin.sent)) {
+      say('FAIL: the Join card does not say the link was sent: ' + JSON.stringify(sent.card.slice(0, 160)));
+      stuck.push('the Join card sends');
+    }
+    let joinLink = null;
+    for (let i = 0; i < 20 && !joinLink; i++) {
+      const m = (await devOutbox(BASE)).filter((x) => x.to === JOINER && /\/auth\/apply/.test(linkIn(x) || ''))[0];
+      joinLink = m ? linkIn(m) : null;
+      if (!joinLink) await T(500);
+    }
+    if (!joinLink) { say('FAIL: the Join card mailed no link'); stuck.push('the join mail'); }
+    else {
+      await landOn(jp, joinLink);
+      for (let i = 0; i < 40 && !jp.url().includes('/d/'); i++) await T(500);
+      await T(2000);
+      const me = await jp.evaluate(async () => (await (await fetch(location.origin + '/api/d/' +
+        location.pathname.split('/')[2] + '/view')).json()).me || null);
+      say('join       · pressed on the page, the link seats ' + JSON.stringify(me));
+      if (!me || /^app:/.test(me)) { say('FAIL: the Join link did not seat a member'); stuck.push('the join seats'); }
+    }
+  }
+  await jc.close();
+  // the refusal, on both cards: the host answers 429 and the card says so
+  for (const [k, path] of [['strapply', '/apply'], ['strlogin', '/login']]) {
+    const { c, p } = await stranger();
+    await p.route('**/api/d/*' + path, (route) => route.fulfill({ status: 429,
+      contentType: 'application/json', body: JSON.stringify({ error: 'too many requests — try again shortly' }) }));
+    const said = await sendFrom(p, k, 'refused.' + k + '@example.org');
+    say('refused    · ' + k + ' · ' + JSON.stringify(said.card.slice(0, 140)) + ' · errline ' + said.errline);
+    if (!/That was refused/.test(said.card) || /Sent to/.test(said.card) || !said.errline) {
+      say('FAIL: a refused ' + k + ' send should say so under the card and on the stagehand\'s line (issue #36 F2)');
+      stuck.push('the refused ' + k);
+    }
+    await c.close();
   }
 }
 await closeGuest();

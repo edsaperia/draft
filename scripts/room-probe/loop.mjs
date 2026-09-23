@@ -12,7 +12,8 @@ let v=await view(S,author);
 const lines=v.text.split('\n');
 const contested=new Set(v.clauses.flatMap(c=>c.contested.map(x=>x.start)));
 let li=lines.findIndex((l,i)=>i>0 && !l.startsWith('#') && !contested.has(i) && l.length>20);
-const p=await cmd(S,author,'propose-text',{baseVersion:v.textVersion,hunks:[{start:li,end:li+1,lines:['PROBE: '+lines[li]]}],why:'probe amendment'});
+// `was` is the wording the hunk replaces — required at the door (Q1463 (1))
+const p=await cmd(S,author,'propose-text',{baseVersion:v.textVersion,hunks:[{start:li,end:li+1,lines:['PROBE: '+lines[li]],was:[lines[li]]}],why:'probe amendment'});
 const cid=p.id; console.log('proposed',cid);
 const state=async()=>{ const x=await view(S,author); const mine=x.mine.find(c=>c.id===cid); const rec=x.records.find(r=>r.candidateId===cid||r.field?.some(f=>f.candidateId===cid)); const cl=x.clauses.find(c=>c.candidates?.some(k=>k.id===cid)); return {v:x.textVersion, mine:mine?.state, judges:cl?.judges, closeness:cl?.closeness, rec:rec?.outcome, adopted:x.text.includes('PROBE:')}; };
 let votesFor=0, otherJudgments=0;

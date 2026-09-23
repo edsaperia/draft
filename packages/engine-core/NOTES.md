@@ -6,11 +6,14 @@ needing Ed's sign-off is in QUESTIONS.md; the rest is engineering record.
 ## Mechanism decisions
 
 - **peakW starts at 0 and only moves on evidence.** The bare prior puts any
-  untested candidate at P ≈ 0.5, so the spec's refund formula taken literally
-  would refund junk in full before a single judgment — an anti-flooding hole.
-  A candidate's peakW updates only from fits in which it has at least one
-  comparison. Corollary: a never-judged candidate that retires refunds 0
-  (withdrawal still refunds fully).
+  untested candidate at P ≈ 0.5, so the refund formula §7 carried until Q1454,
+  taken literally, would have refunded junk in full before a single judgment —
+  an anti-flooding hole. A candidate's peakW updates only from fits in which it
+  has at least one comparison. **The refund no longer reads it** (Q1454, SPEC
+  v0.135, R-133: a proposal that passes returns its stake, and nothing else
+  returns anything), and the rule stands unchanged for the peak's remaining
+  job — ranking the graveyard and the backlog (§8), where an author's own
+  preference must not open an account either.
 - **Incumbent identity is the hash of the contested spans' current text.**
   Incumbency is positional (SPEC §4.4); evidence against the incumbent goes
   stale exactly when the text it judged stops being the status quo. Slightly
@@ -22,15 +25,15 @@ needing Ed's sign-off is in QUESTIONS.md; the rest is engineering record.
   evidentiary role (loss accounts, span attribution) is deferred.
 - **Dominated** (SPEC §6.2 — a query, not an event, and not the projection
   §6.2 asks for): `dominated()` names the candidates the incumbent already
-  beats at the bar *as it stands now*, on at least five usable comparisons in
-  which the candidate is a side (locked, ground-shifted evidence excluded).
-  Today's bar is a floor under any projection's because the ramp is a
-  smoothstep to its closing value and re-anchoring on a moved close never
-  lowers it (`@draft/constitution`'s `barAt`) — with the one caveat that
-  nothing validates a ramp whose start exceeds its end. No engine command
-  fires §6.2's invitation: the composer's summons is the host's to send, and
-  `dominated()` is what it would read. (Re-read against the code 2026-09-07,
-  Q1262.)
+  beats at the bar, on at least five usable comparisons in which the
+  candidate is a side (locked, ground-shifted evidence excluded). **The bar
+  is the same at every moment of the document's life** — pinned at 0.5 since
+  SPEC v0.128 (Q1362 (b), Ed 2026-09-15, R-117), the ramp and its
+  re-anchoring kept one release longer with start and end equal — so there is
+  no projection to make and nothing in this query turns on the clock. No
+  engine command fires §6.2's invitation: the composer's summons is the
+  host's to send, and `dominated()` is what it would read. (Re-read against
+  the code 2026-09-07, Q1262; re-read against the pinning 2026-09-17.)
 - **Deadlock:** ≥ `deadlockMinComparisons` usable comparisons AND the
   best available pair's value < `deadlockEpsilon`, where pair value =
   posterior variance of the strength difference × outcome unpredictability.
@@ -61,12 +64,16 @@ later refinement has since landed.
   `reopenedBoost` (1.5) while a ground shift has locked the race's evidence
   and nothing fresh has been measured (§4.4, Q50). The hot set is the top
   `hotSetSize` = 3 by that value (Q31).
-- **How a hand is built.** The leading slots are the *unheard* slots — every
-  floor-short race this participant has not judged, least-measured first —
-  before any hot-set slot is filled (Q1178, `f345167`): a fresh race carries
-  no evidence and so sorts below every measured one, and the multiplier alone
-  starved new proposals, which `room-walk` reproduces. The remaining slots
-  take a seeded per-slot roll rather than a fixed pattern (`roll <
+- **How a hand is built.** **There is no unheard slot** (Q1178, ruled by Ed
+  2026-09-09; `routing.ts`'s own paragraph records what stood from
+  2026-09-05 to 2026-09-09 and why it went). Serving never considers how
+  recently a card was made, only how close it is to resolving: v / c_p
+  alone, §8.2's ×1.25 on `valued` a value and not a slot, and the
+  exploration roll below the only push toward a new race. Reaching every
+  live race is `askOn`'s job (Q1202) — the server's view carries a working
+  pair for every race the hand did not deal — so the hand is an emphasis and
+  never a gate on what a member can be asked. Every slot takes a seeded
+  per-slot roll rather than a fixed pattern (`roll <
   1/salienceEvery` a diagonal, then `1/explorationEvery` an exploration card,
   cheap judges only), so a client fetching one card at a time gets the same
   mix; the diagonal branch opens only above 2E live questions, and §8.3a's
@@ -135,9 +142,13 @@ phases.
 `session.ts` (engine-core state machine) · `text/` (patch-engine: `diff`,
 `patch`, `compose`, `rebase`) · `ranking/davidson.ts` (ranking-model) ·
 `ranking/ceiling.ts` (the confidence a room's evidence can reach —
-`ceilingPct`, `winsNeeded`; Q840) · `adoption-threshold.ts` · `tokens.ts` ·
-`hash.ts` + `sha256.ts` + `rng.ts` (event-log integrity) · routing lives in
-`session.ts` (`feed`, `bountyBoard`, `backlog`) · `participant-api.ts` (the
+`ceilingPct`, `winsNeeded`; Q840) · `adoption-threshold.ts` (the bar, pinned
+at 0.5 and gating nothing — Q1362 (b), R-117) · `tokens.ts` ·
+`hash.ts` + `sha256.ts` + `rng.ts` (event-log integrity) · `routing.ts` (the
+serving rules, SPEC §8, as `Routing` over a `RoutingHost` of the session's
+live closures — `feed` and `bestPairFor`; Q1352 (o)) · `races.ts` (races and
+their ranking, SPEC §2.3 and §4.1, as `Races` over a `RacesHost`; Q1352 (p))
+· `session.ts` keeps `bountyBoard` and `backlog` · `participant-api.ts` (the
 blind-discipline surface, `authorVisible`) · `race-labeler.ts` (advisory
 naming, outside the state machine; Q49) · `oracle.ts` (SemanticOracle
 contract; implementations live outside the engine) · `dedup-gate.ts`

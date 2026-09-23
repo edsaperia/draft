@@ -8,7 +8,7 @@
  */
 
 import type { ConstitutionSession } from './session.js';
-import type { Arrival, DepartureBy, MemberId, MotionPayload, Power, PowerKey,
+import type { Arrival, DepartureBy, MemberId, MotionId, MotionPayload, Power, PowerKey,
   PowerSource } from './types.js';
 import type { MotionRoute, SettingId } from './catalogue.js';
 import { CATALOGUE, entryOf } from './catalogue.js';
@@ -101,6 +101,24 @@ export interface MotionView {
    * to say so, and to name the hand the standing rule actually came from.
    */
   moot: string | null;
+  /**
+   * **How a failed motion failed** (SURFACE E41; Q1447), and null while it is
+   * anything but failed. The page needs it for one word: STYLE T8 gives
+   * *refuse* to the Founder and *reject* to the membership, and a card that
+   * had only `status: 'held'` to read would have to guess which happened.
+   * `crown` is the Founder's 🛡️ over a motion the room carried, `members` the
+   * room deciding against it, and `system` **any** withdrawal — the module
+   * emits one event for the mover's own and for the host's alike (`motions.ts`),
+   * so the two are told apart by `owedHeld`, which carries only the host's.
+   *
+   * **`close` is the fourth, and the one nobody is told about** (Q1450, Ed
+   * 2026-09-18): the clock ran out while the motion was still running. It
+   * reaches no news card, E41 having no card at the close — it is here so
+   * that the 🥂 card can count a motion of either route the close found
+   * running, which on the ordinary side is a `held` record and on the
+   * constitutional one is `status: 'kept-at-close'`.
+   */
+  heldBy: 'members' | 'crown' | 'system' | 'close' | null;
   mine: boolean;
   /** When it settled — what the record and the clause's history line date. */
   at: number | null;
@@ -205,6 +223,14 @@ export interface MemberView {
    */
   owedDepartures: MemberId[];
   /**
+   * The motions **you moved** that failed and are still owed your OK (SURFACE
+   * E41; Q1447), oldest first, as motion ids into `motions` below — which
+   * carries the payload, the route, the reason and when each settled, so
+   * nothing about a failure is stated twice. Empty for everybody but the
+   * mover: a rejection is not news the room is owed.
+   */
+  owedHeld: MotionId[];
+  /**
    * The acts that laid powers down and are still owed your OK (entry 162,
    * Q1013), oldest first: one entry per act, carrying the whole of what that
    * act moved. The batch's contents ride the view rather than the page keeping
@@ -258,7 +284,13 @@ const MANAGED = CATALOGUE.filter((e) =>
 export function view(s: ConstitutionSession, member: MemberId): MemberView {
   const me = s.memberRecords().get(member) ?? null;
   const isConvenor = member === s.convenorRecord().id;
-  const electorateSize = s.motionElectorate().length;
+  // **E, once, for everything counted against it** (issue #6, F4). The
+  // electorate is read live (R-088) — that is what lets a resignation
+  // complete a motion nobody else has moved on — so every *n of E* readout
+  // has to be counted over the same live set, or the page states a fraction
+  // whose halves came from different rooms.
+  const eIds = new Set(s.motionElectorate());
+  const electorateSize = eIds.size;
 
   const questions: QuestionView[] = [];
   const resolutions: ResolutionView[] = [];
@@ -303,7 +335,6 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
       const answerable = entry.deps.every((d) => s.settingState(d).settledBy !== null);
       // While it runs it can say only how many have answered (§9.0a):
       // any value or running maximum would let the room read itself.
-      const eIds = new Set(s.motionElectorate());
       let answered = 0;
       for (const id of st.answers.keys()) if (eIds.has(id)) answered += 1;
       questions.push({
@@ -327,6 +358,12 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
   }
 
   const motions: MotionView[] = [];
+  // the motions a 👑 question refused (SURFACE E41; Q1447): read once, so a
+  // room with many settled motions does not walk the questions per motion
+  const crownRefused = new Set<string>();
+  for (const q of s.crownQuestionRecords().values()) {
+    if (q.status === 'rejected' && q.motion !== null) crownRefused.add(q.motion);
+  }
   let myHeldMotion: string | null = null;
   for (const rec of s.motionRecords().values()) {
     if ((rec.status === 'running' || rec.status === 'awaiting-crown') &&
@@ -344,10 +381,21 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
       why: rec.why,
       status: rec.status,
       moot: rec.moot,
+      heldBy: rec.status === 'withdrawn' ? 'system'
+        : rec.status !== 'held' ? null
+        : rec.heldAtClose ? 'close'
+        : crownRefused.has(rec.id) ? 'crown' : 'members',
       mine: rec.by === member,
       at: rec.settledAtT,
       from: s.amendedFrom(rec.id),
-      answeredCount: rec.route === 'constitutional' ? rec.answers.size : 0,
+      // …and the same set here (issue #6, F4). An answer stays on the record
+      // after its author has gone, so the raw size counted people the settle
+      // check no longer waits for: a motion the room could not carry read
+      // *2 of 2 have answered* while a present member had not answered it.
+      // A blind question's count has been read this way since it was written;
+      // a motion's had not.
+      answeredCount: rec.route === 'constitutional'
+        ? [...rec.answers.keys()].filter((id) => eIds.has(id)).length : 0,
       electorateSize,
       myAnswer: rec.answers.get(member) ?? null,
     });
@@ -430,6 +478,21 @@ export function view(s: ConstitutionSession, member: MemberId): MemberView {
     // name, the moment and whose act it was for every one of them — a second
     // copy is a second truth, and the card reads the register's own row
     owedDepartures: me ? departures.filter((d) => me.departuresOwed.has(d.id)).map((d) => d.id) : [],
+    // the failed motions still owed your OK (SURFACE E41; Q1447), oldest
+    // first: the ids alone, because `motions` already carries the payload,
+    // the route, the reason and the moment for every one of them — a second
+    // copy is a second truth. A motion whose record cannot be found is
+    // **skipped** rather than served bare, exactly as `owedAmendments` skips
+    // an amendment whose record is gone
+    owedHeld: me
+      ? [...me.heldOwed]
+          .flatMap((id) => {
+            const rec = s.motionRecords().get(id);
+            return rec ? [{ id, at: rec.settledAtT ?? rec.openedAtT }] : [];
+          })
+          .sort((a, b) => a.at - b.at)
+          .map((x) => x.id)
+      : [],
     // newest last, so the rail meets the acts in the order they happened; a
     // seat with no member record gets [], exactly as `owedOks` does
     owedReleases: me

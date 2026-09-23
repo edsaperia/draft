@@ -19,10 +19,7 @@
  * `SIGNING`, `SIGNER`, `AUTHOR_RUNG`, `SIGNER_PERSON`) go in as calls for
  * the same reason, `init` replacing every one of them; `caretPulse` goes in
  * as a call for a different one, being a `const` below the line `make` is
- * called on and so still in its temporal dead zone. `laneMode` travels the
- * other way: the strip's own handler and the page's `SESSION.setLaneRaw`
- * both write it, so it comes back as a settable property rather than only
- * through `laneRaw`.
+ * called on and so still in its temporal dead zone.
  *
  * Two things deliberately did not come. `mineSeq` names a draft at the
  * moment it is proposed and is `act`'s alone, so it stays beside `act`. And
@@ -40,7 +37,7 @@ window.COMPOSER = (function () {
   // the four names below that come out of `CARDS.make(env)` are session.js's
   // own instance of it, and arrive through `env` like anything else of its.
   const T = window.COPY.session;
-  const { esc, fieldHtml, laneBlocks, originText, speakerHtml } = window.CARDS;
+  const { esc, fieldHtml, laneBlocks, removedHtml, originText, speakerHtml } = window.CARDS;
   // the drawn glyphs (Q1401): the row's circles and the card's own buttons are
   // pictures from the one set, the sentences beside them take glyphify
   const { glyphHtml, glyphify } = window.CARDS;
@@ -61,9 +58,11 @@ window.COMPOSER = (function () {
        clause carries a caret, and the first character you type opens the clause
        into two lanes — what it says on the left, what you are making it say on
        the right — with your rationale above and 🗑️ and the ✏️ hold below. The
-       briefing, the drafting desk and the arrival bar from design/composer.html
-       are all superseded by this; what survives of that mockup is the briefing,
-       and only as an escalation state (SPEC §3.5).
+       briefing, the drafting desk and the arrival bar from the retired
+       composer mockup (design/composer.html until 2026-09-17, Ed's ruling on
+       issue #21; its description is in design/DECISIONS.md under Q70) are all
+       superseded by this; what survives of that mockup is the briefing, and
+       only as an escalation state (SPEC §3.5).
 
        Three things follow from "it is just the document":
          · there is **one** draft at a time, because there is one caret;
@@ -124,17 +123,20 @@ window.COMPOSER = (function () {
         // heading, so the two clauses are not neighbours and never merge
         if (at === last + 1) {
           s.keys.push(key); s.origin.push(orig);
+          if (s.seed != null) s.seed += '\n' + orig.text;
           const off = s.text.length + 1;
           s.text += '\n' + text;
           return { site: s, offset: off };
         }
         if (at === first - 1) {
           s.keys.unshift(key); s.origin.unshift(orig);
+          if (s.seed != null) s.seed = orig.text + '\n' + s.seed;
           s.text = text + '\n' + s.text;
           return { site: s, offset: 0 };
         }
       }
       const s = { keys: [key], origin: [orig], text, label: headingForKey(key) };
+      if (seed) s.seed = seed.text;
       // a gap site is born with its own anchor's bookkeeping (Q1311): the
       // held-open `.insert-anchor` after the block before it is where its card
       // stands (the read side's shape for a proposed section, Q261's smaller half)
@@ -149,14 +151,34 @@ window.COMPOSER = (function () {
     // in the lane and in the proposal because its `# ` is in the text, where
     // the member can also delete it. The block's kind still rides along for
     // anything that asks what the block *was* (the card's head).
+    // **An origin is what the document holds, never the wording you started
+    // from** (Q1483, the nh2026 convention 2026-09-20: *the propose edit
+    // button doesn't always pick up the right text*). The two are different
+    // things the moment ✏️ seeds a draft off somebody else's lane, and until
+    // now one field carried both: the origin took the seed's words, so
+    // `misaimed` compared a rival's wording against the clause as it stands
+    // (live.js), found them different, and refused every press with *the text
+    // moved while you were writing* — which was false, nothing was sent, and
+    // `followSites` would have gone looking for the rival's line in the
+    // document and marked the draft stranded. So the seeded wording — **what
+    // the diff is measured against** (Ed, 228) — lives on the site as `seed`,
+    // and the origin is **what the document holds**, which is the identity the
+    // follow and the misaim guard need and the only thing either reads.
     function originOf(key, seed) {
       const l = lineOf(key) || {};
       // a gap has nothing standing in it: an empty paragraph origin, marked so
       // the card's head can say which gap and the host can send an insertion
       if (isGapKey(key)) return { key, text: '', note: seed ? seed.note : null, t: 'p', gap: true };
-      return { key, text: seed ? seed.text : sourceTextFor(key), note: seed ? seed.note : null,
+      return { key, text: sourceTextFor(key), note: seed ? seed.note : null,
                t: l.t, level: l.level, bullet: !!l.bullet };
     }
+    // the wording a site's lane is diffed against, and what its head shows:
+    // the seed where ✏️ started it off another lane, the document's own
+    // blocks otherwise. One block, as a seeded site's head has always drawn.
+    const headBlocksOf = (site) => (site.seed == null ? site.origin
+      : [{ key: site.keys[0], text: site.seed, t: site.origin[0] && site.origin[0].t,
+           level: site.origin[0] && site.origin[0].level,
+           bullet: !!(site.origin[0] && site.origin[0].bullet) }]);
 
     // A **run** of blocks taken as one site. Ed's ruling (2026-08-17): four
     // contiguous paragraphs deleted together are one candidate, and not even a
@@ -165,9 +187,10 @@ window.COMPOSER = (function () {
     // single site whatever the run's length, which is what `draft-site` has meant
     // since 225; all that is new is being able to select one rather than having
     // to type your way across it.
-    function addDraftRun(d, keys, text) {
-      const s = { keys: keys.slice(), origin: keys.map((k) => originOf(k, null)),
+    function addDraftRun(d, keys, text, seed) {
+      const s = { keys: keys.slice(), origin: keys.map((k) => originOf(k, seed || null)),
                   text, label: headingForKey(keys[0]) };
+      if (seed) s.seed = seed.text;
       d.sites.push(s);
       d.sites.sort((a, b) => docIndexOfKey(a.keys[0]) - docIndexOfKey(b.keys[0]));
       return s;
@@ -218,6 +241,8 @@ window.COMPOSER = (function () {
     // Everything a block carries that is not its text: the gutter marks on a
     // clause, the fold triangle on a heading. All of it sits *before* the words,
     // so its length is a constant to subtract rather than a position to track.
+    // The block's markdown marker is **not** in it since Q1467: the marker is
+    // the line's own first characters, and the caret counts them.
     const leadLen = (block) => [...block.querySelectorAll('.chipcol, .nocaret')]
       .reduce((n, el) => n + el.textContent.length, 0);
 
@@ -306,14 +331,122 @@ window.COMPOSER = (function () {
       setCaretIn(blocks[blocks.length - 1], blocks[blocks.length - 1].textContent.length);
     }
 
+    // **B and I put the marks in, and take them out again** (Q1467). Edit mode
+    // is markdown source everywhere since the `[]` toggle went, so bold and
+    // italic are `**` and `*` written round the selection — and a press on a
+    // selection that already carries them removes them instead, whether the
+    // marks are inside the selection or standing just outside it in the same
+    // block. `insertText` rather than a node rewrite, so the host's own
+    // `input` handler re-marks and the site's text follows. One act for both
+    // columns; `blockOf` says what a block is on the surface asking (a lane's
+    // `.lp`, the founder's column's own child).
+    function markSelection(marks, blockOf) {
+      const sel = getSelection();
+      if (!sel || !sel.rangeCount) return;
+      const r = sel.getRangeAt(0);
+      const s = sel.toString();
+      const n = marks.length;
+      const put = (t) => document.execCommand('insertText', false, t);
+      // **A run across paragraphs is marked paragraph by paragraph** (Q1467;
+      // Ed, 2026-09-19, his pick of three: *wrap each paragraph's part
+      // separately*). Markdown has no bold that spans a paragraph break, so one
+      // pair round the whole run left both paragraphs wearing literal asterisks
+      // outside edit mode. Each part takes its own pair; a block's own marker
+      // (`# `, `- `) and the white space at a part's edges stay outside it,
+      // since a pair that opens on a space is not a pair (`MD_RX`); a blank
+      // line is left alone; and a press on a run whose every part is already
+      // marked takes them all off, as it does inside one block. It comes
+      // before the whole-selection test below, which would take the first
+      // part's opening pair and the last part's closing one and leave the
+      // middle broken. Guard: `scripts/repro/bold-across-blocks.mjs`.
+      if (s.indexOf('\n') >= 0) {
+        const first = blockOf(r.startContainer);
+        let atStart = false;
+        if (first) {
+          const g = document.createRange();
+          g.selectNodeContents(first);
+          try { g.setEnd(r.startContainer, r.startOffset); atStart = g.toString().length === 0; } catch (e) { /* not in the block */ }
+        }
+        const parts = s.split('\n').map((line, i) => {
+          // only a line that begins its block can begin with the block's marker
+          const m = (i > 0 || atStart) ? /^(?:#{1,3}|-)\s+/.exec(line) : null;
+          const head = m ? m[0] : '';
+          const rest = line.slice(head.length);
+          const lead = /^\s*/.exec(rest)[0];
+          const tail = /\s*$/.exec(rest.slice(lead.length))[0];
+          return { head: head + lead, core: rest.slice(lead.length, rest.length - tail.length), tail };
+        });
+        // `*x*` is italic and `**x**` is not: the single mark must not read
+        // the bold pair's own characters as its own
+        const isMarked = (c) => c.length > 2 * n && c.startsWith(marks) && c.endsWith(marks) &&
+          (n === 2 || (c[1] !== '*' && c[c.length - 2] !== '*'));
+        const cores = parts.filter((p) => p.core);
+        const all = cores.length > 0 && cores.every((p) => isMarked(p.core));
+        return put(parts.map((p) => p.head + (!p.core ? ''
+          : all ? p.core.slice(n, -n)
+            : isMarked(p.core) ? p.core : marks + p.core + marks) + p.tail).join('\n'));
+      }
+      if (s.length > 2 * n && s.startsWith(marks) && s.endsWith(marks)) return put(s.slice(n, -n));
+      const block = s ? blockOf(r.startContainer) : null;
+      if (block && block === blockOf(r.endContainer)) {
+        const offOf = (node, o) => {
+          const g = document.createRange();
+          g.selectNodeContents(block);
+          try { g.setEnd(node, o); } catch (e) { return null; }
+          return g.toString().length;
+        };
+        const a = offOf(r.startContainer, r.startOffset), b = offOf(r.endContainer, r.endOffset);
+        const t = block.textContent;
+        // `*` inside `**` is the bold marks' own second character, never an
+        // italic pair — a grammar of three marks has no `***` (`MD_RX`)
+        const doubled = marks === '*' && (t.slice(a - 2, a - 1) === '*' || t.slice(b + 1, b + 2) === '*');
+        if (a != null && b != null && a >= n && !doubled &&
+            t.slice(a - n, a) === marks && t.slice(b, b + n) === marks) {
+          const at = (k) => {
+            const w = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
+            let node = w.nextNode(), acc = 0;
+            while (node) {
+              if (acc + node.length >= k) return [node, k - acc];
+              acc += node.length; node = w.nextNode();
+            }
+            return null;
+          };
+          const p1 = at(a - n), p2 = at(b + n);
+          if (p1 && p2) {
+            const g = document.createRange();
+            g.setStart(p1[0], p1[1]); g.setEnd(p2[0], p2[1]);
+            sel.removeAllRanges(); sel.addRange(g);
+            return put(s);
+          }
+        }
+      }
+      put(marks + s + marks);
+    }
+
     // ---- opening the composer -------------------------------------------
     // `initial` carries the keystroke that started it: the clause with that one
     // character already applied, and where the caret should sit afterwards.
-    function startDraft(key, seed, initial) {
+    // `run` is the blocks the wording being taken is a reading OF — ✏️
+    // *propose edit* under a card headed by several lines hands all of them
+    // (Q1483, the other half). It used to hand the one key the button carried,
+    // so a card headed *Step 3…* and *Remedies…* gave a draft of *Step 3…*
+    // alone aimed at `[22, 23)` where the card is about `[22, 24)`: sent, the
+    // candidate's several lines would have replaced one and doubled the rest.
+    // A run of one, a run holding a gap, or a run the key is not in is no run.
+    function startDraft(key, seed, initial, run) {
       if (!key) return;
       const d = ensureDraft();
+      const keys = (run && run.length > 1 && run.includes(key) && !run.some(isGapKey)) ? run : null;
       let site = siteFor(d, key), offset = 0;
-      if (site) {
+      if (keys) {
+        // the whole run gives way to the whole run, wherever the draft held
+        // part of it — the same rule a seed on one clause follows
+        d.sites = d.sites.filter((x) => !x.keys.some((k) => keys.includes(k)));
+        site = addDraftRun(d, keys,
+          seed ? seed.text : keys.map(sourceTextFor).filter(Boolean).join('\n'), seed);
+        key = keys[0];
+      }
+      else if (site) {
         if (initial) site.text = initial.text;
         // **A seed replaces what is in the box** (Ed, 2026-08-17: *clicking a
         // "propose edit" puts that text in it instead*). It used to seed only on
@@ -325,6 +458,7 @@ window.COMPOSER = (function () {
         else if (seed) {
           const at = site.keys.indexOf(key);
           site.text = seed.text;
+          site.seed = seed.text;
           site.keys = [key];
           site.origin = [originOf(key, seed)];
           if (at < 0) site.label = headingForKey(key);
@@ -364,7 +498,36 @@ window.COMPOSER = (function () {
         layoutQueue(); drawWires();
         return;
       }
-      toggle(d.id, true, land);
+      // **A keystroke never travels** (Q1461 (iii), Ed's residency room
+      // 2026-09-18: a new clause typed into a gap came out appended to the
+      // clause above). `toggle`'s travel is a 260–700ms animated scroll and
+      // the caret only lands in the lane on its far side (`after`), so
+      // everything typed in between went on hitting the *column* — and each
+      // of those keystrokes opened a draft of its own, bumping `seqToken`
+      // and cancelling the open that was in flight. Measured in a busy room:
+      // 799px of travel, the card opening 567ms after the Enter, the
+      // sentence's first 26 characters each overwriting the last in a site on
+      // the clause above and only the tail reaching the lane. Nothing is owed
+      // here anyway — the caret is in the block, so the block is on screen,
+      // and the card grows from it without it moving (`keepStill`). Travel
+      // belongs to the two click routes that open a draft somewhere the
+      // reader is not looking: ✏️ on another wording, and *Propose something
+      // else* on a deadlock.
+      toggle(d.id, !initial, land);
+    }
+
+    // **A carriage return never reaches a lane** (Q1491, the nh2026
+    // convention 2026-09-20). A paste out of a Windows editor arrives with
+    // '\r\n' endings; split on '\n' alone, every line but the last keeps a
+    // trailing '\r', and that character rides the draft into the hunk, into
+    // the document, and thereafter into every attestation made against the
+    // line — fifteen proposals were refused over one, told the wording they
+    // replaced was not the wording they replaced. The engine's doors
+    // normalise too, so nothing gets in from any client; this is so the draft
+    // never holds one at all and the lane shows exactly what will be sent.
+    function pastedText(ev) {
+      const t = (ev.dataTransfer && ev.dataTransfer.getData('text/plain')) || '';
+      return t.replace(/\r\n?/g, '\n');
     }
 
     // The first keystroke in a clause. Every input is intercepted: the charter
@@ -374,15 +537,13 @@ window.COMPOSER = (function () {
     function startDraftFromTyping(p, ev) {
       const key = p.dataset.key;
       if (!key) return;
-      // the caret is measured in the **words** — the column's marker is a
-      // `.nocaret` span, drawn and never counted — and the lane holds the
-      // **source line**, marker first (Q1403), so every offset moves past the
-      // marker on its way from the one to the other
-      const orig = currentTextFor(key);
-      const mark = markerFor(key);
-      const src = mark + orig;
-      const sel = caretRangeIn(p) || { start: orig.length, end: orig.length };
-      let a = Math.min(sel.start, orig.length), b = Math.min(sel.end, orig.length);
+      // **A caret offset in the column is an offset into the source line**
+      // (Q1467): edit mode draws the block's marker as ordinary text, so what
+      // is measured here and what the lane holds are the same string and
+      // nothing is added on the way between them.
+      const src = markerFor(key) + currentTextFor(key);
+      const sel = caretRangeIn(p) || { start: src.length, end: src.length };
+      let a = Math.min(sel.start, src.length), b = Math.min(sel.end, src.length);
       // **Enter at a clause edge inserts rather than rewrites** (backlog 204,
       // Q261): a collapsed caret at the very end of an unmodified clause opens a
       // draft on the gap after it, at the very start on the gap before it — a
@@ -391,10 +552,9 @@ window.COMPOSER = (function () {
       const enter = ev.inputType === 'insertParagraph' || ev.inputType === 'insertLineBreak';
       const d0 = draftOf();
       if (enter && a === b && !isGapKey(key) && !(d0 && siteFor(d0, key))) {
-        if (a === orig.length) return startDraft(gapAfter(key), null, { text: '', caret: 0 });
-        if (a === 0 && orig.length) return startDraft(gapBefore(key), null, { text: '', caret: 0 });
+        if (a === src.length) return startDraft(gapAfter(key), null, { text: '', caret: 0 });
+        if (a === 0 && src.length) return startDraft(gapBefore(key), null, { text: '', caret: 0 });
       }
-      a += mark.length; b += mark.length;
       let ins = '';
       switch (ev.inputType) {
         case 'insertText': ins = ev.data == null ? '' : ev.data; break;
@@ -402,19 +562,17 @@ window.COMPOSER = (function () {
         // (Ed, 231) — which falls out of this for free: the lane holds a run of
         // paragraphs, so a newline at the end is simply an empty second block.
         case 'insertParagraph': case 'insertLineBreak': ins = '\n'; break;
-        case 'insertFromPaste':
-          ins = (ev.dataTransfer && ev.dataTransfer.getData('text/plain')) || ''; break;
+        case 'insertFromPaste': ins = pastedText(ev); break;
         case 'deleteContentBackward':
-          // **Backspace at the words' start of a heading or bullet takes the
-          // marker off whole** (Q1403): the block becomes a paragraph with the
-          // caret where it was, and the next backspace — now at a paragraph's
-          // start — is Q1302's join. From the column the caret cannot stand
-          // inside the marker, so this is the one way the keystroke reaches
-          // it; in the open lane the marker is ordinary text.
+          // **Backspace takes one character, marker included** (Q1467,
+          // retiring Q1403's whole-marker special case): the caret can stand
+          // anywhere in the source line now, so a Backspace after a `#`
+          // deletes that `#` like any other character and a heading is
+          // demoted or flattened one press at a time. At the line's true
+          // start — offset 0, before the marker — it is Q1302's join.
           if (a === b) {
-            if (mark && a === mark.length) { a = 0; }
-            else if (a === 0) return joinWithNeighbour(key, -1, d0);
-            else a -= 1;
+            if (a === 0) return joinWithNeighbour(key, -1, d0);
+            a -= 1;
           }
           break;
         case 'deleteContentForward':
@@ -461,7 +619,7 @@ window.COMPOSER = (function () {
         keepStill(() => renderAll(), '[data-key="' + k1 + '"]');
         land(); layoutQueue(); drawWires(); return;
       }
-      toggle(d.id, true, land);
+      toggle(d.id, false, land);          // a keystroke never travels (above)
     }
 
     // What the same keystroke means when the selection spans more than one block
@@ -473,6 +631,28 @@ window.COMPOSER = (function () {
     // it comes out as one candidate and not as a patch.
     function startDraftFromRun(picked, ev) {
       const keys = picked.blocks.map((b) => b.dataset.key);
+      // **A run is one place, and two places never share a line** (K14–K16).
+      // `selectedBlocks` reads the column's own editable blocks, and an open
+      // card — an editing card over a site of this draft, a race card over a
+      // clause — takes the blocks it covers out of that list: a selection
+      // dragged across one comes back as the blocks on either side of it and
+      // nothing in between. That is not a run. Sent as one it spans every
+      // line between its ends, swallowing the site standing inside it, and
+      // the patch goes out with two hunks over the same lines — which the
+      // host refuses whole, the member's work with it (Q1492; the nh2026
+      // convention 2026-09-20, `hunks 0 and 1 overlap: [73, 86) and [74, 80)`
+      // and `[85, 95) and [86, 95)`, one member rewriting a long section each
+      // time). So the run is only a run where its blocks are neighbours in
+      // the document and none of them is already somewhere this draft holds;
+      // otherwise nothing is made, and the draft that is there says why.
+      const d0 = draftOf();
+      const ix = keys.map(docIndexOfKey);
+      const apart = ix.some((n, i) => i > 0 && n !== ix[i - 1] + 1);
+      const held = !!d0 && keys.some((k) => siteFor(d0, k));
+      if (apart || held) {
+        if (d0) { d0.refusal = T.refusal.crossesCard; renderAll(); }
+        return;
+      }
       // the run is the blocks' source lines (Q1403); a caret measured in a
       // block's words moves past that block's own marker
       const texts = keys.map(sourceTextFor);
@@ -493,8 +673,7 @@ window.COMPOSER = (function () {
       switch (ev.inputType) {
         case 'insertText': ins = ev.data == null ? '' : ev.data; break;
         case 'insertParagraph': case 'insertLineBreak': ins = '\n'; break;
-        case 'insertFromPaste':
-          ins = (ev.dataTransfer && ev.dataTransfer.getData('text/plain')) || ''; break;
+        case 'insertFromPaste': ins = pastedText(ev); break;
         case 'deleteContentBackward': case 'deleteContentForward':
         case 'deleteByCut': case 'deleteWordBackward': case 'deleteWordForward':
           break;                                 // the selection itself is what goes
@@ -516,7 +695,7 @@ window.COMPOSER = (function () {
         keepStill(() => renderAll(), '[data-key="' + keys[0] + '"]');
         land(); layoutQueue(); drawWires(); return;
       }
-      toggle(d.id, true, land);
+      toggle(d.id, false, land);         // a keystroke never travels (above)
     }
 
     // The right-hand lane marks what is new, exactly as every other pair does
@@ -536,17 +715,11 @@ window.COMPOSER = (function () {
     // identical word inserted — "used on ~~bone~~ bone," — which is nonsense the
     // reader has to see through. Split off, the comma is the only thing that
     // lights, which is the truth.
-    // Rich by default; markdown is the checking view (Ed, 2026-08-17). One
-    // preference rather than one per card \u2014 it is how *you* like to work, and it
-    // would be strange for it to reset every time a different clause opened.
-    // **And since Q1294 it is the column's, not the lane's** (Ed, 2026-09-10):
-    // the `[]` toggle sits with B and I in the one strip at the top right of
-    // the lifted column (`laneCtlHtml`, Q1294 (b): *top right of the edit box*)
-    // and flips every clause and every open lane at once (`srcMode`,
-    // `laneBlocks`); outside edit mode there is no strip and the column is
-    // always rendered.
-    let laneMode = 'rich';
-    const laneRaw = () => laneMode === 'md';
+    // **A lane is markdown source, always** (Q1467, Ed 2026-09-19): rich
+    // editing and the `[]` toggle that chose between them are gone, so there
+    // is no preference to hold, no caret to convert between two views, and
+    // nothing the lane shows that the candidate does not store. Outside edit
+    // mode the column is rendered, as it always was.
     // ---- the strip's state (Q1294 (b)) ----------------------------------------
     // Each editing lane's re-mark (the rewrite of its own markup after a change,
     // bound in `renderDoc`), keyed by the lane, so the column's B and I can reach
@@ -649,8 +822,35 @@ window.COMPOSER = (function () {
         '<button class="btn btn-withdraw glyphbtn" data-act="row-discard"' + (o.discardDisabled ? ' disabled' : '') +
         ' title="' + esc(o.discardTitle || T.row.discardAll) + '">' + glyphHtml('🗑️') + '</button>' +
         '<span class="rowmid">' + esc(mid) + '</span>' +
+        // **an empty wallet says when the next ✏️ lands** (Q1486 (E), Ed
+        // 2026-09-21: *dark, with ✏️ hh:mm countdown*). Beside the dark
+        // commit, never instead of it, and never where the ✏️ would be spent
+        // by nobody — the pen's own ✒️ costs nothing, so it keeps its place.
+        dripNoteHtml(o) +
         (o.pen ? btn(true, o.title) + (o.pair ? btn(false, o.proposeTitle) : '') : btn(false, o.title)) +
         '</div>';
+    }
+    /**
+     * **The countdown on a dark ✏️** (Q1486 (E), Ed 2026-09-21, widening his
+     * own question: *dark, with ✏️ hh:mm countdown (for proposals as well as
+     * rule changes, the same anywhere you would want to press the button but
+     * you have no ✏️s)*).
+     *
+     * Drawn only where the wallet is what is stopping the press — a draft
+     * with nothing changed in it greys the same button and has nothing to do
+     * with the drip — and only where a next ✏️ is actually coming: at the cap
+     * there is nothing to wait for, and a document whose rate gives no drip
+     * at all has no moment to name, so the line is absent and the button's
+     * own tooltip is the whole of what is said (`T.row.broke`).
+     *
+     * The moment is the wallet's own next drip as the view serves it
+     * (`walletInfo.nextDripInMs`, through `SESSION.setWallet`), and the
+     * machinery is the abstention clock's: one absolute ms in an attribute,
+     * one 1 s timer patching the figures, never a render.
+     */
+    function dripNoteHtml(o) {
+      if (!o || !o.broke) return '';
+      return window.CARDS.abstainNoteHtml(env.dripAt(), 'drip');
     }
     // **What the row's commits say they will do** (Q1382): the hold's price,
     // the places it lands in, the signature it carries, and the one case where
@@ -681,7 +881,10 @@ window.COMPOSER = (function () {
       const btn = (pen) => '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose"' +
         (pen ? ' data-pen="1"' : '') + ((pen ? !rs.changed : (!rs.changed || pt.broke)) ? ' disabled' : '') +
         ' title="' + esc(pen ? pt.penTitle : pt.title) + '">' + glyphHtml(pen ? '✒️' : '✏️') + '</button>';
-      return MAY_PEN() ? btn(true) + btn(false) : btn(false);
+      // the same countdown beside the same dark button (Q1486 (E)): this is
+      // the row's ✏️ drawn on the card, so it says what the row says
+      const drip = dripNoteHtml({ broke: pt.broke && rs.changed });
+      return MAY_PEN() ? btn(true) + drip + btn(false) : drip + btn(false);
     };
     // what the row says about the draft as it stands
     const draftRowState = () => {
@@ -692,7 +895,8 @@ window.COMPOSER = (function () {
       // into a clause and take it out again and the site survives with its
       // origin's own wording, so `sites.length` would say *1 place changed*
       // beside a greyed commit.
-      const dirty = sites.filter((s) => s.text !== s.origin.map((x) => x.text).join('\n'));
+      // An empty last line is the lane's, not the proposal's (#78, `sentText`).
+      const dirty = sites.filter((s) => window.CARDS.sentText(s) !== s.origin.map((x) => x.text).join('\n'));
       return { count: sites.length, changedCount: dirty.length, changed: dirty.length > 0 };
     };
     function signControlHtml(d) {
@@ -779,7 +983,19 @@ window.COMPOSER = (function () {
         clauseHeadHtml(d, {
           // a gap's head names the gap, there being no clause to show
           label: seeded ? seeded.note : site.origin[0] && site.origin[0].gap ? gapLabel(site.keys[0]) : undefined,
-          html: site.origin.map((o) => '<div class="lp' + (o.t === 'h' ? ' hblock lvl' + (o.level || 1) : o.bullet ? ' bullet' : '') +
+          // **A stranded draft's head shows what stands now** (Q1463, Ed
+          // 2026-09-19, his pick of three): the paragraph it was written against
+          // is gone, the sentence below tells the member to write against the
+          // clause as it now stands, and the head's label says *as it stands* —
+          // so the head reads the document's lines at the place the site is
+          // held, as E38 has a stranded proposal's do. The wording it was
+          // written against is still there to work from: it is what the lane
+          // was seeded with. Everywhere else the head is the origin, which for
+          // a draft that has followed its paragraph is the same words.
+          html: (site.lost
+            ? site.keys.map((k) => lineOf(k)).filter((l) => l && !l.gap)
+              .map((l) => ({ key: l.key, text: l.x, t: l.t, level: l.level, bullet: l.bullet }))
+            : headBlocksOf(site)).map((o) => '<div class="lp' + (o.t === 'h' ? ' hblock lvl' + (o.level || 1) : o.bullet ? ' bullet' : '') +
             '" data-key="' + o.key + '">' + blockHtml({ x: o.text, t: o.t, level: o.level, bullet: o.bullet }) + '</div>').join(''),
         }) +
         // and your draft as the one reply, in the reply's own order: the wording,
@@ -790,6 +1006,14 @@ window.COMPOSER = (function () {
         // …and, under an elective 👤 rung, whether your name goes on it (Q770):
         // part of the rationale composer area, above the row that commits it
         signControlHtml(d) + '</div>' +
+        // **A site the text moved out from under says so where the words are**
+        // (Q1463, Ed 2026-09-18). The follow carries a site to its paragraph's
+        // new line; where the paragraph itself was replaced there is nothing
+        // to follow, and what is left is the member's own wording with no
+        // place to stand. The same slot a stranded proposal's sentence takes
+        // (Q170) — above the row, under the words it is about — and nothing
+        // typed is discarded: the lane keeps it, to be re-aimed.
+        (site.lost ? '<p class="setnote">' + esc(T.stranded.drafted) + '</p>' : '') +
         // **The proposal's lifecycle is one row** (Ed, 2026-08-17). Discard on the
         // very left, commit on the very right, and the row does not move when the
         // draft becomes a proposal — only the right-hand control changes from the
@@ -873,10 +1097,23 @@ window.COMPOSER = (function () {
         // the room's reading of it.
         // the run's source lines, one per block (Q1406): the head renders
         // blocks, so a heading among them keeps its rank rather than its hashes
-        clauseHeadHtml(d, { text: s.origin.map((o) => o.text).join('\n'), key: s.keys[0],
-                            chips: chipsFor(s.keys[0], d.id) }) +
+        // …and **a gap has no clause to show** (Q1410, the walk's C3, C5 and
+        // C11): a proposal of yours on a gap has an empty origin, so joining
+        // it gave the head a blank box where every other card standing in a
+        // gap says *(no text here)* under *The gap as it stands*. It takes
+        // the insert head too — the same test the editing card makes one
+        // screen up, and `headOpts`' own on the read side.
+        clauseHeadHtml(d, s.origin[0] && s.origin[0].gap
+          ? { text: null, label: T.insert.headLabel, key: s.keys[0],
+              chips: chipsFor(s.keys[0], d.id) }
+          : { text: originText(s), key: s.keys[0],
+              chips: chipsFor(s.keys[0], d.id) }) +
+        // …and **a deletion of yours says so** (Q1412): this lane is read, not
+        // edited, so where the site's text is empty it carries the removal
+        // sentence rather than `laneBlocks`' editable blank — the same reading
+        // the room gets on its pair card.
         fieldHtml('<div class="propblock"><div class="rtext">' +
-          laneBlocks(s.text, originText(s)) + '</div>' +
+          (String(s.text || '').trim() ? laneBlocks(s.text, originText(s)) : removedHtml()) + '</div>' +
           speakerHtml(d.rationale, undefined, mineSpeaker(d)) + '</div>',
           1, T.compose.proposedLab)
       );
@@ -893,11 +1130,15 @@ window.COMPOSER = (function () {
         // **The same row the editing card had, one step further on** (Ed,
         // 2026-08-17). 🗑️ stays exactly where it was — discarding a draft and
         // withdrawing a proposal are the same gesture at two moments, and the
-        // only difference is that one of them hands an edit back. And the right
-        // slot keeps the ✏️ that was *Propose*, now reading **Submitted**: the
-        // act has become the fact of it, which is what the judgment row's ✓ does
-        // when it is pressed. Nothing moves between the two cards, which is the
-        // point — it is one lifecycle, not two screens.
+        // only difference is that one of them hands an edit back.
+        // **And the right slot is empty** (Q1485 (A), Ed 2026-09-21: *Close,
+        // and say so*). It held the ✏️ that was *Propose*, pressed and dead,
+        // reading **Submitted** — the act become the fact of it — which was
+        // the whole of *one lifecycle, not two screens*. The card closes at
+        // the press now, so nobody ever meets that face at the moment it was
+        // written for, and on a card reopened an hour later a pressed button
+        // is a control that does nothing. What says the proposal is in is the
+        // rail: its sentence at the press, its pinned line thereafter.
         // **A passed proposal is not its author's to withdraw** (SPEC §9.7 rule
         // 8, SURFACE E37): once the membership has passed it and it waits on the
         // Founder, 🗑️ is dead — the room has decided, and the line on the rail
@@ -906,8 +1147,6 @@ window.COMPOSER = (function () {
         '<button class="btn btn-withdraw glyphbtn" data-act="draft-withdraw"' + (d.awaiting ? ' disabled' : '') +
         ' title="' + (d.awaiting ? esc(d.cap || '') : T.row.withdraw +
         (n > 1 ? T.row.allPlaces(n) : '') + T.row.withdrawCost) + '">' + glyphHtml('🗑️') + '</button>' +
-        '<button class="btn btn-propose" aria-pressed="true" disabled' +
-        ' title="' + T.row.submittedTitle + '">' + glyphify(T.row.submitted) + '</button>' +
         '</div>' +
         '</div>'
       );
@@ -952,15 +1191,9 @@ window.COMPOSER = (function () {
       dropDraft, dropDraftSite,
       caretRangeIn, selectedBlocks, laneCaret, placeCaret,
       startDraft, startDraftFromTyping, startDraftFromRun,
-      laneRaw, laneRemark, syncEditCtl,
+      laneRemark, syncEditCtl, markSelection,
       commitBtnHtml, proposalRowHtml, proposeCtlTitles, draftRowState, setDraftSigned,
-      editCardHtml, mineCardHtml, strandedCardHtml,
-      // the column's `[]` preference, written from two places outside this
-      // file — the strip's own handler in `columnPass`, and the page through
-      // `SESSION.setLaneRaw` — so it goes back as the variable rather than as
-      // a copy of whatever it held at make time
-      get laneMode() { return laneMode; },
-      set laneMode(v) { laneMode = v; } };
+      editCardHtml, mineCardHtml, strandedCardHtml };
   }
   return { make };
 })();

@@ -17,6 +17,7 @@ import { describe, it, expect } from 'vitest';
 import { ConstitutionSession } from '../src/session.js';
 import { view } from '../src/view.js';
 import { chainHash } from '../src/hash.js';
+import { buildConstituted } from './helpers.js';
 
 const open = () => ConstitutionSession.open({
   title: 'T', slug: 't',
@@ -124,6 +125,23 @@ describe('who is owed an acknowledgement (Q530)', () => {
     expect(s.memberRecords().get(bo)!.okOwed.has('chamber')).toBe(false);
     s.setSetting(5, 'chamber', { rung: 'link' });
     expect(s.memberRecords().get(bo)!.okOwed.has('chamber')).toBe(true);
+  });
+
+  // **An owed OK that is given reopens the channel** (issue #80 F2): the
+  // module owes one OK per setting and skips a member already owing it, so
+  // an OK the page could never serve wedged that setting's news shut for
+  // good. Pinned on the road the live page takes: a Founder's ✒️ on an
+  // ordinary rule after 🍾, answered, then changed again.
+  it('after the start, a second ✒️ change to an ordinary rule is owed again once the first is acknowledged', () => {
+    const { s, bo } = buildConstituted();
+    s.setSetting(3, 'rate', { grant: 3, cap: 6, dripMinutes: 20 }, 'Faster.');
+    expect(s.memberRecords().get(bo)!.okOwed.has('rate')).toBe(true);
+    expect(s.settingState('rate').setWhy).toBe('Faster.');
+    expect(s.settingState('rate').previousValue).not.toBeNull();
+    s.giveOk(4, bo, 'rate');
+    expect(s.memberRecords().get(bo)!.okOwed.has('rate')).toBe(false);
+    s.setSetting(5, 'rate', { grant: 3, cap: 6, dripMinutes: 30 });
+    expect(s.memberRecords().get(bo)!.okOwed.has('rate')).toBe(true);
   });
 
   it('the convenor is never owed their own acknowledgement', () => {

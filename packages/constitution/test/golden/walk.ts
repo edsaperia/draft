@@ -63,7 +63,7 @@ export function goldenWalk(): ConstitutionSession {
   s.setSetting(7, 'rate', { grant: 4, cap: 8, dripMinutes: 240 });
   const settled: Array<[SettingId, unknown]> = [
     ['pace', { shape: 'fixed' }],
-    ['quorum', { form: 'share', n: 60 }],
+    ['quorum', { form: 'share', n: 40 }],
     ['authorship', { rung: 'sealed' }],
     ['judgments', { rung: 'after' }],
     ['applications', { apply: true }],

@@ -67,7 +67,7 @@ describe('catalogue integrity (SPEC §9.0–§9.7½)', () => {
     const samples: Partial<Record<SettingId, SettingValue[]>> = {
       ending: [{ endsAtMs: null }, { endsAtMs: 100 }, { endsAtMs: 200 }],
       bar: [{ pct: 60 }, { pct: 95 }],
-      quorum: [{ form: 'share', n: 50 }, { form: 'share', n: 100 }],
+      quorum: [{ form: 'share', n: 50 }, { form: 'share', n: 50 }],
       authorship: [{ rung: 'anonymous' }, { rung: 'public' }],
       rate: [
         { grant: 4, cap: 8, dripMinutes: 240 },
@@ -220,6 +220,22 @@ describe('catalogue integrity (SPEC §9.0–§9.7½)', () => {
     expect(validateValue('ending', { endsAtMs: null })).toBeNull();
   });
 
+  // **A quorum may ask for everybody** (Q1490, Ed 2026-09-21 → why: R-139,
+  // reversing R-126): the share ran 0–50 for four days and runs 0–100 now,
+  // the whole scale including unanimity. Only the two ends are refused.
+  it('a share quorum is 0–100, unanimity included (Q1490)', () => {
+    for (const n of [0, 1, 5, 50, 51, 99, 100]) {
+      expect(validateFor(entryOf('quorum'), { form: 'share', n }), `share ${n}`).toBeNull();
+    }
+    expect(validateFor(entryOf('quorum'), { form: 'share', n: 101 })).toMatch(/0–100/);
+    expect(validateFor(entryOf('quorum'), { form: 'share', n: -1 })).toMatch(/0–100/);
+    // …and the count form is unbounded above, E moving under it: the engine
+    // caps it at the group each race is waiting on (§9.5a, R-088)
+    for (const n of [0, 1, 2, 40, 999]) {
+      expect(validateFor(entryOf('quorum'), { form: 'count', n }), `count ${n}`).toBeNull();
+    }
+  });
+
   // Issue #4: an interval below float precision at epoch milliseconds spun
   // the engine's drip for ever, and replay re-validates, so a stored value
   // took the host down at boot too. The floor is a whole real minute —
@@ -242,7 +258,7 @@ describe('catalogue integrity (SPEC §9.0–§9.7½)', () => {
   });
 
   it('eqValue is key-order independent', () => {
-    expect(eqValue({ form: 'share', n: 60 }, { n: 60, form: 'share' } as SettingValue)).toBe(true);
+    expect(eqValue({ form: 'share', n: 40 }, { n: 40, form: 'share' } as SettingValue)).toBe(true);
     expect(eqValue({ pct: 66 }, { pct: 67 })).toBe(false);
   });
 });
