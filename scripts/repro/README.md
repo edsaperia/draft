@@ -126,6 +126,11 @@ pre-fix page before its fix landed.
 - `refused-acts.mjs <dev server>` — issue #37: a refused judgment is un-filed, a double ✓
   sends one, a refused withdrawal puts the proposal and the ✏️ back, a command that never
   answers does not hold the next one.
+- `reconnecting.mjs <dev server>` — Q1505: the red *Reconnecting…* bar and its cause — the
+  device offline (`context.setOffline`), a 502 twice, a view that never answers — every commit
+  held while it stands, scrolling and typed work untouched, lifted by the first good poll; the
+  pause keeps its modal; a vote refused at the press says *That was refused: …* on its card
+  (`--only=offline|502|hang|pause|refused`).
 - `crown-rail.mjs <dev server>` — issue #32 (built as Q1475): a change the membership
   carried and the Founder's 🛡️ holds asks the Founder — member or clerk — on the `adm:` and
   `mo:` entries, and waits on them everywhere else.

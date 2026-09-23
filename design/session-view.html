@@ -141,6 +141,21 @@
   .pausemodal .track { height: 8px; border-radius: 4px; background: var(--light); overflow: hidden; }
   .pausemodal .track i { display: block; height: 100%; width: 0; background: var(--primary); border-radius: 4px;
     transition: width 900ms linear; }
+  /* **The reconnecting bar** (Q1505, Ed 2026-09-23: *warn before anybody
+     acts* — a red bar along the top, not a modal, because members may still
+     want to scroll and read while they cannot submit). Directly under the
+     topbar, full width, in the surface's one red (`--slash`, SURFACE §6 —
+     this bar is its third use by ruling); it never eats a click, and it does
+     not move, so there is no still form to give it under reduced motion.
+     While it stands every commit is held: greyed as a disabled control is,
+     its tooltip the reason (`data-held`, live.js). */
+  .reconnectbar { position: fixed; left: 0; right: 0; top: var(--nav-h); z-index: 58;
+    background: var(--slash); color: #fff; text-align: center;
+    font-family: var(--font-ui); font-size: var(--t-small); line-height: 1.4;
+    padding: var(--s1) var(--s3); box-shadow: var(--shadow-sm); pointer-events: none; }
+  .reconnectbar[hidden] { display: none; }
+  .reconnectbar b { font-weight: 600; }
+  html.reconnecting [data-held] { opacity: 0.45; filter: grayscale(1); cursor: not-allowed; }
   /* the stagehand stands above the flag rather than on it */
   .devswitch { position: fixed; bottom: 47px; left: 10px; z-index: 60;
     font: 11px/1.4 ui-monospace, Consolas, monospace; color: var(--muted);
@@ -9435,6 +9450,9 @@
     pressInFlight: (...a) => pressInFlight(...a),
     proseText: (...a) => proseText(...a),
     pwPair: (...a) => pwPair(...a),
+    // Y25's card sentence for a refused vote (Q1505), in the wording every
+    // other refusal wears
+    refusedSentence: (e) => PAGE_COPY.refused(plainRefusal(e)),
     relabel: (...a) => relabel(...a),
     render: (...a) => render(...a),
     setStranger: (...a) => setStranger(...a),

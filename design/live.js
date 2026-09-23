@@ -103,6 +103,8 @@ window.LIVE = (function () {
       // poll keeps asking, so the reload lands on the first clean one
       if (was && !HOST.paused && HOST.newBuild && !unsent()) { location.reload(); return; }
       renderHost();
+      // the pause stands in front of the bar (Q1505): redrawn when it comes and goes
+      if (!!was !== !!HOST.paused) renderConn();
     }
     function renderHost() {
       let flag = document.getElementById('stalledflag');
@@ -138,6 +140,132 @@ window.LIVE = (function () {
         modal.querySelector('.when').textContent = left > 0
           ? PAGE_COPY.host.pausedWait(Math.max(1, Math.round(left / 60000)))
           : PAGE_COPY.host.pausedOver;
+      }
+    }
+    // **The page has lost the host** (Q1505; Ed, 2026-09-23: *warn before
+    // anybody acts, never after*). Until this, a page on a dead line drew
+    // nothing: the member chose, pressed, the pair filed as ⏳ and the
+    // refusal came back a round trip later (#37 takes the vote back, but
+    // only after the fact). Now the page learns it two ways — the browser's
+    // own `offline` event, at once, and **two view polls in a row that fail
+    // or go unanswered**, the poll carrying a time limit of its own
+    // (`POLL_TIMEOUT_MS`, so a hung line is noticed in about 8 s: a poll
+    // that times out at 4 s, then the next tick's) — and draws a red bar
+    // along the top: *Reconnecting…*, and a second clause only where the
+    // cause is known — the device is offline, or docs.vote answered with a
+    // server error, which proves the request reached it. A timeout or a
+    // dropped fetch on a device that says it is online is ambiguous and says
+    // nothing more; nothing third-party is ever probed. Not a modal: the
+    // page stays readable and scrollable. While the bar stands **every
+    // commit is held** — greyed, its tooltip the reason, its press swallowed
+    // before any handler sees it — and typed work is untouched, since holding
+    // the commit is the whole of it; the first good poll lifts the bar and
+    // releases them. The announced pause is not a disconnection (the host
+    // answered, and its modal says it all), and the stalled flag is the
+    // store's, not the line's: both keep their own treatment. SURFACE C17.
+    const POLL_TIMEOUT_MS = (typeof window !== 'undefined' && window.__pollTimeoutMs) || 4000;
+    const CONN = { fails: 0, cause: null, down: false, observer: null };
+    // what a press can send: every commit wears `.btn-approve` or
+    // `.btn-propose` (✓ ✏️ ✒️ 🏛️ 🍾, OK, the grants' *Accept*, the
+    // composers' commits), the holds start on `[data-confirm]` /
+    // `[data-putmotion]`, and three withdrawals send without either class.
+    // 📝 wears `.btn-propose` and sends nothing — it is the door to typing,
+    // which the bar leaves alone — so it is left out by name
+    const HELD = '.btn-approve, .btn-propose:not([data-act="edit-door"]), [data-confirm], [data-putmotion], [data-holdmotion], ' +
+      '[data-withdrawmotion], [data-act="draft-withdraw"], [data-act="draft-remake"], [data-act="crown-refuse"]';
+    function holdCommits() {
+      for (const el of document.querySelectorAll(HELD)) {
+        if (el.title === PAGE_COPY.host.held && el.dataset.held) continue;
+        if (!el.dataset.held) {
+          el.dataset.held = el.getAttribute('aria-disabled') === 'true' ? 'was' : '1';
+          el.setAttribute('aria-disabled', 'true');
+        }
+        // a render in place may write the control's own title back; the one
+        // it wrote is the one given back when the bar lifts
+        el.dataset.heldTitle = el.title;
+        el.title = PAGE_COPY.host.held;
+      }
+    }
+    function releaseCommits() {
+      for (const el of document.querySelectorAll('[data-held]')) {
+        if (el.dataset.held !== 'was') el.removeAttribute('aria-disabled');
+        if (el.title === PAGE_COPY.host.held) el.title = el.dataset.heldTitle || '';
+        delete el.dataset.held; delete el.dataset.heldTitle;
+      }
+    }
+    function renderConn() {
+      if (!document.body) return;
+      let bar = document.getElementById('reconnectbar');
+      if (!bar) {
+        // born empty and hidden, so the live region exists before it speaks
+        bar = document.createElement('div');
+        bar.id = 'reconnectbar'; bar.className = 'reconnectbar';
+        bar.setAttribute('role', 'status'); bar.setAttribute('aria-live', 'polite');
+        bar.hidden = true;
+        document.body.appendChild(bar);
+      }
+      const down = CONN.down && !HOST.paused;
+      const cause = !down ? null : CONN.cause === 'offline' ? PAGE_COPY.host.offline
+        : CONN.cause === 'server' ? PAGE_COPY.host.notAnswering : null;
+      const html = !down ? '' : '<b>' + esc(PAGE_COPY.host.reconnecting) + '</b>' +
+        (cause ? ' <span class="cause">' + esc(cause) + '</span>' : '');
+      if (bar.innerHTML !== html) bar.innerHTML = html;
+      // flush under the topbar as drawn — its height is the seat's (a
+      // stranger's carries no wallets, a phone's is two rows), so it is
+      // measured rather than read off `--nav-h`
+      const nav = down && document.querySelector('.navbar');
+      if (nav) bar.style.top = Math.max(0, Math.round(nav.getBoundingClientRect().bottom)) + 'px';
+      bar.hidden = !down;
+      document.documentElement.classList.toggle('reconnecting', down);
+      if (down) {
+        holdCommits();
+        if (!CONN.observer && typeof MutationObserver === 'function') {
+          // renders go on while the bar stands (a card opened, a draft
+          // typed), and every control they draw is held as it arrives
+          CONN.observer = new MutationObserver(holdCommits);
+          CONN.observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['title'] });
+        }
+      } else {
+        if (CONN.observer) { CONN.observer.disconnect(); CONN.observer = null; }
+        releaseCommits();
+      }
+    }
+    // what one poll learned: `ok` the host answered (the pause included),
+    // `server` it answered with a server error, `none` no answer at all
+    function noteReach(kind) {
+      if (kind === 'ok') { CONN.fails = 0; CONN.cause = null; if (CONN.down) { CONN.down = false; renderConn(); } return; }
+      CONN.fails += 1;
+      // a device that says it is offline is the one ambiguity the browser
+      // settles for us
+      CONN.cause = kind === 'server' ? 'server'
+        : (typeof navigator !== 'undefined' && navigator.onLine === false) ? 'offline' : null;
+      if (CONN.fails >= 2 || CONN.cause === 'offline') CONN.down = true;
+      if (CONN.down) renderConn();
+    }
+    const connDown = () => CONN.down && !HOST.paused;
+    if (LIVESLUG && typeof window !== 'undefined') {
+      window.addEventListener('offline', () => { CONN.down = true; CONN.cause = 'offline'; renderConn(); });
+      window.addEventListener('resize', () => { if (CONN.down) renderConn(); });
+      // back online is not yet back in touch: the bar keeps its first
+      // clause until a poll answers, and one is asked for at once
+      window.addEventListener('online', () => {
+        if (CONN.cause === 'offline') CONN.cause = null;
+        renderConn();
+        if (!pressInFlight()) api.refresh();
+      });
+      // **a held commit's press never reaches its handler**: swallowed in
+      // the capture phase at the window, before the page's own listeners,
+      // for the pointer (the holds start on `pointerdown`), the click and
+      // the keys that press a button
+      const swallow = (ev) => {
+        if (!connDown()) return;
+        if (ev.type === 'keydown' && ev.key !== 'Enter' && ev.key !== ' ') return;
+        const t = ev.target && ev.target.closest ? ev.target.closest(HELD) : null;
+        if (!t) return;
+        ev.preventDefault(); ev.stopImmediatePropagation();
+      };
+      for (const type of ['pointerdown', 'mousedown', 'touchstart', 'click', 'keydown']) {
+        window.addEventListener(type, swallow, { capture: true, passive: false });
       }
     }
     // **A part is only kept if it was ever held** (Q1477). The slim view lets
@@ -239,7 +367,21 @@ window.LIVE = (function () {
           ? '?since=' + encodeURIComponent(env.cs.v.seq + '.' + (env.cs.v.eseq || 0)) +
             (!askFull && typeof env.cs.v.textVersion === 'number' ? '&tv=' + env.cs.v.textVersion : '') +
             (!askFull && typeof env.cs.v.recordsKey === 'number' ? '&rk=' + env.cs.v.recordsKey : '') : '';
-        return fetch('/api/d/' + LIVESLUG + '/view' + since)
+        // **the poll has a time limit** (Q1505): a view that has not answered
+        // in `POLL_TIMEOUT_MS` is a poll gone unanswered, and two in a row
+        // put the bar up — without one, a half-open line was a poll that
+        // never ended and a page that never knew
+        const ac = typeof AbortController === 'function' ? new AbortController() : null;
+        const limit = ac ? setTimeout(() => ac.abort(), POLL_TIMEOUT_MS) : null;
+        return fetch('/api/d/' + LIVESLUG + '/view' + since, ac ? { signal: ac.signal } : undefined)
+          .then((r) => {
+            // …read off the status alone, before the body: a 5xx is the host
+            // answering with a server error, the announced pause excepted
+            if (r.status >= 500 && r.status !== 503) noteReach('server');
+            else if (r.status !== 503) noteReach('ok');
+            return r;
+          }, (e) => { noteReach('none'); throw e; })
+          .finally(() => { if (limit) clearTimeout(limit); })
           .then((r) => {
             noteBuild(r.headers.get('x-build'));
             // **An answer that is not a view is not news** (Ed's phone,
@@ -250,7 +392,14 @@ window.LIVE = (function () {
             // then on threw at the first `v.view` read, until a reload. Only a
             // 2xx body is read; a 503 still carries the pause, so it is heard.
             if (r.status === 401) return null;
-            if (r.status === 503) return r.json().then((j) => (j && j.paused ? { hostOnly: true, paused: j.paused } : null), () => null);
+            // (a 503 with the pause is the host answering, Q1505; one without
+            // it is a server error like any other 5xx)
+            if (r.status === 503) {
+              return r.json().then((j) => j, () => null).then((j) => {
+                noteReach(j && j.paused ? 'ok' : 'server');
+                return j && j.paused ? { hostOnly: true, paused: j.paused } : null;
+              });
+            }
             if (!r.ok) { console.warn('[live] view answered', r.status); return null; }
             return r.json().catch(() => null);
           })
@@ -1834,7 +1983,12 @@ window.LIVE = (function () {
         // that never answered left a cast-looking vote the server never held.
         // A pair that closed under the press is Q1493 (a)'s and files as closed.
         api.cmd('judge-race', { a: c.a, b: c.b, outcome }, { quiet: raceGone })   // Q1493 (a)
-          .then((res) => { if (!(res && res.ok) && !(res && raceGone(res.error))) SESSION.unjudge(id, what); });
+          // …**and says so under its card** (Q1505): Y25's sentence, which
+          // the charter's pair cards could not carry until now
+          .then((res) => {
+            if ((res && res.ok) || (res && raceGone(res.error))) return;
+            SESSION.unjudge(id, what, env.refusedSentence(res && res.error));
+          });
       };
       // A hunk replaces the document's lines [start, end); the engine holds an
       // empty document as **zero** lines, so the empty clause an empty
