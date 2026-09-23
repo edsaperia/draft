@@ -140,7 +140,31 @@ await T(900);
 const rateBox = openedRate && await page.$('.setupcard [data-ansnum="rate"]');
 if (rateBox) {
   await rateBox.click();
-  await page.keyboard.type('10');
+  /* **a poll under a half-typed answer keeps it** (the P1 sweep's fixer,
+   * 2026-09-23 — Q1486 (B)'s class, reaching the answer fields): the band is
+   * rebuilt wholesale on every poll that moved, and its render keeper held
+   * the founder's and the motions' fields but not `[data-ansnum]` /
+   * `[data-ansdate]`, so another seat's act landing while a member typed an
+   * answer took the caret and the next keys went nowhere. The founder's
+   * invitation is that act: it moves the document log, so the next poll is a
+   * full view and a render. */
+  await page.keyboard.type('1');
+  await page.evaluate(() => { window.__rateBox = document.querySelector('.setupcard [data-ansnum="rate"]'); });
+  await cmd('founder', 'invite', { email: `m2-${run}@example.org` });
+  await T(POLL + 1500);
+  const kept = await page.evaluate(() => {
+    const box = document.querySelector('.setupcard [data-ansnum="rate"]');
+    return { value: box ? box.value : null, focused: !!box && document.activeElement === box,
+      // the box being a new node is what proves a render landed at all
+      rendered: !!box && box !== window.__rateBox,
+      open: (document.querySelector('.setupcard') || { dataset: {} }).dataset.setupcard || null };
+  });
+  check('a render lands under the half-typed answer (the step\'s own premise)', kept.rendered, JSON.stringify(kept));
+  check('a poll landing mid-answer keeps the half-typed value and the caret (answer caret)',
+    kept.value === '1' && kept.focused && kept.open === 'ans-rate', JSON.stringify(kept));
+  await page.keyboard.type('0');
+  const typedOn = await page.evaluate(() => (document.querySelector('.setupcard [data-ansnum="rate"]') || {}).value);
+  check('…and the next key lands after it', typedOn === '10', JSON.stringify(typedOn));
   const before = answersSent.length;
   await page.click('.setupcard [data-confirm]');
   await T(1500);

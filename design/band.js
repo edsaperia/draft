@@ -1871,13 +1871,22 @@ window.BAND = (function () {
     // In a room of twelve that is about four seconds to compose in. The
     // attribute is found rather than listed twice: whichever of the seven the
     // focused field carries is the one the restore looks it up by.
+    // **…and a member's answer fields** (the P1 sweep, 2026-09-23): `ans-*`
+    // cards are composed in `data-ansnum` and `data-ansdate`, and a poll
+    // landing while a member typed an answer took the caret the same way.
+    // 👥's two boxes share one key, so the field is found again by its place
+    // among the fields carrying that key, not by the key alone. A date box
+    // holds no value until it is whole, so a half-typed one comes back empty
+    // with the caret in it — Q1513.
     const KEEP_ATTRS = ['data-txt', 'data-num', 'data-mtext', 'data-mslug',
-      'data-mpace', 'data-mrate', 'data-mnum'];
+      'data-mpace', 'data-mrate', 'data-mnum', 'data-ansnum', 'data-ansdate'];
+    const keptSel = (attr, key) => '.setupcard input[' + attr + '="' + key + '"]';
     const renderKeep = () => {
       const a = document.activeElement;
       const inp = a && a.closest && a.closest('.setupcard') &&
         a.matches(KEEP_ATTRS.map((x) => 'input[' + x + ']').join(', ')) ? a : null;
       const attr = inp ? KEEP_ATTRS.find((x) => inp.hasAttribute(x)) : null;
+      const nth = attr ? [...document.querySelectorAll(keptSel(attr, inp.getAttribute(attr)))].indexOf(inp) : 0;
       const box = document.querySelector('.setupcard .emojibox');
       let sel = null;
       try { if (inp) sel = [inp.selectionStart, inp.selectionEnd]; } catch (e) { /* type=email has none */ }
@@ -1895,16 +1904,24 @@ window.BAND = (function () {
           why = r.toString().length;
         } else why = lane.textContent.length;
       }
-      return { open: S.open, key: attr ? inp.getAttribute(attr) : null, attr,
+      return { open: S.open, key: attr ? inp.getAttribute(attr) : null, attr, nth,
         sel, why, scroll: box ? box.scrollTop : 0 };
     };
     const renderRestore = (k) => {
       if (!k || !k.open || k.open !== S.open) return;
       if (k.attr) {
-        const el = document.querySelector('.setupcard input[' + k.attr + '="' + k.key + '"]');
+        const all = document.querySelectorAll(keptSel(k.attr, k.key));
+        const el = all[k.nth] || all[0];
         if (el && document.activeElement !== el) {
           el.focus({ preventScroll: true });
-          try { if (k.sel && typeof k.sel[0] === 'number') el.setSelectionRange(k.sel[0], k.sel[1]); } catch (e) { /* not a text control */ }
+          if (k.sel && typeof k.sel[0] === 'number') {
+            try { el.setSelectionRange(k.sel[0], k.sel[1]); } catch (e) { /* not a text control */ }
+          } else if (el.type === 'number' && el.value !== '') {
+            // a number box has no selection to restore, and focus puts the
+            // caret at its start — so the next digit went in front of the
+            // ones typed; setting the value again leaves it at the end
+            const v = el.value; el.value = ''; el.value = v;
+          }
         }
       }
       if (k.why !== null && k.why !== undefined) {
