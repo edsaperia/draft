@@ -43,11 +43,11 @@
  * while the room decides 🌍, and *drafting* before the text is confirmed.
  * *Live* the rung is the rule and the founder's pen can move it. *After the
  * close* the door serves `closed: { at }` and, where `canRead`, the engine's
- * final `document()` — but the **record** (adoptions, backlog, carried-but-
- * unassented, the signatures) is built only in `raceView` and served only to
- * a seated member, which is §9.3's *the record's distribution is the
- * convenor's* read literally: a stranger under `public` reads the final text
- * and not who signed it. A **perpetual** document (`ending.endsAtMs === null`)
+ * final `document()` — and since Q1508 and Q1512 (Ed, 2026-09-23) the
+ * closed page's records, signatures and amendments beside it; the member's
+ * own **record** object is built only in `raceView` and served only to a
+ * seated member (§9.3's *the record's distribution is the convenor's*, the
+ * convenor's 🌍 deciding what reaches the door). A **perpetual** document (`ending.endsAtMs === null`)
  * has no third epoch at all and the door's `closed` stays null for ever.
  *
  * **Not duplicated here.** `server.test.ts`'s *the stranger's door
@@ -237,7 +237,6 @@ const NEVER: Array<[string, RegExp]> = [
   // `"judgments"` on its own is 👁️'s **setting row**, which is a rule and
   // public by Q455 — what must never appear is a judgment or a count of them
   ['judgments', /"judgedByMe"|"judgments"\s*:\s*\[/],
-  ['the signatures', /"signatures"/],
   ['the record', /"record"/],
   ['a member\'s wallet', /"wallet"/],
   ['the stagehand\'s roster', /"seats"/],
@@ -248,8 +247,18 @@ const ONLY_WHERE_CAN_READ: Array<[string, RegExp]> = [
   ['a member\'s name', /Bo Vane|Cy Marsh/],
 ];
 
-const assertRedacted = (raw: string, canRead: boolean) => {
+/** …and what only a **closed** document's words rungs carry (Q1512 (d)). */
+const ONLY_CLOSED_WHERE_CAN_READ: Array<[string, RegExp]> = [
+  ['the signatures', /"signatures"/],
+  ['the amendments', /"amendmentRecords"/],
+];
+
+const assertRedacted = (raw: string, canRead: boolean, closedRead = false) => {
   for (const [what, re] of NEVER) expect(raw, `the door served ${what}`).not.toMatch(re);
+  for (const [what, re] of ONLY_CLOSED_WHERE_CAN_READ) {
+    if (closedRead) expect(raw, `closed, readable, and yet no ${what}`).toMatch(re);
+    else expect(raw, `the door served ${what} where it may not`).not.toMatch(re);
+  }
   for (const [what, re] of ONLY_WHERE_CAN_READ) {
     if (canRead) expect(raw, `canRead and yet no ${what}`).toMatch(re);
     else expect(raw, `the door served ${what} at a rung that forbids it`).not.toMatch(re);
@@ -445,16 +454,21 @@ describe('🌍 the third epoch: the close, and the document that never has one',
     expect(mine.body.record).not.toBeNull();
     expect(mine.raw).toContain('a good harvest');
 
-    // the door, at the most open rung there is: the final text, and not one
-    // word of who signed it — §9.3, *the record's distribution is the
-    // convenor's*, read literally
+    // the door, at the most open rung there is: the final text and the
+    // signatures (Q1512 (d), Ed 2026-09-23 — the closed page's Signatures at
+    // the door wherever 🌍 lets a stranger read, the record's own reading),
+    // never the member's `record`, a member id or an address
     const door = await d.knock();
+    const sig = (mine.body.record as { signatures: Array<{ member: string; name: string | null }> })
+      .signatures[0]!;
     expect(door.body.stranger).toBe(true);
     expect(door.body.canRead).toBe(true);
-    expect(door.body.closed).toEqual({ at: ends });
+    expect(door.body.closed).toEqual({ at: ends, signatures: [
+      { name: sig.name, erased: false, comment: 'a good harvest', t: ends } ] });
+    expect(door.body.record).toBeUndefined();
     expect(door.body.text).toContain('apples');
-    expect(door.raw).not.toContain('a good harvest');
-    assertRedacted(door.raw, true);
+    expect(door.raw).not.toContain(sig.member);
+    assertRedacted(door.raw, true, true);
 
     // …and the rung cannot move after the close, so `public` is what this
     // document says for ever: §4.6, nothing moves but the signing

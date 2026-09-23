@@ -9686,11 +9686,15 @@
   // the pen is the Founder's by construction, a raised motion is the
   // membership's act, and neither sentence has to reach into the anonymity
   // ladder to know what it may say.
+  // The door reads the same list from its own field (Q1512): the carried rule
+  // changes alone, by route, never the motions a member's view carries
+  const amendmentSource = () => (cs.isRemote && Array.isArray(cs.v.amendmentRecords)
+    ? cs.v.amendmentRecords : [...cs.motionRecords().values()]);
   const amendmentBlocks = () => {
     if (!cs) return [];
     const rows = [];
     try {
-      for (const m of cs.motionRecords().values()) {
+      for (const m of amendmentSource()) {
         if (m.status !== 'carried') continue;
         if (!m.payload) continue;
         const at = m.at !== undefined && m.at !== null ? m.at : (m.settledAtT || 0);
@@ -9733,18 +9737,16 @@
     });
     return out;
   };
-  // `{ records: true }` is the door's (Q1508): the backlog alone, the records
-  // being what a stranger is served — the amendments and the signatures are
-  // Q1512's, unruled
-  const closedBlocks = (opts = {}) => {
+  // the door draws all three as a member's page does (Q1508, Q1512): its
+  // payload carries the records, the signatures and the amendment records
+  const closedBlocks = () => {
     if (!cs || !cs.closed) return [];
-    const out = opts.records ? [] : amendmentBlocks();
+    const out = amendmentBlocks();
     const und = undecidedRecords();
     if (und.length) {
       out.push({ t: 'h', level: 1, x: 'Backlog', key: 'U:head' });
       for (const o of und) out.push(...backlogBlocks(o));
     }
-    if (opts.records) return out;
     const sigs = closeSignatures();
     out.push({ t: 'h', level: 1, x: 'Signatures', key: 'S:head' });
     if (!sigs.length) out.push({ t: 'p', x: 'Nobody has signed the document yet.', key: 'S:none' });

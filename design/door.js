@@ -226,15 +226,20 @@ window.DOOR = (function () {
       // they are filed through the member path's own drawing (`itemsFromView`
       // over the door's view), so a stranger's closed page is the member's
       // closed page, every tab filed — the undecided ones at the Backlog
-      // after the text, which `closedBlocks` builds from the same records
-      // (the amendments and the signatures are Q1512's, unruled)
+      // after the text, which `closedBlocks` builds from the same records —
+      // and the Amendments and the Signatures with them (Q1512 (d)): the
+      // payload carries both on a closed, readable document, and the member
+      // path's own `closedBlocks` brackets the text with all three
       const recs = p && p.canRead && Array.isArray(p.records) && env.cs ? p.records : null;
+      const readClosed = !!(p && p.canRead && p.closed && env.cs);
       const key = 'stranger:' + (p ? (p.canRead ? 'read:' + p.text : 'shape:' + JSON.stringify(p.textShape)) : '') +
-        (recs ? '\u0000rec:' + recs.length : '');
+        (recs ? '\u0000rec:' + recs.length : '') +
+        (readClosed ? '\u0000closed:' + ((p.closed.signatures || []).length) + ':' +
+          ((p.amendmentRecords || []).length) : '');
       if (key !== env.charterKey) {
         env.charterKey = key;
         SESSION.setData({ DOC: (p && p.canRead && p.text ? blocksOf(p.text) : [])
-          .concat(recs ? closedBlocks({ records: true }) : []),
+          .concat(readClosed ? closedBlocks() : []),
         SUGGS: recs ? itemsFromView(env.cs.v) : [] });
         const shape = p && !p.canRead ? p.textShape.filter((b) => b.chars > 0) : [];
         red.classList.toggle('black', new URLSearchParams(location.search).get('bars') === 'black');

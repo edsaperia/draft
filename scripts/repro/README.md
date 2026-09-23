@@ -140,5 +140,6 @@ pre-fix page before its fix landed.
 - `stranger-records.mjs <dev server>` — Q1508: a signed-out page on a closed document 🌍
   lets a stranger read shows its records — the door's payload carries them with nobody's
   vote in them, the gutter carries the very ✔ tabs a member's closed page files, the
-  undecided races stand as the Backlog, one tab opens its card, and no Signatures block
-  (Q1512). The phase ladder closes the document (`--seed=`, moving on until 🌍 is readable).
+  undecided races stand as the Backlog, one tab opens its card; and (Q1512) the payload
+  carries the signatures and the amendments, no member id and no mover, and the page draws
+  the Amendments and the Signatures block for block as a member's closed page. The phase ladder closes the document (`--seed=`, moving on until 🌍 is readable).

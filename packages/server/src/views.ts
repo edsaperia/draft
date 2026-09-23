@@ -729,12 +729,31 @@ export const strangerView = (doc: LoadedDoc, nowMs: number,
   // leak. Never while live: a live race's record is a member's business.
   const records = opts.records !== false && cs.closed && canRead && ed.bridge !== null
     ? raceView(doc, NOBODY, nowMs).records : null;
+  // **…and the rest of the closed page: the Signatures and the Amendments**
+  // (Q1512 (d), Ed 2026-09-23), on the same condition. The signatures are
+  // the member view's own (`closingSignatures`, the record's reading — Q769,
+  // a name wherever one was chosen), the member id left behind; the
+  // amendments are the carried rule changes `amendmentBlocks` files, each
+  // naming its **route** — the office — and never the mover, the motion's
+  // id or anybody's answer.
+  const readClosed = cs.closed && canRead;
+  const signatures = readClosed
+    ? cs.closingSignatures().map(({ name, erased, comment, t }) => ({ name, erased, comment, t }))
+    : null;
+  const amendmentRecords = readClosed
+    ? [...cs.motionRecords().values()]
+      .filter((m) => m.status === 'carried' && (m.payload.kind === 'set' || m.payload.kind === 'text'))
+      .map((m) => ({ route: m.route,
+        payload: m.payload.kind === 'text' ? { kind: 'text' } : m.payload,
+        why: m.why, status: m.status, at: m.settledAtT, from: cs.amendedFrom(m.id) }))
+    : null;
   return {
     stranger: true,
     title: cs.titleOf,
     slug: cs.slug,
     constitutedAtT: cs.constitutedAtT,
-    closed: cs.closed ? { at: cs.closedAt } : null,
+    closed: cs.closed ? { at: cs.closedAt, ...(signatures !== null ? { signatures } : {}) } : null,
+    ...(amendmentRecords !== null ? { amendmentRecords } : {}),
     serverNowMs: nowMs,
     paused,
     stalled: !!doc.stalled,

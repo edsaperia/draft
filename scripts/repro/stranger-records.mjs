@@ -12,6 +12,11 @@
  * door's payload carries them, the gutter carries their ✔ tabs, and one opens its card.
  * Before Q1508 the door's payload had no `records` and the page drew the text alone.
  *
+ * **…and the rest of the closed page** (Q1512 (d), Ed 2026-09-23): the door's payload
+ * carries the signatures and the carried rule changes the member's view does, and the
+ * signed-out page brackets the text with the **Amendments** and the **Signatures**, block
+ * for block the member's own closed page. Before Q1512 the door drew neither.
+ *
  * Exit 0 when every check passes, 1 on the defect, 2 on a set-up that never got there.
  */
 import { chromium } from 'playwright';
@@ -68,6 +73,18 @@ check('the door carries the closed document\'s records',
   `${Array.isArray(door.records) ? door.records.length : 'no'} records at the door for ${RECORDS} in the room`);
 check('…with nobody\'s vote in them',
   !JSON.stringify(door.records ?? []).includes('"judgedByMe":true'));
+// the signatures and the amendments ride the door too (Q1512), as many as the room's
+const SIGS = ((wire.view && wire.view.closed && wire.view.closed.signatures) || []).length;
+const AMENDS = ((wire.view && wire.view.motions) || []).filter((m) => m.status === 'carried' &&
+  m.payload && (m.payload.kind === 'set' || m.payload.kind === 'text')).length;
+if (!SIGS || !AMENDS) bail(`the room has ${SIGS} signatures and ${AMENDS} amendments on /d/${slug}`);
+const doorSigs = (door.closed && door.closed.signatures) || [];
+check('the door carries the signatures', doorSigs.length === SIGS,
+  `${doorSigs.length} at the door for ${SIGS} in the room`);
+check('…with no member id in them', !doorSigs.some((x) => 'member' in x));
+check('the door carries the amendments', (door.amendmentRecords || []).length === AMENDS,
+  `${(door.amendmentRecords || []).length} at the door for ${AMENDS} in the room`);
+check('…naming no mover', !/"(by|mine|id)"/.test(JSON.stringify(door.amendmentRecords || [])));
 
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ viewport: { width: 1600, height: 1000 } });   // no cookie
@@ -90,9 +107,12 @@ const state = await page.evaluate(() => {
     stranger: !!document.getElementById('holding'),
     marks,
     recTabs: tabs.length,
-    // the Backlog is records; the signatures are Q1512's and never *nobody signed*
+    // the Backlog is records; the Amendments and the Signatures are Q1512's
     backlog: !!document.querySelector('#charter [data-key="U:head"]'),
-    signatures: !!document.querySelector('#charter [data-key^="S:"]'),
+    amendments: !!document.querySelector('#charter [data-key="A:head"]'),
+    signatures: !!document.querySelector('#charter [data-key="S:head"]'),
+    bracket: [...document.querySelectorAll('#charter [data-key^="A:"], #charter [data-key^="S:"]')]
+      .map((el) => el.dataset.key + ' ' + el.textContent.replace(/\s+/g, ' ').trim()),
     recTabIds: [...new Set(tabs.map((t) => t.dataset.anchor))],
   };
 });
@@ -105,7 +125,10 @@ check('the gutter carries a ✔ tab for the records', state.recTabIds.length > 0
 const UNDECIDED = wire.records.filter((r) => r.outcome === 'undecided').length;
 check('the undecided races stand as the Backlog', !UNDECIDED || state.backlog,
   `${UNDECIDED} undecided · Backlog heading ${state.backlog}`);
-check('no Signatures block at the door (Q1512, unruled)', !state.signatures);
+check('the Amendments stand after the text (Q1512)', state.amendments,
+  `${AMENDS} amendments · Amendments heading ${state.amendments}`);
+check('the Signatures stand after them (Q1512)', state.signatures,
+  `${SIGS} signatures · Signatures heading ${state.signatures}`);
 
 // …the same tabs a member's own closed page files, since the door draws through the
 // member path's drawing (`itemsFromView`) rather than a copy of it
@@ -118,10 +141,21 @@ await mpage.waitForSelector('.doc.closedpage', { timeout: 20000 }).catch(() => {
 await mpage.waitForTimeout(4500);
 const memberTabs = await mpage.evaluate(() => [...new Set([...document
   .querySelectorAll('#charter .achip[data-anchor^="rec:"]')].map((t) => t.dataset.anchor))].sort());
+const memberBracket = await mpage.evaluate(() => [...document
+  .querySelectorAll('#charter [data-key^="A:"], #charter [data-key^="S:"]')]
+  .map((el) => el.dataset.key + ' ' + el.textContent.replace(/\s+/g, ' ').trim()));
 await mctx.close();
 check('…the very tabs a member\'s closed page files',
   JSON.stringify(memberTabs) === JSON.stringify(state.recTabIds.slice().sort()),
   `member ${JSON.stringify(memberTabs)} · stranger ${JSON.stringify(state.recTabIds)}`);
+
+// …and the bracket: the Amendments and the Signatures drawn through the member path's
+// own `closedBlocks`, so block for block what a member's closed page reads (Q1512)
+const same = JSON.stringify(memberBracket) === JSON.stringify(state.bracket);
+check('…and the Amendments and the Signatures a member\'s closed page draws, block for block',
+  memberBracket.length > 0 && same,
+  `member ${memberBracket.length} blocks · stranger ${state.bracket.length}` + (same ? ''
+    : ` · first difference: ${JSON.stringify(memberBracket.find((x, i) => x !== state.bracket[i]) ?? state.bracket[memberBracket.length])}`));
 
 // …and one opens: a tab that draws and leads nowhere is the same defect in another face
 const id = state.recTabIds[0];
