@@ -597,6 +597,13 @@ const IN_PAGE = () => {
         strings: strings(card),
         // a judgment card (Q1500): a charter card whose lanes are radios and
         // which is not the Text's 👑 question — the kinds that carry no 🗑️
+        // a grant (Q1501, Q1502): the commit's word as the glyphs read, and the
+        // hue its own tab wears in the card's strip
+        grant: /^(grant-(pen|shield|voice)|canpropose|canjudge)$/.test(key) ? {
+          accept: ((b) => (b ? window.CARDS.glyphTextOf(b).replace(/\s+/g, ' ').trim() : null))(card.querySelector('[data-ok]')),
+          tabHue: ((t) => (t ? ((t.getAttribute('style') || '').match(/--lc-([a-z]+)/) || [])[1] || null : null))(
+            card.querySelector('.chipcol [data-chip="' + CSS.escape(key) + '"]')),
+        } : null,
         judgment: card.matches('.sugg:not(.setupcard)') && !!card.querySelector('[data-v]') &&
           !card.querySelector('[data-act^="crown-"]'),
         buttons: buttons(card),
@@ -869,6 +876,21 @@ function rulesFor(card, tok) {
     } else if (substantive.length && first && !/🗑/.test(first.label || '')) {
       at('CP7', 'pattern', '🗑️ leads every commit row (C4; Y20 by shape)',
         'the row opens with “' + ((first.label || first.cls) + '').slice(0, 40) + '”');
+    }
+  }
+  // GA1 — a grant not yet accepted says so (Q1501, Q1502, Ed 2026-09-22):
+  // its commit reads *Accept* and the power it hands you (🏛️: *Activate*),
+  // and its tab wears the *yours* hue; once accepted it is grey like any
+  // settled card and its OK only closes
+  if (card.grant) {
+    const WORD = { 'grant-pen': 'Accept ✒️', 'grant-shield': 'Accept 🛡️', 'grant-voice': 'Activate 🏛️',
+      canpropose: 'Accept ✏️', canjudge: 'Accept ⚖️' };
+    const g = card.grant;
+    if (g.accept !== null && g.accept !== WORD[card.key]) {
+      at('GA1', 'pattern', 'a grant not yet accepted commits with ' + WORD[card.key], 'the commit reads “' + g.accept + '”');
+    }
+    if (g.accept !== null && g.tabHue !== 'yours') {
+      at('GA1', 'pattern', 'a grant not yet accepted wears the yours hue on its tab', 'its tab wears ' + g.tabHue);
     }
   }
   // CP2 — the radio names the register (re-ruled 2026-08-31): a dotted radio

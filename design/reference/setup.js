@@ -211,7 +211,16 @@ window.SETUP = (function () {
   };
   const nounOf = (c) => c.n || c.t;
   const HUE = { ask: 'open', wait: 'closed', news: 'changed', yours: 'yours', done: 'closed' };
-  const hueOf = (c, ctx) => HUE[stateOf(c, ctx)];
+  // **A grant waiting to be accepted wears *yours*** (Q1501, Ed 2026-09-22:
+  // members did not realise the grant cards need their OK before the verb
+  // works). The five — 💡 ⚖️ ✒️ 🛡️ 🏛️ — are news, and news is the colour
+  // of a rule that only wants to have been read; a grant is addressed to you
+  // (C8) and its press hands you something, so until it is accepted it takes
+  // the hue for *something of yours awaits* on its tab, its rail entry and
+  // its card's strip, and goes grey like any settled card after.
+  const grantCard = (c) => !!c && !!c.isGate && !c.isBegin && !c.isClosing;
+  const hueFor = (c, st) => (st === 'news' && grantCard(c) ? 'yours' : HUE[st]);
+  const hueOf = (c, ctx) => hueFor(c, stateOf(c, ctx));
   // **One wash ramp for both columns** (Q623 (a), 2026-08-22). The charter's
   // entries take their alpha from urgency — session.js's `washCol`, URG_LO at
   // no urgency to URG_HI at the most — where a setup entry took a fixed 0.22,
@@ -337,7 +346,7 @@ window.SETUP = (function () {
     return '<span class="achip st-' + st + (o.active ? ' wmark' : '') + (o.inert ? ' behind' : '') + '"' +
     ' data-chip="' + c.k + '"' +
     (o.inert ? ' aria-hidden="true"' : ' role="button" tabindex="0" data-tab="' + c.k + '"') +
-    ' style="--chiphue: var(--lc-' + HUE[st] + ')' + (o.z ? '; z-index:' + o.z : '') + '"' +
+    ' style="--chiphue: var(--lc-' + hueFor(c, st) + ')' + (o.z ? '; z-index:' + o.z : '') + '"' +
     (o.inert ? '' : ' title="' + esc(labelOf(c, ctx) + (o.active ? ' — close it'
       : st === 'ask' ? ' — waiting on you' : st === 'wait' ? ' — waiting on others'
       : st === 'news' ? (c.grants ? ' — yours to take' : ' — decided; it waits for your OK')
@@ -649,6 +658,7 @@ window.SETUP = (function () {
      surface's `resolveCounts` and undefined where none is in flight — so a
      constitutional proposal wears the same bar and the same *n of E have
      answered* as a blind question, instead of the founder's 100%. */
+  const SPARKLE_MS = 3200;              // system.css's `sparkleSweep` length
   function railEntry(c, ctx) {
     const w = washOf(c, ctx);
     const st = stateOf(c, ctx);
@@ -669,6 +679,12 @@ window.SETUP = (function () {
       ' aria-current="' + (ctx.open === c.k) + '"' +
       ' title="' + esc(room ? got + ' of ' + ctx.E + ' have answered' : labelOf(c, ctx)) + '"' +
       ' style="--washcol: ' + w.col + '; --washbg: ' + w.bg + '; --fill: ' + fill + '">' +
+      // **an unaccepted grant sparkles** (Q1501, Ed's word): a small, slow
+      // shimmer across the entry while it waits, a still glint under reduced
+      // motion, and never once accepted. Its phase is the clock's, so a rail
+      // rebuilt by a poll carries on the same sweep rather than restarting it.
+      (st === 'news' && grantCard(c) ? '<span class="sparkle" aria-hidden="true" style="animation-delay: -' +
+        (Date.now() % SPARKLE_MS) + 'ms"></span>' : '') +
       '<span class="ql"><span class="subj" aria-hidden="true">' + markOf(c, ctx) + '</span>' +
       // **an entry about a person leads with their face** (Q1375, Ed
       // 2026-09-15): the surface writes `face` on the departure and admit

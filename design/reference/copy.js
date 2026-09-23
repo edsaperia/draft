@@ -1036,8 +1036,14 @@ window.COPY = (function () {
         done: 'Open — the constitution is settled.',
       },
       voice: {
-        title: 'Constitutional Proposals',
+        // **the 🏛️ grant is the membership's own door** (Q1502, Ed
+        // 2026-09-22: *Activate your membership*); its body is about 🏛️
+        // alone, and — by the same ruling — says what activating it opens,
+        // the one grant body that does (T45's exception)
+        title: 'Activate Your Membership',
+        why: 'A 🏛️ is a constitutional proposal: one at a time, returned whole, passing only when all members agree. You are already a member; activating it opens every question, proposal and vote on the rules.',
         waiting: 'Waiting on your arrival.',
+        accept: 'Activate 🏛️',
       },
       pen: {
         title: 'Founder Actions',
@@ -1049,6 +1055,10 @@ window.COPY = (function () {
         why: 'As the founder of this document, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can give up this power later if you choose to.',
         waiting: 'Waiting on the save.',
       },
+      // **a grant is accepted, not OK'd** (Q1501, Ed 2026-09-22; T44 amended
+      // for the grants alone): the commit names the act and the power it
+      // hands you — 💡's power is ✏️ — and 🏛️'s reads its own word above
+      accept: (glyph) => 'Accept ' + glyph,
       begin: { title: 'Begin' },
       closing: { title: 'The Close' },
     },

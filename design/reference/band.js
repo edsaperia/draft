@@ -1179,10 +1179,14 @@ window.BAND = (function () {
           const gateOpenBare = c.isGate && !c.isGrant && c.open();
           return cardHtml(c, ctx, gateOpenBare ? '' : grantProv(c) + gateBody(c),
             acked(c.k) ? binBtn() + '<button class="btn btn-approve okbtn" data-close="1">OK</button>'
+              // **…until it is accepted** (Q1501, Ed 2026-09-22; T44 amended for
+              // the grants): *Accept* and the power it hands you — ✏️ on 💡, ⚖️,
+              // ✒️, 🛡️ — and 🏛️'s *Activate 🏛️* (Q1502); `data-ok` unchanged
               : binBtn() +
-                '<button class="btn btn-approve okbtn"' +
+                '<button class="btn btn-approve okbtn grantok"' +
                 (c.open() ? '' : ' disabled') +
-                ' data-ok="' + c.k + '">OK</button>', g.cards);
+                ' data-ok="' + c.k + '">' + esc(c.k === 'grant-voice' ? PAGE_COPY.gate.voice.accept
+                  : PAGE_COPY.gate.accept(c.grants || c.g)) + '</button>', g.cards);
         }
         // **A record, opened** (Q942): what was proposed at its head, the outcome
         // and the reason in the field, and 🗑️ alone at the foot — a record asks

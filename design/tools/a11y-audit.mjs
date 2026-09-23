@@ -576,6 +576,33 @@ async function focusWalk(page, base, url, errors) {
 }
 
 /**
+ * A17 · **nothing repeats by itself once reduced motion is asked for.** Read
+ * with `prefers-reduced-motion: reduce` emulated: every element whose
+ * computed animation runs for ever. `sparkles` counts the grant sparkle
+ * (Q1501) so a run can say whether it met one at all.
+ */
+const motionProbe = () => {
+  const path = (e) => e.tagName.toLowerCase() + (e.className && typeof e.className === 'string' ? '.' + e.className.trim().split(/\s+/).slice(0, 2).join('.') : '');
+  const running = [...document.querySelectorAll('*')].filter((e) => {
+    const cs = getComputedStyle(e);
+    return cs.animationName && cs.animationName !== 'none' && /infinite/.test(cs.animationIterationCount);
+  }).map((e) => ({ path: path(e), name: getComputedStyle(e).animationName }));
+  // …and the grant sparkle's still form, asked of the stylesheet even where
+  // no grant is waiting in this scene: a probe span in the first rail entry,
+  // read and taken out again
+  let sparkle = null;
+  const host = document.querySelector('.queue button:not(.sealdot)');
+  if (host) {
+    const probe = document.createElement('span');
+    probe.className = 'sparkle';
+    host.insertBefore(probe, host.firstChild);
+    sparkle = getComputedStyle(probe).animationName;
+    probe.remove();
+  }
+  return { running, sparkles: document.querySelectorAll('.sparkle').length, sparkle };
+};
+
+/**
  * A14 · a commit that is only ever a held pointer. The page states its own
  * gesture (SURFACE §7.2's switch, read through `SESSION.holdMs` and the
  * `.holding` machinery), so this asks the page rather than guessing: a control
@@ -703,6 +730,13 @@ async function main() {
       scene.probes = await page.evaluate(PROBES, null);
       scene.focusRules = await page.evaluate(focusRules);
       scene.holds = await page.evaluate(holdProbe);
+      // A17 · what still moves when the reader has asked for stillness (Q1501's
+      // sparkle is the first motion on the surface that repeats by itself):
+      // the stylesheet's own reduced-motion branch, read with the media
+      // emulated, every element whose animation never ends
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      scene.motion = await page.evaluate(motionProbe);
+      await page.emulateMedia({ reducedMotion: 'no-preference' });
       if (axe) scene.axe = await runAxe(page);
 
       /**
@@ -820,6 +854,12 @@ async function main() {
             'the card closed and focus fell to <body> — the keyboard is back at the top of the page',
             c.card, s.name);
         }
+      }
+    }
+    if (s.motion) {
+      for (const m of s.motion.running) add('A17 motion', 'nothing repeats by itself under reduced motion', 'animation ' + m.name + ' runs for ever', m.path, s.name);
+      if (s.motion.sparkle && s.motion.sparkle !== 'none') {
+        add('A17 motion', 'nothing repeats by itself under reduced motion', 'the grant sparkle runs ' + s.motion.sparkle + ' (Q1501)', '.queue button > .sparkle', s.name);
       }
     }
     if (s.holds && s.holds.holders.length) {

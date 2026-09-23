@@ -978,6 +978,29 @@ const secondSeatPreBegin = async () => {
     ? 'nothing set before this arrival is served · served ' + JSON.stringify(f.served)
     : 'FAIL: ' + JSON.stringify(owed) + ' are served as acknowledgements before 🍾'));
   if (owed.length) stuck.push('pre-Begin acks in the member seat: ' + owed.join(','));
+  /* **…and 🏛️ reaches them as *Activate Your Membership*** (Q1502, Ed
+   * 2026-09-22): a body about 🏛️ alone, and the commit *Activate 🏛️*. Read
+   * and closed, never pressed — what the OK then opens is the member
+   * questions walk's. */
+  const voice = await guestPage.evaluate(async () => {
+    const b = document.querySelector('#rail [data-card="grant-voice"]');
+    if (!b) return null;
+    b.click();
+    await new Promise((r) => setTimeout(r, 900));
+    const c = document.querySelector('.setupcard[data-setupcard="grant-voice"]');
+    const ok = c && c.querySelector('[data-ok]');
+    const out = { title: b.getAttribute('title'),
+      word: ok ? window.CARDS.glyphTextOf(ok).replace(/\s+/g, ' ').trim() : null,
+      body: c ? c.innerText.replace(/\s+/g, ' ').slice(0, 600) : null };
+    const a = c && c.querySelector('.chipcol .achip'); if (a) a.click();
+    return out;
+  });
+  await guestPage.waitForTimeout(400);
+  const voiceOk = !!voice && voice.word === 'Activate 🏛️' && /Activate Your Membership/.test(voice.title || '') &&
+    /You are already a member/.test(voice.body || '');
+  say('activate   · ' + (voiceOk ? 'the member’s 🏛️ grant reads “' + voice.word + '”, titled ' + voice.title
+    : 'FAIL: ' + JSON.stringify(voice)));
+  if (!voiceOk) stuck.push('the member’s 🏛️ grant (Q1502)');
 };
 /* ---- names and faces reach every seat (backlog 42, Q850–Q853) -----------
  * The register is public by the spec's own test — names, pictures, who has
@@ -2317,6 +2340,26 @@ for (let i = 0; i < 60; i++) {
     say('  textcard · ' + (tcOk ? next + ' opens headless and its entry carries no subtitle'
       : 'FAIL: ' + next + ' · title head ' + JSON.stringify(tc.title) + ' · entry subtitle ' + JSON.stringify(tc.sub)));
     if (!tcOk) stuck.push(next + ': a title head or an entry subtitle (Q1373/Q1374)');
+    /* **A grant is accepted, and says so** (Q1501, Q1502; Ed 2026-09-22):
+     * until its press the card's commit reads *Accept* and the power —
+     * 🏛️'s *Activate 🏛️* — and its rail entry and tab wear the *yours* hue,
+     * the entry sparkling. Read at the same moment as the line above. */
+    const GRANT_WORD = { 'grant-pen': 'Accept ✒️', 'grant-shield': 'Accept 🛡️', 'grant-voice': 'Activate 🏛️',
+      canpropose: 'Accept ✏️', canjudge: 'Accept ⚖️' };
+    const gw = await page.evaluate((k) => {
+      const ok = document.querySelector('.setupcard [data-ok="' + k + '"]');
+      const li = document.querySelector('#rail li[data-q="' + k + '"]');
+      const b = li && li.querySelector('button');
+      const tab = document.querySelector('.setupcard .chipcol [data-chip="' + k + '"]');
+      return { word: ok ? window.CARDS.glyphTextOf(ok).replace(/\s+/g, ' ').trim() : null,
+        entryHue: b ? /lc-yours/.test(b.getAttribute('style') || '') : null,
+        sparkle: !!(li && li.querySelector('.sparkle')),
+        tabHue: tab ? /lc-yours/.test(tab.getAttribute('style') || '') : null };
+    }, next);
+    const gwOk = gw.word === GRANT_WORD[next] && gw.entryHue === true && gw.sparkle && gw.tabHue === true;
+    say('  accept   · ' + (gwOk ? next + ' commits with “' + gw.word + '”, its entry and tab in the yours hue, the entry sparkling'
+      : 'FAIL: ' + next + ' · ' + JSON.stringify(gw) + ' · wanted “' + GRANT_WORD[next] + '”'));
+    if (!gwOk) stuck.push(next + ': the grant’s Accept, hue and sparkle (Q1501/Q1502)');
   }
   // **The door is ✉️, and it stopped being 🪪 on 2026-08-26** (entry 94,
   // Q916). This opened `admission` and typed into an invitation box that used
@@ -4695,12 +4738,29 @@ if (caret) {
     say('gate entry · ' + (gateSubsOk ? '💡 and ⚖️ stand as their names alone, no subtitle'
       : 'FAIL: a gate entry carries a subtitle · ' + JSON.stringify(gateSubs)));
     if (!gateSubsOk) stuck.push('a gate entry carries a subtitle (Q1374)');
+    // **…and each wears *yours* and sparkles until accepted** (Q1501): the
+    // member's 💡 and ⚖️ are the two grants no founder meets as cards
+    const gateLook = await guestPage.evaluate(() => ['canpropose', 'canjudge'].map((k) => {
+      const li = document.querySelector('#rail li[data-q="' + k + '"]');
+      const b = li && li.querySelector('button');
+      return [k, !!b && /lc-yours/.test(b.getAttribute('style') || ''), !!(li && li.querySelector('.sparkle'))];
+    }));
+    const gateLookOk = gateLook.every(([, hue, sp]) => hue && sp);
+    say('gate hue   · ' + (gateLookOk ? '💡 and ⚖️ wait in the yours hue, sparkling, until accepted'
+      : 'FAIL: ' + JSON.stringify(gateLook)));
+    if (!gateLookOk) stuck.push('💡 ⚖️ unaccepted: the yours hue and the sparkle (Q1501)');
     if (!g0.judgeServed) {
       say('⚖️ OK      · FAIL: ⚖️ is not served to the member, so its OK cannot be walked · rail ' + JSON.stringify(g0.rail));
       stuck.push('⚖️ is not served to the member (Q1328)');
     } else {
       await guestPage.evaluate(() => document.querySelector('#rail [data-card="canjudge"]').click());
       await guestPage.waitForTimeout(500);
+      const judgeWord = await guestPage.evaluate(() => {
+        const b = document.querySelector('.setupcard [data-ok]');
+        return b ? window.CARDS.glyphTextOf(b).replace(/\s+/g, ' ').trim() : null;
+      });
+      say('⚖️ accept  · ' + (judgeWord === 'Accept ⚖️' ? 'the member’s ⚖️ commits with “Accept ⚖️” (Q1501)' : 'FAIL: ' + JSON.stringify(judgeWord)));
+      if (judgeWord !== 'Accept ⚖️') stuck.push('the member’s ⚖️ commit word (Q1501)');
       const pressed = await guestPage.evaluate(() => {
         const b = document.querySelector('.setupcard [data-ok]');
         if (!b || b.disabled) return false;

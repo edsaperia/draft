@@ -2600,9 +2600,10 @@
       grants: '🏛️', textcard: true,
       open: () => !!cs && viewerIsMember() && !!viewerRow().in,
       early: () => !!cs && viewerIsMember() && !!viewerRow().in,
-      // the consent-wallet paragraph is cut (Ed's QA, 2026-09-02 pm): the
-      // head's three lines are the whole body of the card
-      why: '',
+      // **a body of its own, about 🏛️ alone** (Q1502, Ed 2026-09-22): it
+      // headed with the Proposals preamble — three rules about three things —
+      // and asked for one OK; `proposalsClause` stays the constitution's
+      why: PAGE_COPY.gate.voice.why,
       waiting: PAGE_COPY.gate.voice.waiting,
       blockers: () => [] },
     // **A grant is the holder's** (SURFACE E8's audience column, enforced here
@@ -7075,10 +7076,10 @@
       // itself), and since Q639 the two grants, whose clause is the Founded
       // line they hang their tabs on — and open questions, which their title
       // names better than a rule that does not exist yet.
-      // (🏛️ rides the Founded line too since Q1365, but its head is the
-      // preamble's three rule lines — the whole body of the card, Ed's QA
-      // 2026-09-02 pm — so it falls through to the gate branch below)
-      if (c.k === 'text' || c.k === 'grant-pen' || c.k === 'grant-shield') return null;
+      // (🏛️ rides the Founded line too since Q1365; its head was the
+      // preamble's three rule lines until Q1502 gave it a body of its own)
+      // …and 🏛️ since Q1502: its card is the strip, its own body and the commit
+      if (c.k === 'text' || c.k === 'grant-pen' || c.k === 'grant-shield' || c.k === 'grant-voice') return null;
       if (c.isGate) return breakLines(linkify(esc(decisionLine(c))));
       if (c.ansFor || c.kind === 'personal') return null;
       if (settled(c)) {

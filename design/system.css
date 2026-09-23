@@ -873,6 +873,28 @@
      behind, which would need a stacking context on the button. */
   .queue button:not(.sealdot) { position: relative; overflow: hidden; }
   .queue button:not(.sealdot) > * { position: relative; z-index: 1; }
+  /* **An unaccepted grant sparkles** (Q1501, Ed 2026-09-22 — his word): a
+     narrow band of light crosses the entry once every 3.2 s and rests between
+     sweeps, under the text, never on an accepted grant (setup.js draws the
+     span only in `news`). The phase is written by the page from the clock, so
+     a rebuilt rail carries on mid-sweep. Under reduced motion it is still: a
+     soft ring in the entry's own hue, which says the same without moving. */
+  .queue button:not(.sealdot) > .sparkle {
+    position: absolute; inset: 0; z-index: 0; pointer-events: none; border-radius: inherit;
+    background: linear-gradient(105deg, transparent 42%, rgba(255, 255, 255, 0.7) 50%, transparent 58%);
+    background-size: 260% 100%; background-repeat: no-repeat; background-position: 130% 0;
+    animation: sparkleSweep 3200ms ease-in-out infinite;
+  }
+  @keyframes sparkleSweep {
+    0% { background-position: 130% 0; }
+    40%, 100% { background-position: -30% 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .queue button:not(.sealdot) > .sparkle {
+      animation: none; background: none;
+      box-shadow: inset 0 0 0 2px rgba(var(--lc-yours), 0.45);
+    }
+  }
   /* The bar's leading edge is drawn a second time in its own colour, so it
      composites to roughly double alpha and stays a crisp datum (Ed, 285). Once
      the whole card carries a ground in the same hue, a low-urgency bar — 0.07

@@ -342,13 +342,13 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "OK",
+      "label": "Accept ✒️",
       "title": null
      }
     ],
     "hints": [
      "Founder Actions — close it",
-     "Constitutional Proposals — yours to take",
+     "Activate Your Membership — yours to take",
      "Put it back as it stands"
     ],
     "helpers": [
@@ -368,13 +368,13 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "OK",
+      "label": "Accept 🛡️",
       "title": null
      }
     ],
     "hints": [
      "Founder Veto — close it",
-     "Constitutional Proposals — yours to take",
+     "Activate Your Membership — yours to take",
      "Founder Actions — settled",
      "Put it back as it stands"
     ],
@@ -384,9 +384,9 @@
    },
    "grant-voice": {
     "eyebrow": "",
-    "head": "When the document begins, members may propose changes to rules and vote on proposals.A proposal ✏️ passes once it is preferred by enough of the membership, and by more than prefer the current text.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "",
     "lock": "",
-    "body": "",
+    "body": "A 🏛️ is a constitutional proposal: one at a time, returned whole, passing only when all members agree. You are already a member; activating it opens every question, proposal and vote on the rules.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -395,17 +395,19 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "OK",
+      "label": "Activate 🏛️",
       "title": null
      }
     ],
     "hints": [
-     "Constitutional Proposals — close it",
+     "Activate Your Membership — close it",
      "Founder Actions — settled",
      "Founder Veto — settled",
      "Put it back as it stands"
     ],
-    "helpers": []
+    "helpers": [
+     "A 🏛️ is a constitutional proposal: one at a time, returned whole, passing only when all members agree. You are already a member; activating it opens every question, proposal and vote on the rules."
+    ]
    },
    "hat": {
     "eyebrow": "",
@@ -3835,13 +3837,13 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "OK",
+      "label": "Accept ✒️",
       "title": null
      }
     ],
     "hints": [
      "Founder Actions — close it",
-     "Constitutional Proposals — yours to take",
+     "Activate Your Membership — yours to take",
      "Put it back as it stands"
     ],
     "helpers": [
@@ -3861,13 +3863,13 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "OK",
+      "label": "Accept 🛡️",
       "title": null
      }
     ],
     "hints": [
      "Founder Veto — close it",
-     "Constitutional Proposals — yours to take",
+     "Activate Your Membership — yours to take",
      "Founder Actions — settled",
      "Put it back as it stands"
     ],
@@ -3877,9 +3879,9 @@
    },
    "grant-voice": {
     "eyebrow": "",
-    "head": "When the document begins, members may propose changes to rules and vote on proposals.A proposal ✏️ passes once it is preferred by enough of the membership, and by more than prefer the current text.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "",
     "lock": "",
-    "body": "",
+    "body": "A 🏛️ is a constitutional proposal: one at a time, returned whole, passing only when all members agree. You are already a member; activating it opens every question, proposal and vote on the rules.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -3888,17 +3890,19 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "OK",
+      "label": "Activate 🏛️",
       "title": null
      }
     ],
     "hints": [
-     "Constitutional Proposals — close it",
+     "Activate Your Membership — close it",
      "Founder Actions — settled",
      "Founder Veto — settled",
      "Put it back as it stands"
     ],
-    "helpers": []
+    "helpers": [
+     "A 🏛️ is a constitutional proposal: one at a time, returned whole, passing only when all members agree. You are already a member; activating it opens every question, proposal and vote on the rules."
+    ]
    },
    "hat": {
     "eyebrow": "",
@@ -4646,9 +4650,9 @@
    },
    "grant-voice": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes once it is preferred by enough of the membership, and by more than prefer the current text.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "",
     "lock": "",
-    "body": "The Founder invited you into the membership, and Constitutional Proposals came with it.",
+    "body": "The Founder invited you into the membership, and Constitutional Proposals came with it.A 🏛️ is a constitutional proposal: one at a time, returned whole, passing only when all members agree. You are already a member; activating it opens every question, proposal and vote on the rules.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -4662,11 +4666,12 @@
      }
     ],
     "hints": [
-     "Constitutional Proposals — close it",
+     "Activate Your Membership — close it",
      "Put it back as it stands"
     ],
     "helpers": [
-     "The Founder invited you into the membership, and Constitutional Proposals came with it."
+     "The Founder invited you into the membership, and Constitutional Proposals came with it.",
+     "A 🏛️ is a constitutional proposal: one at a time, returned whole, passing only when all members agree. You are already a member; activating it opens every question, proposal and vote on the rules."
     ]
    },
    "hat": {
@@ -6639,7 +6644,7 @@
     "hints": [
      "Founder Actions — close it",
      "Founder Veto — settled",
-     "Constitutional Proposals — settled",
+     "Activate Your Membership — settled",
      "Put it back as it stands"
     ],
     "helpers": [
@@ -6666,7 +6671,7 @@
     "hints": [
      "Founder Actions — settled",
      "Founder Veto — close it",
-     "Constitutional Proposals — settled",
+     "Activate Your Membership — settled",
      "Put it back as it stands"
     ],
     "helpers": [
@@ -6675,9 +6680,9 @@
    },
    "grant-voice": {
     "eyebrow": "",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes once it is preferred by enough of the membership, and by more than prefer the current text.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "",
     "lock": "",
-    "body": "",
+    "body": "A 🏛️ is a constitutional proposal: one at a time, returned whole, passing only when all members agree. You are already a member; activating it opens every question, proposal and vote on the rules.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -6693,10 +6698,12 @@
     "hints": [
      "Founder Actions — settled",
      "Founder Veto — settled",
-     "Constitutional Proposals — close it",
+     "Activate Your Membership — close it",
      "Put it back as it stands"
     ],
-    "helpers": []
+    "helpers": [
+     "A 🏛️ is a constitutional proposal: one at a time, returned whole, passing only when all members agree. You are already a member; activating it opens every question, proposal and vote on the rules."
+    ]
    },
    "hat": {
     "eyebrow": "",
