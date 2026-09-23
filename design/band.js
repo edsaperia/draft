@@ -1851,8 +1851,22 @@ window.BAND = (function () {
       const box = document.querySelector('.setupcard .emojibox');
       let sel = null;
       try { if (inp) sel = [inp.selectionStart, inp.selectionEnd]; } catch (e) { /* type=email has none */ }
+      // …and the Founder's reason lane (found building issue #34): a
+      // plaintext-only editable rather than an input, so it is held by
+      // character offset — a poll landing mid-sentence took the caret and the
+      // rest of the reason went nowhere, and ✒️ sent the half that was left
+      let why = null;
+      const lane = a && a.closest && a.closest('.setupcard [data-setwhy]');
+      if (lane) {
+        const s = getSelection();
+        if (s && s.rangeCount && lane.contains(s.getRangeAt(0).endContainer)) {
+          const r = document.createRange();
+          r.selectNodeContents(lane); r.setEnd(s.getRangeAt(0).endContainer, s.getRangeAt(0).endOffset);
+          why = r.toString().length;
+        } else why = lane.textContent.length;
+      }
       return { open: S.open, key: attr ? inp.getAttribute(attr) : null, attr,
-        sel, scroll: box ? box.scrollTop : 0 };
+        sel, why, scroll: box ? box.scrollTop : 0 };
     };
     const renderRestore = (k) => {
       if (!k || !k.open || k.open !== S.open) return;
@@ -1861,6 +1875,19 @@ window.BAND = (function () {
         if (el && document.activeElement !== el) {
           el.focus({ preventScroll: true });
           try { if (k.sel && typeof k.sel[0] === 'number') el.setSelectionRange(k.sel[0], k.sel[1]); } catch (e) { /* not a text control */ }
+        }
+      }
+      if (k.why !== null && k.why !== undefined) {
+        const lane = document.querySelector('.setupcard [data-setwhy]');
+        if (lane && document.activeElement !== lane) {
+          lane.focus({ preventScroll: true });
+          const w = document.createTreeWalker(lane, NodeFilter.SHOW_TEXT);
+          let n = k.why, node = w.nextNode();
+          const r = document.createRange();
+          while (node && n > node.length) { n -= node.length; node = w.nextNode(); }
+          if (node) r.setStart(node, n); else { r.selectNodeContents(lane); r.collapse(false); }
+          r.collapse(true);
+          const s = getSelection(); s.removeAllRanges(); s.addRange(r);
         }
       }
       const box = document.querySelector('.setupcard .emojibox');

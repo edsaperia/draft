@@ -487,7 +487,11 @@ window.LIVE = (function () {
         applicantRecords: () => index().applicants || (index().applicants =
           new Map(((self.v.view && self.v.view.applicants) || [])
             .map((a) => [a.id, a]))),
-        setSetting: (t, mid, value) => api.cmd('set-setting', { setting: mid, value }),
+        // the reason rides the request (issue #34 F1): `commitSetting` passes
+        // it and the server stores `args.why`, and this dropped it, so every
+        // Founder ✒️ change to a rule read *No reason given.* to the room;
+        // `JSON.stringify` leaves an undefined `why` out, as `openMotion` relies on
+        setSetting: (t, mid, value, why) => api.cmd('set-setting', { setting: mid, value, why }),
         delegate: (t, mid) => api.cmd('delegate', { setting: mid }),
         reclaim: (t, mid) => api.cmd('reclaim', { setting: mid }),
         relinquish: (t, mid, power) => api.cmd('relinquish', { setting: mid, power }),

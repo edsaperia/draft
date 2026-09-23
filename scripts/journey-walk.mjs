@@ -2039,6 +2039,26 @@ const beginRowsBeforeStart = async () => {
     : 'FAIL: ' + rows.length + ' rows · given ' + JSON.stringify(givenPen) +
       ' · laid down ' + JSON.stringify(downPen)));
   if (!ok) stuck.push('the 🍾 row holding a promised-away pen did not read given, alone');
+  /* 🗑️ puts the table back (issue #34 F2). The toggles write `S.beginRows`
+   * in place and the bin's snapshot never named it, so a struck cell survived
+   * the bin and 🍾 laid that power down for good. Two kept cells struck, 🗑️,
+   * 🍾 reopened: the rows must read as they opened — twice, since the
+   * snapshot outlives the press. Red on the pre-#34 page at the first round. */
+  const said = (rs) => JSON.stringify(rs.map((r) => r.key + ' ' + r.cells.map((c) => c.pw + '=' + c.says).join(' ')));
+  const opening = said(rows);
+  const binRounds = [];
+  for (const [k, pw] of [['chamber', 'u'], ['quorum', 'a']]) {
+    const struck = await brSet(k, pw, 'down');
+    const mid = said(await brRows());
+    const binned = await clickIn('.setupcard [data-revert]');
+    await T(500);
+    const back = await open('begin') ? said(await brRows()) : null;
+    binRounds.push({ k, pw, struck, moved: mid !== opening, binned, restored: back === opening });
+  }
+  const binOk = binRounds.every((r) => r.struck && r.moved && r.binned && r.restored);
+  say('begin bin  · ' + (binOk ? 'a struck cell, 🗑️, and 🍾 reopens as it opened — twice'
+    : 'FAIL: ' + JSON.stringify(binRounds)));
+  if (!binOk) stuck.push('🗑️ on 🍾 puts the power table back (#34 F2)');
   // …and one row's 🛡️ set to lay down, which is what the press must carry
   const set = await brSet('invite', 'a', 'down');
   const after = await brRows();

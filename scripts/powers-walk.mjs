@@ -606,6 +606,39 @@ const runDocument = async (hat) => {
     // page's *nothing commits* sweep is about cards, not about a live race
     for (const m of running) await cmd('withdraw-motion', { motion: m.id });
     await T(600);
+    /* ---- ⏰ · the pen carries its reason (issue #34 F1) ----------------
+     * The Founder types *Why are you changing this?* and presses ✒️: the
+     * live `setSetting` took no reason, so the request carried no `why`, the
+     * module recorded none, and every member read *No reason given.* under a
+     * Founder's change to a rule. Red on the pre-#34 page at `setWhy: null`. */
+    const WHY = 'The cohort asked for one more week.';
+    if (await page.evaluate(() => !document.querySelector('.setupcard'))) await openCard('ending');
+    const later = new Date(Date.now() + 86_400_000 + 7_200_000);
+    const local2 = later.getFullYear() + '-' + pad(later.getMonth() + 1) + '-' + pad(later.getDate()) +
+      'T' + pad(later.getHours()) + ':' + pad(later.getMinutes());
+    await page.evaluate((v) => {
+      const el = document.querySelector('.setupcard [data-txt="endsAt"]');
+      if (el) { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); }
+    }, local2);
+    await T(500);
+    // half the reason, one 4s poll, then the rest: a poll's render under the
+    // lane took the caret (found building #34), so the walk makes one land
+    // there on purpose rather than by luck
+    const HALF = 14;
+    const typed = await typeIn('.setupcard [data-setwhy]', WHY.slice(0, HALF));
+    await T(4800);
+    if (typed) await page.keyboard.type(WHY.slice(HALF), { delay: 8 });
+    const penned = typed ? await press(1250) : null;
+    await T(1500);
+    const whyNow = await page.evaluate(async (slug) => {
+      const b = await (await fetch(`/api/d/${slug}/view`)).json().catch(() => null);
+      const row = b && b.view && (b.view.settings || []).find((s) => s.setting === 'ending');
+      return row ? row.setWhy : undefined;
+    }, SLUG);
+    const whyOk = typed && !!penned && whyNow === WHY;
+    if (!whyOk) fail('⏰ reason · ' + JSON.stringify({ typed, penned, setWhy: whyNow }));
+    say('  ⏰ reason    · ' + (whyOk ? 'the ✒️ carries the typed reason to the module — PASS'
+      : 'FAIL — ' + JSON.stringify({ typed, penned, setWhy: whyNow })));
   }
   await clickIn('.setupcard [data-revert]');
 

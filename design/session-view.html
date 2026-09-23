@@ -1506,7 +1506,12 @@
   // the blind answers ride the snapshot too, as their own `ans:` keys — an
   // answer is one more provisional value, and the bin that puts a card back
   // should not need to know which kind of card it is standing on
-  const takeSnap = (k) => { const s = { __ans: Object.assign({}, S.myAns) };
+  // …and 🍾's power table and the reason lanes the same way (issue #34 F2,
+  // F3): both are written in place into objects the plain keys below would
+  // hold by identity, so they are copied, and kept under `__` names so
+  // `openCardDirty` never compares them by identity
+  const takeSnap = (k) => { const s = { __ans: Object.assign({}, S.myAns),
+    __begin: Object.assign({}, S.beginRows), __why: Object.assign({}, S.setWhy || {}) };
     REVERTKEYS().forEach((kk) => { s[kk] = S[kk]; }); snaps[k] = s; };
   const dropSnap = (k) => { delete snaps[k]; };
   // **The bin puts back its own card, not the whole surface.** The snapshot
@@ -1529,6 +1534,8 @@
     // the answer rather than into it
     el.querySelectorAll('[data-ans][data-ansval="date"]').forEach((b) => ks.add('ans:' + b.dataset.ans + 'Kind'));
     if (el.querySelector('[data-setwhy]')) ks.add('setWhy');
+    // 🍾's power table (issue #34 F2): a struck cell is unsent like any radio
+    if (el.querySelector('.pwtoggle[data-bkey]')) ks.add('beginRows');
     if (el.querySelector('[data-titlelane]')) ks.add('titleDraft');
     // ❌'s subject is provisional input like any other, so 🗑️ puts it back
     if (el.querySelector('[data-removewho]')) ks.add('removeWho');
@@ -1572,6 +1579,12 @@
     (only || []).forEach((k) => {
       if (k.startsWith('ans:')) { const a = k.slice(4);
         if (s.__ans) S.myAns[a] = a in s.__ans ? s.__ans[a] : null; return; }
+      // a copy, since the snapshot outlives the press (issue #34 F2)
+      if (k === 'beginRows') { S.beginRows = Object.assign({}, s.__begin || {}); return; }
+      // the open card's reason alone — the snapshot can predate a reason
+      // typed on another card (issue #34 F3, SURFACE C3)
+      if (k === 'setWhy') { const w = s.__why || {}; S.setWhy = S.setWhy || {};
+        if (S.open in w) S.setWhy[S.open] = w[S.open]; else delete S.setWhy[S.open]; return; }
       if (k in s) S[k] = s[k];
     }); };
   // **What the bin would put back, asked as a question** (issue #12): the one
@@ -1591,6 +1604,9 @@
         const was = s.__ans && a in s.__ans ? s.__ans[a] : null;
         const is = S.myAns[a];
         return (was == null ? is != null : is !== was); }
+      // the two copied keys compare by content (issue #34)
+      if (k === 'beginRows') return JSON.stringify(S.beginRows || {}) !== JSON.stringify(s.__begin || {});
+      if (k === 'setWhy') return ((S.setWhy || {})[S.open] || '') !== ((s.__why || {})[S.open] || '');
       return k in s && S[k] !== s[k];
     });
   };
