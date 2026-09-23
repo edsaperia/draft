@@ -262,6 +262,22 @@ await check('the phase ladder is not in the artifact (Q674)', async () => {
   return '404 on POST ladder · POST seat · GET ladder';
 });
 
+// **The dev clock** (Q1455), asked the same way and for a sharper reason than
+// the ladder: this one has a foothold in a path that ships — `foldTime` adds a
+// per-document skew — and a reachable route would let anybody holding a slug
+// run that document ahead of the wall clock and past its own close. The
+// build's grep says the module and every write to the skew are gone from the
+// bytes; this says the door is not there on the host that is serving.
+await check('the dev clock is not in the artifact (Q1455)', async () => {
+  const r = await fetch(base + '/api/dev/clock', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ slug: 'nothing', advanceMs: 1000 }),
+  });
+  expect(r.status === 404, `status ${r.status} — a document's clock can be moved on the live host`);
+  return '404 on POST clock';
+});
+
 // The one dev-shaped route that *does* ship (Q1310): the bot outbox, which
 // serves only mail to bots.docs.vote and only to the bearer of
 // DRAFT_BOT_KEY. Without the key set it is an unknown path; with it, a

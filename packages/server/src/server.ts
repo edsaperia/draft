@@ -213,8 +213,11 @@ export async function createDraftServer(cfg: ServerConfig,
 
   /** The minute's other housekeeping rides the same metronome: the rate
    *  limiter's stale buckets, swept before the documents are driven. */
-  const tick = async (nowMs: number = Date.now()): Promise<void> => {
-    sweepBuckets(nowMs);
+  const tick = async (nowMs?: number): Promise<void> => {
+    // the buckets are the host's, so they sweep on the wall clock; the
+    // documents are each asked for their own now, which is that same wall
+    // clock everywhere but a document a dev walk has moved (Q1455)
+    sweepBuckets(nowMs ?? Date.now());
     await writes.tick(nowMs);
   };
 

@@ -18,7 +18,7 @@
  * | `GET /d/:slug` | **no** | `session-view.html` for any slug the store knows; 404 otherwise. The page then asks `/view` and gets the door. |
  * | `GET /healthz` | n/a | counts and the booted catalogue; names no document |
  * | `GET /api/slug/:slug` | **no** | whether an address is free — so it confirms a document exists, at every rung |
- * | `GET /api/dev/outbox` · `/api/dev/ladder` · `POST /api/dev/seat` | no | 404 unless `mailer.dev`, and dropped from the built artifact by `--drop-labels=DEV` |
+ * | `GET /api/dev/outbox` · `/api/dev/ladder` · `POST /api/dev/seat` · `POST /api/dev/clock` | no | 404 unless `mailer.dev`, and dropped from the built artifact by `--drop-labels=DEV` |
  *
  * **The rungs**, and what `canRead` makes of them (`server.ts`, `strangerView`):
  * `closed` → false · `link` → true · `public` → true · **unsettled** (founder
@@ -515,6 +515,9 @@ describe('🌍 nothing a stranger reaches leaks the stagehand', () => {
     for (const [method, path] of [
       ['GET', '/api/dev/outbox'], ['GET', '/api/dev/ladder'],
       ['POST', '/api/dev/ladder'], ['POST', '/api/dev/seat'],
+      // the dev clock (Q1455) is the sharpest of them: reachable, it would
+      // run any document anybody holds a slug for ahead of the wall clock
+      ['POST', '/api/dev/clock'],
     ] as const) {
       const res = await fetch(b.base + path, method === 'GET' ? {}
         : { method, headers: { 'content-type': 'application/json' }, body: '{}' });

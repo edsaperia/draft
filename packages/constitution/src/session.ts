@@ -98,8 +98,11 @@ export interface WaitingHold {
  * document rather than half-reading it (`DocStore.loadAll`, Q1322).
  */
 
-/** Q459: a read refreshes the activity clock at most this often. */
-const SEEN_EVERY_MS = 60 * 60_000;
+/** Q459: a read refreshes the activity clock at most this often. **Exported
+ *  since Q1455**, because a second reader would otherwise mirror the literal:
+ *  the dev clock refuses a jump too short for presence to record it, and a
+ *  copy of this number in another package would rot silently the day it moves. */
+export const SEEN_EVERY_MS = 60 * 60_000;
 
 export class ConstitutionSession {
   private log: LogEntry[] = [];

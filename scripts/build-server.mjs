@@ -28,13 +28,36 @@ import { readFileSync } from 'node:fs';
  * top-level initialisers pure and keeps them even with no live reference. The
  * failure would be silent, so the build checks its own work.
  */
-const NEVER_IN_PROD = ['dev-ladder', 'ladder.invalid', 'Bellamy', '/api/dev/'];
+const NEVER_IN_PROD = ['dev-ladder', 'ladder.invalid', 'Bellamy', '/api/dev/',
+  // **The dev clock** (Q1455): the module's name as its dynamic import spells
+  // it, and a sentence only its refusals carry. `/api/dev/` above already
+  // covers the route path; these two say the module behind it was never
+  // resolved into the bundle either.
+  'dev-clock', 'a dev clock advances and never rewinds'];
+/**
+ * **And the one seam the dev clock leaves in code that ships** (Q1455). Unlike
+ * the ladder, this dev control needs a foothold in a production path —
+ * `foldTime` adds a per-document skew — so absence of the module is not the
+ * whole proof: the artifact must also hold no way to *set* that skew.
+ * `installDevClock`'s body wears the DEV label, so the assignment inside it is
+ * gone with the label — and esbuild then drops the emptied function outright,
+ * which is a bonus and not the proof. The needle is the **assignment**, not
+ * the function's name: what is left in the artifact must be the declaration
+ * `devSkew = null` and no other write to it anywhere.
+ */
+const NEVER_ASSIGNED_IN_PROD = [/(?<!\b(?:var|let|const)\s)\bdevSkew\s*=[^=]/];
 function assertNoDevCode(file) {
   const bytes = readFileSync(file, 'utf8');
   const found = NEVER_IN_PROD.filter((needle) => bytes.includes(needle));
   if (found.length > 0) {
     throw new Error(`${file} carries dev-only code: ${found.join(', ')} — ` +
       'a DEV-labelled block is reachable, or an import escaped its label');
+  }
+  const settable = NEVER_ASSIGNED_IN_PROD.filter((re) => re.test(bytes));
+  if (settable.length > 0) {
+    throw new Error(`${file} can still set the dev clock: ${settable.join(', ')} — ` +
+      "installDevClock's body escaped its DEV label, and a production host " +
+      'could be made to run a document ahead of the wall clock');
   }
 }
 

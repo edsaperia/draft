@@ -22,6 +22,7 @@
  */
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { join } from 'node:path';
+import { foldTime } from './engine-host.js';
 import { outboxTail } from './mailer.js';
 import { cookieSession, json, readJson, setCookie } from './routes.js';
 import type { Route } from './routes.js';
@@ -129,7 +130,16 @@ DEV: devLadderTable.push(
         await import('./dev-ladder.js');
       const slug = url.searchParams.get('slug');
       const doc = slug === null ? null : ctx.store.bySlug(slug);
-      const phase = phaseOf(doc, nowMs);
+      /* **The ladder reads the document's own clock, not the wall's**
+         (Q1455). `foldTime` is real now for every document there has ever
+         been — the log cannot get ahead of the clock by itself — so this is
+         a no-op everywhere except a document the dev clock has moved, where
+         the wall clock is the wrong question: *is this document within
+         fifteen minutes of its ending* is a question about the document's
+         time. Pure: `foldTime` reads and writes nothing, which a readout a
+         page load fires must stay. */
+      const t = doc === null ? nowMs : foldTime(doc, nowMs);
+      const phase = phaseOf(doc, t);
       const manifestSafely = (d: typeof doc, t: number): { what: string; seat?: string }[] => {
         try {
           return manifestOf(d, t).lines;
@@ -156,7 +166,7 @@ DEV: devLadderTable.push(
            report itself as *the server is not in dev mail mode* — which is
            exactly what a first cut of `manifestOf` did. It is an extra;
            a failure to describe the document is not a failure to serve it. */
-        manifest: manifestSafely(doc, nowMs),
+        manifest: manifestSafely(doc, t),
       });
       return true;
     },
@@ -176,11 +186,46 @@ DEV: devLadderTable.push(
         { store: ctx.store, commit: (d, t) => ctx.writes.commit(d, t) }, doc, {
         ...(typeof body.to === 'string' ? { to: body.to as never } : {}),
         ...(typeof body.seed === 'number' ? { seed: body.seed } : {}),
+        // the document's own clock, for the readout's reason above (Q1455):
+        // real now for every document but one the dev clock has moved, and
+        // on that one an ending five minutes from the *wall* clock would
+        // land behind the log, which is the permanent wedge Q679 names
+        nowMs: doc === null ? nowMs : foldTime(doc, nowMs),
       });
       // the press seats you as the founder, since the founder is who the
       // ladder's own rungs are written from
       setCookie(res, result.docId, ctx.auth.cookieFor(result.docId, 'founder', nowMs), ctx.httpsOn);
       json(res, 200, result);
+      return true;
+    },
+  },
+  {
+    /* **The dev clock** (Q1455, Ed 2026-09-18). Move one document's clock
+       forward, so a walk that needs a member to lapse is not paying five
+       real minutes a hat for it. The route is a door and nothing more: the
+       module behind it holds the offsets, the refusals and the reasoning,
+       and the `import()` is **dynamic and inside the label** for the
+       ladder's own reason — a static one would survive the drop.
+
+       It moves the clock and stops. The lapse is the host's ordinary minute
+       tick, which is the one thing the seat matrix still exercises for real
+       once the waiting is gone. */
+    name: 'POST the dev clock',
+    method: 'POST',
+    match: '/api/dev/clock',
+    handler: async (ctx, r) => {
+      const { req, res, nowMs, baseOrigin } = r;
+      if (r.devOff()) return true;
+      if (devCrossSite(req, res, baseOrigin)) return true;
+      const body = await readJson(req) as { slug?: unknown };
+      const doc = r.docOr404(typeof body.slug === 'string' ? ctx.store.bySlug(body.slug) : null);
+      if (!doc) return true;
+      const { advanceClock } = await import('./dev-clock.js');
+      const out = await advanceClock({
+        tOf: (d) => ctx.writes.tOf(d),
+        commit: (d, t) => ctx.writes.commit(d, t),
+      }, doc, body, nowMs);
+      json(res, out.status, out.body);
       return true;
     },
   },

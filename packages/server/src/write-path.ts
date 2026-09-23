@@ -32,7 +32,7 @@ import type { OutboxRow, Persistence } from './persistence.js';
 import type { MailOutbox, QueuedMail } from './outbox.js';
 import { MAILS } from './mailer.js';
 import type { Mail, Mailer } from './mailer.js';
-import { driveBridge, foldTime, persistEngine, rewindEngine } from './engine-host.js';
+import { devNow, driveBridge, foldTime, persistEngine, rewindEngine } from './engine-host.js';
 
 /**
  * **A command the store could not write, said as what it is** (issue #79).
@@ -195,14 +195,34 @@ export class WritePath {
    * both functions again outside this guard, so the error is still
    * reported, once a minute, where the operator reads it.
    */
-  tOf(doc: LoadedDoc, nowMs: number = this.d.now()): number {
+  /**
+   * **`nowMs` given means that instant, omitted means *what time is it***
+   * (Q1455). The distinction never mattered while every document ran on one
+   * wall clock; a dev walk can now run one of them ahead, and the two answers
+   * part. Omit it and the document is asked for its own now — which is what
+   * every route that means *now* does, and what the tick does per document, so
+   * a moved clock lapses and closes on schedule. Hand one in and it is used as
+   * given, which is what the phase ladder's own pen needs: a commit behind a
+   * write must land on the instant that write named, not a millisecond later.
+   * The pause is a fact about the host, so it reads the wall clock either way.
+   *
+   * **And *what time is it* is asked of the host, not of `Date`.** `d.now` is
+   * the clock this write path was made with, and it is the one seam a test has
+   * on the path every commit rides; a first cut let the no-argument case fall
+   * through to `foldTime`'s own default, which reads `Date.now()` — so the
+   * injected clock was silently dropped, and one call read two clocks (the
+   * pause on `d.now`, the fold on `Date`). `devNow` adds the document's skew
+   * to whichever clock it is handed, so both halves of that rule hold at once.
+   */
+  tOf(doc: LoadedDoc, nowMs?: number): number {
     const { cfg, pause } = this.d;
-    const t = foldTime(doc, nowMs);
+    const realMs = nowMs ?? this.d.now();
+    const t = foldTime(doc, nowMs ?? devNow(doc.id, realMs));
     const ending = doc.cs.constitutedAtT !== null && !doc.cs.closed
       ? doc.cs.settingState('ending').value as { endsAtMs: number | null } | null
       : null;
     if (ending !== null && ending.endsAtMs !== null && t >= ending.endsAtMs
-        && pause.now(nowMs) === null) {
+        && pause.now(realMs) === null) {
       try {
         // engine first, then the constitution (SPEC §4.6): the final
         // adoption batch runs while the constitution is still open, and
@@ -472,10 +492,16 @@ export class WritePath {
   }
 
   /** Drive the clocks (§9.5/§9.5a) over every document, then the sender.
-   *  `server.ts`'s own `tick` sweeps the rate-limit buckets and calls this. */
-  async tick(nowMs: number = this.d.now()): Promise<void> {
+   *  `server.ts`'s own `tick` sweeps the rate-limit buckets and calls this.
+   *
+   *  **Each document is asked for its own now** (Q1455): `nowMs` omitted is
+   *  the ordinary minute turn, and `tOf` then answers per document, so one a
+   *  dev walk has moved lapses and closes on the clock it is running on. A
+   *  test that states the time it is still states it for every document. */
+  async tick(nowMs?: number): Promise<void> {
     const { cfg, closing, noteError, outbox, pause, store } = this.d;
-    if (pause.now(nowMs) !== null) return; // paused (Q1345): the clock waits with the store
+    const realMs = nowMs ?? this.d.now();
+    if (pause.now(realMs) !== null) return; // paused (Q1345): the clock waits with the store
     for (const doc of store.all()) {
       if (closing()) return; // shutting down: no new commits join the drain
       if (doc.cs.constitutedAtT === null) continue;
@@ -503,7 +529,7 @@ export class WritePath {
         // the tick's own clock: a test-driven tick states the time it is
         driveBridge(doc, this.tOf(doc, nowMs), cfg.engineTuning);
         doc.cs.tick(this.tOf(doc, nowMs));
-        await this.commit(doc, nowMs);
+        await this.commit(doc, realMs);
       } catch (e) {
         noteError('tick', e);
         console.error(`tick failed for document '${doc.id}':`, e);
@@ -513,7 +539,7 @@ export class WritePath {
     // is the fast path, and this is what re-offers a row whose backoff has
     // elapsed. Awaited, so a tick that overlaps a shutdown drains with it.
     if (!closing()) {
-      await outbox.run(nowMs).catch((e: unknown) => {
+      await outbox.run(realMs).catch((e: unknown) => {
         noteError('outbox', e);
         console.error('outbox pass failed:', e);
         return { sent: 0, failed: 0, held: false };

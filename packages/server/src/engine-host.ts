@@ -42,6 +42,36 @@ export function asEngineDoc(doc: LoadedDoc): EngineDoc {
 }
 
 /**
+ * **The dev clock's one foothold in code that ships** (Q1455, Ed 2026-09-18).
+ * A document's own clock is `foldTime` and nothing else, so one document can
+ * be moved forward by adding a skew there — and the whole of the mechanism in
+ * the production artifact is the two functions below, which answer 0 for
+ * every document for ever. `installDevClock`'s **body is inside the `DEV:`
+ * label**, so the build drops it and what is left is a function that takes an
+ * argument and does nothing: the artifact holds the read and no way at all to
+ * write it, and the only caller of the setter — `dev-clock.ts` — is reached
+ * solely by a dynamic import inside the same label and so is never resolved
+ * into the bundle. `scripts/build-server.mjs` greps its own output for both.
+ *
+ * Nothing about the skew is ever written down, and nothing needs to be: what
+ * reaches the log is the *time*, and the time is in the log. A host that
+ * restarts forgets the skew and the document's clock falls back to real now
+ * — which cannot move it backwards, because `foldTime` is a maximum over the
+ * logs it already has.
+ */
+let devSkew: ((docId: string) => number) | null = null;
+
+export function installDevClock(skew: (docId: string) => number): void {
+  DEV: { devSkew = skew; }
+}
+
+/** How far ahead of the wall clock this document is being run. Always 0 in
+ *  anything that ships, and 0 on every document but the one a dev walk moved. */
+export function devSkewMs(docId: string): number {
+  return devSkew === null ? 0 : devSkew(docId);
+}
+
+/**
  * **A command is stamped at the fold** (Q1332, Ed 2026-09-11: *stamp at the
  * fold* — the log records when the document changed). The time is taken
  * when the command is about to fold, never at the request's receipt, and is
@@ -52,13 +82,36 @@ export function asEngineDoc(doc: LoadedDoc): EngineDoc {
  * fresher one had folded first; the constitution log alone was already
  * guarded, which is why only judgments were lost.
  */
-export function foldTime(doc: LoadedDoc, nowMs: number = Date.now()): number {
+export function foldTime(doc: LoadedDoc, nowMs?: number): number {
   const log = doc.cs.logEntries();
   const csLast = log.length > 0 ? log[log.length - 1]!.event.t : 0;
   const bridge = asEngineDoc(doc).bridge;
   const eLog: ReadonlyArray<{ event: { t: number } }> = bridge ? bridge.engine.log : [];
   const eLast = eLog.length > 0 ? eLog[eLog.length - 1]!.event.t : 0;
-  return Math.max(nowMs, csLast, eLast);
+  return Math.max(nowMs ?? devNow(doc.id), csLast, eLast);
+}
+
+/**
+ * **The wall clock this document is running on** (Q1455) — real now, and on a
+ * document a dev walk has moved, real now plus its skew. Used where `foldTime`
+ * is asked *what time is it*, and never where a caller has said *this time*:
+ * an explicit argument is honoured as given, skew or no skew.
+ *
+ * **That distinction is the whole of it, and it is load-bearing.** A first cut
+ * added the skew inside the maximum, so every caller that handed in a time —
+ * the phase ladder commits at `pen.now`, a time it has just written an event
+ * at — got a moment *after* the one they named. Two failures came of it, both
+ * seen within the hour: the skew compounding on every hop (one jump of an
+ * hour, committed two hours on), and, once that was idempotent, the ladder's
+ * `toClosed` writing its ending at one instant and the commit behind it
+ * driving the engine at a millisecond later — so the engine ran its close at a
+ * window behind its own log and threw *timestamps must be non-decreasing*,
+ * once a minute, for ever. It bit about one run in two, which is the worst
+ * kind of bug to own. Honouring the argument is what makes a caller's *this
+ * instant* mean it.
+ */
+export function devNow(docId: string, nowMs: number = Date.now()): number {
+  return nowMs + devSkewMs(docId);
 }
 
 /** Resume a persisted bridge; called once per document at load. The host's
