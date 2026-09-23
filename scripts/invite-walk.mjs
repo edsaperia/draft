@@ -354,12 +354,17 @@ say('mail       · ' + JSON.stringify(mail && linkIn(mail)));
 if (!mail || !/\/auth\/login/.test(linkIn(mail) || '')) {
   fail('the mail', 'no login link reached the carried invitee');
 }
-// the subsection stops saying *proposed*: the invitation stands
-const sub2 = await mover.evaluate(() => {
+// the subsection stops saying *proposed*: the invitation stands. The view
+// above is the server's; the page learns it on its next 4 s poll, so read
+// until it has (up to 10 s) rather than once — a single read raced the poll
+// (PR #96's run 35803362292, 2026-09-23)
+const readInvitees = () => mover.evaluate(() => {
   const h = document.getElementById('cs-mem-invitees');
   const box = h && (h.closest('.csub') || h.parentElement);
   return box ? box.textContent.replace(/\s+/g, ' ').trim().slice(0, 160) : null;
 });
+let sub2 = await readInvitees();
+for (let i = 0; i < 20 && sub2 && /proposed/.test(sub2); i++) { await T(500); sub2 = await readInvitees(); }
 say('Invitees   · ' + JSON.stringify(sub2));
 if (!sub2 || !/newbie/.test(sub2)) fail('the subsection', '*Invitees* lost the carried invitee: ' + JSON.stringify(sub2));
 else if (/proposed/.test(sub2)) fail('the subsection', '*Invitees* still calls the carried invitation proposed');

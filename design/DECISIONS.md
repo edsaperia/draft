@@ -7160,3 +7160,90 @@ The 👥 scale opens to 1–100% with two conditional sentences on the card; R-1
 
 1. The seven gates; both probes; `journey`, `applicants-walk` (three prices), `after-begin-walk`, `invite-walk`, `first-keys-walk`, `member-questions-walk`, `slug-walk`, `ladder`, `powers-walk`, `seat-matrix --hat=both`, `room-walk` on a cooldown-0 server — sequentially, not in parallel.
 
+## The guard regime made fast — plan-ci-speed.md, lifted at its deletion (2026-09-23)
+
+Ed, 2026-09-22 evening: *our current test/walk/guard regime is very slow — audit the work, see where the time breaks down, whether we can optimise or parallelise without losing much, which are earning their keep*; built the same night on PR #96. A push was decided after 43 minutes; it is decided after about ten, set by the two seat-matrix groups. Stage 3 (memo-differential to the sprint tier) was dropped by Ed. The rule it produced is CLAUDE.md's *CI runs in parallel* convention; two scripts CLAUDE.md had named as guards (`type-measure`, `pic-measure.mjs`) are named instruments since, by Ed's ruling, because they assert nothing.
+
+### The audit of record (the plan's §1)
+
+**Sources.** Every CI run on record (184, 2026-08-20 to 2026-09-22, via
+`gh run list`), the failing step of every red one (59 reads of `gh run
+view`), the two 2026-09-22 runs step by step, the workflow's git history
+(`git log -S` per step), and four days of local gate and walk logs in the
+job temp directory.
+
+**Per push, on the runner, today** (both 2026-09-22 runs, identical):
+
+| Job | Wall clock | Gates the deploy | What dominates |
+|---|---|---|---|
+| `ci` | 4 min | yes | `npm test` 53 s; deploy-and-verify 121 s |
+| `probe` | 9.5 min | no | `toc-travel` 272 s; `copy-check --walk` 180 s; the rest 90 s |
+| `walks` | 43 min | no | seat-matrix 1105 s; journey 444 s; rate-motion 320 s; powers-walk 129 s; after-begin 103 s; head-insertion-aim 78 s; invite 73 s; applicants ×3 183 s; the rest ~60 s |
+
+The jobs run in parallel, so a push is decided after 43 minutes, and that
+number is the `walks` job's twenty steps in series on one runner.
+
+**How it grew** (average minutes per run, by week):
+
+| Week of | Runs | Avg min | Red | Note |
+|---|---|---|---|---|
+| 08-20 | 53 | 2 | 3 | `ci` alone |
+| 08-25 | 39 | 9 (one run hung 70 h: 113 with it) | 20 | `probe` 08-21, walks 08-27 |
+| 08-31 | 21 | 9 | 20 | walks red on every push |
+| 09-07 | 27 | 18 | 7 | first green walks 09-07; `copy-check --walk`, `room-walk` |
+| 09-14 | 42 | 29 | 9 | seat-matrix, founder-answers, five walks 09-15, three 09-17 |
+| 09-22 | 2 | 43 | 1 | head-insertion, overlapping-sites, rail-font 09-21; rate-motion 09-22 |
+
+Doubling roughly every ten days. No job carries `timeout-minutes`, which is
+how one run stood for seventy hours.
+
+**Reds, whole record.** 60 of 184 runs red (33%). By failing step: journey
+31, `probe --strict` 22, applicants-walk 9, deploy-and-verify 6, typecheck
+3, founding-golden 3, ladder 2, toc-travel 2, `copy-check --walk` 2,
+seat-matrix 1, spec-check 1, clock-check 1. **From 2026-08-27 to 09-06 the
+walks job was red on every push** — twelve days in which a new red was
+indistinguishable from the standing one, which is a job catching nothing.
+
+**Reds, last two weeks, read one by one** (the commit after each):
+
+| Kind | Count | Which |
+|---|---|---|
+| real product catch | 3 | spec-check 09-15 (a broken state chain; would have held the deploy, cost 0 s); applicants-walk 09-11 ×2 (the assembly admit card not opening — one bug) |
+| real, dev tooling | 1 | ladder 09-18 (the cast's 👥 draw above Q1439's cap) |
+| guard out of step with a deliberate change | 7 | journey ×3 (drawn marks read by text; 17 rows not 18; one unread), toc-travel ×2 (the stagehand's `devswitch` under a run at 1280×900), copy golden ×2, clock-check ×1 (load order after Q1352) |
+| by design | 1 | seat-matrix 09-19: E42's row unread, exit 3, red three days (Q1499) |
+| hosting | 6 | deploy-and-verify (fixed by e31ce168, *one sighting is not a cutover*) |
+
+**Locally**, the last day: five full gate runs, three journeys, a dozen
+single walks. `npm test` is ~140 s on this machine and **91 s of it is one
+file**, `packages/engine-core/test/memo-differential.test.ts` (8 tests),
+which also flaked on the worker heartbeat on 2026-09-21 (7bbf742c). The
+walks job was run whole locally at least once before a push and then again
+by CI.
+
+**Guards named in CLAUDE.md that no workflow runs** (the shape issue #17
+found on 2026-09-17, still open for these): `crlf-paste`, `poll-race`,
+`slider-walk`, `scripts/repro/stale-key.mjs`, `focus-steal.mjs`,
+`heading-marker.mjs`, `title-motion-tab.mjs`, `wrong-line-room.mjs`;
+`card-audit` (13 gotchas cite it) and `a11y-audit` are audits with exit
+codes and run nowhere either.
+
+**What earns its keep.** The seconds-cost gates (`spec-check`, static
+`copy-check`, `clock-check`, typecheck, lint: under 30 s together, one
+deploy saved). journey: the only guard on the live path and the one with a
+catch record, but its 29 explicit waits sum to ~35 s of 444, so the rest is
+155 steps of round trips nobody has profiled. applicants-walk: two real
+reds. seat-matrix: 18 minutes a push for one by-design red; its job is to
+make an unread cell red *at once*, which parallel keeps. toc-travel: 4.5
+minutes, two reds, both its own; it waits a literal 400 ms three times per
+heading with the scroll already stubbed synchronous. `copy-check --walk`:
+3 minutes, two stale-golden reds, and the static half already runs in `ci`.
+
+### Stage notes
+
+- **Stage 1** — PR #96, 90045bf4 (rebased as 34354c12); run 35792314266: the walks decided after 10m19s, down from 43 min (slowest group seat-member; the others 8m00s–10m09s; ~35 s setup per runner). Exit 3 proved on run 35793133650 (both seat groups red at noRule=7), reverted green on 35794080592. `seat-matrix --hat=both` split into one hat per group, identical assertions (each hat was already its own document). `ci`'s timeout is 45 on a push to main, 15 otherwise, so a timeout never cancels the deploy's poll and strands docs.vote paused. Leftovers on main as c44e8289: the copy golden re-frozen after Q1503, `*.sh text eol=lf`.
+- **Stage 2** — afbf9143; run 35796532663: toc-travel 272 s → 43 s (two frames, or the card's own `COLLAPSE_MS` then two, where it just shut one; `--slow` keeps 400 ms); output identical to the baseline's 16 lines. `probe` 9m56s → 3m05s; `copy-check --walk` moved to its own job `copy-walk` (~3.5 min) because probe was over 5 min without it.
+- **Stage 3** — **not built**: the builder's edit to `memo-differential.test.ts` (a seeded 1-in-12 step sample unless `MEMO_DIFF_FULL=1`) was refused by the session's permission classifier as a security-test removal, and reverted untried. Measured first: the file is 35 s of engine-core's 37 s locally; comparing at every tenth step took it to 5.5 s. `sprint.yml` already had `workflow_dispatch`. **Dropped by Ed, 2026-09-23 01:21**: on the runner `ci` finishes in 2 min while the seat groups take 10, so the stage saved no push time — only ~30 s per local gate run — at the cost of a thinner cache check on every push. memo-differential stays whole at every push.
+- **Stage 4** — 9d7acef8; CI run 35798765130, sprint run 35798769642: all ten guards exist and were green; a sixth walks group `repros` (7m51s — wrong-line-room runs `shapes` and `record` only, the eight cases being 745 s; focus-steal `--gap` only); `card-audit` at 1600 and at 390 against it, and `a11y-audit`, in sprint.yml in report mode, not `--strict`. `spec-check`'s `checkGuardsRun` warns on a named guard no workflow runs: 13 of 55 before, 2 after (`type-measure`, `pic-measure.mjs` — instruments that assert nothing; a question for Ed).
+- **Stage 5** — 585904f6; run 35799636835: rate-motion 319 s → 104 s, motions 9m47s → 6m05s. The plan's premise was wrong — the walk already founded one document; its time was fixed waits — so it runs four lanes side by side, each on its own identical document, scenario order kept within a lane, output printed in the original order (`--lanes=1` the old serial run). Sixteen verdicts the same and all OK; two differ only in the document's own counters (seq, motion id).
+- **Stage 6** — 02c4b875; run 35800526695: `WALK_TIMING=1` prefixes each `say` line with `[+ N ms]`, the journey group sets it; 177 lines unchanged after stripping. Slowest: *broke row* 20.9 s, *follow* 15.2, *build wait* 14.1, *build hand* 12.7, *askable 1* 12.2, *run edit 1/2* 10.4 each, *pairs 1* 10.2, *motion gone* 10.0. The whole run now ~10m15s, set by the seat groups. Known: `ci-walks.sh` run locally on Windows leaves the tsx grandchild listening (its `pkill -f` fallback is CI-only).

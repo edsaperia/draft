@@ -16,18 +16,26 @@ overnight mandate and its running log, stage 8's log, the design-day backlog,
 the hosting and domain notes, the stage write-ups as they stood — is
 `design/DECISIONS.md` § *PRODUCTION.md, the history lifted 2026-09-07*.
 
-## Where it stands (2026-09-17)
+## Where it stands (2026-09-22)
 
 docs.vote has served the product since 2026-08-20 — one Render service, the
 alpha home (481 (a)), from Postgres since 23:30 that night with no disk
 (498 (b)), mail from `mail.docs.vote` via Resend, the operator mailed at every
 birth. CI deploys on green and verifies the live host afterwards, so **a push
-to `main` is a deploy** (476). Stages 0–11 are done; 15 has had three passes,
-the third on 2026-09-17; 12 is drafted and parked; 13 is not started as a
-stage but has been **measured** (`design/REPORT-a11y.md`, 2026-09-16); 14 and
-16 are not started; **17's first cut is live** — a one-column phone layout
-since 2026-09-12, well short of what `design/MOBILE.md` asks for — and 18 is
-not started; 19 is in progress.
+to `main` is a deploy** (476). **The first real room sat on 2026-09-20**: the
+Newspeak House convention, `docs.vote/d/nh2026`, twelve members with Ed as
+Founder, on 5929a6e; it closed itself at 17:10 and raised Q1477–Q1493, every
+one built, folded and **live at e31ce168 since 2026-09-22 18:45** (the batch's
+notes are in `design/DECISIONS.md`). Stages 0–11 are done; 15 has had three
+passes, the third on 2026-09-17; 12 is drafted and parked; 13 is not started
+as a stage but has been **measured** (`design/REPORT-a11y.md`, 2026-09-16) and
+its three plain defects are owed by the next batch (Ed, 2026-09-22); 14 is
+parked, measured twice for concurrency and never for replay; 16 is not
+started; **17's first cut is live** — a one-column phone layout since
+2026-09-12, well short of what `design/MOBILE.md` asks for — and 18 is not
+started; 19 is in progress, the convention counting as its first sitting, and
+its fix batch is now the **62 open GitHub issues** (23 P1) and Q1494–Q1499,
+the P1s to be ruled one at a time before any is built (Ed, 2026-09-22).
 
 ## The stages
 
@@ -51,13 +59,13 @@ Commit hashes are this repository's; *running log* means the lifted log in
 | 10 | docs.vote live (481 (a)); security review #2 | live: done 2026-08-20; review #2: **deferred by Ed, 2026-09-07 (Q1252), until the product is more stable** | certificate issued, `www` and http 301, `npm run verify` 10/10 on the host; two source passes ran (`c8a732d`, 2026-08-20; the stranger's door, `083d95e`, 2026-08-21 — stored XSS at the public door, pinned by a server test) and `verify-deploy` checks headers, exposed paths and error leakage on every deploy. The post-deployment review the stage promised, and stage 19's targeted review of the seams changed since, wait together for a stable product |
 | 11 | Backups and the restore drill; `repair-tail` for torn files | done 2026-08-20 | `8f9d56c`; `draft-tools drill` passed on the live database (2 documents, 16 entries, every hash identical); `docs/runbooks/backup-and-restore.md`; 499 (a) |
 | 12 | Privacy, ToS, retention, erasure | **open** — drafted, parked | `docs/legal/PRIVACY.md` and `TERMS.md` (`2a70192`; placeholders marked, not in force, not linked from the product); Q500's eight decisions **parked by Ed, 2026-08-29, until go-live is actually scheduled** |
-| 13 | Accessibility | **open** — not started as a stage, but **measured 2026-09-16**: the first audit ran and raised Q1394–Q1398, nothing on the surface changed. Its plan document is still owed when the stage is scheduled, in `design/MOBILE.md`'s shape — precedence declared, cite rather than restate, per-stage acceptance with file:line evidence (Ed, 2026-09-07, Q1255) — and now has an evidence base to be built on | `design/REPORT-a11y.md` (44 findings at 1600×1000, 50 at 390×844, four confirmed by two independent instruments); `design/tools/a11y-audit.mjs`, `npm run a11y-audit`. The worst row is the judgment lanes: 79 sightings on 27 cards where two rival wordings share one accessible name and sit in no group. Beside it, driven rather than read: **every act drops the keyboard at the top of the page** — opening a card and committing a judgment both leave focus on `<body>`, 6 of 6. The only Level-A failure is that the page has no `<html>` element, so it declares no language |
-| 14 | Performance, caching, stress tests | **open** — not started as a stage | the instruments exist: `soak-harness` (`packages/sim-harness/src/soak.ts`, 2026-08-27) and the alpha preset below; **load waits until behaviour is as expected** (Ed, 2026-08-26 — stage 19) |
+| 13 | Accessibility | **open** — not started as a stage, but **measured 2026-09-16**: the first audit ran and raised Q1394–Q1398, nothing on the surface changed. **Ruled by Ed, 2026-09-22: the three plain defects are ordinary fixes and join the next batch** — the missing `<html>` element and its language (Q1394), focus that stays on the card after an act (Q1397), and a distinct accessible name for each of a judgment's two wordings (Q1395); Q1396 and Q1398 wait for the stage. Its plan document is still owed when the stage is scheduled, in `design/MOBILE.md`'s shape — precedence declared, cite rather than restate, per-stage acceptance with file:line evidence (Ed, 2026-09-07, Q1255) — and now has an evidence base to be built on | `design/REPORT-a11y.md` (44 findings at 1600×1000, 50 at 390×844, four confirmed by two independent instruments); `design/tools/a11y-audit.mjs`, `npm run a11y-audit`. The worst row is the judgment lanes: 79 sightings on 27 cards where two rival wordings share one accessible name and sit in no group. Beside it, driven rather than read: **every act drops the keyboard at the top of the page** — opening a card and committing a judgment both leave focus on `<body>`, 6 of 6. The only Level-A failure is that the page has no `<html>` element, so it declares no language |
+| 14 | Performance, caching, stress tests | **open** — not started as a stage; **measured twice for concurrency** (the two moon rooms under *Measurements*: the knee is about 140 acting bots on the Render starter) and **never for replay**, which stage 19's rules name as the real scaling risk — and which bit on 2026-09-19, when a bot room's replay outgrew Render's health-check window, the instance died, and the third wipe was run with the host down (decision 1253). **Left parked by Ed, 2026-09-22**: the replay curve and a boot guard wait for the stage; issue #70 (`/healthz` reports no memory, boot time or document size) is the operator's half of the same gap | the instruments exist: `soak-harness` (`packages/sim-harness/src/soak.ts`, 2026-08-27) and the alpha preset below; **load waits until behaviour is as expected** (Ed, 2026-08-26 — stage 19) |
 | 15 | Documentation review — the gate is *somebody else can operate it* | **open** — three passes (2026-08-20, 2026-09-07, and **2026-09-17**, issue #15, which found the `DRAFT_STORE` row telling an operator to boot production on the ephemeral store, two stale counts, both CI job lists short, the documents-only lane described as a glob it is not, and every restart procedure silent about the pause and about the surface a restart drops). The gate is literal (Ed, 2026-09-07, Q1254): it closes when an operator who is neither Ed nor a session follows a runbook cold to its end; on the go-live checklist. **The convention the third pass adopted** (Ed, 2026-09-17): evidence points at a file and a symbol, never a line number | `752b41d`; `docs/OPERATING.md`, the four runbooks, `README.md` |
-| 16 | Rollback, go-live checklist, soft launch | **open** — not started | the checklist below; built so far, the mail kill-switch `DRAFT_MAIL_OFF` (`config.ts`'s `mailOff`; OPERATING §2) and the **announced pause** the deploy already uses as a maintenance mode (`write-path.ts`'s `PauseState`, Q1345); no error reporting exists (OPERATING §4) |
+| 16 | Rollback, go-live checklist, soft launch | **open** — not started | the checklist below; built so far, the mail kill-switch `DRAFT_MAIL_OFF` (`config.ts`'s `mailOff`; OPERATING §2) and the **announced pause** the deploy already uses as a maintenance mode (`write-path.ts`'s `PauseState`, Q1345); the **error log in the store** since 2026-09-22 (migration 6, `errorLogContract`; the page's own uncaught errors posted to `POST /api/page-error`; OPERATING §11) — nobody is *told*, and **Ed ruled 2026-09-22 that the log is enough, read within a day of every room and weekly besides** (`docs/runbooks/demo-day.md` § *Afterwards*), so the checklist asks for the log and its reading, not for an alert |
 | 17 | Mobile read + judge — `design/MOBILE.md` stages 0–4 | **open** — planned 2026-08-23 (655–673); a **first cut is live since 2026-09-12** (`b95e44b`, `435b8fe`), read + judge on one column with both rails as drawers, and the stage's own plan is what is still owed | `design/MOBILE.md` § *Status — the first cut, 2026-09-12* and the two passes after it (Q1350–Q1351, Q1387–Q1388), which list what is built and what is not; guards `npm run card-audit:narrow` and `npm run drawer-walk` (CI's `probe` job). **Not built**: the two-tap confirm, the tap targets, the pinned/flow split, and `mobile-walk` — there is still no such script in `scripts/` |
 | 18 | PWA · push · offline — `design/MOBILE.md` stage 5 | **planned**, not built | no service worker, manifest, VAPID or push anywhere; notification is email only (`design/MOBILE.md` § *Server*) |
-| 19 | Supervised beta — the criterion below | **open** — in progress | built: the seat matrix (`scripts/seat-matrix.mjs`, 2026-08-27, plan-queue batch N), the copy freeze (`scripts/copy-check.mjs`, both goldens), promise-coverage (batch L, 2026-08-27, backlog entries 78–86); not yet: the fix batch sized from L, the scripted sittings. **Issues #2–#28** — an automated review of the tree (2026-09-16), read and ruled by Ed one at a time on the afternoon of 2026-09-17 — is the fix batch that arrived instead of L's: merged that afternoon, #2 · #3 · #4 · #5 · #7 · #9 · #13 · #14's tuning half · #20 · #24 · #26 and the Q1412 group; built beside them, #6's invitation race · #8 · #11 · #12 · #15 (this file and `docs/OPERATING.md`) · #18 · #21; scheduled rather than built, #10 · #23 · #28 after the weekend, #17 behind #8's `ci.yml`, and #14's withdrawal half and #27 as spec-pass work. Each issue's own commit says what it changed |
+| 19 | Supervised beta — the criterion below | **open** — in progress | built: the seat matrix (`scripts/seat-matrix.mjs`, 2026-08-27, plan-queue batch N), the copy freeze (`scripts/copy-check.mjs`, both goldens), promise-coverage (batch L, 2026-08-27, backlog entries 78–86); not yet: the fix batch sized from L, the scripted sittings. **Issues #2–#28** — an automated review of the tree (2026-09-16), read and ruled by Ed one at a time on the afternoon of 2026-09-17 — is the fix batch that arrived instead of L's: merged that afternoon, #2 · #3 · #4 · #5 · #7 · #9 · #13 · #14's tuning half · #20 · #24 · #26 and the Q1412 group; built beside them, #6's invitation race · #8 · #11 · #12 · #15 (this file and `docs/OPERATING.md`) · #18 · #21; scheduled rather than built, #10 · #23 · #28 after the weekend, #17 behind #8's `ci.yml`, and #14's withdrawal half and #27 as spec-pass work — of which **only #17 has landed** (`ff1fdbab`, `49e535ff`). Each issue's own commit says what it changed. **The first sitting was the nh2026 convention of 2026-09-20** (twelve members, Ed the Founder, free play; it counts — Ed, 2026-09-22), and it produced findings of the criterion's own class (Q1483, Q1486 among them), so **two clean sittings are owed from here**; its seventeen questions are built and live at e31ce168. **The fix batch now** (Ed, 2026-09-22): the **62 open GitHub issues** — 36 filed 2026-09-19 (#29–#74, the user-flow exercise and its adviser panel, Q1479), 20 on 2026-09-20 (#75–#94), 6 older; 23 P1, 30 P2, 8 P3, 14 carrying a question, 17 marked spec-drift — and Q1494–Q1499 from the convention batch. **The 23 P1s were ruled one at a time on the evening of 2026-09-22**: #69 and #68 closed as built on 2026-09-19 (#68's residual refiled as #95, P3), #77 closed as fixed by Q1483, and **twenty ruled build** — the GitHub milestone *P1 batch, ruled 2026-09-22*, each issue commented with its ruling; the contract is `design/spec-pass/plan-p1-batch.md` (deleted at the fold, as the convention plan was). Two rulings narrowed an issue: #88 builds the page fix and no module refusal; #86's runbook waits for the batch. One widened: #76's Begin task lists the members whose answers are still due. P2 and P3 wait; the three plain accessibility defects (stage 13) and Q1498 ride with the batch |
 
 The original plan put the surface merge at stage 2; it moved to 8 so that
 three weeks of backend work needed no design QA and a staging service existed
@@ -84,11 +92,15 @@ remark.
 
 Rules that follow:
 
-- **Sittings are scripted, not free-play.** Each tester gets a role and a
-  numbered sequence drawn from the matrix; the observer logs every finding
-  against a cell. A finding then says something about one cell and silence
-  says something about the rest — free play only ever reports the cells the
-  tester wandered into. Findings go to the plan-queue backlog as entries.
+- **Sittings are scripted where possible** (amended by Ed, 2026-09-22; the
+  rule read *scripted, not free-play* until then). Each tester gets a role
+  and a numbered sequence drawn from the matrix; the observer logs every
+  finding against a cell. A finding then says something about one cell and
+  silence says something about the rest — free play only ever reports the
+  cells the tester wandered into. **But a real room supervised by Ed is a
+  sitting whether or not it was scripted**: the nh2026 convention of
+  2026-09-20 was free play and is sitting one, with a red result. Findings go
+  to QUESTIONS.md as numbered items or to the repository's issues.
 - **Fixes wait for the net.** The seat matrix lands before promise-coverage
   (batch L) and before the fix batch, so each fix in a 545 KB page has an
   assertion under it and L's *lock what holds* has somewhere to put a surface
@@ -156,7 +168,12 @@ route that does both in one act is owed then; the erased person stands as
 *[redacted]* (STYLE T49). Part 2 — redaction of free text at the projection — is not
 built: rationales, application words and closing comments still ride events.
 Part 3 is written into `docs/legal/PRIVACY.md` as a marked draft. Q500's eight
-decisions are parked until go-live is scheduled.
+decisions are parked until go-live is scheduled. **A ninth joined them on
+2026-09-22**: the error log is permanent now — in the store since migration 6,
+where it had lived on the ephemeral disk and been deleted by every deploy —
+so it needs a retention period, which `PRIVACY.md` carries as a placeholder;
+the wipe clears it with everything else (`docs/OPERATING.md` §11). Parked
+with the eight, on the same condition.
 
 ## Stages 17 and 18 — the phone
 
@@ -170,8 +187,12 @@ what it does and does not do. Stage 18 is untouched.
 ## Go-live checklist (stage 16)
 
 CI green on the release SHA · migrations applied ·
-restore drill within 7 days · health checks green and error reporting
-receiving a test event · `/api/dev/outbox` absent from the artifact and
+restore drill within 7 days · health checks green and **the error log in the
+store, its tail readable by the operator's tool, and read within a day of
+every room and weekly besides** (Ed, 2026-09-22: *the log is enough* — the
+item read *error reporting receiving a test event* until then, and no alert
+is built or owed; the reading is `docs/runbooks/demo-day.md` § *Afterwards*
+and OPERATING §11) · `/api/dev/outbox` absent from the artifact and
 `design/*.notes.md` unreachable · headers, cert, HSTS, redirect verified live ·
 test mail to Gmail/Outlook/iCloud lands in the inbox and the link works
 exactly once · privacy policy and ToS linked · `DRAFT_SECRET` in the platform
@@ -189,9 +210,14 @@ something that does not exist and no release could ever have satisfied it.
 Nothing replaces it: a new clause would be a new gate, and that is Ed's to
 write.
 
-**Soft launch in three steps:** Ed alone with a real document for a week →
-3–5 friends on one document with the logs watched daily → a Newspeak House
-cohort. A named observation point after each.
+**The soft launch, as it happened** (Ed, 2026-09-22, replacing the three
+steps this paragraph held — *Ed alone for a week → 3–5 friends → a Newspeak
+House cohort*, each with an observation point): the cohort came first. A
+Newspeak House convention of twelve sat on docs.vote on 2026-09-20, in alpha,
+before the checklist above and before any friends-only room; its findings are
+stage 19's first sitting. There is no dated sequence any more. **Go-live is
+the day the second, production service is stood up** (481), on this
+checklist, and the observation points are stage 19's sittings.
 
 ## Security defects and review findings
 

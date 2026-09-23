@@ -1100,6 +1100,40 @@ const lifecycleL2 = async () => {
  * where it was, no *keep* block wears the draft, the register still reads the
  * committed name, and the card is still open. Second-seat by construction:
  * in a quiet room no render lands between typing and the commit. */
+/* **🎩 from a member's seat says what it stands at** (Q1503, Ed's convention
+ * observation 2026-09-22: *"Set to [blank]"*). A member opening the founder's
+ * 🎩 met `readBody`'s *Set to* line with no `VALUE.hat` behind it. It is the
+ * founder's own two sentences now, locked, the standing one marked — read
+ * here on the guest seat, and closed by the bin so the rest of the seat's
+ * walk sees the page it always saw. */
+const hatFromMemberSeat = async () => {
+  if (!guestPage) return;
+  const opened = await guestPage.evaluate(() => {
+    const el = document.querySelector('#band [data-tab="hat"]');
+    if (!el) return false;
+    el.click();
+    return true;
+  });
+  await guestPage.waitForTimeout(420);
+  if (!opened) { say('hat        · FAIL: no 🎩 tab in the member seat'); stuck.push('Q1503: the 🎩 tab'); return; }
+  const r = await guestPage.evaluate(() => {
+    const picks = [...document.querySelectorAll('.setupcard .choice .pick')];
+    const out = {
+      radios: picks.length,
+      locked: picks.filter((p) => p.querySelector('.lanepick')?.disabled).length,
+      marked: picks.filter((p) => p.classList.contains('on')).map((p) => (p.querySelector('.opttext')?.textContent ?? '').trim()),
+      setTo: /Set to/.test(document.querySelector('.setupcard')?.textContent ?? ''),
+    };
+    document.querySelector('.setupcard [data-revert]')?.click();
+    return out;
+  });
+  await guestPage.waitForTimeout(400);
+  const ok = r.radios === 2 && r.locked === 2 && r.marked.length === 1 && !r.setTo;
+  say('hat        · ' + (ok ? 'ok' : 'FAIL') + ': 🎩 on the member seat — ' + r.radios + ' radios, ' + r.locked +
+    ' locked, marked ' + JSON.stringify(r.marked) + (r.setTo ? ', a *Set to* line' : ''));
+  if (!ok) stuck.push('Q1503: 🎩 on the member seat');
+};
+
 const DRAFT_NAME = 'Draft Name';
 const draftSurvivesRender = async () => {
   if (!guestPage) return; // its own failure, already reported
@@ -2182,6 +2216,8 @@ for (let i = 0; i < 60; i++) {
       await identityReachesEverySeat();
       // Q1327 — a draft typed on ✋ in the member seat survives the poll's render
       await draftSurvivesRender();
+      // Q1503 — 🎩 from the member's seat is the founder's card, locked
+      await hatFromMemberSeat();
       // L9 — 🗑️ puts back what was typed and touches nothing set (Q1239)
       await lifecycleL9();
     } else {

@@ -342,9 +342,11 @@ because it leaves a 429 in the platform's logs.
 
 **The login door has two buckets** (Q1341, Ed 2026-09-12): 200 requests per
 IP in ten minutes, since a convention room arrives on one venue wifi and so
-on one address, and 5 per email address in the same window, which is what
-stops a script working one address. Both numbers are guesses to revisit
-after a real convention.
+on one address, and **10** per email address in the same window (5 until
+`d1f6345`, 2026-09-19 — issue #86), which is what stops a script working one
+address. Both numbers are guesses to revisit after a real convention; the
+per-IP one was revisited after the first (issue #69), the per-address one
+raised the same night.
 
 **Reading a failure.** A `/healthz` 404 usually means the live build predates
 the health route rather than that anything is wrong; check `x-build` against
@@ -905,6 +907,13 @@ prints the last `n` (50), newest first, one event per line with its reason
 beneath. **Either store**, since stage 5a: pass the database URL on
 docs.vote and a data directory locally. It reads and writes nothing else,
 so unlike the deleting verbs it is safe beside a running service.
+
+**When it is read** (Ed, 2026-09-22): **within a day of every room closing,
+and weekly on a fixed day besides.** Nothing alerts on a line landing — Ed
+ruled the log is enough, and the log is only enough if it is read — so the
+reading is a runbook step, not a reflex: `docs/runbooks/demo-day.md`
+§ *Afterwards* is the after-a-room half, and the weekly read is the same
+command. Every line is a defect to file.
 
 **What the page shows for the same event** (SURFACE Y25): the sentence
 under the card the command left from, and a stagehand's line at the foot of

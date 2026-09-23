@@ -1764,6 +1764,93 @@ function checkClaudeMd() {
 }
 
 /**
+ * **A guard CLAUDE.md names is one some workflow runs** (plan-ci-speed.md
+ * Stage 4; the shape issue #17 found on 2026-09-17). A gotcha that names its
+ * guard is short because the guard's red build is what stops the mistake
+ * recurring (Q736) — which is true only if something runs the guard. Ten
+ * named guards ran in no job when the plan was written.
+ *
+ * What counts as a named guard: every `npm run …` or `node scripts|design/…`
+ * invocation in a Gotchas bullet (the same reading `checkClaudeMd`'s GUARD
+ * takes), and any script, tool or test named after *Guard:*, *guard*,
+ * *Measured by*, *Walked by* or *reproduces it* anywhere in the Glossary or
+ * Gotchas. It resolves when the workflows (and `scripts/ci-walks.sh`, which
+ * the walks job calls) run that npm script or that file — comments do not
+ * count — and a `*.test.ts` resolves to `npm test`.
+ *
+ * **A warning, not a finding** (the builder's brief, 2026-09-23: *don't make
+ * spec-check red on day one*). What is left is a list for Ed to rule on —
+ * wire it into a job, or stop naming it as a guard — and it prints on every
+ * run, under `--quiet` too, and as a GitHub annotation on the runner.
+ */
+function checkGuardsRun() {
+  const lines = read('CLAUDE.md').split(/\r?\n/);
+  const idx = (p) => lines.findIndex((l) => l.startsWith(p));
+  const gloss = idx('## Glossary'), gotcha = idx('## Gotchas'), end = idx('## The spec pass');
+  if (gloss < 0 || gotcha < 0 || end < 0) return; // checkClaudeMd has said so
+  const bullets = [];
+  lines.slice(gloss, end).forEach((l, i) => {
+    if (/^\s*- /.test(l)) bullets.push({ text: l, gotcha: gloss + i > gotcha });
+    else if (bullets.length && /^\s+\S/.test(l)) bullets[bullets.length - 1].text += ' ' + l.trim();
+  });
+  const pkg = JSON.parse(read('package.json')).scripts;
+  // what the runner runs: the workflows and the walks script, comment lines out
+  const code = (t) => t.split(/\r?\n/).filter((l) => !/^\s*#/.test(l)).join('\n');
+  const wfDir = '.github/workflows';
+  let ran = readdirSync(join(ROOT, wfDir)).filter((f) => /\.ya?ml$/.test(f)).map((f) => code(read(`${wfDir}/${f}`))).join('\n');
+  for (const m of [...ran.matchAll(/bash (scripts\/[\w./-]+\.sh)/g)]) if (existsSync(join(ROOT, m[1]))) ran += '\n' + code(read(m[1]));
+  const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const ranScripts = new Set(Object.keys(pkg).filter((n) => new RegExp(`npm run ${esc(n)}(?![\\w:-])`).test(ran)));
+  if (/\bnpm test\b/.test(ran)) ranScripts.add('test');
+  const ranText = ran + '\n' + [...ranScripts].map((n) => pkg[n]).join('\n');
+  // the two probes' pages are run by `npm run probe`, which names neither
+  const RUN_BY = { 'session-probe.js': 'probe', 'setup-probe.js': 'probe' };
+  // named beside a guard, and not one: a freeze makes the red go away, and
+  // `design` is the server a walk is pointed at
+  const NOT_GUARDS = new Set(['npm run copy-freeze', 'npm run qa:freeze', 'npm run design']);
+  const INVOKE = /`((?:npm run [\w:-]+|node (?:scripts|design)\/)[^`]*)`/g;
+  const CLAUSE = /(?:[Gg]uards?:?|[Mm]easured by|[Ww]alked by|[Rr]eproduces it)\s+(.*?)(?:\.(?=\s+[A-Z*]|$)|$)/g;
+  const guards = new Map();
+  const add = (g, head) => { if (!NOT_GUARDS.has(g) && !guards.has(g)) guards.set(g, head); };
+  for (const b of bullets) {
+    const head = b.text.trim().slice(2, 60);
+    const toks = [];
+    // *measured with `x`, an instrument, not a guard* (Ed, 2026-09-23): a
+    // script that measures and asserts nothing is named, never counted
+    if (b.gotcha) for (const m of b.text.matchAll(INVOKE)) {
+      if (!b.text.slice(m.index + m[0].length).startsWith(', an instrument')) toks.push(m[1]);
+    }
+    for (const c of b.text.matchAll(CLAUSE)) for (const t of c[1].matchAll(/`([^`]+)`/g)) toks.push(t[1]);
+    for (const raw of toks) {
+      const tok = raw.trim();
+      let m;
+      if ((m = /^npm run ([\w:-]+)/.exec(tok))) add('npm run ' + m[1], head);
+      else if ((m = /^node ((?:scripts|design)\/[\w./-]+)/.exec(tok))) add(m[1], head);
+      else if ((m = /^((?:scripts|design)\/[\w./-]+\.(?:mjs|js))/.exec(tok))) add(m[1], head);
+      else if ((m = /^([\w-]+\.test\.ts)/.exec(tok))) add(m[1], head);
+      else if ((m = /^([\w-]+\.mjs)/.exec(tok))) add(m[1], head);
+      else if ((m = /^([\w-]+)(?:\s+--[\w=-]+)*$/.exec(tok)) && pkg[m[1]]) add('npm run ' + m[1], head);
+    }
+  }
+  const base = (p) => p.split('/').pop();
+  const unrun = [];
+  for (const [g, head] of guards) {
+    const ok = g.startsWith('npm run ') ? ranScripts.has(g.slice(8))
+      : g.endsWith('.test.ts') ? ranScripts.has('test')
+      : RUN_BY[base(g)] ? ranScripts.has(RUN_BY[base(g)])
+      : ranText.includes(g) || ranText.includes(base(g));
+    if (!ok) unrun.push(`${g} — named by: ${head}`);
+  }
+  note(`  ${guards.size} guards named in CLAUDE.md, ${guards.size - unrun.length} of them run by a workflow`);
+  if (!unrun.length) return;
+  console.log(`  ⚠ [guards] ${unrun.length} guard(s) CLAUDE.md names that no workflow runs — a warning, not a finding:`);
+  for (const u of unrun) console.log(`      ${u}`);
+  if (process.env.GITHUB_ACTIONS === 'true') {
+    console.log(`::warning title=guards run nowhere::${unrun.length} guard(s) CLAUDE.md names run in no workflow: ${unrun.map((u) => u.split(' — ')[0]).join(', ')}`);
+  }
+}
+
+/**
  * A raw NUL byte in the first 8000 bytes of a file makes git call the whole
  * file binary, and a binary file has no three-way merge: two branches that
  * touch it conflict entirely, however far apart their edits sit. It is not a
@@ -2044,6 +2131,7 @@ checkPicture();
 checkBannedWords();
 checkListJoiner();
 checkClaudeMd();
+checkGuardsRun();
 checkLedger();
 checkApprovalFloor();
 checkCandidateStates();
