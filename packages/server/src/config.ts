@@ -72,9 +72,21 @@ export interface ServerConfig {
    * like an unknown path, so a host without a key exposes nothing. Rotated
    * by changing the variable; a leaked key lets a stranger act as the bots
    * in bot rooms and nothing more, since no real member's mail ever lands
-   * in that file. Optional on the type so a test boot need not state it.
+   * in that file — **and since issue #10 that is true again**: the pause and
+   * the surface reload moved to `adminKey`. Optional on the type so a test
+   * boot need not state it.
    */
   botKey?: string | null;
+  /**
+   * **The operator's key to the host itself** (`DRAFT_ADMIN_KEY`, issue #10;
+   * Ed, 2026-09-22, option 1): `POST /api/admin/pause`, `/resume` and
+   * `/surface`. Whoever holds it can freeze every room (a re-POSTed pause
+   * never lifts) or **replace the page every member runs** — so it lives in
+   * CI's secret and production's dashboard alone, never on the dev host and
+   * never in a room-bots user's hands. Unset, the three routes answer 404
+   * like an unknown path.
+   */
+  adminKey?: string | null;
   /** HMAC secret for cookies and tokens at rest. */
   secret: string;
   /**
@@ -212,6 +224,7 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ServerConfi
     // empty is unset: a cleared dashboard field must close the route, not
     // open it to whoever sends an empty bearer
     botKey: (env.DRAFT_BOT_KEY ?? '').trim() || null,
+    adminKey: (env.DRAFT_ADMIN_KEY ?? '').trim() || null,
     notifyEmail: (env.DRAFT_NOTIFY_EMAIL ?? 'edsaperia@gmail.com') || null,
     secret: env.DRAFT_SECRET ?? persistedSecret(dataDir),
     trustProxy: env.DRAFT_TRUST_PROXY !== undefined

@@ -24,13 +24,15 @@ const tmp = () => mkdtempSync(join(tmpdir(), 'draft-surface-'));
 const booted: DraftServer[] = [];
 afterAll(async () => { for (const d of booted) await d.close(); });
 
-async function boot(botKey: string | null): Promise<{ base: string; dataDir: string }> {
+/** The admin key guards the surface (issue #10); the bot key defaults to it
+ *  so a case about the surface alone need name one key. */
+async function boot(adminKey: string | null, botKey: string | null = adminKey): Promise<{ base: string; dataDir: string }> {
   const dataDir = tmp();
   const cfg = {
     port: 0, dataDir, baseUrl: 'http://127.0.0.1',
     designDir: join(import.meta.dirname, '..', '..', '..', 'design'),
     resendApiKey: null, mailFrom: 'test <t@example.org>', mailOff: false,
-    botKey,
+    botKey, adminKey,
     secret: 'test-secret', store: 'file' as const, databaseUrl: null,
     trustProxy: false, buildSha: 'aaaaaaa', notifyEmail: null,
   };
@@ -45,6 +47,24 @@ const page = '<meta charset="utf-8"><title>surface test</title><p>a new surface<
 const upload = (base: string, sha: string, body: Buffer, key = 'test-key') =>
   fetch(`${base}/api/admin/surface?sha=${sha}`, { method: 'POST',
     headers: { 'content-type': 'application/gzip', authorization: `Bearer ${key}` }, body });
+
+/**
+ * **The page is replaced on the admin key alone** (issue #10; Ed, 2026-09-22,
+ * option 1): the surface route installs and serves whatever page it is sent,
+ * so the key to it is the key to every member's page — and it was the bot
+ * key, typed on command lines and declared on the public dev host. The bot
+ * key is refused here now, and the admin key refused at the bot outbox.
+ */
+describe('the surface takes the admin key and no other (issue #10)', () => {
+  it('refuses the bot key and accepts the admin key', async () => {
+    const { base } = await boot('admin-key', 'bot-key');
+    const body = gzipSync(packTar([{ name: 'design/session-view.html', data: Buffer.from(page) }]));
+    const withBot = await upload(base, 'bbbbbbb', body, 'bot-key');
+    expect(withBot.status).toBe(401);
+    const withAdmin = await upload(base, 'bbbbbbb', body, 'admin-key');
+    expect(withAdmin.status, await withAdmin.clone().text()).toBe(200);
+  });
+});
 
 describe('the tar reader', () => {
   it('reads what the writer packs, and refuses what is not a page file', () => {

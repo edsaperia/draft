@@ -93,8 +93,9 @@ export interface Req {
    *  writes the answer in the caller's own shape where JSON is the wrong
    *  one — a door a person is looking at owes them a page (issue #69, F3). */
   tooMany(route: string, max?: number, refused?: () => void): boolean;
-  /** the operator's key, as every admin route and the bot outbox gate on it */
-  bearerRefused(): boolean;
+  /** the bearer check, against the one key this route takes: the admin key
+   *  on pause, resume and surface, the bot key on the bot outbox (issue #10) */
+  bearerRefused(key: string | null | undefined): boolean;
   /** a route that exists on a dev host only: an unknown path anywhere else */
   devOff(): boolean;
 }
@@ -187,9 +188,9 @@ export function makeReq(ctx: RouteContext, req: IncomingMessage, res: ServerResp
     tooMany,
     // an unknown path without a key configured, 401 (and the limiter) with a
     // wrong one; true means the answer has been written
-    bearerRefused: () => {
-      if (!ctx.cfg.botKey) { json(res, 404, { error: 'not found' }); return true; }
-      if (bearerOk(req.headers.authorization, ctx.cfg.botKey)) return false;
+    bearerRefused: (key) => {
+      if (!key) { json(res, 404, { error: 'not found' }); return true; }
+      if (bearerOk(req.headers.authorization, key)) return false;
       if (!tooMany('bots')) json(res, 401, { error: 'unauthorized' });
       return true;
     },

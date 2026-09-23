@@ -61,7 +61,8 @@ in the repo).
 | `DRAFT_MAIL_FROM` | The `From` header on every mail | `docs.vote <invitations@mail.docs.vote>` | Dashboard, `sync: false` — **read §8, trap 2 before trusting it** |
 | `DRAFT_MAIL_OFF` | The mail kill-switch (stage 16): `1` holds every queued mail **pending** — nothing is lost and nothing goes out — and clearing it delivers the backlog. `/healthz` reports it as `mail: off` | unset (mail on) | Not set. An env-var change and a restart; no deploy — **§3's *Restarting the live host* first**, for the pause and for the surface a restart drops |
 | `DRAFT_NOTIFY_EMAIL` | Operator notification: every document birth is mailed here | `edsaperia@gmail.com`, compiled in | Not set. Setting it **empty** switches the notification off |
-| `DRAFT_BOT_KEY` | The key to the bot outbox (§10, Q1310): mail to any address at `bots.docs.vote` is filed on the host instead of sent, and `GET /api/bots/outbox` serves the file to the bearer of this key. Unset or empty, the route is a 404 like any unknown path | unset | Dashboard, `sync: false`, on both services. Rotate by changing it; a restart applies it — **§3's *Restarting the live host* first**. Rotating it also takes the key CI pauses and uploads the surface with, so change the `DRAFT_BOT_KEY` repository secret in the same sitting |
+| `DRAFT_BOT_KEY` | The key to the bot outbox (§10, Q1310): mail to any address at `bots.docs.vote` is filed on the host instead of sent, and `GET /api/bots/outbox` serves the file to the bearer of this key. Unset or empty, the route is a 404 like any unknown path | unset | Dashboard, `sync: false`, on both services. Rotate by changing it; a restart applies it — **§3's *Restarting the live host* first**. Since issue #10 it opens the bot outbox and nothing else |
+| `DRAFT_ADMIN_KEY` | The key to the host itself (issue #10; Ed, 2026-09-22, option 1): `POST /api/admin/pause`, `/resume` and `/surface`. **Whoever holds it can freeze every room or replace the page every member runs.** Unset or empty, the three routes are 404s like any unknown path | unset | Dashboard, `sync: false`, on **`draft` only — never draft-dev**, and the `DRAFT_ADMIN_KEY` repository secret, the same value; nowhere else, never handed to a room-bots user. Rotate both in one sitting, **the dashboard first**: a push that bears a key the host does not hold is refused its pause and its surface upload and deploys unpaused on the full lane, and CI stays green |
 | `DRAFT_STORE` | `file` or `pg` — where the bytes live. Absent means `file`. An unrecognised value is a **boot refusal**, never a fallback | `file` — the code's default (`config.ts`, `storeRaw`), **not production's value** | **`pg` in production**, and has been since the cutover of 2026-08-20 23:30 (§1, §7). Dashboard: `render.yaml` declares the key `sync: false`, so the value is not in the repo and a blueprint sync does not set it. This is the Postgres cutover switch, so **a service brought up without it boots on the file store** — which since 498(b) is an empty directory on the ephemeral instance filesystem, wiped at the next deploy. `/healthz` `store` says which one answered; on docs.vote it must read `pg` |
 | `DATABASE_URL` | Postgres connection string; required when `DRAFT_STORE=pg` | unset | Dashboard, when it exists — the frankfurt database's **internal** connection string |
 | `DRAFT_TRUST_PROXY` | `1`/`0`. Trust `x-forwarded-*` for the client IP and the original protocol | On in the built artifact, off in dev | Not set — the build's default is already right on Render |
@@ -144,7 +145,7 @@ freely; pushing is the decision.
    least one is the latter): the served
    page files at the top of `design/` are packed as one ustar tar.gz and
    `POST`ed to `$DRAFT_BASE_URL/api/admin/surface?sha=<commit>` bearing
-   `DRAFT_BOT_KEY`; the running host unpacks them into
+   `DRAFT_ADMIN_KEY` (issue #10); the running host unpacks them into
    `<dataDir>/surface-<commit>/`, serves from there from that moment, and
    states the commit in `x-build` — so every open page reloads itself, CI's
    check sees the commit it pushed, and no process restarts, no document
@@ -154,8 +155,8 @@ freely; pushing is the decision.
    and a server change in one push always take the full lane; a change to
    both in two pushes is one push out of step, which is the lane's cost.
    For the full lane CI first **pauses the live host** (Q1345) — `POST
-   $DRAFT_BASE_URL/api/admin/pause` bearing the `DRAFT_BOT_KEY` repository
-   secret, the same key the host holds — and then POSTs the
+   $DRAFT_BASE_URL/api/admin/pause` bearing the `DRAFT_ADMIN_KEY` repository
+   secret, the same key the host holds (issue #10) — and then POSTs the
    `RENDER_DEPLOY_HOOK` repository secret, with `ref=<the pushed commit>`
    on it so Render builds the commit this run tested rather than whatever
    `main`'s head is by the time it gets there (issue #8). With no hook
@@ -250,7 +251,7 @@ write on it fails. So:
    503 and the pause in the answer, ticks nothing, and every open page draws
    the maintenance modal instead of meeting an error:
 
-       curl -fsS -X POST -H "authorization: Bearer $DRAFT_BOT_KEY" \
+       curl -fsS -X POST -H "authorization: Bearer $DRAFT_ADMIN_KEY" \
          -H 'content-type: application/json' -d '{}' \
          https://docs.vote/api/admin/pause
 
@@ -288,8 +289,10 @@ a POST-only route proves nothing (Q674): `/api/dev/ladder` and
 `/api/dev/seat` are asked with their real method and must 404; the three
 admin routes — `/api/admin/pause`, `/api/admin/resume` and
 `/api/admin/surface` — are asked carrying a **wrong** bearer token and must
-answer 401 (or 404 on a host with no key); the bot outbox is asked with no
-key and with a wrong one; and one cross-origin POST to `/auth/login` must be
+answer 401 (or 404 on a host with no key), and where the bot key is in the
+environment it is offered to `/api/admin/surface` with a malformed sha and
+must be refused 401 (issue #10 — an unsplit host answers 400, installing
+nothing); the bot outbox is asked with no key and with a wrong one; and one cross-origin POST to `/auth/login` must be
 refused 403.
 
 ```
@@ -764,9 +767,10 @@ invited to: judging, proposing, moving, signing as them. Nothing more — no
 real member's mail is ever in that file, and a bot has no power a member
 lacks. Rotate by changing the variable in the dashboard and restarting
 (§3's *Restarting the live host*); every link already filed stays one-use as
-before. Two things ride the same key: CI's pause and its surface upload, so
-the `DRAFT_BOT_KEY` repository secret is rotated in the same sitting or the
-next deploy runs unpaused and falls back to the full lane.
+before. **Nothing else rides it since issue #10**: CI's pause and its surface
+upload moved to `DRAFT_ADMIN_KEY` (§2), whose leak is the host's and not the
+bots' — which is why that key is never typed on a command line, never set on
+the dev host, and never handed to anybody running `room-bots`.
 
 ## 11. The error log
 

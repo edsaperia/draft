@@ -85,13 +85,15 @@ class SplitPersistence extends FilePersistence {
   }
 }
 
-async function boot(botKey: string | null): Promise<{ base: string; draft: DraftServer; store: SplitPersistence; dataDir: string }> {
+/** The admin key guards the pause (issue #10); the bot key defaults to it
+ *  so a case about the pause alone need name one key. */
+async function boot(adminKey: string | null, botKey: string | null = adminKey): Promise<{ base: string; draft: DraftServer; store: SplitPersistence; dataDir: string }> {
   const dataDir = tmp();
   const cfg = {
     port: 0, dataDir, baseUrl: 'http://127.0.0.1',
     designDir: join(import.meta.dirname, '..', '..', '..', 'design'),
     resendApiKey: null, mailFrom: 'test <t@example.org>', mailOff: false,
-    botKey,
+    botKey, adminKey,
     secret: 'test-secret', store: 'file' as const, databaseUrl: null,
     trustProxy: false, buildSha: null, notifyEmail: null,
   };
@@ -156,6 +158,21 @@ describe('the announced pause (Q1345)', () => {
     const keyed = await boot('test-key');
     expect((await post(keyed.base, '/api/admin/pause', {}, { authorization: 'Bearer wrong' })).status).toBe(401);
     expect((await post(keyed.base, '/api/admin/resume', {}, { authorization: 'Bearer wrong' })).status).toBe(401);
+  });
+
+  // **the pause takes the admin key and no other** (issue #10): the bot key
+  // is typed on command lines and declared on the public dev host, and a
+  // re-POSTed pause freezes every room for as long as somebody keeps asking
+  it('refuses the bot key on pause and resume, and the admin key at the bot outbox', async () => {
+    const { base } = await boot('admin-key', 'bot-key');
+    const bot = { authorization: 'Bearer bot-key' };
+    const admin = { authorization: 'Bearer admin-key' };
+    expect((await post(base, '/api/admin/pause', {}, bot)).status).toBe(401);
+    expect((await post(base, '/api/admin/resume', {}, bot)).status).toBe(401);
+    expect((await post(base, '/api/admin/pause', {}, admin)).status).toBe(200);
+    expect((await post(base, '/api/admin/resume', {}, admin)).status).toBe(200);
+    expect((await fetch(base + '/api/bots/outbox', { headers: admin })).status).toBe(401);
+    expect((await fetch(base + '/api/bots/outbox', { headers: bot })).status).toBe(200);
   });
 
   it('refuses every command with 503 and the pause, says paused on every view answer, and lets the pause lift', async () => {

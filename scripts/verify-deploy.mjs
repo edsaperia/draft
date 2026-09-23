@@ -266,8 +266,10 @@ await check('the phase ladder is not in the artifact (Q674)', async () => {
 // serves only mail to bots.docs.vote and only to the bearer of
 // DRAFT_BOT_KEY. Without the key set it is an unknown path; with it, a
 // request without the key is refused. Either way, never 200 to a stranger.
-// the pause and resume ride the same key (Q1345): a stranger's POST is an
-// unknown path without the key on the host, 401 with it — never a pause
+// the pause, resume and surface reload take **DRAFT_ADMIN_KEY** since issue
+// #10 (they rode the bot key, whose leak was said to be bots-only): a
+// stranger's POST is an unknown path without the key on the host, 401 with it
+// — never a pause
 await check('the pause and the surface reload are closed to a stranger (Q1345, Q1347)', async () => {
   const rs = await Promise.all(['/api/admin/pause', '/api/admin/resume', '/api/admin/surface?sha=abcdef0'].map((p) =>
     fetch(base + p, { method: 'POST', headers: { 'content-type': 'application/json',
@@ -275,8 +277,24 @@ await check('the pause and the surface reload are closed to a stranger (Q1345, Q
   for (const r of rs) {
     expect(r.status === 401 || r.status === 404, `${r.url} answered ${r.status} — a stranger can pause the host`);
   }
-  return rs[0].status === 404 ? '404 — no DRAFT_BOT_KEY on this host' : '401 on pause · 401 on resume';
+  return rs[0].status === 404 ? '404 — no DRAFT_ADMIN_KEY on this host' : '401 on pause · 401 on resume';
 });
+
+// **…and the bot key is not the admin key** (issue #10): where the bot key is
+// in this process's environment, it is offered to the surface route with a
+// sha that route refuses before it reads anything — so a host still on one
+// key answers 400 and installs nothing, and a split host answers 401 (404
+// where no admin key is set at all)
+const botKey = (process.env.DRAFT_BOT_KEY || process.env.BOT_KEY || '').trim();
+if (botKey) {
+  await check('the bot key cannot replace the page (issue #10)', async () => {
+    const r = await fetch(base + '/api/admin/surface?sha=not-a-sha', { method: 'POST',
+      headers: { 'content-type': 'application/gzip', authorization: 'Bearer ' + botKey }, body: '' });
+    expect(r.status === 401 || r.status === 404,
+      `the bot key reached the surface route (${r.status}) — DRAFT_ADMIN_KEY is not split from it`);
+    return r.status + ' to the bot key';
+  });
+}
 
 await check('the bot outbox is closed to a stranger (Q1310)', async () => {
   const bare = await get('/api/bots/outbox');
