@@ -5168,7 +5168,20 @@ if (caret) {
           say('refused    · ' + (okR0 ? 'a judgment the host refused leaves its entry asking (' + r0.mark + '), not filed ⏳'
             : 'FAIL: ' + JSON.stringify(r0)));
           if (!okR0) stuck.push('a refused judgment is not filed (#37)');
-          await openEntry(q1.id);                   // back where the step below expects to be
+          // **…and says so under its card** (Q1505, SURFACE Y25): the card is
+          // re-opened once its press's own close has run, carrying the
+          // sentence above its commit row — so the step below finds it open
+          // rather than opening it (a second open would close it)
+          const said = await page.evaluate((id) => {
+            const q = String(id).replace(/["\\]/g, '\\$&');
+            const card = document.querySelector('.sugg[data-card="' + q + '"], .sugg[data-card^="' + q + '#"]');
+            const f = card && card.querySelector('.foot.refusal');
+            return card ? (f ? f.textContent.trim() : '') : null;
+          }, q1.id);
+          const okR1 = said === 'That was refused: refused by the walk.';
+          say('refused ¶  · ' + (okR1 ? 'the card came back open, saying “' + said + '”' : 'FAIL: ' + JSON.stringify(said)));
+          if (!okR1) stuck.push('a refused vote says so under its card (Q1505)');
+          if (said === null) await openEntry(q1.id);  // back where the step below expects to be
           // 3 — judged: that entry is ⏳ now, and the other pair's entry is lit
           // beside it — its own, not the same one re-lit
           const j1 = await judge(q1.id, 'keep');

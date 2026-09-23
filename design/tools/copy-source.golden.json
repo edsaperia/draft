@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 534
+  "entries": 538
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -255,9 +255,13 @@
   "page.heldNews.couldNotBePut": "Your proposal could not be put to the membership, and your ✏️ is back in your wallet.",
   "page.heldNews.founderRefused": "ƒ (what) => 'The Founder refused your proposal: ' + what + '.'",
   "page.heldNews.membershipRejected": "ƒ (what) => 'The membership rejected your proposal: ' + what + '.'",
+  "page.host.held": "Waiting to reconnect — what you have typed is kept",
+  "page.host.notAnswering": "docs.vote is not answering.",
+  "page.host.offline": "Your device is offline.",
   "page.host.paused": "This document is paused while we do some quick database maintenance.",
   "page.host.pausedOver": "Nearly there — hold on a moment longer.",
   "page.host.pausedWait": "ƒ (minutes) => (minutes <= 1 ? 'It should be back in about a minute.'\n        : 'It should be back in about ' + minutes + ' minutes.')",
+  "page.host.reconnecting": "Reconnecting…",
   "page.host.stalled": "This document cannot save changes at the moment. Nothing you do here will be kept.",
   "page.lapseReturned": "ƒ (names, n) => names + (n === 1 ? ' is' : ' are') +\n      ' active again — ' + (n === 1 ? 'their membership had' : 'their memberships had') +\n      ' lapsed under the old rule.'",
   "page.motionRec.gone": "This record is no longer on the document.",

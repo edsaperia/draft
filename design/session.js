@@ -95,6 +95,12 @@
   let seqToken = 0;       // supersedes an in-flight open/move/close sequence
   const resolved = new Set();
   const pendingJudge = new Set();   // a pair whose judgment is between press and filing (#37)
+  // **A vote refused at the press says so on its card** (Q1505, SURFACE Y25):
+  // item id → Y25's *That was refused: …*, drawn above the commit row and
+  // retired by the next choice on the card (`choose`)
+  const refusedSay = new Map();
+  const refusedFoot = (s) => (refusedSay.has(s.id)
+    ? '<div class="foot refusal" role="alert">' + esc(refusedSay.get(s.id)) + '</div>' : '');
 
   // ---- the card grammar lives in cards.js now (2026-08-18) ----------------
   // The decision-card machinery was lifted into design/cards.js so the setup
@@ -2713,6 +2719,7 @@
         // before you reach for them rather than after.
         reviseNote(s) +
         '<div class="foot">' + T.diag.foot + '</div>' +
+        refusedFoot(s) +
         commitRowHtml(s) +
         '</div>'
       );
@@ -2804,6 +2811,7 @@
         // must win. Neither has to: the clause above is in the same ranking
         // and stays unless the room comes to prefer one of them (Q1362 (a)).
         '<div class="foot">' + T.race.foot + '</div>' +
+        refusedFoot(sv) +
         commitRowHtml(sv) +
         '</div>'
       );
@@ -2842,6 +2850,7 @@
         // Indifferent block is an answer and stays on every site card; the
         // bar — 🗑️ · ❄️? · ✓ — is the proposal-row's, once, at the foot of the
         // window (`renderPatchRow`), where the one judgment for all sites is cast
+        refusedFoot(s) +
         vinBlockHtml(s) +
         '</div>'
       );
@@ -2871,6 +2880,7 @@
       groundNote(sv) +
       fieldHtml(proposalHtml(sv, { v: 'approve', html: prop, why: sv.rationale, by: sv.by, edit: noEdit })) +
       reviseNote(sv) + parkNote(sv) +
+      refusedFoot(sv) +
       commitRowHtml(sv) +
       '</div>'
     );
@@ -3829,6 +3839,11 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       if (!s) return;
       const now = pickOf(s) === el.dataset.v ? null : el.dataset.v;
       picked.set(pairKeyOf(s), now);
+      // the next choice on a card retires its refusal (Y25, Q1505): in place,
+      // like the choice itself
+      if (refusedSay.delete(s.id)) {
+        openCardEls(s.id).forEach((c) => c.querySelectorAll('.foot.refusal').forEach((f) => f.remove()));
+      }
       // One judgment, however many cards it is showing on (181): every card
       // for this suggestion moves its selection together.
       const syncSubmit = (submit) => {
@@ -5706,14 +5721,31 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   // this on a refusal; only the verdict it was sent with is taken back, since
   // a later revision of the same pair may already be in flight — and the
   // entry asks again, the view having kept the pair unanswered.
-  function unjudge(id, what) {
+  // **…and says so under its card** (Q1505, Ed 2026-09-23; SURFACE Y25):
+  // `said` is the sentence, which the card carries until the next choice on
+  // it; the card is re-opened, as Y25's band cards are, unless the member has
+  // since opened another charter card — a refusal does not take a card away
+  // from somebody reading one.
+  function unjudge(id, what, said) {
     const s = SUGGS.find((x) => x.id === id);
     if (!s) return false;
     const key = pairKeyOf(s);
     if (committed.get(key) !== what) return false;
     resolved.delete(key); verdicts.delete(key); picked.delete(key); committed.delete(key);
     if (justArrived === key) justArrived = null;
+    if (said) refusedSay.set(id, said);
     renderAll(); drawWires();
+    // a quick refusal lands while the press's own close is still running
+    // (`collapseCards` → `shut`), so the re-open waits for the card to be
+    // shut rather than toggling it closed a second time; a card still open
+    // after that is simply open, the sentence already drawn on it
+    let tries = 0;
+    const reopen = () => {
+      if (!said || !refusedSay.has(id)) return;
+      if (openId === null) { toggle(id, true); return; }
+      if (openId === id && ++tries < 10) setTimeout(reopen, 150);
+    };
+    reopen();
     return true;
   }
 
