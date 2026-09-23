@@ -1815,7 +1815,11 @@ function checkGuardsRun() {
   for (const b of bullets) {
     const head = b.text.trim().slice(2, 60);
     const toks = [];
-    if (b.gotcha) for (const m of b.text.matchAll(INVOKE)) toks.push(m[1]);
+    // *measured with `x`, an instrument, not a guard* (Ed, 2026-09-23): a
+    // script that measures and asserts nothing is named, never counted
+    if (b.gotcha) for (const m of b.text.matchAll(INVOKE)) {
+      if (!b.text.slice(m.index + m[0].length).startsWith(', an instrument')) toks.push(m[1]);
+    }
     for (const c of b.text.matchAll(CLAUSE)) for (const t of c[1].matchAll(/`([^`]+)`/g)) toks.push(t[1]);
     for (const raw of toks) {
       const tok = raw.trim();
