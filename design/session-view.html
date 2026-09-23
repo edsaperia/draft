@@ -820,10 +820,30 @@
     const anchored = !!(ref && ref.length);
     const hold = () => { if (anchored) CC.restoreStill(ref); };
     if (!el) { fn(); render(); hold(); return; }
+    // **the keyboard goes back to the card's own tab** (Q1397, Ed 2026-09-22:
+    // focus stays on the card after an act): a card closing under an OK, a
+    // commit or the bin took the focused control with it and left the keyboard
+    // at the top of the page. Only where the card held it, and only if nothing
+    // else has taken it meanwhile.
+    // …and only for a keyboard (`:focus-visible` on what held it): a pointer's
+    // focus is left where the pointer left it, which is what the page did
+    // before and what the frozen founding walk measures
+    const fa = document.activeElement;
+    // — a control the keyboard pressed, never a field still holding a caret
+    const heldKey = el.contains(fa) && fa && fa.matches && fa.matches(':focus-visible') &&
+      fa.matches('button, [role="button"], [role="radio"]') ? el.dataset.setupcard : null;
+    const handBack = () => {
+      if (!heldKey) return;
+      const a = document.activeElement;
+      if (a && a !== document.body && document.contains(a)) return;
+      const t = document.querySelector('[data-tab="' + heldKey + '"]') ||
+        document.querySelector('#rail [data-card="' + heldKey + '"]');
+      if (t) { try { t.focus({ preventScroll: true }); } catch (e) { /* gone */ } }
+    };
     let holding = anchored;
     const frame = () => { if (!holding) return; hold(); requestAnimationFrame(frame); };
     if (holding) requestAnimationFrame(frame);
-    CC.collapseCard(el, () => { holding = false; fn(); render(); hold(); });
+    CC.collapseCard(el, () => { holding = false; fn(); render(); hold(); handBack(); });
   };
   // **Clicking a rail entry travels to its card** (Ed, 2026-08-21). The
   // charter's rail has done this for as long as it has existed — session.js's

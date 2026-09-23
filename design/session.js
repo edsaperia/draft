@@ -4275,6 +4275,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         const heldEl = hold ? doc.querySelector(hold) : null;
         const heldTop = heldEl ? heldEl.getBoundingClientRect().top : null;
         keepStill(() => { openId = next; renderAll(); }, hold);
+        focusOpenedCard(next);
         if (heldTop !== null && !doc.querySelector(hold)) {
           const born = [...doc.querySelectorAll('.sugg')].find((c) => c.dataset.card === next);
           const drift = born ? born.getBoundingClientRect().top - heldTop : 0;
@@ -4591,7 +4592,9 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       resolved.add(key);
       justArrived = firstTime ? key : null;
       if (hooks.judge) hooks.judge(id, what, pair);
-      const shut = () => { if (openId === id) openId = null; renderAll(); drawWires(); };
+      const held = !!document.activeElement && !!document.activeElement.closest &&
+        !!document.activeElement.closest('.sugg[data-card], [data-patchrow]');
+      const shut = () => { if (openId === id) openId = null; renderAll(); drawWires(); if (held) focusTabOf(id); };
       if (openId === id) collapseCards(id, shut); else shut();
     }, firstTime && btn ? 240 : 0);
   }
@@ -4930,7 +4933,64 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   // (Ed, 2026-08-17: *cables don't change colour when the cards change colour*).
   // The wire's own fade is unaffected by the order: it carries its previous
   // value in `prevWire` rather than reading it off the DOM.
+  // **Where the keyboard stands survives the column being rebuilt** (Q1397,
+  // Ed 2026-09-22: focus stays on the card after an act). `renderAll` rebuilds
+  // every card, tab and entry wholesale, so the element holding focus stopped
+  // existing on every render and a keyboard was dropped back to the top of the
+  // page. The focused control is named by what it is — a card's lane or act,
+  // a clause tab — and found again after the rebuild. A caret has keepers of
+  // its own (`heldCaret`, the lane's `remark`), so editables are left alone.
+  const focusKeep = () => {
+    const a = document.activeElement;
+    if (!a || a === document.body || !doc.contains(a) || a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return null;
+    const card = a.closest('.sugg[data-card]');
+    if (card) return { card: card.dataset.card, v: a.dataset.v || null, act: a.dataset.act || null, anchor: a.dataset.anchor || null };
+    const tab = a.closest('.achip[data-anchor]');
+    return tab ? { tab: tab.dataset.anchor } : null;
+  };
+  const focusRestore = (k) => {
+    if (!k) return;
+    const q = (v) => String(v).replace(/["\\]/g, '\\$&');
+    let el = null;
+    if (k.card) {
+      const card = doc.querySelector('.sugg[data-card="' + q(k.card) + '"]');
+      if (!card) return;
+      el = (k.v && card.querySelector('[data-v="' + q(k.v) + '"]')) ||
+        (k.act && card.querySelector('[data-act="' + q(k.act) + '"]')) ||
+        (k.anchor && card.querySelector('.achip[data-anchor="' + q(k.anchor) + '"]'));
+    } else if (k.tab) {
+      el = doc.querySelector('.achip[role="button"][data-anchor="' + q(k.tab) + '"]');
+    }
+    if (el && document.activeElement !== el) { try { el.focus({ preventScroll: true }); } catch (e) { /* gone */ } }
+  };
+  // **Opening puts the keyboard on the main decision** (SURFACE C5, Q1397):
+  // the chosen lane, else the first, never the commit row; a card with no
+  // lane — a record — takes its own tab in the strip, which is inside it.
+  // The editing card is the caret's (K13) and is left to the composer.
+  const focusOpenedCard = (id) => {
+    if (id === DRAFT_ID) return;
+    const card = [...doc.querySelectorAll('.sugg[data-card]')].find((c) => c.dataset.card === id);
+    // the tab pressed rides into the card's strip, so the keyboard may already
+    // be inside — it still goes on to the decision, unless it is on one
+    if (!card || (card.contains(document.activeElement) && document.activeElement.matches('[data-v]'))) return;
+    const el = card.querySelector('[data-v][aria-checked="true"]:not([disabled])') ||
+      card.querySelector('[data-v]:not([disabled])') ||
+      card.querySelector('.achip[role="button"]');
+    if (el) { try { el.focus({ preventScroll: true }); } catch (e) { /* gone */ } }
+  };
+  // …and **an act that closes a card hands the keyboard to its tab**
+  // (Q1397): the card runs back onto its paragraph and the tab is what stands
+  // there, so a keyboard carries on from the card it acted on
+  // A tab filed behind others in its pile is inert (`behind`), so the pile's
+  // front tab — the way back into that clause — takes the keyboard instead.
+  const focusTabOf = (id) => {
+    const mine = [...doc.querySelectorAll('.achip[data-anchor]')].filter((x) => x.dataset.anchor === id && !x.closest('.sugg'));
+    const t = mine.find((x) => x.getAttribute('role') === 'button') ||
+      (mine[0] && mine[0].closest('.chipcol') && mine[0].closest('.chipcol').querySelector('.achip[role="button"]'));
+    if (t) { try { t.focus({ preventScroll: true }); } catch (e) { /* gone */ } }
+  };
   function renderAll() {
+    const kept = focusKeep();
     // `layoutQueue` belongs here rather than at each call site (Ed, 2026-08-17:
     // *when I resolve the 🔥 card, a new one should appear in my sidebar
     // immediately, rather than me having to deselect it first*). The rail was
@@ -4945,6 +5005,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // the host's riding tab carries the draft's count (backlog 204) — a DOM
     // poke on the host's side, never a render, so this cannot recurse
     if (hooks.rendered) hooks.rendered();
+    focusRestore(kept);
   }
 
   // **The patch row** (Q1382, Ed 2026-09-15: *the vote for a patch is also
