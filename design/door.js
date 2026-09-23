@@ -161,8 +161,8 @@ window.DOOR = (function () {
       lockline: { value: (c) => {
         const st = csState(c.k);
         return st && st.settledBy && st.settledBy !== 'convenor'
-          ? 'Decided by the members.'
-          : 'Set by the founder when the document was made.';
+          ? PAGE_COPY.lockline.members
+          : PAGE_COPY.lockline.founder;
       } },
     });
     // An undecided rule has no value to print and nobody to attribute it to,

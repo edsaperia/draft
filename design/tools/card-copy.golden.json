@@ -4384,13 +4384,13 @@
     "body": "Any member may propose to invite someone to join the membership, and the membership decides ✏️.Propose thisAny member may invite someone to join the membership at will ✒️.Propose this",
     "options": [
      {
-      "set": null,
-      "val": "Any member may propose to invite someone to join the membership, and the membership decides ✏️.",
+      "set": "admission",
+      "val": "proposal",
       "label": "Any member may propose to invite someone to join the membership, and the membership decides ✏️."
      },
      {
-      "set": null,
-      "val": "Any member may invite someone to join the membership at will ✒️.",
+      "set": "admission",
+      "val": "pen",
       "label": "Any member may invite someone to join the membership at will ✒️."
      }
     ],
@@ -4421,12 +4421,12 @@
     "eyebrow": "",
     "head": "New members may only join by invitation.Chosen by the membership",
     "lock": "",
-    "body": "Anyone may apply to join.Propose this",
+    "body": "Anyone with the link may apply to become a member.Propose this",
     "options": [
      {
-      "set": null,
-      "val": "Anyone may apply",
-      "label": "Anyone may apply to join."
+      "set": "applications",
+      "val": "apply",
+      "label": "Anyone with the link may apply to become a member."
      }
     ],
     "inputs": [],
@@ -4456,27 +4456,27 @@
     "eyebrow": "",
     "head": "All proposals are made anonymously.Chosen by the membership",
     "lock": "",
-    "body": "A proposer is never named unless they sign the proposal themselves.Propose thisProposers are named in the closing record, never before.Propose thisProposers are named in the closing record, and sooner if they sign.Propose thisEvery proposal carries its proposer’s name from the moment it is made.Propose this",
+    "body": "Proposals may be made anonymously.Propose thisAll proposals are made anonymously, and all names are revealed at the end.Propose thisProposals may be made anonymously, and all names are revealed at the end.Propose thisProposals may not be made anonymously.Propose this",
     "options": [
      {
-      "set": null,
-      "val": "Nobody’s name unless they choose",
-      "label": "A proposer is never named unless they sign the proposal themselves."
+      "set": "authorship",
+      "val": "anonymousElective",
+      "label": "Proposals may be made anonymously."
      },
      {
-      "set": null,
-      "val": "Names at the close",
-      "label": "Proposers are named in the closing record, never before."
+      "set": "authorship",
+      "val": "sealed",
+      "label": "All proposals are made anonymously, and all names are revealed at the end."
      },
      {
-      "set": null,
-      "val": "Names at the close, or earlier by choice",
-      "label": "Proposers are named in the closing record, and sooner if they sign."
+      "set": "authorship",
+      "val": "sealedElective",
+      "label": "Proposals may be made anonymously, and all names are revealed at the end."
      },
      {
-      "set": null,
-      "val": "Names from the start",
-      "label": "Every proposal carries its proposer’s name from the moment it is made."
+      "set": "authorship",
+      "val": "public",
+      "label": "Proposals may not be made anonymously."
      }
     ],
     "inputs": [],
@@ -4761,12 +4761,12 @@
     "eyebrow": "",
     "head": "Votes are never revealed.Chosen by the membership",
     "lock": "",
-    "body": "Votes are published with the closing record, never before.Propose this",
+    "body": "Votes are revealed when the document is finished, and not before.Propose this",
     "options": [
      {
-      "set": null,
-      "val": "Revealed at the end",
-      "label": "Votes are published with the closing record, never before."
+      "set": "judgments",
+      "val": "after",
+      "label": "Votes are revealed when the document is finished, and not before."
      }
     ],
     "inputs": [],
@@ -5517,13 +5517,13 @@
     "body": "To remove a member, all members apart from them must agree 🏛️.Propose thisTo remove a member, a majority of members must agree ✏️.Propose this",
     "options": [
      {
-      "set": null,
-      "val": "To remove a member, all members apart from them must agree 🏛️.",
+      "set": "removal",
+      "val": "assembly",
       "label": "To remove a member, all members apart from them must agree 🏛️."
      },
      {
-      "set": null,
-      "val": "To remove a member, a majority of members must agree ✏️.",
+      "set": "removal",
+      "val": "proposal",
       "label": "To remove a member, a majority of members must agree ✏️."
      }
     ],
@@ -6347,13 +6347,13 @@
     "body": "Any member may propose to invite someone to join the membership, and the membership decides ✏️.Propose thisAny member may invite someone to join the membership at will ✒️.Propose this",
     "options": [
      {
-      "set": null,
-      "val": "Any member may propose to invite someone to join the membership, and the membership decides ✏️.",
+      "set": "admission",
+      "val": "proposal",
       "label": "Any member may propose to invite someone to join the membership, and the membership decides ✏️."
      },
      {
-      "set": null,
-      "val": "Any member may invite someone to join the membership at will ✒️.",
+      "set": "admission",
+      "val": "pen",
       "label": "Any member may invite someone to join the membership at will ✒️."
      }
     ],
@@ -6384,12 +6384,12 @@
     "eyebrow": "",
     "head": "New members may only join by invitation.Chosen by the membership",
     "lock": "",
-    "body": "Anyone may apply to join.Propose this",
+    "body": "Anyone with the link may apply to become a member.Propose this",
     "options": [
      {
-      "set": null,
-      "val": "Anyone may apply",
-      "label": "Anyone may apply to join."
+      "set": "applications",
+      "val": "apply",
+      "label": "Anyone with the link may apply to become a member."
      }
     ],
     "inputs": [],
@@ -6419,27 +6419,27 @@
     "eyebrow": "",
     "head": "All proposals are made anonymously.Chosen by the membership",
     "lock": "",
-    "body": "A proposer is never named unless they sign the proposal themselves.Propose thisProposers are named in the closing record, never before.Propose thisProposers are named in the closing record, and sooner if they sign.Propose thisEvery proposal carries its proposer’s name from the moment it is made.Propose this",
+    "body": "Proposals may be made anonymously.Propose thisAll proposals are made anonymously, and all names are revealed at the end.Propose thisProposals may be made anonymously, and all names are revealed at the end.Propose thisProposals may not be made anonymously.Propose this",
     "options": [
      {
-      "set": null,
-      "val": "Nobody’s name unless they choose",
-      "label": "A proposer is never named unless they sign the proposal themselves."
+      "set": "authorship",
+      "val": "anonymousElective",
+      "label": "Proposals may be made anonymously."
      },
      {
-      "set": null,
-      "val": "Names at the close",
-      "label": "Proposers are named in the closing record, never before."
+      "set": "authorship",
+      "val": "sealed",
+      "label": "All proposals are made anonymously, and all names are revealed at the end."
      },
      {
-      "set": null,
-      "val": "Names at the close, or earlier by choice",
-      "label": "Proposers are named in the closing record, and sooner if they sign."
+      "set": "authorship",
+      "val": "sealedElective",
+      "label": "Proposals may be made anonymously, and all names are revealed at the end."
      },
      {
-      "set": null,
-      "val": "Names from the start",
-      "label": "Every proposal carries its proposer’s name from the moment it is made."
+      "set": "authorship",
+      "val": "public",
+      "label": "Proposals may not be made anonymously."
      }
     ],
     "inputs": [],
@@ -6768,12 +6768,12 @@
     "eyebrow": "",
     "head": "Votes are never revealed.Chosen by the membership",
     "lock": "",
-    "body": "Votes are published with the closing record, never before.Propose this",
+    "body": "Votes are revealed when the document is finished, and not before.Propose this",
     "options": [
      {
-      "set": null,
-      "val": "Revealed at the end",
-      "label": "Votes are published with the closing record, never before."
+      "set": "judgments",
+      "val": "after",
+      "label": "Votes are revealed when the document is finished, and not before."
      }
     ],
     "inputs": [],
@@ -7674,13 +7674,13 @@
     "body": "To remove a member, all members apart from them must agree 🏛️.Propose thisTo remove a member, a majority of members must agree ✏️.Propose this",
     "options": [
      {
-      "set": null,
-      "val": "To remove a member, all members apart from them must agree 🏛️.",
+      "set": "removal",
+      "val": "assembly",
       "label": "To remove a member, all members apart from them must agree 🏛️."
      },
      {
-      "set": null,
-      "val": "To remove a member, a majority of members must agree ✏️.",
+      "set": "removal",
+      "val": "proposal",
       "label": "To remove a member, a majority of members must agree ✏️."
      }
     ],

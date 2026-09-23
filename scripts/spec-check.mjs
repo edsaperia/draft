@@ -1441,17 +1441,33 @@ function checkComposer(M, pm) {
   // setting**, which is the same half-done-rename shape in a new dress — and
   // a `lanesFor` argument this cannot resolve is still a finding, never a
   // silent pass.
+  // …and since issue #19 that is the whole of the composable rung set: 👤 ⚖️
+  // 🌍 🤝 joined 🪪 and 🥾, so six settings spell neither side here and the
+  // page's own lane sentences are ⏰'s and 💤's *never* rungs alone.
   // the RULES sentences live in design/copy.js since 2026-09-05 (Ed's brief,
   // Part 3: copy edits touch that file only); cards.js keeps the readers
+  // **A rung's sentence is what the rung body returns**, which for 🌍 and 🤝
+  // is one of two branches: those two name a fact outside themselves — the
+  // clerk deviation, 🪪's price — so their rows are functions of the room and
+  // a `key: 'sentence'` match sees one arm of each ternary and nothing of a
+  // lambda that returns outright. Read as *a literal in return position*: the
+  // string after `:`, after `=>`, or after either arm's `?`/`:`, which leaves
+  // `x.admissionPrice === 'pen'` alone. Both sides of the comparison below
+  // resolve through this one list, so a room-dependent sentence contributes
+  // every branch it has to each of them and they still agree by construction.
   const rules = new Map(keyBodies(uncomment(objLit(js('design/copy.js'), 'RULES')))
-    .map(([k, b]) => [k, [...b.matchAll(/:\s*'((?:\\.|[^'\\])*)'/g)].map((m) => m[1])]));
-  const ruleSays = (fn, arg) => {
-    const m = arg.match(new RegExp(`^${fn}\\('([A-Za-z]+)'\\)$`));
+    .map(([k, b]) => [k, [...b.matchAll(/(?:=>|\?|:)\s*\(?\s*'((?:\\.|[^'\\])*)'/g)].map((m) => m[1])]));
+  // the derived forms, `<fn>('<setting>')` with whatever else the call takes
+  // — `ruleMval` is handed the shape the setting's value has, and the answer
+  // is the setting's sentences either way. Matched anywhere in the body,
+  // because since issue #19 an MVAL row is a thunk around the call.
+  const ruleSays = (fns, arg) => {
+    const m = arg.match(new RegExp(`\\b(?:${fns.join('|')})\\(\\s*'([A-Za-z]+)'\\s*[,)]`));
     return m ? (rules.get(m[1]) || null) : null;
   };
   const mvalKeys = (b) => [...b.matchAll(/'((?:\\.|[^'\\])*)'\s*:\s*\{/g)].map((m) => m[1]);
   const mval = new Map(keyBodies(uncomment(objLit(page, 'MVAL'))).map(([k, b]) => {
-    const derived = ruleSays('priceMval', (b.split(':').slice(1).join(':').trim().replace(/,\s*$/, '')));
+    const derived = ruleSays(['priceMval', 'ruleMval'], (b.split(':').slice(1).join(':').trim().replace(/,\s*$/, '')));
     return [k, derived || mvalKeys(b)];
   }));
   const lanes = new Map(); let laneLabels = 0;
@@ -1459,7 +1475,7 @@ function checkComposer(M, pm) {
     const body = raw; const found = [];
     for (const m of body.matchAll(/lanesFor\(/g)) {
       const arg = (argsAt(body, m.index + m[0].length - 1)[1] || '').trim();
-      const derived = ruleSays('ruleLanes', arg);
+      const derived = ruleSays(['ruleLanes'], arg);
       if (derived) { found.push(...derived); continue; }
       let lit = null;
       if (arg.startsWith('[')) lit = arg;
@@ -1473,7 +1489,7 @@ function checkComposer(M, pm) {
     if (found.length) { lanes.set(k, found); laneLabels += found.length; }
   }
   // …and a `RULES` table nothing reads is the other way this could go quiet
-  for (const k of ['admission', 'removal']) {
+  for (const k of ['admission', 'removal', 'authorship', 'judgments', 'chamber', 'applications']) {
     if (!(rules.get(k) || []).length) find('composer', `cards.js's RULES.${k} yields no sentences — MVAL.${k} and PROPOSE.${k} both resolve through it`);
   }
   for (const [k, labels] of lanes) {

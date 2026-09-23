@@ -479,31 +479,28 @@ window.BEGIN = (function () {
       // **The record says who is named; the card reads the record** (Q770,
       // entry 31). A sentence derived from the rung alone is wrong the moment
       // one person signs, so live the count comes from the field entries the
-      // server has already passed through the one reveal rule. The fixture has
-      // no record and keeps a plain sentence from the standing rung — the
-      // elective rungs riding their base (Q767).
+      // server has already passed through the one reveal rule; the fixture
+      // has no record and keeps a plain sentence from the standing rung. The
+      // eight sentences are `PAGE_COPY.closingNames` since issue #19, and the
+      // reasoning for each of them travelled with it; what is chosen between
+      // them is this card's, and stays here.
+      const NM = PAGE_COPY.closingNames;
       const fields = rec ? [...(rec.adopted || []), ...(rec.undecided || [])].flatMap((r) => r.field || []) : null;
       let names;
       if (fields) {
         const named = fields.filter((f) => f.author).length;
-        names = fields.length === 0 ? 'Nothing was proposed, so the record names nobody.'
-          : named === 0 ? 'The record names nobody: every proposal keeps the privacy it was made under.'
-          : named === fields.length ? 'The record names every one of the ' + n(fields.length, 'proposer', 'proposers') + '.'
-          : 'The record names ' + named + ' of the ' + n(fields.length, 'proposer', 'proposers') + '.';
-        // **honour**: the rule moved while the document was open — some
-        // proposals were made under one rung and stand under another
+        names = fields.length === 0 ? NM.nothing
+          : named === 0 ? NM.none
+          : named === fields.length ? NM.all(n(fields.length, 'proposer', 'proposers'))
+          : NM.some(named, n(fields.length, 'proposer', 'proposers'));
         const under = new Set(fields.map((f) => f.madeUnder).filter(Boolean));
-        if (under.size > 1 || (rec.rungNow && [...under].some((u) => u !== rec.rungNow))) {
-          names += ' Proposals keep the privacy they were made under: the rule moved while the document was open.';
-        }
+        if (under.size > 1 || (rec.rungNow && [...under].some((u) => u !== rec.rungNow))) names += NM.honour;
       } else {
         const auth = csState('authorship');
         const rawRung = auth && auth.value ? auth.value.rung || auth.value : null;
         const reveal = rawRung === 'anonymousElective' ? 'anonymous'
           : rawRung === 'sealedElective' ? 'sealed' : rawRung;
-        names = reveal === 'anonymous' ? 'Authorship stays sealed: the record names nobody.'
-          : reveal === 'public' ? 'Authorship was public throughout.'
-          : 'Authorship is unsealed: the record names who proposed what.';
+        names = reveal === 'anonymous' ? NM.sealed : reveal === 'public' ? NM.public : NM.unsealed;
       }
       const sigs = closeSignatures();
       const sigList = sigs.length ? '<div class="gatelist sigs">' + sigs.map((sg) =>

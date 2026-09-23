@@ -331,9 +331,16 @@ const IN_PAGE = () => {
       return txt(h).replace(r ? txt(r) : '', '').trim(); })(),
     lock: txt(card.querySelector('.lockline')),
     body: txt(card.querySelector('.field, .lanes')),
+    // **A composer's lane is an option like any other** (issue #19). It draws
+    // `data-mval`, whose value is the clause sentence the lane would set — no
+    // use at all to a reader asking *which rung is this*, which is what T5
+    // compares. A lane that types a catalogue rung says so in `data-mset` /
+    // `data-mrung`, and those are read first, so the lane, the founder's radio
+    // (`data-set` / `data-val`) and the member's ladder (`data-ans` /
+    // `data-ansval`) name one rung and T5 can put the three side by side.
     options: Array.from(card.querySelectorAll('[data-set],[data-ans],[data-val],[data-mval],[data-motion]')).map((el) => ({
-      set: el.dataset.set || el.dataset.ans || null,
-      val: el.dataset.val || el.dataset.ansval || el.dataset.mval || el.dataset.motion || null,
+      set: el.dataset.set || el.dataset.ans || el.dataset.mset || null,
+      val: el.dataset.val || el.dataset.ansval || el.dataset.mrung || el.dataset.mval || el.dataset.motion || null,
       on: el.classList.contains('on') || el.getAttribute('aria-checked') === 'true' || el.getAttribute('aria-pressed') === 'true',
       // the option's name is its block's text since CP1 (2026-08-31): every
       // radio reads *Prefer this / Preferred*, so reading the button made T5
@@ -1186,6 +1193,22 @@ function crossCard(cards) {
 
   // T5 — one label per rung, everywhere. The founder's radio, the member's
   // ladder and the composer's lane must say the same words for one value.
+  // **And the composer's lane is one of the three** (issue #19). It was not:
+  // a lane's only identity in the payload was `data-mval`, whose value is the
+  // sentence the lane would set, so a lane joined nothing — every one of them
+  // was a rung of its own with one label, the size-2 test never fired, and
+  // the lens read as coverage of three surfaces while seeing two. 👤 ⚖️ 🌍
+  // and 🤝 each drew a third wording underneath it for as long as that held.
+  // The lane says which rung it is now (`data-mset` / `data-mrung`, read
+  // ahead of `data-mval` where `strings.options` is built), and the three
+  // surfaces meet here. `data-motion` is deliberately still unjoined: a
+  // consent card's *yes* is not a rung of anything, and its block's text is
+  // whatever that one motion proposes.
+  // One thing this does not distinguish, and it is a real one: a rung whose
+  // sentence names a fact about the room — 🌍's clerk deviation, 🤝's 🪪
+  // price — is two sentences in two rooms, so a walk seated differently from
+  // the rest would report it as two labels and be right about the strings
+  // and wrong about the defect.
   // The status-quo *keep* rungs (Ed's QA, 2026-09-02 pm) are exempt by
   // design: their label IS the member's own standing value — a name, a
   // picture — so two seats rightly label them two ways.
