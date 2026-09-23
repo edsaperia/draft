@@ -2317,7 +2317,13 @@ export class Session {
       edgesByCandidate: (id) => this.edgesByCandidate.get(id) ?? [],
       evidenceSince: (id) => this.evidenceSince.get(id),
       evidenceSinceT: (id) => this.evidenceSinceT.get(id),
-      suspended: (id) => this.roster.get(id)?.suspended === true,
+      // **out of E is removed or lapsed** (SPEC §8.2, §9.5; issue #65 F1): the
+      // interface said both and this read one, so a member who resigned or was
+      // removed went on approving the proposal they left behind
+      suspended: (id) => {
+        const r = this.roster.get(id);
+        return r?.removed === true || r?.suspended === true;
+      },
       eMembers: () => this.eMembers(),
       // the later of arriving and coming back (Q1439, §8.2): before either,
       // nobody could have been asked. `-Infinity` for somebody off the roster

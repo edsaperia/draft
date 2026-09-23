@@ -524,6 +524,30 @@ describe('the edges of E', () => {
     expect((adopted as { approvals?: number; floor?: number }).floor).toBe(1);
   });
 
+  // **A departed author is out of E** (issue #65 F1, SPEC §8.2): the derived
+  // preference counts *unless its author is out of E*, and §9.5 names three
+  // roads out — the engine honoured lapse alone, so a member who resigned or
+  // was removed went on approving the proposal they left behind.
+  it('a removed author is out of E, so their preference is not an approval', () => {
+    const { s } = proposed({ quorum: { form: 'count', n: 2 } });
+    expect(only(s, 2000).approvals).toBe(1);   // the author's own (§3.3)
+    s.removeParticipant(2100, 'p1');           // a resignation folds to the same event
+    expect(only(s, 2200).approvals).toBe(0);
+  });
+
+  // **A whole room lapsing at one tick retires nothing** (issue #65 F2, SPEC
+  // §4.4 → why: R-140): with E empty every count is nought, `0 ≤ 0` held,
+  // and every live proposal was closed for good — though §9.5a returns each
+  // of those members on their next read.
+  it('a room that all lapses at once retires nothing', () => {
+    const { s } = proposed({ quorum: { form: 'count', n: 2 } });
+    for (const p of ['p1', 'p2', 'p3', 'p4', 'p5']) s.suspendParticipant(2100, p);
+    expect(only(s, 2200).dominated).toEqual([]);
+    expect(s.tick(2200).map((e) => e.type)).not.toContain('candidate-retired');
+    for (const p of ['p1', 'p2', 'p3', 'p4', 'p5']) s.resumeParticipant(2300, p);
+    expect(only(s, 2400).leaderId, 'the proposal is still there when they return').toBeTruthy();
+  });
+
   it('at E = 2 the seconder is unanimity, and the measured clause still binds', () => {
     const { s } = proposed({}, 2);
     const r = only(s, 2000);
@@ -550,6 +574,20 @@ describe('a setting race rides the same floor', () => {
     const after = 1000 + P + 1;
     expect(only(s, after).approvals).toBe(2);
     expect(s.tick(after).map((e) => e.type)).toContain('adopted');
+  });
+
+  // issue #65's *Verify*: the motion races share the path, so a mover who
+  // leaves stops approving their own motion as an author of a text does
+  it('a mover who leaves stops approving their motion (issue #65 F1)', () => {
+    const s = open({ quorum: { form: 'count', n: 2 } }, 5);
+    s.setStanding(500, 'ending', { endsAtMs: null });
+    s.submitCandidate(1000, {
+      author: 'p1', rationale: 'later',
+      setting: { settingId: 'ending', value: { endsAtMs: 9_000_000 } },
+    });
+    expect(only(s, 2000).approvals).toBe(1);
+    s.removeParticipant(2100, 'p1');
+    expect(only(s, 2200).approvals).toBe(0);
   });
 });
 

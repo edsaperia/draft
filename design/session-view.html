@@ -6047,7 +6047,10 @@
     // fall back on: the row says so, and wears the anonymous disc
     row.erased = !!rec.erased;
     row.n = rec.erased ? PAGE_COPY.synth.redacted
-      : (rec.name || (row.founder ? '' : String(rec.email || '').split('@')[0]));
+      // **nothing invented** (issue #65 F3): a member who chose no name has
+      // none here either, so every other seat and their own agree — each
+      // reader falls back for itself, to the address or to *Anonymous*
+      : (rec.name || '');
     row.pic = rec.erased ? '' : (rec.picture || '');
   };
   const syncFromCs = () => {
@@ -6062,7 +6065,7 @@
       const row = S.roster.find((r) => r.mid === mid2);
       if (!row && !rec.removed) {
         S.roster.push({
-          n: rec.erased ? PAGE_COPY.synth.redacted : (rec.name || String(rec.email || '').split('@')[0]),
+          n: rec.erased ? PAGE_COPY.synth.redacted : (rec.name || ''), // issue #65 F3
           pic: rec.erased ? '' : (rec.picture || ''),
           e: rec.email || '',
           erased: !!rec.erased,

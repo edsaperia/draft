@@ -641,6 +641,12 @@ export class Races {
     if (members.length === 0) return [];
     const c = this.host.constitution();
     const e = this.host.eMembers();
+    // **nothing is dominated while E is empty** (SPEC §4.4 → why: R-140;
+    // issue #65 F2): every count is nought, `0 ≤ 0` holds, and a room that
+    // lapsed at one tick lost every live proposal for good — though §9.5a
+    // returns each of them on their next read, so an empty E is a room not
+    // yet back rather than an answer
+    if (e.length === 0) return [];
     const incStrength = fit.strengths.get(incumbentId) ?? 0;
     const above = (id: string): boolean =>
       (fit.strengths.get(id) ?? 0) > incStrength + TIE_EPS;
