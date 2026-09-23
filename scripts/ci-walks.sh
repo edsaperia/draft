@@ -166,10 +166,12 @@ case "$GROUP" in
     ;;
 
   # the founding → 🍾 → grants → caret → proposal on the live path, which the
-  # probes and founding-walk never reach; the long single walk, so alone
+  # probes and founding-walk never reach; the long single walk, so alone.
+  # WALK_TIMING=1 (Stage 6): every line carries the milliseconds since the
+  # one before, so the log is the walk's profile — `sort -t+ -k2 -n` on it
   journey)
     boot journey "$PORT_MAIN"; BASE=$BOOTED
-    walk "journey" npm run journey -- "$BASE"
+    walk "journey" env WALK_TIMING=1 npm run journey -- "$BASE"
     ;;
 
   motions)
