@@ -17,6 +17,11 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪶</text></svg>">
 <link rel="stylesheet" href="system.css">
 <link rel="stylesheet" href="setup.css">
+<!-- **Paper on a desk — a mockup switch** (Q1516 (6), Ed 2026-09-23: a page
+     break between the Rules and the Text). `?paper=1` marks the root and loads
+     `paper.css` + `paper.js`; without it neither file is fetched and nothing
+     on the page changes. Branch `paper-mockup` only, never main. -->
+<script>if (/[?&]paper=1(&|$)/.test(location.search)) { document.documentElement.classList.add('paper'); document.write('<link rel="stylesheet" href="paper.css"><script src="paper.js"><\/script>'); }</script>
 <style>
 /* ============================================================================
    document-creation — **the document, from its first minute.**
@@ -2450,7 +2455,7 @@
     // the outline lists only what exists: before the save there is no
     // constitution to point at (Ed, 2026-08-18)
     return (!settled(card('myemail')) ? '' :
-      '<li class="lvl1">' + secToggleHtml('cs-constitution') + '<a href="#cs-constitution">Constitution</a></li>' +
+      '<li class="lvl1">' + secToggleHtml('cs-constitution') + '<a href="#cs-constitution">' + (document.documentElement.classList.contains('paper') ? 'Rules' : 'Constitution') + '</a></li>' +
       secLive().filter((s2) => !s2.railOnly).map((s2) =>
         '<li class="lvl2">' + secToggleHtml('cs-' + s2.key) + '<a href="#cs-' + s2.key + '">' + esc(s2.title) + '</a></li>').join('') +
       '<li class="lvl1"><a href="#dochead">' + esc(S.title || 'Untitled') + '</a></li>') +
@@ -4835,7 +4840,7 @@
     // is being headed yet — the run is three clauses on an unsaved document —
     // and the table of contents already withholds its Constitution entry
     // until the save, so a heading here disagreed with the outline beside it.
-    { key: 'constitution', label: cs ? 'Constitution' : '',
+    { key: 'constitution', label: cs ? (document.documentElement.classList.contains('paper') ? 'Rules' : 'Constitution') : '',
       // **The birth has no sections** (Ed, 2026-08-21: *during the birth we
       // don't need to see the Membership section*). Before the save there is
       // no constitution to divide up — the run is the title, the link and

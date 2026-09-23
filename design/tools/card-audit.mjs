@@ -63,6 +63,10 @@ const STRICT = process.argv.includes('--strict');
 const VIEWPORT = { width: +arg('width', 1600), height: +arg('height', 1000) };
 const OUT = arg('out', join(DESIGN, 'tools', 'card-audit.json'));
 const BASELINE = arg('baseline', null);
+/** extra query on every page the audit opens — `--query=paper=1` audits the
+ *  paper-on-a-desk mockup (Q1516 (6)); absent, the addresses are unchanged */
+const EXTRA_Q = arg('query', '');
+const at = (u) => (EXTRA_Q ? u + (u.includes('?') ? '&' : '?') + EXTRA_Q : u);
 /** where to keep the specimens the card sheet is built from; off when absent */
 const SPECIMENS = arg('specimens', null);
 /** how big a box has to be before a specimen flattens it; 0 keeps the default */
@@ -1455,7 +1459,7 @@ async function birth(page) {
  * question, its helper text and its dark commit can be read.
  */
 async function walkFounding(page, base, cards, errors, opts = {}) {
-  await page.goto(base + '/session-view.html');
+  await page.goto(at(base + '/session-view.html'));
   await page.waitForSelector('#rail .qitem', { timeout: 20_000 });
   await page.evaluate(() => window.scrollTo(0, 0));
   await wait(page, 300);
@@ -1559,7 +1563,7 @@ const walkDelegated = (page, base, cards, errors) =>
  * power tabs live. ⏩ is the stagehand that gets there in one press.
  */
 async function walkSettled(page, base, cards, errors, seat, switches, piles) {
-  await page.goto(base + '/session-view.html');
+  await page.goto(at(base + '/session-view.html'));
   await page.waitForSelector('#rail .qitem', { timeout: 20_000 });
   await page.evaluate(() => window.scrollTo(0, 0));
   await wait(page, 300);
@@ -2035,7 +2039,7 @@ function doorRules(doors) {
 }
 
 async function walkCharter(page, base, cards, errors, { closed, doors, rails } = {}) {
-  await page.goto(base + '/session-view.html?fixture=session' + (closed ? '&closed=1&band=1' : ''));
+  await page.goto(at(base + '/session-view.html?fixture=session' + (closed ? '&closed=1&band=1' : '')));
   await page.waitForFunction(() => !!(window.SESSION && window.SESSION.SUGGS.length && document.querySelector('.qitem')),
     null, { timeout: 20_000 });
   await page.evaluate(() => { window.scrollTo(0, 0); window.SESSION.smoothScrollBy = (dy, done) => { window.scrollBy(0, dy); if (done) done(); }; });
