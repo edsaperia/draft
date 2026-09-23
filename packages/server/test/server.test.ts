@@ -1318,6 +1318,64 @@ describe('the address is chosen before the email, and reserved on send (Q460/462
       { available: boolean }).available).toBe(true);
     expect((await lastMailTo(dataDir, 'ada@example.org')).link).toBeTruthy();
   });
+
+  /**
+   * **The pending creation is read one way** (issue #38, absorbing #40):
+   * `Stash.pendingOf`, by all three handlers. A founder mistypes 📧,
+   * corrects it and presses 📨; the link opens in a new tab and the birth tab
+   * stays open beside the document.
+   */
+  it('one pending creation, read one way: the address it moved to, the founder it names, the tab left behind', async () => {
+    const { base } = await boot({ trustProxy: true });
+    const send = async (body: Record<string, unknown>) => {
+      const res = await fetch(base + '/api/docs', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'cf-connecting-ip': '198.51.103.38' },
+        body: JSON.stringify({ title: 'Stash', ...body }),
+      });
+      return { status: res.status, body: await res.json() as { slug?: string; pendingId?: string;
+        devLink?: string; created?: boolean; suggestion?: string; error?: string } };
+    };
+
+    // F2: the address was corrected on the resend, and the earlier link is
+    // the one followed first — it founds where the creation now points, not
+    // where its own token was minted
+    const a = await send({ slug: 'corr-a', email: 'ada@example.org' });
+    const b = await send({ slug: 'corr-b', email: 'ada@example.org', pendingId: a.body.pendingId });
+    expect(b.status).toBe(200);
+    const early = await consume(a.body.devLink!);
+    expect(early.status).toBe(302);
+    expect(early.headers.get('location')).toBe('/d/corr-b');
+    expect((await fetch(`${base}/api/d/corr-a/view`)).status).toBe(404);
+
+    // F1: a mistyped address, corrected on the resend; the good link founds,
+    // and the typo's link — followed afterwards — seats nobody
+    const typo = await send({ slug: 'typo', email: 'a@exmaple.org' });
+    const good = await send({ slug: 'typo', email: 'a@example.org', pendingId: typo.body.pendingId });
+    const founded = await consume(good.body.devLink!);
+    expect(founded.headers.get('location')).toBe('/d/typo');
+    const stray = await consume(typo.body.devLink!);
+    expect(stray.status, 'the typo link names a founder the document does not have').toBe(410);
+    expect(stray.headers.get('set-cookie')).toBeNull();
+
+    // F4: the birth tab left open after the save — its keystrokes are told
+    // where the document is, not a 404 nothing reads
+    const one = await send({ slug: 'stale-tab', email: 'bo@example.org' });
+    await consume(one.body.devLink!);
+    const typed = await post(base, '/api/docs/pending', { pendingId: one.body.pendingId, text: 'x' });
+    expect(typed.status).toBe(409);
+    expect(await typed.json()).toMatchObject({ created: true, slug: 'stale-tab' });
+    // …and a stash nobody holds stays the plain 404
+    expect((await post(base, '/api/docs/pending', { pendingId: 'no-such', text: 'x' })).status).toBe(404);
+
+    // F3: 📨 from that tab is told the document exists — never *that address
+    // is taken* with a twin at `stale-tab-2` — and gets no token and no mail
+    const again = await send({ slug: 'stale-tab', email: 'bo@example.org', pendingId: one.body.pendingId });
+    expect(again.status).toBe(200);
+    expect(again.body).toMatchObject({ created: true, slug: 'stale-tab' });
+    expect(again.body.devLink).toBeUndefined();
+    expect(again.body.suggestion).toBeUndefined();
+  });
 });
 
 describe('the clock closes the document (SPEC §4.6, Q467)', () => {

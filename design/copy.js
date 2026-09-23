@@ -900,6 +900,10 @@ window.COPY = (function () {
       ' preferring the current text can stop a proposal.',
     quorumFloorMin: 'The minimum quorum is 2: the author and one other member.',
     titledLead: 'The document is titled ',
+    // the 📧 clause in the birth tab left open once the document exists
+    // (issue #38 F4): the text typed here is no longer sent, so it says so
+    birthMade: (slug) => 'This document now lives at docs.vote/d/' + slug +
+      '. What is typed here no longer reaches it.',
     // the card value lines (VALUE) — the label-vocabulary strings that MVAL
     // keys on stay in the page until pass 2 moves that cluster whole
     val: {

@@ -106,6 +106,20 @@ export const authTable: Route[] = [
       const givenId = typeof body.pendingId === 'string' && body.pendingId !== ''
         ? body.pendingId : null;
       const mine = givenId === null ? null : sha256Hex(givenId);
+      /* **A creation already made is told so** (issue #38 F3, #40): 📨 from
+         the birth tab left open beside the document carried a claimed
+         stash's pendingId, which the reservation no longer honours — so it
+         was told its own address was taken and offered `<slug>-2`, a twin
+         with the same Founder. The pendingId is the capability, so only its
+         holder learns this: no token, no mail, no cookie. */
+      if (mine !== null) {
+        const pend = await stash.pendingOf(mine, nowMs);
+        const made = pend?.docId === undefined ? null : ctx.store.byId(pend.docId);
+        if (made) {
+          json(res, 200, { ok: true, created: true, slug: made.cs.slug });
+          return true;
+        }
+      }
       // the founder chooses the address before the email (Q460); absent
       // (older clients, the tests' shorthand) it is suggested from the title
       let slug: string;
@@ -163,7 +177,19 @@ export const authTable: Route[] = [
       const body = await readJson(req);
       const pendingId = expectString(body, 'pendingId');
       const text = cap(expectString(body, 'text'), LIMITS.text, 'the text');
-      if (!(await ctx.stash.update(sha256Hex(pendingId), text, nowMs))) {
+      const key = sha256Hex(pendingId);
+      if (!(await ctx.stash.update(key, text, nowMs))) {
+        // **a claimed stash is not an expired one** (issue #38 F4, #40): the
+        // birth tab typing after the save met the same 404 as a dead draft,
+        // which nothing read — so the page is told where the document is,
+        // and stops sending what no longer reaches it
+        const pend = await ctx.stash.pendingOf(key, nowMs);
+        const made = pend?.docId === undefined ? null : ctx.store.byId(pend.docId);
+        if (made) {
+          json(res, 409, { error: 'that document has already been created',
+            created: true, slug: made.cs.slug });
+          return true;
+        }
         json(res, 404, { error: 'that draft has expired' });
         return true;
       }
@@ -236,24 +262,40 @@ export const authTable: Route[] = [
          the document, logging the founder in. This holds however the address
          moved in between, because the claim is on the creation rather than
          on a name. */
-      const madeId = p.stashKey === undefined ? null : await stash.claimedBy(p.stashKey, nowMs);
-      const made = madeId === null ? null : store.byId(madeId);
+      const pend = p.stashKey === undefined ? null : await stash.pendingOf(p.stashKey, nowMs);
+      const made = pend?.docId === undefined ? null : store.byId(pend.docId);
       if (made) {
+        // **…to the founder it names** (issue #38 F1): a link minted to a
+        // mistyped 📧 and followed after the corrected one founded the
+        // document was a stranger's 90-day Founder cookie. It is refused as
+        // a used link — never falling through, which would found a twin
+        const founder = made.cs.convenorRecord().email?.toLowerCase();
+        if (founder !== p.email.toLowerCase()) {
+          spentPage(ctx, r, PAGE.used, 'create');
+          return true;
+        }
         setCookie(res, made.id, auth.cookieFor(made.id, made.cs.convenorRecord().id, nowMs), ctx.httpsOn);
         redirect(res, `/d/${made.cs.slug}`);
         return true;
       }
+      /* **The address is the creation's, not the link's** (issue #38 F2):
+         each send mints its own token with the address asked for then, while
+         the resend moves the one reservation onto the address asked for now
+         — so an earlier link followed first founded at the address the
+         founder had moved off, and the one they chose never existed. The
+         stashless token keeps its own. */
+      const want = pend?.slug ?? p.slug;
       /* …and the same for a link minted before the stash carried its claim:
          the address it promised already holds a document this very founder
          made, so it forwards there rather than founding a twin beside it. */
-      const twin = store.bySlug(p.slug);
+      const twin = store.bySlug(want);
       if (twin && twin.cs.convenorRecord().email?.toLowerCase() === p.email.toLowerCase()) {
         setCookie(res, twin.id, auth.cookieFor(twin.id, twin.cs.convenorRecord().id, nowMs), ctx.httpsOn);
-        redirect(res, `/d/${p.slug}`);
+        redirect(res, `/d/${want}`);
         return true;
       }
-      const slug = store.slugTaken(p.slug)
-        ? uniqueSlug(p.title, (s) => store.slugTaken(s)) : p.slug;
+      const slug = store.slugTaken(want)
+        ? uniqueSlug(p.title, (s) => store.slugTaken(s)) : want;
       const id = `d-${randomBytes(5).toString('hex')}`;
       // on the chain (review #1, finding 9): the birth's persist must not
       // interleave with a first command's commit

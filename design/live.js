@@ -1091,11 +1091,17 @@ window.LIVE = (function () {
       // pasted text syncs against the pending creation (§9.7a v0.55)
       let deb = null;
       prose.addEventListener('input', () => {
-        if (!api.birth || !api.birth.pendingId) return;
+        if (!api.birth || !api.birth.pendingId || S.birthMade) return;
         clearTimeout(deb);
         deb = setTimeout(() => {
           api.post('/api/docs/pending',
             { pendingId: api.birth.pendingId, text: proseText() })
+            // **the answer is read** (issue #38 F4): once the creation is a
+            // document the host says where, and this tab stops sending text
+            // that no longer reaches it — the 📧 clause says so
+            .then((res) => {
+              if (res && res.created && !S.birthMade) { S.birthMade = res.slug; render(); }
+            })
             .catch(() => {}); }, 800);
       });
     }

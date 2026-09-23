@@ -1660,6 +1660,9 @@
     titleBy: 'founder', slugBy: 'founder', policyBy: '',
     mailOpen: false,
     sentAddr: '', inviteOne: '', inviteMany: '',
+    // the address the pending creation became, learned by the birth tab left
+    // open beside the document (issue #38 F3, F4) — null until the host says
+    birthMade: null,
     // (`pwKeep`, the power tabs' *Keep this* by tab key, left with Q1378: the
     // return tab is one block, the change, and the head is what stands)
     // the last refusal, against the card it belongs to: {k, m} (Q811)
@@ -6979,7 +6982,8 @@
     // has been decided, and a document does not narrate that somebody is
     // about to type.
     if (c.k === 'myemail') return !cs
-      ? (S.emailSent ? 'The Founder is checking their email for a link.' : '')
+      ? (S.birthMade ? PAGE_COPY.birthMade(S.birthMade)
+        : S.emailSent ? 'The Founder is checking their email for a link.' : '')
       : S.emailVerified ? 'Your address is verified.'
       : S.emailSent ? 'Your address is awaiting verification.'
       : 'Your address is not yet given.';
@@ -8804,6 +8808,12 @@
         ...(api.birth && api.birth.pendingId ? { pendingId: api.birth.pendingId } : {}) })
         .then((res) => {
           birthSending = false;
+          // **the creation is already a document** (issue #38 F3): 📨 from
+          // the birth tab left open beside it — no mail went, and the 📧
+          // clause says where the document now lives
+          if (res && res.created) {
+            S.birthMade = res.slug; S.emailSent = true; S.open = null; return render();
+          }
           // api.post resolves the error JSON rather than throwing, so a
           // refused send must be caught here — a card that says "Sent"
           // over a mail that never went is the one lie this step can tell

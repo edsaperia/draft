@@ -71,9 +71,25 @@ export class Stash {
     return rec.expMs >= nowMs ? rec.text : '';
   }
 
+  /**
+   * **The pending creation, read one way** (issue #38, absorbing #40): the
+   * address it now reserves, and the document it became once claimed — or
+   * null for a stash that never existed or has expired. Three handlers read
+   * this record, and each read it differently: the create link founded from
+   * its own token's snapshot rather than the address the resend had moved
+   * to, and a claimed stash counted as no stash at all, so the birth tab's
+   * keystrokes met a 404 and its 📨 was told its own address was taken.
+   */
+  async pendingOf(key: string, nowMs: number):
+  Promise<{ slug?: string; docId?: string } | null> {
+    const rec = await this.persistence.getStash(key);
+    if (rec === null || rec.expMs < nowMs) return null;
+    return { ...(rec.slug === undefined ? {} : { slug: rec.slug }),
+      ...(rec.docId === undefined ? {} : { docId: rec.docId }) };
+  }
+
   /** The document a pending creation became, or null while it is unclaimed. */
   async claimedBy(key: string, nowMs: number): Promise<string | null> {
-    const rec = await this.persistence.getStash(key);
-    return rec !== null && rec.expMs >= nowMs && rec.docId !== undefined ? rec.docId : null;
+    return (await this.pendingOf(key, nowMs))?.docId ?? null;
   }
 }

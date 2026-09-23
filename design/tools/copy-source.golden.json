@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 524
+  "entries": 525
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -137,6 +137,7 @@
   "page.begin.givenTip": "Already given up on its own card — it comes back only there",
   "page.begin.keptTip": "Kept — press to lay it down at the start",
   "page.binPutBack": "Put it back as it stands",
+  "page.birthMade": "ƒ (slug) => 'This document now lives at docs.vote/d/' + slug +\n      '. What is typed here no longer reaches it.'",
   "page.cards.admission.n": "Admissions",
   "page.cards.admission.rule": "Each member says the <b>cheapest</b> admission they would accept, and the document takes the dearest — one member who wants everyone asked keeps everyone asked.",
   "page.cards.admission.t": "How Does Somebody Join?",
