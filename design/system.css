@@ -655,6 +655,17 @@
     flex: none; display: flex; align-items: center; gap: 1px;
     padding: 1px 3px; background: var(--bg); border-radius: var(--r-sm);
   }
+  /* **a mark is a control** (Q1520): it opens its own entry's card, the
+     `+n` tally goes to the section. Buttons drawn exactly as the spans they
+     were — the user agent's padding, font, spacing and ground taken off — so
+     nothing in the run moves; `.tocmarks .more` below restores the tally's
+     own size, colour and gap. */
+  .tocmarks .tocmark, .tocmarks .more {
+    appearance: none; background: none; border: 0; padding: 0; margin: 0;
+    font: inherit; color: inherit; letter-spacing: inherit; line-height: inherit;
+    text-align: inherit; cursor: pointer;
+  }
+  .tocmarks .tocmark:focus-visible, .tocmarks .more:focus-visible { outline-offset: 1px; border-radius: 2px; }
   /* **The marks alphabet: Fluent Emoji, Flat, in colour — except ⏸ and ↻**
      (Ed, 2026-09-15, Q1360: *Fluent Flat is perfect!*, and the same afternoon
      *keep the hand-drawn ⏸ and ↻ for those two alone*). Q288 had every mark

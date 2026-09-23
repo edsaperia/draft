@@ -4866,17 +4866,32 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // happened here*, which is a different question with a different answer.
     // The `+n` tally counts what it hides, so a section of nothing but filed
     // decisions now reads as empty rather than as a row of ticks.
-    const marks = entriesForSection(n).map(markKindOf).filter((k) => !FILED_KINDS.has(k));
+    const marks = entriesForSection(n).map((g) => ({ g, k: markKindOf(g) })).filter((m) => !FILED_KINDS.has(m.k));
     if (!marks.length) return '';
     // choose by what is actionable, then draw in document order
-    const keep = new Set(marks.map((m, i) => [m, i])
+    const keep = new Set(marks.map((m, i) => [m.k, i])
       .sort((a, b) => keepRank(a[0]) - keepRank(b[0]) || a[1] - b[1])
       .slice(0, TOC_MARKS).map(([, i]) => i));
     const shown = marks.filter((_, i) => keep.has(i));
+    // **each mark is a control that opens its own card** (Q1520, Ed
+    // 2026-09-23: *clicking on the icons next to the table of contents should
+    // open those cards*) — the rail entry's own act, bound in `renderToc` —
+    // named by the entry's title and what it wants of you, so it is no longer
+    // hidden from a screen reader. **The `+n` tally goes to the section**, as
+    // the heading's own link does: what it counts is not drawn, so there is
+    // no one card for it to open.
+    const markBtn = ({ g, k }) => {
+      // escaped piece by piece, where the member-written title enters
+      const name = T.toc.markName(esc(plainLabel(g.qLabel)), esc(T.toc.markState[k] || ''));
+      return '<button type="button" class="tocmark" data-tocq="' + esc(g.id) + '" aria-label="' + name +
+        '" title="' + name + '">' + mkHtml(k) + '</button>';
+    };
+    const more = marks.length - shown.length;
     // the `.run` is the marks' own box — their ground and their width — inside
     // a zero-width span, so they queue rightwards out of the rail (Q1384)
-    return '<span class="tocmarks" aria-hidden="true"><span class="run">' + shown.map(mkHtml).join('') +
-      (marks.length > shown.length ? '<span class="more">+' + (marks.length - shown.length) + '</span>' : '') +
+    return '<span class="tocmarks"><span class="run">' + shown.map(markBtn).join('') +
+      (more > 0 ? '<button type="button" class="more" data-tocmore="' + n + '" aria-label="' + esc(T.toc.more(more)) +
+        '" title="' + esc(T.toc.more(more)) + '">+' + more + '</button>' : '') +
       '</span></span>';
   }
 
@@ -4891,19 +4906,27 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       if (!/^\d+$/.test(b.dataset.secToggle)) return;   // the host's own fold keys are its business
       b.addEventListener('click', (ev) => { ev.preventDefault(); toggleSection(+b.dataset.secToggle); });
     });
+    const toHeading = (n) => {
+      // A heading with exactly one question in it *is* that question, so
+      // clicking it opens the card rather than merely arriving nearby
+      // (Ed, 179). With several, there is nothing to disambiguate on and it
+      // stays what it was: navigation.
+      const only = entriesForSection(n);
+      if (only.length === 1 && openId !== only[0].id) return toggle(only[0].id, true);
+      // same owned animation as the queue-wire, and clear of the sticky navbar
+      travelToHeading('sec-' + n);
+    };
     tocEl.querySelectorAll('[data-toc]').forEach((a) =>
-      a.addEventListener('click', (ev) => {
-        ev.preventDefault();
-        const n = +a.dataset.toc;
-        // A heading with exactly one question in it *is* that question, so
-        // clicking it opens the card rather than merely arriving nearby
-        // (Ed, 179). With several, there is nothing to disambiguate on and it
-        // stays what it was: navigation.
-        const only = entriesForSection(n);
-        if (only.length === 1 && openId !== only[0].id) return toggle(only[0].id, true);
-        // same owned animation as the queue-wire, and clear of the sticky navbar
-        travelToHeading('sec-' + n);
-      })
+      a.addEventListener('click', (ev) => { ev.preventDefault(); toHeading(+a.dataset.toc); })
+    );
+    // **a mark opens its card, a tally goes to its section** (Q1520): the mark
+    // is the rail entry's own act — `toggle(id, true)`, which travels through
+    // `bringIntoView` — and the tally is the heading's
+    tocEl.querySelectorAll('[data-tocq]').forEach((b) =>
+      b.addEventListener('click', (ev) => { ev.preventDefault(); toggle(b.dataset.tocq, true); })
+    );
+    tocEl.querySelectorAll('[data-tocmore]').forEach((b) =>
+      b.addEventListener('click', (ev) => { ev.preventDefault(); toHeading(+b.dataset.tocmore); })
     );
     // Everything the host contributed above the charter's own headings — the
     // Constitution pile head, one entry per live constitution section, the

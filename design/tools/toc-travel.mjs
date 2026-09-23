@@ -33,6 +33,11 @@
  * border covers it — the element under the border at the run's height is the
  * run's own. Three sizes: the third is the wide step at which the rail takes
  * 300px, so the wider page is measured too.
+ *
+ * And since **Q1520** (Ed, 2026-09-23) it clicks the marks themselves: every
+ * heading's first mark, with a real pointer where the reader sees it, must
+ * open its own entry's card with the card's head on screen under the bar —
+ * the rail entry's own path — and every `+n` tally must go to its section.
  */
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
@@ -168,6 +173,81 @@ async function measureAt(browser, base, size, fails) {
         (r.bottom - r.top).toFixed(1) + 'px behind the bar');
     }
   }
+  // **A mark opens its own card** (Q1520, Ed 2026-09-23: *clicking on the
+  // icons next to the table of contents should open those cards*). Every
+  // heading's first mark, clicked with a real pointer where the reader sees
+  // it: the entry it stands for is the open card, and the card's head is on
+  // screen under the bar — the rail entry's own path (`bringIntoView`). And
+  // every `+n` tally goes to its section, as the heading's own link does.
+  const markTargets = await page.evaluate(() => [...document.querySelectorAll('#toc li')].map((li, i) => {
+    const sp = li.querySelector('.tocmarks');
+    if (!sp) return null;
+    // a control on the fixed page; on the page before Q1520 the bare picture,
+    // so the red names the mark rather than an absent class
+    const first = sp.querySelector('[data-tocq]') || sp.querySelector('.mk');
+    return { li: i, hasMore: !!sp.querySelector('.more'), text: (li.querySelector('a') || li).textContent.trim().slice(0, 30), first: !!first };
+  }).filter((t) => t && t.first));
+  let marksOpened = 0, moresTravelled = 0;
+  const settleMs = (ms) => page.waitForTimeout(ms);
+  for (const t of markTargets) {
+    for (const which of ['mark', ...(t.hasMore ? ['more'] : [])]) {
+      // shut whatever the last click opened and let its collapse re-render
+      // the rail, and only then find the mark: a rail rebuilt under a
+      // measured point is a click on its neighbour
+      await page.evaluate(() => { if (window.SESSION.openId) { try { window.SESSION.toggle(window.SESSION.openId, false); } catch { /* shut */ } } window.scrollTo(0, 0); });
+      await settleMs(450);   // the collapse, COLLAPSE_MS
+      const at = await page.evaluate(({ li, which }) => {
+        window.scrollTo(0, 0);
+        const row = document.querySelectorAll('#toc li')[li];
+        const sp = row && row.querySelector('.tocmarks');
+        if (!sp) return { gone: true };
+        const el = which === 'more' ? sp.querySelector('.more')
+          : (sp.querySelector('[data-tocq]') || sp.querySelector('.mk'));
+        // the list scrolls its own box: bring the row to the list's middle
+        const ul = document.querySelector('#toc');
+        if (ul) ul.scrollTop = Math.max(0, row.offsetTop - ul.clientHeight / 2);
+        const b = el.getBoundingClientRect();
+        const x = b.left + b.width / 2, y = b.top + b.height / 2;
+        const hit = document.elementFromPoint(x, y);
+        return { x, y, id: el.dataset.tocq || null, named: el.getAttribute('aria-label') || '',
+          hit: !!hit && (hit === el || el.contains(hit)), sec: 'sec-' + (row.querySelector('a[data-toc]') || { dataset: {} }).dataset.toc };
+      }, { li: t.li, which });
+      if (at.gone) { fails.push(label + ': ' + JSON.stringify(t.text) + '’s ' + which + ' is gone from the rail once the last card shut — Q1520'); continue; }
+      await page.mouse.click(at.x, at.y);
+      await settleMs(700);   // the travel (instant here) and the card's unroll
+      const got = await page.evaluate(({ id, sec }) => {
+        const bar = document.querySelector('.navbar').getBoundingClientRect().bottom;
+        const card = id ? [...document.querySelectorAll('.sugg')].find((c) => c.dataset.card === id) : null;
+        const head = card ? card.getBoundingClientRect().top : null;
+        const h = document.getElementById(sec);
+        return { open: window.SESSION.openId, bar, head, inner: window.innerHeight,
+          secTop: h ? h.getBoundingClientRect().top : null };
+      }, at);
+      const who = JSON.stringify(t.text) + (which === 'more' ? '’s +n' : '’s first mark');
+      if (!at.hit) { fails.push(label + ': ' + who + ' is not what the pointer lands on — Q1520'); continue; }
+      if (which === 'more') {
+        if (got.open) fails.push(label + ': ' + who + ' opened a card (' + got.open + ') — the tally goes to the section — Q1520');
+        else if (got.secTop === null || got.secTop < got.bar - 0.5 || got.secTop > got.bar + 160) {
+          fails.push(label + ': ' + who + ' left the section’s heading at ' + (got.secTop === null ? 'nowhere' : got.secTop.toFixed(1)) + ', the bar ending at ' + got.bar.toFixed(1) + ' — the tally goes to the section — Q1520');
+        } else moresTravelled++;
+        continue;
+      }
+      if (!at.id) { fails.push(label + ': ' + who + ' names no entry — a picture, not a control that opens its card — Q1520'); continue; }
+      if (!at.named) fails.push(label + ': ' + who + ' has no accessible name — Q1520');
+      if (got.open !== at.id) { fails.push(label + ': ' + who + ' left ' + (got.open || 'no card') + ' open, wanted ' + at.id + ' — Q1520'); continue; }
+      if (got.head === null || got.head < got.bar - 0.5 || got.head > got.inner - 40) {
+        fails.push(label + ': ' + who + ' opened ' + at.id + ' with its head at ' + (got.head === null ? 'nowhere' : got.head.toFixed(1)) + ', out of view (bar ' + got.bar.toFixed(1) + ', window ' + got.inner + ') — Q1520');
+        continue;
+      }
+      marksOpened++;
+    }
+  }
+  if (!markTargets.length) fails.push(label + ': no heading carries a mark — nothing of Q1520 was clicked');
+  console.log('toc-travel ' + label + ': ' + marksOpened + ' of ' + markTargets.length + ' first marks opened their card in view, ' +
+    moresTravelled + ' +n tall(ies) went to their section (Q1520)');
+  await page.evaluate(() => { if (window.SESSION.openId) { try { window.SESSION.toggle(window.SESSION.openId, false); } catch { /* shut */ } } });
+  await settleMs(450);
+
   for (const e of pageErrors) fails.push(label + ': page error — ' + e);
 
   // **The marks queue rightwards, out of the rail** (Q1384). Measured from

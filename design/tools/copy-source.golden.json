@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 565
+  "entries": 577
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -556,6 +556,18 @@
   "session.stranded.keepsCost": " — it keeps its place and the edit it already cost",
   "session.stranded.note": "The document changed here, and your proposal could not be carried across to the new wording.",
   "session.stranded.remake": "Re-make it here — write it against the clause as it now stands, and propose it again",
+  "session.toc.markName": "ƒ (label, state) => label + (state ? ' — ' + state : '')",
+  "session.toc.markState.adopted": "passed — the text changed here",
+  "session.toc.markState.deciding": "you have voted — it is still running",
+  "session.toc.markState.needs": "wants your vote",
+  "session.toc.markState.propose": "your proposal",
+  "session.toc.markState.retired": "rejected — the text stands",
+  "session.toc.markState.shifted": "the wording changed after you voted — you will be asked again",
+  "session.toc.markState.stranded": "your proposal — the text moved under it",
+  "session.toc.markState.stuck": "deadlocked — wants a new proposal",
+  "session.toc.markState.urgent": "wants your vote first",
+  "session.toc.markState.weigh": "asks which of two questions matters more",
+  "session.toc.more": "ƒ (n) => n + ' more in this section — go to it'",
   "session.verdict.approve": "approved (recorded as: proposal beats current text)",
   "session.verdict.equal": "said they matter equally",
   "session.verdict.indifferent": "indifferent",

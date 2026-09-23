@@ -626,6 +626,33 @@ const motionProbe = () => {
 };
 
 /**
+ * A19 · **a contents-rail mark is a named control** (Q1520, Ed 2026-09-23:
+ * *clicking on the icons next to the table of contents should open those
+ * cards*). Every mark beside a heading, and the `+n` tally: a button, in the
+ * tab order, under no `aria-hidden`, whose accessible name is words — the
+ * entry's title and its state — rather than nothing or the glyph alone.
+ */
+const tocMarkProbe = () => {
+  const A = window.__A11Y;
+  const out = { n: 0, bad: [] };
+  for (const sp of document.querySelectorAll('#toc .tocmarks')) {
+    const items = [...sp.querySelectorAll('.run > *')];
+    for (const el of items) {
+      out.n++;
+      const why = [];
+      const name = A.accName(el).trim();
+      if (el.closest('[aria-hidden="true"]')) why.push('under aria-hidden');
+      if (!(el.tagName === 'BUTTON' || el.getAttribute('role') === 'button')) why.push('not a button (' + el.tagName.toLowerCase() + ')');
+      if (!A.focusable(el)) why.push('not in the tab order');
+      if (!name) why.push('no accessible name');
+      else if (!/[A-Za-z]{3}/.test(name)) why.push('named only ' + JSON.stringify(name));
+      if (why.length) out.bad.push({ path: A.pathOf(el), why: why.join(', ') });
+    }
+  }
+  return out;
+};
+
+/**
  * A18 · **the wire can be seen** (Q1516 (6), 2026-09-23: the yellow wire from a
  * rail entry to its clause measured 1.63∶1 on white and 1.43∶1 on the desk).
  * SC 1.4.11 asks 3∶1 of a graphic needed to understand the page, and the wire
@@ -807,6 +834,7 @@ async function main() {
       scene.probes = await page.evaluate(PROBES, null);
       scene.focusRules = await page.evaluate(focusRules);
       scene.holds = await page.evaluate(holdProbe);
+      scene.tocMarks = await page.evaluate(tocMarkProbe);
       // A17 · what still moves when the reader has asked for stillness (Q1501's
       // sparkle is the first motion on the surface that repeats by itself):
       // the stylesheet's own reduced-motion branch, read with the media
@@ -939,6 +967,11 @@ async function main() {
         add('A17 motion', 'nothing repeats by itself under reduced motion', 'the grant sparkle runs ' + s.motion.sparkle + ' (Q1501)', '.queue button > .sparkle', s.name);
       }
     }
+    if (s.tocMarks) {
+      for (const b of s.tocMarks.bad) {
+        add('A19 marks', 'a contents-rail mark is a named control that opens its card (Q1520)', b.why, b.path, s.name);
+      }
+    }
     for (const c of s.cards || []) {
       const w = c.wire;
       if (!w || w.min >= 3) continue;
@@ -1010,6 +1043,10 @@ async function main() {
     }
   }
 
+  // A19's count, likewise: a scene with no marks has asked nothing of them
+  const marksRead = scenes.reduce((n, s) => n + (s.tocMarks ? s.tocMarks.n : 0), 0);
+  const marksBad = scenes.reduce((n, s) => n + (s.tocMarks ? s.tocMarks.bad.length : 0), 0);
+  console.log('\nA19 marks: ' + marksRead + ' contents-rail mark(s) read, ' + (marksRead - marksBad) + ' of them named controls');
   // A18's measurement, stated whether or not it found anything: a guard that
   // met no wire has not run
   const wires = scenes.flatMap((s) => (s.cards || []).map((c) => c.wire && { ...c.wire, id: s.name + '·' + c.id })).filter(Boolean);
