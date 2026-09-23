@@ -626,6 +626,60 @@ const motionProbe = () => {
 };
 
 /**
+ * A18 · **the wire can be seen** (Q1516 (6), 2026-09-23: the yellow wire from a
+ * rail entry to its clause measured 1.63∶1 on white and 1.43∶1 on the desk).
+ * SC 1.4.11 asks 3∶1 of a graphic needed to understand the page, and the wire
+ * is what says *this entry is about that clause*. Read off the drawn cable of
+ * the open card: every colour group in `#wires` composited the way the page
+ * paints it — a group's stroke at its own opacity over what lies beneath it —
+ * and the **outermost** band (the widest stroke) is what meets the ground. The
+ * grounds are the two it crosses: the sheet (`--bg`) and the desk (the body's
+ * own background). Null where the card draws no wire.
+ */
+const wireProbe = () => {
+  const wires = document.getElementById('wires');
+  if (!wires) return null;
+  // the colour passes, bottom to top; the shadows are clipped groups nested
+  // one deeper and carry no stroke of their own
+  const passes = [...wires.children].filter((g) => g.tagName.toLowerCase() === 'g' && !g.getAttribute('clip-path'));
+  if (!passes.length) return null;
+  const probe = document.createElement('span');
+  document.body.appendChild(probe);
+  const rgbOf = (css) => {
+    probe.style.color = ''; probe.style.color = css;
+    const m = getComputedStyle(probe).color.match(/[\d.]+/g) || [];
+    return m.slice(0, 3).map(Number);
+  };
+  const lin = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+  const lum = ([r, g, b]) => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+  const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return Math.round(((x + 0.05) / (y + 0.05)) * 100) / 100; };
+  const over = (top, a, under) => top.map((c, i) => Math.round(c * a + under[i] * (1 - a)));
+  const sheet = rgbOf('var(--bg)');
+  const desk = rgbOf(getComputedStyle(document.body).backgroundColor);
+  // each pass: its stroke, its opacity and the width it is drawn at
+  const bands = passes.map((g) => {
+    const p = g.querySelector('path');
+    if (!p) return null;
+    const w = parseFloat(getComputedStyle(p).strokeWidth) || 0;   // what is drawn, not what is asked
+    return { rgb: rgbOf(p.getAttribute('stroke')), a: g.getAttribute('opacity') == null ? 1 : +g.getAttribute('opacity'), w };
+  }).filter(Boolean);
+  probe.remove();
+  if (!bands.length) return null;
+  // the core is every pass at the narrowest width composited in order; the
+  // outer band is the widest pass alone, over the ground
+  const narrow = Math.min(...bands.map((b) => b.w));
+  const widest = Math.max(...bands.map((b) => b.w));
+  const at = (ground, width) => bands.filter((b) => b.w >= width).reduce((under, b) => over(b.rgb, b.a, under), ground);
+  const outerOn = (ground) => (widest > narrow ? at(ground, widest) : at(ground, narrow));
+  const core = at(sheet, narrow);
+  const onSheet = ratio(outerOn(sheet), sheet), onDesk = ratio(outerOn(desk), desk);
+  const inkPass = [...wires.children].find((g) => g.classList && g.classList.contains('ink'));
+  const inkPath = inkPass && inkPass.querySelector('path');
+  return { hue: inkPath ? inkPath.getAttribute('stroke') : null, core, outer: outerOn(sheet),
+    edged: widest > narrow, onSheet, onDesk, min: Math.min(onSheet, onDesk) };
+};
+
+/**
  * A14 · a commit that is only ever a held pointer. The page states its own
  * gesture (SURFACE §7.2's switch, read through `SESSION.holdMs` and the
  * `.holding` machinery), so this asks the page rather than guessing: a control
@@ -783,7 +837,7 @@ async function main() {
           const sel = '.sugg[data-card="' + id.replace(/"/g, '\\"') + '"]';
           const has = await page.evaluate((q) => !!document.querySelector(q), sel);
           if (!has) { await page.evaluate((cid) => { try { window.SESSION.toggle(cid, false); } catch { /* shut */ } }, id); continue; }
-          const card = { id, probes: await page.evaluate(PROBES, sel) };
+          const card = { id, probes: await page.evaluate(PROBES, sel), wire: await page.evaluate(wireProbe) };
           if (axe) card.axe = await runAxe(page, sel);
           scene.cards.push(card);
           await page.evaluate((cid) => { try { window.SESSION.toggle(cid, false); } catch { /* shut */ } }, id);
@@ -885,6 +939,12 @@ async function main() {
         add('A17 motion', 'nothing repeats by itself under reduced motion', 'the grant sparkle runs ' + s.motion.sparkle + ' (Q1501)', '.queue button > .sparkle', s.name);
       }
     }
+    for (const c of s.cards || []) {
+      const w = c.wire;
+      if (!w || w.min >= 3) continue;
+      add('A18 wire', 'the wire from a rail entry to its clause stands 3∶1 off the sheet and the desk it crosses (SC 1.4.11)',
+        'a ' + w.hue + ' wire under 3∶1', c.id + ' ' + w.onSheet + '∶1 on the sheet, ' + w.onDesk + '∶1 on the desk', s.name + '·' + c.id);
+    }
     if (s.holds && s.holds.holders.length) {
       for (const h of s.holds.holders.filter((h) => !h.focusable)) {
         add('A14 hold', 'a commit made by holding has a key that does the same', 'a ' + (s.holds.holdMs || '?') + 'ms hold, not focusable', h.path, s.name);
@@ -949,6 +1009,15 @@ async function main() {
       if (r.where.length) console.log('           at: ' + r.where.slice(0, 3).join(' | '));
     }
   }
+
+  // A18's measurement, stated whether or not it found anything: a guard that
+  // met no wire has not run
+  const wires = scenes.flatMap((s) => (s.cards || []).map((c) => c.wire && { ...c.wire, id: s.name + '·' + c.id })).filter(Boolean);
+  if (wires.length) {
+    const low = wires.reduce((a, b) => (b.min < a.min ? b : a));
+    console.log('\nA18 wires: ' + wires.length + ' measured · lowest ' + low.onSheet + '∶1 on the sheet, ' +
+      low.onDesk + '∶1 on the desk (' + low.hue + ', ' + low.id + ')' + (low.edged ? ' · edged' : ''));
+  } else console.log('\nA18 wires: none measured — no card drew a wire');
 
   if (errors.length) {
     console.log('\nerrors:');

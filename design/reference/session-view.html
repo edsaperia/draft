@@ -1,4 +1,4 @@
-<html lang="en">
+<html lang="en" class="desk">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <!-- **The root element above, for its `lang` alone** (Q1394 (a), Ed
@@ -11,7 +11,9 @@
      A bare `<html>` start tag changes no rendered byte: head and body are
      still synthesised around exactly the same children, which is why the tag
      stands first and this note stands under it — the charset declaration has
-     to stay inside the document's first 1024 bytes. -->
+     to stay inside the document's first 1024 bytes. Its `desk` class is the
+     paper on a desk (Q1516 (6); system.css, paper.js), which the feed
+     page, loading the same stylesheet, does not wear. -->
 
 <title>docs.vote</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪶</text></svg>">
@@ -552,6 +554,10 @@
 <!-- and the composer (Q1352 (i)), made the same way and for the same reason -->
 <script src="composer.js"></script>
 <script src="session.js"></script>
+<!-- paper on a desk (Q1516 (6)): the two sheets under the column, laid by
+     themselves once the page has parsed; after session.js, whose NARROW_Q
+     it reads -->
+<script src="paper.js"></script>
 <!-- the inline script, split (Q1352): the stranger's door -->
 <script src="door.js"></script>
 <!-- 🍾 and 🥂 -->

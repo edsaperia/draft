@@ -63,6 +63,11 @@ const STRICT = process.argv.includes('--strict');
 const VIEWPORT = { width: +arg('width', 1600), height: +arg('height', 1000) };
 const OUT = arg('out', join(DESIGN, 'tools', 'card-audit.json'));
 const BASELINE = arg('baseline', null);
+/** an extra query on every page the audit opens — `--query=a=1` audits the
+ *  page as that switch draws it (kept from the paper mockup, Q1516 (6));
+ *  absent, every address is unchanged */
+const EXTRA_Q = arg('query', '');
+const withQuery = (u) => (EXTRA_Q ? u + (u.includes('?') ? '&' : '?') + EXTRA_Q : u);
 /** where to keep the specimens the card sheet is built from; off when absent */
 const SPECIMENS = arg('specimens', null);
 /** how big a box has to be before a specimen flattens it; 0 keeps the default */
@@ -1455,7 +1460,7 @@ async function birth(page) {
  * question, its helper text and its dark commit can be read.
  */
 async function walkFounding(page, base, cards, errors, opts = {}) {
-  await page.goto(base + '/session-view.html');
+  await page.goto(withQuery(base + '/session-view.html'));
   await page.waitForSelector('#rail .qitem', { timeout: 20_000 });
   await page.evaluate(() => window.scrollTo(0, 0));
   await wait(page, 300);
@@ -1559,7 +1564,7 @@ const walkDelegated = (page, base, cards, errors) =>
  * power tabs live. ⏩ is the stagehand that gets there in one press.
  */
 async function walkSettled(page, base, cards, errors, seat, switches, piles) {
-  await page.goto(base + '/session-view.html');
+  await page.goto(withQuery(base + '/session-view.html'));
   await page.waitForSelector('#rail .qitem', { timeout: 20_000 });
   await page.evaluate(() => window.scrollTo(0, 0));
   await wait(page, 300);
@@ -1932,18 +1937,25 @@ async function walkRail(page, rails, walk) {
   // drawn fill of every unfiled decided mark on the page — rail, gutter,
   // contents rail, card heads — read against the palette's own tokens, each
   // resolved to rgb through a probe element rather than written down here.
+  // The token is read **where the mark stands**: the desk gives the rails a
+  // darker `--muted` for AA on grey (system.css, `--desk-muted`,
+  // `--slip-muted`; Q1516 (6)), and a ✖ there is painted that local grey.
   const decided = await page.evaluate(() => {
     const probe = document.createElement('span');
     document.body.appendChild(probe);
-    const tok = (name) => { probe.style.color = 'var(' + name + ')'; return getComputedStyle(probe).color; };
-    const want = { adopted: tok('--ok'), retired: tok('--muted') };
-    probe.remove();
-    const seen = {};
+    const TOKEN = { adopted: '--ok', retired: '--muted' };
+    const resolve = (raw) => { probe.style.color = ''; probe.style.color = raw; return getComputedStyle(probe).color; };
+    const want = { adopted: resolve('var(--ok)'), retired: resolve('var(--muted)') };
+    const seen = {}, wanted = {};
     for (const kind of ['adopted', 'retired']) {
-      seen[kind] = [...document.querySelectorAll('.mk-' + kind + ' svg path')]
-        .map((p) => getComputedStyle(p).fill);
+      seen[kind] = []; wanted[kind] = [];
+      for (const mk of document.querySelectorAll('.mk-' + kind)) {
+        const here = resolve(getComputedStyle(mk).getPropertyValue(TOKEN[kind]).trim());
+        for (const p of mk.querySelectorAll('svg path')) { seen[kind].push(getComputedStyle(p).fill); wanted[kind].push(here); }
+      }
     }
-    return { want, seen };
+    probe.remove();
+    return { want, seen, wanted };
   });
   const beneath = await page.evaluate(() =>
     Object.fromEntries(window.SESSION.SUGGS.filter((s) => s.beneath).map((s) => [s.id, s.beneath])));
@@ -1978,11 +1990,12 @@ function railRules(rails) {
       const d = r.decided;
       if (!d) continue;
       const fills = d.seen[kind] || [];
+      const wants = (d.wanted && d.wanted[kind]) || fills.map(() => d.want[kind]);
       any += fills.length;
-      const wrong = [...new Set(fills.filter((f) => f !== d.want[kind]))];
-      if (wrong.length) {
-        file('R3', R3_SAID[kind], fills.filter((f) => f !== d.want[kind]).length + ' of ' + fills.length
-          + ' .mk-' + kind + ' path(s) fill ' + wrong.join(' / ') + ', wanted ' + d.want[kind], r.walk);
+      const off = fills.map((f, i) => [f, wants[i]]).filter(([f, w]) => f !== w);
+      if (off.length) {
+        file('R3', R3_SAID[kind], off.length + ' of ' + fills.length + ' .mk-' + kind + ' path(s) fill '
+          + [...new Set(off.map(([f, w]) => f + ' (wanted ' + w + ')'))].join(' / '), r.walk);
       }
     }
     if (!any) file('R3', R3_SAID[kind].replace(/ \(Q1517.*$/, '') + ' — measured at all (Q1517)',
@@ -2097,7 +2110,7 @@ function doorRules(doors) {
 }
 
 async function walkCharter(page, base, cards, errors, { closed, doors, rails } = {}) {
-  await page.goto(base + '/session-view.html?fixture=session' + (closed ? '&closed=1&band=1' : ''));
+  await page.goto(withQuery(base + '/session-view.html?fixture=session' + (closed ? '&closed=1&band=1' : '')));
   await page.waitForFunction(() => !!(window.SESSION && window.SESSION.SUGGS.length && document.querySelector('.qitem')),
     null, { timeout: 20_000 });
   await page.evaluate(() => { window.scrollTo(0, 0); window.SESSION.smoothScrollBy = (dy, done) => { window.scrollBy(0, dy); if (done) done(); }; });

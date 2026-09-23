@@ -2861,8 +2861,13 @@
   #wires .ink { transition: opacity var(--wash-ms) ease; }
   #wires .ink path { transition: stroke var(--wash-ms) ease; }
   #wires .ink .cap { transition: fill var(--wash-ms) ease; }
+  /* **the edge** (Q1516 (6)): one pixel either side of the cable, in its own
+     hue darkened to stand 3∶1 off the sheet and the desk (`wireEdge`,
+     session.js), fading with it */
+  #wires .edge path { stroke-width: 8; transition: stroke var(--wash-ms) ease; }
+  #wires .edge .cap { transition: fill var(--wash-ms) ease; }
   @media (prefers-reduced-motion: reduce) {
-    #wires .ink, #wires .ink path, #wires .ink .cap { transition: none; }
+    #wires .ink, #wires .ink path, #wires .ink .cap, #wires .edge path, #wires .edge .cap { transition: none; }
   }
   /* NARROW_Q */
   @media (max-width: 900px) { #wires { display: none; } }
@@ -3062,3 +3067,152 @@
   /* a held commit: the pen is on its way from the wallet, one second's worth
      (Q445c — the gravity of an act is the length of its hold) */
   .btn.emojibtn.penholding { transform: translateY(1px); }
+
+  /* ==========================================================================
+     **Paper on a desk** (Q1516 (6), Ed 2026-09-23: *a page ends and there's a
+     shadow and then a new page begins with the text on it* — the page break
+     between the Rules and the Text, which implies the document as paper on a
+     desk; mocked up behind `?paper=1` on branch `paper-mockup`, three rounds,
+     *This looks fantastic*, then built for everyone). The session-view's root
+     carries `desk` (session-view.html's `<html>`); the feed, which loads this
+     file too and is dark for a projector, does not. The two sheets are drawn
+     by `design/paper.js`; these rules are the desk, the break, and what the
+     desk asks of everything that stands on it.
+
+     The decisions, each measured on the Hollow Oak fixture:
+
+     - **The desk is #EEF0F2**, a neutral grey one step under Bootstrap's
+       gray-200 (#E9ECEF). The sheet against it is 1.14∶1 — paper is told from
+       the desk by the shadow, as a card is told from the sheet, never by an
+       outline — and dark enough that the rails read as a gutter at a glance.
+     - **The sheet is the column's own box**, 860px at 1600, unchanged, so the
+       70ch measure and every card's geometry stay where they are. Radius
+       `--r-lg`, the token already assigned to *the document*.
+     - **The sheet lies at `--shadow-sm`**, the lowest step: a rail entry is a
+       slip at the same height, an open card lifts two steps above the paper
+       to `--shadow-xl`, so *open is said by depth* keeps its whole range.
+     - **The gap is `--s5`, 24px**, the same as the layout's column gap, so the
+       desk is one width between every pair of things lying on it; at narrow
+       `--s4`, 16px, where vertical room is dearer.
+     - **A sheet's top and foot margin is `--sheet-margin`, 80px** (Ed's
+       review: *the top and bottom margins seem too small*): a printed page's
+       margin, from the sheet's edge to the first line's box and from the last
+       line's box to the edge, the same at all four places — the top of the
+       Rules, the Rules' foot at the break, the top of the Text, and the Text's
+       end. At narrow 48px, two `--s5`. Each site subtracts what its first or
+       last line already carries so the measured margin is the token.
+     - **The Text sheet ends at its last line, not at the runway.** The
+       column's 95vh of scroll runway (*the runway is content*) lies on the
+       desk: it is room to scroll, not paper. In edit mode the card's foot is
+       the page's foot (Q1292), so there the sheet runs to the column's end.
+     - **The sheet's left edge is trimmed in by `--sheet-trim`, 88px** (Ed's
+       review: *the left margin seems too large*): the column's 132px left
+       padding is the clause-tab gutter, which was all paper. Drawn 88px in,
+       the text stands as far from the sheet's left edge as from its right
+       (84px at 1600), and the tabs keep `--s5` of paper to their left (16px
+       for the open tab, which grows 8px leftward — M12). Only the drawn sheet
+       moves; the column, its tabs and its cards stay where they were. At
+       narrow the sheet runs to the glass and no trim applies.
+     ========================================================================== */
+  html.desk {
+    --desk: #EEF0F2;
+    /* --muted on the desk: #6B747C is 4.16∶1 on #EEF0F2, under AA's 4.5; this
+       is 5.03∶1 there. Only text standing on the desk takes it — on a sheet
+       --muted is its own value, 4.76∶1 on white. */
+    --desk-muted: #5F676F;
+    /* --muted on a slip: the rail's wash is doubled on the desk (session.js,
+       QUEUE_WASH_K), and #6B747C on a full green bar — a decided entry, 0.32
+       over a 0.12 ground — is 2.76∶1. Bootstrap's gray-700 is 4.74∶1 there
+       and 5.26∶1 on the flame's 0.88 yellow; 8.2∶1 on white. */
+    --slip-muted: #495057;
+    --desk-gap: var(--s5);
+    --sheet-margin: 80px;
+    --sheet-trim: 88px;
+    --sheet-shadow: var(--shadow-sm);
+  }
+  html.desk body { background: var(--desk); }
+  /* the top margin: the first line's box sits --s4 below the padding's edge
+     (the title's own leading), so the padding is the margin less that */
+  html.desk .doc { padding-top: calc(var(--sheet-margin) - var(--s4)); }
+
+  /* ---- the sheets (drawn by paper.js on the body, behind everything) ----- */
+  html.desk .desksheets { position: static; }
+  html.desk .sheet {
+    position: absolute; z-index: -1; pointer-events: none;
+    background: var(--bg); border-radius: var(--r-lg); box-shadow: var(--sheet-shadow);
+  }
+  /* the column is no longer the paper: its ground and its outline go, the
+     border keeping its width so nothing inside moves by a pixel */
+  html.desk .doc { background: transparent; border-color: transparent; }
+
+  /* ---- the break ------------------------------------------------------------ */
+  /* The one hairline in the document (setup.css, `.cpara.docsep`) becomes the
+     desk between the sheets: no rule, a block the gap tall, a sheet's margin
+     above and below it. paper.js ends the Rules sheet at this block's top and
+     starts the Text sheet at its bottom. Above it the Rules' last line box
+     already trails --s2 of the pile's own spacing, so the margin takes it off. */
+  html.desk .cpara.docsep {
+    border-top: 0; height: var(--desk-gap); min-height: 0;
+    margin: calc(var(--sheet-margin) - var(--s2)) 0 var(--sheet-margin);
+  }
+  /* the fixture's charter repeats the title as its first line (session.js's
+     `line.t === 'title'`), which on a page with the band shown stands straight
+     under `#dochead`; on the Text sheet it read as the title three times. A
+     fixture artefact, collapsed only while the band is shown — to zero height
+     rather than `display: none`, so the column's first element keeps a rect
+     for anything measured against it (`rideLine`, edit-mode.js). */
+  html.desk .doc:not(.fixsession) #charter > .prose > .doctitle {
+    height: 0; margin: 0; padding: 0; overflow: hidden; visibility: hidden;
+  }
+
+  /* ---- the rails on the desk ------------------------------------------------ */
+  /* Text standing on the desk takes the darker grey (AA, above). */
+  html.desk .layout > .toc,
+  html.desk .layout > .queue { --muted: var(--desk-muted); }
+  html.desk .layout > .queue button { --muted: var(--slip-muted); }
+  /* the current heading and the hovered one were a --light pill on white; on
+     the desk they are a white slip, the paper's own colour */
+  html.desk .toc a:hover, html.desk .toc a.current { background: var(--bg); }
+  /* the marks' ground was *the page's own colour* so a run covered the
+     document's border (M10); a run now crosses the desk and can reach the
+     sheet's edge, so its ground is paper — a small white tag riding the edge */
+  html.desk .tocmarks .run { background: var(--bg); box-shadow: var(--shadow-sm); }
+  /* **the break in the contents rail**: the Text's heading is the first entry
+     of the second sheet, so it stands off the Rules by the desk gap, under a
+     sheet's edge drawn as a hairline with the sheet's own shadow */
+  html.desk .toc li:has(> a[href="#dochead"]) {
+    margin-top: calc(var(--desk-gap) + var(--s2)); position: relative;
+  }
+  html.desk .toc li:has(> a[href="#dochead"])::before {
+    content: ''; position: absolute; left: 0; right: var(--s4); top: calc(-1 * var(--desk-gap) / 2 - var(--s1));
+    height: 0; border-top: 1px solid var(--border); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.10);
+  }
+
+  /* A rail entry's wash is a tint laid over what is under it, and what was
+     under it was the white page. On the desk it would grey every entry, so the
+     entry takes its own white ground and the wash rides on `::after` beneath
+     the fill bar and the text — the task drawer's technique (NARROW_Q, above),
+     so the fade over --wash-ms survives. Every entry is a slip of paper at the
+     sheet's own height, `--shadow-sm`; the open one lifts to `--shadow-xl`,
+     three steps up. The wash is doubled where it is written (session.js,
+     `QUEUE_WASH_K`), not here, so the wire leaving an entry keeps matching the
+     entry's composited colour. The captions take `--slip-muted` (above). */
+  html.desk .queue button:not(.sealdot) { background-color: var(--bg); isolation: isolate; }
+  html.desk .queue button:not(.sealdot)::after {
+    content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+    background-color: var(--washbg, transparent); transition: background-color var(--wash-ms) ease;
+  }
+  html.desk .queue .sealdot {
+    background: linear-gradient(rgba(var(--lc-closed), 0.16), rgba(var(--lc-closed), 0.16)), var(--bg);
+  }
+
+  /* ---- narrow: the sheets run to the glass ----------------------------------- */
+  /* NARROW_Q */
+  @media (max-width: 900px) {
+    html.desk { --desk-gap: var(--s4); --sheet-margin: calc(2 * var(--s5)); --sheet-trim: 0px; }
+    html.desk .sheet { border-radius: 0; }
+    /* the contents drawer is a gutter too; it slides in on the desk's colour */
+    html.desk .layout > .toc { background: var(--desk); }
+    /* in the drawer there is no sheet edge for a run to ride, so no tag */
+    html.desk .tocmarks .run { background: transparent; box-shadow: none; }
+  }

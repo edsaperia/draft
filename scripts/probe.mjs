@@ -81,6 +81,8 @@ const FROZEN = [
   'wallets.js',
   'live.js',
   'session.js',
+  // paper on a desk (Q1516 (6)): the sheets under the column
+  'paper.js',
   // session.js's own split (Q1352 (h)): the page loads it for session.js,
   // which makes it as it is evaluated
   'flights.js',
