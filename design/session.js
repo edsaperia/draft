@@ -1639,52 +1639,15 @@
       : (el.dataset && el.dataset.washkey ? el : el.querySelector('[data-washkey]'));
     const raw = host ? getComputedStyle(host).getPropertyValue('--washcol').trim() : '';
     const m = raw.match(/^rgba\((.+?),\s*([\d.]+)\s*\)$/);
-    if (!m) {
-      const rgb = 'rgb(var(--lc-' + ((g && anchHue(g)) || 'closed') + '))';
-      return { rgb, a: 0.16, edge: wireEdge(rgb) };
-    }
+    if (!m) return { rgb: 'rgb(var(--lc-' + ((g && anchHue(g)) || 'closed') + '))', a: 0.16 };
     const a = +m[2];
     const ga = groundAOf(host.dataset.washkey);   // a rail entry's doubled ground, else GROUND_A
-    return { rgb: 'rgb(' + m[1] + ')', a: +(a + ga * (1 - a)).toFixed(3), edge: wireEdge('rgb(' + m[1] + ')') };
+    return { rgb: 'rgb(' + m[1] + ')', a: +(a + ga * (1 - a)).toFixed(3) };
   };
-  // **The wire's edge: its own hue, dark enough to be seen** (Q1516 (6), Ed
-  // 2026-09-23: *the faint yellow wire's contrast fixed alongside* the paper).
-  // The cable is the entry's composited colour, and an entry is a pale wash,
-  // so every cable was a pale line: measured on the fixture, a quiet yellow
-  // 1.13∶1 on the sheet and 1∶1 on the desk, the grey 1.41∶1, even the red
-  // 2.16∶1 — against the 3∶1 SC 1.4.11 asks of a graphic you need to read the
-  // page. Darkening the cable would break the rule it has kept since
-  // 2026-08-17, *identical as a colour* to the card it leaves. So the cable
-  // keeps its colour and gains an **edge**: one pixel either side
-  // (`WIRE_EDGE_W`, the cap one pixel wider) in the entry's own hue at full
-  // strength, taken toward black only as far as it must go to stand 3∶1 off
-  // both grounds it crosses — the sheet (`--bg`) and the desk (the body's own
-  // ground). One rule for every hue, as the cable's own mix is: a hue already
-  // dark enough (the red) is not darkened at all. Guard: `a11y-audit`'s A18.
-  const WIRE_EDGE_W = 8;   // system.css's `#wires .edge path` states it too, the stylesheet winning
-  const WIRE_EDGE_R = 8;
-  const edgeCache = new Map();
-  const wireEdge = (css) => {
-    const desk = getComputedStyle(document.body).backgroundColor;
-    const key = css + '|' + desk;
-    if (edgeCache.has(key)) return edgeCache.get(key);
-    const probe = document.createElement('span');
-    document.body.appendChild(probe);
-    const rgbOf = (c) => { probe.style.color = c; return (getComputedStyle(probe).color.match(/[\d.]+/g) || []).slice(0, 3).map(Number); };
-    const hue = rgbOf(css), grounds = [rgbOf('var(--bg)'), rgbOf(desk)];
-    probe.remove();
-    const lin = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
-    const lum = ([r, g2, b]) => 0.2126 * lin(r) + 0.7152 * lin(g2) + 0.0722 * lin(b);
-    const ratio = (p, q) => { const [x, y] = [lum(p), lum(q)].sort((s, t) => t - s); return (x + 0.05) / (y + 0.05); };
-    let edge = hue;
-    for (let k = 0; k <= 1; k += 0.02) {
-      edge = hue.map((c) => Math.round(c * (1 - k)));
-      if (grounds.every((gr) => gr.length !== 3 || ratio(edge, gr) >= 3)) break;
-    }
-    const out = hue.length === 3 ? 'rgb(' + edge.join(', ') + ')' : css;
-    edgeCache.set(key, out);
-    return out;
-  };
+  // **The cable has no edge** (Ed, 2026-09-24: *the cables … have a border
+  // now … can you remove it?*). Q1516 (6) gave it a 1px darker rim to stand
+  // 3∶1 off the sheet and the desk; the rim read as a border and went. The
+  // cable is its entry's colour and nothing else, as it was before.
   const WIRE_UNDER = '#FFFFFF';
   const SVGNS = 'http://www.w3.org/2000/svg';
 
@@ -1766,7 +1729,7 @@
     const lines = [], dots = [];
     const dot = (x, y) => dots.push([x, y]);
     const line = (d) => lines.push(d);
-    const shapes = (g, col, w, r = 7) => {
+    const shapes = (g, col, w) => {
       for (const d of lines) {
         const p = document.createElementNS(SVGNS, 'path');
         p.setAttribute('d', d);
@@ -1777,16 +1740,15 @@
       for (const [x, y] of dots) {
         const c = document.createElementNS(SVGNS, 'circle');
         c.setAttribute('class', 'cap');
-        c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', r);
+        c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', 7);
         c.setAttribute('fill', col);
         g.appendChild(c);
       }
     };
-    const paint = (col, alpha, w, r, cls) => {
+    const paint = (col, alpha) => {
       const g = document.createElementNS(SVGNS, 'g');
       if (alpha != null) { g.setAttribute('class', 'ink'); g.setAttribute('opacity', alpha); }
-      if (cls) g.setAttribute('class', cls);
-      shapes(g, col, w, r);
+      shapes(g, col);
       wiresEl.appendChild(g);
       return g;
     };
@@ -1961,6 +1923,7 @@
     clipHoles();
     shadow(1, 1, 0.13);
     shadow(3, 3, 0.20);
+    paint(WIRE_UNDER, null);
     // **A cable changes colour when its card does** (Ed, 2026-08-17), and by
     // the same means the washes do: the wire is rebuilt from scratch on every
     // draw, so a CSS transition has nothing to run from unless the new shapes
@@ -1968,16 +1931,7 @@
     // forced reflow. Keyed by the judgment, so a wire that is simply redrawn at
     // a new scroll position does not re-run the fade.
     const from = prevWire.get(id) || color;
-    // the edge first, a pixel wider all round (`wireEdge`, Q1516 (6)), then
-    // the white the cable composites over, then the cable itself
-    const edge = paint(from.edge || color.edge, null, WIRE_EDGE_W, WIRE_EDGE_R, 'edge');
-    paint(WIRE_UNDER, null);
     const ink = paint(from.rgb, from.a);
-    if (from.edge !== color.edge) {
-      void wiresEl.getBoundingClientRect();
-      edge.querySelectorAll('path').forEach((p) => p.setAttribute('stroke', color.edge));
-      edge.querySelectorAll('circle').forEach((c) => c.setAttribute('fill', color.edge));
-    }
     if (from.rgb !== color.rgb || from.a !== color.a) {
       void wiresEl.getBoundingClientRect();
       ink.setAttribute('opacity', color.a);

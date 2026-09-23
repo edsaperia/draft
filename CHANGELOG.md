@@ -6,6 +6,11 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-09-24, later: the wire's border removed
+
+### Changed
+- **The line joining a task to its place in the document has no border again.** The previous deploy gave it a darker outline so it would stand out more against the page; it read as a border, and it is gone.
+
 ## 2026-09-24: the fix batch after the first real document
 
 Twenty high-priority issues (filed after a review of every user flow and after the first real document), three accessibility defects and a round of Founder feedback, all fixed in one deploy. Most of it makes the page tell you the truth, faster, when something goes wrong.
