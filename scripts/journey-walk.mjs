@@ -5056,6 +5056,33 @@ if (caret) {
           // derived preference meets the moment anybody measures the leader at
           // all. *Keep* holds the race open for the reason a room actually
           // holds one open: it prefers the text it has (R-114's asymmetry).
+          /* **A vote the host refused is not filed** (issue #37). The press
+           * files the pair ⏳ before the answer, and nothing took it back:
+           * the entry read *still deciding* and reopened with the verdict
+           * pressed while the server held no judgment and still asked for
+           * one — until a reload. The wire answers this judgment with a 500;
+           * two polls later the entry must be asking again. Red on the
+           * pre-#37 page at *deciding*. */
+          expectRefused.push(/"cmd":"judge-race"/);
+          const refuse = (r) => ((r.request().postData() || '').includes('"judge-race"')
+            ? r.fulfill({ status: 500, contentType: 'application/json', body: '{"error":"refused by the walk"}' })
+            : r.continue());
+          await page.route('**/api/d/*/cmd', refuse);
+          let r0 = null;
+          try {
+            const jr = await judge(q1.id, 'keep');
+            await T(9200);                          // two polls
+            const er = byId(await entries(), q1.id);
+            r0 = { judged: jr, mark: er && er.mark, cap: er && er.cap };
+          } finally {
+            await page.unroute('**/api/d/*/cmd', refuse);
+            expectRefused.length = 0;
+          }
+          const okR0 = !!r0 && r0.judged && (r0.mark === 'needs' || r0.mark === 'urgent');
+          say('refused    · ' + (okR0 ? 'a judgment the host refused leaves its entry asking (' + r0.mark + '), not filed ⏳'
+            : 'FAIL: ' + JSON.stringify(r0)));
+          if (!okR0) stuck.push('a refused judgment is not filed (#37)');
+          await openEntry(q1.id);                   // back where the step below expects to be
           // 3 — judged: that entry is ⏳ now, and the other pair's entry is lit
           // beside it — its own, not the same one re-lit
           const j1 = await judge(q1.id, 'keep');
