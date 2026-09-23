@@ -38,6 +38,13 @@ get (CLAUDE.md, V1 decisions: *no sim backdoor*).
 5. **Purpose: a room to watch.** Rooms of people-like members with a
    one-line *why* per act in the harness log; not a CI guard (a model is not
    deterministic).
+6. **Bots play only while a human is on the page** (Ed, 2026-09-23 ~10:50:
+   *we should have the bots not run if no human is active on the page*).
+   Active means **a non-bot member's page, in a visible tab, has polled
+   within about two minutes**. With nobody there every smart bot idles —
+   no model call, no command — and resumes within one cycle of somebody
+   arriving. The rule is the smart bots' alone; `room-bots` is unchanged (Ed:
+   *I expect we will mostly use the smart bots for testing from now on*).
 
 ## Stage 1 — the prompt at the invite (page + server; needs a deploy)
 
@@ -57,10 +64,23 @@ get (CLAUDE.md, V1 decisions: *no sim backdoor*).
   invitation itself is refused as a duplicate (its ordinary refusal stands on
   the page) — the latest record wins. That is how Ed changes a personality
   mid-room.
+- **Human presence** (ruling 6): the page's view poll adds `vis=1` when
+  `document.visibilityState === 'visible'`; the host keeps, **in memory
+  only** — never the log, never the store — the last visible poll per seat,
+  and answers `GET /api/bots/present?slug=<slug>` under `DRAFT_BOT_KEY`
+  (beside the bot outbox, outside the `DEV:` label, 404 unset, 401 wrong)
+  with one boolean: *a member whose address is not a bot address polled
+  visibly within 120 s*. Never who, never a count; no member view changes.
+  Presence's hourly `SEEN_EVERY_MS` stamp is untouched — this is a separate,
+  volatile fact. A host restart forgets it, which reads as *nobody here*
+  until the next poll, four seconds later.
 - **Guards**: `bots.test.ts` — a bot address with a prompt files a prompt
   record; a non-bot address with `botPrompt` is refused; the prompt is in no
   view, no log entry, no feed entry; a second prompt for a seated bot files
-  and supersedes. `invite-walk` unchanged and green.
+  and supersedes; `/api/bots/present` reads false with no poll, true after a
+  visible poll from a non-bot seat, false after a bot seat's poll alone,
+  false after a hidden tab's poll, false again past 120 s, and refuses a
+  wrong key. `invite-walk` unchanged and green.
 
 ## Stage 2 — the harness (`scripts/smart-bots.mjs`; local only)
 
@@ -72,6 +92,10 @@ move what both need into `scripts/lib/` rather than copying.
 
 Each bot, on its own jittered clock:
 
+0. **Asks whether a human is here** (`/api/bots/present`, ruling 6) — once
+   per cycle for the whole harness, not per bot. No: the whole room idles,
+   the log says so once (*waiting for a person*), and nothing else is read
+   or called until the answer is yes.
 1. **Reads its seat's view** and builds a compact brief: the document text
    with line numbers; the pairs and questions dealt to *this* seat (the race
    cards, motion ballots, answer cards); what it has proposed and their
