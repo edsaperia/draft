@@ -283,6 +283,9 @@ case "$GROUP" in
     # the spectator feed's scroll hold (#87) — no server, design/feed.html
     # from disk
     walk "feed-scroll-hold" node scripts/repro/feed-scroll-hold.mjs
+    # the red Reconnecting… bar (Q1505): offline, a 502, a hung poll, the
+    # pause keeping its modal, and a vote refused at the press
+    walk "reconnecting" node scripts/repro/reconnecting.mjs "$BASE"
     ;;
 esac
 
