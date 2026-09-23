@@ -572,6 +572,14 @@ window.COPY = (function () {
         : 'It should be back in about ' + minutes + ' minutes.'),
       pausedOver: 'Nearly there — hold on a moment longer.',
       stalled: 'This document cannot save changes at the moment. Nothing you do here will be kept.',
+      // **the page has lost the host** (Q1505, Ed 2026-09-23: warn before
+      // anybody acts, never after): a red bar along the top, the page still
+      // readable, the cause added only where the page knows it
+      reconnecting: 'Reconnecting…',
+      offline: 'Your device is offline.',
+      notAnswering: 'docs.vote is not answering.',
+      // every commit's tooltip while the bar stands
+      held: 'Waiting to reconnect — what you have typed is kept',
     },
     // the wire did not answer, or answered with a status and no sentence
     noAnswer: (status) => (status ? 'the server answered ' + status : 'the server could not be reached'),
