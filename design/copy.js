@@ -800,6 +800,10 @@ window.COPY = (function () {
       departedRemoved: (who) => who + ' has been removed',
       departedLeft: (who) => who + ' has left',
       passedLead: 'Passed: ',
+      // a change the Founder's ✒️ made (the pen route) was never put to
+      // anybody, so it did not *pass* (Q1514, Ed 2026-09-23): the news card's
+      // own phrasing, naming the office, never the person
+      founderChangedLead: 'Changed by the Founder: ',
       rejectedLead: 'Rejected: ',
       // the failed-motion news card's own title (SURFACE E41; Q1447). The
       // record's `rejectedLead` states the outcome to the room; this one is

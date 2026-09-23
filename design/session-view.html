@@ -3241,7 +3241,11 @@
     // whatever reads one, and the mark is the outcome's.
     RECCACHE[k].carried = rec.status === 'carried';
     RECCACHE[k].g = RECCACHE[k].carried ? '✔' : '✖';
-    RECCACHE[k].t = (rec.status === 'carried' ? PAGE_COPY.synth.passedLead : PAGE_COPY.synth.rejectedLead) + motionDisplay(rec);
+    // a ✒️ decree stood without a vote, so it is filed as the Founder's change,
+    // never as *Passed* (Q1514) — the route the news card already reads
+    RECCACHE[k].t = (rec.status !== 'carried' ? PAGE_COPY.synth.rejectedLead
+      : rec.route === 'pen' ? PAGE_COPY.synth.founderChangedLead
+        : PAGE_COPY.synth.passedLead) + motionDisplay(rec);
     return RECCACHE[k];
   };
   const applicantById = (id) => allApplicants().find((ap) => ap.id === id);

@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 562
+  "entries": 563
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -389,6 +389,7 @@
   "page.synth.anonymous": "Anonymous",
   "page.synth.departedLeft": "ƒ (who) => who + ' has left'",
   "page.synth.departedRemoved": "ƒ (who) => who + ' has been removed'",
+  "page.synth.founderChangedLead": "Changed by the Founder: ",
   "page.synth.hasJoined": "ƒ (who) => who + ' has joined'",
   "page.synth.heldLead": "Your proposal did not pass: ",
   "page.synth.mailGaveUp": "An Invitation Did Not Send",

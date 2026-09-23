@@ -397,10 +397,22 @@ SCENARIOS['empty-wallet'] = async (s, cookie, name) => {
     const r = await cmdAs(cookie, 'open-motion', { payload: { kind: 'set', setting: 'title', value: { text: 'Rate Motion Probe ' + (i + 1) } } });
     say('   spend ' + (i + 1) + ': ' + r.status + ' ' + JSON.stringify(r.json).slice(0, 120));
   }
+  // **a decree is filed as the Founder's, never as *Passed*** (Q1514, Ed
+  // 2026-09-23: *Changed by the Founder: ‹value›*): the Founder ✒️-decrees
+  // once here, so the scenario carries a decree whether it runs in its lane
+  // behind decree-under or alone under `--only`
+  const dec = await cmdAs(doc().fcookie, 'set-setting', { setting: 'rate', value: { grant: 3, cap: 3, dripMinutes: 4 }, why: '' });
+  say('   the Founder ✒️ decrees every 4 minutes: ' + dec.status + ' ' + JSON.stringify(dec.json).slice(0, 120));
   await s.page.waitForTimeout(5500);
   await openRate(s);
   const c0 = await readCard(s);
   say('   ⏱️ opened with an empty wallet: ' + JSON.stringify(c0 && { wallet: c0.wallet, inputs: c0.inputs, commit: c0.commit, text: c0.text }));
+  const hist = (c0 && c0.text) || '';
+  const decreeLine = hist.includes('Changed by the Founder: a new proposal every 4 minutes');
+  const passedDecree = /Passed: a new proposal every/.test(hist);
+  verdict(name + ' · history', decreeLine && !passedDecree, 'the decree’s filed history line reads ' +
+    (decreeLine ? '“Changed by the Founder: a new proposal every 4 minutes”' : 'NO “Changed by the Founder:” line') +
+    (passedDecree ? ' · and a decree still reads “' + /Passed: a new proposal every \d+ minutes?/.exec(hist)[0] + '”' : ''));
   const c1 = await typeBlur(s, 3);
   say('   typed 3, clicked away: ' + JSON.stringify(c1 && { field: c1.field, commit: c1.commit, wallet: c1.wallet }));
   await shot(s, name + '-1');
