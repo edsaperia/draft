@@ -46,7 +46,8 @@ case "$GROUP" in
   motions)     PORT_MAIN=8167 ;;
   doors)       PORT_MAIN=8169; PORT_ROOM=8162 ;;
   repros)      PORT_MAIN=8171; PORT_DESIGN=8164 ;;
-  *) echo "usage: ci-walks.sh seat-member|seat-clerk|journey|motions|doors|repros"; exit 2 ;;
+  repros-b)    PORT_MAIN=8173; PORT_DESIGN=8166 ;;
+  *) echo "usage: ci-walks.sh seat-member|seat-clerk|journey|motions|doors|repros|repros-b"; exit 2 ;;
 esac
 
 PIDS=()
@@ -266,6 +267,15 @@ case "$GROUP" in
     walk "heading-marker" node scripts/repro/heading-marker.mjs "$DESIGN_BASE"
     # a rename has its tab (Q1474)
     walk "title-motion-tab" node scripts/repro/title-motion-tab.mjs "$BASE"
+    ;;
+
+  # **The second half of the repros** (2026-09-23): the group had grown to
+  # twelve minutes with the P1 batch's guards and set the push's time, so the
+  # long wrong-line-room cases and the batch's own guards run beside it on a
+  # runner of their own, with their own two servers.
+  repros-b)
+    boot repros-b "$PORT_MAIN"; BASE=$BOOTED
+    boot_design "$PORT_DESIGN"; DESIGN_BASE=$BOOTED
     # a proposal aims at its own line: the two cases CLAUDE.md names, a
     # seed that is not an origin (Q1483, `shapes`) and a record's span in
     # one line space (Q1488, `record`). The walk's other six cases were
