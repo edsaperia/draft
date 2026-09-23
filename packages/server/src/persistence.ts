@@ -63,6 +63,11 @@ export interface StashRecord {
   /** The address promised at the birth (Q460/462b): reserved while the
    *  pending creation lives, released when it is claimed or expires. */
   slug?: string;
+  /** The address the creation was last sent to (issue #38 F5): written by
+   *  the first send and overwritten by every resend, so a link minted to an
+   *  address the founder has since corrected founds nothing. Absent on a
+   *  stash opened before migration 7. */
+  email?: string;
   /** The document this pending creation became (Q519). A re-send mints a
    *  second link against one creation, and every link stays live: the first
    *  one followed creates the document and records it here, and the rest

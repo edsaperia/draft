@@ -149,11 +149,11 @@ export const authTable: Route[] = [
       // first send opens one. renew() is the truth of it, so a stash swept
       // between the check and here still falls back to a fresh creation.
       const renewed = givenId !== null && mine !== null &&
-        await stash.renew(mine, expMs, slug, nowMs);
+        await stash.renew(mine, expMs, slug, nowMs, email);
       const pendingId = renewed && givenId !== null
         ? givenId : randomBytes(18).toString('base64url');
       const stashKey = sha256Hex(pendingId);
-      if (!renewed) await stash.open(stashKey, expMs, slug);
+      if (!renewed) await stash.open(stashKey, expMs, slug, email);
       const token = await auth.mintToken(
         { kind: 'create', email, pending: { title, slug, email, isMember, stashKey } }, nowMs);
       const link = magicLink(cfg.baseUrl, 'create', token, slug);
@@ -276,6 +276,16 @@ export const authTable: Route[] = [
         }
         setCookie(res, made.id, auth.cookieFor(made.id, made.cs.convenorRecord().id, nowMs), ctx.httpsOn);
         redirect(res, `/d/${made.cs.slug}`);
+        return true;
+      }
+      /* **…and an unclaimed creation to the address it was last sent to**
+         (issue #38 F5): the resend renewed the pending creation whatever the
+         address, so a link to the mistyped one, followed first, founded the
+         document with a stranger as its Founder and the pasted charter in
+         it. A stash opened before migration 7 holds no address, and cannot
+         be asked. */
+      if (pend?.email !== undefined && pend.email.toLowerCase() !== p.email.toLowerCase()) {
+        spentPage(ctx, r, PAGE.used, 'create');
         return true;
       }
       /* **The address is the creation's, not the link's** (issue #38 F2):

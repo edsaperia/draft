@@ -1375,6 +1375,19 @@ describe('the address is chosen before the email, and reserved on send (Q460/462
     expect(again.body).toMatchObject({ created: true, slug: 'stale-tab' });
     expect(again.body.devLink).toBeUndefined();
     expect(again.body.suggestion).toBeUndefined();
+
+    // F5: the other order — the typo's link followed *before* the corrected
+    // one. The stash holds the address the creation was last sent to, so the
+    // typo's link founds nothing, seats nobody, and the good link still founds
+    const typo2 = await send({ slug: 'typo-first', email: 'b@exmaple.org' });
+    const good2 = await send({ slug: 'typo-first', email: 'b@example.org', pendingId: typo2.body.pendingId });
+    const first = await consume(typo2.body.devLink!);
+    expect(first.status, 'a link to an address the founder corrected founds nothing').toBe(410);
+    expect(first.headers.get('set-cookie')).toBeNull();
+    expect((await fetch(`${base}/api/d/typo-first/view`)).status).toBe(404);
+    const second = await consume(good2.body.devLink!);
+    expect(second.status).toBe(302);
+    expect(second.headers.get('location')).toBe('/d/typo-first');
   });
 });
 

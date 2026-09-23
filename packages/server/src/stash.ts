@@ -19,8 +19,9 @@ export class Stash {
 
   /** Open a stash; with a slug it also reserves that address (Q460/462b)
    *  for as long as the stash lives — claimed by take(), swept at expiry. */
-  async open(key: string, expMs: number, slug?: string): Promise<void> {
-    await this.persistence.putStash(key, { text: '', expMs, ...(slug === undefined ? {} : { slug }) });
+  async open(key: string, expMs: number, slug?: string, email?: string): Promise<void> {
+    await this.persistence.putStash(key, { text: '', expMs, ...(slug === undefined ? {} : { slug }),
+      ...(email === undefined ? {} : { email }) });
   }
 
   /** Re-send: the same pending creation speaking again (Ed's QA, 2026-08-21
@@ -29,11 +30,13 @@ export class Stash {
    *  text has been pasted into it — while its reservation moves to the
    *  address now asked for and its life is renewed against the new link's.
    *  False if the stash never existed or has expired, in which case the
-   *  caller opens a fresh one. */
-  async renew(key: string, expMs: number, slug: string, nowMs: number): Promise<boolean> {
+   *  caller opens a fresh one. The address moves with it (issue #38 F5):
+   *  the one this send goes to is the founder's, whatever the last said. */
+  async renew(key: string, expMs: number, slug: string, nowMs: number,
+    email?: string): Promise<boolean> {
     const rec = await this.persistence.getStash(key);
     if (rec === null || rec.expMs < nowMs || rec.docId !== undefined) return false;
-    await this.persistence.putStash(key, { ...rec, expMs, slug });
+    await this.persistence.putStash(key, { ...rec, expMs, slug, ...(email === undefined ? {} : { email }) });
     return true;
   }
 
@@ -81,10 +84,11 @@ export class Stash {
    * keystrokes met a 404 and its 📨 was told its own address was taken.
    */
   async pendingOf(key: string, nowMs: number):
-  Promise<{ slug?: string; docId?: string } | null> {
+  Promise<{ slug?: string; email?: string; docId?: string } | null> {
     const rec = await this.persistence.getStash(key);
     if (rec === null || rec.expMs < nowMs) return null;
     return { ...(rec.slug === undefined ? {} : { slug: rec.slug }),
+      ...(rec.email === undefined ? {} : { email: rec.email }),
       ...(rec.docId === undefined ? {} : { docId: rec.docId }) };
   }
 

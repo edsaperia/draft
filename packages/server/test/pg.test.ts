@@ -224,6 +224,12 @@ d('PgPersistence contract', () => {
     expect(await p.getStash('k')).not.toBeNull();
     await p.sweepStashes(600);
     expect(await p.getStash('k')).toBeNull();
+    // the address the creation was last sent to (issue #38 F5, migration 7)
+    await p.putStash('k3', { text: '', expMs: 9e12, slug: 's', email: 'ada@example.org' });
+    expect(await p.getStash('k3')).toEqual({ text: '', expMs: 9e12, slug: 's', email: 'ada@example.org' });
+    await p.putStash('k3', { text: '', expMs: 9e12, slug: 's', email: 'ada@example.com' });
+    expect((await p.getStash('k3'))!.email).toBe('ada@example.com');
+    expect((await p.dumpStashes()).find(([k]) => k === 'k3')![1].email).toBe('ada@example.com');
     await p.putStash('k2', { text: 'x', expMs: 9e12 });
     await p.deleteStash('k2');
     expect(await p.getStash('k2')).toBeNull();

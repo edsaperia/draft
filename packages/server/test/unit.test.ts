@@ -171,6 +171,24 @@ describe('Stash over the seam', () => {
     expect(await stash.claimedBy('k', 500)).toBe('d-1');
     expect(await stash.update('k', 'after the save', 500)).toBe(false);
   });
+
+  // **one read of the pending creation** (issue #38): the address it now
+  // reserves, the address it was last sent to — each resend overwrites both
+  // — and the document it became; null once it has expired
+  it('pendingOf reads the reservation, the last address sent to, and the claim', async () => {
+    const dir = tmp();
+    const stash = new Stash(new FilePersistence(dir));
+    await stash.open('k', 1000, 'typo', 'a@exmaple.org');
+    expect(await stash.pendingOf('k', 500)).toEqual({ slug: 'typo', email: 'a@exmaple.org' });
+    expect(await stash.renew('k', 1000, 'typo-2', 500, 'a@example.org')).toBe(true);
+    expect(await stash.pendingOf('k', 500)).toEqual({ slug: 'typo-2', email: 'a@example.org' });
+    await stash.take('k', 500, 'd-1');
+    expect(await stash.pendingOf('k', 500)).toMatchObject({ docId: 'd-1', email: 'a@example.org' });
+    expect(await stash.pendingOf('k', 2000)).toBeNull();
+    expect(await stash.pendingOf('missing', 500)).toBeNull();
+    // and the file store keeps the address across a reload
+    expect(await new FilePersistence(dir).getStash('k')).toMatchObject({ email: 'a@example.org' });
+  });
 });
 
 describe('DocStore', () => {

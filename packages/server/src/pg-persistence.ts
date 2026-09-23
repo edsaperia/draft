@@ -183,6 +183,18 @@ const MIGRATIONS: ReadonlyArray<{ version: number; sql: string }> = [
       CREATE INDEX errors_at ON errors (at DESC, id DESC);
     `,
   },
+  {
+    // **The stash holds the address it was last sent to** (issue #38 F5): a
+    // resend renewed the pending creation whatever the address, so a link to
+    // a mistyped one, followed before the corrected one, founded the document
+    // with a stranger as its Founder. Nullable: a stash opened before this
+    // migration holds no address, and the link it minted cannot be asked —
+    // for the seven days such a stash lives, the old behaviour stands.
+    version: 7,
+    sql: `
+      ALTER TABLE stashes ADD COLUMN email text;
+    `,
+  },
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.version;
@@ -429,20 +441,21 @@ export class PgPersistence implements MaintainablePersistence {
 
   async putStash(key: string, rec: StashRecord): Promise<void> {
     await this.pool.query(
-      `INSERT INTO stashes (key, text, exp_ms, slug, doc_id) VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO stashes (key, text, exp_ms, slug, doc_id, email) VALUES ($1, $2, $3, $4, $5, $6)
         ON CONFLICT (key) DO UPDATE SET text = EXCLUDED.text, exp_ms = EXCLUDED.exp_ms,
-          slug = EXCLUDED.slug, doc_id = EXCLUDED.doc_id`,
-      [key, rec.text, rec.expMs, rec.slug ?? null, rec.docId ?? null]);
+          slug = EXCLUDED.slug, doc_id = EXCLUDED.doc_id, email = EXCLUDED.email`,
+      [key, rec.text, rec.expMs, rec.slug ?? null, rec.docId ?? null, rec.email ?? null]);
   }
 
   async getStash(key: string): Promise<StashRecord | null> {
     const { rows } = await this.pool.query<{ text: string; exp_ms: string; slug: string | null;
-      doc_id: string | null }>(
-      'SELECT text, exp_ms, slug, doc_id FROM stashes WHERE key = $1', [key]);
+      doc_id: string | null; email: string | null }>(
+      'SELECT text, exp_ms, slug, doc_id, email FROM stashes WHERE key = $1', [key]);
     if (rows.length === 0) return null;
     const r = rows[0]!;
     return { text: r.text, expMs: Number(r.exp_ms),
       ...(r.slug === null ? {} : { slug: r.slug }),
+      ...(r.email === null ? {} : { email: r.email }),
       ...(r.doc_id === null ? {} : { docId: r.doc_id }) };
   }
 
@@ -597,10 +610,11 @@ export class PgPersistence implements MaintainablePersistence {
 
   async dumpStashes(): Promise<Array<readonly [string, StashRecord]>> {
     const { rows } = await this.pool.query<{ key: string; text: string; exp_ms: string;
-      slug: string | null; doc_id: string | null }>(
-      'SELECT key, text, exp_ms, slug, doc_id FROM stashes ORDER BY key');
+      slug: string | null; doc_id: string | null; email: string | null }>(
+      'SELECT key, text, exp_ms, slug, doc_id, email FROM stashes ORDER BY key');
     return rows.map((r) => [r.key, { text: r.text, expMs: Number(r.exp_ms),
       ...(r.slug === null ? {} : { slug: r.slug }),
+      ...(r.email === null ? {} : { email: r.email }),
       ...(r.doc_id === null ? {} : { docId: r.doc_id }) }] as const);
   }
 

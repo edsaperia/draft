@@ -130,7 +130,7 @@ exact serialised bytes; `event::jsonb` where a reader wants it),
 with an expiry index; `outbox` is the durable mail queue (migration 4,
 review #1 finding 15); `schema_migrations` records what has been applied.
 
-**Five migrations so far** (`pg-persistence.ts` `MIGRATIONS`, and
+**Seven migrations so far** (`pg-persistence.ts` `MIGRATIONS`, and
 `SCHEMA_VERSION` is the last one's number):
 
 | # | What it adds | Why |
@@ -140,6 +140,8 @@ review #1 finding 15); `schema_migrations` records what has been applied.
 | 3 | `stashes.doc_id` | Q519 — a re-sent link forwards to the document the first one made |
 | 4 | `outbox` and its `outbox_unsent` index | review #1 finding 15 — the durable mail queue |
 | 5 | `people` | decision 1253 — the addresses leave the log and live beside it |
+| 6 | `errors` and its `errors_at` index | plan stage 5a — the error log comes into the store, so a deploy no longer deletes it |
+| 7 | `stashes.email` | issue #38 F5 — a pending creation holds the address it was last sent to, so a link to a corrected typo founds nothing; nullable, and a stash opened before it cannot be asked |
 
 Every migration runs at boot, once, under an advisory lock; a build that
 finds a newer schema than it knows refuses to start.
