@@ -105,7 +105,12 @@ export const memberTable: Route[] = [
         // presence exactly as it was.
         let ladderClock = false;
         DEV: { ladderClock = mailer.dev && doc.cs.slug.startsWith('ladder-'); }
-        if (applicantId === null && !ladderClock &&
+        // **and a document whose saves are failing is read, not stamped**
+        // (issue #79): a failed save rewinds the document, so every poll
+        // would stamp presence again, fail, re-fold the whole log and answer
+        // 500 — and the view is the one place the red flag can be read. The
+        // stamp waits for a save that lands, which clears `stalled`.
+        if (applicantId === null && !ladderClock && !doc.stalled &&
             doc.cs.seen(writes.tOf(doc), memberId)) {
           await writes.commit(doc, nowMs);
         }

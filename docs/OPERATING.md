@@ -882,13 +882,21 @@ message, since a render that throws throws on every frame. The `?debug=1`
 strip — which prints the same errors on the phone that met them and sends
 nothing — is unchanged and runs beside it.
 
-**A stalled document** (Q1346). A save the store rejects for a reason no
-retry will clear — a 23505, another writer holding the document's log
-(§3's split) — marks the document `stalled`: it still serves, every write
-on it fails, `/healthz` counts it under `documentsStalled`, every view
-answer carries `stalled: true`, and the page flies a red flag where the
-alpha flag stands: *This document cannot save changes at the moment.
-Nothing you do here will be kept.* A save that lands clears it. A stalled
+**A stalled document** (Q1346; widened by issue #79). **Any** save the
+store rejects — a 23505, another writer holding the document's log (§3's
+split); an EACCES on the file store; a statement timeout, a reset
+connection or a 23503 on Postgres — marks the document `stalled`: it still
+serves, `/healthz` counts it under `documentsStalled`, every view answer
+carries `stalled: true`, and the page flies a red flag where the alpha flag
+stands: *This document cannot save changes at the moment. Nothing you do
+here will be kept.* **The command whose save failed does not stand**: the
+host takes the document back to what the store holds (the persisted prefix
+of both logs, re-folded as a boot would) and answers the member 500 with
+*that could not be saved, so nothing changed — please try again in a
+moment*, so the member and every other seat agree; a command queued behind
+it is refused the same way. `errors.last` in `/healthz` names the store's
+own code. While stalled a read does not stamp presence. A save that lands
+clears it, so a transient failure heals itself. A split-writer stalled
 document on docs.vote is recovered by a restart (§3's *Restarting the live
 host* — pause first, and read `surface` after), which reloads it from the
 database at the other writer's last row; what the stalled instance took in

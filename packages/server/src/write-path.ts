@@ -32,7 +32,24 @@ import type { OutboxRow, Persistence } from './persistence.js';
 import type { MailOutbox, QueuedMail } from './outbox.js';
 import { MAILS } from './mailer.js';
 import type { Mail, Mailer } from './mailer.js';
-import { driveBridge, foldTime, persistEngine } from './engine-host.js';
+import { driveBridge, foldTime, persistEngine, rewindEngine } from './engine-host.js';
+
+/**
+ * **A command the store could not write, said as what it is** (issue #79).
+ * `commit` throws this after it has rewound the document, so the refusal the
+ * member reads is true: nothing changed, for them or for anybody. It is the
+ * route failing, not the member — a 500, counted in `/healthz`'s errors with
+ * the store's own error as its cause — but unlike every other internal
+ * failure its sentence reaches the wire, since it tells the member exactly
+ * what happened and what to do.
+ */
+export class NotSavedError extends Error {
+  static readonly MESSAGE = 'that could not be saved, so nothing changed — please try again in a moment';
+  readonly notSaved = true;
+  constructor(cause?: unknown) {
+    super(NotSavedError.MESSAGE, cause === undefined ? undefined : { cause });
+  }
+}
 
 /**
  * **A pause is announced, never guessed** (Q1345, Ed 2026-09-12: *explicitly
@@ -322,7 +339,14 @@ export class WritePath {
    */
   commit(doc: LoadedDoc, nowMs: number): Promise<number | null> {
     const { cfg, commits, pause, persistence, store } = this.d;
+    // the session the caller applied its command to, taken before the
+    // chain: every caller applies and then commits in one synchronous run
+    const applied = doc.cs;
     return commits.run(doc.id, async () => {
+      // a commit ahead of this one in the chain failed and rewound the
+      // document (issue #79), taking this command's apply with it — so this
+      // one was not saved either, and must not answer 200 over nothing
+      if (doc.cs !== applied) throw new NotSavedError();
       // the engine rides every commit (Q391): born at constitute, synced
       // with roster truth and ground shifts, closed when the ending passes
       driveBridge(doc, this.tOf(doc, nowMs), cfg.engineTuning);
@@ -344,12 +368,19 @@ export class WritePath {
         await store.persist(doc);
         await persistEngine(persistence, doc);
       } catch (e) {
-        // **a save the store rejected for good marks the document** (Q1346):
-        // a 23505 is another writer holding this document's log — the
-        // split of Q1345 — and no retry from this instance will ever land,
-        // so the document says so on every view until a save succeeds
-        if ((e as { code?: unknown }).code === '23505') doc.stalled = nowMs;
-        throw e;
+        // **a save the store rejected marks the document** (Q1346): a 23505
+        // is another writer holding this document's log — the split of
+        // Q1345 — and no retry from this instance will ever land. **Widened
+        // to every failure** (issue #79): EACCES, a statement timeout, a
+        // reset connection, #71's 23503 all mean *this document's saves are
+        // not landing*, and a save that lands clears the flag one line
+        // below, so a transient blip heals itself as the split does
+        doc.stalled = nowMs;
+        // …and the command does not stand: memory goes back to what the
+        // store holds, so the refusal and every other seat agree
+        store.rewind(doc);
+        rewindEngine(doc, cfg.engineTuning);
+        throw new NotSavedError(e);
       }
       doc.stalled = null;
       // **Mail is relayed off its own cursor** (issue #7). Relaying `fresh`
