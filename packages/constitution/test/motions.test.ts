@@ -159,6 +159,19 @@ describe('the constitutional route (v0.48): unanimity over the live electorate',
       value: { rung: 'closed' } })).toBe('mo-2');
   });
 
+  // **The module takes the mover's own keep** (issue #88 finding 2, ruled by
+  // Ed 2026-09-22: not built — a mover who changes their mind withdraws, and
+  // the API stays as it is). The page no longer draws the mover a lane
+  // (K8); a client speaking the API directly still reaches this, and it ends
+  // the motion as any keep does.
+  it('the mover’s own keep is accepted and ends their motion (#88, ruled: no refusal)', () => {
+    const { s, bo } = constituted();
+    const m = s.openMotion(3, bo, { kind: 'set', setting: 'chamber', value: { rung: 'closed' } });
+    expect(() => s.answerMotion(4, bo, m, 'keep')).not.toThrow();
+    expect(s.motionRecords().get(m)!.status).toBe('held');
+    expect(s.settingState('chamber').value).toEqual({ rung: 'link' });
+  });
+
   it('a keep before anybody else has answered ends it just the same', () => {
     const { s, bo, cy } = constituted();
     const m = s.openMotion(3, bo, { kind: 'set', setting: 'bar', value: { pct: 80 } });

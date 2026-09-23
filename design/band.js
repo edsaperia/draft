@@ -1209,8 +1209,9 @@ window.BAND = (function () {
               (pm.by === viewerId()
                 ? '<button class="btn glyphbtn" data-withdrawmotion="' + c.k + '" title="Withdraw it — your 🏛️ comes back whole">' + glyphHtml('🗑️') + '</button>'
                 : binBtn()) +
-              '<button class="btn btn-approve glyphbtn emojibtn"' + (motionPicked(c) ? '' : ' disabled') +
-              ' data-confirm="1" title="Give your answer">' + glyphHtml('🏛️') + '</button>', g.cards);
+              // the mover gives no answer on their own motion (issue #88, K8)
+              (pm.by === viewerId() ? '' : '<button class="btn btn-approve glyphbtn emojibtn"' + (motionPicked(c) ? '' : ' disabled') +
+              ' data-confirm="1" title="Give your answer">' + glyphHtml('🏛️') + '</button>'), g.cards);
           }
           const pHeld = c.power === 'u' ? pwPair(c.base).u : pwPair(c.base).a;
           // …and never on a closed document (entry 62): `relinquish` and
@@ -1295,8 +1296,10 @@ window.BAND = (function () {
             (m.by === viewerId()
               ? '<button class="btn glyphbtn" data-withdrawmotion="' + c.k + '" title="Withdraw it — your 🏛️ comes back whole">' + glyphHtml('🗑️') + '</button>'
               : binBtn()) +
-            '<button class="btn btn-approve glyphbtn emojibtn"' + (motionPicked(c) ? '' : ' disabled') +
-            ' data-confirm="1" title="Give your answer">' + glyphHtml('🏛️') + '</button>', g.cards);
+            // …and gives no answer on it (issue #88, K8): their accept is on
+            // the record from the put, and 🗑️ is the road for a changed mind
+            (m.by === viewerId() ? '' : '<button class="btn btn-approve glyphbtn emojibtn"' + (motionPicked(c) ? '' : ' disabled') +
+            ' data-confirm="1" title="Give your answer">' + glyphHtml('🏛️') + '</button>'), g.cards);
         }
         // — unless it is a decision you are owed: the OK comes before the
         // motion, since an unacknowledged rule sits in the rail until it is

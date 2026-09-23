@@ -1534,6 +1534,33 @@ const motionFillOnAmended = async () => {
   say('mover’s ⏳ · ' + (okG ? 'the mover’s own entry is a ⏳ wait with the same bar: ' + g1.title
     : 'FAIL: ' + JSON.stringify(g1)));
   if (!okG) stuck.push('the 🏛️ motion’s fill on the mover’s entry');
+  /* …and the mover's own card asks them nothing (issue #88, K8): the two
+   * blocks inert with the proposed one marked, no lane to press, and 🗑️ —
+   * withdrawing — as its one act. Until #88 it drew the live *Keep this*
+   * lane first, and a keep kills (Q1473), so the mover could end their own
+   * motion as *rejected by the membership*. Red on the pre-#88 page at
+   * three lanes. */
+  const moverCard = await guestPage.evaluate(async (k) => {
+    const t = document.querySelector('#rail [data-card="' + k + '"]');
+    if (!t) return null;
+    t.click();
+    await new Promise((r) => setTimeout(r, 700));
+    const c = document.querySelector('[data-setupcard="' + k + '"]');
+    if (!c) return { open: false };
+    const out = { open: true, lanes: c.querySelectorAll('[data-motion]').length,
+      blocks: c.querySelectorAll('.pick').length,
+      marked: c.querySelectorAll('.pick.on').length,
+      answer: !!c.querySelector('[data-confirm]'),
+      withdraw: !!c.querySelector('[data-withdrawmotion]') };
+    const a = c.querySelector('.chipcol .achip'); if (a) a.click();
+    return out;
+  }, mKey);
+  await guestPage.waitForTimeout(400);
+  const moverOk = !!moverCard && moverCard.open && moverCard.lanes === 0 && moverCard.blocks === 2 &&
+    moverCard.marked === 1 && !moverCard.answer && moverCard.withdraw;
+  say('mover’s 🏛️ · ' + (moverOk ? 'the mover’s own card: two inert blocks, the proposed one marked, no lane and no 🏛️, 🗑️ its one act'
+    : 'FAIL: ' + JSON.stringify(moverCard)));
+  if (!moverOk) stuck.push('the mover’s own 🏛️ card draws no lane (#88)');
   /* **The founder answers *keep*, and that is the end of it** (Q1473, Ed
    * 2026-09-19: *it should fail as soon as someone votes against on a 🏛️*).
    * Until v0.138 a keep blocked and did not kill, and these lines asserted

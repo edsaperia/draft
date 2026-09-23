@@ -6385,7 +6385,13 @@
       const v = rec && rec.payload && rec.payload.kind === 'set' ? rec.payload.value : null;
       return motionBlocks(c.k, decisionLine(c), (v !== null && sentenceFor(hostKeyOf(c), v)) || m.to, m.why, route, mover, absAt); })());
   };
-  const consentBody = (c, m) => motionPairBody(c, m, 'constitutional');
+  // …and the mover's constitutional card the same (issue #88; K8): the mover's
+  // accept is on the record from the put (§9.6), so a live *Keep this* lane
+  // was a revision of their own consent into a kill (Q1473) and served them
+  // E41's *your motion failed* about their own press. The inert two blocks,
+  // and 🗑️ — withdrawing — as their one act.
+  const moverOf = (m) => m.by !== null && m.by !== undefined && m.by === viewerId();
+  const consentBody = (c, m) => motionPairBody(c, m, 'constitutional', moverOf(m));
   // the mover's ordinary card is theirs, not an ask (K8, Q1370): the blocks
   // inert with the proposed one marked, and the commit row withdraw alone
   const ordinaryBody = (c, m) => motionPairBody(c, m, 'ordinary',

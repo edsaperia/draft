@@ -7166,41 +7166,20 @@
     "eyebrow": "",
     "head": "",
     "lock": "",
-    "body": "All proposals are made anonymously.Prefer thisAll proposals are made anonymously, and all names are revealed at the end.Names put pressure on people; the writing should stand alone.PreferredIndifferent",
-    "options": [
-     {
-      "set": null,
-      "val": "no",
-      "label": "All proposals are made anonymously."
-     },
-     {
-      "set": null,
-      "val": "yes",
-      "label": "All proposals are made anonymously, and all names are revealed at the end.Names put pressure on people; the writing should stand alone."
-     },
-     {
-      "set": null,
-      "val": "abstain",
-      "label": "Indifferent"
-     }
-    ],
+    "body": "All proposals are made anonymously.All proposals are made anonymously, and all names are revealed at the end.Names put pressure on people; the writing should stand alone.Proposed",
+    "options": [],
     "inputs": [],
     "foot": [
      {
       "label": "🗑️",
       "title": "Withdraw it — your 🏛️ comes back whole"
-     },
-     {
-      "label": "🏛️",
-      "title": "Give your answer"
      }
     ],
     "hints": [
      "Anonymous Proposals — settled",
      "Are Proposals Anonymous? — close it",
      "A member wrote this. Who, is sealed until the closing record.",
-     "Withdraw it — your 🏛️ comes back whole",
-     "Give your answer"
+     "Withdraw it — your 🏛️ comes back whole"
     ],
     "helpers": []
    },
