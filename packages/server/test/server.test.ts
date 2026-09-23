@@ -1357,6 +1357,12 @@ describe('the address is chosen before the email, and reserved on send (Q460/462
     const stray = await consume(typo.body.devLink!);
     expect(stray.status, 'the typo link names a founder the document does not have').toBe(410);
     expect(stray.headers.get('set-cookie')).toBeNull();
+    // Q1506 (b), Ed 2026-09-23: the page says why, rather than passing for any
+    // dead link — a genuinely spent link keeps `PAGE.used` (the case above)
+    const strayPage = await stray.text();
+    expect(strayPage, 'Q1506: the refused link names its cause')
+      .toContain('This link was sent to an address the document’s Founder has since changed.');
+    expect(strayPage).not.toContain('already been used');
 
     // F4: the birth tab left open after the save — its keystrokes are told
     // where the document is, not a 404 nothing reads
@@ -1384,6 +1390,8 @@ describe('the address is chosen before the email, and reserved on send (Q460/462
     const first = await consume(typo2.body.devLink!);
     expect(first.status, 'a link to an address the founder corrected founds nothing').toBe(410);
     expect(first.headers.get('set-cookie')).toBeNull();
+    // the unclaimed branch keeps `PAGE.used` until Q1511 is ruled
+    expect(await first.text()).toContain('This link has already been used, or it has expired.');
     expect((await fetch(`${base}/api/d/typo-first/view`)).status).toBe(404);
     const second = await consume(good2.body.devLink!);
     expect(second.status).toBe(302);

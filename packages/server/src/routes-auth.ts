@@ -275,10 +275,11 @@ export const authTable: Route[] = [
         // **…to the founder it names** (issue #38 F1): a link minted to a
         // mistyped 📧 and followed after the corrected one founded the
         // document was a stranger's 90-day Founder cookie. It is refused as
-        // a used link — never falling through, which would found a twin
+        // a used link — never falling through, which would found a twin —
+        // and the page says why (Q1506 (b))
         const founder = made.cs.convenorRecord().email?.toLowerCase();
         if (founder !== p.email.toLowerCase()) {
-          spentPage(ctx, r, PAGE.used, 'create');
+          spentPage(ctx, r, PAGE.changed, 'create');
           return true;
         }
         setCookie(res, made.id, auth.cookieFor(made.id, made.cs.convenorRecord().id, nowMs), ctx.httpsOn);
@@ -619,6 +620,11 @@ const PAGE = {
   },
   /** The two ways a link can fail before it seats anybody. */
   used: 'This link has already been used, or it has expired.',
+  /** A creation link to an address the founder moved the creation off,
+   *  followed after the document was founded (issue #38 F1): it says why
+   *  rather than passing for any dead link (Q1506 (b), Ed 2026-09-23 —
+   *  *changed*, not *corrected*; the disclosure accepted). */
+  changed: 'This link was sent to an address the document’s Founder has since changed.',
   cut: 'That link is not complete — it may have been cut short on its way to you.',
   ask: 'Send yourself a new one:',
   send: 'Send the link',
