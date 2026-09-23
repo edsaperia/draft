@@ -1318,8 +1318,20 @@ window.BAND = (function () {
         }
         // — unless it is a decision you are owed: the OK comes before the
         // motion, since an unacknowledged rule sits in the rail until it is
-        // pressed (the composer returns the moment it is)
-        if (composerOn(c) && stateOf(c, ctx) !== 'news') {
+        // pressed (the composer returns the moment it is).
+        // **…but news never takes a composer out from under a draft** (the P1
+        // sweep, 2026-09-23, after issue #80 made a Founder's ✒️ change to an
+        // ordinary rule news again): a composer already on screen for this
+        // card, holding a motion the member has typed and not sent, stays
+        // the composer when the news lands — the value and the caret are
+        // kept (Q1486, *nothing rebuilds under a caret*), and the news waits
+        // in the rail, its OK served the next time the card opens. Read off
+        // the card in the document, so a card closed and reopened meets the
+        // OK first, as it always did; the draft itself is never discarded.
+        const composing = S.open === c.k && !!S.draft && S.draft.k === c.k &&
+          !!(S.draft.to || S.draft.why) &&
+          !!document.querySelector('.setupcard[data-setupcard="' + c.k + '"] [data-dropmotion]');
+        if (composerOn(c) && (stateOf(c, ctx) !== 'news' || composing)) {
           // **The settled card is the composer** (Ed, 2026-08-18): the rule as
           // it stands at the head, the alternatives as the setting's own
           // controls, session-view's rationale lane, 🗑️ and the route's commit.

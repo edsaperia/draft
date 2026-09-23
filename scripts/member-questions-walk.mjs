@@ -260,7 +260,22 @@ if (s.rail.includes('ans-ending')) {
   check('*At a set time* is chosen by its press and shows its box, the ✓ still dark (#75 F1)',
     f1.chosen === 'true' && f1.box && f1.commit === true, JSON.stringify(f1));
   if (f1.box) {
-    await page.click('.setupcard [data-ansdate="ending"]');
+    // **the keys start in the box's first field** (P1 sweep, 2026-09-23): a
+    // datetime-local is a row of fields, and a click puts the caret in the
+    // field under the pointer. The box's middle is a different field on each
+    // platform's fonts — on the Linux runner it is not the first, so the keys
+    // filled the wrong fields, the box held no whole date and the ✓ stayed
+    // dark (the red of run 35829297505; a Linux probe of the same box gives a
+    // whole date from a click on the first field and nothing from one on the
+    // day or the year). So the click lands just inside the box's left edge, as
+    // a person starting a date does: still a real click and real keys, so the
+    // `input` road and the blur the ✓'s press causes (F2) are the page's own.
+    const first = await page.evaluate(() => {
+      const b = document.querySelector('.setupcard [data-ansdate="ending"]');
+      const cs = getComputedStyle(b);
+      return { x: parseFloat(cs.borderLeftWidth) + parseFloat(cs.paddingLeft) + 3, y: b.offsetHeight / 2 };
+    });
+    await page.click('.setupcard [data-ansdate="ending"]', { position: first });
     await page.keyboard.type('01012030');
     await page.keyboard.press('Tab');
     await page.keyboard.type('1200P');

@@ -191,7 +191,7 @@ const seat = async (cookie, { narrow = false, unacked = false } = {}) => {
   await page.waitForTimeout(800);
   return { ctx, page, wire, errs, narrow };
 };
-const openRate = async (s) => {
+const openRate = async (s, again = false) => {
   const how = await s.page.evaluate(() => {
     const t = document.querySelector('#band [data-tab="rate"]') || document.querySelector('#band .achip[data-chip="rate"]');
     if (!t) return 'no ⏱️ tab in the constitution';
@@ -203,6 +203,22 @@ const openRate = async (s) => {
   if (typeof how === 'string') return how;
   if (s.narrow) await s.page.touchscreen.tap(how.x, how.y); else await s.page.mouse.click(how.x, how.y);
   await s.page.waitForTimeout(1200);
+  // **a Founder's decree is news first** (issue #80, SURFACE E7): once the
+  // Founder has ✒️-changed ⏱️, every member is owed its OK, and the card
+  // opens on the news until it is pressed — the composer returns the moment
+  // it is. The decree scenarios share a document, so a seat reaching ⏱️
+  // after one meets that OK; it presses it as the welcomes are pressed, then
+  // opens the composer again. Asserts nothing: the scenarios' own verdicts
+  // are unchanged, and a card that never gives the composer back still
+  // reads as no field.
+  const news = await s.page.evaluate(() => { const c = document.querySelector('.setupcard[data-setupcard="rate"]');
+    const b = c && !c.querySelector('[data-mrate]') && c.querySelector('[data-ok]');
+    if (!b || b.disabled) return false; b.scrollIntoView({ block: 'center' }); b.click(); return true; });
+  if (news && !again) {
+    say('   ⏱️ opened on the Founder’s news: OK pressed, then the composer');
+    await s.page.waitForTimeout(1800);
+    if (!await s.page.evaluate(() => !!document.querySelector('.setupcard[data-setupcard="rate"] [data-mrate]'))) return openRate(s, true);
+  }
   return how;
 };
 const readCard = (s) => s.page.evaluate(() => {
@@ -484,6 +500,8 @@ SCENARIOS['typing-under-poll'] = async (s, cookie, name) => {
   const c3 = await readCard(s);
   await shot(s, name);
   say('   and after the Founder decrees ⏱️ itself (' + d.status + '): ' + JSON.stringify(c3 && { field: c3.field, focus: c3.focus, commit: c3.commit, pickOn: c3.pickOn }));
+  // the decree's news (issue #80) waits in the rail beside the kept composer
+  say('   rail then: ' + JSON.stringify(await s.page.evaluate(() => [...document.querySelectorAll('#rail [data-q]')].map((e) => e.dataset.q + ' “' + (window.CARDS.glyphTextOf(e) || '').replace(/\s+/g, ' ').trim().slice(0, 60) + '”'))));
   verdict(name, !!c3 && c3.field === '7' && !!c2 && c2.field === '7', 'a number typed and not yet left: after another member’s act the field reads ' +
     (c2 && c2.field) + ' (focus ' + (c2 && c2.focus) + '), after the Founder’s decree ' + (c3 && c3.field) + ' (focus ' + (c3 && c3.focus) + ')');
 };
