@@ -16,6 +16,7 @@ import { ConstitutionSession, mayApply, sha256Hex } from '../../constitution/src
 import type { ApplicationsValue } from '../../constitution/src/index.js';
 import { magicLink } from './auth.js';
 import { LIMITS, cap, emailOk } from './commands.js';
+import { logError } from './error-log.js';
 import { MAILS } from './mailer.js';
 import { slugify, uniqueSlug } from './store.js';
 import { admissionPrice } from './views.js';
@@ -413,30 +414,52 @@ export const authTable: Route[] = [
       const doc = r.docOr404(store.byId(rec.docId));
       if (!doc) return true;
       const t = writes.tOf(doc);
-      // the log's first applicant entry lands here, after the address has
-      // proved it works (stage 3, defect 8); the module re-checks policy
-      // and membership, so a world that changed since the mail refuses
-      const applicantId = rec.applicantId ?? doc.cs.startApplication(t, rec.email);
-      // a re-entry link (Q439(a)) lands on a seat that is already verified,
-      // or has an application sitting with the room: there is nothing to
-      // verify and nothing to write — the link's whole job is the cookie
-      if (doc.cs.applicantRecords().get(applicantId)?.status === 'started') {
-        doc.cs.verifyApplication(t, applicantId);
-      }
-      // **Under `open` the link is the joining** (backlog 73, Q894). The rung
-      // says so in as many words — *anyone with the link becomes a member the
-      // moment they open it* — and the module agrees, `submitApplication`
-      // auto-admitting with no motion in the way. But this handler only ever
-      // verified, so the visitor was left at `verified` for ever: no UI
-      // submits for them (the page renders an `open` applicant no rail at all,
-      // believing landing already admitted them), so `open` membership was
-      // unreachable by any road. An empty application is a real application
-      // (§9.7½), which is what makes the admit here honest. Open is 🤝 yes
-      // with 🪪 at ✒️ (entry 94); the other prices land verify-only and
-      // keep their later submit and their motion.
-      if (admissionPrice(doc.cs) === 'pen' && !doc.cs.closed &&
-          doc.cs.applicantRecords().get(applicantId)?.status === 'verified') {
-        doc.cs.submitApplication(t, applicantId);
+      // **A refusal here is a page, and it is logged** (issue #35 F2, F3;
+      // absorbing #53). The token is already spent, and the module refuses
+      // ordinary states — invitation-only, an address already on the
+      // membership, an application already underway (two knocks, two
+      // links) — whose throw fell to the central catch: raw JSON rendered
+      // as the interstitial's navigation, the link dead. The three module
+      // calls are caught together; `commit` stays outside, so a store
+      // failure is still a 500 and never a 410 page.
+      let applicantId: string;
+      try {
+        // the log's first applicant entry lands here, after the address has
+        // proved it works (stage 3, defect 8); the module re-checks policy
+        // and membership, so a world that changed since the mail refuses
+        applicantId = rec.applicantId ?? doc.cs.startApplication(t, rec.email);
+        // a re-entry link (Q439(a)) lands on a seat that is already verified,
+        // or has an application sitting with the room: there is nothing to
+        // verify and nothing to write — the link's whole job is the cookie
+        if (doc.cs.applicantRecords().get(applicantId)?.status === 'started') {
+          doc.cs.verifyApplication(t, applicantId);
+        }
+        // **Under `open` the link is the joining** (backlog 73, Q894). The rung
+        // says so in as many words — *anyone with the link becomes a member the
+        // moment they open it* — and the module agrees, `submitApplication`
+        // auto-admitting with no motion in the way. But this handler only ever
+        // verified, so the visitor was left at `verified` for ever: no UI
+        // submits for them (the page renders an `open` applicant no rail at all,
+        // believing landing already admitted them), so `open` membership was
+        // unreachable by any road. An empty application is a real application
+        // (§9.7½), which is what makes the admit here honest. Open is 🤝 yes
+        // with 🪪 at ✒️ (entry 94); the other prices land verify-only and
+        // keep their later submit and their motion.
+        if (admissionPrice(doc.cs) === 'pen' && !doc.cs.closed &&
+            doc.cs.applicantRecords().get(applicantId)?.status === 'verified') {
+          doc.cs.submitApplication(t, applicantId);
+        }
+      } catch (err) {
+        // whatever the module emitted before refusing is real (review #1,
+        // finding 6), so it is committed like any other write
+        await writes.commit(doc, nowMs);
+        const reason = err instanceof Error ? err.message : String(err);
+        // the row the central catch used to write by accident, now on
+        // purpose and with the document named (Y25: every refusal is logged)
+        logError(ctx.persistence, { kind: 'refused', status: 410, method: 'POST',
+          path: r.path, doc: doc.id, slug: doc.cs.slug, reason });
+        spentPage(ctx, r, refusedSentence(reason), 'apply');
+        return true;
       }
       await writes.commit(doc, nowMs);
       // an admitted visitor holds a member's seat, not an applicant's — the
@@ -479,11 +502,26 @@ export const authTable: Route[] = [
       // (`MAILS.uninvited`); the link itself simply opens the document, with
       // no cookie and so no seat — which is the stranger's door, and says
       // nothing about the withdrawal because the mail has said it already.
-      if (!m || m.removed) { redirect(res, `/d/${doc.cs.slug}`); return true; }
-      // membership begins at first arrival (§9.6a); revival is logging in
-      if (m.arrivedAtT === null) doc.cs.arrive(t, rec.memberId);
-      else if (m && m.lapsed) doc.cs.memberReturn(t, rec.memberId);
+      //
+      // **…and so does an invitation the close expired** (issue #35 F1, SPEC
+      // X14): `arrive` refuses a closed document, and the throw came after
+      // the token was spent — raw JSON and a dead link. No cookie without a
+      // seat: `acknowledgeClose` admits any unremoved member, so a cookie
+      // would let somebody the close excluded sign the record.
+      //
+      // **A clerk is a seat** (found building #35): a founder who is not a
+      // member has no row in `memberRecords`, and reading that absence as a
+      // withdrawn seat opened a clerk's own login link seatless.
+      const clerk = !m && rec.memberId === doc.cs.convenorRecord().id;
+      const noSeat = !clerk && (!m || m.removed || (doc.cs.closed && m.arrivedAtT === null));
+      // membership begins at first arrival (§9.6a); revival is logging in —
+      // though never into a closed log, which `memberReturn` does not check
+      if (!noSeat && m && m.arrivedAtT === null) doc.cs.arrive(t, rec.memberId);
+      else if (!noSeat && m && m.lapsed && !doc.cs.closed) doc.cs.memberReturn(t, rec.memberId);
+      // committed before the early return: `tOf` can close the document on
+      // this very request, and what it folded must not wait in memory
       await writes.commit(doc, nowMs);
+      if (noSeat) { redirect(res, `/d/${doc.cs.slug}`); return true; }
       setCookie(res, doc.id, auth.cookieFor(doc.id, rec.memberId, nowMs), ctx.httpsOn);
       redirect(res, `/d/${doc.cs.slug}`);
       return true;
@@ -650,6 +688,13 @@ function busyDoor(ctx: RouteContext, r: Req, token: string): void {
  * **410, not 400.** The request is perfectly well formed; what it names is
  * gone, and single-use means gone for good.
  */
+/** A module refusal said as Y25 says it on a card (issue #35 F2): *That was
+ *  refused: …*, the module's own `(§…)` pointer dropped, and one full stop. */
+function refusedSentence(reason: string): string {
+  const said = reason.replace(/\s*\(§[^)]*\)/g, '').trim().replace(/[.\s]+$/, '');
+  return `That was refused: ${said}.`;
+}
+
 function spentPage(ctx: RouteContext, r: Req, lead: string,
   kind: 'create' | 'login' | 'apply'): void {
   const asked = r.url.searchParams.get('d') ?? '';

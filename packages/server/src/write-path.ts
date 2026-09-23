@@ -265,16 +265,27 @@ export class WritePath {
         }
       } else if (event.type === 'closed') {
         // the close (SPEC §4.6): every member and invitee is told, once — the
-        // close is one event in the log, and only fresh entries relay
-        const link = `${cfg.baseUrl}/d/${cs.slug}`;
+        // close is one event in the log, and only fresh entries relay.
+        // **A member's mail logs them in** (issue #35 F4): the bare address
+        // met a member without a cookie at the stranger's page, needing a
+        // second mail to sign. An invitation never followed keeps the bare
+        // address — the close expired it (SPEC X14), and the login door
+        // seats nobody on a closed document who had not arrived.
+        const bare = `${cfg.baseUrl}/d/${cs.slug}`;
         const seen = new Set<string>();
-        const tell = (email: string | null | undefined): void => {
-          if (!email || seen.has(email)) return;
+        const tell = (email: string | null | undefined, seat: string | null): void => {
+          if (!mailable(email) || seen.has(email)) return;
           seen.add(email);
-          push(email, MAILS.closed(title, link));
+          if (seat === null) { push(email, MAILS.closed(title, bare)); return; }
+          const l = loginLink(seat, email);
+          push(email, MAILS.closed(title, l.link), l.tokenHash);
         };
-        tell(cs.convenorRecord().email);
-        for (const m of cs.memberRecords().values()) if (!m.removed) tell(m.email);
+        // the convenor by their own record: a clerk is not in memberRecords
+        const convenor = cs.convenorRecord();
+        tell(convenor.email, convenor.id);
+        for (const m of cs.memberRecords().values()) {
+          if (!m.removed) tell(m.email, m.arrivedAtT === null ? null : m.id);
+        }
       } else if (event.type === 'member-removed' && event.by === 'convenor') {
         // exile at will (SURFACE E31, Q901): the removed member is outside
         // the document by now, so mail is the channel — with the document's

@@ -309,3 +309,84 @@ describe('the arrival doors (issue #69)', () => {
     expect((await stash()).status).toBe(429);
   }, 60_000);
 });
+
+/**
+ * **A refused application link is answered with a page, and the refusal is
+ * logged** (issue #35, F2 and F3; absorbing #53). `/auth/apply` spends the
+ * token and then asks the module to start the application, and the module
+ * refuses three ordinary states — invitation-only, an address already on the
+ * membership, an application already underway. The throw fell to the
+ * central catch, which answered the interstitial's navigation with raw JSON:
+ * no shell, no way back, the link already spent. It is `spentPage`'s 410 now,
+ * led by Y25's sentence, with a `refused` row in the error log that names
+ * the document.
+ */
+describe('the apply door refuses with a page (issue #35)', () => {
+  const knock = async (base: string, slug: string, email: string): Promise<string> => {
+    const r = await post(base, `/api/d/${slug}/apply`, { email });
+    expect(r.status, await r.clone().text()).toBe(200);
+    const { devLink } = await r.json() as { devLink: string };
+    return new URL(devLink).searchParams.get('token') ?? '';
+  };
+  const follow = (base: string, slug: string, token: string) => fetch(`${base}/auth/apply?d=${slug}`, {
+    method: 'POST', redirect: 'manual',
+    headers: { 'content-type': 'application/x-www-form-urlencoded', origin: base },
+    body: new URLSearchParams({ token }).toString(),
+  });
+  const doorOpen = async (base: string, slug: string, founder: string, apply: boolean) => {
+    const cookie = await founderCookie(base, slug, founder);
+    const r = await post(base, `/api/d/${slug}/cmd`,
+      { cmd: 'set-setting', args: { setting: 'applications', value: { apply } } }, { cookie });
+    expect(r.status, await r.clone().text()).toBe(200);
+  };
+  const refusedRows = async (base: string) =>
+    ((await (await fetch(`${base}/api/dev/errors`)).json()) as {
+      errors: { kind: string; status: number; path: string; slug?: string; reason: string }[] })
+      .errors.filter((row) => row.kind === 'refused' && row.path === '/auth/apply');
+
+  it('a second knock from one address, followed after the first, reads as already underway', async () => {
+    const { base } = await boot(false);
+    const slug = await found(base, 'Twice', 'founder.twice@example.org');
+    await doorOpen(base, slug, 'founder.twice@example.org', true);
+    const first = await knock(base, slug, 'knocker@example.org');
+    const second = await knock(base, slug, 'knocker@example.org');
+    expect((await follow(base, slug, first)).status).toBe(302);
+    const refused = await follow(base, slug, second);
+    expect(refused.status).toBe(410);
+    expect(refused.headers.get('content-type')).toMatch(/text\/html/);
+    const page = await refused.text();
+    expect(page).toContain('That was refused: an application from that address is already underway');
+    expect(page, 'the module’s own pointer is dropped').not.toContain('§');
+    expect(page, 'and the document is a link away').toContain(`/d/${slug}`);
+    const rows = await refusedRows(base);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ status: 410, slug, reason: expect.stringContaining('already underway') });
+  });
+
+  it('a knock whose door shut before the link was followed reads as invitation-only', async () => {
+    const { base } = await boot(false);
+    const slug = await found(base, 'Shut', 'founder.shut@example.org');
+    await doorOpen(base, slug, 'founder.shut@example.org', true);
+    const token = await knock(base, slug, 'late@example.org');
+    await doorOpen(base, slug, 'founder.shut@example.org', false);
+    const refused = await follow(base, slug, token);
+    expect(refused.status).toBe(410);
+    expect(refused.headers.get('content-type')).toMatch(/text\/html/);
+    expect(await refused.text()).toContain('That was refused: this document is invitation-only');
+    expect((await refusedRows(base))[0]).toMatchObject({ status: 410, slug });
+  });
+});
+
+/** The founder's seat on a document `found` made: a login link, followed. */
+async function founderCookie(base: string, slug: string, email: string): Promise<string> {
+  const r = await login(base, slug, email);
+  const { devLink } = await r.json() as { devLink: string };
+  const u = new URL(devLink);
+  const seated = await fetch(u.origin + u.pathname, {
+    method: 'POST', redirect: 'manual',
+    headers: { 'content-type': 'application/x-www-form-urlencoded', origin: u.origin },
+    body: new URLSearchParams({ token: u.searchParams.get('token') ?? '' }).toString(),
+  });
+  expect(seated.status).toBe(302);
+  return (seated.headers.get('set-cookie') ?? '').split(';')[0]!;
+}

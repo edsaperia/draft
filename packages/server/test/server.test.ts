@@ -951,6 +951,47 @@ describe('review #1 hardening', () => {
     expect(await after.json()).toMatchObject({ stranger: true });
     expect(JSON.stringify(await (await fetch(`${base}/api/d/${created.slug}/view`,
       { headers: { cookie: leaver } })).json())).not.toContain('.org');
+
+    // an invitation withdrawn before it was followed: the kept link lands on
+    // the document's door, seatless — never *unknown member 'm-…'* in a
+    // stranger's browser (issue #35 F1, Q1493)
+    await post(base, `/api/d/${created.slug}/cmd`,
+      { cmd: 'invite', args: { email: 'kept@example.org' } }, g);
+    const keptLink = (await lastMailTo(dataDir, 'kept@example.org')).link!;
+    const gv2 = await (await fetch(`${base}/api/d/${created.slug}/view`,
+      { headers: { cookie: g } })).json() as MemberViewPayload;
+    const keptId = gv2.view.members.find((m) => m.email === 'kept@example.org')!.id;
+    await post(base, `/api/d/${created.slug}/cmd`,
+      { cmd: 'uninvite', args: { member: keptId } }, g);
+    const kept = await consume(keptLink);
+    expect(kept.status).toBe(302);
+    expect(kept.headers.get('location')).toBe(`/d/${created.slug}`);
+    expect(kept.headers.get('set-cookie'), 'no seat, so no cookie').toBeNull();
+  });
+
+  // **A clerk is seated by the login door** (found building issue #35): a
+  // founder who is not a member has no row in `memberRecords`, and Q1493's
+  // *a seat that is gone* read that absence as a withdrawn invitation — so a
+  // clerk's own login link opened the document seatless, the stranger's
+  // door, with no way in at all.
+  it('a clerk founder’s login link seats them', async () => {
+    const { base, dataDir } = await boot();
+    const created = await (await post(base, '/api/docs', {
+      title: 'Clerked', email: 'clerk@example.org',
+    })).json() as { devLink: string; slug: string };
+    const c = cookieOf(await consume(created.devLink));
+    const set = await post(base, `/api/d/${created.slug}/cmd`,
+      { cmd: 'set-convenor-membership', args: { isMember: false } }, c);
+    expect(set.status, await set.clone().text()).toBe(200);
+    const asked = await post(base, `/api/d/${created.slug}/login`, { email: 'clerk@example.org' });
+    expect(asked.status).toBe(200);
+    const again = await consume((await lastMailTo(dataDir, 'clerk@example.org')).link!);
+    expect(again.status).toBe(302);
+    const cookie = again.headers.get('set-cookie');
+    expect(cookie, 'the clerk is seated').toBeTruthy();
+    const v = await (await fetch(`${base}/api/d/${created.slug}/view`,
+      { headers: { cookie: cookie!.split(';')[0]! } })).json() as { stranger?: boolean };
+    expect(v.stranger).toBeUndefined();
   });
 });
 
@@ -1332,6 +1373,9 @@ describe('the clock closes the document (SPEC §4.6, Q467)', () => {
     ] as const) {
       for (const cookie of [ada, bo, cy]) await cmd(cookie, 'answer', { setting, value });
     }
+    // an invitation nobody follows until after the close (issue #35 F1)
+    await cmd(ada, 'invite', { email: 'dee@example.org' });
+    const deeInvite = (await lastMailTo(dataDir, 'dee@example.org')).link!;
     await cmd(ada, 'begin', {}); // 🍾
     expect((await viewOf(ada)).constitutedAtT).not.toBeNull();
 
@@ -1418,10 +1462,26 @@ describe('the clock closes the document (SPEC §4.6, Q467)', () => {
       .map((l) => JSON.parse(l) as { to: string; subject: string; link?: string })
       .filter((m) => m.subject === '“Night Watch Rota” has closed');
     expect(closedMails().map((m) => m.to).sort())
-      .toEqual(['ada@example.org', 'bo@example.org', 'cy@example.org']);
-    expect(closedMails()[0]!.link).toBe(`${base}/d/${slug}`);
+      .toEqual(['ada@example.org', 'bo@example.org', 'cy@example.org', 'dee@example.org']);
+    // **a member's closing mail logs them in** (issue #35 F4): the bare
+    // address met a member with no cookie at the stranger's page. An
+    // invitation never followed keeps the bare address — the close expired
+    // it (X14), and the login door would seat nobody
+    const closeLink = (to: string) => closedMails().find((m) => m.to === to)!.link!;
+    for (const to of ['ada@example.org', 'bo@example.org', 'cy@example.org']) {
+      expect(closeLink(to), to).toContain('/auth/login?token=');
+    }
+    expect(closeLink('dee@example.org')).toBe(`${base}/d/${slug}`);
     await draft.tick(ends + 61_000);
-    expect(closedMails()).toHaveLength(3);
+    expect(closedMails()).toHaveLength(4);
+
+    // **an invitation link followed after the close lands on the closed
+    // document** (issue #35 F1): `arrive` refuses a closed document, and the
+    // throw came after the token was spent — raw JSON, the link dead
+    const late = await consume(deeInvite);
+    expect(late.status).toBe(302);
+    expect(late.headers.get('location')).toBe(`/d/${slug}`);
+    expect(late.headers.get('set-cookie'), 'the close excluded them, so no seat').toBeNull();
   });
 });
 
