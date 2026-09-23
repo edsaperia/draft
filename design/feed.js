@@ -200,7 +200,10 @@
   // since it is the same host saying the same thing.
   function sayOf(v) {
     if (v.paused) return P.host.paused;
-    if (v.stalled) return P.host.stalled;
+    // …except the stalled sentence, which is the feed's own (issue #87 F4):
+    // the session's says *nothing you do here will be kept* to a reader who
+    // is doing nothing, so the feed says it about the document instead
+    if (v.stalled) return T.stalled;
     if (!v.canRead) return (v.holding && v.holding.sentence) || '';
     if (!v.begun) return T.notBegun;
     if (!v.entries || !v.entries.length) return T.empty;
@@ -240,7 +243,10 @@
     const was = document.documentElement.scrollHeight;
     list.innerHTML = html;
     const grew = document.documentElement.scrollHeight - was;
-    if (grew > 0 && window.scrollY > 0) window.scrollBy(0, grew);
+    // **an entry leaving is carried too** (issue #87 F2): a withdrawn or
+    // voted-down motion now leaves the feed, which moves everything older up
+    // by its height, so the correction runs whichever way the list changed
+    if (grew !== 0 && window.scrollY > 0) window.scrollBy(0, grew);
     seen = new Set(v.entries.map(keyOf));
   }
 

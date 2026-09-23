@@ -10,6 +10,8 @@
  * *public like the amendment itself* (`MotionRecord.why`) — that it passed,
  * and how long that took; and the Founder's own ✒️ change to a rule after the
  * document began, which the record calls an amendment and names by office.
+ * **A motion that ends without carrying is taken back off it** (issue #87):
+ * a vote against, a withdrawal, the close's keep.
  *
  * What it never carries:
  *  - **who moved it** — a motion's authorship is sealed (`by` never leaves);
@@ -33,6 +35,7 @@ import { FoldState, apply } from './fold.js';
 import { spellWords } from './meaning.js';
 import { InMemoryPeople } from './people.js';
 import type { LogEntry, MotionId } from './types.js';
+import { eqValue } from './values.js';
 import type { SettingValue } from './values.js';
 
 export interface SettingFeedEntry {
@@ -115,10 +118,25 @@ export function settingFeed(log: readonly LogEntry[]): SettingFeedEntry[] {
     // and is the only emitter, so the old test could never be true and no ✒️
     // change to a rule ever made an entry. `begun` is implied by `crown` and
     // kept as the statement of what this branch is about.
-    } else if (ev.type === 'setting-set' && ev.by === 'crown' && begun && RULE.has(ev.setting)) {
+    // **…and a ✒️ that restates what stands changes no rule** (issue #87 F3):
+    // `setSetting` emits unconditionally, and both sides of *as it stood / as
+    // it stands* would print the same sentence — the fold's own test
+    // (Q1348, R-105: a pen that restates what stands shifts no ground)
+    } else if (ev.type === 'setting-set' && ev.by === 'crown' && begun && RULE.has(ev.setting) &&
+        (stoodForSet === null || !eqValue(stoodForSet, ev.value))) {
       out.push({ t: ev.t, kind: 'decreed', motionId: null, setting: ev.setting,
         glyph: GLYPH.get(ev.setting) ?? '', route: 'pen',
         from: stoodForSet, to: ev.value, rationale: ev.why ?? '' });
+    }
+    // **a motion that ends without carrying leaves the feed** (issue #87 F1;
+    // spectator-api.ts's splice at `candidate-withdrawn`, for the rules): a
+    // vote against (Q1473, R-138), the mover's withdrawal and the close's
+    // keep. A carried motion never reaches these events; a motion that never
+    // made an entry — a person's, the pen's — finds nothing to take away.
+    if (ev.type === 'motion-held' || ev.type === 'motion-withdrawn' ||
+        ev.type === 'motion-kept-at-close') {
+      const at = made.findIndex((e) => e.kind === 'proposed' && e.motionId === ev.motion);
+      if (at >= 0) made.splice(at, 1);
     }
   }
   return made;

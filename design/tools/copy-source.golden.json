@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 525
+  "entries": 526
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -58,6 +58,7 @@
   "feed.rule.units": "ƒ (n, unit) => n + ' ' + unit",
   "feed.ruleNow": "The rule as it stands",
   "feed.ruleStood": "The rule as it stood",
+  "feed.stalled": "This document cannot save changes at the moment, so nothing here will change until it can.",
   "feed.stood": "The clause as it stood",
   "feed.tabTitle": "ƒ (title) => title + ' — feed'",
   "feed.titled": "ƒ (what, counts) => (counts ? what + ' · ' + counts : what)",

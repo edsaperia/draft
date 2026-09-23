@@ -1153,6 +1153,8 @@ window.COPY = (function () {
     empty: 'Nothing has been proposed yet.',
     closed: (dateWords) => 'Closed ' + dateWords,
     unreachable: 'The feed could not be reached. It will try again.',
+    // the host's red flag, said about the document to a reader who cannot act
+    stalled: 'This document cannot save changes at the moment, so nothing here will change until it can.',
     missing: 'There is no document at this address.',
   };
 

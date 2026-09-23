@@ -129,3 +129,6 @@ pre-fix page before its fix landed.
 - `crown-rail.mjs <dev server>` — issue #32 (built as Q1475): a change the membership
   carried and the Founder's 🛡️ holds asks the Founder — member or clerk — on the `adm:` and
   `mo:` entries, and waits on them everywhere else.
+- `feed-scroll-hold.mjs` — issue #87 F2: the spectator feed, scrolled back, holds the entry
+  being read still when an entry leaves above it (a rules motion voted down) and when one
+  arrives. No server — `design/feed.html` served from disk with a fabricated feed answer.
