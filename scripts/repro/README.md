@@ -114,3 +114,18 @@ DRAFT_DATA_DIR=<fresh> npm run server`) unless it says docs.vote.
   node scripts/repro/rehearsal.mjs --base http://127.0.0.1:8350 --minutes 25 --bots 8
   node scripts/room-bots.mjs http://127.0.0.1:8350/d/<slug> --key=$DRAFT_BOT_KEY --seed=rehearsal --min 10s --max 40s --heat 0.6 --motions 0.05
   ```
+
+## 2026-09-23 — the P1 batch (plan-p1-batch.md, Stage 1)
+
+Guards rather than room replays: each asserts, exits 1 on a failure, and was seen red on the
+pre-fix page before its fix landed.
+
+- `lane-enter.mjs <design base>` — issue #78: Enter at the end of a lane you are drafting in
+  makes a second line; four cases on the fixture (end · bare · middle · twice). Needs
+  `npm run design`, not a dev server.
+- `refused-acts.mjs <dev server>` — issue #37: a refused judgment is un-filed, a double ✓
+  sends one, a refused withdrawal puts the proposal and the ✏️ back, a command that never
+  answers does not hold the next one.
+- `crown-rail.mjs <dev server>` — issue #32 (built as Q1475): a change the membership
+  carried and the Founder's 🛡️ holds asks the Founder — member or clerk — on the `adm:` and
+  `mo:` entries, and waits on them everywhere else.
