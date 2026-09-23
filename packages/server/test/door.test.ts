@@ -231,6 +231,49 @@ describe('the arrival doors (issue #69)', () => {
     expect((await arrive(client())).status, 'the same link, another address').toBe(302);
   }, 60_000);
 
+  /* **A body the door cannot read is still counted** (issue #89): 264da28
+   * read the token above the brake so a refusal could hand it back, and a
+   * malformed or oversized body threw before `tooMany` ever saw it — never
+   * counted, each one a row in the error log. The bucket is filled to one
+   * short of its cap straight through the limiter's own module, as the
+   * stranger case does; the unreadable request must be the one that fills
+   * it, so the good arrival after it is the 429. */
+  it('counts a malformed or oversized body at all three doors before it reads it', async () => {
+    const { base } = await boot(true);
+    const bodies: Array<[string, Record<string, string>, string]> = [
+      ['malformed json', { 'content-type': 'application/json' }, '{'],
+      ['oversized form', { 'content-type': 'application/x-www-form-urlencoded' },
+        'token=' + 'x'.repeat(10_001)],
+    ];
+    for (const door of ['/auth/create', '/auth/login', '/auth/apply']) {
+      for (const [what, headers, body] of bodies) {
+        const ip = client();
+        for (let i = 0; i < CAPS.auth - 1; i++) {
+          rateLimited(`auth:${ip['cf-connecting-ip']}`, Date.now(), CAPS.auth);
+        }
+        const bad = await fetch(base + door, {
+          method: 'POST', headers: { origin: base, ...headers, ...ip }, body, redirect: 'manual',
+        });
+        await bad.arrayBuffer();
+        expect(bad.status, `${door} · ${what} · the two-hundredth`).not.toBe(429);
+        const good = await fetch(base + door, {
+          method: 'POST',
+          headers: { 'content-type': 'application/x-www-form-urlencoded', origin: base, ...ip },
+          body: new URLSearchParams({ token: 'no-such-token' }).toString(),
+          redirect: 'manual',
+        });
+        await good.arrayBuffer();
+        expect(good.status, `${door} · after ${what} · the two-hundred-and-first`).toBe(429);
+        // and past the cap the unreadable body is refused like any other
+        const again = await fetch(base + door, {
+          method: 'POST', headers: { origin: base, ...headers, ...ip }, body, redirect: 'manual',
+        });
+        await again.arrayBuffer();
+        expect(again.status, `${door} · ${what} · past the cap`).toBe(429);
+      }
+    }
+  }, 60_000);
+
   it('serves two hundred knocks at /apply on one address, then refuses', async () => {
     const { base } = await boot(true);
     const slug = await found(base, 'Knock', 'founder.knock@example.org');

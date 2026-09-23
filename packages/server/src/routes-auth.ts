@@ -218,7 +218,7 @@ export const authTable: Route[] = [
       // (Q1341). The brake reads the token first so a refusal can hand it
       // back on a page (`busyDoor`) rather than as raw JSON — the body is
       // capped at 10 KB, so nothing is spent by reading it.
-      const token = await readTokenBody(req);
+      const token = await tokenOrEmpty(req);
       if (r.tooMany('auth', 200, () => { busyDoor(ctx, r, token); })) return true;
       if (pausedDoor(ctx, r, token)) return true;
       const rec = await auth.useToken(token, nowMs);
@@ -402,7 +402,7 @@ export const authTable: Route[] = [
       const { req, res, nowMs } = r;
       const { store, auth, writes } = ctx;
       // the shared `auth:<ip>` bucket, answered as a page (issue #69, F3)
-      const token = await readTokenBody(req);
+      const token = await tokenOrEmpty(req);
       if (r.tooMany('auth', 200, () => { busyDoor(ctx, r, token); })) return true;
       if (pausedDoor(ctx, r, token)) return true;
       const rec = await auth.useToken(token, nowMs);
@@ -457,7 +457,7 @@ export const authTable: Route[] = [
       const { req, res, nowMs } = r;
       const { store, auth, writes } = ctx;
       // the shared `auth:<ip>` bucket, answered as a page (issue #69, F3)
-      const token = await readTokenBody(req);
+      const token = await tokenOrEmpty(req);
       if (r.tooMany('auth', 200, () => { busyDoor(ctx, r, token); })) return true;
       if (pausedDoor(ctx, r, token)) return true;
       const rec = await auth.useToken(token, nowMs);
@@ -604,6 +604,18 @@ function pausedDoor(ctx: RouteContext, r: Req, token: string): boolean {
  * a header what the sentence says in words. The status stays the limiter's
  * 429; only the medium changes.
  */
+/**
+ * **The brake counts a body it cannot read** (issue #89). The three
+ * `/auth/*` doors read the token above `tooMany` so a refusal can hand it
+ * back (`busyDoor`), and `readTokenBody` throws on a body past 10 KB or on
+ * malformed JSON — which, uncaught, skipped the bucket entirely and wrote a
+ * row to the error log for every one. An unreadable body is an empty token:
+ * counted like any arrival, and past the brake it meets the spent-link page.
+ */
+async function tokenOrEmpty(req: Req['req']): Promise<string> {
+  try { return await readTokenBody(req); } catch { return ''; }
+}
+
 function busyDoor(ctx: RouteContext, r: Req, token: string): void {
   const d = r.url.searchParams.get('d') ?? '';
   const action = d === '' ? r.path : `${r.path}?d=${encodeURIComponent(d)}`;
