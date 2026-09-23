@@ -1255,6 +1255,65 @@ const lifecycleL9 = async () => {
   if (!nameOk) stuck.push('L9: 🗑️ on ✋');
 };
 
+/* ---- an ordinary rule changed by the Founder's ✒️ is news (issue #80) ----
+ * The module owes every member an OK for a Founder's change to an ordinary
+ * rule once it has a *from* (Q530); the page decides it is news by reading
+ * `previousValue`, and the live `settingState` adapter dropped it — so on
+ * every real document `changedFrom` read null, the ordinary arm of `news()`
+ * never fired, and the owed OK could never be given (and, owed, it wedged the
+ * setting's news channel shut). 🪶 is the ordinary rule the Founder still
+ * holds a pen on here (⏱️'s is promised away before 🍾, above), changed at
+ * the wire as 🌍 is below; what is under test is the member's rail, card and
+ * single OK — twice, the second change back to the old name, because an OK
+ * given must leave the channel open for the next one. Red on the pre-#80
+ * page at *railed: false*. */
+const ordinaryAmendmentNews = async () => {
+  if (!guestPage) return; // its own failure, already reported
+  const setTitle = (text, why) => page.evaluate(([t, w]) =>
+    fetch(location.pathname.replace('/d/', '/api/d/') + '/cmd', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ cmd: 'set-setting', args: { setting: 'title', value: { text: t }, ...(w ? { why: w } : {}) } }),
+    }).then((r) => r.json()).catch((e) => ({ error: String(e && e.message) })), [text, why]);
+  const owedOf = () => guestPage.evaluate(() => fetch(location.pathname.replace('/d/', '/api/d/') + '/view')
+    .then((r) => r.json()).then((v) => (v.view || {}).owedOks || []).catch(() => null));
+  const was = await page.evaluate(() => fetch(location.pathname.replace('/d/', '/api/d/') + '/view')
+    .then((r) => r.json()).then((v) => v.title).catch(() => null));
+  const round = async (label, text, why) => {
+    const said = await setTitle(text, why);
+    if (said && said.error) return { label, error: said.error };
+    await T(5000); // one poll in the member's seat
+    const s = await guestState();
+    const owed0 = await owedOf();
+    const railed = (s.rail || []).includes('title');
+    let body = '', pressed = false, owed1 = null;
+    const oks = guestOks;
+    if (railed) {
+      await guestPage.evaluate(() => { const el = document.querySelector('#rail [data-card="title"]'); if (el) el.click(); });
+      await guestPage.waitForTimeout(900);
+      body = await guestPage.evaluate(() => {
+        const c = document.querySelector('.setupcard[data-setupcard="title"]');
+        return c ? c.innerText.replace(/\s+/g, ' ') : '';
+      });
+      const ok = await guestPage.$('.setupcard[data-setupcard="title"] [data-ok]:not([disabled])');
+      if (ok) { await ok.click(); pressed = true; }
+      await guestPage.waitForTimeout(1800);
+      owed1 = await owedOf();
+    }
+    const good = railed && (owed0 || []).includes('title') && pressed && (!why || body.includes(why)) &&
+      Array.isArray(owed1) && !owed1.includes('title') && guestOks - oks === 1;
+    return { label, good, railed, owed0, pressed, reason: why ? body.includes(why) : null, owed1,
+      oks: guestOks - oks, rail: s.rail };
+  };
+  if (!was) { say('title news · FAIL: no title in the view'); stuck.push('the ordinary amendment (#80)'); return; }
+  const WHY = 'A shorter name reads better on the notice board.';
+  const r1 = await round('renamed', was + ' (renamed)', WHY);
+  const r2 = r1.good ? await round('and back', was, null) : null;
+  const good = r1.good && r2 && r2.good;
+  say('title news · ' + (good
+    ? 'the Founder\'s ✒️ on 🪶 reaches the member as news carrying its reason, one OK clears it, and a second change is news again'
+    : 'FAIL: ' + JSON.stringify([r1, r2])));
+  if (!good) stuck.push('the Founder\'s change to an ordinary rule is news (#80)');
+};
 const secondSeatOnAmendment = async () => {
   if (!guestPage) return; // its own failure, already reported
   // the founder amends a constitutional setting they still hold, at the wire:
@@ -2702,6 +2761,9 @@ if (!doorOk) stuck.push('the floating 📝 (Q1335)');
 // the other half of backlog 50: what *is* news to a member is a rule changed
 // while they were here, and one press of OK is what dismisses it
 await secondSeatOnAmendment();
+
+// issue #80: and an *ordinary* rule the Founder changes is news too
+await ordinaryAmendmentNews();
 
 // Q1319: with the amendment acknowledged, a member puts 🌍 to the room and
 // the founder's rail entry must read the motion's progress

@@ -9757,6 +9757,9 @@
       return rd ? { ready: rd.ready, waiting: rd.waiting, holds: rd.holds || [] } : null; })(),
     roomExists: roomExists(), otherTasksLeft: otherTasksLeft(), ansDue: ansDue(),
     voiceAcked: acked('grant-voice'),
+    // what each setting was changed from, as the page reads it (issue #80:
+    // the live adapter dropped it and every ordinary change read as a first)
+    changedFrom: Object.fromEntries(ORDER.map((k) => [k, (() => { try { return changedFrom(k); } catch (e) { return null; } })()])),
     order: ORDER.map((k) => { const c = card(k); return !c ? k + ' (no card)'
       : k + ' vis=' + (visible(c) ? 1 : 0) + ' set=' + (settled(c) ? 1 : 0) +
         ' act=' + (mustAct(c) ? 1 : 0) + ' blk=' + (blocksOrder(c) ? 1 : 0) +

@@ -435,6 +435,11 @@ window.LIVE = (function () {
           return { holder: st.holder, powers: st.powers, powerFrom: st.powerFrom,
             pendingRelease: st.pendingRelease || { unilateral: false, assent: false },
             value: st.value,
+            // Q530's two fields (issue #80): without them `changedFrom` read
+            // null on every live page, so a Founder's ✒️ change to an ordinary
+            // rule was news to nobody and its owed OK could never be given
+            previousValue: st.previousValue === undefined ? null : st.previousValue,
+            setWhy: st.setWhy === undefined ? null : st.setWhy,
             settledBy: st.settledBy, settledAtT: st.settledAtT,
             collecting: st.collecting,
             distribution: res ? res.distribution : null,
