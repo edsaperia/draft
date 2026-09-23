@@ -165,3 +165,5 @@ production unless walks force cold loads, evictions and reconnects.
 ## Stage notes
 
 (One line per stage as it lands: commit, measurement, what was found.)
+
+- **Stage 0**, 2026-09-23, branch `scaling-stage0`: `scale-seed` / `scale-measure` / `boot-guard` in sim-harness; PRODUCTION.md *Measurements*, 2026-09-23. A pool of 1,000 seeded documents measured at N = 30, 100, 300 (1,000 not run: this machine lacked the memory). On the starter at ×7, boot fills the 15-minute window at ~200 documents, RSS passes 512 MB at ~290, 30%-online polling fills the core at ~240 — the plan's order holds in sequence but not in margin, and boot and memory swap places if the big documents weigh what nh2026 does. `tick()` is milliseconds, so Stage 1 is only Stage 2's prerequisite; Stage 2 must not ship without Stage 3 (a convention's lazy load is ~30 s of blocked thread on Render, past the health check's 15 s); Stage 4 matters sooner than its place. Boot guard at `FLEET = 60`, half the window; wiring it into CI is the session's.
