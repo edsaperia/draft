@@ -37,9 +37,13 @@ export const SHARE = 0.5;
  *  *Measurements*, 2026-09-11: Render ran at about a seventh of this machine).
  *  A CI runner slower than the desktop makes the guard stricter, never laxer. */
 export const RENDER = 7;
-/** The fleet the guard speaks for: see PRODUCTION.md *Measurements*,
- *  2026-09-23, for why this number and not the plan's 300. */
-export const FLEET = 100;
+/** The fleet the guard speaks for — not the plan's 300, which no code today
+ *  boots inside the window (PRODUCTION.md *Measurements*, 2026-09-23: about
+ *  190 documents of this mix fill it). Sixty reads about a fifth of the
+ *  window on the desktop, so a CI runner twice as slow stays green and a
+ *  replay that gets two and a half times slower goes red. Raised when Stages
+ *  1–3 make boot stop growing with the fleet, and only then. */
+export const FLEET = 60;
 /** The set: the pool's mix (1 in 10 unbegun, 5 small, 3 medium, 1 convention). */
 export const SET = 'convention:1,medium:3,small:5,unbegun:1';
 export const SET_DOCS = 10;

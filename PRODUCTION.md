@@ -60,7 +60,7 @@ Commit hashes are this repository's; *running log* means the lifted log in
 | 11 | Backups and the restore drill; `repair-tail` for torn files | done 2026-08-20 | `8f9d56c`; `draft-tools drill` passed on the live database (2 documents, 16 entries, every hash identical); `docs/runbooks/backup-and-restore.md`; 499 (a) |
 | 12 | Privacy, ToS, retention, erasure | **open** — drafted, parked | `docs/legal/PRIVACY.md` and `TERMS.md` (`2a70192`; placeholders marked, not in force, not linked from the product); Q500's eight decisions **parked by Ed, 2026-08-29, until go-live is actually scheduled** |
 | 13 | Accessibility | **open** — not started as a stage, but **measured 2026-09-16**: the first audit ran and raised Q1394–Q1398, nothing on the surface changed. **Ruled by Ed, 2026-09-22: the three plain defects are ordinary fixes and join the next batch** — the missing `<html>` element and its language (Q1394), focus that stays on the card after an act (Q1397), and a distinct accessible name for each of a judgment's two wordings (Q1395); Q1396 and Q1398 wait for the stage. Its plan document is still owed when the stage is scheduled, in `design/MOBILE.md`'s shape — precedence declared, cite rather than restate, per-stage acceptance with file:line evidence (Ed, 2026-09-07, Q1255) — and now has an evidence base to be built on | `design/REPORT-a11y.md` (44 findings at 1600×1000, 50 at 390×844, four confirmed by two independent instruments); `design/tools/a11y-audit.mjs`, `npm run a11y-audit`. The worst row is the judgment lanes: 79 sightings on 27 cards where two rival wordings share one accessible name and sit in no group. Beside it, driven rather than read: **every act drops the keyboard at the top of the page** — opening a card and committing a judgment both leave focus on `<body>`, 6 of 6. The only Level-A failure is that the page has no `<html>` element, so it declares no language |
-| 14 | Performance, caching, stress tests | **open** — not started as a stage; **measured twice for concurrency** (the two moon rooms under *Measurements*: the knee is about 140 acting bots on the Render starter) and **never for replay**, which stage 19's rules name as the real scaling risk — and which bit on 2026-09-19, when a bot room's replay outgrew Render's health-check window, the instance died, and the third wipe was run with the host down (decision 1253). **Left parked by Ed, 2026-09-22**: the replay curve and a boot guard wait for the stage; issue #70 (`/healthz` reports no memory, boot time or document size) is the operator's half of the same gap | the instruments exist: `soak-harness` (`packages/sim-harness/src/soak.ts`, 2026-08-27) and the alpha preset below; **load waits until behaviour is as expected** (Ed, 2026-08-26 — stage 19) |
+| 14 | Performance, caching, stress tests | **open** — not started as a stage; **measured twice for concurrency** (the two moon rooms under *Measurements*: the knee is about 140 acting bots on the Render starter) and **for replay on 2026-09-23** (plan-scaling.md Stage 0, *Measurements*: boot, memory and CPU all fail between about 200 and 300 documents on the starter), which stage 19's rules name as the real scaling risk — and which bit on 2026-09-19, when a bot room's replay outgrew Render's health-check window, the instance died, and the third wipe was run with the host down (decision 1253). **Left parked by Ed, 2026-09-22**: the replay curve and a boot guard wait for the stage; issue #70 (`/healthz` reports no memory, boot time or document size) is the operator's half of the same gap | the instruments exist: `soak-harness` (`packages/sim-harness/src/soak.ts`, 2026-08-27) and the alpha preset below; **load waits until behaviour is as expected** (Ed, 2026-08-26 — stage 19) |
 | 15 | Documentation review — the gate is *somebody else can operate it* | **open** — three passes (2026-08-20, 2026-09-07, and **2026-09-17**, issue #15, which found the `DRAFT_STORE` row telling an operator to boot production on the ephemeral store, two stale counts, both CI job lists short, the documents-only lane described as a glob it is not, and every restart procedure silent about the pause and about the surface a restart drops). The gate is literal (Ed, 2026-09-07, Q1254): it closes when an operator who is neither Ed nor a session follows a runbook cold to its end; on the go-live checklist. **The convention the third pass adopted** (Ed, 2026-09-17): evidence points at a file and a symbol, never a line number | `752b41d`; `docs/OPERATING.md`, the four runbooks, `README.md` |
 | 16 | Rollback, go-live checklist, soft launch | **open** — not started | the checklist below; built so far, the mail kill-switch `DRAFT_MAIL_OFF` (`config.ts`'s `mailOff`; OPERATING §2) and the **announced pause** the deploy already uses as a maintenance mode (`write-path.ts`'s `PauseState`, Q1345); the **error log in the store** since 2026-09-22 (migration 6, `errorLogContract`; the page's own uncaught errors posted to `POST /api/page-error`; OPERATING §11) — nobody is *told*, and **Ed ruled 2026-09-22 that the log is enough, read within a day of every room and weekly besides** (`docs/runbooks/demo-day.md` § *Afterwards*), so the checklist asks for the log and its reading, not for an alert |
 | 17 | Mobile read + judge — `design/MOBILE.md` stages 0–4 | **open** — planned 2026-08-23 (655–673); a **first cut is live since 2026-09-12** (`b95e44b`, `435b8fe`), read + judge on one column with both rails as drawers, and the stage's own plan is what is still owed | `design/MOBILE.md` § *Status — the first cut, 2026-09-12* and the two passes after it (Q1350–Q1351, Q1387–Q1388), which list what is built and what is not; guards `npm run card-audit:narrow` and `npm run drawer-walk` (CI's `probe` job). **Not built**: the two-tap confirm, the tap targets, the pinned/flow split, and `mobile-walk` — there is still no such script in `scripts/` |
@@ -608,6 +608,116 @@ is caught at the read that would have been wrong. Both halves were shown to
 fail on a session whose memo spans the fold again. Still not built: more
 than one process, and the 300 KB first load above. The next instrument is
 this room again on docs.vote, to move the knee's number a second time.
+
+### The host against the number of documents — measured 2026-09-23 (stage 14, plan-scaling.md Stage 0)
+
+**The question** (Ed, 2026-09-23): does the one instance hold 300 documents
+with people in them? **No — not on the Render starter, and not for one
+reason but three, all arriving between about 200 and 300 documents.**
+
+**The instrument.** `npm run scale-seed -w @draft/sim-harness` wrote a pool
+of 1,000 documents through the real member route with the engine live (a
+server in the seeding process; the founder by the magic link, members by
+the dev seat switch; every act off a full member view), in a stated mix:
+115 never begun, 487 small (3–15 proposals), 294 working (20–60), 104
+conventions (150–200 proposals, ~1,000 judgments, 10–14 members); 369
+closed. 1.09 M log entries, 431 MB of JSONL. `npm run scale-measure` then
+copied the first *N* into a fresh data dir and booted the host over it —
+`main.ts`'s boot as a measured child (`scale-host.ts`, tsx over the
+sources, `--max-old-space-size=384` as render.yaml runs it) and, with
+`--artifact`, `dist/server.mjs` itself — read memory, three `tick()`
+passes, and then a share of every document's members polling `view` every
+4 s the way `live.js` does (`since`/`tv`/`rk`), with the seats in 1–5 open
+documents also acting every 15–45 s, for 60 s. Latencies are the server's
+own request lines (on Windows a loopback fetch jitters 0–16 ms by itself,
+so client-side times were not used). **One machine**: an i9-13900H laptop
+(14 cores, 16 GB), Node 24.18, the file store. Render read as the moon
+room's seven times slower (the 2026-09-11 sections above) — **an
+assumption for replay and CPU, never measured on Render.**
+
+| N | log entries | boot to `/healthz` (artifact / dev) | on Render ×7 | RSS after boot (artifact) | live heap after GC | one `tick()` (cold / warm) | 10% online: polls/s · view p50/p95 · busy | 30% online: polls/s · view p50/p95 · busy |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 30 | 23,210 | 8.5 / 8.3 s | ~1 min | 220 MB | 33 MB | 10 / 1 ms | 10 · 0 / 1 ms · 1% | 27 · 0 / 1 ms · 2% |
+| 100 | 96,512 | 29.2 / 36.0 s | ~3.5–4 min | 287 MB | 85 MB | 13 / 2 ms | 26 · 0 / 1 ms · 2% | 79 · 0 / 1 ms · 3% |
+| 300 | 340,630 | 217.6 / 201.9 s | **~25 min** | **516 MB** | 261 MB | 119 / 14 ms | 96 · 0 / 1 ms · 8% | 292 · 0 / 1 ms · **19%** |
+| 1,000 | 1,094,319 | not run | — | — | — | — | — | — |
+
+**1,000 was not run**: the host's live heap there extrapolates to about
+900 MB and its RSS past 1.2 GB, and this machine had 1.2 GB free — a run
+would have measured the page file. Its boot extrapolates to 10–12 minutes
+here, over an hour on Render.
+
+**Cold open of one document** (a host over that document alone): the
+median seeded convention (184 + 6,919 entries) replays in **4.0 s**, its
+first full view 17 ms; a median working document 0.15 s; a small one
+0.02 s; **nh2026's own logs** (317 + 3,057 entries, copied from the
+convention's data) **1.3 s**, first view 16–19 ms, 19 MB live heap with the
+process's own ~15.
+
+**What the numbers say.**
+
+1. **Boot is the big documents, not the count.** At N = 300 the 34
+   conventions are about three quarters of the replay; a small document
+   costs nothing. Replay per entry climbs with document size (0.34 ms at
+   N = 30, 0.59 ms at 300), and was the same 202 s with the heap
+   unconstrained, so it is the fold, not the collector. On Render at ×7 the
+   15-minute window is full at **about 200 documents of this mix** (about
+   20–25 rebase-heavy conventions), and half of it — the boot guard's budget —
+   at about 135.
+2. **Memory kills next, at about 290.** RSS grows ~1.15 MB a document;
+   the starter's 512 MB is passed at N = 300 (516 MB, the heap at 261 of
+   its 384 MB, collecting hard — the first `tick()` took 119 ms against 52
+   unconstrained). Unlike boot this is not an extrapolation: RSS was read
+   directly.
+3. **CPU is not far behind on Render.** Idle polling is cheap per request
+   (the short answer, p95 1 ms) but not free — 292 polls a second cost 19%
+   of a desktop core at N = 300, and under the heap limit a poll costs
+   about twice what it does at N = 100. Read at ×7, 30% of members
+   online fills Render's core at **about 240 documents**; 10% online at
+   about 550. The active rooms' own cost is the moon room's, on top.
+4. **`tick()` is not a problem**: 119 ms cold and 14 ms warm over 300
+   documents, far under the 5 s a health check waits.
+
+**The order of failure: confirmed in sequence, corrected in its margins.**
+Boot replay, then memory, then CPU — as the plan guessed — but not as
+three well-separated walls: at 30% online the three fall at about 200, 290
+and 240 documents on Render, so CPU arrives *before* memory, and **the
+order of the first two depends on how heavy the big documents are**. The
+seeded conventions are rebase-heavy (5,804 rebases in the median one
+against nh2026's 1,591, because more proposals are live at each adoption)
+and replay three times slower than nh2026; with nh2026-weight conventions
+boot would fill the window nearer 400 documents and **memory, at ~290,
+would fail first**. The residency room (Q1469: twelve thousand entries,
+nine minutes on Render) is the other direction. Either way nothing about
+300 holds.
+
+**What changes for the later stages** (plan-scaling.md's Stage notes):
+Stage 2 fixes the first two failures at once and must not ship without
+Stage 3, because a lazy load is a synchronous replay on the one thread — a
+convention's 4 s here is ~30 s on Render, during which every request and
+the health check wait, and Render stops routing after 15 s of failed checks
+and restarts after 60; Stage 1's CPU saving is negligible (a tick pass is
+milliseconds) and it is worth building only as Stage 2's prerequisite;
+Stage 4 is needed sooner than its place suggests, since idle polling is
+the CPU failure's whole cause at these shares. The cheap stopgap is a
+larger Render plan (memory buys the second failure; it does not move the
+first).
+
+**The boot guard** — `npm run boot-guard -w @draft/sim-harness`, about 50 s:
+seeds ten documents in the pool's mix (one convention), replays them in a
+fresh process three times, and fails when the median scaled to **60
+documents** on Render (×7) passes **half** of the 15-minute window
+(render.com/docs/health-checks, read 2026-09-23; render.yaml sets the
+path, not the time). It reads 22% here. Sixty rather than 300 because
+nothing boots 300 today: the guard catches replay getting slower (red at
+about 2.5×) and states the headroom, and `FLEET` rises when Stages 1–3 stop
+boot growing with the fleet. Wired by the session (not by Stage 0).
+
+**Not measured.** Postgres (every number above is the file store; on
+docs.vote each log is a query at boot); Render itself — the ×7 is a
+latency ratio borrowed for replay and CPU, and the first thing to check is
+one real boot's time in the Render log against a local replay of the same
+store.
 
 
 ## History
