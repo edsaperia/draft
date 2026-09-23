@@ -6,7 +6,7 @@ because it sounds like we might hit some of these limits quite soon after a
 launch.* **A plan, not a build:** stage 14 was parked by Ed on 2026-09-22 and
 *load waits until behaviour is as expected* is his ruling of 2026-08-26
 (PRODUCTION.md stage 19); **when** any stage below is built is his call, and
-that call is recorded as a change to those rulings when he makes it.
+that call is recorded as a change to those rulings when he makes it. **Ruled by Ed, 2026-09-23 ~11:25: Stage 0 now, the rest before launch** — the measurement and the boot guard are built at once (they touch no product code); Stages 1–4 are built after the beta criterion is met and before any public launch, in order, each proved against the old path; Stage 5 keeps its own measured condition. This changes *load waits until behaviour is as expected* (2026-08-26) for Stage 0 alone, and un-parks stage 14 (2026-09-22) to that extent.
 
 **Precedence.** SPEC wins over this file (the log and its replay are the
 mechanism's own, §11); PRODUCTION.md holds the stage and this file its plan;
