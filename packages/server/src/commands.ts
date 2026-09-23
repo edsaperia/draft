@@ -137,9 +137,12 @@ export function faceTakenBy(cs: ConstitutionSession, pic: string, self: string):
   return null;
 }
 
-const refuseTaken = (cs: ConstitutionSession, pic: string, self: string): string => {
+const refuseTaken = (cs: ConstitutionSession, pic: string, self: string,
+  blind = false): string => {
   const holder = faceTakenBy(cs, pic, self);
-  if (holder !== null) throw new Error(`Taken — ${holder} got there first.`);
+  // an applicant is outside the room (issue #33, SURFACE Y28): the refusal
+  // names nobody, `faceTakenBy`'s own no-name word standing in
+  if (holder !== null) throw new Error(`Taken — ${blind ? 'Somebody' : holder} got there first.`);
   return pic;
 };
 
@@ -474,10 +477,16 @@ const HANDLERS: Record<string, Handler> = {
   },
   'submit-application': (cs, a, t, args) => {
     const applicant = applicantOnly(a);
+    // **the status is asked before the face** (issue #33): an application
+    // that cannot be submitted meets the module's own refusal, fields or
+    // none, so a seat that has already submitted cannot go on probing faces
+    if (cs.applicantRecords().get(applicant)?.status !== 'verified') {
+      cs.submitApplication(t, applicant);
+    }
     const fields: { name?: string; picture?: string; words?: string } = {};
     if (typeof args.name === 'string') fields.name = cap(args.name, LIMITS.name, 'the name');
     if (typeof args.picture === 'string') {
-      fields.picture = refuseTaken(cs, validPicture(args.picture), applicant);
+      fields.picture = refuseTaken(cs, validPicture(args.picture), applicant, true);
     }
     if (typeof args.words === 'string') fields.words = cap(args.words, LIMITS.words, 'the words');
     cs.submitApplication(t, applicant, fields);

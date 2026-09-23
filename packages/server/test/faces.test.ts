@@ -99,4 +99,30 @@ describe('what a face may be', () => {
     s.setIdentity(5, cy, { picture: 'e🐸' });
     expect(faceTakenBy(s, 'e🐸', 'ada')).toBe('Somebody');
   });
+
+  // **An applicant is outside the room** (issue #33, SURFACE Y28): the door
+  // withholds every member's name and every other applicant's at every rung
+  // of 🌍, and the face refusal named the holder anyway — one name per probe.
+  it('an applicant meets a taken face without the holder\'s name (SURFACE Y28)', () => {
+    const s = ConstitutionSession.open({ title: 'T', slug: 't',
+      convenor: { id: 'ada', email: 'ada@example.org', isMember: true } }, 0);
+    const bo = s.invite(1, 'bo@example.org'); s.arrive(1, bo);
+    s.setIdentity(2, bo, { name: 'Bo', picture: 'e🦊' });
+    s.setSetting(3, 'applications', { apply: true });
+    const dee = s.startApplication(4, 'dee@example.org'); s.verifyApplication(4, dee);
+    s.submitApplication(5, dee, { name: 'Dee', picture: 'e🐸' });
+    const eve = s.startApplication(6, 'eve@example.org'); s.verifyApplication(6, eve);
+    const asEve = { memberId: `app:${eve}`, isFounder: false, applicantId: eve };
+    for (const pic of ['e🦊', 'e🐸']) { // a member's face, then another applicant's
+      expect(() => runCommand(s, asEve, 7, 'submit-application', { picture: pic }))
+        .toThrow('Taken — Somebody got there first.');
+    }
+    runCommand(s, asEve, 8, 'submit-application', { picture: 'e🦉' });
+    // **and the status is checked first** (the P1 plan's #33 row): once
+    // submitted, a probe with a taken face meets the module's own refusal,
+    // so an application cannot be used to test faces after the fact
+    const asDee = { memberId: `app:${dee}`, isFounder: false, applicantId: dee };
+    expect(() => runCommand(s, asDee, 9, 'submit-application', { picture: 'e🦊' }))
+      .toThrow('verified by magic link before it can be submitted');
+  });
 });
