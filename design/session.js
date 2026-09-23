@@ -698,10 +698,29 @@
   // because a bare decimal beside a headcount reads more like a share, not less.
   // Rounded to whole percent: the second decimal was never doing anything but
   // suggesting the model is more precise than it is.
-  const groundOf = (col) => String(col).replace(/[\d.]+\s*\)\s*$/, GROUND_A + ')');
+  //
+  // **Paper on a desk, the mockup** (Q1516 (6), round 3; Ed 2026-09-23: *adjust
+  // the colours of the queue cards slightly, to make them stand out better
+  // from the desk*): under `?paper=1` a rail entry is a white slip on a grey
+  // desk, and at 0.06 its hue barely told it from the desk. So there, and only
+  // there, a **queue** wash (keys `q:`, and `set:` for the band's own entries,
+  // session-view.html's `entryOf`) takes twice the alpha, ground and bar
+  // alike: the bar is still the ground's own colour with its alpha swapped, so
+  // the evidence meter keeps its magnitude. The clause washes in the document
+  // are not rail entries and keep theirs. Without the switch the factor is 1
+  // and every string below is the one it always was.
+  // (asked defensively: clock-check evaluates this file with a stub root)
+  const rootClasses = document.documentElement && document.documentElement.classList;
+  const QUEUE_WASH_K = rootClasses && rootClasses.contains('paper') ? 2 : 1;
+  const isQueueWash = (key) => QUEUE_WASH_K !== 1 && /^(q|set):/.test(String(key));
+  const groundAOf = (key) => (isQueueWash(key) ? GROUND_A * QUEUE_WASH_K : GROUND_A);
+  const scaledCol = (col) => String(col).replace(/([\d.]+)(\s*\)\s*)$/,
+    (_, a, tail) => Math.min(1, +a * QUEUE_WASH_K).toFixed(3) + tail);
+  const groundOf = (col, key) => String(col).replace(/[\d.]+\s*\)\s*$/, groundAOf(key) + ')');
   function washAttrs(key, col, fill) {
+    if (isQueueWash(key)) col = scaledCol(col);
     const from = prevWash.get(key) || { col, fill };
-    const varsOf = (w) => '--washcol: ' + w.col + '; --washbg: ' + groundOf(w.col) +
+    const varsOf = (w) => '--washcol: ' + w.col + '; --washbg: ' + groundOf(w.col, key) +
       (fill == null ? '' : '; --fill: ' + w.fill);
     return ' data-washkey="' + esc(key) + '" data-wash="' + col + '"' +
       (fill == null ? '' : ' data-fill="' + fill + '"') +
@@ -714,7 +733,7 @@
     for (const el of els) {
       if (el.dataset.wash == null) continue;
       el.style.setProperty('--washcol', el.dataset.wash);
-      el.style.setProperty('--washbg', groundOf(el.dataset.wash));
+      el.style.setProperty('--washbg', groundOf(el.dataset.wash, el.dataset.washkey));
       if (el.dataset.fill != null) el.style.setProperty('--fill', el.dataset.fill);
       prevWash.set(el.dataset.washkey, { col: el.dataset.wash, fill: el.dataset.fill });
     }
@@ -1623,7 +1642,8 @@
     const m = raw.match(/^rgba\((.+?),\s*([\d.]+)\s*\)$/);
     if (!m) return { rgb: 'rgb(var(--lc-' + ((g && anchHue(g)) || 'closed') + '))', a: 0.16 };
     const a = +m[2];
-    return { rgb: 'rgb(' + m[1] + ')', a: +(a + GROUND_A * (1 - a)).toFixed(3) };
+    const ga = groundAOf(host.dataset.washkey);   // the paper's queue ground, else GROUND_A
+    return { rgb: 'rgb(' + m[1] + ')', a: +(a + ga * (1 - a)).toFixed(3) };
   };
   const WIRE_UNDER = '#FFFFFF';
   const SVGNS = 'http://www.w3.org/2000/svg';

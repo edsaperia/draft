@@ -44,10 +44,14 @@
 html.paper {
   --desk: #EEF0F2;
   /* --muted on the desk: #6B747C is 4.16∶1 on #EEF0F2, under AA's 4.5; this
-     is 5.03∶1 there. Only text standing on the desk takes it — on a sheet or
-     a slip --muted is its own value, 4.76∶1 on white. */
+     is 5.03∶1 there. Only text standing on the desk takes it — on a sheet
+     --muted is its own value, 4.76∶1 on white. */
   --desk-muted: #5F676F;
-  --muted-sheet: #6B747C;
+  /* --muted on a slip (round 3): the rail's wash is doubled on the desk
+     (session.js, QUEUE_WASH_K), and #6B747C on a full green bar — a decided
+     entry, 0.32 over a 0.12 ground — is 2.76∶1. Bootstrap's gray-700 is
+     4.74∶1 there and 5.26∶1 on the flame's 0.88 yellow; 8.2∶1 on white. */
+  --slip-muted: #495057;
   --desk-gap: var(--s5);
   --sheet-margin: 80px;
   --sheet-trim: 88px;
@@ -94,7 +98,7 @@ html.paper .doc:not(.fixsession) #charter > .prose > .doctitle {
 /* Text standing on the desk takes the darker grey (AA, above). */
 html.paper .layout > .toc,
 html.paper .layout > .queue { --muted: var(--desk-muted); }
-html.paper .layout > .queue button { --muted: var(--muted-sheet); }
+html.paper .layout > .queue button { --muted: var(--slip-muted); }
 /* the current heading and the hovered one were a --light pill on white; on
    the desk they are a white slip, the paper's own colour */
 html.paper .toc a:hover, html.paper .toc a.current { background: var(--bg); }
@@ -118,7 +122,16 @@ html.paper .toc li:has(> a[href="#dochead"])::before {
    entry takes its own white ground and the wash rides on `::after` beneath
    the fill bar and the text — the task drawer's technique (system.css,
    NARROW_Q), so the fade over --wash-ms survives. Every entry is a slip of
-   paper at the sheet's own height. */
+   paper at the sheet's own height, `--shadow-sm`, as system.css already
+   rests it; the open one lifts to `--shadow-xl`, three steps up.
+
+   **Round 3** (Ed, 2026-09-23: *adjust the colours of the queue cards
+   slightly, to make them stand out better from the desk*): on the desk the
+   wash is doubled, the ground 0.06 → 0.12 and the bar with it, the bar being
+   the ground's own colour at its own alpha — so the evidence meter still
+   reads as a magnitude. Done where the wash is written (session.js,
+   `QUEUE_WASH_K`), not here, so the wire leaving an entry keeps matching the
+   entry's composited colour. The captions take `--slip-muted` (above). */
 html.paper .queue button:not(.sealdot) { background-color: var(--bg); isolation: isolate; }
 html.paper .queue button:not(.sealdot)::after {
   content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
