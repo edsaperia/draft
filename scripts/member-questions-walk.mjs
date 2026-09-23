@@ -260,11 +260,22 @@ if (s.rail.includes('ans-ending')) {
   check('*At a set time* is chosen by its press and shows its box, the ✓ still dark (#75 F1)',
     f1.chosen === 'true' && f1.box && f1.commit === true, JSON.stringify(f1));
   if (f1.box) {
+    await page.evaluate(() => { window.__box = document.querySelector('.setupcard [data-ansdate="ending"]'); }); // DIAG
     await page.click('.setupcard [data-ansdate="ending"]');
     await page.keyboard.type('01012030');
     await page.keyboard.press('Tab');
     await page.keyboard.type('1200P');
     await T(400);
+    // DIAG (P1 sweep, 2026-09-23): what the box holds before the press, for the red on the Linux runner
+    say('⏰ typed  · ' + JSON.stringify(await page.evaluate(() => {
+      const b = document.querySelector('.setupcard [data-ansdate="ending"]');
+      const ok = document.querySelector('.setupcard [data-confirm]');
+      const r = b && b.getBoundingClientRect();
+      return { value: b && b.value, valid: b && b.validity.valid, box: r && [Math.round(r.x), Math.round(r.y), Math.round(r.width), Math.round(r.height)],
+        focused: document.activeElement === b, active: document.activeElement && document.activeElement.tagName,
+        font: b && getComputedStyle(b).fontFamily, lang: navigator.language, tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        commit: ok ? ok.disabled : null, same: window.__box === b };
+    })));
     const before = answersSent.length;
     await page.click('.setupcard [data-confirm]');
     await T(1500);
