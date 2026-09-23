@@ -34,7 +34,7 @@
  * Exit 0 only if every case passes; 1 on any failure, 2 on a broken set-up.
  */
 import { chromium } from 'playwright';
-import { post as postTo, followLink, sleep, withWas } from '../lib/walk.mjs';
+import { post as postTo, followLink, sleep, withWas, landOn } from '../lib/walk.mjs';
 
 const argv = process.argv.slice(2);
 const BASE = (argv.find((a) => /^https?:/.test(a)) || 'http://127.0.0.1:8208').replace(/\/$/, '');
@@ -122,7 +122,7 @@ async function found(run, seats) {
 async function seat(browser, link, slug) {
   const context = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
   const page0 = await context.newPage();
-  await page0.goto(link);
+  await landOn(page0, link);
   await page0.waitForURL(new RegExp(`/d/${slug}`), { timeout: 20_000 });
   const me = await page0.evaluate(() => fetch(location.pathname.replace('/d/', '/api/d/') + '/view')
     .then((r) => r.json()).then((v) => v.me || (v.view && v.view.me) || null).catch(() => null));

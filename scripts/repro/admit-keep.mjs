@@ -31,7 +31,7 @@
  * Exit 0 only if all four pass; 1 on any failure, 2 on a broken set-up.
  */
 import { chromium } from 'playwright';
-import { post as postTo, followLink, outbox, linkIn, sleep } from '../lib/walk.mjs';
+import { post as postTo, followLink, outbox, linkIn, sleep, landOn } from '../lib/walk.mjs';
 
 const argv = process.argv.slice(2);
 const BASE = (argv.find((a) => /^https?:/.test(a)) || process.env.DRAFT_BASE_URL
@@ -107,7 +107,7 @@ const seatPage = async (link) => {
   const ctx = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => errors.push(String(e)));
-  await page.goto(link, { waitUntil: 'load' });
+  await landOn(page, link, { waitUntil: 'load' });
   for (let i = 0; i < 40 && !page.url().includes('/d/'); i++) await sleep(500);
   await sleep(2500);
   return page;

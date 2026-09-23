@@ -22,7 +22,7 @@
  * `judge`, `double`, `withdraw` and `hang`.
  */
 import { chromium } from 'playwright';
-import { post, followLink, outbox, linkIn, sleep } from '../lib/walk.mjs';
+import { post, followLink, outbox, linkIn, sleep, landOn } from '../lib/walk.mjs';
 
 const B = process.argv[2] || 'http://127.0.0.1:8232';
 const say = (s) => console.log(s);
@@ -80,7 +80,7 @@ const openPage = async (init) => {
   const page = await ctx.newPage();
   page.sent = [];
   page.on('request', (r) => { if (r.url().endsWith('/cmd')) page.sent.push(r.postData() || ''); });
-  await page.goto(`${B}/d/${slug}`); await sleep(3000);
+  await landOn(page, `${B}/d/${slug}`); await sleep(3000);
   // every OK the page asks for, so the rail holds the race
   for (let i = 0; i < 20; i++) {
     const k = await page.evaluate(() => { const e = [...document.querySelectorAll('#rail [data-card]')]

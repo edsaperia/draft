@@ -32,7 +32,7 @@
  */
 import { chromium } from 'playwright';
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
-import { say, sleep as T, followLink, post as postTo, outbox, linkIn } from './lib/walk.mjs';
+import { say, sleep as T, followLink, post as postTo, outbox, linkIn, landOn } from './lib/walk.mjs';
 
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
 const stuck = [];
@@ -123,7 +123,7 @@ const seat = async (email) => {
   const page = await ctx.newPage();
   page.on('pageerror', (e) => errors.push(email.split('-')[0] + ': ' + String(e)));
   const login = await (await post(`/api/d/${SLUG}/login`, { email })).json();
-  await page.goto(login.devLink, { waitUntil: 'networkidle' });
+  await landOn(page, login.devLink, { waitUntil: 'networkidle' });
   await T(1500);
   // every OK owed at the start (the founder's settings, the gates): the
   // motion waits behind ⚖️'s OK for anybody but its mover (Q1344)

@@ -29,6 +29,9 @@ import type { Req, RouteContext, Route } from './routes.js';
  *  the floor of three that stood from Q460 was never ruled. */
 const SLUG_OK = /^[a-z0-9][a-z0-9-]*$/;
 
+/** What `auth.mintToken` makes: `randomBytes(24)` as base64url (issue #67 F2). */
+const TOKEN_SHAPE = /^[A-Za-z0-9_-]{32}$/;
+
 /** Free if no document holds it and no live pending creation has
  *  reserved it (Q462b). */
 const slugFree = async (ctx: RouteContext, nowMs: number, slug: string): Promise<boolean> =>
@@ -211,7 +214,11 @@ export const authTable: Route[] = [
       const token = url.searchParams.get('token') ?? '';
       // a link a mail client wrapped across two lines arrives without its
       // token, and that is the same dead end by another road (2026-09-17)
-      if (token === '') {
+      // **…and so is one cut anywhere else** (issue #67 F2): a mint is
+      // exactly 32 base64url characters (auth.ts), so a token of any other
+      // shape was truncated in transit — read as cut, and spent nowhere,
+      // rather than as a link somebody used
+      if (!TOKEN_SHAPE.test(token)) {
         spentPage(ctx, r, PAGE.cut, path.slice(6) as 'create' | 'login' | 'apply');
         return true;
       }
@@ -604,6 +611,12 @@ const shell = (body: string): string =>
  */
 const PAGE = {
   continue: 'Continue',
+  /** What the press does, on the page a link opens (issue #67 F1). */
+  proceed: {
+    create: 'Press Continue to create your document.',
+    login: 'Press Continue to log in.',
+    apply: 'Press Continue to confirm your address.',
+  },
   /** The two ways a link can fail before it seats anybody. */
   used: 'This link has already been used, or it has expired.',
   cut: 'That link is not complete — it may have been cut short on its way to you.',
@@ -631,15 +644,22 @@ const PAGE = {
   unmade: 'Nothing stands at that address yet. Name the document again to create it:',
 } as const;
 
-/** The magic-link interstitial (stage 3, defect 6) — it exists for
- *  milliseconds. The action carries `d` so the POST it makes still knows
- *  the document when the token it spends turns out to be spent already. */
+/** The magic-link interstitial (stage 3, defect 6). The action carries `d`
+ *  so the POST it makes still knows the document when the token it spends
+ *  turns out to be spent already.
+ *
+ *  **It waits for a press** (issue #67 F1): it made the GET prefetch-safe and
+ *  then spent the token itself with `forms[0].submit()`, so anything that
+ *  *renders* a link — a mail scanner detonating it in a headless browser —
+ *  took the seat, and the member read *already used*. One sentence and a real
+ *  button, `busyDoor`'s shape: only a person's press spends the link. */
 function interstitial(action: string, token: string): string {
+  const door = action.slice(6).split('?')[0] as 'create' | 'login' | 'apply';
   return shell(
+    '<p>' + e(PAGE.proceed[door] ?? PAGE.proceed.login) + '</p>' +
     '<form method="post" action="' + e(action) + '">' +
     '<input type="hidden" name="token" value="' + e(token) + '">' +
-    '<noscript><button type="submit">Continue</button></noscript></form>' +
-    '<script>document.forms[0].submit()</script>');
+    '<button type="submit" style="padding: .4rem .8rem">' + e(PAGE.continue) + '</button></form>');
 }
 
 /**

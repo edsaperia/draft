@@ -32,7 +32,7 @@
  * Exit 0 only if all four pass; exit 1 on any failure, 2 on a broken set-up.
  */
 import { chromium } from 'playwright';
-import { post as postTo, followLink, sleep, withWas } from '../lib/walk.mjs';
+import { post as postTo, followLink, sleep, withWas, landOn } from '../lib/walk.mjs';
 
 const argv = process.argv.slice(2);
 const BASE = (argv.find((a) => /^https?:/.test(a)) || 'http://127.0.0.1:8208').replace(/\/$/, '');
@@ -109,7 +109,7 @@ async function seat(browser, link, slug) {
   const page = await (await browser.newContext({ viewport: { width: 1600, height: 1000 } })).newPage();
   const errs = [];
   page.on('pageerror', (e) => { errs.push(e.message); say(`pageerror: ${e.message}`); });
-  await page.goto(link);
+  await landOn(page, link);
   await page.waitForURL(new RegExp(`/d/${slug}`), { timeout: 20_000 });
   await page.waitForSelector('#charter', { timeout: 20_000 });
   await sleep(1200);

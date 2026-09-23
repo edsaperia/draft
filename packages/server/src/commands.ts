@@ -65,6 +65,12 @@ export const emailOk = (email: string): string => {
   if (email.length > LIMITS.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     throw new Error('that does not look like an email address');
   }
+  // **an address no provider delivers is refused where it is typed** (issue
+  // #67 F4): an accented letter or a non-Latin domain passed every gate and
+  // failed at the provider on every retry, reading *the mail could not be sent*
+  if (/[^\x21-\x7e]/.test(email)) {
+    throw new Error('that address has a character email cannot send to — use plain letters, digits and punctuation, no accents');
+  }
   // one address, one member (§9.7½) only holds if case cannot mint two
   // seats (review #1, finding 18); comparisons lowercase too
   return email.toLowerCase();

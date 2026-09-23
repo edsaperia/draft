@@ -145,12 +145,22 @@ export class WritePath {
   async sendNow(mail: Mail, documentId: string | null,
     token?: string): Promise<void> {
     const { cfg, mailer, outbox } = this.d;
-    if (cfg.mailOff) {
-      await outbox.enqueue([{ ...mail, documentId,
-        ...(token === undefined ? {} : { tokenHash: sha256Hex(token) }) }], this.d.now());
-      return;
+    const queue = (): Promise<void> => outbox.enqueue([{ ...mail, documentId,
+      ...(token === undefined ? {} : { tokenHash: sha256Hex(token) }) }], this.d.now());
+    if (cfg.mailOff) return queue();
+    try {
+      await mailer.send(mail);
+    } catch (e) {
+      // **a door's mail the provider refused is queued, not lost** (issue #67
+      // F3): the login mail and the applicant's verification had one attempt
+      // where a relayed mail has six, and the door could only report silence.
+      // The outbox's ladder takes it from here — and its give-up revokes the
+      // link, the token hash riding the row. The creation mail (no document
+      // yet) stays synchronous: the birth's 📧 reports its own failure.
+      if (documentId === null) throw e;
+      await queue();
+      this.d.outbox.kick(this.d.now());
     }
-    await mailer.send(mail);
   }
 
   /**

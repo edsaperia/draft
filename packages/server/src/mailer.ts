@@ -204,6 +204,23 @@ const leadPhrase = (ms: number): string => {
   return `${Math.max(1, Math.round(ms / 60_000))} minutes`;
 };
 
+/**
+ * **The document's own address, in the mail's words** (issue #67 F2): a
+ * magic link runs to some 85 characters and mail clients wrap it, and a link
+ * cut between its token and `&d=` lands on a page that can only say *open
+ * the document's own address — it is in the mail that brought you here*.
+ * Only the creation mail carried it; every mail whose link is a login or an
+ * application now says it too, read off the link's own `d`. Empty for a link
+ * that is the address already.
+ */
+const ownAddress = (link: string): string => {
+  try {
+    const u = new URL(link);
+    const d = u.searchParams.get('d');
+    return d ? `\n\nThe document’s own address is ${u.host}/d/${d}.` : '';
+  } catch { return ''; }
+};
+
 export const MAILS = {
   // Q460: clicking the link IS the creation — the document comes into
   // being at the address promised, and not before
@@ -220,19 +237,20 @@ export const MAILS = {
     subject: `You are invited to “${title}”`,
     text: `You have been invited to become a member of “${title}”.\n\n` +
       `Open your invitation:\n${link}\n\n` +
-      `Your membership begins when you click the link; until then votes may happen without you.`,
+      `Your membership begins when you click the link; until then votes may happen without you.` +
+      ownAddress(link),
     link,
   }),
   applyVerify: (title: string, link: string): Omit<Mail, 'to'> => ({
     subject: `Your application to “${title}”`,
     text: `This address is how “${title}” will know you.\n\n` +
-      `Verify it to continue your application:\n${link}`,
+      `Verify it to continue your application:\n${link}` + ownAddress(link),
     link,
   }),
   admitted: (title: string, link: string): Omit<Mail, 'to'> => ({
     subject: `You are a member of “${title}”`,
     text: `The members of “${title}” have admitted you.\n\n` +
-      `Log in to take your seat:\n${link}`,
+      `Log in to take your seat:\n${link}` + ownAddress(link),
     link,
   }),
   /**
@@ -251,7 +269,7 @@ export const MAILS = {
   }),
   login: (title: string, link: string): Omit<Mail, 'to'> => ({
     subject: `Log in to “${title}”`,
-    text: `Here is your login link for “${title}”:\n${link}`,
+    text: `Here is your login link for “${title}”:\n${link}` + ownAddress(link),
     link,
   }),
   /**
@@ -262,7 +280,7 @@ export const MAILS = {
     subject: `Your membership of “${title}” is about to lapse`,
     text: `You have been inactive for a while, and your membership of ` +
       `“${title}” will lapse in about ${leadPhrase(leadMs)}. ` +
-      `To prevent your membership from lapsing, click this link:\n${link}`,
+      `To prevent your membership from lapsing, click this link:\n${link}` + ownAddress(link),
     link,
   }),
   /** To the operator (cfg.notifyEmail), never to a member. */
@@ -281,7 +299,7 @@ ${url}`,
 ${link}
 
 ` +
-      `Members may add a closing comment.`,
+      `Members may add a closing comment.` + ownAddress(link),
     link,
   }),
   /**
@@ -337,7 +355,8 @@ ${link}
   lapsed: (title: string, link: string): Omit<Mail, 'to'> => ({
     subject: `Your membership of “${title}” has lapsed`,
     text: `Your membership of “${title}” has lapsed. This means you automatically ` +
-      `abstain on all votes. To re-activate your membership, click this link:\n${link}`,
+      `abstain on all votes. To re-activate your membership, click this link:\n${link}` +
+      ownAddress(link),
     link,
   }),
 } as const;

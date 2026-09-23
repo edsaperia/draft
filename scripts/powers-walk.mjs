@@ -52,7 +52,7 @@
  */
 import { chromium } from 'playwright';
 import { assertServerBuild } from './lib/assert-server.mjs';
-import { say, sleep as T, arg, pageGesture as gestureOf, outbox as devOutbox } from './lib/walk.mjs';
+import { say, sleep as T, arg, pageGesture as gestureOf, outbox as devOutbox, landOn } from './lib/walk.mjs';
 
 // argv first, then the environment the server itself was started with, then
 // the historical default. Under plan-queue every slot carries its own
@@ -226,7 +226,7 @@ const runDocument = async (hat) => {
     }
     born = r.devLink;
   }
-  await page.goto(born);
+  await landOn(page, born);
   for (let i = 0; i < 40 && !page.url().includes('/d/'); i++) await T(500);
   await T(1800);
   const SLUG = (page.url().match(/\/d\/([^/?#]+)/) || [])[1];
@@ -326,7 +326,7 @@ const runDocument = async (hat) => {
   // constitution over the wire never meets the two grant cards. Pressing them
   // is not scenery — without it every ✒️ on the page is dark for the right
   // reason and this walk would prove nothing.
-  await page.goto(DOCBASE + '/d/' + SLUG);
+  await landOn(page, DOCBASE + '/d/' + SLUG);
   await T(2400);
   for (const g of ['grant-pen', 'grant-shield']) {
     if (!(await openCard(g))) { fail('no ' + g + ' card to accept'); continue; }
@@ -363,7 +363,7 @@ const runDocument = async (hat) => {
     ' and on 📝 · ⏰ keeps its pen');
 
   /* ---- pre-start: the release is a promise, and the control is correct -- */
-  await page.goto(DOCBASE + '/d/' + SLUG);
+  await landOn(page, DOCBASE + '/d/' + SLUG);
   await T(2200);
   await openCard('title');
   // the title's ✒️ is `commitReady`, which is *the lane differs from what
@@ -407,7 +407,7 @@ const runDocument = async (hat) => {
     fail('begin → ' + begun0.status + ' ' + JSON.stringify((begun0.body || {}).error || '').slice(0, 200));
     await page.close(); return;
   }
-  await page.goto(DOCBASE + '/d/' + SLUG);
+  await landOn(page, DOCBASE + '/d/' + SLUG);
   await T(2400);
   const begun = await page.evaluate(() => !!document.querySelector('.doc.begun'));
   say('🍾         · ' + (begun ? 'begun' : 'FAIL: the page does not read as begun'));
@@ -447,7 +447,7 @@ const runDocument = async (hat) => {
    * own settledness is `S.emailVerified` — page state a reload cannot rebuild
    * — and pre-start it blocks the order ahead of them. 🎩 needs no press at
    * all on this side of 🍾: `constituted()` settles it (Q682). */
-  await page.goto(DOCBASE + '/d/' + SLUG);
+  await landOn(page, DOCBASE + '/d/' + SLUG);
   await T(2400);
   const order = [];
   for (const k of ['myname', 'mypic']) {
@@ -526,7 +526,7 @@ const runDocument = async (hat) => {
    * not a member, so their card keeps the pen alone and says why.
    * It fails on the pre-change page at *⏰ · one commit where there should be
    * two* (member) and at *⏰ · no sentence saying why* (clerk). */
-  await page.goto(DOCBASE + '/d/' + SLUG);
+  await landOn(page, DOCBASE + '/d/' + SLUG);
   await T(2400);
   if (!(await openCard('ending'))) fail('no ⏰ tab after 🍾 — the pair has nowhere to stand');
   else if (hat === 'clerk') {
@@ -659,7 +659,7 @@ const runDocument = async (hat) => {
     return !!(b && b.view && b.view.closed);
   }, SLUG);
   for (let i = 0; i < 45 && !(await shutNow()); i++) await T(2_000);
-  await page.goto(DOCBASE + '/d/' + SLUG);
+  await landOn(page, DOCBASE + '/d/' + SLUG);
   await T(2600);
   const shut = await page.evaluate(() => !!document.querySelector('#doc.closedpage'));
   if (!shut) {

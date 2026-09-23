@@ -42,7 +42,7 @@
  */
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
-import { post as postTo, followLink, sleep } from '../lib/walk.mjs';
+import { post as postTo, followLink, sleep, landOn } from '../lib/walk.mjs';
 
 const BASE = (process.argv.find((a) => /^https?:/.test(a)) || 'http://127.0.0.1:8402').replace(/\/$/, '');
 const ONLY = (process.argv.find((a) => a.startsWith('--case=')) || '').slice(7);
@@ -156,7 +156,7 @@ async function seat(browser, d, who, size = { width: 1600, height: 1000 }, touch
     if (/\/cmd$/.test(r.url()) && r.status() >= 400) refused.push(r.status() + ' ' + (await r.text().catch(() => '')).slice(0, 160));
   });
   if (LAG) await page.route('**/api/d/**', async (route) => { await sleep(LAG); await route.continue(); });
-  await page.goto(`${BASE}/d/${d.slug}`);
+  await landOn(page, `${BASE}/d/${d.slug}`);
   await page.waitForSelector('#charter', { timeout: 20_000 });
   await sleep(1000);
   await page.evaluate(() => fetch(location.pathname.replace('/d/', '/api/d/') + '/view').then((r) => r.json())

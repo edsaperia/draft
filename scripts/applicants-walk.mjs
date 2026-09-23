@@ -50,7 +50,7 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import { chromium } from 'playwright';
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
-import { say, sleep as T, linkIn, outbox as devOutbox, onPage } from './lib/walk.mjs';
+import { say, sleep as T, linkIn, outbox as devOutbox, onPage, landOn } from './lib/walk.mjs';
 
 // The card's words come from `design/copy.js`, read here the way copy-check
 // reads it — evaluated in a bare context, so the assertion is the file's own
@@ -179,7 +179,7 @@ if (!mails.length) {
   process.exit(1);
 }
 const link = linkIn(mails[mails.length - 1]);
-await page.goto(link);
+await landOn(page, link);
 for (let i = 0; i < 40 && !page.url().includes('/d/'); i++) await T(500);
 await T(1800);
 const SLUG = (page.url().match(/\/d\/([^/?#]+)/) || [])[1];
@@ -264,9 +264,9 @@ if (knock.status !== 200 || !knock.body || !knock.body.devLink) {
    * test is the handover rather than the boot. */
   const doorPage = await guestCtx.newPage();
   doorPage.on('pageerror', (e) => errors.push('door tab: ' + String(e)));
-  await doorPage.goto(DOCBASE + '/d/' + SLUG);
+  await landOn(doorPage, DOCBASE + '/d/' + SLUG);
   await T(2500);
-  await guest.goto(knock.body.devLink);
+  await landOn(guest, knock.body.devLink);
   await T(2200);
   // **At ✒️ the link is the joining** (Q894–Q896): `/auth/apply` admits the
   // visitor on arrival, so there is no application left to submit and the
@@ -495,7 +495,7 @@ if (knock.status !== 200 || !knock.body || !knock.body.devLink) {
   // the returning section's invitation does — else the page they already hold
   guestSeat = async (link) => {
     if (link) {
-      await guest.goto(link);
+      await landOn(guest, link);
       for (let i = 0; i < 40 && !guest.url().includes('/d/'); i++) await T(500);
     } else await guest.reload({ waitUntil: 'load' });
     await T(2500);
@@ -547,7 +547,7 @@ if (PRICE === 'proposal') {
     await route.fulfill({ status: 429, contentType: 'application/json',
       body: JSON.stringify({ error: 'too many' }) });
   });
-  await page.goto(DOCBASE + '/d/' + SLUG);
+  await landOn(page, DOCBASE + '/d/' + SLUG);
   await page.evaluate(() => { window.__noReload = true; });
   await T(6500);
   const back = await page.evaluate(() => ({
@@ -567,7 +567,7 @@ if (PRICE === 'proposal') {
   }
   await page.unroute('**/api/d/*/view*');
 }
-await page.goto(DOCBASE + '/d/' + SLUG);
+await landOn(page, DOCBASE + '/d/' + SLUG);
 await T(2500);
 
 // **A task waits behind the grant its main action needs** (Q1328, Q1344). At
@@ -1037,7 +1037,7 @@ if (PRICE !== 'pen') {
   } else {
     const memCtx = await browser.newContext({ viewport: { width: 1200, height: 900 } });
     const mem = await memCtx.newPage();
-    await mem.goto(invLink);
+    await landOn(mem, invLink);
     for (let i = 0; i < 40 && !mem.url().includes('/d/'); i++) await T(500);
     const memCmd = (op, args) => mem.evaluate(async ([slug, op2, args2]) => {
       const r = await fetch(`/api/d/${slug}/cmd`, {
@@ -1067,7 +1067,7 @@ if (PRICE !== 'pen') {
         const backCtx = await browser.newContext({ viewport: { width: 1200, height: 900 } });
         const back = await backCtx.newPage();
         back.on('pageerror', (e) => errors.push('returning applicant: ' + String(e)));
-        await back.goto(again.body.devLink);
+        await landOn(back, again.body.devLink);
         await T(2200);
         const served = await back.evaluate(async () => {
           const v = await (await fetch(location.origin + '/api/d/' + location.pathname.split('/')[2] + '/view')).json();
@@ -1201,7 +1201,7 @@ if (PRICE === 'pen') {
     const c = await browser.newContext({ viewport: { width: 1200, height: 900 } });
     const p = await c.newPage();
     p.on('pageerror', (e) => errors.push('door: ' + String(e)));
-    await p.goto(DOCBASE + '/d/' + SLUG);
+    await landOn(p, DOCBASE + '/d/' + SLUG);
     await T(3000);
     return { c, p };
   };
@@ -1242,7 +1242,7 @@ if (PRICE === 'pen') {
     }
     if (!joinLink) { say('FAIL: the Join card mailed no link'); stuck.push('the join mail'); }
     else {
-      await jp.goto(joinLink);
+      await landOn(jp, joinLink);
       for (let i = 0; i < 40 && !jp.url().includes('/d/'); i++) await T(500);
       await T(2000);
       const me = await jp.evaluate(async () => (await (await fetch(location.origin + '/api/d/' +

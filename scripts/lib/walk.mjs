@@ -134,6 +134,32 @@ export const followLink = async (link) => {
     cookie: (r.headers.get('set-cookie') ?? '').split(';')[0],
     location: r.headers.get('location') ?? '' };
 };
+/**
+ * **Open a URL in a browser, pressing Continue where it is a magic link**
+ * (issue #67 F1). The interstitial used to submit itself, so a walk seated a
+ * browser by `goto` alone; it waits for a person's press now, which is the
+ * whole of the fix — a link scanner that renders the page spends nothing. So
+ * every walk that lands a browser on a link lands it here: a plain `goto` for
+ * any other address, and on `/auth/create|login|apply` one press of the
+ * interstitial's own button, then the wait until the page has left `/auth/`.
+ * Answers what `goto` answered.
+ */
+export const landOn = async (page, url, opts = {}) => {
+  const res = await page.goto(url, opts);
+  let path = '';
+  try { path = new URL(page.url()).pathname; } catch { /* about:blank */ }
+  if (/^\/auth\/(create|login|apply)$/.test(path)) {
+    const button = await page.$('form[method="post"] button[type="submit"]');
+    if (button) {
+      await Promise.all([
+        page.waitForURL((u) => !/^\/auth\//.test(new URL(u).pathname),
+          { waitUntil: opts.waitUntil || 'load', timeout: 30_000 }).catch(() => {}),
+        button.click(),
+      ]);
+    }
+  }
+  return res;
+};
 
 /* ---- the page ------------------------------------------------------------ */
 

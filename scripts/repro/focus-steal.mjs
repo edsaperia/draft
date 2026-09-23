@@ -27,7 +27,7 @@
  * insertion at the gap's own line.
  */
 import { chromium } from 'playwright';
-import { post as postTo, followLink, sleep, withWas } from '../lib/walk.mjs';
+import { post as postTo, followLink, sleep, withWas, landOn } from '../lib/walk.mjs';
 
 const argv = process.argv.slice(2);
 const BASE = (argv.find((a) => /^https?:/.test(a)) || 'http://127.0.0.1:8202').replace(/\/$/, '');
@@ -115,7 +115,7 @@ if (!mail) die('no invitation for the page seat in the dev outbox');
 const browser = await chromium.launch();
 const page = await (await browser.newContext({ viewport: { width: 1600, height: 1000 } })).newPage();
 page.on('pageerror', (e) => say(`pageerror: ${e.message}`));
-await page.goto(mail.link);
+await landOn(page, mail.link);
 await page.waitForURL(new RegExp(`/d/${SLUG}`), { timeout: 20_000 });
 await page.waitForSelector('#charter', { timeout: 20_000 });
 await sleep(1500);

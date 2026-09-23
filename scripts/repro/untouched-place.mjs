@@ -36,7 +36,7 @@
  * untouched site too, an empty gap site as one blank line.
  */
 import { chromium } from 'playwright';
-import { post as postTo, followLink, sleep } from '../lib/walk.mjs';
+import { post as postTo, followLink, sleep, landOn } from '../lib/walk.mjs';
 import { assertServerBuild, walkBase } from '../lib/assert-server.mjs';
 
 const argv = process.argv.slice(2);
@@ -109,7 +109,7 @@ async function seat(browser, cookie, slug) {
   await ctx.addCookies([{ name: n, value: rest.join('='), url: BASE }]);
   const page = await ctx.newPage();
   page.on('pageerror', (e) => say(`pageerror: ${e.message}`));
-  await page.goto(`${BASE}/d/${slug}`);
+  await landOn(page, `${BASE}/d/${slug}`);
   await page.waitForSelector('#charter', { timeout: 20_000 });
   await sleep(1200);
   // the grants' OKs live in localStorage, one key per document and seat

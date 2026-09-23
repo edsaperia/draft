@@ -42,7 +42,7 @@
  */
 import { chromium } from 'playwright';
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
-import { say, arg, onPage } from './lib/walk.mjs';
+import { say, arg, onPage, landOn } from './lib/walk.mjs';
 
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
 const STOP = arg('to');
@@ -101,7 +101,7 @@ async function pressNext() {
 }
 
 say(`ladder-walk against ${BASE}, seed ${SEED}`);
-await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
+await landOn(page, BASE + '/', { waitUntil: 'domcontentloaded' });
 await T(600);
 
 // the seed goes in before the first press, so the walk is reproducible

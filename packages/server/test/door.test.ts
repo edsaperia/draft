@@ -13,6 +13,7 @@ import type { AddressInfo } from 'node:net';
 import { afterAll, describe, expect, it } from 'vitest';
 import { FilePersistence } from '../src/persistence.js';
 import { rateLimited } from '../src/routes.js';
+import { MAILS } from '../src/mailer.js';
 import { createDraftServer } from '../src/server.js';
 import type { DraftServer } from '../src/server.js';
 
@@ -21,7 +22,7 @@ const tmp = () => mkdtempSync(join(tmpdir(), 'draft-door-'));
 const booted: DraftServer[] = [];
 afterAll(async () => { for (const d of booted) await d.close(); });
 
-async function boot(trustProxy: boolean): Promise<{ base: string }> {
+async function boot(trustProxy: boolean): Promise<{ base: string; draft: DraftServer; persistence: FilePersistence }> {
   const dataDir = tmp();
   const cfg = {
     port: 0, dataDir, baseUrl: 'http://127.0.0.1',
@@ -31,11 +32,12 @@ async function boot(trustProxy: boolean): Promise<{ base: string }> {
     secret: 'test-secret', store: 'file' as const, databaseUrl: null,
     trustProxy, buildSha: null, notifyEmail: null,
   };
-  const draft = await createDraftServer(cfg, new FilePersistence(dataDir));
+  const persistence = new FilePersistence(dataDir);
+  const draft = await createDraftServer(cfg, persistence);
   await new Promise<void>((r) => draft.server.listen(0, '127.0.0.1', r));
   cfg.baseUrl = `http://127.0.0.1:${(draft.server.address() as AddressInfo).port}`;
   booted.push(draft);
-  return { base: cfg.baseUrl };
+  return { base: cfg.baseUrl, draft, persistence };
 }
 
 const post = (base: string, path: string, body: unknown, headers: Record<string, string> = {}) =>
@@ -390,3 +392,88 @@ async function founderCookie(base: string, slug: string, email: string): Promise
   expect(seated.status).toBe(302);
   return (seated.headers.get('set-cookie') ?? '').split(';')[0]!;
 }
+
+/**
+ * **A magic link waits for a person** (issue #67). The interstitial made the
+ * GET prefetch-safe and then spent the token itself — `forms[0].submit()` —
+ * so anything that *renders* the page (a link scanner detonating it in a
+ * headless browser) took the seat, and the member read *already used*. A cut
+ * link was read as a used one and sent the reader to an address the mail did
+ * not carry; the two mails a stranger waits on had one attempt and no queue;
+ * and an address no provider can deliver was accepted everywhere.
+ */
+describe('the magic link waits for a press (issue #67)', () => {
+  it('the interstitial runs nothing, and only its button spends the link', async () => {
+    const { base } = await boot(false);
+    const { devLink } = await (await post(base, '/api/docs',
+      { title: 'Oak', email: 'f.oak@example.org' })).json() as { devLink: string };
+    const page = await (await fetch(devLink)).text();
+    expect(page, 'no script acts on the link').not.toContain('submit()');
+    expect(page).not.toContain('<script');
+    expect(page, 'the button is not hidden behind <noscript>').not.toContain('<noscript>');
+    expect(page).toMatch(/<button[^>]*type="submit"[^>]*>Continue<\/button>/);
+    // a renderer that fetches the page twice spends nothing; the press seats
+    await fetch(devLink);
+    const u = new URL(devLink);
+    const pressed = await fetch(u.origin + u.pathname + u.search.replace(/token=[^&]*&?/, ''), {
+      method: 'POST', redirect: 'manual',
+      headers: { 'content-type': 'application/x-www-form-urlencoded', origin: u.origin },
+      body: new URLSearchParams({ token: u.searchParams.get('token') ?? '' }).toString(),
+    });
+    expect(pressed.status).toBe(302);
+  });
+
+  it('a link cut short reads as cut, spends nothing, and the whole one still works', async () => {
+    const { base } = await boot(false);
+    const slug = await found(base, 'Cut', 'founder.cut@example.org');
+    const { devLink } = await (await login(base, slug, 'founder.cut@example.org')).json() as { devLink: string };
+    const u = new URL(devLink);
+    const token = u.searchParams.get('token') ?? '';
+    // a wrap between the token and `&d=` loses the tail and the address
+    const cut = await fetch(`${u.origin}${u.pathname}?token=${token.slice(0, 20)}`);
+    const said = await cut.text();
+    expect(said).toContain('not complete');
+    expect(said).not.toContain('already been used');
+    const whole = await fetch(u.origin + u.pathname, {
+      method: 'POST', redirect: 'manual',
+      headers: { 'content-type': 'application/x-www-form-urlencoded', origin: u.origin },
+      body: new URLSearchParams({ token }).toString(),
+    });
+    expect(whole.status).toBe(302);
+  });
+
+  it('every mail with a link names the document’s own address in its words', () => {
+    const link = 'https://docs.vote/auth/login?token=x&d=hollow-oak';
+    for (const m of [MAILS.invite('T', link), MAILS.login('T', link), MAILS.admitted('T', link),
+      MAILS.applyVerify('T', link.replace('login', 'apply')), MAILS.lapsed('T', link),
+      MAILS.lapseWarning('T', link, 86_400_000), MAILS.closed('T', link)]) {
+      expect(m.text.replace(link, '').replace(link.replace('login', 'apply'), ''),
+        m.subject).toContain('docs.vote/d/hollow-oak');
+    }
+  });
+
+  it('a login mail the provider refuses is queued, not lost', async () => {
+    const { base, draft, persistence } = await boot(false);
+    const slug = await found(base, 'Queue', 'founder.queue@example.org');
+    const id = draft.store.bySlug(slug)!.id;
+    const send = draft.mailer.send;
+    draft.mailer.send = async () => { throw new Error('the mail could not be sent — try again shortly'); };
+    try {
+      const r = await login(base, slug, 'founder.queue@example.org');
+      expect(r.status, await r.clone().text()).toBe(200);
+      const rows = await persistence.listOutboxFor(id, 'founder.queue@example.org');
+      expect(rows.length, 'the mail waits in the outbox for the next attempt').toBeGreaterThan(0);
+      expect(rows[rows.length - 1]!.tokenHash, 'with the hash that revokes it on a give-up').toBeTruthy();
+    } finally { draft.mailer.send = send; }
+  });
+
+  it('an address a provider cannot deliver is refused where it is typed', async () => {
+    const { base } = await boot(false);
+    const slug = await found(base, 'Ascii', 'founder.ascii@example.org');
+    for (const email of ['josé@example.com', 'ed@münchen.de']) {
+      const r = await login(base, slug, email);
+      expect(r.status, email).toBe(400);
+      expect(((await r.json()) as { error: string }).error).toMatch(/plain|ASCII|accent/i);
+    }
+  });
+});

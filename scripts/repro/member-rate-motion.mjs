@@ -41,7 +41,7 @@
  * Needs a dev server (the dev outbox carries the magic links). Changes nothing in the tree.
  */
 import { devices } from 'playwright';
-import { browserFor } from '../lib/walk.mjs';
+import { browserFor, landOn } from '../lib/walk.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { AsyncLocalStorage } from 'node:async_hooks';
 
@@ -175,7 +175,7 @@ const seat = async (cookie, { narrow = false, unacked = false } = {}) => {
     let ans = null; try { ans = await res.json(); } catch {}
     wire.push({ cmd: body && body.cmd, args: body && body.args, status: res.status(), answer: ans });
   });
-  await page.goto(`${BASE}/d/${doc().slug}`);
+  await landOn(page, `${BASE}/d/${doc().slug}`);
   await page.waitForSelector('#band .cpara', { timeout: 20000 });
   await page.waitForTimeout(2000);
   // the three welcomes a fresh member owes (C9): nothing composes until 💡 is OK'd

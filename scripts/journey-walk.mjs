@@ -31,7 +31,7 @@
  * first: a pointer cannot press what is off screen.
  */
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
-import { say, linkIn, onPage, browserFor, installPaste, followLink } from './lib/walk.mjs';
+import { say, linkIn, onPage, browserFor, installPaste, followLink, landOn } from './lib/walk.mjs';
 
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
 // --empty-text: found the document on a confirmed-empty text (Q649 (a)) and
@@ -246,7 +246,7 @@ if (!mails.length) {
   process.exit(1);
 }
 const link = linkIn(mails[mails.length - 1]);
-await page.goto(link);
+await landOn(page, link);
 for (let i = 0; i < 40 && !page.url().includes('/d/'); i++) await T(500);
 await T(2200);
 say('birth      · saved at ' + page.url());
@@ -935,7 +935,7 @@ const invitationLink = async (addr) => {
   return mail ? linkIn(mail) : null;
 };
 const guestLand = async (url) => {
-  await guestPage.goto(url);
+  await landOn(guestPage, url);
   for (let i = 0; i < 40 && !guestPage.url().includes('/d/'); i++) {
     await guestPage.waitForTimeout(500);
   }
@@ -1791,7 +1791,7 @@ const motionDeckOnAmended = async () => {
   const ctx3 = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
   const cyPage = await ctx3.newPage();
   cyPage.on('pageerror', (e) => errors.push('[cy] ' + String(e)));
-  await cyPage.goto(cyLink);
+  await landOn(cyPage, cyLink);
   for (let i = 0; i < 40 && !cyPage.url().includes('/d/'); i++) await cyPage.waitForTimeout(500);
   await cyPage.waitForTimeout(2600);
   const putA = await wire(guestPage, 'open-motion', { payload: { kind: 'set', setting: AMENDED, value: { rung: 'closed' } }, why: 'members only, again' });
@@ -4204,7 +4204,7 @@ if (caret) {
         let n = 0;
         p2.on('framenavigated', (f) => { if (f === p2.mainFrame()) n++; });
         await fakeBuild(p2, (seen) => seen >= 1);
-        await p2.goto(page.url());
+        await landOn(p2, page.url());
         await p2.waitForFunction(() => !!window.SESSION, null, { timeout: 30_000 });
         n = 0;                          // the load itself is a navigation
         for (let i = 0; i < 20 && !n; i++) await p2.waitForTimeout(500);
@@ -4246,7 +4246,7 @@ if (caret) {
         let n = 0;
         p3.on('framenavigated', (f) => { if (f === p3.mainFrame()) n++; });
         await fakeBuild(p3, () => faking);
-        await p3.goto(page.url());
+        await landOn(p3, page.url());
         await p3.waitForFunction(() => !!window.SESSION, null, { timeout: 30_000 });
         n = 0;
         // **Every box on the card, not one** — through the page's own
@@ -4943,7 +4943,7 @@ if (caret) {
       const ctxDeck = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
       const deckPage = await ctxDeck.newPage();
       deckPage.on('pageerror', (e) => errors.push('[cy] ' + String(e)));
-      await deckPage.goto(cySeatLink);
+      await landOn(deckPage, cySeatLink);
       for (let i = 0; i < 40 && !deckPage.url().includes('/d/'); i++) await deckPage.waitForTimeout(500);
       await deckPage.waitForTimeout(2600);
       say('deck seat  · ' + (deckPage.url().includes('/d/')
@@ -5345,7 +5345,7 @@ if (caret) {
             const ctx2 = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
             cyPage = await ctx2.newPage();
             cyPage.on('pageerror', (e) => errors.push('[cy] ' + String(e)));
-            await cyPage.goto(link2);
+            await landOn(cyPage, link2);
             for (let i = 0; i < 40 && !cyPage.url().includes('/d/'); i++) await cyPage.waitForTimeout(500);
             await cyPage.waitForTimeout(2600);
           }
@@ -5553,7 +5553,7 @@ const dominatedProposal = async () => {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
   const cyPage = await ctx.newPage();
   cyPage.on('pageerror', (e) => errors.push('[cy] ' + String(e)));
-  await cyPage.goto(link);
+  await landOn(cyPage, link);
   for (let i = 0; i < 40 && !cyPage.url().includes('/d/'); i++) await cyPage.waitForTimeout(500);
   await cyPage.waitForTimeout(2600);
 
@@ -5805,7 +5805,7 @@ const draftFollowsClause = async () => {
   const cyCtx = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
   const cyPage = await cyCtx.newPage();
   cyPage.on('pageerror', (e) => errors.push('[cy] ' + String(e)));
-  await cyPage.goto(link);
+  await landOn(cyPage, link);
   for (let i = 0; i < 40 && !cyPage.url().includes('/d/'); i++) await cyPage.waitForTimeout(500);
   await cyPage.waitForTimeout(2600);
 

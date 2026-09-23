@@ -21,7 +21,7 @@
  * Exit 0 only if every case passes; 1 on any failure, 2 on a broken set-up.
  */
 import { chromium } from 'playwright';
-import { post as postTo, followLink, sleep, withWas } from '../lib/walk.mjs';
+import { post as postTo, followLink, sleep, withWas, landOn } from '../lib/walk.mjs';
 
 const argv = process.argv.slice(2);
 const BASE = (argv.find((a) => /^https?:/.test(a)) || 'http://127.0.0.1:8208').replace(/\/$/, '');
@@ -105,7 +105,7 @@ async function seat(browser, { slug, me, link }) {
   }, [slug, me]);
   const page = await context.newPage();
   page.on('pageerror', (e) => say(`  pageerror: ${e.message}`));
-  await page.goto(link);
+  await landOn(page, link);
   await page.waitForSelector('#charter', { timeout: 20_000, state: 'attached' });
   await sleep(2000);
   // past the resting 📝 tab, then in by the door

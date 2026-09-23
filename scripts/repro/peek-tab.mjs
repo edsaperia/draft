@@ -2,6 +2,7 @@
 // card it opens: its text and controls. Read-only apart from arriving.
 //   node peek-tab.mjs <magic link> <tab key e.g. invite>
 import { chromium } from 'playwright';
+import { landOn } from '../lib/walk.mjs';
 
 const [link, tab] = process.argv.slice(2);
 const browser = await chromium.launch();
@@ -9,7 +10,7 @@ const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
 const logs = [];
 page.on('pageerror', (e) => logs.push('PAGEERROR ' + e.message));
 page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') logs.push(m.type() + ': ' + m.text().slice(0, 160)); });
-await page.goto(link, { waitUntil: 'networkidle' });
+await landOn(page, link, { waitUntil: 'networkidle' });
 await page.waitForTimeout(1500);
 const out = await page.evaluate(async (tab) => {
   const rail = [...document.querySelectorAll('.qitem')].map((el) => el.dataset.q);

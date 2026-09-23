@@ -184,7 +184,7 @@ import { writeFile, readFile } from 'node:fs/promises';
 import { chromium } from 'playwright';
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
 import { tableAfter, keysOf } from './lib/surface-tables.mjs';
-import { say, sleep, arg, linkIn, outbox as devOutbox, typeIn, press, withWas } from './lib/walk.mjs';
+import { say, sleep, arg, linkIn, outbox as devOutbox, typeIn, press, withWas, landOn as openLink } from './lib/walk.mjs';
 
 /* ---- arguments -------------------------------------------------------- */
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
@@ -1034,7 +1034,7 @@ const cmdAs = (D, name, op, args) => D.seats[name].page.evaluate(async ([slug, o
   return { status: r.status, body: await r.json().catch(() => null) };
 }, [D.slug, op, args]);
 const landOn = async (page, url) => {
-  await page.goto(url);
+  await openLink(page, url);
   for (let i = 0; i < 40 && !page.url().includes('/d/'); i++) await page.waitForTimeout(500);
   await page.waitForTimeout(2600);
 };
@@ -1212,7 +1212,7 @@ const RUN = {
   seat: async (step, D) => {
     const s = await standUp(D, step.seat);
     if (s.def.role === 'stranger') {
-      await s.page.goto(D.docbase + '/d/' + D.slug);
+      await openLink(s.page, D.docbase + '/d/' + D.slug);
       await s.page.waitForTimeout(2600);
     } else {
       const mail = (await devOutbox(BASE)).find((m) => JSON.stringify(m).includes(s.email));
@@ -1455,7 +1455,7 @@ const RUN = {
     // date a read did not revive, and the seat stayed lapsed for the rest of
     // the run with its page open, which is the state Ed says never exists.
     s.page = await s.ctx.newPage(); attachNets(D, step.seat, s.page);
-    await s.page.goto(D.docbase + '/d/' + D.slug);
+    await openLink(s.page, D.docbase + '/d/' + D.slug);
     await s.page.waitForTimeout(2600);
     const after = await viewAs(D, 'founder');
     const back = (((after && after.view) || {}).members || []).find((m) => m.email === s.email);
@@ -1471,7 +1471,7 @@ const RUN = {
       body: JSON.stringify({ email: s.email }) });
     const body = await r.json().catch(() => null);
     if (r.status !== 200 || !body || !body.devLink) throw new Error(`the door refused the knock → ${r.status} ${JSON.stringify(body)}`);
-    await s.page.goto(body.devLink);
+    await openLink(s.page, body.devLink);
     await s.page.waitForTimeout(2200);
     // **the seat is read, not assumed** (Q1281): a page that booted as
     // nobody is an unstood seat, and an unstood seat is a red run — this is

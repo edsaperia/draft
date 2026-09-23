@@ -24,7 +24,7 @@
  */
 import { chromium } from 'playwright';
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
-import { say, sleep as T, followLink, linkIn, outbox as devOutbox, post as postTo } from './lib/walk.mjs';
+import { say, sleep as T, followLink, linkIn, outbox as devOutbox, post as postTo, landOn } from './lib/walk.mjs';
 
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
 await assertServerBuild(BASE, 'member-questions-walk');
@@ -78,7 +78,7 @@ page.on('response', (r) => { if (r.url().includes('/api/') && r.status() >= 400)
   refused.push(r.status() + ' ' + r.request().method() + ' ' + new URL(r.url()).pathname + ' ' +
     String(r.request().postData() || '').slice(0, 120));
 } });
-await page.goto(m1Invite, { waitUntil: 'networkidle' });
+await landOn(page, m1Invite, { waitUntil: 'networkidle' });
 for (let i = 0; i < 40 && !page.url().includes('/d/'); i++) await page.waitForTimeout(500);
 await page.waitForTimeout(2600);
 const state = () => page.evaluate(() => ({

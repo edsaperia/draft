@@ -31,7 +31,7 @@
  * Exit 0 only if both pass; exit 1 on any failure, 2 on a broken set-up.
  */
 import { chromium } from 'playwright';
-import { post as postTo, followLink, sleep, withWas } from '../lib/walk.mjs';
+import { post as postTo, followLink, sleep, withWas, landOn } from '../lib/walk.mjs';
 
 const argv = process.argv.slice(2);
 const BASE = (argv.find((a) => /^https?:/.test(a)) || 'http://127.0.0.1:8311').replace(/\/$/, '');
@@ -101,7 +101,7 @@ async function seat(browser, cookie, slug) {
   const page = await ctx.newPage();
   const errs = [];
   page.on('pageerror', (e) => { errs.push(e.message); say(`pageerror: ${e.message}`); });
-  await page.goto(`${BASE}/d/${slug}`);
+  await landOn(page, `${BASE}/d/${slug}`);
   await page.waitForSelector('#charter', { timeout: 20_000 });
   await sleep(1200);
   await page.evaluate(() => fetch(location.pathname.replace('/d/', '/api/d/') + '/view').then((r) => r.json())

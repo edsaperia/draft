@@ -21,7 +21,7 @@
  * Exit 0 only if all pass; 1 on a failure. Red on the pre-Q1475 page at all three.
  */
 import { chromium } from 'playwright';
-import { post, followLink, outbox, linkIn, sleep } from '../lib/walk.mjs';
+import { post, followLink, outbox, linkIn, sleep, landOn } from '../lib/walk.mjs';
 
 const B = process.argv[2] || 'http://127.0.0.1:8232';
 const say = (s) => console.log(s);
@@ -67,7 +67,7 @@ const seat = async (slug, cookie) => {
   const ctx = await browser.newContext({ viewport: { width: 1600, height: 1100 } });
   const [n, ...v] = cookie.split('='); await ctx.addCookies([{ name: n, value: v.join('='), url: B }]);
   const page = await ctx.newPage();
-  await page.goto(`${B}/d/${slug}`); await sleep(3500);
+  await landOn(page, `${B}/d/${slug}`); await sleep(3500);
   return page;
 };
 const entry = (page, prefix) => page.evaluate((p) => {

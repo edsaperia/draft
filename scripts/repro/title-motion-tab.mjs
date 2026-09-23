@@ -23,6 +23,7 @@
  * Exit 0 only if every check passes; 1 on a failure, 2 on a broken set-up.
  */
 import { chromium } from 'playwright';
+import { landOn } from '../lib/walk.mjs';
 
 const BASE = (process.argv[2] || process.env.DRAFT_BASE_URL || 'http://127.0.0.1:8281').replace(/\/$/, '');
 const say = (s) => console.log(s);
@@ -76,7 +77,7 @@ const readSeat = async (who, cookie) => {
   const page = await ctx.newPage();
   const errs = [];
   page.on('pageerror', (e) => errs.push(String(e)));
-  await page.goto(`${BASE}/d/${slug}`);
+  await landOn(page, `${BASE}/d/${slug}`);
   await page.waitForSelector('#band .cpara', { timeout: 20000 });
   await page.waitForTimeout(2500);
 

@@ -5,6 +5,7 @@
 //   node scripts/repro/rail-open-where.mjs <document url> <cookie file> [--max 6]
 import { chromium } from 'playwright';
 import { readFileSync } from 'node:fs';
+import { landOn } from '../lib/walk.mjs';
 const [url, cookieFile] = process.argv.slice(2);
 const MAX = Number((process.argv[process.argv.indexOf('--max') + 1]) || 6) || 6;
 const u = new URL(url);
@@ -17,7 +18,7 @@ const page = await ctx.newPage();
 // can be measured against a live room's real state before it is pushed
 if (process.argv.includes('--local')) await page.route('**/session.js*', (r) => r.fulfill({ contentType: 'text/javascript; charset=utf-8', body: readFileSync('design/session.js', 'utf8') }));
 page.on('pageerror', (e) => console.log('pageerror:', e.message));
-await page.goto(url); await page.waitForSelector('#charter', { timeout: 30000 }); await page.waitForTimeout(1500);
+await landOn(page, url); await page.waitForSelector('#charter', { timeout: 30000 }); await page.waitForTimeout(1500);
 await page.evaluate(() => fetch(location.pathname.replace('/d/', '/api/d/') + '/view').then((r) => r.json()).then((v) =>
   localStorage.setItem('draft:grants:' + location.pathname.split('/')[2] + ':' + (v.me || ''),
     JSON.stringify(['canpropose', 'grant-pen', 'grant-shield', 'grant-voice', 'canjudge']))));

@@ -27,7 +27,7 @@
  */
 import { chromium } from 'playwright';
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
-import { say, sleep as T, post as postTo } from './lib/walk.mjs';
+import { say, sleep as T, post as postTo, landOn } from './lib/walk.mjs';
 
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
 await assertServerBuild(BASE, 'first-keys-walk');
@@ -43,7 +43,7 @@ const errors = []; const refused = [];
 page.on('pageerror', (e) => errors.push(String(e)));
 page.on('response', (r) => { if (r.status() >= 400) refused.push(r.status() + ' ' + r.url().replace(BASE, '')); });
 
-await page.goto(made.devLink);
+await landOn(page, made.devLink);
 await page.waitForSelector('#ridetab .achip[data-tab="text"]', { timeout: 15000 });
 await T(800);
 

@@ -23,7 +23,7 @@
  */
 import { chromium } from 'playwright';
 import { assertServerBuild, walkBase } from '../lib/assert-server.mjs';
-import { say, arg } from '../lib/walk.mjs';
+import { say, arg, landOn } from '../lib/walk.mjs';
 
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8341');
 const SEED = Number(arg('seed') ?? 7272);
@@ -87,7 +87,7 @@ await ctx.addCookies([{ name: cname, value: cval, url: BASE }]);
 const page = await ctx.newPage();
 const errors = [];
 page.on('pageerror', (e) => errors.push(String(e)));
-await page.goto(`${BASE}/d/${slug}`);
+await landOn(page, `${BASE}/d/${slug}`);
 await page.waitForSelector('.doc.closedpage', { timeout: 20000 }).catch(() => {});
 await page.waitForTimeout(4500);   // the boot render and one poll
 

@@ -57,7 +57,7 @@
  * Exit 0 when nothing is wrong; 1 on any finding, 2 on a broken set-up.
  */
 import { chromium } from 'playwright';
-import { post as postTo, followLink, sleep } from '../lib/walk.mjs';
+import { post as postTo, followLink, sleep, landOn } from '../lib/walk.mjs';
 
 const BASE = (process.argv.find((a) => /^https?:/.test(a)) || 'http://127.0.0.1:8401').replace(/\/$/, '');
 const ONLY = (process.argv.find((a) => a.startsWith('--case=')) || '').slice(7);
@@ -189,7 +189,7 @@ async function seat(browser, link, slug) {
     }
     return route.continue();
   });
-  await page.goto(link);
+  await landOn(page, link);
   await page.waitForURL(new RegExp(`/d/${slug}`), { timeout: 20_000 });
   await page.waitForSelector('#charter', { timeout: 20_000, state: 'attached' });
   await sleep(1200);
