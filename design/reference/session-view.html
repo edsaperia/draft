@@ -1506,7 +1506,12 @@
   // the blind answers ride the snapshot too, as their own `ans:` keys — an
   // answer is one more provisional value, and the bin that puts a card back
   // should not need to know which kind of card it is standing on
-  const takeSnap = (k) => { const s = { __ans: Object.assign({}, S.myAns) };
+  // …and 🍾's power table and the reason lanes the same way (issue #34 F2,
+  // F3): both are written in place into objects the plain keys below would
+  // hold by identity, so they are copied, and kept under `__` names so
+  // `openCardDirty` never compares them by identity
+  const takeSnap = (k) => { const s = { __ans: Object.assign({}, S.myAns),
+    __begin: Object.assign({}, S.beginRows), __why: Object.assign({}, S.setWhy || {}) };
     REVERTKEYS().forEach((kk) => { s[kk] = S[kk]; }); snaps[k] = s; };
   const dropSnap = (k) => { delete snaps[k]; };
   // **The bin puts back its own card, not the whole surface.** The snapshot
@@ -1525,7 +1530,12 @@
     el.querySelectorAll('[data-txt]').forEach((b) => ks.add(b.dataset.txt));
     el.querySelectorAll('[data-num]').forEach((b) => ks.add(b.dataset.num));
     el.querySelectorAll('[data-ans]').forEach((b) => ks.add('ans:' + b.dataset.ans));
+    // …and a date rung's pending kind (issue #75 F1), which it writes beside
+    // the answer rather than into it
+    el.querySelectorAll('[data-ans][data-ansval="date"]').forEach((b) => ks.add('ans:' + b.dataset.ans + 'Kind'));
     if (el.querySelector('[data-setwhy]')) ks.add('setWhy');
+    // 🍾's power table (issue #34 F2): a struck cell is unsent like any radio
+    if (el.querySelector('.pwtoggle[data-bkey]')) ks.add('beginRows');
     if (el.querySelector('[data-titlelane]')) ks.add('titleDraft');
     // ❌'s subject is provisional input like any other, so 🗑️ puts it back
     if (el.querySelector('[data-removewho]')) ks.add('removeWho');
@@ -1569,6 +1579,12 @@
     (only || []).forEach((k) => {
       if (k.startsWith('ans:')) { const a = k.slice(4);
         if (s.__ans) S.myAns[a] = a in s.__ans ? s.__ans[a] : null; return; }
+      // a copy, since the snapshot outlives the press (issue #34 F2)
+      if (k === 'beginRows') { S.beginRows = Object.assign({}, s.__begin || {}); return; }
+      // the open card's reason alone — the snapshot can predate a reason
+      // typed on another card (issue #34 F3, SURFACE C3)
+      if (k === 'setWhy') { const w = s.__why || {}; S.setWhy = S.setWhy || {};
+        if (S.open in w) S.setWhy[S.open] = w[S.open]; else delete S.setWhy[S.open]; return; }
       if (k in s) S[k] = s[k];
     }); };
   // **What the bin would put back, asked as a question** (issue #12): the one
@@ -1588,6 +1604,9 @@
         const was = s.__ans && a in s.__ans ? s.__ans[a] : null;
         const is = S.myAns[a];
         return (was == null ? is != null : is !== was); }
+      // the two copied keys compare by content (issue #34)
+      if (k === 'beginRows') return JSON.stringify(S.beginRows || {}) !== JSON.stringify(s.__begin || {});
+      if (k === 'setWhy') return ((S.setWhy || {})[S.open] || '') !== ((s.__why || {})[S.open] || '');
       return k in s && S[k] !== s[k];
     });
   };
@@ -4003,7 +4022,9 @@
   };
   const mustAct = (c) => (motionOn(c) ? (crownAsksMe(c) ||
       (viewerIsMember() && !viewerLapsed() && !answeredMotion(c) && !motionExcludesMe(c)))
-    : c.isBegin ? (amFounder() && !constituted())
+    // …never while the room is still answering (issue #76): then 🍾 is a ⏳
+    // wait, the founder's part being done
+    : c.isBegin ? (amFounder() && !constituted() && !beginCollecting())
     : c.isClosing ? false
     : c.leaveDoor ? false                                      // nothing asks you to leave (Q1400)
     // 🪪 is the remedy for a `one-voice` wait, and while that is what the
@@ -4987,7 +5008,20 @@
       if (moved) SESSION.layoutQueue();
     }, PUT_MS);
   }
+  // **⏳ Begin lists who is still to answer** (issue #76, Ed 2026-09-22: *a
+  // ⏳ Begin task in the rail with a list of the usernames/avatars which have
+  // answers still due*): each member owing an answer, face and name, off the
+  // module's own readout — participation by name, never preference.
+  const dueFaces = () => dueMembers().map((m) => {
+    const row = S.roster.find((r) => (r.mid || 'founder') === m.id) || {};
+    const n = (row.n || m.name || row.e || '').trim();
+    return '<span class="qdue">' + avHtml({ n, pic: row.pic }) + ' ' + esc(n || PAGE_COPY.synth.redacted) + '</span>';
+  }).join('');
   const summary = (c) => {
+    if (c.isBegin && beginCollecting()) {
+      const faces = dueFaces();
+      return faces ? '<span class="qwhy qdues">' + faces + '</span>' : '';
+    }
     const m = motionOn(c);
     const body = m ? window.CARDS.railSpeakerHtml(m.why, null) : '';
     if (!justPutOn(c)) return body;
@@ -6366,7 +6400,13 @@
       const v = rec && rec.payload && rec.payload.kind === 'set' ? rec.payload.value : null;
       return motionBlocks(c.k, decisionLine(c), (v !== null && sentenceFor(hostKeyOf(c), v)) || m.to, m.why, route, mover, absAt); })());
   };
-  const consentBody = (c, m) => motionPairBody(c, m, 'constitutional');
+  // …and the mover's constitutional card the same (issue #88; K8): the mover's
+  // accept is on the record from the put (§9.6), so a live *Keep this* lane
+  // was a revision of their own consent into a kill (Q1473) and served them
+  // E41's *your motion failed* about their own press. The inert two blocks,
+  // and 🗑️ — withdrawing — as their one act.
+  const moverOf = (m) => m.by !== null && m.by !== undefined && m.by === viewerId();
+  const consentBody = (c, m) => motionPairBody(c, m, 'constitutional', moverOf(m));
   // the mover's ordinary card is theirs, not an ask (K8, Q1370): the blocks
   // inert with the proposed one marked, and the commit row withdraw alone
   const ordinaryBody = (c, m) => motionPairBody(c, m, 'ordinary',
@@ -6527,7 +6567,8 @@
   // reached, and *have you answered it* is true of the Founder on every
   // motion they carried — so the entry filed ⏳ and the ask never ran
   const waiting = (c) => (motionOn(c) ? (!crownAsksMe(c) && answeredMotion(c))
-    : c.isBegin ? (!amFounder() && !constituted())   // a member sees the start waiting on the founder
+    : c.isBegin ? (!amFounder() && !constituted()) ||   // a member sees the start waiting on the founder
+      beginCollecting()                                 // …and the founder, on the room (issue #76)
     : c.isClosing ? false
     : c.isGate ? !c.open()
     : c.k === 'myemail' ? (S.emailSent && !S.emailVerified)
@@ -8009,11 +8050,20 @@
       S.draft.to = v;
       S.draft.val = mvalTyped(S.open, v);
       return render(); }
+    // **A blind answer's field repaints in place on its `change`, never
+    // renders** (issue #75 F2 — Q1486 (A)'s rule reaching the `ans-*`
+    // family). `change` fires on the blur the commit's own mousedown causes,
+    // and a render there replaced the commit under the press: mouseup landed
+    // on a new node, no click was dispatched and the first press on every
+    // typed answer sent nothing. The `input` road keeps the answer, the ✓ and
+    // the rail current at every keystroke; this only makes sure the value a
+    // blur settles is the one that stands.
     if (ev.target.matches('[data-ansdate]')) {
-      S.myAns[ev.target.dataset.ansdate] = ev.target.value || null; return render(); }
+      S.myAns[ev.target.dataset.ansdate] = ev.target.value || null;
+      renderRail(); SESSION.refreshRail(); refreshCommit(); return; }
     if (ev.target.matches('[data-ansnum]')) {
       setAnsNum(ev.target);
-      return render(); }
+      renderRail(); SESSION.refreshRail(); refreshCommit(); return; }
     // a motion's own control writes the value it proposes — `setMotionField`
     // above is the reader, shared with the `input` listener since Q1486 (A);
     // a date picker keeps its own branch below, because one rebuilt under the
@@ -8524,9 +8574,22 @@
     // particular string is a place to answer rather than an answer.
     const an = ev.target.closest('[data-ans]');
     if (an) { const v = an.dataset.ansval;
-      S.myAns[an.dataset.ans] = (v === 'true') ? true : (v === 'false') ? false
-        : (v === 'date') ? (S.myAns[an.dataset.ans] === 'never' ? null : S.myAns[an.dataset.ans])
-        : v;
+      // **A date rung is a kind of answer before it is one** (issue #75 F1):
+      // *At a set time* carries no value of its own — the date does — so its
+      // press wrote the existing answer back onto itself, and on an unanswered
+      // card the rung could never become chosen and its box never appeared.
+      // The press records the kind (`<key>Kind`, read by the body's `on`
+      // test), keeps a date already given, and clears a *Never*; the ✓ still
+      // lights only once a date is in the box (`filled`). Any other rung
+      // clears the kind.
+      const k = an.dataset.ans;
+      if (v === 'date') {
+        S.myAns[k + 'Kind'] = 'date';
+        if (S.myAns[k] === 'never') S.myAns[k] = null;
+      } else {
+        delete S.myAns[k + 'Kind'];
+        S.myAns[k] = (v === 'true') ? true : (v === 'false') ? false : v;
+      }
       return render(); }
     // 🍾's power table (entry 158; one cell per setting × power since Q1195
     // (c)). **The write is one direction only**: *lay down* sends the power
@@ -9225,6 +9288,10 @@
     // is the drag bug's cousin. `change` — the blur — does the full one.
     if (t.dataset.ansnum) { setAnsNum(t);
       renderRail(); SESSION.refreshRail(); refreshCommit(); }
+    // …and a date typed into ⏰'s answer (issue #75), the same way: the ✓
+    // wakes the moment the box holds a whole date
+    if (t.dataset.ansdate) { S.myAns[t.dataset.ansdate] = t.value || null;
+      renderRail(); SESSION.refreshRail(); refreshCommit(); }
   });
   // …and the render the drag deferred. `change` on a range is the release —
   // the gesture is over, so the card may be rebuilt, which is what brings the
@@ -9670,7 +9737,7 @@
   // design/begin.js since refactor Q1352 (b): made here, where the code stood,
   // with the page bindings it reads — `cs` and `FIX` through accessors, since
   // both are reassigned; every function wrapped, read when called.
-  const { readinessOf, oneVoiceRemedy, inviteTask, oneVoiceAsk, beginOffered, releaseBody, mailGiveUpBody,
+  const { readinessOf, oneVoiceRemedy, inviteTask, oneVoiceAsk, beginOffered, beginCollecting, dueMembers, releaseBody, mailGiveUpBody,
     BEGIN_ROWS, beginStillHeld, beginPos, beginLayDown, beginBody, closingBody } = window.BEGIN.make({
     S, PAGE_COPY, SEC, SESSION,
     get cs() { return cs; },
@@ -9695,6 +9762,7 @@
     remedyOnly: (...a) => remedyOnly(...a),
     servedCards: (...a) => servedCards(...a),
     settled: (...a) => settled(...a),
+    viewerId: (...a) => viewerId(...a),
     viewerIsMember: (...a) => viewerIsMember(...a),
     visible: (...a) => visible(...a),
   });
@@ -9728,6 +9796,9 @@
       return rd ? { ready: rd.ready, waiting: rd.waiting, holds: rd.holds || [] } : null; })(),
     roomExists: roomExists(), otherTasksLeft: otherTasksLeft(), ansDue: ansDue(),
     voiceAcked: acked('grant-voice'),
+    // what each setting was changed from, as the page reads it (issue #80:
+    // the live adapter dropped it and every ordinary change read as a first)
+    changedFrom: Object.fromEntries(ORDER.map((k) => [k, (() => { try { return changedFrom(k); } catch (e) { return null; } })()])),
     order: ORDER.map((k) => { const c = card(k); return !c ? k + ' (no card)'
       : k + ' vis=' + (visible(c) ? 1 : 0) + ' set=' + (settled(c) ? 1 : 0) +
         ' act=' + (mustAct(c) ? 1 : 0) + ' blk=' + (blocksOrder(c) ? 1 : 0) +

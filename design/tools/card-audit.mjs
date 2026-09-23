@@ -595,6 +595,10 @@ const IN_PAGE = () => {
         // 270 of them would drown the numbers this instrument exists for
         ...(window.__CA_SPEC ? { spec: specimen(card, key) } : {}),
         strings: strings(card),
+        // a judgment card (Q1500): a charter card whose lanes are radios and
+        // which is not the Text's 👑 question — the kinds that carry no 🗑️
+        judgment: card.matches('.sugg:not(.setupcard)') && !!card.querySelector('[data-v]') &&
+          !card.querySelector('[data-act^="crown-"]'),
         buttons: buttons(card),
         radios: radios(card),
         helpers: helpers(card),
@@ -857,7 +861,12 @@ function rulesFor(card, tok) {
     const bl = card.buttons.filter((b) => b.r);
     const substantive = bl.filter((b) => !/^OK$/.test((b.label || '').trim()) && !/chill/.test(b.cls));
     const first = bl[0];
-    if (substantive.length && first && !/🗑/.test(first.label || '')) {
+    // …but never on a judgment card (Q1500, Ed 2026-09-22): quick · insert ·
+    // race · patch · diagonal · the ⏳ judged pair carry no 🗑️ at all
+    if (card.judgment) {
+      const bin = bl.find((b) => /🗑/.test(b.label || ''));
+      if (bin) at('CP7', 'pattern', 'no 🗑️ on a judgment card (Q1500)', 'the row carries “' + (bin.label || bin.cls) + '”');
+    } else if (substantive.length && first && !/🗑/.test(first.label || '')) {
       at('CP7', 'pattern', '🗑️ leads every commit row (C4; Y20 by shape)',
         'the row opens with “' + ((first.label || first.cls) + '').slice(0, 40) + '”');
     }

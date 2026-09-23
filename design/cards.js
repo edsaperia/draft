@@ -1477,9 +1477,8 @@ window.CARDS = (function () {
       // locked or not — the block keeps the vin radio in the same column as
       // the lanes' own.
       //
-      // **🗑️ joins the row** (CP7, Q1102 — C4 wins over the old table rows):
-      // far left, always live; it clears an uncommitted choice and closes,
-      // and a cast vote stays, the bin putting back un-actioned input only.
+      // **…and no 🗑️** (Q1500, retiring CP7's bin on a judgment): see
+      // `commitBarHtml`.
       return vinBlockHtml(s) + commitBarHtml(s, extra);
     }
     // **The two halves of the commit row** (Q1382, Ed 2026-09-15: *the vote
@@ -1515,8 +1514,12 @@ window.CARDS = (function () {
       const insists = env.isTopUrgent(s) && env.stateOf(s) === 'needs';
       return '<div class="race-mid commitrow' + (cls ? ' ' + cls : '') + '"' +
         (cls ? ' data-patchrow="' + s.id + '"' : '') + '>' +
-        '<button class="btn glyphbtn" data-act="clear-close" title="' +
-        (env.lockedOf(s) ? G.commit.binLocked : G.commit.bin) + '">' + glyphHtml('🗑️') + '</button>' +
+        // **No 🗑️ on a judgment** (Q1500, Ed 2026-09-22, reading (b)): a
+        // member read it as *skip* and it only closed, a judgment's one unsent
+        // state being a radio you can move or leave. A choice is undone by
+        // choosing another or Indifferent, and the card closes by a click
+        // outside. The slot keeps its place so the commit stays at the right.
+        '<span class="binslot" aria-hidden="true"></span>' +
         (extra || '') +
         // The two acts on this card share the right-hand corner, in the order you
         // would reach for them: ❄️ first because it is the one that says *not now*,

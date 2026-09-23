@@ -25,6 +25,9 @@
  * Load order: after the other splits, before the inline script that makes it.
  */
 window.LIVE = (function () {
+  // how long a command, and the refresh after it, may hold the chain (#37 F3);
+  // a walk may shorten it with `window.__cmdTimeoutMs` to prove the release
+  const CMD_TIMEOUT_MS = (typeof window !== 'undefined' && window.__cmdTimeoutMs) || 20000;
   // ---- the wire: the host's two flags and `api` (Q391b, Q1345, Q1346) -----
   // Made where the live-mode constants stand, which is above `S` — so `S` and
   // `cs` are accessors, and every page function arrives as a wrapper.
@@ -173,11 +176,23 @@ window.LIVE = (function () {
         let answer = null;
         const card = (opts && opts.card) || env.S.open || null;
         const sentAt = Date.now();
+        // **one request that never answers must not hold every later one**
+        // (issue #37 F3): the command and its refresh are one chain, so a
+        // half-open socket held every vote, proposal and OK behind it. The
+        // command is aborted after `CMD_TIMEOUT_MS` and takes the catch below
+        // (a refusal with no answer); the refresh is waited for no longer
+        // than that. Never retried: a timeout is not proof nothing landed.
+        let timer = null;
         this.chain = this.chain
-          .then(() => fetch('/api/d/' + LIVESLUG + '/cmd', { method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ cmd: name, args: args || {} }) })
-            .then((r) => r.json().then((j) => ({ status: r.status, j }), () => ({ status: r.status, j: null }))))
+          .then(() => {
+            const ac = new AbortController();
+            timer = setTimeout(() => ac.abort(), CMD_TIMEOUT_MS);
+            return fetch('/api/d/' + LIVESLUG + '/cmd', { method: 'POST', signal: ac.signal,
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ cmd: name, args: args || {} }) })
+              .then((r) => r.json().then((j) => ({ status: r.status, j }), () => ({ status: r.status, j: null })))
+              .finally(() => clearTimeout(timer));
+          })
           .then(({ status, j }) => {
             answer = j && (j.error || j.ok) ? j : { error: PAGE_COPY.noAnswer(status), status };
             // a paused host (Q1345) is not a refusal: the modal says it all
@@ -210,7 +225,8 @@ window.LIVE = (function () {
           // with the open card's id and shut the card with no animation.
           // Anything that has to be true *of the next render* is done here.
           .then(() => { if (opts && opts.landed) { try { opts.landed(answer); } catch (e) { console.warn('[live] landed', e && e.message); } } })
-          .then(() => this.refresh());
+          .then(() => Promise.race([this.refresh(),
+            new Promise((res) => setTimeout(res, CMD_TIMEOUT_MS))]));
         return this.chain.then(() => answer);
       },
       refresh() {
@@ -435,6 +451,11 @@ window.LIVE = (function () {
           return { holder: st.holder, powers: st.powers, powerFrom: st.powerFrom,
             pendingRelease: st.pendingRelease || { unilateral: false, assent: false },
             value: st.value,
+            // Q530's two fields (issue #80): without them `changedFrom` read
+            // null on every live page, so a Founder's ✒️ change to an ordinary
+            // rule was news to nobody and its owed OK could never be given
+            previousValue: st.previousValue === undefined ? null : st.previousValue,
+            setWhy: st.setWhy === undefined ? null : st.setWhy,
             settledBy: st.settledBy, settledAtT: st.settledAtT,
             collecting: st.collecting,
             distribution: res ? res.distribution : null,
@@ -482,7 +503,11 @@ window.LIVE = (function () {
         applicantRecords: () => index().applicants || (index().applicants =
           new Map(((self.v.view && self.v.view.applicants) || [])
             .map((a) => [a.id, a]))),
-        setSetting: (t, mid, value) => api.cmd('set-setting', { setting: mid, value }),
+        // the reason rides the request (issue #34 F1): `commitSetting` passes
+        // it and the server stores `args.why`, and this dropped it, so every
+        // Founder ✒️ change to a rule read *No reason given.* to the room;
+        // `JSON.stringify` leaves an undefined `why` out, as `openMotion` relies on
+        setSetting: (t, mid, value, why) => api.cmd('set-setting', { setting: mid, value, why }),
         delegate: (t, mid) => api.cmd('delegate', { setting: mid }),
         reclaim: (t, mid) => api.cmd('reclaim', { setting: mid }),
         relinquish: (t, mid, power) => api.cmd('relinquish', { setting: mid, power }),
@@ -1798,7 +1823,12 @@ window.LIVE = (function () {
           : what === 'keep' ? (c.inc || 'tie')
           : what === 'approve' ? challenger
           : what === 'a' ? 'a' : what === 'b' ? 'b' : 'tie';
-        api.cmd('judge-race', { a: c.a, b: c.b, outcome }, { quiet: raceGone });   // Q1493 (a)
+        // **a vote the host did not take is taken back** (issue #37): the
+        // press filed the pair as ⏳ before the answer, so a refusal or a wire
+        // that never answered left a cast-looking vote the server never held.
+        // A pair that closed under the press is Q1493 (a)'s and files as closed.
+        api.cmd('judge-race', { a: c.a, b: c.b, outcome }, { quiet: raceGone })   // Q1493 (a)
+          .then((res) => { if (!(res && res.ok) && !(res && raceGone(res.error))) SESSION.unjudge(id, what); });
       };
       // A hunk replaces the document's lines [start, end); the engine holds an
       // empty document as **zero** lines, so the empty clause an empty
@@ -1839,10 +1869,13 @@ window.LIVE = (function () {
         // made. `draftRowState`'s own test, so what goes out is what the row
         // counts; it also stops an empty gap sending one blank line. A site
         // with no remembered wording is sent as it always was.
+        // The empty last line an Enter at a lane's end leaves for the caret is
+        // the lane's and never goes out (#78, `sentText`).
+        const sent = window.CARDS.sentText;
         const changed = (site) => !Array.isArray(site.origin) ||
-          site.text !== site.origin.map((x) => x.text).join('\n');
+          sent(site) !== site.origin.map((x) => x.text).join('\n');
         return d.sites.filter(changed).map((site) => {
-          const ls = site.text.split('\n');
+          const ls = sent(site).split('\n');
           // a **gap site** (backlog 204) is a pure insertion: `start === end`
           // at the line the gap stands before, clamped to the text's end
           if (/^G\d+$/.test(site.keys[0])) {
@@ -1872,8 +1905,10 @@ window.LIVE = (function () {
           return { start, end, lines: ls, was };
         });
       };
-      // what a draft would send, readable by a walk (`SESSION.LIVE_HOOKS.hunksOf`)
+      // what a draft would send, readable by a walk as `SESSION.hunksOf` — the
+      // page's `LIVE_HOOKS` is closed over where no walk reaches it (#78's step)
       env.LIVE_HOOKS.hunksOf = hunksOf;
+      SESSION.hunksOf = hunksOf;
 
       // **Refuse if lost** (Q1463, Ed 2026-09-18), the second half of *follow
       // the paragraph, and refuse if lost*. The page carries a draft's sites
@@ -2085,7 +2120,15 @@ window.LIVE = (function () {
         // this page proposed it as
         const s = liveItem(id) || { candidate: proposedAs.get(id) || (String(id).startsWith('mine:') ? id.slice(5) : null) };
         if (!s.candidate) return;
-        api.cmd('withdraw-text', { candidate: s.candidate });
+        // **a refused withdrawal puts the proposal and the ✏️ back** (issue
+        // #37): session.js refunds and drops the item before the answer, so
+        // without this a proposal still live on the server read as withdrawn
+        // and its ✏️ as spent-and-refunded. The two lines `propose` uses.
+        api.cmd('withdraw-text', { candidate: s.candidate }).then((res) => {
+          if (res && res.ok) return;
+          syncWallet();
+          SESSION.setData({ SUGGS: itemsFromView(env.cs.v) });
+        });
       };
       // 🛡️ on the Text (R-056): the Founder's answer carries the question's own
       // id off the card, so nothing has to make the setting-side lookup

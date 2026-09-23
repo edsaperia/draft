@@ -1026,6 +1026,13 @@
     -webkit-line-clamp: 4; line-clamp: 4;
   }
   .queue button.mosturgent .qwhy.spoke .qsaid { -webkit-line-clamp: 5; line-clamp: 5; }
+  /* **⏳ Begin names who is still to answer** (issue #76): one face and name
+     per member owed an answer, at the rail's 18px, wrapping — no clamp, since
+     a name cut off is a person left out */
+  .qwhy.qdues { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s3); -webkit-line-clamp: none; line-clamp: none; }
+  .qdue { display: inline-flex; align-items: center; gap: var(--s1); }
+  .qdue .av { width: 18px; height: 18px; font-size: 8px; }
+  .qdue .emojiface { font-size: 18px; line-height: 18px; }
   .qface { display: flex; align-items: flex-start; justify-content: center; width: 18px; flex: none; margin-top: 1px; }
   .qface .av { width: 18px; height: 18px; font-size: 8px; }
   .qface .emojiface { font-size: 18px; line-height: 18px; }

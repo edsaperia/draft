@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 522
+  "entries": 521
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -68,7 +68,6 @@
   "grammar.commit.abstainIn": "ƒ (left) => '💤 abstain in ' + left",
   "grammar.commit.abstainShort": "ƒ (hhmm) => '💤 ' + hhmm",
   "grammar.commit.abstained": "💤 abstained",
-  "grammar.commit.bin": "Clears your choice and closes — there is nothing here to put back",
   "grammar.commit.binLocked": "Close — your vote stays on the record",
   "grammar.commit.cast": "Recorded — choose again to change it",
   "grammar.commit.chillOff": "Not this one, not now — it stays open and stops being the most urgent",

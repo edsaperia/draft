@@ -318,6 +318,13 @@ window.BAND = (function () {
     const rungOpt = (V, key, val, ttl, exp, inner, off, extra) =>
       (V.__stand && sameField(V.__stand[key], val) ? '' : opt(V, key, val, ttl, exp, inner, off, extra));
 
+    // **What 🎩 stands at, read from the module** (Q1503): the Founder's row
+    // carries the role and `settled(card('hat'))` says whether it was ever
+    // set (`membershipSet`, or the start, or this page's own press). Null
+    // until then, so nothing is pre-answered (F6). The body and the commit
+    // row read this one function, so they cannot disagree about it.
+    const hatCurrent = () => (settled(card('hat')) || S.seen.has('hat'))
+      ? (iDraft() ? 'member' : 'clerk') : null;
     const BODY = {
       // the retrospective branch keys on the **start**, not on the OK (Q820):
       // until 🍾 the column below is still the founder's and still the answer,
@@ -336,20 +343,24 @@ window.BAND = (function () {
         // acknowledgement this branch used to carry (Q797, an OK) is retired —
         // 📝 → write → ✒️, and no OK anywhere.
         : ''),
-      hat: () => {
+      hat: (locked) => {
         const started = !!(env.cs && env.cs.constitutedAtT !== null);
         // the radio is the session-view's own opt(), over the derived current
         // (the pw() pattern): the generic data-set handler lands S.hatPick
-        // nothing is preselected until it has been answered once
-        const o = { hatPick: S.hatPick || (S.seen.has('hat') ? (iDraft() ? 'member' : 'clerk') : null) };
+        // nothing is preselected until it has been answered once — and
+        // **answered is the module's word, not this page's** (Q1503, Ed's
+        // convention observation 2026-09-22): `S.seen` is page-local and no
+        // reload rebuilds it, so a founder who came back past 🍾 met two
+        // greyed radios with neither marked. `hatCurrent` reads the row.
+        const o = { hatPick: S.hatPick || hatCurrent() };
         // 🎩 has no clause in the constitution, so its two sentences live here
         // alone, in the clause voice (Q1109; STYLE §3 — third person, about
         // the document)
         return '<div class="choice" role="radiogroup">' +
           // the consequences cut, the fact kept (Ed's card review, 2026-09-02);
           // *a clerk can stay unnamed* survives on ✋'s clerk branch alone
-          opt(o, 'hatPick', 'member', 'The Founder is part of the membership.', '', '', started) +
-          opt(o, 'hatPick', 'clerk', 'The Founder is not part of the membership.', '', '', started) +
+          opt(o, 'hatPick', 'member', 'The Founder is part of the membership.', '', '', started || !!locked) +
+          opt(o, 'hatPick', 'clerk', 'The Founder is not part of the membership.', '', '', started || !!locked) +
           '</div>';
         // the *Settled.* note went with Ed's card review round 3 (2026-09-05,
         // 39 🎩): a locked card says so by its greyed radios alone
@@ -1198,8 +1209,9 @@ window.BAND = (function () {
               (pm.by === viewerId()
                 ? '<button class="btn glyphbtn" data-withdrawmotion="' + c.k + '" title="Withdraw it — your 🏛️ comes back whole">' + glyphHtml('🗑️') + '</button>'
                 : binBtn()) +
-              '<button class="btn btn-approve glyphbtn emojibtn"' + (motionPicked(c) ? '' : ' disabled') +
-              ' data-confirm="1" title="Give your answer">' + glyphHtml('🏛️') + '</button>', g.cards);
+              // the mover gives no answer on their own motion (issue #88, K8)
+              (pm.by === viewerId() ? '' : '<button class="btn btn-approve glyphbtn emojibtn"' + (motionPicked(c) ? '' : ' disabled') +
+              ' data-confirm="1" title="Give your answer">' + glyphHtml('🏛️') + '</button>'), g.cards);
           }
           const pHeld = c.power === 'u' ? pwPair(c.base).u : pwPair(c.base).a;
           // …and never on a closed document (entry 62): `relinquish` and
@@ -1284,8 +1296,10 @@ window.BAND = (function () {
             (m.by === viewerId()
               ? '<button class="btn glyphbtn" data-withdrawmotion="' + c.k + '" title="Withdraw it — your 🏛️ comes back whole">' + glyphHtml('🗑️') + '</button>'
               : binBtn()) +
-            '<button class="btn btn-approve glyphbtn emojibtn"' + (motionPicked(c) ? '' : ' disabled') +
-            ' data-confirm="1" title="Give your answer">' + glyphHtml('🏛️') + '</button>', g.cards);
+            // …and gives no answer on it (issue #88, K8): their accept is on
+            // the record from the put, and 🗑️ is the road for a changed mind
+            (m.by === viewerId() ? '' : '<button class="btn btn-approve glyphbtn emojibtn"' + (motionPicked(c) ? '' : ' disabled') +
+            ' data-confirm="1" title="Give your answer">' + glyphHtml('🏛️') + '</button>'), g.cards);
         }
         // — unless it is a decision you are owed: the OK comes before the
         // motion, since an unacknowledged rule sits in the rail until it is
@@ -1337,6 +1351,13 @@ window.BAND = (function () {
           // pressable, and refused by the server with a console warning nobody
           // reads. `founderHandOff` is the same question the composer swap has
           // always asked, put to the body.
+          // **🎩 from any other seat is the founder's own card, locked** (Q1503):
+          // `readBody`'s *Set to* line has no `VALUE.hat` to print and read
+          // *Set to* and nothing on every member's seat, where the two
+          // sentences with the standing one marked say the answer in full —
+          // the settled grammar every other option-block card reads by
+          : c.k === 'hat' && !amFounder()
+          ? BODY.hat(true)
           : ((!amFounder() || founderHandOff(c)) && c.own !== 'you' && !doorDirect(c))
           // **The watch-half is retired** (Q1176, Ed 2026-09-02 pm): *What the
           // membership said*, the distribution strip, the taken line and the
@@ -1583,9 +1604,11 @@ window.BAND = (function () {
               // means *not yet* (Y19), and 🎩 after the start is *never*.
               // 🗑️ stays as the close, with 1167 b's close-only OK beside it
               // (Ed's QA, 2026-09-02 pm).
-              if (env.cs && env.cs.constitutedAtT !== null) return binBtn() +
+              // …and from any seat but the founder's the card is locked in
+              // every era (Q1503), so the same close-only row
+              if ((env.cs && env.cs.constitutedAtT !== null) || !amFounder()) return binBtn() +
                 '<button class="btn btn-approve okbtn" data-close="1">OK</button>';
-              const cur = S.seen.has('hat') ? (iDraft() ? 'member' : 'clerk') : null;
+              const cur = hatCurrent();   // the module's answer, not `S.seen`'s (Q1503)
               const dirty = !!S.hatPick && S.hatPick !== cur;
               return binBtn() +
                 '<button class="btn btn-approve glyphbtn emojibtn"' +
@@ -1831,8 +1854,22 @@ window.BAND = (function () {
       const box = document.querySelector('.setupcard .emojibox');
       let sel = null;
       try { if (inp) sel = [inp.selectionStart, inp.selectionEnd]; } catch (e) { /* type=email has none */ }
+      // …and the Founder's reason lane (found building issue #34): a
+      // plaintext-only editable rather than an input, so it is held by
+      // character offset — a poll landing mid-sentence took the caret and the
+      // rest of the reason went nowhere, and ✒️ sent the half that was left
+      let why = null;
+      const lane = a && a.closest && a.closest('.setupcard [data-setwhy]');
+      if (lane) {
+        const s = getSelection();
+        if (s && s.rangeCount && lane.contains(s.getRangeAt(0).endContainer)) {
+          const r = document.createRange();
+          r.selectNodeContents(lane); r.setEnd(s.getRangeAt(0).endContainer, s.getRangeAt(0).endOffset);
+          why = r.toString().length;
+        } else why = lane.textContent.length;
+      }
       return { open: S.open, key: attr ? inp.getAttribute(attr) : null, attr,
-        sel, scroll: box ? box.scrollTop : 0 };
+        sel, why, scroll: box ? box.scrollTop : 0 };
     };
     const renderRestore = (k) => {
       if (!k || !k.open || k.open !== S.open) return;
@@ -1841,6 +1878,19 @@ window.BAND = (function () {
         if (el && document.activeElement !== el) {
           el.focus({ preventScroll: true });
           try { if (k.sel && typeof k.sel[0] === 'number') el.setSelectionRange(k.sel[0], k.sel[1]); } catch (e) { /* not a text control */ }
+        }
+      }
+      if (k.why !== null && k.why !== undefined) {
+        const lane = document.querySelector('.setupcard [data-setwhy]');
+        if (lane && document.activeElement !== lane) {
+          lane.focus({ preventScroll: true });
+          const w = document.createTreeWalker(lane, NodeFilter.SHOW_TEXT);
+          let n = k.why, node = w.nextNode();
+          const r = document.createRange();
+          while (node && n > node.length) { n -= node.length; node = w.nextNode(); }
+          if (node) r.setStart(node, n); else { r.selectNodeContents(lane); r.collapse(false); }
+          r.collapse(true);
+          const s = getSelection(); s.removeAllRanges(); s.addRange(r);
         }
       }
       const box = document.querySelector('.setupcard .emojibox');

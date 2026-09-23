@@ -4950,7 +4950,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   // **The patch row** (Q1382, Ed 2026-09-15: *the vote for a patch is also
   // floating, since there is no single card for it to sit on*). A patch race
   // is a card at every site it touches (§9's patch row) and one judgment for
-  // all of them, so its bar of acts — 🗑️ clears the choice and closes, ❄️
+  // all of them, so its bar of acts — no 🗑️ since Q1500, ❄️
   // where the race offers it, ✓ commits the pick — is drawn once, in the
   // door's own slot at the foot of the window, while a patch card is open;
   // the site cards keep their radios and the Indifferent block and carry no

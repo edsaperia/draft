@@ -94,6 +94,7 @@
   const collapsed = new Set();   // folded-away section indices
   let seqToken = 0;       // supersedes an in-flight open/move/close sequence
   const resolved = new Set();
+  const pendingJudge = new Set();   // a pair whose judgment is between press and filing (#37)
 
   // ---- the card grammar lives in cards.js now (2026-08-18) ----------------
   // The decision-card machinery was lifted into design/cards.js so the setup
@@ -4571,11 +4572,19 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // one being a commit, and the host is told which pair the verdict goes
     // back on.
     const key = pairKeyOf(s);
+    // **one press, one judgment** (issue #37): `firstTime` is read at the
+    // press and `resolved.add` runs in the timeout below, so a double-click
+    // sent `judge-race` twice — the second refused as *not in a live race*,
+    // a refusal shown for a vote that worked. The pair is held until the
+    // first one has been filed.
+    if (pendingJudge.has(key)) return;
+    pendingJudge.add(key);
     const pair = activeCardOf(s);
     const firstTime = !resolved.has(key);
     const btn = queueEl.querySelector('[data-q="' + id + '"]');
     if (firstTime && btn) btn.classList.add('leaving');
     setTimeout(() => {
+      pendingJudge.delete(key);
       verdicts.set(key, verdict);
       picked.set(key, what);
       committed.set(key, what);      // this is now the thing on the record
@@ -4941,7 +4950,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   // **The patch row** (Q1382, Ed 2026-09-15: *the vote for a patch is also
   // floating, since there is no single card for it to sit on*). A patch race
   // is a card at every site it touches (§9's patch row) and one judgment for
-  // all of them, so its bar of acts — 🗑️ clears the choice and closes, ❄️
+  // all of them, so its bar of acts — no 🗑️ since Q1500, ❄️
   // where the race offers it, ✓ commits the pick — is drawn once, in the
   // door's own slot at the foot of the window, while a patch card is open;
   // the site cards keep their radios and the Indifferent block and carry no
@@ -5629,8 +5638,27 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     if (r && r.floor != null) FLOOR = r.floor;
   }
 
+  // **A judgment the host refused is un-filed** (issue #37). The press files
+  // the pair as ⏳ before any answer (Q576's receipt), and nothing took it
+  // back: `stateOf` reads `resolved` over the view, so a vote the server
+  // never took read as cast for as long as the tab lived. The live hook calls
+  // this on a refusal; only the verdict it was sent with is taken back, since
+  // a later revision of the same pair may already be in flight — and the
+  // entry asks again, the view having kept the pair unanswered.
+  function unjudge(id, what) {
+    const s = SUGGS.find((x) => x.id === id);
+    if (!s) return false;
+    const key = pairKeyOf(s);
+    if (committed.get(key) !== what) return false;
+    resolved.delete(key); verdicts.delete(key); picked.delete(key); committed.delete(key);
+    if (justArrived === key) justArrived = null;
+    renderAll(); drawWires();
+    return true;
+  }
+
   window.SESSION = {
     init, setData, renderAll, toggle, clauseKeysOf, closeCard, setWallet, setRoom, setClosed,
+    unjudge,
     setDocClosed,
     clockText, dateWords,
     // a block as the engine's source line — marker and words (Q1403): the

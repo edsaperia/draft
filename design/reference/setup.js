@@ -1456,7 +1456,11 @@ window.SETUP = (function () {
       // hydration skips a `myAnswer` of null outright), so `!== null` read
       // true and painted *At a set time* as chosen, beside an empty date and
       // a dark ✓: a suggested answer on a blind collection.
-      ansRow(A.ending !== null && A.ending !== undefined && A.ending !== 'never',
+      // …and the rung is chosen by its own press before a date is in its
+      // box (issue #75 F1): `endingKind` is that press, the box's reveal
+      // hanging on the rung being on — until #75 the rung waited on a date
+      // and the date on the rung, and neither ever came.
+      ansRow(A.endingKind === 'date' || (A.ending !== null && A.ending !== undefined && A.ending !== 'never'),
         'ending', 'date', ctlWord('At a set time'), '',
         '', '<span class="fld"><label>Ends</label><input type="datetime-local" data-ansdate="ending"' +
         (A.ending && A.ending !== 'never' ? ' value="' + esc(A.ending) + '"' : '') + '></span>') +

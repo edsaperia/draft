@@ -891,10 +891,6 @@
     "inputs": [],
     "foot": [
      {
-      "label": "🗑️",
-      "title": "Clears your choice and closes — there is nothing here to put back"
-     },
-     {
       "label": "Choose one of the three first",
       "title": "Choose one of the three first"
      }
@@ -904,7 +900,6 @@
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
-     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -1032,10 +1027,6 @@
     "inputs": [],
     "foot": [
      {
-      "label": "🗑️",
-      "title": "Clears your choice and closes — there is nothing here to put back"
-     },
-     {
       "label": "Recorded — choose again to change it",
       "title": "Recorded — choose again to change it"
      }
@@ -1048,7 +1039,6 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
-     "Clears your choice and closes — there is nothing here to put back",
      "Recorded — choose again to change it"
     ],
     "helpers": [
@@ -1064,10 +1054,6 @@
     "inputs": [],
     "foot": [
      {
-      "label": "🗑️",
-      "title": "Clears your choice and closes — there is nothing here to put back"
-     },
-     {
       "label": "Choose one of the three first",
       "title": "Choose one of the three first"
      }
@@ -1078,7 +1064,6 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
-     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -1091,10 +1076,6 @@
     "options": [],
     "inputs": [],
     "foot": [
-     {
-      "label": "🗑️",
-      "title": "Clears your choice and closes — there is nothing here to put back"
-     },
      {
       "label": "❄️",
       "title": "Not this one, not now — it stays open and stops being the most urgent"
@@ -1110,7 +1091,6 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
-     "Clears your choice and closes — there is nothing here to put back",
      "Not this one, not now — it stays open and stops being the most urgent",
      "Choose one of the three first"
     ],
@@ -1125,10 +1105,6 @@
     "inputs": [],
     "foot": [
      {
-      "label": "🗑️",
-      "title": "Clears your choice and closes — there is nothing here to put back"
-     },
-     {
       "label": "Choose one of the three first",
       "title": "Choose one of the three first"
      }
@@ -1139,7 +1115,6 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
-     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -1153,10 +1128,6 @@
     "inputs": [],
     "foot": [
      {
-      "label": "🗑️",
-      "title": "Clears your choice and closes — there is nothing here to put back"
-     },
-     {
       "label": "Choose one of the three first",
       "title": "Choose one of the three first"
      }
@@ -1167,7 +1138,6 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
-     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -1203,10 +1173,6 @@
     "inputs": [],
     "foot": [
      {
-      "label": "🗑️",
-      "title": "Clears your choice and closes — there is nothing here to put back"
-     },
-     {
       "label": "Choose one of the three first",
       "title": "Choose one of the three first"
      }
@@ -1217,7 +1183,6 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
-     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -1231,10 +1196,6 @@
     "inputs": [],
     "foot": [
      {
-      "label": "🗑️",
-      "title": "Clears your choice and closes — there is nothing here to put back"
-     },
-     {
       "label": "Recorded — choose again to change it",
       "title": "Recorded — choose again to change it"
      }
@@ -1245,7 +1206,6 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
-     "Clears your choice and closes — there is nothing here to put back",
      "Recorded — choose again to change it"
     ],
     "helpers": []
@@ -1259,10 +1219,6 @@
     "inputs": [],
     "foot": [
      {
-      "label": "🗑️",
-      "title": "Clears your choice and closes — there is nothing here to put back"
-     },
-     {
       "label": "Recorded — choose again to change it",
       "title": "Recorded — choose again to change it"
      }
@@ -1273,7 +1229,6 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
-     "Clears your choice and closes — there is nothing here to put back",
      "Recorded — choose again to change it"
     ],
     "helpers": [
@@ -1289,10 +1244,6 @@
     "inputs": [],
     "foot": [
      {
-      "label": "🗑️",
-      "title": "Clears your choice and closes — there is nothing here to put back"
-     },
-     {
       "label": "Choose one of the three first",
       "title": "Choose one of the three first"
      }
@@ -1303,7 +1254,6 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
-     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -1369,10 +1319,6 @@
     "inputs": [],
     "foot": [
      {
-      "label": "🗑️",
-      "title": "Clears your choice and closes — there is nothing here to put back"
-     },
-     {
       "label": "Recorded — choose again to change it",
       "title": "Recorded — choose again to change it"
      }
@@ -1387,7 +1333,6 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
-     "Clears your choice and closes — there is nothing here to put back",
      "Recorded — choose again to change it"
     ],
     "helpers": []
@@ -1427,10 +1372,6 @@
     "inputs": [],
     "foot": [
      {
-      "label": "🗑️",
-      "title": "Clears your choice and closes — there is nothing here to put back"
-     },
-     {
       "label": "Choose one of the three first",
       "title": "Choose one of the three first"
      }
@@ -1445,7 +1386,6 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
-     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -1589,10 +1529,6 @@
     "inputs": [],
     "foot": [
      {
-      "label": "🗑️",
-      "title": "Clears your choice and closes — there is nothing here to put back"
-     },
-     {
       "label": "Choose one of the three first",
       "title": "Choose one of the three first"
      }
@@ -1603,7 +1539,6 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
-     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -1693,10 +1628,6 @@
     "inputs": [],
     "foot": [
      {
-      "label": "🗑️",
-      "title": "Clears your choice and closes — there is nothing here to put back"
-     },
-     {
       "label": "Choose one of the three first",
       "title": "Choose one of the three first"
      }
@@ -1708,7 +1639,6 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
-     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -1722,10 +1652,6 @@
     "inputs": [],
     "foot": [
      {
-      "label": "🗑️",
-      "title": "Clears your choice and closes — there is nothing here to put back"
-     },
-     {
       "label": "Choose one of the three first",
       "title": "Choose one of the three first"
      }
@@ -1736,7 +1662,6 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
-     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -1766,10 +1691,6 @@
     "inputs": [],
     "foot": [
      {
-      "label": "🗑️",
-      "title": "Clears your choice and closes — there is nothing here to put back"
-     },
-     {
       "label": "Choose one of the three first",
       "title": "Choose one of the three first"
      }
@@ -1780,7 +1701,6 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
-     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -1794,10 +1714,6 @@
     "inputs": [],
     "foot": [
      {
-      "label": "🗑️",
-      "title": "Clears your choice and closes — there is nothing here to put back"
-     },
-     {
       "label": "Recorded — choose again to change it",
       "title": "Recorded — choose again to change it"
      }
@@ -1808,7 +1724,6 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
-     "Clears your choice and closes — there is nothing here to put back",
      "Recorded — choose again to change it"
     ],
     "helpers": []
@@ -1822,10 +1737,6 @@
     "inputs": [],
     "foot": [
      {
-      "label": "🗑️",
-      "title": "Clears your choice and closes — there is nothing here to put back"
-     },
-     {
       "label": "Choose one of the three first",
       "title": "Choose one of the three first"
      }
@@ -1836,7 +1747,6 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
-     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -1850,10 +1760,6 @@
     "inputs": [],
     "foot": [
      {
-      "label": "🗑️",
-      "title": "Clears your choice and closes — there is nothing here to put back"
-     },
-     {
       "label": "Choose one of the three first",
       "title": "Choose one of the three first"
      }
@@ -1864,7 +1770,6 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
-     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -1878,10 +1783,6 @@
     "inputs": [],
     "foot": [
      {
-      "label": "🗑️",
-      "title": "Clears your choice and closes — there is nothing here to put back"
-     },
-     {
       "label": "Choose one of the three first",
       "title": "Choose one of the three first"
      }
@@ -1892,7 +1793,6 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
-     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -1928,10 +1828,6 @@
     "inputs": [],
     "foot": [
      {
-      "label": "🗑️",
-      "title": "Clears your choice and closes — there is nothing here to put back"
-     },
-     {
       "label": "Choose one of the three first",
       "title": "Choose one of the three first"
      }
@@ -1945,7 +1841,6 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
-     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -1958,10 +1853,6 @@
     "options": [],
     "inputs": [],
     "foot": [
-     {
-      "label": "🗑️",
-      "title": "Clears your choice and closes — there is nothing here to put back"
-     },
      {
       "label": "Recorded — choose again to change it",
       "title": "Recorded — choose again to change it"
@@ -1977,7 +1868,6 @@
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "I can’t split them",
-     "Clears your choice and closes — there is nothing here to put back",
      "Recorded — choose again to change it"
     ],
     "helpers": []
@@ -1991,10 +1881,6 @@
     "inputs": [],
     "foot": [
      {
-      "label": "🗑️",
-      "title": "Clears your choice and closes — there is nothing here to put back"
-     },
-     {
       "label": "Recorded — choose again to change it",
       "title": "Recorded — choose again to change it"
      }
@@ -2005,7 +1891,6 @@
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "I can’t split them",
-     "Clears your choice and closes — there is nothing here to put back",
      "Recorded — choose again to change it"
     ],
     "helpers": []
@@ -2041,10 +1926,6 @@
     "inputs": [],
     "foot": [
      {
-      "label": "🗑️",
-      "title": "Clears your choice and closes — there is nothing here to put back"
-     },
-     {
       "label": "Choose one of the three first",
       "title": "Choose one of the three first"
      }
@@ -2057,7 +1938,6 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "Hollis Vane wrote this.",
      "I can’t split them",
-     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -2071,10 +1951,6 @@
     "inputs": [],
     "foot": [
      {
-      "label": "🗑️",
-      "title": "Clears your choice and closes — there is nothing here to put back"
-     },
-     {
       "label": "Choose one of the three first",
       "title": "Choose one of the three first"
      }
@@ -2085,7 +1961,6 @@
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "I can’t split them",
-     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -2099,10 +1974,6 @@
     "inputs": [],
     "foot": [
      {
-      "label": "🗑️",
-      "title": "Clears your choice and closes — there is nothing here to put back"
-     },
-     {
       "label": "Choose one of the three first",
       "title": "Choose one of the three first"
      }
@@ -2113,7 +1984,6 @@
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "I can’t split them",
-     "Clears your choice and closes — there is nothing here to put back",
      "Choose one of the three first"
     ],
     "helpers": []
@@ -2157,18 +2027,12 @@
     "body": "ProposedQuiet HoursThe house keeps quiet hours from eleven at night to eight in the morning: voices low in the Common Areas, the Workshop’s louder tools asleep, and any gathering still going moves to the Garden or winds down.We’ve never written down the one rule everyone already tiptoes around. Guests stay over, members work early — saying it out loud beats resenting each other politely.Prefer this",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Close — your vote stays on the record"
-     }
-    ],
+    "foot": [],
     "hints": [
      "Close this one",
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them",
-     "Close — your vote stays on the record"
+     "I can’t split them"
     ],
     "helpers": []
    },
@@ -2292,12 +2156,7 @@
     "body": "ProposedThe Purse-holder keeps the accounts in whatever way suits them, and shows them to any member who asks, within a week of being asked.Asking is not the same as being shown. A week is long enough to find the book and short enough to matter.Preferred✏️ propose edit",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Close — your vote stays on the record"
-     }
-    ],
+    "foot": [],
     "hints": [
      "Whole charter · place n of m — open it",
      "Close this one",
@@ -2305,8 +2164,7 @@
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them",
-     "Close — your vote stays on the record"
+     "I can’t split them"
     ],
     "helpers": [
      "Waiting on the Founder’s answer about another change to this clause 🛡️"
@@ -2319,19 +2177,13 @@
     "body": "ProposedFurniture in the Common Room may be moved but must be put back before the room is left empty.The joke about Hollis is lovely and it is not a rule. Charters that wink at people age badly, and whoever inherits this will not know who Hollis was.Prefer this✏️ propose edit",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Close — your vote stays on the record"
-     }
-    ],
+    "foot": [],
     "hints": [
      "Close this one",
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them",
-     "Close — your vote stays on the record"
+     "I can’t split them"
     ],
     "helpers": []
    },
@@ -2344,10 +2196,6 @@
     "inputs": [],
     "foot": [
      {
-      "label": "🗑️",
-      "title": "Close — your vote stays on the record"
-     },
-     {
       "label": "❄️",
       "title": "Not this one, not now — it stays open and stops being the most urgent"
      }
@@ -2358,7 +2206,6 @@
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
      "I can’t split them",
-     "Close — your vote stays on the record",
      "Not this one, not now — it stays open and stops being the most urgent"
     ],
     "helpers": []
@@ -2370,19 +2217,13 @@
     "body": "ProposedEvery member is expected at three of the four quarterly meetings; a member who attends none in a year is asked, kindly, whether they still want to be a member, and the asking is done by the Steward in private.As written, \"asked kindly\" could happen at a meeting, in front of everyone. That is the opposite of kind. Name who asks and where.Prefer this✏️ propose edit",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Close — your vote stays on the record"
-     }
-    ],
+    "foot": [],
     "hints": [
      "Close this one",
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them",
-     "Close — your vote stays on the record"
+     "I can’t split them"
     ],
     "helpers": []
    },
@@ -2393,19 +2234,13 @@
     "body": "ProposedBooks belonging to a member and left in the Corner become the house’s after two years, unless the member says otherwise in the book on the shelf.A year is one long absence. Two years still clears the shelves of anything genuinely abandoned, without swallowing the library of somebody who spent a winter abroad.Prefer this✏️ propose edit",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Close — your vote stays on the record"
-     }
-    ],
+    "foot": [],
     "hints": [
      "Close this one",
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them",
-     "Close — your vote stays on the record"
+     "I can’t split them"
     ],
     "helpers": []
    },
@@ -2438,19 +2273,13 @@
     "body": "ProposedOnce a year, before the spring meeting, the Steward opens the cellar and the house decides together what may go, and anything nobody speaks for is offered to members before it is thrown.Things get thrown that somebody would have taken. One sentence, one afternoon saved, and nobody has to argue about a bicycle.Prefer this✏️ propose edit",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Close — your vote stays on the record"
-     }
-    ],
+    "foot": [],
     "hints": [
      "Close this one",
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them",
-     "Close — your vote stays on the record"
+     "I can’t split them"
     ],
     "helpers": []
    },
@@ -2461,19 +2290,13 @@
     "body": "ProposedAny member may bring any worry to any other in confidence, and that confidence is kept; nothing kept from a respondent may ever count against them.\"Nothing undisclosed to a respondent\" dangles. \"Kept from\" says the same thing in plain words. No change of substance.Preferred✏️ propose edit",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Close — your vote stays on the record"
-     }
-    ],
+    "foot": [],
     "hints": [
      "Close this one",
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them",
-     "Close — your vote stays on the record"
+     "I can’t split them"
     ],
     "helpers": []
    },
@@ -2484,19 +2307,13 @@
     "body": "ProposedThe Garden is kept up by a rota posted in the shed, with a Garden Steward to keep it organised and set two working weekends a year, in spring and in autumn.Heroic weekends are called by whoever minds most, which means the same four people. Two dates in the calendar are something everyone can plan around.Prefer this✏️ propose edit",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Close — your vote stays on the record"
-     }
-    ],
+    "foot": [],
     "hints": [
      "Close this one",
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them",
-     "Close — your vote stays on the record"
+     "I can’t split them"
     ],
     "helpers": [
      "the clause changed after you voted"
@@ -2509,19 +2326,13 @@
     "body": "ProposedNo guest holds a key, and no guest is left alone in the houseunless the member who brought them says so and is reachable.Half of us have left a guest making toast while we went for milk. The rule as written makes ordinary hospitality a breach.Prefer this✏️ propose edit",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Close — your vote stays on the record"
-     }
-    ],
+    "foot": [],
     "hints": [
      "Close this one",
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them",
-     "Close — your vote stays on the record"
+     "I can’t split them"
     ],
     "helpers": []
    },
@@ -2584,12 +2395,7 @@
     "body": "ProposedFriends of the house are welcome whenever a member is in, up to three at a time without telling anybody.Nobody minds two friends. Nine is a party, and a party is a thing you mention.Prefer this✏️ propose edit",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Close — your vote stays on the record"
-     }
-    ],
+    "foot": [],
     "hints": [
      "Guests — notice — open it",
      "Guests — open it",
@@ -2599,8 +2405,7 @@
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them",
-     "Close — your vote stays on the record"
+     "I can’t split them"
     ],
     "helpers": []
    },
@@ -2637,12 +2442,7 @@
     "body": "ProposedFriends of the house are welcome whenever a member is in, and until the quiet hours begin.Welcome and “welcome at three in the morning” are different offers, and only one of them is fair on whoever is asleep upstairs.Prefer this✏️ propose edit",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Close — your vote stays on the record"
-     }
-    ],
+    "foot": [],
     "hints": [
      "Guests — notice — open it",
      "Close this one",
@@ -2652,8 +2452,7 @@
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them",
-     "Close — your vote stays on the record"
+     "I can’t split them"
     ],
     "helpers": []
    },
@@ -2794,19 +2593,13 @@
     "body": "ProposedEvery member holds a front-door key, and may lend or cut a spare for a regular they trust, provided the Steward keeps a simple note of who holds one.Keys are a security matter, not a vibe. A one-line log with the Steward costs nothing and means we can account for who can get in.Prefer this✏️ propose edit",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Close — your vote stays on the record"
-     }
-    ],
+    "foot": [],
     "hints": [
      "Close this one",
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them",
-     "Close — your vote stays on the record"
+     "I can’t split them"
     ],
     "helpers": []
    },
@@ -2893,20 +2686,14 @@
     "body": "ProposedA member who loses a key tells the Steward as soon as they know, and the house decides at the next meeting whether the locks are worth changing.You often do not know the day you lost it. \"As soon as they know\" is the honest version and does not make a rule nobody can keep.Prefer this✏️ propose edit",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Close — your vote stays on the record"
-     }
-    ],
+    "foot": [],
     "hints": [
      "Close this one",
      "Lost Keys — open it",
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them",
-     "Close — your vote stays on the record"
+     "I can’t split them"
     ],
     "helpers": []
    },
@@ -2917,19 +2704,13 @@
     "body": "ProposedThe Steward is not the Club’s head. The Club has no head.The second half is a boast about our own history, and it will read strangely in ten years. The first sentence is the rule and it is enough.Prefer this✏️ propose edit",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Close — your vote stays on the record"
-     }
-    ],
+    "foot": [],
     "hints": [
      "Close this one",
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them",
-     "Close — your vote stays on the record"
+     "I can’t split them"
     ],
     "helpers": []
    },
@@ -2956,19 +2737,13 @@
     "body": "ProposedPower tools are not used when the member is alone in the house, unless another member knows they are there and when they expect to finish, and not after the beginning of quiet hours.The flat ban means the only person who can use the lathe on a weekday is somebody who does not work. Telling one person where you are gets the same safety at a fraction of the cost.Prefer this✏️ propose edit",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Close — your vote stays on the record"
-     }
-    ],
+    "foot": [],
     "hints": [
      "Close this one",
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them",
-     "Close — your vote stays on the record"
+     "I can’t split them"
     ],
     "helpers": []
    },
@@ -2979,19 +2754,13 @@
     "body": "ProposedA new member is on probation for a full year, during which they hold every right of membership except the right to vote on admissions, removals, or changes to these rules.Six months is two meetings. You cannot know how someone handles a hard evening in the house until you have seen one, and there is usually one a year.Prefer this✏️ propose edit",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Close — your vote stays on the record"
-     }
-    ],
+    "foot": [],
     "hints": [
      "Close this one",
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them",
-     "Close — your vote stays on the record"
+     "I can’t split them"
     ],
     "helpers": []
    },
@@ -3002,19 +2771,13 @@
     "body": "ProposedThe Outdoor StoresThe contents rail is a column of headings, and this one wraps to three lines in it. Naming the section for what it is leaves the joke where it belongs, in the clause underneath.Prefer this✏️ propose edit",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Close — your vote stays on the record"
-     }
-    ],
+    "foot": [],
     "hints": [
      "Close this one",
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them",
-     "Close — your vote stays on the record"
+     "I can’t split them"
     ],
     "helpers": []
    },
@@ -3025,19 +2788,13 @@
     "body": "ProposedThe subscription is set once a year at the spring meeting, and may not be raised by more than a tenth in any year without a reserved decision.A quarter is a lot to be voted onto somebody by a simple majority. A tenth still covers ordinary inflation and makes a real rise something the house has to agree properly.Prefer this✏️ propose edit",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Close — your vote stays on the record"
-     }
-    ],
+    "foot": [],
     "hints": [
      "Close this one",
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them",
-     "Close — your vote stays on the record"
+     "I can’t split them"
     ],
     "helpers": []
    },
@@ -3048,19 +2805,13 @@
     "body": "ProposedNo candidate may be nominated twice in one year, counted from the date of the first nomination.Nobody has ever disagreed about this and one clerk has already asked. Say which year it means and the question stops being asked.Prefer this✏️ propose edit",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Close — your vote stays on the record"
-     }
-    ],
+    "foot": [],
     "hints": [
      "Close this one",
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them",
-     "Close — your vote stays on the record"
+     "I can’t split them"
     ],
     "helpers": []
    },
@@ -3093,12 +2844,7 @@
     "body": "ProposedFriends of the house are welcome whenever a member is in, and a member expecting more than one says so in the Members’ Book. The house splits cleanly on this and has not moved in a week: half want it written down, half think a rule about friends is the beginning of the end. Somebody needs to find the version both halves can live with.Prefer this✏️ propose edit",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Close — your vote stays on the record"
-     }
-    ],
+    "foot": [],
     "hints": [
      "Close this one",
      "Guests — open it",
@@ -3107,8 +2853,7 @@
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
      "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them",
-     "Close — your vote stays on the record"
+     "I can’t split them"
     ],
     "helpers": []
    },
@@ -3119,12 +2864,7 @@
     "body": "Proposed · 2 rival proposalsFriends of the house are welcome whenever a member is in, up to three at a time without telling anybody.Nobody minds two friends. Nine is a party, and a party is a thing you mention.Preferred✏️ propose editFriends of the house are welcome whenever a member is in, and until the quiet hours begin.Welcome and “welcome at three in the morning” are different offers, and only one of them is fair on whoever is asleep upstairs.Prefer this✏️ propose edit",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Close — your vote stays on the record"
-     }
-    ],
+    "foot": [],
     "hints": [
      "Guests — notice — open it",
      "Guests — open it",
@@ -3134,8 +2874,7 @@
      "A member wrote this. Who, is sealed until the closing record.",
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
-     "I can’t split them",
-     "Close — your vote stays on the record"
+     "I can’t split them"
     ],
     "helpers": []
    },
@@ -3146,19 +2885,13 @@
     "body": "Proposed · 2 rival proposalsA member in difficulty may ask the Purse-holder to reduce or suspend their subscription for up to two quarters, and the Purse-holder tells no one, including the Steward and the meeting.The current wording says the Purse-holder need not say why. It should say they may not say at all — the discretion belongs to the member in difficulty, not the office-holder.Prefer this✏️ propose editA member in difficulty may reduce or suspend their own subscription for up to two quarters by telling the Purse-holder, who may not refuse and may not ask why.Asking permission to be poor is the humiliating part. Make it a notification, not a request, and the office-holder never has to weigh a friend’s circumstances.Preferred✏️ propose edit",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Close — your vote stays on the record"
-     }
-    ],
+    "foot": [],
     "hints": [
      "Close this one",
      "A member wrote this. Who, is sealed until the closing record.",
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
-     "I can’t split them",
-     "Close — your vote stays on the record"
+     "I can’t split them"
     ],
     "helpers": []
    },
@@ -3191,19 +2924,13 @@
     "body": "Proposed · 2 rival proposalsThe house keeps quiet hours from eleven at night to eight in the morning.One sentence, one clock. Everything else is manners, and manners do not need a clause.Prefer this✏️ propose editAfter eleven at night the Common Areas are for reading, and the Workshop is closed until eight.Say what the rooms are for after dark rather than what people may not do — a house rule reads better as an invitation.Prefer this✏️ propose edit",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Close — your vote stays on the record"
-     }
-    ],
+    "foot": [],
     "hints": [
      "Close this one",
      "A member wrote this. Who, is sealed until the closing record.",
      "Say you prefer this proposal — nothing leaves the card until you submit",
      "Write your own version of this proposal. Free to open — proposing costs one edit.",
-     "I can’t split them",
-     "Close — your vote stays on the record"
+     "I can’t split them"
     ],
     "helpers": []
    },

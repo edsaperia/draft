@@ -141,8 +141,9 @@ window.COPY = (function () {
       indifferent: 'Indifferent',
       vinDiagonal: 'They matter equally',
       vinPair: 'I can’t split them',
+      // the park and the Text's crown card still close by a bin; a judgment
+      // has none since Q1500
       binLocked: 'Close — your vote stays on the record',
-      bin: 'Clears your choice and closes — there is nothing here to put back',
       chillOn: 'Cooled — this one will not be put at the front of your queue. Press again to allow it.',
       chillOff: 'Not this one, not now — it stays open and stops being the most urgent',
       cast: 'Recorded — choose again to change it',
