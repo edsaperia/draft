@@ -1390,8 +1390,12 @@ describe('the address is chosen before the email, and reserved on send (Q460/462
     const first = await consume(typo2.body.devLink!);
     expect(first.status, 'a link to an address the founder corrected founds nothing').toBe(410);
     expect(first.headers.get('set-cookie')).toBeNull();
-    // the unclaimed branch keeps `PAGE.used` until Q1511 is ruled
-    expect(await first.text()).toContain('This link has already been used, or it has expired.');
+    // the unclaimed branch says the claimed branch's sentence — one cause,
+    // one sentence (Q1511 (a)); a genuinely spent link keeps `PAGE.used`
+    // (the single-use case above)
+    const firstPage = await first.text();
+    expect(firstPage).toContain('This link was sent to an address the document’s Founder has since changed.');
+    expect(firstPage).not.toContain('already been used');
     expect((await fetch(`${base}/api/d/typo-first/view`)).status).toBe(404);
     const second = await consume(good2.body.devLink!);
     expect(second.status).toBe(302);

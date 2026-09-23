@@ -291,9 +291,10 @@ export const authTable: Route[] = [
          address, so a link to the mistyped one, followed first, founded the
          document with a stranger as its Founder and the pasted charter in
          it. A stash opened before migration 7 holds no address, and cannot
-         be asked. */
+         be asked. The page says the claimed branch's sentence: one cause,
+         one sentence (Q1511 (a)). */
       if (pend?.email !== undefined && pend.email.toLowerCase() !== p.email.toLowerCase()) {
-        spentPage(ctx, r, PAGE.used, 'create');
+        spentPage(ctx, r, PAGE.changed, 'create');
         return true;
       }
       /* **The address is the creation's, not the link's** (issue #38 F2):
@@ -621,9 +622,10 @@ const PAGE = {
   /** The two ways a link can fail before it seats anybody. */
   used: 'This link has already been used, or it has expired.',
   /** A creation link to an address the founder moved the creation off,
-   *  followed after the document was founded (issue #38 F1): it says why
-   *  rather than passing for any dead link (Q1506 (b), Ed 2026-09-23 —
-   *  *changed*, not *corrected*; the disclosure accepted). */
+   *  followed after the document was founded (issue #38 F1) or before
+   *  anything was (F5, Q1511 (a)): it says why rather than passing for any
+   *  dead link (Q1506 (b), Ed 2026-09-23 — *changed*, not *corrected*; the
+   *  disclosure accepted). */
   changed: 'This link was sent to an address the document’s Founder has since changed.',
   cut: 'That link is not complete — it may have been cut short on its way to you.',
   ask: 'Send yourself a new one:',
