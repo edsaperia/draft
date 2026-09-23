@@ -24,7 +24,7 @@ window.DOOR = (function () {
     // picture from the Fluent Flat set, and the sentences take glyphify
     const { glyphHtml, glyphify } = window.CARDS;
     const { policyNow, admissionPrice, avHtml, esc, csState, card, recordBody, cardHtml,
-      binBtn, departedSentence, textDivs, hydrateFromModule, blocksOf, isStranger, E, render,
+      binBtn, departedSentence, textDivs, hydrateFromModule, itemsFromView, closedBlocks, blocksOf, isStranger, E, render,
       plainRefusal, setDoorErr, doorErrHtml, showErrLine } = env;
     // There is no login screen. A stranger arrives at the three columns: the
     // rules are public while the text is private, the text's *shape* stands
@@ -221,10 +221,21 @@ window.DOOR = (function () {
       const sentence = [departedSentence(), p ? p.holding.sentence : ''].filter(Boolean).join(' ');
       hold.textContent = sentence;
       hold.hidden = !sentence;
-      const key = 'stranger:' + (p ? (p.canRead ? 'read:' + p.text : 'shape:' + JSON.stringify(p.textShape)) : '');
+      // **A closed document's ✔s, where 🌍 lets you read it** (Q1508): the
+      // server carries the records on a closed, readable document alone, and
+      // they are filed through the member path's own drawing (`itemsFromView`
+      // over the door's view), so a stranger's closed page is the member's
+      // closed page, every tab filed — the undecided ones at the Backlog
+      // after the text, which `closedBlocks` builds from the same records
+      // (the amendments and the signatures are Q1512's, unruled)
+      const recs = p && p.canRead && Array.isArray(p.records) && env.cs ? p.records : null;
+      const key = 'stranger:' + (p ? (p.canRead ? 'read:' + p.text : 'shape:' + JSON.stringify(p.textShape)) : '') +
+        (recs ? '\u0000rec:' + recs.length : '');
       if (key !== env.charterKey) {
         env.charterKey = key;
-        SESSION.setData({ DOC: p && p.canRead && p.text ? blocksOf(p.text) : [], SUGGS: [] });
+        SESSION.setData({ DOC: (p && p.canRead && p.text ? blocksOf(p.text) : [])
+          .concat(recs ? closedBlocks({ records: true }) : []),
+        SUGGS: recs ? itemsFromView(env.cs.v) : [] });
         const shape = p && !p.canRead ? p.textShape.filter((b) => b.chars > 0) : [];
         red.classList.toggle('black', new URLSearchParams(location.search).get('bars') === 'black');
         red.innerHTML = shape.length ? barsHtml(shape, red) : '';

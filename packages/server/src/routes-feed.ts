@@ -127,7 +127,7 @@ export const feedTable: Route[] = [
       const paused = ctx.pause.payload(nowMs);
       // the door's own answer decides a stranger's reading, so the feed and
       // the door can never disagree about who may see the words
-      const door = strangerView(doc, nowMs, paused, null) as
+      const door = strangerView(doc, nowMs, paused, null, { records: false }) as
         { canRead: boolean; admission: string; holding: { kind: string; sentence: string | null } };
       const canRead = member || door.canRead;
       if (canRead && url.searchParams.get('since') === String(eseq)) {

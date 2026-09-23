@@ -667,9 +667,12 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
  * character count — is served so the redaction can stand at real
  * metrics; the words only where 🌍 says link or public.
  */
+/** The seat a stranger's records are read for: no member's id, no author's. */
+const NOBODY = '\u0000stranger';
 export const strangerView = (doc: LoadedDoc, nowMs: number,
   paused: { at: number; expectedMs: number; elapsedMs: number } | null,
-  session: { memberId: string; applicantId: string | null } | null = null): Record<string, unknown> => {
+  session: { memberId: string; applicantId: string | null } | null = null,
+  opts: { records?: boolean } = {}): Record<string, unknown> => {
   const cs = doc.cs;
   // **A seat that dies mid-session becomes the door, and the door says
   // why** (SURFACE E31–E32, Q901). The cookie still names whose seat it
@@ -716,6 +719,16 @@ export const strangerView = (doc: LoadedDoc, nowMs: number,
   const admission = admissionPrice(cs);
   const begun = cs.constitutedAtT !== null;
   const lines = text.length === 0 ? [] : text.split('\n');
+  // **A closed document's ✔s, wherever 🌍 lets a stranger read it** (Q1508,
+  // Ed 2026-09-23): the finished text without its history was half the
+  // record. The rows are the member's own `raceView` records, read for a seat
+  // that is nobody — so they are sealed exactly as a member's are (the one
+  // `authorVisible` names rule, which the close has already lifted where the
+  // rung says), no row is anybody's `judgedByMe`, no author's early row can
+  // match, and nothing live (standings, a hand) exists on a closed engine to
+  // leak. Never while live: a live race's record is a member's business.
+  const records = opts.records !== false && cs.closed && canRead && ed.bridge !== null
+    ? raceView(doc, NOBODY, nowMs).records : null;
   return {
     stranger: true,
     title: cs.titleOf,
@@ -730,6 +743,7 @@ export const strangerView = (doc: LoadedDoc, nowMs: number,
     founder: { name: founderName, picture: founderPicture },
     canRead,
     text: canRead ? text : null,
+    ...(records !== null ? { records } : {}),
     textShape: lines.map((l) => {
       const m = l.match(/^(#{1,3})\s+/);
       return { heading: m ? m[1]!.length : 0, chars: m ? l.length - m[0].length : l.length };

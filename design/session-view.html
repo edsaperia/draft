@@ -9404,6 +9404,9 @@
     departedSentence: (...a) => departedSentence(...a),
     textDivs: (...a) => textDivs(...a),
     hydrateFromModule: (...a) => hydrateFromModule(...a),
+    // the member path's record drawing, for a closed document's ✔s (Q1508)
+    itemsFromView: (...a) => itemsFromView(...a),
+    closedBlocks: (...a) => closedBlocks(...a),
     blocksOf: (...a) => blocksOf(...a),
     isStranger: (...a) => isStranger(...a),
     E: (...a) => E(...a),
@@ -9421,7 +9424,7 @@
   // values, every page function as a wrapper. `cs` is settable, the boot
   // being what assigns it, and `LIVE_HOOKS` is an accessor, the page
   // declaring it below this line.
-  const { setProse, hydrateValues, fieldsOf, hydrateFromModule, hydrateSeen,
+  const { setProse, hydrateValues, fieldsOf, hydrateFromModule, hydrateSeen, itemsFromView,
     liveJudge, liveJudgeAdmit, admitCardOf, allApplicants, applicantsAsking,
     memApplicantRows, whenOf, liveBoot, birthBoot } = window.LIVE.make({
     S, CARDS, DKEY, PAGEVAL, ANSBACK, STANDS, FOUNDER, LIVESLUG, SESSION, api, prose,
@@ -9610,7 +9613,10 @@
   // record; then a signatures block, a name or the disc, the comment, when.
   const undecidedRecords = () => {
     if (!cs || !cs.closed) return [];
-    if (cs.isRemote) return (cs.record && cs.record.undecided) || [];
+    // the door is served the records and no closed `record` (Q1508): its
+    // undecided rows are the same races, filed the same way
+    if (cs.isRemote) return cs.record ? (cs.record.undecided || [])
+      : (cs.v.records || []).filter((o) => o.outcome === 'undecided');
     return (FIX && FIX.CLOSED && FIX.CLOSED.undecided) || [];
   };
   const undecidedCount = () => undecidedRecords().length;
@@ -9700,14 +9706,18 @@
     });
     return out;
   };
-  const closedBlocks = () => {
+  // `{ records: true }` is the door's (Q1508): the backlog alone, the records
+  // being what a stranger is served — the amendments and the signatures are
+  // Q1512's, unruled
+  const closedBlocks = (opts = {}) => {
     if (!cs || !cs.closed) return [];
-    const out = amendmentBlocks();
+    const out = opts.records ? [] : amendmentBlocks();
     const und = undecidedRecords();
     if (und.length) {
       out.push({ t: 'h', level: 1, x: 'Backlog', key: 'U:head' });
       for (const o of und) out.push(...backlogBlocks(o));
     }
+    if (opts.records) return out;
     const sigs = closeSignatures();
     out.push({ t: 'h', level: 1, x: 'Signatures', key: 'S:head' });
     if (!sigs.length) out.push({ t: 'p', x: 'Nobody has signed the document yet.', key: 'S:none' });

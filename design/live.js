@@ -2299,7 +2299,9 @@ window.LIVE = (function () {
           .then(() => { SESSION.setData({ SUGGS: itemsFromView(env.cs.v) }); });
       };
     }
-    return { setProse, hydrateValues, fieldsOf, hydrateFromModule, hydrateSeen,
+    // `itemsFromView` goes out too (Q1508): the door files a closed
+    // document's records through the member path's own drawing, never a copy
+    return { setProse, hydrateValues, fieldsOf, hydrateFromModule, hydrateSeen, itemsFromView,
       liveJudge, liveJudgeAdmit, admitCardOf, allApplicants, applicantsAsking,
       memApplicantRows, whenOf, unhead, liveBoot, birthBoot };
   }
