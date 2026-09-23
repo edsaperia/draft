@@ -7513,7 +7513,11 @@
       // 🤝 says whether the door is open, 🪪 what it costs: open *and* free
       // is arrival (entry 94), open at a price is applying
       const applying = policyNow() === 'apply' && admissionPrice() !== 'pen';
-      const now2 = applying && canJudge();
+      // **a verified applicant keeps their cards when 🪪 moves to ✒️** (issue
+      // #36 F3): 🤝 is still yes, so the submit they came to make is still a
+      // real act — at ✒️ it admits them — and the rail fell to one *Applications
+      // Have Closed* card over a door that had not shut
+      const now2 = policyNow() === 'apply' && canJudge();
       // **A submitted application's card stands whatever 🤝 says** (SURFACE
       // Y28, Q1357, Ed 2026-09-14). The door's state is about *new*
       // applications: 🤝 whether strangers may knock and 🪪 what a knock
@@ -9389,6 +9393,11 @@
     isStranger: (...a) => isStranger(...a),
     E: (...a) => E(...a),
     render: (...a) => render(...a),
+    // Y25's two channels, for the door's own sends (issue #36 F2)
+    plainRefusal: (...a) => plainRefusal(...a),
+    setDoorErr: (...a) => setDoorErr(...a),
+    doorErrHtml: (...a) => doorErrHtml(...a),
+    showErrLine: (...a) => showErrLine(...a),
   });
 
   // ---- the live layer (Q391b) -------------------------------------------

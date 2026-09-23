@@ -1188,6 +1188,84 @@ if (PRICE === 'pen' && guestResign) {
     }
   }
 }
+/* ---- issue #36: the door joins, and says when it could not ----------- *
+ * **An open door is joined from the page** (F1; Q509 (a)): at 🤝 yes with
+ * 🪪 at ✒️ the door offered Log In alone, which mails a stranger nothing,
+ * and every knock this walk made went by `fetch` (F4), so no guard had ever
+ * pressed the door's own 📧. And **sent means the host took it** (F2): the
+ * card read *Sent to …* before the knock was posted, whatever came back —
+ * so a stubbed 429, on the Join card and on Log In, must read as refused. */
+if (PRICE === 'pen') {
+  const JOINER = 'juniper@example.org';
+  const stranger = async () => {
+    const c = await browser.newContext({ viewport: { width: 1200, height: 900 } });
+    const p = await c.newPage();
+    p.on('pageerror', (e) => errors.push('door: ' + String(e)));
+    await p.goto(DOCBASE + '/d/' + SLUG);
+    await T(3000);
+    return { c, p };
+  };
+  const sendFrom = async (p, k, email) => {
+    await p.evaluate((kk) => { const b = document.querySelector('#rail [data-card="' + kk + '"]'); if (b) b.click(); }, k);
+    await T(700);
+    const field = await p.$('.setupcard [data-stremail]');
+    if (!field) return { card: '(no email field)' };
+    await field.click();
+    await p.keyboard.type(email, { delay: 5 });
+    await T(200);
+    await p.click('.setupcard [data-strsend]');
+    await T(2000);
+    return p.evaluate(() => ({
+      card: ((document.querySelector('.setupcard') || {}).textContent || '').replace(/\s+/g, ' ').trim(),
+      errline: !!document.getElementById('errline'),
+    }));
+  };
+  const { c: jc, p: jp } = await stranger();
+  const rail = await jp.evaluate(() => [...document.querySelectorAll('#rail [data-card]')]
+    .map((b) => ({ k: b.dataset.card, t: (b.closest('li') || b).textContent.replace(/\s+/g, ' ').trim() })));
+  say('join       · the door\'s rail ' + JSON.stringify(rail));
+  const joinCard = rail.find((r) => r.k === 'strapply');
+  if (!joinCard || !joinCard.t.includes(COPY.page.strjoin.title)) {
+    say('FAIL: an open door offers no Join card (issue #36 F1)');
+    stuck.push('the Join card');
+  } else {
+    const sent = await sendFrom(jp, 'strapply', JOINER);
+    if (!sent.card.includes(COPY.page.strjoin.sent)) {
+      say('FAIL: the Join card does not say the link was sent: ' + JSON.stringify(sent.card.slice(0, 160)));
+      stuck.push('the Join card sends');
+    }
+    let joinLink = null;
+    for (let i = 0; i < 20 && !joinLink; i++) {
+      const m = (await devOutbox(BASE)).filter((x) => x.to === JOINER && /\/auth\/apply/.test(linkIn(x) || ''))[0];
+      joinLink = m ? linkIn(m) : null;
+      if (!joinLink) await T(500);
+    }
+    if (!joinLink) { say('FAIL: the Join card mailed no link'); stuck.push('the join mail'); }
+    else {
+      await jp.goto(joinLink);
+      for (let i = 0; i < 40 && !jp.url().includes('/d/'); i++) await T(500);
+      await T(2000);
+      const me = await jp.evaluate(async () => (await (await fetch(location.origin + '/api/d/' +
+        location.pathname.split('/')[2] + '/view')).json()).me || null);
+      say('join       · pressed on the page, the link seats ' + JSON.stringify(me));
+      if (!me || /^app:/.test(me)) { say('FAIL: the Join link did not seat a member'); stuck.push('the join seats'); }
+    }
+  }
+  await jc.close();
+  // the refusal, on both cards: the host answers 429 and the card says so
+  for (const [k, path] of [['strapply', '/apply'], ['strlogin', '/login']]) {
+    const { c, p } = await stranger();
+    await p.route('**/api/d/*' + path, (route) => route.fulfill({ status: 429,
+      contentType: 'application/json', body: JSON.stringify({ error: 'too many requests — try again shortly' }) }));
+    const said = await sendFrom(p, k, 'refused.' + k + '@example.org');
+    say('refused    · ' + k + ' · ' + JSON.stringify(said.card.slice(0, 140)) + ' · errline ' + said.errline);
+    if (!/That was refused/.test(said.card) || /Sent to/.test(said.card) || !said.errline) {
+      say('FAIL: a refused ' + k + ' send should say so under the card and on the stagehand\'s line (issue #36 F2)');
+      stuck.push('the refused ' + k);
+    }
+    await c.close();
+  }
+}
 await closeGuest();
 
 if (errors.length) { say('page errors· ' + JSON.stringify(errors)); stuck.push('page errors'); }

@@ -752,8 +752,12 @@ window.BAND = (function () {
     const applyShutOnMe = () => {
       const a = S.app;
       if (!a.emailVerified || a.submitted) return false;
-      if (env.cs && env.cs.isRemote) return env.cs.v && env.cs.v.applyOpen === false;
-      return !(policyNow() === 'apply' && admissionPrice() !== 'pen');
+      // shut means 🤝 no: at ✒️ the door is open and a verified applicant's
+      // submit admits them (issue #36 F3) — `applyOpen` alone read that as shut
+      if (env.cs && env.cs.isRemote) {
+        return env.cs.v && env.cs.v.applyOpen === false && env.cs.v.joinOpen === false;
+      }
+      return policyNow() !== 'apply';
     };
     const appCtx = {
       get open() { return S.open; }, get E() { return E(); },

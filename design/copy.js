@@ -652,6 +652,14 @@ window.COPY = (function () {
     // the applicant's five tasks (APPCARDS): not settings, one label each,
     // moved here from the page unchanged (Q1209's build) because a member
     // reads them
+    // **the Join card on an open-door document** (issue #36 F1; Q509 (a), whose
+    // ruling ended *the Join affordance comes back*): 🤝 yes with 🪪 at ✒️, where
+    // arriving is joining — the door's 🪪 card becomes a join, and its link seats
+    strjoin: {
+      title: 'Join',
+      why: 'Anyone with the link may join. Your email is your identity here — the link it sends makes you a member.',
+      sent: 'Follow the link to join — the address is your identity here.',
+    },
     appcards: {
       apply: 'Apply for Membership',
       appmail: 'Your Email',

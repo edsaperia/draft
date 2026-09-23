@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 531
+  "entries": 534
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -366,6 +366,9 @@
   "page.slugNote.suggested": "Suggested from the title — ",
   "page.slugNote.taken": " is taken.",
   "page.slugNote.takenSo": " is taken, so this one is ",
+  "page.strjoin.sent": "Follow the link to join — the address is your identity here.",
+  "page.strjoin.title": "Join",
+  "page.strjoin.why": "Anyone with the link may join. Your email is your identity here — the link it sends makes you a member.",
   "page.synth.admitLead": "Admit ",
   "page.synth.admitTail": "?",
   "page.synth.anApplicant": "an applicant",
