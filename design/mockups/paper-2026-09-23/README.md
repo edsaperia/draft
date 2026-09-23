@@ -17,3 +17,5 @@ The switch is `?paper=1` on `design/session-view.html` (it loads `design/paper.c
 | `phone-plain-5-contents-drawer.png` / `phone-paper-5-contents-drawer.png` | 390: the contents drawer on the desk colour, with the break between Rules and the Text |
 
 The stagehand's dev dropdown is hidden in every shot except the two founding pairs, where ⏩ is pressed.
+
+**Round 2, after Ed's review (2026-09-23: *the left margin seems too large, and the top and bottom margins seem too small*).** The paper shots are re-taken; the plain ones are the first round's, the plain page being unchanged. Each sheet now has an 80px margin at its top and foot at 1600 (`--sheet-margin`; 48px at 390), measured from the sheet's edge to the first or last line's box, and the Text sheet ends 80px below its last line, the scroll runway lying on the desk. At 1600 the sheet's drawn left edge comes 88px in over the tab gutter (`--sheet-trim`), so the text stands 84px from both edges and the tabs 24px from the left one; at 390 the sheets still run to the glass and the left is unchanged.

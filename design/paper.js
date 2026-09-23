@@ -16,7 +16,10 @@
    starts the Text sheet at its bottom. No docsep (the birth before the save,
    or the session fixture without `&band=1`) means one sheet, the whole column.
 
-   At narrow the sheets bleed through `.wrap`'s side padding to the glass.
+   The drawn left edge comes in `--sheet-trim` over the clause-tab gutter, and
+   the last sheet ends `--sheet-margin` below the last line rather than
+   running through the scroll runway (paper.css states both). At narrow the
+   sheets bleed through `.wrap`'s side padding to the glass, untrimmed.
    ========================================================================== */
 (function () {
   'use strict';
@@ -44,14 +47,42 @@
     el.style.width = px(width); el.style.height = px(height);
   }
 
+  // a length token off the root, resolved: `--sheet-margin` may be a calc()
+  const probe = document.createElement('div');
+  function token(name) {
+    probe.style.cssText = 'position:absolute;visibility:hidden;width:var(' + name + ')';
+    document.body.appendChild(probe);
+    const w = probe.getBoundingClientRect().width;
+    probe.remove();
+    return w;
+  }
+
+  // where the text ends: the top of the scroll runway, which is `#runway`
+  // after 🍾 in read mode and the column's `::after` otherwise (system.css,
+  // *the runway is content*); in edit mode the card's foot is the page's
+  // foot (Q1292), so the paper runs to the column's end
+  function textEnd(r, sy) {
+    if (doc.classList.contains('editing')) return null;
+    const rw = document.getElementById('runway');
+    if (rw && rw.offsetHeight > 0) return rw.getBoundingClientRect().top + sy;
+    const after = parseFloat(getComputedStyle(doc, '::after').height) || 0;
+    return after > 0 ? r.bottom + sy - after : null;
+  }
+
   function lay() {
     if (!doc) return;
     const r = doc.getBoundingClientRect();
     const sx = window.scrollX, sy = window.scrollY;
     const wrap = doc.closest('.wrap');
     const bleed = NARROW.matches && wrap ? parseFloat(getComputedStyle(wrap).paddingLeft) || 0 : 0;
-    const left = r.left + sx - bleed, width = r.width + 2 * bleed;
-    const top = r.top + sy, bottom = r.bottom + sy;
+    // the drawn edge comes in by --sheet-trim over the tab gutter (paper.css)
+    const trim = NARROW.matches ? 0 : token('--sheet-trim');
+    const left = r.left + sx - bleed + trim, width = r.width + 2 * bleed - trim;
+    const top = r.top + sy;
+    // the last line's box stands --s4 above the runway's top (a block's own
+    // trailing leading), so the foot adds the margin less that
+    const end = textEnd(r, sy);
+    const bottom = end == null ? r.bottom + sy : end + token('--sheet-margin') - token('--s4');
     const sep = doc.querySelector('.cpara.docsep');
     const s = sep && sep.getClientRects().length ? sep.getBoundingClientRect() : null;
     if (!s) {

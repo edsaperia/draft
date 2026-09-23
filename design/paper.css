@@ -20,9 +20,26 @@
    - **The gap is `--s5`, 24px**, the same as the layout's column gap, so the
      desk is one width between every pair of things lying on it; at narrow
      `--s4`, 16px, where vertical room is dearer.
-   - **A sheet's inner margin is 36px**, `.doc`'s own top padding, so the Rules
-     sheet ends as far below its last line as the column begins above its
-     first, and the Text sheet begins the same.
+   - **A sheet's top and foot margin is `--sheet-margin`, 80px** (Ed's review,
+     2026-09-23: *the top and bottom margins seem too small* — they were 36px,
+     `.doc`'s own top padding): a printed page's margin, from the sheet's edge
+     to the first line's box and from the last line's box to the edge, the
+     same at all four places — the top of the Rules, the Rules' foot at the
+     break, the top of the Text, and the Text's end. At narrow 48px, two
+     `--s5`. Each site subtracts what its first or last line already carries
+     (its leading, a heading's margin) so the measured margin is the token.
+   - **The Text sheet ends at its last line, not at the runway.** The column's
+     95vh of scroll runway (system.css, *the runway is content*) lies on the
+     desk: it is room to scroll, not paper. In edit mode the card's foot is the
+     page's foot (Q1292), so there the sheet runs to the column's end as before.
+   - **The sheet's left edge is trimmed in by `--sheet-trim`, 88px** (Ed's
+     review: *the left margin seems too large*): the column's 132px left
+     padding is the clause-tab gutter, which was all paper. Drawn 88px in,
+     the text stands as far from the sheet's left edge as from its right
+     (84px at 1600), and the tabs keep `--s5`, 24px, of paper to their left
+     (16px for the open tab, which grows 8px leftward — M12). Only the drawn
+     sheet moves; the column, its tabs and its cards stay where they were.
+     At narrow the sheet runs to the glass and no trim applies.
    ========================================================================== */
 html.paper {
   --desk: #EEF0F2;
@@ -32,10 +49,14 @@ html.paper {
   --desk-muted: #5F676F;
   --muted-sheet: #6B747C;
   --desk-gap: var(--s5);
-  --sheet-pad: 36px;
+  --sheet-margin: 80px;
+  --sheet-trim: 88px;
   --sheet-shadow: var(--shadow-sm);
 }
 html.paper body { background: var(--desk); }
+/* the top margin: the first line's box sits --s4 below the padding's edge
+   (the title's own leading), so the padding is the margin less that */
+html.paper .doc { padding-top: calc(var(--sheet-margin) - var(--s4)); }
 
 /* ---- the sheets (drawn by paper.js on the body, behind everything) ------- */
 html.paper .desksheets { position: static; }
@@ -49,12 +70,13 @@ html.paper .doc { background: transparent; border-color: transparent; }
 
 /* ---- the break ------------------------------------------------------------- */
 /* The one hairline in the document (setup.css, `.cpara.docsep`) becomes the
-   desk between the sheets: no rule, a block the gap tall, a sheet's inner
-   margin above and below it. paper.js ends the Rules sheet at this block's
-   top and starts the Text sheet at its bottom. */
+   desk between the sheets: no rule, a block the gap tall, a sheet's margin
+   above and below it. paper.js ends the Rules sheet at this block's top and
+   starts the Text sheet at its bottom. Above it the Rules' last line box
+   already trails --s2 of the pile's own spacing, so the margin takes it off. */
 html.paper .cpara.docsep {
   border-top: 0; height: var(--desk-gap); min-height: 0;
-  margin: var(--sheet-pad) 0;
+  margin: calc(var(--sheet-margin) - var(--s2)) 0 var(--sheet-margin);
 }
 /* the fixture's charter repeats the title as its first line (session.js's
    `line.t === 'title'`), which on a page with the band shown stands straight
@@ -109,7 +131,7 @@ html.paper .queue .sealdot {
 /* ---- narrow: the sheets run to the glass ----------------------------------- */
 /* NARROW_Q (mockup) */
 @media (max-width: 900px) {
-  html.paper { --desk-gap: var(--s4); --sheet-pad: var(--s5); }
+  html.paper { --desk-gap: var(--s4); --sheet-margin: calc(2 * var(--s5)); --sheet-trim: 0px; }
   html.paper .sheet { border-radius: 0; }
   /* the contents drawer is a gutter too; it slides in on the desk's colour */
   html.paper .layout > .toc { background: var(--desk); }
