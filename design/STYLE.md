@@ -190,8 +190,9 @@ Glyph names are stable (tabulated 2026-09-07, Q1208; the founding order's own gl
   [title]*.
 - **A mail is the only channel to somebody outside the document, and it says
   the whole thing.** Three go to people who have no seat to read anything on
-  — `removed`, `closed` and, since Q1493 (Ed, 2026-09-21: *An email when
-  withdrawn*), `uninvited` — and each carries the document's own address and
+  — `removed`, `uninvited` (since Q1493, Ed 2026-09-21: *An email when
+  withdrawn*) and `closed` to an invitation never followed (issue #35 F4:
+  a member's `closed` logs them in, to sign) — and each carries the document's own address and
   **no login link**, since a token would be minted for a seat that does not
   exist. They name the **office and never the person** (SURFACE C10), give no
   reason where the act takes none, and promise nothing about what happens
