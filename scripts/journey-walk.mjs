@@ -31,7 +31,7 @@
  * first: a pointer cannot press what is off screen.
  */
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
-import { say, linkIn, onPage, browserFor, installPaste } from './lib/walk.mjs';
+import { say, linkIn, onPage, browserFor, installPaste, followLink } from './lib/walk.mjs';
 
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8140');
 // --empty-text: found the document on a confirmed-empty text (Q649 (a)) and
@@ -1964,6 +1964,32 @@ const stuckAtBegin = async () => {
       : 'FAIL: holds ' + JSON.stringify(after.holds) + ' · rail ' + JSON.stringify(after.rail)));
     if (!gone) stuck.push('the ✉️ remedy did not clear after an invitation');
   } else { say('invited    · FAIL: no ✉️ to invite from'); stuck.push('the ✉️ tab at the dead end'); }
+  /* 5 — **and while the room answers, 🍾 waits in the open, naming who is
+   * still to answer** (issue #76, Ed 2026-09-22: *a ⏳ Begin task in the rail
+   * with a list of the usernames/avatars which have answers still due*). The
+   * invitee arrives, so every hold is `collecting` and the founder's own part
+   * is done: 🍾 must be a ⏳ entry in the rail carrying the invitee's face and
+   * name, and its card must open refused. Until #76 the entry stood as an
+   * ask with nobody named on it, or — where ✋ or 🖼️ were still served — not
+   * at all. */
+  const link = await invitationLink(GUEST1);
+  const arrived = link ? await followLink(link).then(() => true, () => false) : false;
+  await T(5200);                                 // one poll in the founder's seat
+  const due = await page.evaluate(() => {
+    const li = document.querySelector('#rail li[data-q="begin"]');
+    const b = li && li.querySelector('button');
+    return b ? { state: [...b.classList].find((c) => c.startsWith('st-')) || null,
+      names: [...li.querySelectorAll('.qdue')].map((e) => e.textContent.trim()),
+      faces: li.querySelectorAll('.qdue .av, .qdue .emojiface').length } : null;
+  });
+  const holds5 = ((await founding()) || {}).readiness || {};
+  const guestName = GUEST1.split('@')[0];
+  const dueOk = arrived && !!due && due.state === 'st-wait' && due.faces >= 1 &&
+    due.names.some((n) => n.includes(guestName)) &&
+    (holds5.holds || []).every((h) => h.why === 'collecting');
+  say('who is due · ' + (dueOk ? '🍾 waits as ⏳ in the rail, naming ' + JSON.stringify(due.names) + ' with their faces'
+    : 'FAIL: ' + JSON.stringify({ arrived, due, holds: holds5.holds })));
+  if (!dueOk) stuck.push('⏳ Begin names who is still to answer (#76)');
 };
 
 /* ---- 🍾's power table (entry 158, Q1018, R-057; per setting since Q1195 (c),

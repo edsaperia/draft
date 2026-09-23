@@ -4022,7 +4022,9 @@
   };
   const mustAct = (c) => (motionOn(c) ? (crownAsksMe(c) ||
       (viewerIsMember() && !viewerLapsed() && !answeredMotion(c) && !motionExcludesMe(c)))
-    : c.isBegin ? (amFounder() && !constituted())
+    // …never while the room is still answering (issue #76): then 🍾 is a ⏳
+    // wait, the founder's part being done
+    : c.isBegin ? (amFounder() && !constituted() && !beginCollecting())
     : c.isClosing ? false
     : c.leaveDoor ? false                                      // nothing asks you to leave (Q1400)
     // 🪪 is the remedy for a `one-voice` wait, and while that is what the
@@ -5006,7 +5008,20 @@
       if (moved) SESSION.layoutQueue();
     }, PUT_MS);
   }
+  // **⏳ Begin lists who is still to answer** (issue #76, Ed 2026-09-22: *a
+  // ⏳ Begin task in the rail with a list of the usernames/avatars which have
+  // answers still due*): each member owing an answer, face and name, off the
+  // module's own readout — participation by name, never preference.
+  const dueFaces = () => dueMembers().map((m) => {
+    const row = S.roster.find((r) => (r.mid || 'founder') === m.id) || {};
+    const n = (row.n || m.name || row.e || '').trim();
+    return '<span class="qdue">' + avHtml({ n, pic: row.pic }) + ' ' + esc(n || PAGE_COPY.synth.redacted) + '</span>';
+  }).join('');
   const summary = (c) => {
+    if (c.isBegin && beginCollecting()) {
+      const faces = dueFaces();
+      return faces ? '<span class="qwhy qdues">' + faces + '</span>' : '';
+    }
     const m = motionOn(c);
     const body = m ? window.CARDS.railSpeakerHtml(m.why, null) : '';
     if (!justPutOn(c)) return body;
@@ -6552,7 +6567,8 @@
   // reached, and *have you answered it* is true of the Founder on every
   // motion they carried — so the entry filed ⏳ and the ask never ran
   const waiting = (c) => (motionOn(c) ? (!crownAsksMe(c) && answeredMotion(c))
-    : c.isBegin ? (!amFounder() && !constituted())   // a member sees the start waiting on the founder
+    : c.isBegin ? (!amFounder() && !constituted()) ||   // a member sees the start waiting on the founder
+      beginCollecting()                                 // …and the founder, on the room (issue #76)
     : c.isClosing ? false
     : c.isGate ? !c.open()
     : c.k === 'myemail' ? (S.emailSent && !S.emailVerified)
@@ -9721,7 +9737,7 @@
   // design/begin.js since refactor Q1352 (b): made here, where the code stood,
   // with the page bindings it reads — `cs` and `FIX` through accessors, since
   // both are reassigned; every function wrapped, read when called.
-  const { readinessOf, oneVoiceRemedy, inviteTask, oneVoiceAsk, beginOffered, releaseBody, mailGiveUpBody,
+  const { readinessOf, oneVoiceRemedy, inviteTask, oneVoiceAsk, beginOffered, beginCollecting, dueMembers, releaseBody, mailGiveUpBody,
     BEGIN_ROWS, beginStillHeld, beginPos, beginLayDown, beginBody, closingBody } = window.BEGIN.make({
     S, PAGE_COPY, SEC, SESSION,
     get cs() { return cs; },
@@ -9746,6 +9762,7 @@
     remedyOnly: (...a) => remedyOnly(...a),
     servedCards: (...a) => servedCards(...a),
     settled: (...a) => settled(...a),
+    viewerId: (...a) => viewerId(...a),
     viewerIsMember: (...a) => viewerIsMember(...a),
     visible: (...a) => visible(...a),
   });
