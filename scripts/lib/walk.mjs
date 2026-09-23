@@ -51,7 +51,20 @@ export const browserFor = (argv = process.argv, env = process.env) => {
   return engine;
 };
 
-export const say = (...a) => console.log(...a);
+/**
+ * `WALK_TIMING=1` puts the milliseconds since the previous line in front of
+ * each (plan-ci-speed.md Stage 6: *journey, profiled not changed*), so a
+ * walk's log is its own profile — sort by the first column. Off, a line is
+ * exactly what it always was.
+ */
+const TIMING = process.env.WALK_TIMING === '1';
+let lastSay = 0;
+export const say = (...a) => {
+  if (!TIMING) return console.log(...a);
+  const now = Date.now(), ms = lastSay ? now - lastSay : 0;
+  lastSay = now;
+  console.log(`[+${String(ms).padStart(6)} ms]`, ...a);
+};
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 /** `--name=value` from argv, else `dflt` (null when none is given). */
 export const arg = (name, dflt = null) => {

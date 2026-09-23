@@ -4,7 +4,7 @@
  * the room of 2026-09-20 at 5929a6e: *a member was unable to propose to change the proposal rate*.)
  *
  *   PORT=8403 DRAFT_BASE_URL=http://127.0.0.1:8403 DRAFT_DATA_DIR=<fresh> npm run server
- *   node scripts/repro/member-rate-motion.mjs http://127.0.0.1:8403 [--shots=<dir>] [--only=<scenario>]
+ *   node scripts/repro/member-rate-motion.mjs http://127.0.0.1:8403 [--shots=<dir>] [--only=<scenario>] [--lanes=1]
  *
  * **What it drives.** It founds a document shaped like `docs.vote/d/nh2026`: a clerk Founder (not a
  * member), four invited members who arrive, every setting Founder-set with nothing delegated, ⏱️ at
@@ -43,6 +43,7 @@
 import { devices } from 'playwright';
 import { browserFor } from '../lib/walk.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { AsyncLocalStorage } from 'node:async_hooks';
 
 const BASE = (process.argv[2] && !process.argv[2].startsWith('--') ? process.argv[2]
   : process.env.DRAFT_BASE_URL || 'http://127.0.0.1:8403').replace(/\/$/, '');
@@ -51,10 +52,24 @@ const SHOTS = argOf('shots');
 const ONLY = argOf('only');
 if (SHOTS) mkdirSync(SHOTS, { recursive: true });
 const clock = () => new Date().toTimeString().slice(0, 8);
-const say = (s) => console.log(`[${clock()}] ${s}`);
+/**
+ * **Lanes** (plan-ci-speed.md Stage 5). The scenarios ran one after another
+ * on one document, 320 s on CI's runner, most of it fixed waits: the three
+ * welcomes a fresh page OKs, and the two polls each under-poll scenario sits
+ * through. They now run in `LANES`, each lane its own document founded the
+ * same way and its scenarios in the same relative order, the lanes side by
+ * side. `lane` carries the lane's document and the scenario's own log, so a
+ * scenario's lines are held and printed, whole, in the order below — the
+ * verdict lines read in the order they always did.
+ */
+const lane = new AsyncLocalStorage();
+const doc = () => lane.getStore().doc;
+const say = (s) => { const line = `[${clock()}] ${s}`; const st = lane.getStore();
+  if (st && st.out) st.out.push(line); else console.log(line); };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const findings = [];
-const verdict = (name, ok, detail) => { say((ok ? 'OK   · ' : 'FAIL · ') + name + ' · ' + detail); if (!ok) findings.push(name + ' · ' + detail); };
+const verdict = (name, ok, detail) => { say((ok ? 'OK   · ' : 'FAIL · ') + name + ' · ' + detail);
+  if (!ok) { const st = lane.getStore(); (st && st.findings ? st.findings : FINDINGS_LOOSE).push(name + ' · ' + detail); } };
+const FINDINGS_LOOSE = [];
 
 const post = async (path, body, cookie) => {
   const r = await fetch(BASE + path, { method: 'POST',
@@ -86,56 +101,62 @@ if (!health || health.devMail !== true) { say('SET-UP · not a dev server: ' + B
 
 /* ---- found a document shaped like nh2026 ---------------------------------- */
 const STAMP = Date.now().toString(36);
-const SLUG = 'rate-' + STAMP;
-const FOUNDER = `founder-${STAMP}@walk.docs.vote`;
-const MEMBERS = ['ann', 'bob', 'cyd', 'dee'].map((n) => `${n}-${STAMP}@walk.docs.vote`);
 const used = new Set();
-const saved = await post('/api/docs', { title: 'Rate Motion Probe', email: FOUNDER, slug: SLUG, isMember: false });
-if (saved.status !== 200 && saved.status !== 201) { say('SET-UP · save refused: ' + JSON.stringify(saved)); process.exit(2); }
-const fArr = await followLink(await linkFor(FOUNDER, used));
-const FCOOKIE = fArr.cookie;
-const cmdAs = async (cookie, name, args = {}) => post(`/api/d/${SLUG}/cmd`, { cmd: name, args }, cookie);
+const cmdAs = async (cookie, name, args = {}) => post(`/api/d/${doc().slug}/cmd`, { cmd: name, args }, cookie);
 const must = async (cookie, name, args) => { const r = await cmdAs(cookie, name, args);
   if (r.status !== 200) throw new Error(`${name} refused (${r.status}): ${JSON.stringify(r.json)}`); return r.json.result; };
-const viewAs = async (cookie) => fetch(`${BASE}/api/d/${SLUG}/view`, { headers: { cookie } }).then((r) => r.json());
+const viewAs = async (cookie) => fetch(`${BASE}/api/d/${doc().slug}/view`, { headers: { cookie } }).then((r) => r.json());
 
-const TEXT = ['# Purpose', 'The club exists to keep the oak.', '# Meetings', 'The club meets monthly.',
-  'Minutes are kept by the recorder.', '# Money', 'Dues are five pounds.', 'The treasurer reports yearly.'].join('\n');
-await must(FCOOKIE, 'confirm-starting-text', { text: TEXT });
-await must(FCOOKIE, 'set-convenor-membership', { isMember: false });
-for (const e of MEMBERS) await must(FCOOKIE, 'invite', { email: e });
-await cmdAs(FCOOKIE, 'set-quorum-form', { form: 'share' });
-const HELD = {
-  quorum: { form: 'share', n: 50 }, rate: { grant: 3, cap: 3, dripMinutes: 10 },
-  lapse: { afterMs: null }, authorship: { rung: 'public' }, judgments: { rung: 'never' },
-  chamber: { rung: 'link' }, applications: { apply: false }, admission: { price: 'assembly' },
-  removal: { price: 'consent' }, ending: { endsAtMs: Date.now() + 6 * 3600_000 },
+/** one lane's document: `tag` keeps its slug and its five addresses apart from every other lane's */
+const found = async (tag) => {
+  const D = lane.getStore().doc;
+  const STAMP_L = STAMP + tag;
+  const SLUG = D.slug = 'rate-' + STAMP_L;
+  const FOUNDER = `founder-${STAMP_L}@walk.docs.vote`;
+  const MEMBERS = ['ann', 'bob', 'cyd', 'dee'].map((n) => `${n}-${STAMP_L}@walk.docs.vote`);
+  const saved = await post('/api/docs', { title: 'Rate Motion Probe', email: FOUNDER, slug: SLUG, isMember: false });
+  if (saved.status !== 200 && saved.status !== 201) { console.log(`[${clock()}] SET-UP · save refused: ` + JSON.stringify(saved)); process.exit(2); }
+  const fArr = await followLink(await linkFor(FOUNDER, used));
+  const FCOOKIE = D.fcookie = fArr.cookie;
+
+  const TEXT = ['# Purpose', 'The club exists to keep the oak.', '# Meetings', 'The club meets monthly.',
+    'Minutes are kept by the recorder.', '# Money', 'Dues are five pounds.', 'The treasurer reports yearly.'].join('\n');
+  await must(FCOOKIE, 'confirm-starting-text', { text: TEXT });
+  await must(FCOOKIE, 'set-convenor-membership', { isMember: false });
+  for (const e of MEMBERS) await must(FCOOKIE, 'invite', { email: e });
+  await cmdAs(FCOOKIE, 'set-quorum-form', { form: 'share' });
+  const HELD = {
+    quorum: { form: 'share', n: 50 }, rate: { grant: 3, cap: 3, dripMinutes: 10 },
+    lapse: { afterMs: null }, authorship: { rung: 'public' }, judgments: { rung: 'never' },
+    chamber: { rung: 'link' }, applications: { apply: false }, admission: { price: 'assembly' },
+    removal: { price: 'consent' }, ending: { endsAtMs: Date.now() + 6 * 3600_000 },
+  };
+  for (const [setting, value] of Object.entries(HELD)) await must(FCOOKIE, 'set-setting', { setting, value });
+  const MCOOKIES = D.mcookies = [];
+  for (const e of MEMBERS) {
+    const a = await followLink(await linkFor(e, used));
+    if (!a.cookie) throw new Error('no seat for ' + e + ': ' + JSON.stringify(a));
+    MCOOKIES.push(a.cookie);
+    await must(a.cookie, 'set-identity', { name: e.split('-')[0].replace(/^./, (c) => c.toUpperCase()) });
+  }
+  // 🍾: what nh2026 kept — both powers on ⏱️ ⏰ 👥 💤 🥾 🪪 🤝, 🛡️ alone on 🪶 📍 🌍, nothing on 👤 👁️ or the Text
+  const KEEP_BOTH = ['rate', 'ending', 'quorum', 'lapse', 'removal', 'admission', 'applications', 'bar', 'pace', 'machines'];
+  const KEEP_VETO = ['title', 'link', 'chamber'];
+  const managed = health.catalogue.filter((id) => !['displayName', 'picture', 'startingText'].includes(id));
+  let laidDown = [...managed, 'startingText', 'door:invite', 'door:remove'].flatMap((setting) =>
+    [{ setting, power: 'unilateral' }, { setting, power: 'assent' }])
+    .filter((p) => !KEEP_BOTH.includes(p.setting) && !(KEEP_VETO.includes(p.setting) && p.power === 'assent'));
+  for (let tries = 0; tries < 8; tries++) {
+    const r = await cmdAs(FCOOKIE, 'begin', { laidDown });
+    if (r.status === 200) break;
+    const m = /'([^']+)' carries no power/.exec(JSON.stringify(r.json));
+    if (!m) { console.log(`[${clock()}] SET-UP · 🍾 refused: ` + JSON.stringify(r.json)); process.exit(2); }
+    laidDown = laidDown.filter((p) => p.setting !== m[1]);
+  }
+  const v0 = await viewAs(MCOOKIES[0]);
+  const rate0 = ((v0.view || v0).settings || []).find((s) => s.setting === 'rate');
+  say(`document /d/${SLUG} begun · ⏱️ ${JSON.stringify(rate0 && { value: rate0.value, holder: rate0.holder, powers: rate0.powers })}`);
 };
-for (const [setting, value] of Object.entries(HELD)) await must(FCOOKIE, 'set-setting', { setting, value });
-const MCOOKIES = [];
-for (const e of MEMBERS) {
-  const a = await followLink(await linkFor(e, used));
-  if (!a.cookie) throw new Error('no seat for ' + e + ': ' + JSON.stringify(a));
-  MCOOKIES.push(a.cookie);
-  await must(a.cookie, 'set-identity', { name: e.split('-')[0].replace(/^./, (c) => c.toUpperCase()) });
-}
-// 🍾: what nh2026 kept — both powers on ⏱️ ⏰ 👥 💤 🥾 🪪 🤝, 🛡️ alone on 🪶 📍 🌍, nothing on 👤 👁️ or the Text
-const KEEP_BOTH = ['rate', 'ending', 'quorum', 'lapse', 'removal', 'admission', 'applications', 'bar', 'pace', 'machines'];
-const KEEP_VETO = ['title', 'link', 'chamber'];
-const managed = health.catalogue.filter((id) => !['displayName', 'picture', 'startingText'].includes(id));
-let laidDown = [...managed, 'startingText', 'door:invite', 'door:remove'].flatMap((setting) =>
-  [{ setting, power: 'unilateral' }, { setting, power: 'assent' }])
-  .filter((p) => !KEEP_BOTH.includes(p.setting) && !(KEEP_VETO.includes(p.setting) && p.power === 'assent'));
-for (let tries = 0; tries < 8; tries++) {
-  const r = await cmdAs(FCOOKIE, 'begin', { laidDown });
-  if (r.status === 200) break;
-  const m = /'([^']+)' carries no power/.exec(JSON.stringify(r.json));
-  if (!m) { say('SET-UP · 🍾 refused: ' + JSON.stringify(r.json)); process.exit(2); }
-  laidDown = laidDown.filter((p) => p.setting !== m[1]);
-}
-const v0 = await viewAs(MCOOKIES[0]);
-const rate0 = ((v0.view || v0).settings || []).find((s) => s.setting === 'rate');
-say(`document /d/${SLUG} begun · ⏱️ ${JSON.stringify(rate0 && { value: rate0.value, holder: rate0.holder, powers: rate0.powers })}`);
 
 /* ---- one member's real page ------------------------------------------------ */
 const browser = await browserFor().launch();
@@ -154,7 +175,7 @@ const seat = async (cookie, { narrow = false, unacked = false } = {}) => {
     let ans = null; try { ans = await res.json(); } catch {}
     wire.push({ cmd: body && body.cmd, args: body && body.args, status: res.status(), answer: ans });
   });
-  await page.goto(`${BASE}/d/${SLUG}`);
+  await page.goto(`${BASE}/d/${doc().slug}`);
   await page.waitForSelector('#band .cpara', { timeout: 20000 });
   await page.waitForTimeout(2000);
   // the three welcomes a fresh member owes (C9): nothing composes until 💡 is OK'd
@@ -292,7 +313,7 @@ SCENARIOS['wide-one'] = typeThenPress(1);
 SCENARIOS['narrow'] = typeThenPress(4);
 
 const run = async (name, fn, cookieIx, opts) => {
-  if (ONLY && ONLY !== name) return;
+  const MCOOKIES = doc().mcookies;
   say('— ' + name + ' —');
   const s = await seat(MCOOKIES[cookieIx], opts);
   try { await fn(s, MCOOKIES[cookieIx], name); } catch (e) { verdict(name, false, 'threw: ' + (e && e.stack || e)); }
@@ -400,7 +421,7 @@ SCENARIOS['decree-under'] = async (s, cookie, name) => {
   await openRate(s);
   const c1 = await typeBlur(s, 7);
   say('   composed 7: ' + JSON.stringify(c1 && { field: c1.field, commit: c1.commit, pickOn: c1.pickOn }));
-  const d = await cmdAs(FCOOKIE, 'set-setting', { setting: 'rate', value: { grant: 3, cap: 3, dripMinutes: 5 }, why: '' });
+  const d = await cmdAs(doc().fcookie, 'set-setting', { setting: 'rate', value: { grant: 3, cap: 3, dripMinutes: 5 }, why: '' });
   say('   the Founder ✒️ decrees every 5 minutes: ' + d.status + ' ' + JSON.stringify(d.json).slice(0, 120));
   await s.page.waitForTimeout(9000); // two polls
   const c2 = await readCard(s);
@@ -422,7 +443,7 @@ SCENARIOS['decree-under'] = async (s, cookie, name) => {
   // rather than measuring a field that is no longer in the document.
   await openRate(s);
   const c4 = await typeBlur(s, 2);
-  await cmdAs(FCOOKIE, 'set-setting', { setting: 'rate', value: { grant: 3, cap: 3, dripMinutes: 2 }, why: '' });
+  await cmdAs(doc().fcookie, 'set-setting', { setting: 'rate', value: { grant: 3, cap: 3, dripMinutes: 2 }, why: '' });
   await s.page.waitForTimeout(9000);
   const c5 = await readCard(s);
   const b2 = s.wire.length;
@@ -452,13 +473,13 @@ SCENARIOS['typing-under-poll'] = async (s, cookie, name) => {
   await openRate(s);
   await typeRate(s, 7);
   const c1 = await readCard(s);
-  const other = MCOOKIES[(MCOOKIES.indexOf(cookie) + 1) % MCOOKIES.length];
+  const MC = doc().mcookies, other = MC[(MC.indexOf(cookie) + 1) % MC.length];
   const r = await cmdAs(other, 'set-identity', { name: 'Renamed ' + Date.now().toString(36).slice(-3) });
   say('   typed 7 (field still focused: ' + c1.focus + '); another member changes their name: ' + r.status);
   await s.page.waitForTimeout(9000);
   const c2 = await readCard(s);
   say('   two polls later: ' + JSON.stringify(c2 && { field: c2.field, focus: c2.focus, commit: c2.commit, pickOn: c2.pickOn }));
-  const d = await cmdAs(FCOOKIE, 'set-setting', { setting: 'rate', value: { grant: 3, cap: 3, dripMinutes: 6 }, why: '' });
+  const d = await cmdAs(doc().fcookie, 'set-setting', { setting: 'rate', value: { grant: 3, cap: 3, dripMinutes: 6 }, why: '' });
   await s.page.waitForTimeout(9000);
   const c3 = await readCard(s);
   await shot(s, name);
@@ -500,7 +521,7 @@ SCENARIOS['one-under-poll'] = async (s, cookie, name) => {
   await s.page.waitForTimeout(9000);
   const quiet = await readCard(s);
   say('   typed 1, touched nothing, a quiet room, two polls: ' + JSON.stringify(quiet && { field: quiet.field, focus: quiet.focus, commit: quiet.commit, pickOn: quiet.pickOn }));
-  const other = MCOOKIES[(MCOOKIES.indexOf(cookie) + 1) % MCOOKIES.length];
+  const MC = doc().mcookies, other = MC[(MC.indexOf(cookie) + 1) % MC.length];
   await cmdAs(other, 'set-identity', { name: 'Renamed ' + Date.now().toString(36).slice(-3) });
   await s.page.waitForTimeout(9000);
   const c2 = await readCard(s);
@@ -511,7 +532,7 @@ SCENARIOS['one-under-poll'] = async (s, cookie, name) => {
 };
 // the same question of the other field composers — 🪶 the title, 👥 quorum — so the fault is placed: ⏱️'s or every field's?
 SCENARIOS['others-under-poll'] = async (s, cookie, name) => {
-  const other = MCOOKIES[(MCOOKIES.indexOf(cookie) + 1) % MCOOKIES.length];
+  const MC = doc().mcookies, other = MC[(MC.indexOf(cookie) + 1) % MC.length];
   for (const [k, sel, typed] of [['title', '[data-mtext]', 'A Better Name'], ['quorum', '[data-mnum]', '30']]) {
     const opened = await s.page.evaluate((kk) => {
       const t = document.querySelector('#band [data-tab="' + kk + '"]') || document.querySelector('#band .achip[data-chip="' + kk + '"]');
@@ -562,25 +583,49 @@ SCENARIOS['narrow-ways'] = async (s, cookie, name) => {
 };
 
 
-// the order matters in a whole run: four seats share 3 ✏️ each, and the two scenarios that move what stands
-// (the Founder's decrees) and the one that empties a wallet go last. `--only=<name>` founds a fresh document.
-await run('wide-type-press', SCENARIOS['wide-type-press'], 0);
-await run('grant-cap', SCENARIOS['grant-cap'], 0);
-await run('unacked', SCENARIOS['unacked'], 0, { unacked: true });
-await run('same-as-stands', SCENARIOS['same-as-stands'], 0);
-await run('wide-hour', SCENARIOS['wide-hour'], 1);
-await run('wide-120', SCENARIOS['wide-120'], 2);
-await run('wide-one', SCENARIOS['wide-one'], 3);
-await run('narrow', SCENARIOS['narrow'], 2, { narrow: true });
-await run('narrow-ways', SCENARIOS['narrow-ways'], 3, { narrow: true });
-await run('others-under-poll', SCENARIOS['others-under-poll'], 1);
-await run('one-under-poll', SCENARIOS['one-under-poll'], 0);
-await run('bad-numbers', SCENARIOS['bad-numbers'], 2);
-await run('typing-under-poll', SCENARIOS['typing-under-poll'], 0);
-await run('decree-under', SCENARIOS['decree-under'], 1);
-await run('empty-wallet', SCENARIOS['empty-wallet'], 3);
+// **The order**, each scenario with the seat it sits in. Within a document the order matters: four seats share
+// 3 ✏️ each, and the two scenarios that move what stands (the Founder's decrees) and the one that empties a
+// wallet go last. Every lane keeps this order among its own, and the log prints in it.
+const ORDER = [
+  ['wide-type-press', 0], ['grant-cap', 0], ['unacked', 0, { unacked: true }], ['same-as-stands', 0],
+  ['wide-hour', 1], ['wide-120', 2], ['wide-one', 3],
+  ['narrow', 2, { narrow: true }], ['narrow-ways', 3, { narrow: true }],
+  ['others-under-poll', 1], ['one-under-poll', 0], ['bad-numbers', 2], ['typing-under-poll', 0],
+  ['decree-under', 1], ['empty-wallet', 3],
+];
+// **The lanes**, balanced by what each scenario waits: the under-poll scenarios sit through two polls a step,
+// the rest mostly through the welcomes. The decrees stay in one lane behind typing-under-poll's, and the empty
+// wallet behind them, as they ran — so the card it reads carries the same decree. `--lanes=1` is the old serial run on one
+// document; `--only=<name>` founds one document for that scenario alone.
+const LANES = ONLY ? [[ONLY]] : argOf('lanes') === '1' ? [ORDER.map(([n]) => n)] : [
+  ['wide-type-press', 'grant-cap', 'unacked', 'same-as-stands', 'wide-hour'],
+  ['wide-120', 'wide-one', 'narrow', 'narrow-ways'],
+  ['others-under-poll', 'one-under-poll', 'bad-numbers'],
+  ['typing-under-poll', 'decree-under', 'empty-wallet'],
+];
+const LOGS = {}, FOUND = {}, FINDINGS = {};
+const laneRun = (names, tag) => lane.run({ doc: {}, out: [] }, async () => {
+  const st = lane.getStore();
+  FOUND[tag] = st.out;
+  await found(tag);
+  for (const name of ORDER.map(([n]) => n).filter((n) => names.includes(n))) {
+    const [, cookieIx, opts] = ORDER.find(([n]) => n === name);
+    st.out = LOGS[name] = [];
+    st.findings = FINDINGS[name] = [];
+    await run(name, SCENARIOS[name], cookieIx, opts);
+  }
+});
+const printed = () => {
+  for (const out of Object.values(FOUND)) for (const l of out) console.log(l);
+  for (const [name] of ORDER) for (const l of LOGS[name] || []) console.log(l);
+};
+try {
+  await Promise.all(LANES.map((names, i) => laneRun(names, LANES.length > 1 ? 'l' + (i + 1) : '')));
+} catch (e) { printed(); throw e; }
+printed();
 
 await browser.close();
+const findings = [...FINDINGS_LOOSE, ...ORDER.flatMap(([n]) => FINDINGS[n] || [])];
 if (SHOTS) writeFileSync(SHOTS + '/member-rate-motion.findings.txt', findings.join('\n') + '\n');
 say(findings.length ? `FINDINGS (${findings.length}):\n  ` + findings.join('\n  ') : 'every scenario ended in a motion or a sentence');
 process.exit(findings.length ? 1 : 0);
