@@ -286,6 +286,8 @@ case "$GROUP" in
     # the red Reconnecting… bar (Q1505): offline, a 502, a hung poll, the
     # pause keeping its modal, and a vote refused at the press
     walk "reconnecting" node scripts/repro/reconnecting.mjs "$BASE"
+    # a stranger reads a closed document's ✔s where 🌍 lets them (Q1508)
+    walk "stranger-records" node scripts/repro/stranger-records.mjs "$BASE"
     ;;
 esac
 

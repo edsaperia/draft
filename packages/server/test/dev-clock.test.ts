@@ -199,7 +199,10 @@ describe('the dev clock (Q1455): one document moved forward, the host still doin
     // ahead after a one-hour jump, its engine log with it, and the next rung
     // writing behind its own past.
     const doc = b.draft.store.bySlug(one.slug)!;
-    expect(foldTime(doc, foldTime(doc))).toBe(foldTime(doc));
+    // read the moving clock once: two reads a millisecond apart on a slow
+    // runner differ, which reddened `ci` on two of three PR #99 runs
+    const at = foldTime(doc);
+    expect(foldTime(doc, at)).toBe(at);
     expect(foldTime(doc, Date.now())).toBeLessThan(realBefore + 3 * 3600_000);
   });
 
