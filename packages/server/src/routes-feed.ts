@@ -31,7 +31,13 @@ import type { Route } from './routes.js';
 import type { LoadedDoc } from './store.js';
 import { strangerView } from './views.js';
 
-/** The newest entries the feed serves: a page of reading, not an archive. */
+/**
+ * The newest entries the feed serves **while the document is live**: a page of
+ * reading, not an archive. **Once closed it is the archive** (Q1509 (b), Ed
+ * 2026-09-23: *keep the cap live, lift it at the close*) — nh2026 ran past two
+ * hundred and its earliest proposals and adoptions were on no feed; a closed
+ * feed never grows, so the whole of it is served once and then only `short`.
+ */
 export const FEED_LIMIT = 200;
 
 interface NamedAuthor { name: string | null; picture: string | null; erased: boolean }
@@ -70,8 +76,9 @@ function ruleEntries(doc: LoadedDoc): SettingFeedEntry[] {
  */
 export function feedEntries(doc: LoadedDoc): Array<TextEntry | RuleEntry> {
   const rules: RuleEntry[] = ruleEntries(doc).map((e) => ({ ...e, author: null, changes: [] }));
+  const capped = <T>(xs: T[]): T[] => (doc.cs.closed ? xs : xs.slice(-FEED_LIMIT));
   const bridge = asEngineDoc(doc).bridge;
-  if (bridge === null) return rules.slice(-FEED_LIMIT).reverse();
+  if (bridge === null) return capped(rules).reverse();
   // the members map first, the convenor record only for a clerk — the view's
   // own `recordOf`, since a founder who is a member keeps their identity there
   const recordOf = (id: string) => doc.cs.memberRecords().get(id) ??
@@ -90,7 +97,40 @@ export function feedEntries(doc: LoadedDoc): Array<TextEntry | RuleEntry> {
   // one feed by time; a stable sort keeps each half's own order where two tie
   const both: Array<TextEntry | RuleEntry> = [...texts, ...rules];
   both.sort((a, b) => a.t - b.t);
-  return both.slice(-FEED_LIMIT).reverse();
+  return capped(both).reverse();
+}
+
+/**
+ * **An entry names its author by reference, and each author travels once**
+ * (Q1509 (a), Ed 2026-09-23): every entry carried its author's name and
+ * picture, so a busy author's photo was repeated with every proposal and every
+ * passing — 76% of nh2026's 1.3 MB feed. `members.list` holds each author once
+ * and an entry's `author` is its index there (null where the rung seals it).
+ *
+ * **The reference is the person as shown, not their id**: two entries share a
+ * reference exactly when they would have carried the same name, picture and
+ * erasure, so the feed says nothing it did not say before — two authors who
+ * chose no name and no picture stay one indistinguishable *Anonymous*, and no
+ * member id reaches a spectator. `arrived` is the size a passed entry's *n of
+ * E* is read against, the door's own `members.arrived`.
+ */
+export function byReference(entries: Array<TextEntry | RuleEntry>, arrived: number): {
+  entries: Array<Omit<TextEntry, 'author'> & { author: number | null } | RuleEntry>;
+  members: { arrived: number; list: NamedAuthor[] };
+} {
+  const list: NamedAuthor[] = [];
+  const at = new Map<string, number>();
+  const refOf = (a: NamedAuthor): number => {
+    const key = JSON.stringify([a.name, a.picture, a.erased]);
+    let i = at.get(key);
+    if (i === undefined) { i = list.length; list.push({ name: a.name, picture: a.picture, erased: a.erased }); at.set(key, i); }
+    return i;
+  };
+  return {
+    entries: entries.map((e) => (e.author === null ? e as RuleEntry | TextEntry & { author: null }
+      : { ...e, author: refOf(e.author) })),
+    members: { arrived, list },
+  };
 }
 
 /** May this request read the document's words? A living member, or 🌍 at link or public. */
@@ -134,6 +174,8 @@ export const feedTable: Route[] = [
         json(res, 200, { eseq, short: true, paused, stalled: !!doc.stalled });
         return true;
       }
+      // each author once, the entries naming them by reference (Q1509 (a))
+      const feed = byReference(canRead ? feedEntries(doc) : [], doc.cs.E());
       json(res, 200, {
         eseq,
         title: doc.cs.titleOf,
@@ -144,15 +186,16 @@ export const feedTable: Route[] = [
         paused,
         stalled: !!doc.stalled,
         canRead,
-        // the membership's size, which a passed entry's *n of E* is read against
-        // — the door serves the same number to anybody (`members.arrived`)
-        members: doc.cs.E(),
+        // `arrived`, the membership's size, which a passed entry's *n of E* is
+        // read against — the door serves the same number to anybody
+        // (`members.arrived`); `list`, the authors the entries name (Q1509)
+        members: feed.members,
         // two facts a rule's sentence turns on (🌍's *members and the Founder*,
         // 🤝's *joins on arrival*), both already the door's to anybody
         founderIsMember: doc.cs.convenorRecord().isMember,
         admissionPrice: door.admission,
         holding: canRead ? null : door.holding,
-        entries: canRead ? feedEntries(doc) : [],
+        entries: feed.entries,
       });
       return true;
     },

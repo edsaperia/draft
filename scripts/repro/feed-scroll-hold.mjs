@@ -31,10 +31,16 @@ const entry = (i) => ({
   glyph: '⏱️', route: 'ordinary', from: { grant: 3, cap: 3, dripMinutes: 240 },
   to: { grant: 3, cap: 3, dripMinutes: 60 + i }, rationale: 'reason number ' + i,
 });
-let entries = Array.from({ length: 12 }, (_, i) => entry(i)).reverse(); // newest first
+// **and the oldest is a text proposal naming its author by reference** (Q1509
+// (a)): the picture travels once, in `members.list`, and `author` indexes it
+const OLDEST = { t: 1_790_000_000_000 - 60_000, kind: 'proposed', candidateId: 'c-old', author: 0,
+  rationale: 'the oldest reason', changes: [{ heading: null, above: null,
+    before: ['The club meets weekly.'], after: ['The club meets every other week.'] }] };
+let entries = [...Array.from({ length: 12 }, (_, i) => entry(i)).reverse(), OLDEST]; // newest first
 let eseq = 1;
 const answer = () => JSON.stringify({ title: 'Scroll Charter', begun: true, canRead: true,
-  closed: null, paused: null, stalled: false, members: 5, founderIsMember: true,
+  closed: null, paused: null, stalled: false, founderIsMember: true,
+  members: { arrived: 5, list: [{ name: 'Rae Author', picture: 'e🦊', erased: false }] },
   admissionPrice: 'assembly', eseq: eseq++, entries });
 
 const browser = await chromium.launch();
@@ -86,6 +92,13 @@ entries = [entry(20), ...entries];
 await poll();
 const afterArrive = await topOf(READING);
 check(afterArrive === before, 'an entry arriving above does not move the reader (' + before + ' → ' + afterArrive + ')');
+
+const oldestBy = await page.evaluate(() => {
+  const a = [...document.querySelectorAll('#feed article')].find((x) => x.textContent.includes('the oldest reason'));
+  const n = a && a.querySelector('.fwho .name');
+  return n ? n.textContent : null;
+});
+check(oldestBy === 'Rae Author', 'an entry’s author is read from members.list by reference (' + JSON.stringify(oldestBy) + ')');
 
 check(errors.length === 0, 'no page errors: ' + JSON.stringify(errors.slice(0, 2)));
 await browser.close();

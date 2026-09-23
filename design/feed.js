@@ -31,6 +31,7 @@
   let seen = null;          // keys drawn so far; null until the first draw
   let last = null;          // the last full answer
   let roster = 0;           // the membership's size, a passed entry's *of E*
+  let people = [];          // each author once; an entry's `author` indexes it (Q1509)
 
   const two = (n) => (n < 10 ? '0' : '') + n;
   const dayOf = (ms) => { const d = new Date(ms); return d.getDate() + ' ' + MONTHS[d.getMonth()]; };
@@ -144,7 +145,9 @@
   function whoHtml(e) {
     // the record names the office, never the person (`amendmentBlocks`' rule)
     if (e.kind === 'decreed') return '<div class="fwho"><span class="name">' + esc(T.founder) + '</span></div>';
-    const a = e.author;
+    // the author by reference (Q1509 (a)): the picture travels once, in
+    // `members.list`, and null is a sealed author, as it always was
+    const a = typeof e.author === 'number' ? people[e.author] || null : null;
     const person = a ? { n: a.name, pic: a.picture, erased: a.erased } : null;
     const name = !a ? T.anonymous : (a.erased ? T.redacted : (a.name || T.anonymous));
     return '<div class="fwho">' + C.avHtml(person) + '<span class="name">' + esc(name) + '</span></div>';
@@ -218,7 +221,8 @@
 
   function draw(v) {
     last = v;
-    roster = v.members || 0;
+    roster = (v.members && v.members.arrived) || 0;
+    people = (v.members && v.members.list) || [];
     ctxOf = { founderIsMember: v.founderIsMember !== false, admissionPrice: v.admissionPrice || 'assembly' };
     document.title = T.tabTitle(v.title || 'docs.vote');
     $('feedname').textContent = v.title || '';
@@ -295,7 +299,7 @@
   const at = (h, mi) => new Date(2026, 8, 19, h, mi).getTime();
   draw({
     title: 'The Hollow Oak Club Charter', begun: true, closed: null, canRead: true, holding: null,
-    members: 19,
+    members: { arrived: 19, list: [{ name: 'Marguerite Okafor', picture: 'e🦉', erased: false }] },
     entries: [
       { t: at(15, 42), kind: 'adopted', candidateId: 'c7', author: null,
         outcome: { voted: 11, approvals: 8, floor: 5, abstained: 3, tookMs: 71 * 60000 },
@@ -315,8 +319,7 @@
       { t: at(15, 24), kind: 'proposed', motionId: 'mo-5', setting: 'lapse', glyph: '💤', route: 'constitutional',
         from: { afterMs: null }, to: { afterMs: 1209600000 }, toSpell: '14 days', author: null, changes: [],
         rationale: 'Half of us are away all August and the quorum should not wait for them.' },
-      { t: at(15, 20), kind: 'proposed', candidateId: 'c9',
-        author: { name: 'Marguerite Okafor', picture: 'e🦉', erased: false },
+      { t: at(15, 20), kind: 'proposed', candidateId: 'c9', author: 0,
         rationale: 'A quorum of five was written when we were forty. We are nineteen.',
         changes: [{ heading: 'Meetings', above: null,
           before: ['A general meeting needs five members present.'],

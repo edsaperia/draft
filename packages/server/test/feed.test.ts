@@ -26,14 +26,24 @@ import { createDraftServer } from '../src/server.js';
 import type { DraftServer } from '../src/server.js';
 import { FilePersistence } from '../src/persistence.js';
 import { attestBody } from './attest-wire.js';
+import { ConstitutionSession } from '../../constitution/src/session.js';
+import { EngineBridge } from '../../constitution/src/engine-bridge.js';
+import { StorePeople } from '../src/store.js';
+import type { LoadedDoc } from '../src/store.js';
+import { asEngineDoc } from '../src/engine-host.js';
+import { FEED_LIMIT, feedEntries } from '../src/routes-feed.js';
 
 const DESIGN_DIR = join(import.meta.dirname, '..', '..', '..', 'design');
 
+type Person = { name: string | null; picture: string | null; erased: boolean };
 type Feed = {
-  eseq: number; short?: boolean; title: string; begun: boolean; canRead: boolean; members: number;
+  eseq: number; short?: boolean; title: string; begun: boolean; canRead: boolean;
+  // Q1509 (a): the size *n of E* is read against, and each author once — an
+  // entry's `author` is an index into `list`
+  members: { arrived: number; list: Person[] };
   holding: { kind: string; sentence: string | null } | null;
   entries: Array<{ t: number; kind: string; candidateId: string; rationale: string;
-    author: { name: string | null; picture: string | null; erased: boolean } | null;
+    author: number | null;
     changes: Array<{ heading: string | null; above: string | null; below: string | null; before: string[]; after: string[] }>;
     outcome?: { voted: number; approvals?: number; floor?: number; abstained?: number; tookMs: number } }>;
 };
@@ -112,7 +122,7 @@ async function room(b: Booted, chamber: 'closed' | 'link', authorship: 'anonymou
   await cmd(ada, 'confirm-starting-text', { text: TEXT });
   await cmd(ada, 'invite', { email: 'bo@example.org' });
   const bo = cookieOf(await consume(await lastLinkTo(b, 'bo@example.org')));
-  await cmd(bo, 'set-identity', { name: 'Bo Tanner' });
+  await cmd(bo, 'set-identity', { name: 'Bo Tanner', picture: 'e🦉' });
   await cmd(ada, 'invite', { email: 'cy@example.org' });
   const cy = cookieOf(await consume(await lastLinkTo(b, 'cy@example.org')));
   const values: Record<string, unknown> = {
@@ -152,9 +162,14 @@ describe('the spectator feed (Q1466)', () => {
     const one = await feed();
     expect(one.canRead).toBe(true);
     expect(one.entries).toHaveLength(1);
+    // **the author by reference, the picture once** (Q1509 (a), Ed
+    // 2026-09-23): every entry repeated its author's picture, three quarters
+    // of nh2026's feed; now `author` indexes `members.list`
+    expect(typeof one.entries[0]!.author).toBe('number');
+    expect(one.members.list[one.entries[0]!.author as number])
+      .toEqual({ name: 'Bo Tanner', picture: 'e🦉', erased: false });
     expect(one.entries[0]).toMatchObject({
       kind: 'proposed', rationale: 'rust',
-      author: { name: 'Bo Tanner', erased: false },
       changes: [{ heading: 'Tools', above: null, below: 'The press is booked a week ahead.',
         before: ['Tools are returned clean.'], after: ['Tools are returned clean and oiled.'] }],
     });
@@ -173,7 +188,12 @@ describe('the spectator feed (Q1466)', () => {
       heading: 'Tools', before: ['Tools are returned clean.'], after: ['Tools are returned clean and oiled.'] });
     // **a passed entry carries the passed card's own numbers** (Ed, 2026-09-19):
     // bo and ada voted, both preferred it, nobody ran out of time, of three
-    expect(two.members).toBe(3);
+    expect(two.members.arrived).toBe(3);
+    // **no entry carries a picture**: the proposal and its passing name one
+    // author, and the list holds them once
+    expect(JSON.stringify(two.entries)).not.toContain('picture');
+    expect(two.entries[0]!.author).toBe(two.entries[1]!.author);
+    expect(two.members.list).toHaveLength(1);
     expect(two.entries[0]!.outcome).toMatchObject({ voted: 2, approvals: 2, floor: 2, abstained: 0 });
     expect(two.entries[0]!.outcome!.tookMs).toBeGreaterThanOrEqual(0);
     // **and an open question carries none**: no direction, no count
@@ -272,4 +292,63 @@ describe('the spectator feed (Q1466)', () => {
     expect((await fetch(`${b.base}/d/no-such-document/feed`)).status).toBe(404);
     expect((await fetch(`${b.base}/api/d/no-such-document/feed`)).status).toBe(404);
   }, 60_000);
+});
+
+/**
+ * **The cap holds while the document is live, and lifts at the close** (Q1509
+ * (b), Ed 2026-09-23: *slim, keep the cap live, lift it at the close*).
+ * `FEED_LIMIT` kept the newest two hundred entries always, and nh2026 ran past
+ * it — its earliest proposals and adoptions were on no feed. A live feed is a
+ * page of reading; a closed one is the archive. Driven in process, as
+ * `records-uncapped.test.ts` is, since a close over the wire waits on a clock.
+ */
+describe('the feed’s cap (Q1509 (b))', () => {
+  const ROUNDS = 110;           // a proposal and its passing each: 220 entries
+  const STEP = 400_000;         // the cooldown metronome is five minutes (§4.2)
+  const ENDS = (ROUNDS + 10) * STEP;
+  const room = (): { doc: LoadedDoc; bridge: EngineBridge } => {
+    const people = new StorePeople();
+    const cs = ConstitutionSession.open({ title: 'Long Feed', slug: 'long-feed',
+      convenor: { id: 'ada', email: 'ada@example.org', isMember: true } }, 0, people);
+    const bo = cs.invite(1, 'bo@example.org');
+    cs.arrive(1, bo);
+    cs.confirmStartingText(2, ['# Charter', 'The clubhouse is kept open all week.'].join('\n'));
+    const values: [string, unknown][] = [
+      ['ending', { endsAtMs: ENDS }], ['quorum', { form: 'count', n: 1 }],
+      ['authorship', { rung: 'public' }], ['judgments', { rung: 'after' }], ['chamber', { rung: 'link' }],
+      ['lapse', { afterMs: null }], ['applications', { apply: false }], ['removal', { price: 'consent' }],
+      ['admission', { price: 'assembly' }], ['machines', { enabled: false, budget: 0 }],
+      ['rate', { grant: 4, cap: 8, dripMinutes: 1 }],
+    ];
+    for (const [id, v] of values) cs.setSetting(2, id as never, v as never);
+    cs.begin(3);
+    const doc = { id: 'd-1', cs, people, persisted: 0, relayed: 0, provisional: null } as LoadedDoc;
+    const bridge = new EngineBridge(cs, { t: 4, rngSeed: 'q1509' });
+    asEngineDoc(doc).bridge = bridge;
+    for (let i = 0; i < ROUNDS; i++) {
+      const t = (i + 1) * STEP;
+      const c = bridge.proposeText(t, bo, { baseVersion: bridge.engine.currentVersion(),
+        hunks: [{ start: 1, end: 2, lines: [`The clubhouse is kept open, revision ${i + 1}.`] }] },
+      `revision ${i + 1}`);
+      bridge.judge(t + STEP / 2, 'ada', c.id, bridge.engine.raceOf(c.id).incumbentId, 'a');
+      expect(bridge.engine.getCandidate(c.id).state, `round ${i + 1}`).toBe('adopted');
+    }
+    return { doc, bridge };
+  };
+
+  it('a live document serves the newest 200; closed, it serves them all, the first proposal included', () => {
+    const { doc, bridge } = room();
+    const live = feedEntries(doc);
+    expect(live).toHaveLength(FEED_LIMIT);
+    expect(live[0]).toMatchObject({ kind: 'adopted' });
+    bridge.close(ENDS);
+    expect(doc.cs.closed).toBe(true);
+    const closed = feedEntries(doc);
+    const texts = closed.filter((e) => !('setting' in e));
+    expect(texts.length, 'every proposal and every passing').toBe(2 * ROUNDS);
+    expect(closed.length).toBeGreaterThan(FEED_LIMIT);
+    // newest first, down to the very first proposal
+    expect(closed[closed.length - 1]!.t).toBeLessThanOrEqual(texts[texts.length - 1]!.t);
+    expect(texts[texts.length - 1]).toMatchObject({ kind: 'proposed', rationale: 'revision 1' });
+  });
 });
