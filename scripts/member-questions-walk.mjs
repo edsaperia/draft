@@ -300,10 +300,32 @@ if (s.rail.includes('ans-ending')) {
       return { x: parseFloat(cs.borderLeftWidth) + parseFloat(cs.paddingLeft) + 3, y: b.offsetHeight / 2 };
     });
     await page.click('.setupcard [data-ansdate="ending"]', { position: first });
-    await page.keyboard.type('01012030');
+    /* **a poll under a half-typed date does not re-render its card** (Q1513,
+     * Ed 2026-09-23): a datetime-local holds no value until every field is
+     * filled, so no render keeper can carry the month and day already typed
+     * — the card is held off the poll's re-render while the box has focus
+     * (30 s cap). Half a date, then another seat's act (the founder's
+     * invitation moves the document log, so the next poll is a full view),
+     * then the box must be the same node, still focused, and the rest of the
+     * keys must make a whole date. */
+    await page.keyboard.type('0101');
+    await page.evaluate(() => { window.__dateBox = document.querySelector('.setupcard [data-ansdate="ending"]'); });
+    await cmd('founder', 'invite', { email: `m3-${run}@example.org` });
+    await T(POLL + 1500);
+    const held = await page.evaluate(() => {
+      const box = document.querySelector('.setupcard [data-ansdate="ending"]');
+      return { same: !!box && box === window.__dateBox,
+        focused: !!box && document.activeElement === box,
+        open: (document.querySelector('.setupcard') || { dataset: {} }).dataset.setupcard || null };
+    });
+    check('a poll landing mid-date leaves the half-typed box standing, focused (Q1513)',
+      held.same && held.focused && held.open === 'ans-ending', JSON.stringify(held));
+    await page.keyboard.type('2030');
     await page.keyboard.press('Tab');
     await page.keyboard.type('1200P');
     await T(400);
+    const whole = await page.evaluate(() => (document.querySelector('.setupcard [data-ansdate="ending"]') || {}).value);
+    check('…and the next keys complete the date (Q1513)', whole === '2030-01-01T12:00', JSON.stringify(whole));
     const before = answersSent.length;
     await page.click('.setupcard [data-confirm]');
     await T(1500);

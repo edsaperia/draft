@@ -9162,6 +9162,24 @@
   }, true);
   document.addEventListener('pointerup', endSliderHold, true);
   document.addEventListener('pointercancel', endSliderHold, true);
+  // **A half-typed date is a press too** (Q1513, Ed 2026-09-23): a
+  // datetime-local holds no value until every field in it is filled, so the
+  // render keeper has nothing to put back — a poll landing after the day and
+  // month gave the member an empty box and the rest of their keys made a
+  // year 0001. While an answer's or a motion's date box has focus the poll
+  // waits, as it does for a drag. The same kind of cap: 30 s from the last
+  // focus or key in the box, so a box left focused cannot park the page, and
+  // only while it still is the focused element (a render or a click away
+  // ends it without a `focusout` being needed).
+  const DATE_BOX = '[data-ansdate], [data-mdate]';
+  let dateHold = 0;
+  const noteDateHold = (ev) => {
+    if (ev.target && ev.target.matches && ev.target.matches(DATE_BOX)) dateHold = Date.now();
+  };
+  document.addEventListener('focusin', noteDateHold, true);
+  document.addEventListener('keydown', noteDateHold, true);
+  const dateInFlight = () => !!dateHold && Date.now() - dateHold < 30_000 &&
+    !!document.activeElement && document.activeElement.matches(DATE_BOX);
   // **And the assembly is a press too**, which it was never listed as: ten
   // seconds is by far the longest of them, so a 4 s poll could rebuild the
   // card under the room convening (backlog 184). It is a real fix rather than
@@ -9169,7 +9187,7 @@
   // …and a travel (Ed, 2026-09-16): a rail click's scroll to its card is a
   // gesture in flight too, and a poll landing inside it lost the card
   const pressInFlight = () => WAL.penHold || SESSION.holding || SESSION.travelling || assembly ||
-    (sliderHold && Date.now() - sliderHold < 30_000);
+    (sliderHold && Date.now() - sliderHold < 30_000) || dateInFlight();
   // A lane rebuilt on every keystroke would lose the caret, so typing repaints
   // the bar and the rail and leaves the card alone — only the commit control,
   // which is about what you have just typed, is set directly.
