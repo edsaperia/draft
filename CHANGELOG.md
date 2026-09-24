@@ -6,6 +6,17 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-09-24, night: tasks you can tell apart, and records that read cleanly
+
+### Changed
+- **Each task in the list says what it is about.** A rule change reads as the change itself (*⏱️ 10 → 5 minutes*), and a pair of wordings or a decided change reads as the words that differ, instead of a long list of entries all starting *Members…* or the same section name. Dates are shorter and always on the 24-hour clock: *15:25* today, *Sun 15:25* this week, *20 Sep* before that.
+- **A record of a rule change reads top to bottom.** When it happened and how it ended come first (*Changed by the Founder*, *Passed* or *Rejected*); then the rule it set, who proposed it and why; then the rule it replaced, in its own box. A record you have already read has no buttons, because there is nothing on it to do.
+- **A pile of filed records shows its depth.** Records you have already acknowledged sit in a pile beside their clause; the pile now shows a card edge for each record behind the front one, so a pile of three no longer looks like one.
+
+### Fixed
+- **Every record you have not yet acknowledged keeps its tab.** On a clause with several decided changes, only the one you had open showed a tab, and the rest vanished when you clicked another.
+- **Stray backslashes are gone from the text.** Text pasted from some editors carries backslashes before full stops and brackets (*5\\. Expiry*); they are no longer shown when reading, and they are left out when you paste. Nothing already written was changed.
+
 ## 2026-09-24, later: the wire's border removed
 
 ### Changed
