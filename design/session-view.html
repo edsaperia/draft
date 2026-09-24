@@ -5338,6 +5338,60 @@
     if (k === 'rate') return 'a new proposal every ' + dripPhrase(p.value.dripMinutes);
     return STANDS[k] ? STANDS[k](PAGEVAL[k](p.value)) : JSON.stringify(p.value);
   };
+  // **A rule change's rail title** (Q????, Ed 2026-09-24): the rule's own
+  // glyph and its value, old → new — *⏱️ 10 → 5 minutes*, *👥 6 → 8 of 12* —
+  // computed from the entry alone. The words *Passed:*, *Changed by the
+  // Founder:* and *Your proposal did not pass:* stay on the card's own title
+  // (`c.t`), which the tab's tooltip and the history in the strip read
+  // (Q1514); the rail entry leaves them to its mark and its card. One value
+  // at a time, in `copy.js`'s short phrases (`railVal`).
+  const RV = PAGE_COPY.railVal;
+  const railVal = (k, v) => {
+    if (v === null || v === undefined) return null;
+    switch (k) {
+      case 'title': return RV.title(v.text);
+      case 'slug': return RV.slug(v.slug);
+      case 'ending': return v.endsAtMs === null ? RV.never : window.CARDS.railAt(v.endsAtMs);
+      case 'quorum': return v.form === 'share' ? RV.quorumShare(v.n) : RV.quorumCount(v.n, E());
+      case 'authorship': case 'judgments': case 'chamber': return RV[k][v.rung] || null;
+      case 'rate': { const p = dripParts(v.dripMinutes); return p ? RV.rate(p.n, p.unit) : null; }
+      case 'lapse': return v.afterMs === null ? RV.never : RV.lapse(M.spellWords(v.afterMs));
+      case 'removal': case 'admission': return RV[k][v.price] || null;
+      case 'applications': return RV.applications[mayApply(v) ? 'apply' : 'invite'];
+      default: return null;
+    }
+  };
+  // null where the entry is not a rule change, and the rail keeps `labelOf`:
+  // a reserve (the power's own sentence already names it), a door's record,
+  // a setting asked or granted rather than changed
+  const railRuleTitle = (c) => {
+    try {
+      let rec = null;
+      if (c.record || c.held) rec = recOf(c);
+      else if (c.motion && cs) rec = cs.motionRecords().get(c.motion) || null;
+      if (rec && rec.payload) {
+        const p = rec.payload;
+        // a running motion on a door names its person, as its record does
+        if (p.kind === 'invite' || p.kind === 'remove') return c.motion ? motionDisplay(rec) : null;
+        if (p.kind !== 'set') return null;
+        const k = pkeyOf(p.setting);
+        const host = card(k);
+        const now2 = railVal(k, p.value);
+        if (!now2 || !host) return null;
+        if (c.motion) return host.g + ' ' + RV.to(now2);
+        const was = railVal(k, stoodBefore(rec));
+        return host.g + ' ' + (was ? window.CARDS.railArrow(was, now2) : now2);
+      }
+      // a rule changed over your head, owed your OK: what it was, what it is
+      if (!c.ansFor && !c.isGate && !c.power && !c.door && MANAGED_KEYS.includes(c.k) && stateOf(c, ctx) === 'news') {
+        const from = changedFrom(c.k), st = csState(c.k);
+        if (!from || !st || st.value === null) return null;
+        const was = railVal(c.k, from), now2 = railVal(c.k, st.value);
+        return was && now2 ? c.g + ' ' + window.CARDS.railArrow(was, now2) : null;
+      }
+    } catch (e) { return null; }
+    return null;
+  };
   const pageMotion = (rec) => ({ id: rec.id, kind: rec.route, by: rec.by,
     why: rec.why || '', to: motionDisplay(rec), status: rec.status,
     invite: rec.payload.kind === 'invite' ? inviteeHandle(rec.payload) : undefined,
@@ -7359,6 +7413,8 @@
         ? PAGE_COPY.lockline.members
         : PAGE_COPY.lockline.founder; },
     summary, value, isRoom,
+    // a rule change's own words on its rail entry (Q????)
+    railTitle: (c) => railRuleTitle(c),
   };
 
   // ---- the rail ----------------------------------------------------------
@@ -9792,13 +9848,32 @@
         (sg.t ? ' · ' + whenOf(sg.t) : ''), key: 'S:' + i }));
     return out;
   };
+  // **the fixture's rule changes** (Q????): `FIX.MOTIONS`, each put by the
+  // member it names — real commands, so the records file behind their rule
+  // and the running ones stand in the rail as any motion does
+  function fixtureMotions() {
+    if (!cs || !FIX || !FIX.MOTIONS) return;
+    const seat = (e) => (S.roster.find((r) => r.e === e) || {}).mid;
+    for (const m of FIX.MOTIONS) {
+      try {
+        // the Founder's own ✒️ is an amendment, not a motion (Q530): set, with its reason
+        if (m.pen) { cs.setSetting(now(), m.payload.setting, m.payload.value, m.why || undefined); continue; }
+        const id = cs.openMotion(now(), seat(m.by), m.payload, m.why || undefined);
+        if (m.end) cs.adjudicateOrdinaryMotion(now(), id, m.end === 'carry' ? 'carried' : 'held');
+        // a carried change the Founder's 🛡️ holds is assented to, so it files
+        if (m.end === 'carry') for (const q of cs.crownQuestionRecords().values()) {
+          if (q.motion === id && q.status === 'pending') cs.answerCrownQuestion(now(), q.id, 'accept');
+        }
+      } catch (e) { console.warn('[fixture motion]', e && e.message); }
+    }
+  }
   // the closed fixture: two of the Hollow Oak's open races become undecided
   // records at their backlog paragraphs, the module closes, two members sign
   function closeFixture() {
     if (!cs || cs.closed) return;
     const pick = FIX.SUGGS.filter((g) => g.kind === 'race' && g.state === 'needs' && !g.deadlocked).slice(0, 2);
     const und = pick.map((g, i) => ({
-      raceId: 'fx-u' + i, outcome: 'undecided', when: Date.now(),
+      raceId: 'fx-u' + i, outcome: 'undecided', when: FIX.NOW,
       field: [g.race.a, g.race.b].map((c, j) => ({ hunks: [{ lines: [c.text] }], rationale: c.rationale,
         p: c.p ?? (j === 0 ? 0.58 : 0.47), outcome: 'undecided', author: null })),
       displaced: [String((FIX.DOC.find((l) => l.key === g.keys[0]) || {}).x || '')],
@@ -9808,7 +9883,7 @@
       const best = o.field.slice().sort((x, y) => y.p - x.p)[0];
       return { id: 'rec:' + o.raceId, kind: 'quick', keys: ['U:' + o.raceId], state: 'sealed',
         qLabel: 'Backlog', urgency: 0, pct: 100, cap: 'undecided at the close — the text stood',
-        decided: { outcome: 'undecided', when: whenOf(o.when), p: best.p, judges: o.judges },
+        decided: { outcome: 'undecided', at: o.when, p: best.p, judges: o.judges },
         undecided: true, won: 'b', optionB: best.hunks[0].lines[0], replaced: o.displaced[0],
         rationale: best.rationale, verdict: o.judgedByMe ? 'voted on this' : undefined, unread: false,
         slate: o.field.map((f) => ({ text: f.hunks[0].lines[0], rationale: f.rationale, p: f.p, won: f === best })) };
@@ -10002,7 +10077,10 @@
     // and the pulse beats from the poll rather than a timer
     ...(LIVEMODE ? { SESSION_MINUTES: Infinity, editsHeld: 0, editsToNext: 0, fixturePulse: false } : {}),
     ...(fix ? { ROSTER: fix.ROSTER, FLOOR: fix.FLOOR, EDIT_RULES: fix.EDIT_RULES,
-      SESSION_MINUTES: fix.SESSION_MINUTES, editsHeld: fix.editsHeld, editsToNext: fix.editsToNext } : {}),
+      SESSION_MINUTES: fix.SESSION_MINUTES, editsHeld: fix.editsHeld, editsToNext: fix.editsToNext,
+      // the fixture's own moment (Q????): its records are dated against it, so
+      // the rail reads *Sun 15:25* on every run rather than drifting by the day
+      railNow: () => fix.NOW } : {}),
     mounts: { doc: document.getElementById('charter'), queue: rail,
       toc: document.getElementById('toc'), wires: document.getElementById('wires'),
       wallet: document.getElementById('wallet'), pulse: document.getElementById('pulse') },
@@ -10097,6 +10175,8 @@
       const p2 = (n) => String(n).padStart(2, '0');
       S.endsAt = left.getFullYear() + '-' + p2(left.getMonth() + 1) + '-' + p2(left.getDate()) + 'T' + p2(left.getHours()) + ':' + p2(left.getMinutes());
       devFastForward();
+      // the rules' history is the band's, so it is put where the band is drawn
+      if (new URLSearchParams(location.search).get('band')) fixtureMotions();
       S.folded.add('cs-constitution');
       if (!new URLSearchParams(location.search).get('band')) document.getElementById('doc').classList.add('fixsession');
       // ?fixture=session&closed=1 — the Hollow Oak session, closed (Q470):

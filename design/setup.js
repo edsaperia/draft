@@ -671,6 +671,14 @@ window.SETUP = (function () {
     const fill = ctx.fillOf ? ctx.fillOf(c)
       : c.racePct !== undefined ? c.racePct + '%'
       : room ? Math.min(100, Math.round(got / ctx.E * 100)) + '%' : '100%';
+    // **the entry's title names its own subject** (Q????, Ed 2026-09-24): a
+    // surface may word it (`ctx.railTitle` — a rule change as its glyph and
+    // its value, old → new), else it is the card's label. The title leads
+    // with the rule's glyph, so where the mark already is that glyph — a
+    // motion asking you — it is said once, by the mark.
+    const mark = markOf(c, ctx);
+    let title = (ctx.railTitle && ctx.railTitle(c)) || labelOf(c, ctx);
+    if (c.g && title.startsWith(c.g + ' ') && mark === glyphHtml(c.g)) title = title.slice(c.g.length + 1);
     // the entry's own sentences take the drawn glyphs too (Q1401 (a)) — the
     // tooltip above is inside a tag, so it keeps the character a tooltip needs
     return glyphify('<li class="qitem" data-q="' + c.k + '">' +
@@ -685,14 +693,14 @@ window.SETUP = (function () {
       // rebuilt by a poll carries on the same sweep rather than restarting it.
       (st === 'news' && grantCard(c) ? '<span class="sparkle" aria-hidden="true" style="animation-delay: -' +
         (Date.now() % SPARKLE_MS) + 'ms"></span>' : '') +
-      '<span class="ql"><span class="subj" aria-hidden="true">' + markOf(c, ctx) + '</span>' +
+      '<span class="ql"><span class="subj" aria-hidden="true">' + mark + '</span>' +
       // **an entry about a person leads with their face** (Q1375, Ed
       // 2026-09-15): the surface writes `face` on the departure and admit
       // cards, and the rail draws it at the speaker line's own size
       // (`railSpeakerHtml`'s `.qface`) between the mark and the sentence; the
       // tooltip above is the sentence alone
       (c.face ? '<span class="qface" aria-hidden="true">' + avHtml(c.face) + '</span>' : '') +
-      '<span class="qt">' + esc(labelOf(c, ctx)) + '</span>' +
+      '<span class="qt">' + esc(title) + '</span>' +
       // **and the abstention clock in the last day** (Q1460 (e)): the surface
       // writes `absAt` on a card whose ordinary motion races — this seat's
       // own deadline on it, and nobody else's — so the entry says when

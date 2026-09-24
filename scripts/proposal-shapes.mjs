@@ -487,10 +487,19 @@ function IN_PAGE() {
     .map((a) => ({ site: a.dataset.site || null,
       h: Math.round(a.getBoundingClientRect().height * 100) / 100 }));
   // the entry's own title: a sealed row says it in `.qt`, a live one in a bare
-  // span inside `.ql`, and a one-line judged row as a text node beside the mark
+  // span inside `.ql`, and a one-line judged row as a text node beside the mark.
+  // **Since Q???? the title is the entry's own words** (SURFACE M22), so the
+  // clause's name `labelFor` gives (Q1411) is read where it still lives — the
+  // item's own label, the name a title falls back to — never off the rail
+  const labelOfItem = (id, siteKey) => {
+    const g = ((window.SESSION && window.SESSION.SUGGS) || []).find((x) => x.id === id);
+    if (!g) return null;
+    const site = (g.sites || []).find((st) => st.key === siteKey || (st.keys || [])[0] === siteKey);
+    return (site && site.label) || g.qLabel || null;
+  };
   const railFor = (id) => [...document.querySelectorAll('#rail .qitem[data-q="' + q(id) + '"]')]
     .map((li) => ({ site: li.dataset.site || null,
-      title: txt(li.querySelector('.ql') || li) }));
+      title: txt(li.querySelector('.ql') || li), label: labelOfItem(id, li.dataset.site || null) }));
   const cardsFor = (id) => [...document.querySelectorAll('#charter .sugg[data-card="' + q(id) + '"]')]
     .map((c) => ({
       site: c.dataset.site || null,
@@ -752,13 +761,13 @@ async function walkItems(page, lines, { railAsserted }) {
           // document's own title* (live.js). So the rule is the fallback, not
           // silence — a title taken from somewhere *below* the gap is wrong.
           await check('I7', cell, s.id,
-            NORM(before.rail[i].title || '').includes(NORM(DOC_TITLE)),
+            NORM(before.rail[i].label || '').includes(NORM(DOC_TITLE)),
             `nothing above it, so the document's own title: ${DOC_TITLE} (live.js labelFor)`,
-            before.rail[i].title);
+            before.rail[i].label);
         } else {
           await check('I7', cell, s.id,
-            NORM(before.rail[i].title || '').includes(NORM(ex.labels[i])),
-            `titled by the nearest heading above: ${ex.labels[i]}`, before.rail[i].title);
+            NORM(before.rail[i].label || '').includes(NORM(ex.labels[i])),
+            `labelled by the nearest heading above: ${ex.labels[i]}`, before.rail[i].label);
         }
       }
     } else {

@@ -81,6 +81,32 @@ window.COPY = (function () {
   // its reference in cards.js, so a copy edit can be traced to its card site
   // in one grep.
   const grammar = {
+    // **A rail entry's title names its own subject** (Q????, Ed 2026-09-24):
+    // the words a change is about, computed from the entry alone — never
+    // by comparison with its neighbours. `railChange` / `railPair` in
+    // cards.js are the only builders; the snippet inside a quote is member
+    // text and is escaped by the renderer, never here.
+    railTitle: {
+      quote: (s) => '‘' + s + '’',
+      // a proposal that replaces words, or a record of one: what went out, what came in
+      arrow: (was, now) => was + ' → ' + now,
+      // two wordings put side by side, as the card presents them
+      or: (a, b) => a + ' or ' + b,
+      // a pair where one side simply has words the other lacks
+      withOrWithout: (q) => 'with or without ' + q,
+      // a decided change that only took words out
+      without: (q) => 'without ' + q,
+      // a change of punctuation or spacing alone: the clause's own name, said so
+      punctuation: (name) => name + ' (punctuation)',
+      // a snippet cut short, and a change with more to it than the title shows
+      more: '…',
+    },
+    // `railWhen`: a rail entry's moment, 24-hour, shortest by distance —
+    // *15:25* today, *Sun 15:25* this week, *20 Sep* this year, *20 Sep 2025*
+    railWhen: {
+      days: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+      months: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    },
     // laneSeed: the note under a draft opened from an existing proposal
     seedNote: 'the proposal you are editing',
     // laneProposeHtml: ✏️ on a lane
@@ -421,6 +447,29 @@ window.COPY = (function () {
       // yet.
       held: 'The membership is deciding this — it is yours to vote on once you accept Voting',
     },
+    // **a contents-rail mark is a control** (Q1520, Ed 2026-09-23: *clicking
+    // on the icons next to the table of contents should open those cards*):
+    // it opens its own entry's card, and its name is the entry's title and
+    // what it wants of you — the rail's own words where the rail has them,
+    // SURFACE §6's *wants* column where it does not. Filed marks are never
+    // in the contents rail (M10), so they have no words here.
+    toc: {
+      markState: {
+        needs: 'wants your vote',
+        urgent: 'wants your vote first',
+        stuck: 'deadlocked — wants a new proposal',
+        weigh: 'asks which of two questions matters more',
+        deciding: 'you have voted — it is still running',
+        shifted: 'the wording changed after you voted — you will be asked again',
+        adopted: 'passed — the text changed here',
+        retired: 'rejected — the text stands',
+        propose: 'your proposal',
+        stranded: 'your proposal — the text moved under it',
+      },
+      markName: (label, state) => label + (state ? ' — ' + state : ''),
+      // the `+n` tally goes to the section, as the heading does
+      more: (n) => n + ' more in this section — go to it',
+    },
     // the deadlock card: the reading room and the desk
     dead: {
       headLabel: 'The clause as it stands — and it is still standing',
@@ -496,6 +545,31 @@ window.COPY = (function () {
   const quorumTail = (n, e) => (n === null || n === undefined || e === null || e === undefined
     ? '' : ' (' + n + ' of ' + e + ')');
   const page = {
+    // **A rule change's rail title is the rule's glyph and its value, old →
+    // new** (Q????, Ed 2026-09-24: *⏱️ 10 → 5 minutes*, *👥 6 → 8 of 12*,
+    // *⏰ Sun 17:10 → never*). One short phrase per value, the words the
+    // clause sentence already carries wherever it has them; the glyph says
+    // which rule, the mark and the card say who changed it and how it ended.
+    // Read by the page's `railRuleTitle`, one value at a time.
+    railVal: {
+      title: (text) => grammar.railTitle.quote(text),
+      slug: (slug) => slug,
+      never: 'never',
+      quorumCount: (n, e) => n + ' of ' + e,
+      quorumShare: (pct) => pct + '%',
+      authorship: { anonymous: 'never named', anonymousElective: 'named by choice',
+        sealed: 'named at the close', sealedElective: 'at the close, or by choice',
+        public: 'named from the start' },
+      judgments: { never: 'votes never shown', after: 'votes shown at the end' },
+      chamber: { closed: 'members only', link: 'anyone with the link', public: 'public' },
+      rate: (n, unit) => n + ' ' + (n === 1 ? { days: 'day', hours: 'hour', minutes: 'minute' }[unit] : unit),
+      lapse: (spell) => spell,
+      removal: { consent: 'all agree, them included', assembly: 'all others agree', proposal: 'a vote' },
+      admission: { assembly: 'all agree', proposal: 'a vote', pen: 'any member invites' },
+      applications: { apply: 'anyone may apply', invite: 'invitation only' },
+      // a running motion has no *old* on its title: the rule stands beside it
+      to: (now) => '→ ' + now,
+    },
     // who removed you, and the register's departure lines
     departed: {
       byFounder: (day) => 'The Founder removed you from this document on ' + day + '.',

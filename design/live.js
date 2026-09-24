@@ -1518,6 +1518,8 @@ window.LIVE = (function () {
             const c = A.inc ? B : A;
             return { ...base, ...extra, id: pairId(A.id, B.id), kind: 'quick', card,
               marked: c.marked || markedOf(plain(lines, sp), c.text || ''), rationale: c.rationale, by: c.by || null,
+              // both texts, for the rail's title (Q????): the current one first, as the card presents it
+              was: plain(lines, sp), now: c.text || '',
               candId: c.id, src: c.src, ...slate };
           }
           return { ...base, ...extra, id: pairId(A.id, B.id), kind: 'race', card,
@@ -1605,7 +1607,7 @@ window.LIVE = (function () {
             abstainAt: undefined, ...slate };
           if (!two) {
             const t0 = textIn(c0, sp0);
-            items.push({ ...rest, kind: 'quick', marked: markedOf(plain(lines, sp0), t0),
+            items.push({ ...rest, kind: 'quick', marked: markedOf(plain(lines, sp0), t0), was: plain(lines, sp0), now: t0,
               rationale: c0.rationale, by: byOf(c0), candId: c0.id, src: t0 });
           } else {
             const ta = textIn(others[0], sp0), tb = textIn(others[1], sp0);
@@ -1635,6 +1637,7 @@ window.LIVE = (function () {
             state: 'needs', qLabel: labelFor(site.insertAfterKey || site.keys[0]), urgency: 1, pct: 100,
             cap: 'the membership passed this — it waits on you',
             marked: markedOf(plain(lines, sp), applyIn(lines, sp, c.hunks)),
+            was: plain(lines, sp), now: applyIn(lines, sp, c.hunks),
             rationale: c.rationale, by: authorBy(c.author) });
         }
       }
@@ -1847,7 +1850,8 @@ window.LIVE = (function () {
             // `o.threshold` is still on the record row — the engine's own,
             // pinned (R-117) — and nothing reads it: the eyebrow stopped
             // comparing the reading to a line with the line itself (Q1362)
-            when: whenOf(o.when), p: o.p == null && best ? best.p : o.p, judges: o.judges,
+            // the moment itself, worded by the rail's one helper (Q????)
+            at: o.when, p: o.p == null && best ? best.p : o.p, judges: o.judges,
             // **how many preferred it** (Q1439, ruling a): the quorum counts
             // approvals, so the record carries the winner's approvals beside
             // its judge count — `o.approvals` on the closing record's row
@@ -1924,7 +1928,7 @@ window.LIVE = (function () {
         items.push({ id: 'amd:' + a.candidate, kind: 'quick', keys, state: 'sealed',
           qLabel: labelFor(keys[0]), urgency: 0, pct: 100,
           cap: 'the Founder amended this',
-          decided: { when: whenOf(a.at) },
+          decided: { at: a.at },
           // `won: 'b'` with `optionB` is what `fieldOf`'s default lane reads, so
           // `carried()` is true and `markKindOf` gives the green ✔ — *the
           // charter changed here*, which is what happened. No new mark, and no

@@ -125,6 +125,8 @@
     // card and rail alike, run from a timer of its own in `init` and never
     // from a render
     abstainNoteHtml, tickAbstain,
+    // a rail entry's title and its moment (Q????)
+    railChange, railPair, railWhen,
   } = window.CARDS;
   // **A power is not held until it has been acknowledged** (Ed, 2026-08-21).
   // The host says whether this reader may propose and may judge; both default
@@ -780,6 +782,69 @@
     ? '<span class="qwhy">' + esc(t.why) + '</span>'
     : window.CARDS.railSpeakerHtml(t.why, t.by));
 
+  // **An entry's title names its own subject** (Q????, Ed 2026-09-24): the
+  // words this entry is about, from this entry alone — never the clause's
+  // name, which every entry on one clause shares, and never by comparison
+  // with its neighbours, so a title cannot change because another entry
+  // arrived. A pair to judge reads its two sides as the card presents them
+  // (*‘six’ or ‘seven’*); a decided change and a proposal of your own read
+  // what they changed (*‘monthly’ → ‘quarterly’*). The clause's name stays
+  // where nothing is about words — a diagonal, a park, a deadlock, which is
+  // about the whole field — and is what `railChange` falls back to.
+  // A marked wording as its two texts: the hand-authored fixture carries
+  // its changes as `<del>`/`<ins>` in one string, and the live page hands
+  // both texts over (`was`, `now`) where it knows them.
+  const unmark = (html, drop) => String(html || '')
+    .replace(new RegExp('<' + drop + '>[\\s\\S]*?</' + drop + '>', 'g'), '')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
+  const bothOf = (x) => (x.was !== undefined && x.now !== undefined ? [x.was, x.now]
+    : x.marked ? [unmark(x.marked, 'ins'), unmark(x.marked, 'del')] : null);
+  // what a site of your own replaces: its origin where it carries one (the
+  // fixture writes `x`, the live page `text`), else the blocks it stands on
+  const siteWas = (site) => (site.seed != null ? site.seed
+    : site.origin ? site.origin.map((o) => (o.text != null ? o.text : o.x || '')).join('\n')
+    : (site.keys || [site.key]).filter(Boolean).map(sourceTextFor).join('\n'));
+  // a line that also carries a moment (a record) or a place count (*1 of 3
+  // places*) leaves its title less room than the rail's 34 characters
+  const RAIL_DATED = 26;
+  function railTitleOf(g, e) {
+    // the clause's own name, as its fallback; its `§` comes off where the
+    // caller escapes it (`esc(plainLabel(…))`, the rail's one escaping rule)
+    const name = String(e.label || g.qLabel || '');
+    if (g.kind === 'diagonal' || g.kind === 'park' || stuck(g)) return name;
+    try {
+      if (g.kind === 'draft') {
+        const site = (g.sites || [])[(e.n || 1) - 1];
+        return site ? railChange(siteWas(site), site.text, name, e.of > 1 ? RAIL_DATED : undefined) : name;
+      }
+      if (g.kind === 'patch') {
+        const site = (g.sites || [])[(e.n || 1) - 1];
+        const two = site && bothOf(site);
+        return two ? railPair(two[0], two[1], name) : name;
+      }
+      // a record: the wording that carried, or where none did the best of
+      // what was tried, against what it replaced — the text it displaced
+      // where the record kept it, else the clause, which is what stood
+      if (stateOf(g) === 'sealed') {
+        const field = fieldOf(g).filter((c) => c.text != null);
+        const pick = field.find((c) => c.won) || field.slice().sort((x, y) => (y.p ?? -1) - (x.p ?? -1))[0];
+        if (!pick) return name;
+        const was = g.replaced !== undefined ? g.replaced : g.optionA !== undefined ? g.optionA
+          : pick.won ? '' : (g.keys || []).map(sourceTextFor).join('\n');
+        return railChange(was, pick.text, name, RAIL_DATED);
+      }
+      if (g.race && g.race.a && g.race.b) return railPair(g.race.a.text || '', g.race.b.text || '', name);
+      const two = bothOf(g);
+      return two ? railPair(two[0], two[1], name) : name;
+    } catch (err) { return name; }
+  }
+  // …and its moment, where it has one: the one helper (`railWhen`) against
+  // the page's clock, which the fixture pins so its dates read the same on
+  // every run
+  let RAIL_NOW = () => Date.now();
+  const whenText = (d) => (d && d.at != null ? railWhen(d.at, RAIL_NOW()) || '' : (d && d.when) || '');
+
   function queueEntries() {
     const out = [];
     for (const g of SUGGS) {
@@ -925,8 +990,8 @@
           ' title="' + esc(d.outcome || 'sealed') +
           (isUnread(g) ? ' — you haven’t opened this one yet' : '') + '">' +
           '<span class="ql">' + markHtml(markKindOf(g)) +
-          '<span class="qt">' + esc(plainLabel(e.label || g.qLabel)) + '</span>' +
-          '<span class="qv when">' + esc(d.when || '') + '</span></span>' +
+          '<span class="qt">' + esc(plainLabel(railTitleOf(g, e))) + '</span>' +
+          '<span class="qv when">' + esc(whenText(d)) + '</span></span>' +
           '</button></li>';
         continue;
       }
@@ -969,7 +1034,7 @@
             // ✏️, or ↻ where the text moved out from under a site of it
             // (Q1463): the gutter tab reads `markKindOf` and the rail said
             // `propose` whatever had happened, so the two disagreed
-            ? '<span class="ql">' + markHtml(markKindOf(g)) + '<span>' + esc(plainLabel(e.label || g.qLabel)) + '</span></span>' +
+            ? '<span class="ql">' + markHtml(markKindOf(g)) + '<span>' + esc(plainLabel(railTitleOf(g, e))) + '</span></span>' +
               where +
               '<span class="qwhy' + (why ? '' : ' empty') + '">' +
               (why ? esc(why) : T.rail.noReason) + '</span>' +
@@ -982,7 +1047,7 @@
             // hard-coded ✏️, so a stranded proposal of yours wore ↻ in the
             // gutter and the contents rail and ✏️ here, at the same moment.
             // SURFACE §6 is one alphabet in all three columns.
-            : '<span class="ql">' + markHtml(markKindOf(g)) + esc(plainLabel(e.label || g.qLabel)) +
+            : '<span class="ql">' + markHtml(markKindOf(g)) + esc(plainLabel(railTitleOf(g, e))) +
               (e.of > 1 ? '<span class="qv"> · ' + T.rail.placesOf(e.n, e.of) + '</span>' : '') + '</span>' +
               // **and for a few seconds after the press, one sentence** (Q1485
               // (A)): the card has just closed, so without this the whole of
@@ -1071,7 +1136,7 @@
           // it looks like something you are failing to read. The mark already says you
           // have judged; the card says what you said, in full, when you open it.
           ? '<span class="ql">' + markHtml(g.shifted ? 'shifted' : 'deciding') +
-            esc(plainLabel(e.label || g.qLabel)) + '</span>'
+            esc(plainLabel(railTitleOf(g, e))) + '</span>'
           : '<span class="ql">' +
             markHtml(markKindOf(g)) +
             (e.prio
@@ -1079,7 +1144,7 @@
               // rather than colliding and truncating on one (Ed, 284)
               ? '<span class="qprio">Prioritise:<b>' + esc(plainLabel(e.prio[0])) +
                 '</b><i>vs</i><b>' + esc(plainLabel(e.prio[1])) + '</b></span>'
-              : '<span>' + esc(plainLabel(e.label || g.qLabel)) + '</span>') +
+              : '<span>' + esc(plainLabel(railTitleOf(g, e))) + '</span>') +
             // **The entry carries the clock too, in the last day** (Q1460
             // (e), Ed 2026-09-19: *the rail should only show the clock when
             // it's less than 24 hrs*). A vote you have not cast can hide
@@ -1639,52 +1704,15 @@
       : (el.dataset && el.dataset.washkey ? el : el.querySelector('[data-washkey]'));
     const raw = host ? getComputedStyle(host).getPropertyValue('--washcol').trim() : '';
     const m = raw.match(/^rgba\((.+?),\s*([\d.]+)\s*\)$/);
-    if (!m) {
-      const rgb = 'rgb(var(--lc-' + ((g && anchHue(g)) || 'closed') + '))';
-      return { rgb, a: 0.16, edge: wireEdge(rgb) };
-    }
+    if (!m) return { rgb: 'rgb(var(--lc-' + ((g && anchHue(g)) || 'closed') + '))', a: 0.16 };
     const a = +m[2];
     const ga = groundAOf(host.dataset.washkey);   // a rail entry's doubled ground, else GROUND_A
-    return { rgb: 'rgb(' + m[1] + ')', a: +(a + ga * (1 - a)).toFixed(3), edge: wireEdge('rgb(' + m[1] + ')') };
+    return { rgb: 'rgb(' + m[1] + ')', a: +(a + ga * (1 - a)).toFixed(3) };
   };
-  // **The wire's edge: its own hue, dark enough to be seen** (Q1516 (6), Ed
-  // 2026-09-23: *the faint yellow wire's contrast fixed alongside* the paper).
-  // The cable is the entry's composited colour, and an entry is a pale wash,
-  // so every cable was a pale line: measured on the fixture, a quiet yellow
-  // 1.13∶1 on the sheet and 1∶1 on the desk, the grey 1.41∶1, even the red
-  // 2.16∶1 — against the 3∶1 SC 1.4.11 asks of a graphic you need to read the
-  // page. Darkening the cable would break the rule it has kept since
-  // 2026-08-17, *identical as a colour* to the card it leaves. So the cable
-  // keeps its colour and gains an **edge**: one pixel either side
-  // (`WIRE_EDGE_W`, the cap one pixel wider) in the entry's own hue at full
-  // strength, taken toward black only as far as it must go to stand 3∶1 off
-  // both grounds it crosses — the sheet (`--bg`) and the desk (the body's own
-  // ground). One rule for every hue, as the cable's own mix is: a hue already
-  // dark enough (the red) is not darkened at all. Guard: `a11y-audit`'s A18.
-  const WIRE_EDGE_W = 8;   // system.css's `#wires .edge path` states it too, the stylesheet winning
-  const WIRE_EDGE_R = 8;
-  const edgeCache = new Map();
-  const wireEdge = (css) => {
-    const desk = getComputedStyle(document.body).backgroundColor;
-    const key = css + '|' + desk;
-    if (edgeCache.has(key)) return edgeCache.get(key);
-    const probe = document.createElement('span');
-    document.body.appendChild(probe);
-    const rgbOf = (c) => { probe.style.color = c; return (getComputedStyle(probe).color.match(/[\d.]+/g) || []).slice(0, 3).map(Number); };
-    const hue = rgbOf(css), grounds = [rgbOf('var(--bg)'), rgbOf(desk)];
-    probe.remove();
-    const lin = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
-    const lum = ([r, g2, b]) => 0.2126 * lin(r) + 0.7152 * lin(g2) + 0.0722 * lin(b);
-    const ratio = (p, q) => { const [x, y] = [lum(p), lum(q)].sort((s, t) => t - s); return (x + 0.05) / (y + 0.05); };
-    let edge = hue;
-    for (let k = 0; k <= 1; k += 0.02) {
-      edge = hue.map((c) => Math.round(c * (1 - k)));
-      if (grounds.every((gr) => gr.length !== 3 || ratio(edge, gr) >= 3)) break;
-    }
-    const out = hue.length === 3 ? 'rgb(' + edge.join(', ') + ')' : css;
-    edgeCache.set(key, out);
-    return out;
-  };
+  // **The cable has no edge** (Ed, 2026-09-24: *the cables … have a border
+  // now … can you remove it?*). Q1516 (6) gave it a 1px darker rim to stand
+  // 3∶1 off the sheet and the desk; the rim read as a border and went. The
+  // cable is its entry's colour and nothing else, as it was before.
   const WIRE_UNDER = '#FFFFFF';
   const SVGNS = 'http://www.w3.org/2000/svg';
 
@@ -1766,7 +1794,7 @@
     const lines = [], dots = [];
     const dot = (x, y) => dots.push([x, y]);
     const line = (d) => lines.push(d);
-    const shapes = (g, col, w, r = 7) => {
+    const shapes = (g, col, w) => {
       for (const d of lines) {
         const p = document.createElementNS(SVGNS, 'path');
         p.setAttribute('d', d);
@@ -1777,16 +1805,15 @@
       for (const [x, y] of dots) {
         const c = document.createElementNS(SVGNS, 'circle');
         c.setAttribute('class', 'cap');
-        c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', r);
+        c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', 7);
         c.setAttribute('fill', col);
         g.appendChild(c);
       }
     };
-    const paint = (col, alpha, w, r, cls) => {
+    const paint = (col, alpha) => {
       const g = document.createElementNS(SVGNS, 'g');
       if (alpha != null) { g.setAttribute('class', 'ink'); g.setAttribute('opacity', alpha); }
-      if (cls) g.setAttribute('class', cls);
-      shapes(g, col, w, r);
+      shapes(g, col);
       wiresEl.appendChild(g);
       return g;
     };
@@ -1961,6 +1988,7 @@
     clipHoles();
     shadow(1, 1, 0.13);
     shadow(3, 3, 0.20);
+    paint(WIRE_UNDER, null);
     // **A cable changes colour when its card does** (Ed, 2026-08-17), and by
     // the same means the washes do: the wire is rebuilt from scratch on every
     // draw, so a CSS transition has nothing to run from unless the new shapes
@@ -1968,16 +1996,7 @@
     // forced reflow. Keyed by the judgment, so a wire that is simply redrawn at
     // a new scroll position does not re-run the fade.
     const from = prevWire.get(id) || color;
-    // the edge first, a pixel wider all round (`wireEdge`, Q1516 (6)), then
-    // the white the cable composites over, then the cable itself
-    const edge = paint(from.edge || color.edge, null, WIRE_EDGE_W, WIRE_EDGE_R, 'edge');
-    paint(WIRE_UNDER, null);
     const ink = paint(from.rgb, from.a);
-    if (from.edge !== color.edge) {
-      void wiresEl.getBoundingClientRect();
-      edge.querySelectorAll('path').forEach((p) => p.setAttribute('stroke', color.edge));
-      edge.querySelectorAll('circle').forEach((c) => c.setAttribute('fill', color.edge));
-    }
     if (from.rgb !== color.rgb || from.a !== color.a) {
       void wiresEl.getBoundingClientRect();
       ink.setAttribute('opacity', color.a);
@@ -2089,7 +2108,7 @@
       '<div class="sugg sealed-open" data-card="' + s.id + '"' +
       (skey ? ' data-site="' + skey + '"' : '') + '>' +
       '<div class="rechead"><span>' + T.record.amended + '</span>' +
-      '<span class="sub">' + esc((s.decided || {}).when || '') + '</span></div>' +
+      '<span class="sub">' + esc(whenText(s.decided)) + '</span></div>' +
       (skey
         ? clauseHeadHtml(s, {
             text: sourceTextFor(skey), key: skey, chips: chipsFor(skey, s.id),
@@ -2282,7 +2301,7 @@
       // tried.
       '<div class="rechead">' +
       '<span>' + (und ? T.record.undecided : T.record.decided) + ' · ' + (d.judges ?? 0) + '/' + ROSTER + PEOPLE + '</span>' +
-      '<span class="sub">' + esc(d.when || '') + '</span></div>' +
+      '<span class="sub">' + esc(whenText(d)) + '</span></div>' +
       // **The counts are printed, not hovered** (Q1452, Ed 2026-09-18: *print the
       // count line on the card*): the sentence was a `title` on the head, which a
       // phone never shows and a mouse only finds by resting — and it is the
@@ -4866,17 +4885,32 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // happened here*, which is a different question with a different answer.
     // The `+n` tally counts what it hides, so a section of nothing but filed
     // decisions now reads as empty rather than as a row of ticks.
-    const marks = entriesForSection(n).map(markKindOf).filter((k) => !FILED_KINDS.has(k));
+    const marks = entriesForSection(n).map((g) => ({ g, k: markKindOf(g) })).filter((m) => !FILED_KINDS.has(m.k));
     if (!marks.length) return '';
     // choose by what is actionable, then draw in document order
-    const keep = new Set(marks.map((m, i) => [m, i])
+    const keep = new Set(marks.map((m, i) => [m.k, i])
       .sort((a, b) => keepRank(a[0]) - keepRank(b[0]) || a[1] - b[1])
       .slice(0, TOC_MARKS).map(([, i]) => i));
     const shown = marks.filter((_, i) => keep.has(i));
+    // **each mark is a control that opens its own card** (Q1520, Ed
+    // 2026-09-23: *clicking on the icons next to the table of contents should
+    // open those cards*) — the rail entry's own act, bound in `renderToc` —
+    // named by the entry's title and what it wants of you, so it is no longer
+    // hidden from a screen reader. **The `+n` tally goes to the section**, as
+    // the heading's own link does: what it counts is not drawn, so there is
+    // no one card for it to open.
+    const markBtn = ({ g, k }) => {
+      // escaped piece by piece, where the member-written title enters
+      const name = T.toc.markName(esc(plainLabel(g.qLabel)), esc(T.toc.markState[k] || ''));
+      return '<button type="button" class="tocmark" data-tocq="' + esc(g.id) + '" aria-label="' + name +
+        '" title="' + name + '">' + mkHtml(k) + '</button>';
+    };
+    const more = marks.length - shown.length;
     // the `.run` is the marks' own box — their ground and their width — inside
     // a zero-width span, so they queue rightwards out of the rail (Q1384)
-    return '<span class="tocmarks" aria-hidden="true"><span class="run">' + shown.map(mkHtml).join('') +
-      (marks.length > shown.length ? '<span class="more">+' + (marks.length - shown.length) + '</span>' : '') +
+    return '<span class="tocmarks"><span class="run">' + shown.map(markBtn).join('') +
+      (more > 0 ? '<button type="button" class="more" data-tocmore="' + n + '" aria-label="' + esc(T.toc.more(more)) +
+        '" title="' + esc(T.toc.more(more)) + '">+' + more + '</button>' : '') +
       '</span></span>';
   }
 
@@ -4891,19 +4925,27 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       if (!/^\d+$/.test(b.dataset.secToggle)) return;   // the host's own fold keys are its business
       b.addEventListener('click', (ev) => { ev.preventDefault(); toggleSection(+b.dataset.secToggle); });
     });
+    const toHeading = (n) => {
+      // A heading with exactly one question in it *is* that question, so
+      // clicking it opens the card rather than merely arriving nearby
+      // (Ed, 179). With several, there is nothing to disambiguate on and it
+      // stays what it was: navigation.
+      const only = entriesForSection(n);
+      if (only.length === 1 && openId !== only[0].id) return toggle(only[0].id, true);
+      // same owned animation as the queue-wire, and clear of the sticky navbar
+      travelToHeading('sec-' + n);
+    };
     tocEl.querySelectorAll('[data-toc]').forEach((a) =>
-      a.addEventListener('click', (ev) => {
-        ev.preventDefault();
-        const n = +a.dataset.toc;
-        // A heading with exactly one question in it *is* that question, so
-        // clicking it opens the card rather than merely arriving nearby
-        // (Ed, 179). With several, there is nothing to disambiguate on and it
-        // stays what it was: navigation.
-        const only = entriesForSection(n);
-        if (only.length === 1 && openId !== only[0].id) return toggle(only[0].id, true);
-        // same owned animation as the queue-wire, and clear of the sticky navbar
-        travelToHeading('sec-' + n);
-      })
+      a.addEventListener('click', (ev) => { ev.preventDefault(); toHeading(+a.dataset.toc); })
+    );
+    // **a mark opens its card, a tally goes to its section** (Q1520): the mark
+    // is the rail entry's own act — `toggle(id, true)`, which travels through
+    // `bringIntoView` — and the tally is the heading's
+    tocEl.querySelectorAll('[data-tocq]').forEach((b) =>
+      b.addEventListener('click', (ev) => { ev.preventDefault(); toggle(b.dataset.tocq, true); })
+    );
+    tocEl.querySelectorAll('[data-tocmore]').forEach((b) =>
+      b.addEventListener('click', (ev) => { ev.preventDefault(); toHeading(+b.dataset.tocmore); })
     );
     // Everything the host contributed above the charter's own headings — the
     // Constitution pile head, one entry per live constitution section, the
@@ -5266,6 +5308,9 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // and the speaker's two (K30): the rung whole, and the viewer's own face
     if (env.authorRung) AUTHOR_RUNG = env.authorRung;
     if (env.signerPerson) SIGNER_PERSON = env.signerPerson;
+    // the rail's clock (Q????): the fixture pins it, so a record's moment
+    // reads the same on every run and the probes can freeze it
+    if (env.railNow) RAIL_NOW = env.railNow;
     SESSION_MINUTES = env.SESSION_MINUTES ?? 8 * 60;
     editsHeld = env.editsHeld ?? 5; editsToNext = env.editsToNext ?? 0.6;
     bindData(env.DOC || [], env.SUGGS || []);
