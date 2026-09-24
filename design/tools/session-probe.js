@@ -123,15 +123,54 @@
   // stood*) is never marked, and on the fixture records named here the
   // highlighter is where the live card had it — in the field, or on the
   // winner at the head. Checked on the live page only, like the escapes.
-  const RECORD_MARKED = { 'race-claims': 'field', 'quick-knives': 'head', 'race-nomination': 'field' };
+  //
+  // **What passed is green, what lost stays yellow** (Q1531 amended, Ed
+  // 2026-09-24): every `<ins>` on a record is one of the two grounds, read
+  // off the computed style — the green (`--ins-passed-bg`) on the wording
+  // that carried and on a ✖ record's kept text, the yellow (`--ins-bg`) on a
+  // losing rival and on everything an undecided record marks. The fixture
+  // names where each should be: `head`/`field` the carried winner, `kept`
+  // the ✖ record whose kept text its top loser would have changed, `losers`
+  // a record with a marked losing rival. The old behaviour — yellow on the
+  // winner, an unmarked kept box — is red here.
+  const RECORD_MARKED = {
+    'race-claims': ['head', 'losers'], 'quick-knives': ['head'],
+    'race-nomination': ['losers'], 'quick-larderfood': ['kept'],
+  };
+  const groundOf = (name) => {
+    const probe = document.createElement('ins');
+    probe.style.background = 'var(' + name + ')';
+    document.body.appendChild(probe);
+    const bg = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    return bg;
+  };
   function recordMarks(id, cards) {
     const out = [];
+    const GREEN = groundOf('--ins-passed-bg'), YELLOW = groundOf('--ins-bg');
+    const bg = (el) => getComputedStyle(el).backgroundColor;
+    // …and the passed ground is a green, not the highlighter under a new name
+    const [r, g, b] = (GREEN.match(/[\d.]+/g) || []).map(Number);
     for (const card of cards) {
       if (!card.classList.contains('sealed-open')) continue;
-      if (card.querySelector('.ranked.wasthere ins')) out.push(id + ': the incumbent box is marked');
-      const want = RECORD_MARKED[id];
-      if (want === 'field' && !card.querySelector('.field .ranked:not(.wasthere) ins')) out.push(id + ': no wording in the field is marked');
-      if (want === 'head' && !card.querySelector('.clausehead .headclause ins')) out.push(id + ': the winner at the head is not marked');
+      if (GREEN === YELLOW || !(g > r && g > b)) out.push(id + ': the passed ground ' + GREEN + ' is not a green');
+      // a *Previous text* box on a record that carried is never marked
+      for (const box of card.querySelectorAll('.ranked.wasthere:not(.passed)')) {
+        if (box.querySelector('ins')) out.push(id + ': the previous-text box is marked');
+      }
+      // every mark in what passed is green, every other mark yellow
+      const passedIns = new Set([...card.querySelectorAll('.ranked.passed ins'),
+        ...(card.classList.contains('recpass') ? card.querySelectorAll('.headclause ins') : [])]);
+      for (const ins of card.querySelectorAll('ins')) {
+        const want = passedIns.has(ins) ? GREEN : YELLOW;
+        if (bg(ins) !== want) out.push(id + ': a ' + (passedIns.has(ins) ? 'passed' : 'losing') + ' mark reads ' + bg(ins));
+      }
+      const wants = RECORD_MARKED[id] || [];
+      if (wants.includes('field') && !card.querySelector('.field .ranked.passed:not(.wasthere) ins')) out.push(id + ': the winner in the field is not marked green');
+      if (wants.includes('head') && !(card.classList.contains('recpass') && card.querySelector('.clausehead .headclause ins'))) out.push(id + ': the winner at the head is not marked green');
+      if (wants.includes('kept') && !(card.classList.contains('recpass') && card.querySelector('.clausehead .headclause ins')) &&
+        !card.querySelector('.ranked.wasthere.passed ins')) out.push(id + ': the kept text is not marked green against its top loser');
+      if (wants.includes('losers') && !card.querySelector('.field .ranked:not(.passed):not(.wasthere) ins')) out.push(id + ': no losing rival is marked');
     }
     return out;
   }

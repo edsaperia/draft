@@ -166,6 +166,12 @@
        marker-pen ground with the text's own ink — and not --lc-open's
        yellow either, which is a lifecycle wash saying *this wants you*. */
     --ins-bg: #FFF1A8;            /* the highlighter — added words     */
+    /* **…and green on what passed** (Q1531 amended, Ed 2026-09-24: *records
+       show a green highlight*): on a record, the wording that carried — or,
+       where the text held, the kept words the top loser would have taken
+       away — is marked on --ok's own green, 30% of it on white, so the one
+       green still means *decided*. --fg on it measures 10.35:1. */
+    --ins-passed-bg: color-mix(in srgb, var(--ok) 30%, #fff);
 
     /* --- the two families (Q1402, Ed 2026-09-16). The document's text is
            Charis SIL — the prose, the constitution's clause sentences, a
@@ -2924,6 +2930,13 @@
      clause itself and must keep the paragraph's box to the pixel: a
      background alone moves nothing, the 1px either side could move a wrap */
   .sealed-open .headclause ins { padding: 0; }
+  /* a record's passed wording (Q1531 amended): the head where it carries what
+     passed (`.recpass`), a field box where it does (`.ranked.passed`); losing
+     rivals and an undecided record keep the yellow. A kept box is muted ink,
+     which reads 3.19:1 on the green, so its marked words take --fg */
+  .sealed-open.recpass .headclause ins, .ranked.passed ins {
+    background: var(--ins-passed-bg); color: var(--fg);
+  }
 
   /* queue-wire: the run from the open entry, down the gutter between document
      and rail, and into every place in the charter it refers to (Ed, 71/78).

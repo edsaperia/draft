@@ -2121,7 +2121,9 @@
   function amendmentCardHtml(s) {
     const skey = (s.keys ?? [])[0];
     return (
-      '<div class="sugg sealed-open" data-card="' + s.id + '"' +
+      // an amendment passed, so its marks are the record's green (Q1531 as
+      // amended, Ed 2026-09-24)
+      '<div class="sugg sealed-open recpass" data-card="' + s.id + '"' +
       (skey ? ' data-site="' + skey + '"' : '') + '>' +
       '<div class="rechead"><span>' + T.record.amended + '</span>' +
       '<span class="sub">' + esc(longText(s.decided)) + '</span></div>' +
@@ -2260,17 +2262,38 @@
     // the floor and all — while the incumbent, *Previous text* or *the text
     // that stood*, stays plain, since it is what the others are read against.
     const base = recordBaseOf(s, !held);
-    const markedText = (c) => (c.incumbent ? mdBlocksHtml(null, c.text) : wordingHtml(base, c.text));
+    // **What passed is green, what lost stays yellow** (Q1531 amended, Ed
+    // 2026-09-24): on a ✔ record the winner's marks are the record's green
+    // (`.ranked.passed`, `.recpass`), the losing rivals' the highlighter. On
+    // a ✖ record the kept text *passed against* the losers — *as if the
+    // status quo "passed" against it* — so its box marks, in green, what it
+    // has that the top-ranked loser would have removed or changed: the kept
+    // text against that loser, the loser as the base. Undecided at the close,
+    // and a wording closed early while its race runs, passed nothing.
+    const keptPassed = held && !s.undecided && !s.early;
+    const topLoser = keptPassed ? field.filter((c) => !c.won && c.text != null)
+      .sort((x, y) => (y.p ?? -1) - (x.p ?? -1))[0] || null : null;
+    const keptHtml = (text) => (topLoser && String(text ?? '').trim() ? wordingHtml(topLoser.text, text) : null);
+    const passedBox = (c) => (c.won || (c.incumbent && !!topLoser));
+    const markedText = (c) => (c.incumbent
+      ? (topLoser ? keptHtml(c.text) || mdBlocksHtml(null, c.text) : mdBlocksHtml(null, c.text))
+      : wordingHtml(base, c.text));
     // The head carries it only where it is a proposal's wording — a winner, or
     // the best at the close — and still reads as the record left it; the
-    // incumbent at the head, and a clause changed since, stay the clause. Its
+    // incumbent at the head, and a clause changed since, stay the clause —
+    // except the kept text on a ✖ record, marked against its top loser. Its
     // `<ins>` takes no padding there (`.sealed-open .headclause ins`), so the
     // head keeps the paragraph's box to the pixel.
     const headOf = () => {
       const o = headOpts(s, skey);
-      return !top.incumbent && !s.changedSince && o.text != null && String(o.text).trim()
-        ? Object.assign(o, { html: wordingHtml(base, o.text) }) : o;
+      if (s.changedSince || o.text == null || !String(o.text).trim()) return o;
+      if (!top.incumbent) return Object.assign(o, { html: wordingHtml(base, o.text) });
+      const kept = keptHtml(o.text);
+      return kept ? Object.assign(o, { html: kept }) : o;
     };
+    // the head is green where it holds what passed and reads as the record
+    // left it: the winner, or the kept text on a ✖ record
+    const headPassed = !!top && !s.changedSince && (top.won || (top.incumbent && !!topLoser));
 
     // Where the incumbent is in the list its right-hand slot now names it, so the
     // left-hand tag would be saying it twice; where it is at the *head* it kept
@@ -2306,7 +2329,7 @@
     const spk = (c) => (c.why || c.by || c.underNote || c.refusal
       ? speakerHtml(c.why, undefined, c.by) + under(c) + refused(c) : '');
     return (
-      '<div class="sugg sealed-open" data-card="' + s.id + '"' +
+      '<div class="sugg sealed-open' + (headPassed ? ' recpass' : '') + '" data-card="' + s.id + '"' +
       (skey ? ' data-site="' + skey + '"' : '') + '>' +
       // **A wording closed early carries no eyebrow at all** (Q1451, Ed
       // 2026-09-18). Its author is told at once, while the clause is still
@@ -2395,7 +2418,7 @@
       (rest.length
         ? '<div class="field">' +
           rest.map((c) => {
-            return '<div class="ranked' + (c.incumbent ? ' wasthere' : '') + '">' +
+            return '<div class="ranked' + (c.incumbent ? ' wasthere' : '') + (passedBox(c) ? ' passed' : '') + '">' +
             '<div class="rtag">' + tag(c) + line(c) + '</div>' +
             // read as the clause is (Q1368): a candidate's text is markdown
             // …its changes marked against what it was proposed against (Q1531)
