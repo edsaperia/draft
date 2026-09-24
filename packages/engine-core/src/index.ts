@@ -58,7 +58,7 @@ export {
   isAttested,
   stripAttestation,
 } from './text/attest.js';
-export { rebaseHunks } from './text/rebase.js';
+export { carryHunks, rebaseHunks } from './text/rebase.js';
 export { composeTextual } from './text/compose.js';
 export { fitDavidson } from './ranking/davidson.js';
 export { ceilingPct, unanimousCeiling } from './ranking/ceiling.js';

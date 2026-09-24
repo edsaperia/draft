@@ -213,7 +213,7 @@ describe('a text change voids the pairs it touches, and only those (R-076 kept)'
     expect(raceOf(s, c).comparisons).toBe(1);
   });
 
-  it('a decree over a candidate’s own lines voids that candidate’s pairs', () => {
+  it('a decree over a candidate’s own lines voids its pairs against the text it displaced, and keeps the rival pair (R-141)', () => {
     const s = open();
     const { id: a } = s.submitCandidate(1000, {
       author: 'p1', rationale: 'r', patch: span(0, 0, 1, 'Clause one is rewritten.') });
@@ -228,7 +228,56 @@ describe('a text change voids the pairs it touches, and only those (R-076 kept)'
       author: 'p1', rationale: '',
       patch: span(s.currentVersion(), 0, 1, 'Clause one says something else.'),
     });
-    // every judgment on this race compared text that is gone: all locked
+    // both cover the decree, so both stay in the race (§2.4 → why: R-141)
+    expect(s.getCandidate(a).state).toBe('live');
+    expect(s.getCandidate(b).state).toBe('live');
+    // A against the text the decree displaced compared text that is gone
+    expect(standing(s, 'p3', a, inc)!.locked).toBe(true);
+    // A against B compared two documents the decree left untouched: it stands
+    expect(standing(s, 'p4', a, b)!.locked).toBe(false);
+    expect(raceOf(s, a).comparisons).toBe(1);
+  });
+
+  it('a judgment an adoption carried locks at the next change under the rival’s lines (R-141, R-076)', () => {
+    const s = open({ quorum: null });
+    const { id: a } = s.submitCandidate(1000, {
+      author: 'p1', rationale: 'r', patch: span(0, 0, 1, 'Clause one is rewritten.') });
+    const { id: w } = s.submitCandidate(1100, {
+      author: 'p2', rationale: 'r', patch: span(0, 0, 1, 'Clause one is reworded.') });
+    s.judge(2000, 'p3', a, w, 'b');
+    s.judge(2100, 'p4', w, raceOf(s, w).incumbentId, 'a');
+    expect(s.getCandidate(w).state).toBe('adopted');
+    // carried: A against W is now A against the current text, and it counts
+    const carried = standing(s, 'p3', a, w)!;
+    expect(carried.carried).toBeDefined();
+    expect(carried.locked).toBe(false);
+    expect(raceOf(s, a).comparisons).toBe(1);
+    // the text under A's line changes again: that judgment compared A with
+    // wording that no longer stands, so this time it locks
+    s.decreeText(3000, { author: 'p1', rationale: '',
+      patch: span(s.currentVersion(), 0, 1, 'Clause one says something else.') });
+    expect(s.getCandidate(a).state).toBe('live');
+    expect(standing(s, 'p3', a, w)!.locked).toBe(true);
+    expect(raceOf(s, a).comparisons).toBe(0);
+  });
+
+  it('a change that strands a candidate voids every pair it held', () => {
+    const s = open();
+    // A rewrites line 1 alone; B rewrites lines 1–2 as one run
+    const { id: a } = s.submitCandidate(1000, {
+      author: 'p1', rationale: 'r', patch: span(0, 0, 1, 'Clause one is rewritten.') });
+    const { id: b } = s.submitCandidate(1100, {
+      author: 'p2', rationale: 'r', patch: span(0, 0, 2, 'Clauses one and two merge.') });
+    const inc = raceOf(s, a).incumbentId;
+    s.judge(2000, 'p3', a, inc, 'a');
+    s.judge(2100, 'p4', a, b, 'a');
+    // the decree rewrites lines 1–2: A sits inside it, touching without covering
+    s.decreeText(3000, {
+      author: 'p1', rationale: '',
+      patch: span(s.currentVersion(), 0, 2, 'One new clause.'),
+    });
+    expect(s.getCandidate(a).state).toBe('rebase-pending');
+    expect(s.getCandidate(b).state).toBe('live');
     expect(standing(s, 'p3', a, inc)!.locked).toBe(true);
     expect(standing(s, 'p4', a, b)!.locked).toBe(true);
   });

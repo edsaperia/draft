@@ -1,0 +1,455 @@
+{
+ "log": [
+  {
+   "seq": 0,
+   "hash": "2660772e653c0e475b49f33d2a749b632c8356c536509dfd0487fd0b181bae6f",
+   "prevHash": "",
+   "event": {
+    "type": "opened",
+    "t": 0,
+    "constitution": {
+     "adoptionThresholdStart": 0.5,
+     "adoptionThresholdEnd": 0.5,
+     "adoptionFloorMax": 12,
+     "quorum": {
+      "form": "count",
+      "n": 3
+     },
+     "deadlockMinComparisons": 20,
+     "deadlockEpsilon": 0.02,
+     "cooldownMs": 0,
+     "redraftLimit": 2,
+     "tokenGrant": 4,
+     "tokenDripMinutes": 240,
+     "tokenCap": 8,
+     "stake": 1,
+     "rationaleMaxChars": 300,
+     "boutGapMs": 90000,
+     "hotSetSize": 3,
+     "explorationEvery": 7,
+     "salienceEvery": 10,
+     "authorshipVisibility": "sealed",
+     "rivalGateProb": 0.5,
+     "rivalGateMinComparisons": 3,
+     "reopenedBoost": 1.5,
+     "windowStartMs": 0,
+     "windowEndMs": 360000000,
+     "rngSeed": "legacy"
+    },
+    "text": "# Charter\nMembership is open to anyone.\nDecisions are made by consensus.\nMeetings happen when someone calls one.",
+    "roster": [
+     {
+      "id": "p1",
+      "handle": "P1"
+     },
+     {
+      "id": "p2",
+      "handle": "P2"
+     },
+     {
+      "id": "p3",
+      "handle": "P3"
+     },
+     {
+      "id": "p4",
+      "handle": "P4"
+     },
+     {
+      "id": "p5",
+      "handle": "P5"
+     }
+    ],
+    "settings": {
+     "s1": {
+      "n": 1
+     }
+    }
+   },
+   "schemaVersion": 1
+  },
+  {
+   "seq": 1,
+   "hash": "8559bcdb28dc5c807b516e440bc41abb1cb031bbd0af336c8a81b88935553cb6",
+   "prevHash": "2660772e653c0e475b49f33d2a749b632c8356c536509dfd0487fd0b181bae6f",
+   "event": {
+    "type": "candidate-submitted",
+    "t": 1000,
+    "id": "c1",
+    "author": "p1",
+    "patch": {
+     "baseVersion": 0,
+     "hunks": [
+      {
+       "start": 1,
+       "end": 2,
+       "lines": [
+        "Membership is by invitation."
+       ]
+      }
+     ]
+    },
+    "rationale": "a",
+    "disclosure": "sealed"
+   },
+   "schemaVersion": 1
+  },
+  {
+   "seq": 2,
+   "hash": "3a598ceb9802e4d5d963c85da95f63d1d9d3a3915e4f2fb39ce5df671a95e378",
+   "prevHash": "8559bcdb28dc5c807b516e440bc41abb1cb031bbd0af336c8a81b88935553cb6",
+   "event": {
+    "type": "candidate-submitted",
+    "t": 1100,
+    "id": "c2",
+    "author": "p2",
+    "patch": {
+     "baseVersion": 0,
+     "hunks": [
+      {
+       "start": 1,
+       "end": 2,
+       "lines": [
+        "Membership is open to members."
+       ]
+      }
+     ]
+    },
+    "rationale": "b",
+    "disclosure": "sealed"
+   },
+   "schemaVersion": 1
+  },
+  {
+   "seq": 3,
+   "hash": "a1b9c43baf07ab839d0601e6e0fe8ee711d8d2de2018cad6379e6e905b8b653a",
+   "prevHash": "3a598ceb9802e4d5d963c85da95f63d1d9d3a3915e4f2fb39ce5df671a95e378",
+   "event": {
+    "type": "candidate-submitted",
+    "t": 1200,
+    "id": "c3",
+    "author": "p3",
+    "patch": {
+     "baseVersion": 0,
+     "hunks": [
+      {
+       "start": 3,
+       "end": 4,
+       "lines": [
+        "Meetings happen monthly."
+       ]
+      }
+     ]
+    },
+    "rationale": "c",
+    "disclosure": "sealed"
+   },
+   "schemaVersion": 1
+  },
+  {
+   "seq": 4,
+   "hash": "e5f08e4a060e78a19b7bb472a273a612ead71fde83329485bf961752e40951db",
+   "prevHash": "a1b9c43baf07ab839d0601e6e0fe8ee711d8d2de2018cad6379e6e905b8b653a",
+   "event": {
+    "type": "candidate-submitted",
+    "t": 1300,
+    "id": "c4",
+    "author": "p1",
+    "setting": {
+     "settingId": "s1",
+     "value": {
+      "n": 2
+     }
+    },
+    "rationale": "x",
+    "disclosure": "sealed"
+   },
+   "schemaVersion": 1
+  },
+  {
+   "seq": 5,
+   "hash": "66e4fc92f2857e866468a4a63a331b5b2b5bbca7c26e91365e712611f7c5b707",
+   "prevHash": "e5f08e4a060e78a19b7bb472a273a612ead71fde83329485bf961752e40951db",
+   "event": {
+    "type": "candidate-submitted",
+    "t": 1400,
+    "id": "c5",
+    "author": "p2",
+    "setting": {
+     "settingId": "s1",
+     "value": {
+      "n": 3
+     }
+    },
+    "rationale": "y",
+    "disclosure": "sealed"
+   },
+   "schemaVersion": 1
+  },
+  {
+   "seq": 6,
+   "hash": "96d2c262a1a3da8154b98a1462300b60fdf4107cff3df1217b03c4fdb2e9fd54",
+   "prevHash": "66e4fc92f2857e866468a4a63a331b5b2b5bbca7c26e91365e712611f7c5b707",
+   "event": {
+    "type": "comparison",
+    "t": 2000,
+    "participantId": "p4",
+    "aId": "c1",
+    "bId": "c2",
+    "kind": "edge",
+    "outcome": "a"
+   },
+   "schemaVersion": 1
+  },
+  {
+   "seq": 7,
+   "hash": "e70dc8d66ed406bf4e6eb8af548a3954c80c9b3e99d0f1e1263e2b7a07953650",
+   "prevHash": "96d2c262a1a3da8154b98a1462300b60fdf4107cff3df1217b03c4fdb2e9fd54",
+   "event": {
+    "type": "comparison",
+    "t": 2100,
+    "participantId": "p5",
+    "aId": "c2",
+    "bId": "inc:3e0d9282b89337d1",
+    "kind": "edge",
+    "outcome": "b"
+   },
+   "schemaVersion": 1
+  },
+  {
+   "seq": 8,
+   "hash": "fff74c14143196bb73c19925110bdc2b0427896ba14c88ae0268f0703528c138",
+   "prevHash": "e70dc8d66ed406bf4e6eb8af548a3954c80c9b3e99d0f1e1263e2b7a07953650",
+   "event": {
+    "type": "comparison",
+    "t": 2200,
+    "participantId": "p3",
+    "aId": "c4",
+    "bId": "c5",
+    "kind": "edge",
+    "outcome": "a"
+   },
+   "schemaVersion": 1
+  },
+  {
+   "seq": 9,
+   "hash": "8816f0132fc17c9b338fe18b644a5fc121bb0680dd2c4622d065330473f4a3d1",
+   "prevHash": "fff74c14143196bb73c19925110bdc2b0427896ba14c88ae0268f0703528c138",
+   "event": {
+    "type": "comparison",
+    "t": 2300,
+    "participantId": "p4",
+    "aId": "c1",
+    "bId": "inc:3e0d9282b89337d1",
+    "kind": "edge",
+    "outcome": "a"
+   },
+   "schemaVersion": 1
+  },
+  {
+   "seq": 10,
+   "hash": "b133348de2265b31072526348c44a4bbde025ad3c45f23d6a8fe3fae1ce85626",
+   "prevHash": "8816f0132fc17c9b338fe18b644a5fc121bb0680dd2c4622d065330473f4a3d1",
+   "event": {
+    "type": "comparison",
+    "t": 2400,
+    "participantId": "p5",
+    "aId": "c1",
+    "bId": "inc:3e0d9282b89337d1",
+    "kind": "edge",
+    "outcome": "a"
+   },
+   "schemaVersion": 1
+  },
+  {
+   "seq": 11,
+   "hash": "dfd3de615e9b0bb8d1ef0800ae701063daaaf0f329ebba26a44b4d89600b1cb6",
+   "prevHash": "b133348de2265b31072526348c44a4bbde025ad3c45f23d6a8fe3fae1ce85626",
+   "event": {
+    "type": "adopted",
+    "t": 2400,
+    "candidateId": "c1",
+    "raceId": "r:c1",
+    "newVersion": 1,
+    "p": 0.9525082887236662,
+    "threshold": 0.5,
+    "approvals": 3,
+    "floor": 3,
+    "abstained": 0
+   },
+   "schemaVersion": 1
+  },
+  {
+   "seq": 12,
+   "hash": "3133fbc479c87ef00609dc68c8ffdc0b43c273af47562ea7e3e0721c8d369020",
+   "prevHash": "dfd3de615e9b0bb8d1ef0800ae701063daaaf0f329ebba26a44b4d89600b1cb6",
+   "event": {
+    "type": "rebase-failed",
+    "t": 2400,
+    "id": "c2",
+    "conflicts": [
+     {
+      "start": 1,
+      "end": 2
+     }
+    ]
+   },
+   "schemaVersion": 1
+  },
+  {
+   "seq": 13,
+   "hash": "96743730f3cc3442aa07680484103dbe17f408ec2e76fb58ddf3cb085e2f52de",
+   "prevHash": "3133fbc479c87ef00609dc68c8ffdc0b43c273af47562ea7e3e0721c8d369020",
+   "event": {
+    "type": "candidate-rebased",
+    "t": 2400,
+    "id": "c3",
+    "patch": {
+     "baseVersion": 1,
+     "hunks": [
+      {
+       "start": 3,
+       "end": 4,
+       "lines": [
+        "Meetings happen monthly."
+       ]
+      }
+     ]
+    }
+   },
+   "schemaVersion": 1
+  },
+  {
+   "seq": 14,
+   "hash": "c23c99506686ad269daf3858e66c347db0d8762cf3b833e3e70de76b940645fc",
+   "prevHash": "96743730f3cc3442aa07680484103dbe17f408ec2e76fb58ddf3cb085e2f52de",
+   "event": {
+    "type": "standing-set",
+    "t": 2500,
+    "settingId": "s1",
+    "value": {
+     "n": 5
+    }
+   },
+   "schemaVersion": 1
+  },
+  {
+   "seq": 15,
+   "hash": "cbf5b0a32efa498eb5ef09734fbd9af96be7b2b7ae344e4561d50db368079537",
+   "prevHash": "c23c99506686ad269daf3858e66c347db0d8762cf3b833e3e70de76b940645fc",
+   "event": {
+    "type": "comparison",
+    "t": 2600,
+    "participantId": "p4",
+    "aId": "c3",
+    "bId": "inc:d2cf5bf499945bed",
+    "kind": "edge",
+    "outcome": "a"
+   },
+   "schemaVersion": 1
+  }
+ ],
+ "summary": {
+  "hash": "cbf5b0a32efa498eb5ef09734fbd9af96be7b2b7ae344e4561d50db368079537",
+  "states": {
+   "c1": "adopted",
+   "c2": "rebase-pending",
+   "c3": "live",
+   "c4": "live",
+   "c5": "live"
+  },
+  "judgments": [
+   {
+    "seq": 6,
+    "t": 2000,
+    "participantId": "p4",
+    "aId": "c1",
+    "bId": "c2",
+    "kind": "edge",
+    "outcome": "a",
+    "superseded": false,
+    "locked": true
+   },
+   {
+    "seq": 7,
+    "t": 2100,
+    "participantId": "p5",
+    "aId": "c2",
+    "bId": "inc:3e0d9282b89337d1",
+    "kind": "edge",
+    "outcome": "b",
+    "superseded": false,
+    "locked": true
+   },
+   {
+    "seq": 8,
+    "t": 2200,
+    "participantId": "p3",
+    "aId": "c4",
+    "bId": "c5",
+    "kind": "edge",
+    "outcome": "a",
+    "superseded": false,
+    "locked": true
+   },
+   {
+    "seq": 9,
+    "t": 2300,
+    "participantId": "p4",
+    "aId": "c1",
+    "bId": "inc:3e0d9282b89337d1",
+    "kind": "edge",
+    "outcome": "a",
+    "superseded": false,
+    "locked": true
+   },
+   {
+    "seq": 10,
+    "t": 2400,
+    "participantId": "p5",
+    "aId": "c1",
+    "bId": "inc:3e0d9282b89337d1",
+    "kind": "edge",
+    "outcome": "a",
+    "superseded": false,
+    "locked": true
+   },
+   {
+    "seq": 15,
+    "t": 2600,
+    "participantId": "p4",
+    "aId": "c3",
+    "bId": "inc:d2cf5bf499945bed",
+    "kind": "edge",
+    "outcome": "a",
+    "superseded": false,
+    "locked": false
+   }
+  ],
+  "document": "# Charter\nMembership is by invitation.\nDecisions are made by consensus.\nMeetings happen when someone calls one.",
+  "types": [
+   "opened",
+   "candidate-submitted",
+   "candidate-submitted",
+   "candidate-submitted",
+   "candidate-submitted",
+   "candidate-submitted",
+   "comparison",
+   "comparison",
+   "comparison",
+   "comparison",
+   "comparison",
+   "adopted",
+   "rebase-failed",
+   "candidate-rebased",
+   "standing-set",
+   "comparison"
+  ],
+  "ids": {
+   "A": "c1",
+   "B": "c2",
+   "C": "c3",
+   "X": "c4",
+   "Y": "c5"
+  }
+ }
+}

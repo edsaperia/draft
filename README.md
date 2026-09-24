@@ -33,13 +33,13 @@ Without `RESEND_API_KEY` the server runs a **dev inbox**: every mail, magic link
 
 ## Packages
 
-TypeScript end to end; `pg` is the only runtime dependency. Tests measured 2026-09-23 with `npm test`: **1,482 passing** (9 todo, 19 skipped without Postgres). What has changed, deploy by deploy: [`CHANGELOG.md`](CHANGELOG.md).
+TypeScript end to end; `pg` is the only runtime dependency. Tests measured 2026-09-24 with `npm test`: **1,571 passing** (9 todo, 19 skipped without Postgres). What has changed, deploy by deploy: [`CHANGELOG.md`](CHANGELOG.md).
 
 | Package | What it is | Tests |
 |---|---|---|
-| `packages/engine-core` | The mechanism as a pure, deterministic, dependency-free library: diffs and footprints, the races, Bradley–Terry ranking with ties, the session state machine, the hash-chained event log, the feed router, and the participant API — the one blind surface that people, simulated members and personal AIs all speak identically. Notes: [`NOTES.md`](packages/engine-core/NOTES.md). | 452 |
-| `packages/constitution` | The document's rules as a module, equally pure: the settings catalogue, the blind founding (each member states the least they will accept; the document takes the maximum), motions on both routes — ordinary ones race, constitutional ones need everybody — applications, lapse, its own hash-chained log. Runs in the browser too, as the committed bundle `design/constitution.js`. Notes: [`NOTES.md`](packages/constitution/NOTES.md). | 774 |
-| `packages/server` | The product host: `node:http` with no framework, one hash-chained log per document plus the `people` rows written beside it — **identity never goes in the log** (decision 1253) — as JSONL on disk or a row per entry in Postgres, which is what docs.vote has served from since 2026-08-20; magic-link login, stateless HMAC cookies, the engine riding every commit. Notes: [`NOTES.md`](packages/server/NOTES.md). | 224 (+19 Postgres) |
+| `packages/engine-core` | The mechanism as a pure, deterministic, dependency-free library: diffs and footprints, the races, Bradley–Terry ranking with ties, the session state machine, the hash-chained event log, the feed router, and the participant API — the one blind surface that people, simulated members and personal AIs all speak identically. Notes: [`NOTES.md`](packages/engine-core/NOTES.md). | 498 |
+| `packages/constitution` | The document's rules as a module, equally pure: the settings catalogue, the blind founding (each member states the least they will accept; the document takes the maximum), motions on both routes — ordinary ones race, constitutional ones need everybody — applications, lapse, its own hash-chained log. Runs in the browser too, as the committed bundle `design/constitution.js`. Notes: [`NOTES.md`](packages/constitution/NOTES.md). | 775 |
+| `packages/server` | The product host: `node:http` with no framework, one hash-chained log per document plus the `people` rows written beside it — **identity never goes in the log** (decision 1253) — as JSONL on disk or a row per entry in Postgres, which is what docs.vote has served from since 2026-08-20; magic-link login, stateless HMAC cookies, the engine riding every commit. Notes: [`NOTES.md`](packages/server/NOTES.md). | 266 (+19 Postgres) |
 | `packages/sim-harness` | Simulated members driving whole sessions: deterministic scripted personas with ground-truth welfare scoring, LLM personas speaking the same participant API with no back door, a calibration sweep whose findings are folded into SPEC §4.2 and §8.3, and a live commentator. [`README.md`](packages/sim-harness/README.md). | 32 |
 | `design/` | The surface itself, served by the server off disk: `session-view.html` is the one page — arrival, founding and the live document — with its machinery in `session.js`, `setup.js` and `cards.js`, and every string a member can read in `copy.js`. Beside it `feed.html` is the spectator feed at `/d/:slug/feed`: new proposals and proposals that pass, read from the engine's strictly-public `spectator-api` and nothing else. | — |
 
@@ -49,7 +49,7 @@ Rule files hold rules; the reasoning behind them lives in `design/`. Where two d
 
 | Document | What it is | Read it when |
 |---|---|---|
-| [`SPEC.md`](SPEC.md) | The mechanism, v0.140 — tables and numbered rules, each pointing at its reasons as `→ why: R-nnn`. The single source of truth. | First, to understand what the engine does. |
+| [`SPEC.md`](SPEC.md) | The mechanism, v0.141 — tables and numbered rules, each pointing at its reasons as `→ why: R-nnn`. The single source of truth. | First, to understand what the engine does. |
 | [`SURFACE.md`](SURFACE.md) | What the surface tells a member and what a control does: the event matrix, the marks, the wallets, the founding order, the card kinds. Asserted against the page's own tables by `npm run spec-check`. | Second, to understand what a member sees. |
 | [`CLAUDE.md`](CLAUDE.md) | The project's operative reference: the vocabulary, the glossary of every named part, and the post-mortems that bite. | Before contributing. |
 | [`design/STYLE.md`](design/STYLE.md) | The surface-copy checklist every string a member can read has to pass. | Before touching `copy.js`. |

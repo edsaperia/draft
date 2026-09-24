@@ -137,23 +137,35 @@ describe('session lifecycle', () => {
     expect(adopted).toBeDefined();
     expect(adopted!.type === 'adopted' && adopted!.candidateId).toBe(c1);
 
-    // The document changed; the loser is in rebase limbo; c3 sailed on.
+    // The document changed; c3 sailed on. The loser covered the winner's
+    // line, so it stays in the race against the new text with its c1-vs-c2
+    // vote carried as a vote for the current text (SPEC §2.4, §4.4 → why:
+    // R-141) — one against, its author's own for, three still to answer.
     expect(s.document()).toContain('two existing members to vouch');
     expect(s.getCandidate(c1).state).toBe('adopted');
-    expect(s.getCandidate(c2).state).toBe('rebase-pending');
+    const log = s.log.map((e) => e.event);
+    const reaimed = log.find((e) => e.type === 'candidate-reaimed');
+    expect(reaimed).toMatchObject({ id: c2, by: c1, carried: [expect.any(Number)] });
+    expect(s.getCandidate(c2).state).toBe('live');
+    expect(s.getCandidate(c2).patch!.baseVersion).toBe(1);
+    const c2race = s.raceOf(c2);
+    expect(c2race.comparisons).toBe(1); // the carried vote, not reset
+    expect(c2race.approvals).toBe(1);   // the author's own
     expect(s.getCandidate(c3).state).toBe('live');
+
+    // Two more members prefer what now stands: a + w = 1 + 1 ≤ o = 3, so it
+    // can never win, and the batch closes it with its stake spent (R-132;
+    // §7, Q1534 (2)).
+    s.judge((t += 1000), 'p4', c2, c2race.incumbentId, 'b');
+    s.judge((t += 1000), 'p5', c2, c2race.incumbentId, 'b');
+    expect(s.getCandidate(c2).state).toBe('retired');
+    expect(s.getCandidate(c2).exit).toMatchObject({ cause: 'dominated', refund: 0 });
 
     // The winner has its stake back, and exactly that (SPEC §7, Q1454). It
     // used to be refunded *above* the stake — `stake × min(w/0.5, 1.5)`, so a
     // well-received wording turned a profit on winning and a rejected one was
     // paid too. Proposing well is free now, and never better than free.
     expect(s.getCandidate(c1).exit!.refund).toBe(s.constitution.stake);
-
-    // The loser confirms against the new text; evidence resets.
-    s.confirmRebase(t + 1000, c2, rewrite(1, 1, 'Membership is granted by majority vote.'));
-    expect(s.getCandidate(c2).state).toBe('live');
-    const c2race = s.raceOf(c2);
-    expect(c2race.comparisons).toBe(0); // reset: old judgments no longer speak
 
     // Replay the log: identical state, identical rolling hash.
     expect(s.verifyChain()).toBe(true);
@@ -1417,9 +1429,10 @@ describe('the close (SPEC §4.6)', () => {
     // a live rival elsewhere in the document, which the close files the old way
     const { id: live } = s.submitCandidate(1500, { author: 'p3',
       patch: rewrite(v0, 3, 'Meetings happen fortnightly.'), rationale: 'a rhythm' });
-    // the same line rewritten under it: the rebase conflicts (SPEC §2.4)
-    s.decreeText(2000, { author: 'p1',
-      patch: rewrite(v0, 1, 'Membership is by invitation.'), rationale: 'mine' });
+    // its line and the next rewritten as one run under it: it touches the
+    // change without covering it, so it strands (SPEC §2.4 → why: R-141)
+    s.decreeText(2000, { author: 'p1', rationale: 'mine', patch: { baseVersion: v0,
+      hunks: [{ start: 1, end: 3, lines: ['Membership is by invitation.'] }] } });
     expect(s.getCandidate(stranded).state).toBe('rebase-pending');
     expect(s.getCandidate(live).state).toBe('live');
     expect(s.balance('p2', 2000)).toBe(before - staked); // nothing came back

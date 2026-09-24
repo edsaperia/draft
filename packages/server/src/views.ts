@@ -20,6 +20,7 @@ import { asEngineDoc, foldTime } from './engine-host.js';
 import { ParticipantApi, authorVisible } from '../../engine-core/src/participant-api.js';
 import type { CardView } from '../../engine-core/src/participant-api.js';
 import type { Candidate } from '../../engine-core/src/types.js';
+import { INC_PREFIX } from '../../engine-core/src/types.js';
 import { adoptedSpan, spanNow, versionSteps } from './record-spans.js';
 import type { Span } from './record-spans.js';
 /**
@@ -70,6 +71,29 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
   // ledger, where the page could never draw it.
   const onRace = (ids: Set<string>) => (j: { aId: string; bId: string }) =>
     ids.has(j.aId) && ids.has(j.bId);
+  // **A judgment a change carried is read on the pair it counts on now**
+  // (SPEC §2.4, §4.4 → why: R-141; Q1534). Its `aId`/`bId` are what the member
+  // was shown — a rival against the wording that has since been adopted — and
+  // `carried` is the pair the engine reads it as: the rival against the
+  // current text. So a member who judged the two keeps their answer on the
+  // rival's race, pre-selected on its tab, and is not asked it again. The
+  // current text's id is the race's own, which is the id the page keys the
+  // pair by; a carried judgment the text has since moved under is dropped
+  // like any other judgment against a text that is gone, since the pair it
+  // answered is not the pair the race now asks.
+  const hereOf = (r: { members: string[]; incumbentId: string }) => {
+    const ids = new Set([...r.members, r.incumbentId]);
+    const inRace = onRace(ids);
+    return myJ.flatMap((j) => {
+      if (!j.carried) return inRace(j) ? [j] : [];
+      const incSide = [j.carried.aId, j.carried.bId].some((id) => id.startsWith(INC_PREFIX));
+      if (incSide && j.locked) return [];
+      const now = (id: string) => (id.startsWith(INC_PREFIX) ? r.incumbentId : id);
+      const pair = { aId: now(j.carried.aId), bId: now(j.carried.bId) };
+      if (!r.members.includes(pair.aId) && !r.members.includes(pair.bId)) return [];
+      return inRace(pair) ? [{ ...j, ...pair }] : [];
+    });
+  };
   // per-race judge counts are the record's own numbers (§8.2): a count,
   // never who or which way
   const allJ = engine.judgments();
@@ -165,8 +189,7 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
   // **At this poll's own clock** (Q1439): who has abstained, and so what each
   // race's floor is, moves with `t` and with no event to mark it.
   const clauses = engine.races(nowMs).filter((r) => r.settingId === undefined).map((r) => {
-    const ids = new Set([...r.members, r.incumbentId]);
-    const here = myJ.filter(onRace(ids));
+    const here = hereOf(r);
     const standing = here.some((j) => !j.superseded && !j.locked);
     // **What can still be asked of you here, dealt or not** (Q1202, Ed
     // 2026-09-07: *⏳ should mean "waiting for other people to vote"*). A
@@ -256,8 +279,7 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
   // admission, so the admit entry could not tell voted from unvoted and its
   // fill was the founder's 100%.
   const settingRaces = engine.races(nowMs).filter((r) => r.settingId !== undefined).map((r) => {
-    const ids = new Set([...r.members, r.incumbentId]);
-    const here = myJ.filter(onRace(ids));
+    const here = hereOf(r);
     const dealt = served !== null && served.cards.some((c) => c.kind === 'edge' && c.raceId === r.id);
     const ask = served === null || dealt ? null : api.askOn(r.id, HAND, served.t);
     // **The pair crosses, as a clause row's does** (Q1393, the lantern-house
@@ -414,7 +436,12 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
   // still contests the lines it was written for, and joins the record when
   // that race resolves. Read on the spans rather than on the race id, because
   // a race is named for its lowest-numbered member and loses that name the
-  // moment that member is the one that goes.
+  // moment that member is the one that goes. **Since R-141 this is the common
+  // case, not the rare one** (Q1534): a rival covering an adopted wording
+  // stays in its race against the new text, and one the room had already
+  // preferred the winner to closes in the batch that adopted it — while the
+  // rest of that race runs on. Its row waits here, and joins the record the
+  // continuing race files when it ends (`recordKey` below).
   const liveSpans = engine.races(nowMs)
     .filter((r) => r.settingId === undefined)
     .flatMap((r) => r.contested);
@@ -440,13 +467,33 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
   // being trusted to draw less than it is given: their own candidate, the
   // clause it was written for, and the reason, and none of what the hold-back
   // exists to withhold — no rival, no reading, no judge count, no floor.
-  const earlyMine: Array<{ o: ReturnType<typeof api.outcomes>[number]; c: Candidate }> = [];
+  const earlyMine: Array<{ o: ReturnType<typeof api.outcomes>[number]; c: Candidate;
+    key: string }> = [];
   const fieldVersions = new Map<string, number>();
+  // **One decision, one record — and a race that goes on after its winner
+  // files its own** (Q1534 ruling 5, Ed 2026-09-24; SPEC §2.4 → why: R-141).
+  // A race is named for its oldest live member, so when a rival that covered
+  // the winner stays in the race it very often keeps the name the winner's
+  // record was filed under — and every later outcome under that name used to
+  // pour into the winner's record, rewriting its head with the next adoption.
+  // So a race's outcomes are read in log order and split at each adoption:
+  // everything up to and including the adoption is that decision's record,
+  // under the race's own id, and whatever the race decides after it is a new
+  // record under `<id>/<n>`, the page keying each apart. A rival the batch
+  // closed straight after the adoption (R-132) is after it in the log, so it
+  // joins the race that went on — the one it was still part of.
+  const generation = new Map<string, number>();
+  const recordKey = (raceId: string): string => {
+    const n = generation.get(raceId) ?? 0;
+    return n === 0 ? raceId : `${raceId}/${n}`;
+  };
   for (const o of opts.records === false && !engine.closed ? [] : api.outcomes()) {
     const c = engine.getCandidate(o.candidateId);
     if (c.patch === undefined) continue;
+    const key = recordKey(o.raceId);
+    if (o.outcome === 'adopted') generation.set(o.raceId, (generation.get(o.raceId) ?? 0) + 1);
     if (o.outcome === 'retired' && stillRacing(c, o.version)) {
-      if (c.author === memberId) earlyMine.push({ o, c });
+      if (c.author === memberId) earlyMine.push({ o, c, key });
       continue;
     }
     const mineJ = myJ.some((j) => j.aId === o.candidateId || j.bId === o.candidateId);
@@ -456,20 +503,20 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
       judgedByMe: mineJ, ...(o.reason ? { reason: o.reason } : {}),
       ...(o.cappedFit ? { cappedFit: o.cappedFit } : {}),
       ...(author ? { author } : {}) };
-    let rec = byRace.get(o.raceId);
+    let rec = byRace.get(key);
     if (!rec) {
-      rec = { raceId: o.raceId, candidateId: o.candidateId, outcome: o.outcome, when: o.t,
+      rec = { raceId: key, candidateId: o.candidateId, outcome: o.outcome, when: o.t,
         p: o.p ?? null, threshold: o.threshold ?? null, version: o.version,
         footprint: c.footprint, displaced: [], judges: 0, judgedByMe: false,
         at: { start: 0, end: 0 }, field: [] };
-      byRace.set(o.raceId, rec);
+      byRace.set(key, rec);
     }
     rec.field.push(entry);
     // the version each member's hunks are expressed against (Q1488): its own
     // base for a candidate closed early, the adoption's for the winner
     fieldVersions.set(o.candidateId, o.version);
-    if (!authorsOf.has(o.raceId)) authorsOf.set(o.raceId, new Set());
-    authorsOf.get(o.raceId)!.add(c.author);
+    if (!authorsOf.has(key)) authorsOf.set(key, new Set());
+    authorsOf.get(key)!.add(c.author);
     rec.judgedByMe = rec.judgedByMe || mineJ;
     if (o.outcome === 'adopted') {
       rec.candidateId = o.candidateId; rec.outcome = 'adopted'; rec.when = o.t;
@@ -582,22 +629,24 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
       hunks: Array<{ start: number; end: number; lines: string[] }>;
       rationale: string; judgedByMe: false; reason?: string }> };
   const earlyRows = new Map<string, EarlyRec>();
-  for (const { o, c } of earlyMine) {
+  for (const { o, c, key } of earlyMine) {
     // a race that already has a record of its own says everything this row
-    // would, and the page keys both by the race
-    if (byRace.has(o.raceId)) continue;
+    // would, and the page keys both by the race — by the record it will join,
+    // that is (Q1534 (5)), so a winner's record under the same name, filed
+    // before this wording closed, never silences its author's row
+    if (byRace.has(key)) continue;
     const hunks = c.patch!.hunks;
     const entry = { candidateId: o.candidateId, outcome: 'retired' as const, p: null,
       threshold: null, hunks, rationale: c.rationale, judgedByMe: false as const,
       ...(o.reason ? { reason: o.reason } : {}) };
-    const had = earlyRows.get(o.raceId);
+    const had = earlyRows.get(key);
     // two wordings of mine closed on one clause are one card and one OK
     if (had) { had.field.push(entry); had.when = Math.max(had.when, o.t); continue; }
     const span = { start: Math.min(...hunks.map((h) => h.start)),
       end: Math.max(...hunks.map((h) => h.end)) };
     let prev: string[] = [];
     try { prev = linesAt(o.version); } catch { prev = []; }
-    earlyRows.set(o.raceId, { raceId: o.raceId, candidateId: o.candidateId,
+    earlyRows.set(key, { raceId: key, candidateId: o.candidateId,
       outcome: 'retired', when: o.t, p: null, threshold: null, version: o.version,
       footprint: c.footprint, displaced: prev.slice(span.start, span.end),
       at: spanNow(span, o.version, steps), early: true, field: [entry] });

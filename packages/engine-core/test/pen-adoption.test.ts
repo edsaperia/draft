@@ -7,7 +7,9 @@
  *
  * The four things this file exists to hold: the act lands from an author with
  * no seat and moves no ledger; a rival is rebased and still live; a rival
- * whose rebase conflicts goes to `rebase-pending` exactly as under an ordinary
+ * covering the decreed lines stays in the race, carrying nothing against the
+ * decree (R-141, Ed 2026-09-24, Q1534 ruling 3), and one touching them without
+ * covering them goes to `rebase-pending` exactly as under an ordinary
  * adoption; and a log holding the new event replays bit for bit.
  */
 import { describe, expect, it } from 'vitest';
@@ -46,6 +48,10 @@ const openHeld = (): Session => openSession({ quorum: { form: 'count', n: 99 } }
 /** Replace line `line` with `text` (single-hunk rewrite). */
 const rewrite = (base: number, line: number, text: string) =>
   ({ baseVersion: base, hunks: [{ start: line, end: line + 1, lines: [text] }] });
+
+/** Replace lines [from, to) with one line — a run, which strands a one-line rival inside it. */
+const runOver = (base: number, from: number, to: number, text: string) =>
+  ({ baseVersion: base, hunks: [{ start: from, end: to, lines: [text] }] });
 
 /** Every roster ledger's balance, as one comparable object. */
 const wallets = (s: Session, t: number) =>
@@ -105,6 +111,37 @@ describe('✒️ on the Text: the direct adoption (R-058)', () => {
     expect(events.some((e) => e.type === 'candidate-retired')).toBe(false);
   });
 
+  it('a rival covering the decreed lines stays in the race, and nothing carries against the decree (R-141)', () => {
+    const s = openHeld();
+    const v0 = s.currentVersion();
+    const { id: rival } = s.submitCandidate(50, {
+      author: 'p2',
+      patch: rewrite(v0, 2, 'Decisions are made by a show of hands.'),
+      rationale: 'hands',
+    });
+    const inc = s.races().find((r) => r.members.includes(rival))!.incumbentId;
+    s.judge(60, 'p3', rival, inc, 'a');
+    // the same line, rewritten under it
+    const { id } = s.decreeText(100, {
+      author: 'p1',
+      patch: rewrite(v0, 2, 'Decisions are made by the Founder.'),
+      rationale: 'mine',
+    });
+    const events = s.log.map((e) => e.event);
+    const reaimed = events.find((e) => e.type === 'candidate-reaimed');
+    expect(reaimed).toMatchObject({ id: rival, by: id, carried: [] });
+    expect(events.some((e) => e.type === 'rebase-failed')).toBe(false);
+    const c = s.getCandidate(rival);
+    expect(c.state).toBe('live');
+    // re-aimed at the decreed words: its own words, the new version's line
+    expect(c.patch).toEqual(rewrite(v0 + 1, 2, 'Decisions are made by a show of hands.'));
+    // p3's vote compared the rival with the text the decree displaced: gone
+    const race = s.races().find((r) => r.members.includes(rival))!;
+    expect(race.approvals).toBe(1); // the author's own, and nobody else's
+    expect(race.comparisons).toBe(0);
+    expect(Session.replay(s.log).rollingHash()).toBe(s.rollingHash());
+  });
+
   it('a rival whose rebase genuinely conflicts goes to rebase-pending', () => {
     const s = openHeld();
     const v0 = s.currentVersion();
@@ -113,10 +150,11 @@ describe('✒️ on the Text: the direct adoption (R-058)', () => {
       patch: rewrite(v0, 2, 'Decisions are made by a show of hands.'),
       rationale: 'hands',
     });
-    // the same line, rewritten under it
+    // its line and the one below, rewritten as one run under it: the rival
+    // touches the decree without covering it (SPEC §2.4)
     s.decreeText(100, {
       author: 'p1',
-      patch: rewrite(v0, 2, 'Decisions are made by the Founder.'),
+      patch: runOver(v0, 2, 4, 'Decisions are made by the Founder.'),
       rationale: 'mine',
     });
     expect(s.log.map((e) => e.event).some((e) => e.type === 'rebase-failed' && e.id === rival))
@@ -146,7 +184,7 @@ describe('✒️ on the Text: the direct adoption (R-058)', () => {
     const staked = before - s.balance('p2', 50);
     expect(staked).toBeGreaterThan(0);
     s.decreeText(100, { author: 'p1',
-      patch: rewrite(v0, 2, 'Decisions are made by the Founder.'), rationale: 'mine' });
+      patch: runOver(v0, 2, 4, 'Decisions are made by the Founder.'), rationale: 'mine' });
     expect(s.getCandidate(rival).state).toBe('rebase-pending');
     // nothing came back when it stranded: the stake is still with the candidate
     expect(s.balance('p2', 100)).toBe(before - staked);
@@ -176,7 +214,7 @@ describe('✒️ on the Text: the direct adoption (R-058)', () => {
     });
     expect(s.balance('p2', 50)).toBeLessThan(before);
     s.decreeText(100, { author: 'p1',
-      patch: rewrite(v0, 2, 'Decisions are made by the Founder.'), rationale: 'mine' });
+      patch: runOver(v0, 2, 4, 'Decisions are made by the Founder.'), rationale: 'mine' });
     expect(s.getCandidate(rival).state).toBe('rebase-pending');
     s.withdraw(110, rival);
     expect(s.getCandidate(rival).state).toBe('withdrawn');
@@ -370,7 +408,7 @@ describe('🛡️ on the Text parks per footprint (R-100)', () => {
     expect(parksOf(s).map((e) => e.id)).toEqual([first.id, rival.id]);
   });
 
-  it('an overlapping leader whose park is accepted is ground-shifted like anybody, never parked over the new text', () => {
+  it('an overlapping leader whose park is accepted is re-aimed like anybody, never parked over the new text', () => {
     const s = openSession({ textAssent: true }, 5);
     const v0 = s.currentVersion();
     const first = s.submitCandidate(50, { author: 'p2',
@@ -381,10 +419,38 @@ describe('🛡️ on the Text parks per footprint (R-100)', () => {
     judgeFor(s, 80, 'p5', rival.id, rival.raceId);
     expect(s.races().find((r) => r.id === rival.raceId)!.blockedByPark).toBe(true);
     s.assent(90, first.id, 'accept');
-    // the text it was written against is gone: rebase-pending (SPEC §2.4), not a park
-    expect(s.getCandidate(rival.id).state).toBe('rebase-pending');
+    // it covers the accepted line, so it stays in the race against the words
+    // the park put there (SPEC §2.4 → why: R-141) — live, re-aimed, not a park
+    const back = s.getCandidate(rival.id);
+    expect(back.state).toBe('live');
+    expect(back.patch).toEqual(rewrite(s.currentVersion(), 2, 'Decisions are made by lot.'));
+    expect(s.races().find((r) => r.members.includes(rival.id))!.blockedByPark).toBe(false);
+    // p5's vote was against the text the park displaced, so it locked: the
+    // rival is back to its author's voice alone and does not park again
     s.tick(100);
     expect(parksOf(s).map((e) => e.id)).toEqual([first.id]);
+    expect(s.getCandidate(rival.id).state).toBe('live');
+  });
+
+  it('an accepted park carries the votes cast against it before it parked (R-141)', () => {
+    const s = openSession({ textAssent: true }, 5);
+    const v0 = s.currentVersion();
+    const first = s.submitCandidate(50, { author: 'p2',
+      patch: rewrite(v0, 2, 'Decisions are made by a show of hands.'), rationale: 'hands' });
+    const rival = s.submitCandidate(55, { author: 'p4',
+      patch: rewrite(v0, 2, 'Decisions are made by lot.'), rationale: 'lot' });
+    // p5 prefers the one that will park to the rival; p3 then carries `first`
+    s.judge(58, 'p5', rival.id, first.id, 'b');
+    judgeFor(s, 60, 'p3', first.id, first.raceId);
+    expect(s.getCandidate(first.id).state).toBe('awaiting-assent');
+    s.assent(90, first.id, 'accept');
+    const re = s.log.map((e) => e.event).find((e) => e.type === 'candidate-reaimed');
+    expect(re).toMatchObject({ id: rival.id, by: first.id });
+    expect(re!.type === 'candidate-reaimed' && re!.carried).toHaveLength(1);
+    const race = s.races().find((r) => r.members.includes(rival.id))!;
+    expect(race.approvals).toBe(1);   // p4's own
+    expect(race.comparisons).toBe(1); // p5's, carried as a vote for the current text
+    expect(Session.replay(s.log).rollingHash()).toBe(s.rollingHash());
   });
 
   it('a park is rebased under an ordinary adoption too, and nothing adopts across its span', () => {

@@ -713,10 +713,11 @@ const STEPS = [
     events: [] },
   // **A proposal stranded by a text change** (SURFACE E38; Q170, Ed
   // 2026-09-14; stepped by Q1359). Two rows: a member writes a clause, and
-  // the Founder's pen rewrites the same clause under them. `rebaseOthers` is
-  // the one door every text change goes through, and a patch whose span the
-  // new text replaced cannot be carried across — the candidate goes to
-  // `rebase-pending`, out of every race, held for its author alone.
+  // the Founder's pen rewrites that clause and the next under them.
+  // `rebaseOthers` is the one door every text change goes through, and a
+  // patch the change touched without covering cannot be carried across
+  // (§2.4, R-141) — the candidate goes to `rebase-pending`, out of every
+  // race, held for its author alone.
   //
   // **The pen, and not an adoption**, because 🛡️ is kept on the Text from
   // `begin`: every race on this document parks instead of adopting, and a
@@ -742,15 +743,20 @@ const STEPS = [
         why: 'the hours are the whole of what people ask me about' };
     },
     events: [] },
-  // the strand itself. The pen replaces **the same line**, one line for one,
-  // so the conflict is exact (`spansConflict`) and every other candidate's
-  // offsets are untouched — the Founder's own proposal two rows down is
-  // written against line 1 and must rebase cleanly, not strand beside it.
+  // the strand itself. **The pen rewrites the proposal's line and the next as
+  // one run** (Q1534, SPEC §2.4 v0.141): a proposal covering the change stays
+  // in its race now (R-141), so to strand one the change must touch its line
+  // without the proposal covering it — the proposal's one line sits inside the
+  // pen's two. Two lines for two, the second as it stood, so every other
+  // candidate's offsets are untouched and the Founder's own proposal two rows
+  // down, written against line 1 after this, reads the line it always did.
   { id: 'strand-pen', epoch: 'live', kind: 'cmd', seat: 'founder', cmd: 'pen-text', ifHat: 'member',
     args: async (D) => {
       const v = await viewAs(D, 'founder');
+      const second = String(v.text || '').split('\n')[1];
       return { baseVersion: v.textVersion,
-        hunks: withWas(v.text, [{ start: 0, end: 1, lines: ['The clubhouse shall be kept open on weekdays.'] }]),
+        hunks: withWas(v.text, [{ start: 0, end: 2,
+          lines: ['The clubhouse shall be kept open on weekdays.', second] }]),
         why: 'the hours were never the club’s to promise' };
     },
     // the key is the entry the author's own page files for it — `mine:<id>`

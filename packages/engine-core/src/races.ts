@@ -412,6 +412,24 @@ export class Races {
     });
   }
 
+  /**
+   * **A pair's ground over the lines of a version that has just been left**
+   * (R-141): `pairGround`'s own hash, read against `lines` rather than the
+   * current text and with every footprint where it stood before the change.
+   * The one reader is `rebaseOthers`, which runs after the change has been
+   * folded and asks, of each judgment it might carry, whether it was still
+   * standing on its own ground at the moment before — the test the usable
+   * set would have applied a moment earlier. Not memoised: it is asked once
+   * per change, of the judgments on the rivals that change carries.
+   */
+  pairGroundOn(lines: readonly string[], aId: string, bId: string): string {
+    const ids = [aId, bId].filter((id) => !id.startsWith(INC_PREFIX)).sort();
+    const setting = ids.length > 0 ? this.host.candidates().get(ids[0]!)?.setting : undefined;
+    if (setting) return this.incumbentIdForSetting(setting.settingId);
+    const spans = ids.flatMap((id) => this.host.candidates().get(id)?.footprint ?? []);
+    return this.incumbentIdFor(mergeSpans(spans), lines);
+  }
+
   private buildRaceCore(members: string[]): { core: RaceCore; approval: ApprovalCore } {
     const setting = this.host.candidate(members[0]!).setting;
     const contested = setting
@@ -825,8 +843,8 @@ export class Races {
    * the contested spans' current text, so evidence goes stale exactly
    * when the text it judged stops being the status quo.
    */
-  private incumbentIdFor(contested: Span[]): string {
-    const lines = this.host.currentLines();
+  private incumbentIdFor(contested: Span[],
+    lines: readonly string[] = this.host.currentLines()): string {
     const parts = contested.map((s) => lines.slice(s.start, s.end).join('\n'));
     return INC_PREFIX + sha256Hex(parts.join('\u0000')).slice(0, 16);
   }

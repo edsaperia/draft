@@ -348,3 +348,147 @@ describe('what closing does (Q1440)', () => {
     expect((ev as { reason?: string }).reason).toBe('dominated');
   });
 });
+
+/**
+ * **The *Notice* clause, Q1534's worked example** (SPEC §2.4, §4.4 → why:
+ * R-141; Ed 2026-09-24, rulings 1 and 2). Seven members — Ann, Ben, Cat, Dan,
+ * Eve, Fay, Gus as p1–p7 — at a 30% quorum, and three proposals rewriting the
+ * one line: A (Ann), B (Ben), C (Cat). B carries. Both A and C cover B, so both
+ * stay in the race against the new text with their votes against B carried as
+ * votes against the current text:
+ *
+ * - **C**: five members preferred B to C, so a = 1 (Cat), o = 5, w = 1 (Ben):
+ *   `a + w ≤ o` — dominated, and closed **in the batch that adopted B**, its
+ *   stake spent (ruling 2, R-133).
+ * - **A**: Ann and Gus preferred A to B, Dan and Eve B to A, so a = 2, o = 2,
+ *   w = 3 (Ben, Cat, Fay) — live, trailing, three members still to ask.
+ *
+ * The judgments are cast inside a cooldown, so the batch that adopts B is one
+ * `tick` deciding on all of them at once, exactly as the example tells it.
+ */
+describe('the Notice clause: a carried rival the room preferred the winner to closes in the adopting batch (Q1534)', () => {
+  const NOTICE_DOC = [
+    '# Meetings',
+    'Notice of a meeting is given by writing it in the Members’ Book and telling every member by whatever means reaches them.',
+    'Minutes are kept by the secretary.',
+  ].join('\n');
+  const [ann, ben, cat, dan, eve, fay, gus] = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7'] as const;
+
+  function notice() {
+    const s = Session.open({
+      text: NOTICE_DOC,
+      roster: roster(7),
+      constitution: makeConstitution({
+        windowStartMs: 0, windowEndMs: 1000 * HOUR, rngSeed: 'notice',
+        cooldownMs: HOUR, quorum: { form: 'share', n: 30 },
+      }),
+    }, 0);
+    // an unrelated clause carries first, which starts the cooldown's metronome
+    const minutes = s.submitCandidate(10, { author: ann, rationale: 'r',
+      patch: rewrite(0, 2, 'Minutes are kept by whoever volunteers.') });
+    const incM = s.races().find((r) => r.members.includes(minutes.id))!.incumbentId;
+    s.judge(20, ben, minutes.id, incM, 'a');
+    s.judge(30, cat, minutes.id, incM, 'a');
+    expect(s.getCandidate(minutes.id).state).toBe('adopted');
+    const v = s.currentVersion();
+    const line = (text: string) => rewrite(v, 1, text);
+    const A = s.submitCandidate(100, { author: ann, rationale: 'email',
+      patch: line('Notice of a meeting is given by writing it in the Members’ Book and telling every member by email at least seven days before.') }).id;
+    const B = s.submitCandidate(110, { author: ben, rationale: 'in person',
+      patch: line('Notice of a meeting is given by writing it in the Members’ Book and telling every member in person or by message, at least seven days before.') }).id;
+    const C = s.submitCandidate(120, { author: cat, rationale: 'the board',
+      patch: line('Notice of a meeting is given by pinning it to the board in the hall.') }).id;
+    const inc = s.races().find((r) => r.members.includes(A))!.incumbentId;
+    let t = 200;
+    const j = (who: string, x: string, y: string, outcome: 'a' | 'b') =>
+      s.judge((t += 10), who, x, y, outcome);
+    // B vs the old text: Dan, Eve, Fay for B; Gus for the old text
+    for (const who of [dan, eve, fay]) j(who, B, inc, 'a');
+    j(gus, B, inc, 'b');
+    // A vs the old text: Gus for A; Eve for the old text
+    j(gus, A, inc, 'a');
+    j(eve, A, inc, 'b');
+    // C vs the old text: Fay for the old text
+    j(fay, C, inc, 'b');
+    // A vs B: Ann and Gus for A; Dan and Eve for B
+    for (const who of [ann, gus]) j(who, A, B, 'a');
+    for (const who of [dan, eve]) j(who, A, B, 'b');
+    // B vs C: everyone but Ben and Cat for B
+    for (const who of [ann, dan, eve, fay, gus]) j(who, B, C, 'a');
+    // A vs C: Ben for A
+    j(ben, A, C, 'a');
+    // inside the cooldown: nothing has carried, and nothing has closed
+    for (const id of [A, B, C]) expect(s.getCandidate(id).state).toBe('live');
+    return { s, A, B, C };
+  }
+
+  it('B carries; C is closed in the same batch with nothing back; A stays live with its carried votes', () => {
+    const { s, A, B, C } = notice();
+    const catBefore = s.balance(cat, 2 * HOUR);
+    const batch = s.tick(2 * HOUR);
+    const adopted = batch.find((e) => e.type === 'adopted');
+    expect(adopted).toMatchObject({ candidateId: B });
+    // both rivals re-aimed at B's words, their pairs with B carried
+    const reaimed = batch.filter((e) => e.type === 'candidate-reaimed');
+    expect(reaimed.map((e) => e.type === 'candidate-reaimed' && [e.id, e.by]))
+      .toEqual([[A, B], [C, B]]);
+    // C: closed at the same moment, as dominated, its stake spent
+    const closed = batch.find((e) => e.type === 'candidate-retired');
+    expect(closed).toMatchObject({ id: C, reason: 'dominated', refund: 0 });
+    expect(batch.indexOf(closed!)).toBeGreaterThan(batch.indexOf(adopted!));
+    expect(s.getCandidate(C).exit).toMatchObject({ t: 2 * HOUR, cause: 'dominated', refund: 0 });
+    expect(s.balance(cat, 2 * HOUR)).toBe(catBefore);
+    // A: live, trailing — Ann and Gus for it, Dan and Eve for the current text
+    expect(s.getCandidate(A).state).toBe('live');
+    const race = s.races(2 * HOUR).find((r) => r.members.includes(A))!;
+    expect(race.members).toEqual([A]);
+    expect(race.approvals).toBe(2);
+    expect(race.group).toBe(7); // 2 for, 2 against, Ben, Cat and Fay still to ask
+    expect(race.dominated).toEqual([]);
+    // Gus's A-vs-old and Eve's old-vs-A compared a text that is gone
+    const onOld = s.judgments().filter((x) => x.aId === A && x.bId.startsWith('inc:'));
+    expect(onOld.length).toBe(2);
+    expect(onOld.every((x) => x.locked)).toBe(true);
+    // the four A-vs-B judgments are carried: the pair as cast, and the pair it counts on now
+    const carried = s.judgments().filter((x) => x.carried && x.aId === A && x.bId === B);
+    expect(carried.map((x) => x.participantId).sort()).toEqual([ann, dan, eve, gus]);
+    expect(carried.every((x) => !x.locked && x.carried!.aId === A
+      && x.carried!.bId.startsWith('inc:'))).toBe(true);
+    // B could not adopt twice, and A could not ride the batch that adopted B
+    expect(batch.filter((e) => e.type === 'adopted')).toHaveLength(1);
+  });
+
+  it('two of the three still to ask preferring what stands closes A at the next batch', () => {
+    const { s, A } = notice();
+    s.tick(2 * HOUR);
+    const inc = s.races(2 * HOUR).find((r) => r.members.includes(A))!.incumbentId;
+    s.judge(2 * HOUR + 10, ben, A, inc, 'b');
+    s.judge(2 * HOUR + 20, cat, A, inc, 'b');
+    // a + w = 2 + 1 ≤ o = 4: no answer still to come could carry it; the next
+    // batch is a cooldown away
+    expect(s.getCandidate(A).state).toBe('live');
+    s.tick(3 * HOUR + 30);
+    expect(s.getCandidate(A).state).toBe('retired');
+    expect(s.getCandidate(A).exit).toMatchObject({ cause: 'dominated', refund: 0 });
+  });
+
+  it('…and all three preferring A carries it at the next batch — a change of mind, seconded', () => {
+    const { s, A } = notice();
+    s.tick(2 * HOUR);
+    const inc = s.races(2 * HOUR).find((r) => r.members.includes(A))!.incumbentId;
+    for (const [i, who] of [ben, cat, fay].entries()) s.judge(2 * HOUR + 10 * (i + 1), who, A, inc, 'a');
+    s.tick(3 * HOUR + 40);
+    expect(s.getCandidate(A).state).toBe('adopted');
+    expect(s.document()).toContain('by email at least seven days before');
+  });
+
+  it('replays bit-identically, the carried judgments and all', () => {
+    const { s, A } = notice();
+    s.tick(2 * HOUR);
+    const again = Session.replay(s.log);
+    expect(again.rollingHash()).toBe(s.rollingHash());
+    expect(again.judgments()).toEqual(s.judgments());
+    expect(again.races(2 * HOUR)).toEqual(s.races(2 * HOUR));
+    expect(again.getCandidate(A)).toEqual(s.getCandidate(A));
+  });
+});

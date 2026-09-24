@@ -5920,6 +5920,138 @@ const draftFollowsClause = async () => {
 };
 await draftFollowsClause();
 
+/* ---- a rival covering the winner stays in the race (Q1534, Ed 2026-09-24;
+ * SPEC §2.4, §4.4 → why: R-141; SURFACE E14, E16, E38) ---------------------
+ * Two seats propose rival wordings of one free clause — di (the invitee the
+ * paste step sent, arriving only now) and cy — and the founder prefers di's to
+ * cy's and di's to the clause as it stands, which carries di's: E is four and
+ * the quorum a count of two, di's own preference the first of them. cy's
+ * rewrote exactly the lines di's did, so it **covers** the change and stays in
+ * the race against the words di's put there: cy's own entry stays the blue
+ * ✏️ *yours* line, never the red ↻ of a stranded proposal (E38), and the
+ * founder's answer on cy's against di's is their answer on cy's against what
+ * now stands — the pair's own ⏳ tab kept, *keep* pre-selected, with no ↻.
+ *
+ * **Last, and on seats of its own**: it adopts, and it seats a fourth member,
+ * which would move every count the steps above make. It fails on the pre-fix
+ * page at *rivals 1 · FAIL: … rebase-pending*. */
+const rivalsStay = async () => {
+  if (!guestPage) return;                       // its own failure, already reported
+  const slug = new URL(page.url()).pathname.replace(/^\/d\//, '');
+  const wire = (pg, cmd, args) => pg.evaluate(([c, a]) => fetch(location.pathname.replace('/d/', '/api/d/') + '/cmd', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ cmd: c, args: a }),
+  }).then((r) => r.json()).catch((e) => ({ error: String(e && e.message) })), [cmd, args]);
+  const viewOf = (pg) => pg.evaluate(() => fetch(location.pathname.replace('/d/', '/api/d/') + '/view')
+    .then((r) => r.json()).catch(() => null));
+  const seat = async (addr, tag) => {
+    const lj = await fetch(BASE + '/api/d/' + slug + '/login', { method: 'POST',
+      headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: addr }) })
+      .then((r) => r.json()).catch(() => null);
+    const link = (lj && lj.devLink) || await invitationLink(addr);
+    if (!link) return null;
+    const ctx = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
+    const pg = await ctx.newPage();
+    pg.on('pageerror', (e) => errors.push('[' + tag + '] ' + String(e)));
+    await landOn(pg, link);
+    for (let i = 0; i < 40 && !pg.url().includes('/d/'); i++) await pg.waitForTimeout(500);
+    await pg.waitForTimeout(2600);
+    return { ctx, pg };
+  };
+  const di = await seat('di' + STAMP + '@example.org', 'di');
+  const cy = await seat(GUEST2, 'cy');
+  if (!di || !cy) {
+    say('rivals     · FAIL: no way in for ' + (di ? 'cy' : 'di') + ' — the two rivals need two seats');
+    stuck.push('the seats the rivals ride on');
+    if (di) await di.ctx.close(); if (cy) await cy.ctx.close();
+    return;
+  }
+  const done = async () => { await di.ctx.close(); await cy.ctx.close(); };
+
+  // **a line nothing is racing on**, off the wire, as the steps above choose one
+  const v0 = await viewOf(page);
+  const lines = String((v0 || {}).text || '').split('\n');
+  const taken = new Set();
+  for (const c of ((v0 || {}).clauses || [])) {
+    for (const sp of (c.contested || [])) for (let i = sp.start; i <= sp.end; i++) taken.add(i);
+  }
+  let at = -1;
+  for (let i = 1; i < lines.length; i++) {
+    if (!taken.has(i) && lines[i].trim() && !/^#/.test(lines[i])) { at = i; break; }
+  }
+  if (at < 0) {
+    say('rivals     · FAIL: every clause is already racing · ' + JSON.stringify([...taken]));
+    stuck.push('a free clause for the rivals'); await done(); return;
+  }
+  const propose = (who, text, why) => wire(who.pg, 'propose-text', { baseVersion: (v0 || {}).textVersion,
+    hunks: [{ start: at, end: at + 1, lines: [text], was: [lines[at]] }], why });
+  const pw = await propose(di, 'Guests sign the visitors’ book on arrival.', 'we should know who came');
+  const px = await propose(cy, 'Guests are welcomed by whoever is on duty.', 'a person, not a book');
+  const W = pw && pw.result && pw.result.id;
+  const X = px && px.result && px.result.id;
+  if (!W || !X) {
+    say('rivals     · FAIL: the two rivals could not be proposed · ' + JSON.stringify([pw, px]));
+    stuck.push('the two rival wordings'); await done(); return;
+  }
+  await T(5200);
+  const r0 = ((await viewOf(page)) || { clauses: [] }).clauses
+    .find((c) => (c.candidates || []).some((x) => x.id === W));
+  if (!r0 || !r0.candidates.some((x) => x.id === X)) {
+    say('rivals     · FAIL: the two did not race · ' + JSON.stringify(r0 && r0.candidates));
+    stuck.push('the rivals’ race'); await done(); return;
+  }
+  // the founder prefers di's to cy's, then di's to the clause as it stands
+  const j1 = await wire(page, 'judge-race', { a: X, b: W, outcome: 'b' });
+  const j2 = await wire(page, 'judge-race', { a: W, b: r0.incumbentId, outcome: 'a' });
+  if ((j1 && j1.error) || (j2 && j2.error)) {
+    say('rivals     · FAIL: the founder could not judge · ' + JSON.stringify([j1, j2]));
+    stuck.push('the judgments that carry di’s'); await done(); return;
+  }
+  await T(6000);                                 // the adoption batch, then a poll in each seat
+  const vf = await viewOf(page);
+  const carried = String((vf || {}).text || '').split('\n')[at] === 'Guests sign the visitors’ book on arrival.';
+  if (!carried) {
+    say('rivals     · FAIL: di’s wording did not carry · line ' + JSON.stringify(String((vf || {}).text || '').split('\n')[at]));
+    stuck.push('the adoption the rivals step turns on'); await done(); return;
+  }
+
+  // 1 — cy's rival is live, re-aimed, and its own entry is the blue ✏️, not ↻
+  const vc = await viewOf(cy.pg);
+  const mineX = ((vc || {}).mine || []).find((m) => m.id === X);
+  const xRace = ((vc || {}).clauses || []).find((c) => (c.candidates || []).some((x) => x.id === X));
+  const onPage = await cy.pg.evaluate((id) => {
+    const g = (window.SESSION.SUGGS || []).find((x) => x.candidate === id);
+    const li = g && document.querySelector('#rail li[data-q="' + String(g.id).replace(/["\\]/g, '\\$&') + '"]');
+    const mk = li && li.querySelector('.mk');
+    return { item: !!g, stranded: g ? !!g.stranded : null,
+      mark: mk ? [...mk.classList].find((c) => c.startsWith('mk-')) : null };
+  }, X);
+  const ok1 = mineX && mineX.state === 'live' && !!xRace && onPage.item && onPage.stranded === false &&
+    onPage.mark !== 'mk-stranded';
+  say('rivals 1   · ' + (ok1
+    ? 'di’s wording carried; cy’s covered it and stays in the race against it — live, the blue ✏️ line (' + onPage.mark + '), not ↻'
+    : 'FAIL: ' + JSON.stringify({ state: mineX && mineX.state, race: !!xRace, onPage })));
+  if (!ok1) stuck.push('a rival covering the winner staying in the race (Q1534)');
+
+  // 2 — the founder's answer on cy's against di's is kept, as cy's against what stands
+  const fx = ((vf || {}).clauses || []).find((c) => (c.candidates || []).some((x) => x.id === X));
+  const row = fx && (fx.myJudgments || []).find((j) => j.a === X || j.b === X);
+  const tab = fx ? await page.evaluate(([rid, a, b]) => {
+    const id = rid + '#' + [a, b].sort().join(':');
+    const g = (window.SESSION.SUGGS || []).find((x) => x.id === id);
+    return g ? { state: g.state, pick: g.pick || null, shifted: !!g.shifted } : null;
+  }, [fx.id, X, fx.incumbentId]) : null;
+  const ok2 = !!fx && fx.judged && !fx.shifted && row && !row.locked &&
+    [row.a, row.b].sort().join() === [X, fx.incumbentId].sort().join() &&
+    tab && tab.state === 'deciding' && tab.pick === 'keep' && !tab.shifted;
+  say('rivals 2   · ' + (ok2
+    ? 'the founder’s answer on the two rivals is their answer on cy’s against what now stands: its ⏳ tab kept, *keep* pre-selected, no ↻'
+    : 'FAIL: ' + JSON.stringify({ judged: fx && fx.judged, shifted: fx && fx.shifted, row, tab })));
+  if (!ok2) stuck.push('a carried judgment kept on its pair (Q1534)');
+  await done();
+};
+await rivalsStay();
+
 say('errors     · ' + (errors.length ? errors.slice(0, 4).join(' / ') : 'none'));
 say('refused    · ' + (refused.length ? refused.join(' / ') : 'none'));
 await browser.close();

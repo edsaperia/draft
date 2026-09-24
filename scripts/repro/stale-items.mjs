@@ -191,7 +191,11 @@ if (!ONLY || ONLY === 'remake') {
   // column never had — which is the shape the reader's page is left holding
   const STANDS = 'Minutes are kept by whoever the meeting asks.';
   await decree([{ start: 0, end: 1, lines: ['# Charter', 'Adopted by the club.'] }], '');
-  await decree([{ start: 3, end: 4, lines: [STANDS] }], 'plainer');
+  // **and a second line in the same decree** (Q1534, SPEC §2.4 v0.141): a
+  // proposal covering the whole change stays in its race now (R-141), so to
+  // strand it the change carries a hunk the proposal does not cover
+  await decree([{ start: 1, end: 2, lines: ['Adopted by the club in 2026.'] },
+    { start: 3, end: 4, lines: [STANDS] }], 'plainer');
   say('  a line carried in above, and the clause itself rewritten');
   await sleep(9_000);
 
