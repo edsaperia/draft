@@ -208,11 +208,14 @@
            larger headings in documents, it makes them easier to skim*).
            The title two steps up, a part one, a chapter one major second
            up, a section at the body's own size in italic — size says
-           rank, so no rank is tracked or capitalised. ----------------- */
-    --h-title: 1.777rem;    /* 1.333² — the document's title, Regular    */
-    --h1: 1.333rem;         /* 1.333¹ — a part, Regular, ruled           */
-    --h2: 1.125rem;         /* 1.125¹ — a chapter, Bold                  */
-    --h3: 1rem;             /*         — a section, Italic               */
+           rank, so no rank is tracked or capitalised. **Every level one
+           step up** since Ed, 2026-09-24 (*the headings in the document are
+           too small; h3 seems to just be body sized italic text*), so the
+           smallest heading is larger than the text under it. ------------ */
+    --h-title: 2.369rem;    /* 1.333³ — the document's title, Regular    */
+    --h1: 1.777rem;         /* 1.333² — a part, Regular, ruled           */
+    --h2: 1.333rem;         /* 1.333¹ — a chapter, Bold                  */
+    --h3: 1.125rem;         /* 1.125¹ — a section, Italic                */
     /* the text face's line-height: Charis's x-height is large and its
        descenders long, so the body takes a step more air than the sans
        did (1.5). 16px × 1.55 is 24.8px, off the 4px grid by 0.8 — the
