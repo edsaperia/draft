@@ -272,9 +272,13 @@ async function decide(host: DemoHost, doc: LoadedDoc, bridge: EngineBridge, e: P
   const floor = Math.max(3, engine.raceOf(win, pen.now).floor);
   for (let k = 0; k < floor; k++) {
     const who = rota.next(exclude);
-    if (engine.currentVersion() !== before) break;
+    if (engine.currentVersion() !== before || engine.getCandidate(win).state !== 'live') break;
     bridge.judge(pen.next(), who, win, inc, 'a');
-    if (rival !== null && engine.getCandidate(rival).state === 'live') {
+    // since Q1534 a rival covering the winner stays live after the adoption
+    // (re-aimed at the winner's words), so the winner's own state is what
+    // says the judging is over — a judgment on an adopted candidate refuses
+    if (rival !== null && engine.getCandidate(win).state === 'live' &&
+      engine.getCandidate(rival).state === 'live') {
       bridge.judge(pen.next(), who, win, rival, 'a');
     }
   }

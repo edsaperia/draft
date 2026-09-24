@@ -325,12 +325,14 @@ await check('the bot outbox is closed to a stranger (Q1310)', async () => {
 
 // **The demo door ships by design** (design/DEMO.md Stage 2, §0.2; Q1535):
 // every control is an unknown path without DRAFT_DEMO_KEY on the host and a
-// 401 without the cookie it mints, and a wrong key mints nothing. Four wrong
-// tries here, one short of the lock (five a minute), so a re-run a minute on
-// is never itself locked out.
+// 401 without the cookie it mints, and a wrong key mints nothing. The bots'
+// rows (Stage 4) ask the same gate and are sampled too; that is six wrong
+// tries, so the fifth locks this runner's own address for five minutes — which
+// every assertion here accepts (429 is a refusal, and a locked key mints
+// nothing), so a re-run inside the lock still passes.
 await check('the demo panel is closed to a stranger (Q1535)', async () => {
   const panel = await get('/api/demo/panel');
-  const posts = await Promise.all(['/api/demo/reset', '/api/demo/seat'].map((p) =>
+  const posts = await Promise.all(['/api/demo/reset', '/api/demo/seat', '/api/demo/bots', '/api/demo/heartbeat'].map((p) =>
     fetch(base + p, { method: 'POST', redirect: 'manual',
       headers: { 'content-type': 'application/json' }, body: '{}' })));
   for (const r of [panel, ...posts]) {
@@ -340,7 +342,7 @@ await check('the demo panel is closed to a stranger (Q1535)', async () => {
   expect(!(key.headers.get('set-cookie') ?? '').includes('draft_demo='),
     'a wrong demo key set the demo cookie');
   return panel.status === 404 ? '404 — no DRAFT_DEMO_KEY on this host'
-    : `${panel.status} on the panel · ${posts.map((r) => r.status).join(' · ')} on reset and seat · no cookie for a wrong key`;
+    : `${panel.status} on the panel · ${posts.map((r) => r.status).join(' · ')} on reset, seat, bots and heartbeat · no cookie for a wrong key`;
 });
 
 await check('the demo document serves (Q1535)', async () => {

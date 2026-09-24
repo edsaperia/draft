@@ -243,6 +243,12 @@ case "$GROUP" in
     # the stub model, so CI never calls Claude, the walk's demo key, and a
     # ten-second heartbeat lapse — ▶️, ⏸️, the lapse, the run clock and the cap
     boot demo "$PORT_DEMO" DRAFT_DEMO_KEY=walk DRAFT_DEMO_STUB=1 DRAFT_DEMO_LAPSE_MS=10000; DEMO_BASE=$BOOTED
+    # the whole demo first (Stages 1–5): key, Reset, two phones, the bots on
+    # the demo document, a visitor's vote, ⏸️ ▶️, the lapse, Reset clearing
+    # it all — then the phones' own page walk — and only then demo-bots-walk,
+    # whose dev target route re-points the bots at a ladder document
+    walk "demo-walk" npm run demo-walk -- "$DEMO_BASE"
+    walk "demo-join" node scripts/repro/demo-join.mjs "$DEMO_BASE" --key=walk
     walk "demo-bots-walk" npm run demo-bots-walk -- "$DEMO_BASE"
     ;;
 

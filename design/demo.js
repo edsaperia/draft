@@ -37,7 +37,7 @@
     const seats = (d.seats || []).map((s) =>
       '<option value="' + esc(s.id) + '"' + (s.id === d.me ? ' selected' : '') + '>' +
       esc(s.name) + (s.founder ? ' — Founder' : '') + '</option>').join('');
-    const bots = d.bots; // Stages 4–5: null until the bots exist
+    const bots = d.bots; // the bots' readout (Stages 4–5); absent on a host without them
     wrap.innerHTML =
       '<b>demo</b>' +
       '<span style="color:#666" id="demostate">' + esc(d.state) + ' · gen ' + esc(d.generation) +
@@ -47,16 +47,12 @@
         (d.me ? '' : '<option value="" selected>— sit in a seat —</option>') + seats + '</select>' +
       '<button id="demoreset" style="' + BTN + '">↺ Reset</button>' +
       '<button id="demoqr" style="' + BTN + '">▦ QR</button>' +
-      '<span style="opacity:.5" title="the bots arrive in Stage 4">' +
-        '<button disabled style="' + BTN + '">▶️</button> ' +
-        '<button disabled style="' + BTN + '">⏸️</button> ' +
-        '<select disabled style="font:inherit"><option>8 bots</option></select> ' +
-        '<select disabled style="font:inherit"><option>lively</option></select> ' +
-        '<select disabled style="font:inherit"><option>Haiku 4.5</option></select>' +
-      '</span>' +
-      (bots ? '' : '') +
+      // the bot controls (Stages 4–5): ▶️/⏸️, count, pace, model and the
+      // readout with the spend so far, drawn by demo-bots.js into this panel
+      '<span id="demobotsrow" style="display:contents"></span>' +
       '<span id="demomsg" style="color:#b00"></span>';
     document.body.appendChild(wrap);
+    if (bots && window.DEMO_BOTS) window.DEMO_BOTS.mount(document.getElementById('demobotsrow'));
     const msg = (s) => { document.getElementById('demomsg').textContent = s; };
     document.getElementById('demoqr').onclick = () => qrModal(d.joinUrl || location.origin + '/d/demo?try=1', msg);
     document.getElementById('demoseat').onchange = (e) => {

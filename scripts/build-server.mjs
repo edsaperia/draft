@@ -32,8 +32,8 @@ const NEVER_IN_PROD = ['dev-ladder', 'ladder.invalid', 'Bellamy', '/api/dev/',
   // **The demo's dev half** (design/DEMO.md Stages 2 and 4): the demo panel
   // and its routes ship by design (§0.2) — the one sanctioned exception, which
   // is why `/api/demo/` is not a needle — but its stub model and the two
-  // variables that switch it on and shorten the heartbeat are dev-only
-  'StubDemoModel', 'DRAFT_DEMO_STUB', 'DRAFT_DEMO_LAPSE_MS',
+  // variables that switch it on and shorten the heartbeat are dev-only —
+  // listed once, with the bots' own needles, below
   // **The dev clock** (Q1455): the module's name as its dynamic import spells
   // it, and a sentence only its refusals carry. `/api/dev/` above already
   // covers the route path; these two say the module behind it was never
