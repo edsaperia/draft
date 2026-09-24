@@ -159,3 +159,48 @@ describe('withdrawal keeps its full refund (Q1454 answer 2)', () => {
     expect(s.balance('p1', 3000)).toBe(before);
   });
 });
+
+/**
+ * **A rival that stays in the race keeps its stake in play** (Ed 2026-09-24,
+ * Q1534 ruling 2; SPEC §7 → why: R-133, R-141). Re-aiming is not an exit, so
+ * nothing moves when a winner carries over it: withdrawn it comes back whole,
+ * closed as dominated in the very batch that adopted the winner it comes back
+ * as nothing, like any proposal that did not pass.
+ */
+describe('a re-aimed rival and its stake (Q1534)', () => {
+  /** p1's X and p2's W on line 1; `forW` prefer W to X, `ties` neither; p4 then carries W. */
+  function rivals(forW: string[], ties: string[] = []) {
+    const s = open(5, { quorum: null });
+    const before = s.balance('p1', 1000);
+    const x = s.submitCandidate(1000, { author: 'p1', rationale: 'x',
+      patch: rewrite(0, 1, 'Membership is by invitation.') }).id;
+    const w = s.submitCandidate(1100, { author: 'p2', rationale: 'w',
+      patch: rewrite(0, 1, 'Membership is open to members.') }).id;
+    const inc = s.races().find((r) => r.members.includes(w))!.incumbentId;
+    let t = 2000;
+    for (const who of forW) s.judge((t += 10), who, x, w, 'b');
+    for (const who of ties) s.judge((t += 10), who, x, w, 'tie');
+    s.judge(2100, 'p4', w, inc, 'a');
+    expect(s.getCandidate(w).state).toBe('adopted');
+    return { s, x, before, adoptedAt: 2100 };
+  }
+
+  it('re-aimed and withdrawn: the stake comes back whole', () => {
+    const { s, x, before } = rivals(['p3']);
+    expect(s.getCandidate(x).state).toBe('live');
+    expect(s.balance('p1', 2500)).toBe(before - s.constitution.stake);
+    s.withdraw(2500, x);
+    expect(s.balance('p1', 2500)).toBe(before);
+  });
+
+  it('closed as dominated in the adopting batch: nothing comes back', () => {
+    // p3 and p5 preferred W and p4 was indifferent: before W carried, two
+    // against X are not more than the two who had not answered (p1, p2), so no
+    // rival closed it; once W stands they are a vote each for the current
+    // text, a = 1 (p1), o = 2, w = 1 (p2), and 1 + 1 ≤ 2 closes it at once
+    const { s, x, before, adoptedAt } = rivals(['p3', 'p5'], ['p4']);
+    expect(s.getCandidate(x).state).toBe('retired');
+    expect(s.getCandidate(x).exit).toMatchObject({ t: adoptedAt, cause: 'dominated', refund: 0 });
+    expect(s.balance('p1', 3000)).toBe(before - s.constitution.stake);
+  });
+});

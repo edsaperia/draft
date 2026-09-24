@@ -55,6 +55,20 @@ export type RebaseResult =
   | { ok: true; hunks: Hunk[] }
   | { ok: false; conflicts: Span[] };
 
+/**
+ * **The three roads a live patch takes when the text changes under it**
+ * (SPEC §2.4 → why: R-141). `rebased`: it touches none of the change's
+ * lines, and its lines move while its words do not. `reaimed`: it **covers**
+ * the change — every changed hunk lies inside one of its own — so the
+ * document it would make is the document it would have made, and it now
+ * replaces the words the change put there. `stranded`: it touches the
+ * change's lines without covering them, and goes back to its author.
+ */
+export type CarryResult =
+  | { road: 'rebased'; hunks: Hunk[] }
+  | { road: 'reaimed'; hunks: Hunk[] }
+  | { road: 'stranded'; conflicts: Span[] };
+
 export type ComposeResult =
   | { ok: true; hunks: Hunk[] }
   | { ok: false };

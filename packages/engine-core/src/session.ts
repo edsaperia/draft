@@ -24,7 +24,7 @@ import type { Comparison, Fit, Outcome } from './ranking/types.js';
 import { applyPatch, footprint, footprintsConflict, validateHunks } from './text/patch.js';
 import { checkAttestation, stripAttestation } from './text/attest.js';
 import { splitLines, joinLines, normalizeLines } from './text/diff.js';
-import { rebaseHunks } from './text/rebase.js';
+import { carryHunks } from './text/rebase.js';
 import { fitDavidson } from './ranking/davidson.js';
 import { chainHash, sha256Hex, stableStringify } from './hash.js';
 import { Routing, contextKey, pairKey, type RoutingHost } from './routing.js';
@@ -123,6 +123,18 @@ export interface StoredComparison {
    */
   groundId: string | null;
   /**
+   * **The pair as it was cast, where a change has carried it since** (SPEC
+   * §4.4 → why: R-141). A `candidate-reaimed` event restamps a judgment in
+   * place — the wording the change adopted becomes *the current text* in
+   * `aId`/`bId`, and `groundId` becomes the ground the pair now stands on —
+   * so every live reader (the usable set, the lock, the feed's exclusion)
+   * reads the carried pair with no rule of its own. What the member actually
+   * compared is kept here, for the record: *who judged the winner* is a fact
+   * about the cast, and a count of it must not lose the votes that carried.
+   * Set once, by the first carry; a later carry keeps the original.
+   */
+  cast?: { aId: string; bId: string; groundId: string | null };
+  /**
    * Not in the log: the author's standing preference for their own live
    * candidate, derived against the current incumbent (SPEC §3.3, Q245(b)).
    *
@@ -151,6 +163,14 @@ export interface JudgmentView {
   superseded: boolean;
   /** Locked judgments stay in the log and record but no longer feed the live posterior and cannot be revised (SPEC §4.4). */
   locked: boolean;
+  /**
+   * **The pair it counts on now, where a change carried it** (R-141): `aId`
+   * and `bId` above stay the pair the member was shown, and this is the pair
+   * the engine reads it as since — the adopted wording renamed to the current
+   * text's id (an incumbent pseudo-id). Absent on every judgment no change
+   * has carried. `superseded` and `locked` are read on this pair.
+   */
+  carried?: { aId: string; bId: string };
 }
 
 interface RosterEntry {
@@ -189,7 +209,7 @@ interface RosterEntry {
 const GROUND_MOVERS: ReadonlySet<Event['type']> = new Set<Event['type']>([
   'candidate-submitted', 'candidate-withdrawn', 'candidate-retired',
   'candidate-undecided', 'candidate-confirmed', 'candidate-rebased',
-  'rebase-failed', 'candidate-awaiting-assent', 'co-signed', 'adopted',
+  'candidate-reaimed', 'rebase-failed', 'candidate-awaiting-assent', 'co-signed', 'adopted',
   'text-decreed', 'standing-set',
 ]);
 
@@ -749,6 +769,21 @@ export class Session {
         this.touch();
         break;
       }
+      case 'candidate-reaimed': {
+        // **A rival stays in the race** (SPEC §2.4, §4.4 → why: R-141). The
+        // patch moves first, so every ground below is read with this
+        // candidate where it now stands; the state does not move — it was
+        // live and it is live — and neither does `evidenceSince`, which only
+        // a re-made stranded proposal resets.
+        const c = this.candidate(event.id);
+        if (event.patch) {
+          c.patch = event.patch;
+          c.footprint = footprint(event.patch.hunks);
+        }
+        this.touch();
+        for (const seq of event.carried) this.carryJudgment(seq, event.by);
+        break;
+      }
       case 'rebase-failed': {
         const c = this.candidate(event.id);
         c.state = 'rebase-pending';
@@ -830,6 +865,50 @@ export class Session {
     if (author && refund > 0) credit(author.ledger, this.constitutionValue, t, refund);
     this.fitCache.clear();
     this.touch();
+  }
+
+  /**
+   * **One carried judgment, restamped** (R-141): the fold's half of
+   * `candidate-reaimed`. The wording the change put in place (`by`) is read
+   * as the current text from here on — renamed to the incumbent pseudo-id of
+   * the pair's own ground, which `buildUsableComparisons` normalises to its
+   * race's like any other — and the judgment takes the ground its pair now
+   * stands on, so it counts until the text under those lines changes again
+   * and then locks like any other (R-076). It is marked judged on that
+   * ground too, so the feed does not deal the member the question they have
+   * already answered.
+   */
+  private carryJudgment(seq: number, by: string | undefined): void {
+    const s = this.comparisonAt(seq);
+    if (s === undefined || s.kind !== 'edge') {
+      throw new Error(`candidate-reaimed carries seq ${seq}, which is no edge judgment`);
+    }
+    const cast = s.cast ?? { aId: s.aId, bId: s.bId, groundId: s.groundId };
+    const other = (id: string): string => (id === s.aId ? s.bId : s.aId);
+    const renamed = (id: string): string =>
+      by !== undefined && id === by ? this.raceRules.pairGround(other(id)) : id;
+    const aId = renamed(s.aId);
+    const bId = renamed(s.bId);
+    s.aId = aId;
+    s.bId = bId;
+    s.groundId = this.raceRules.pairGround(aId, bId);
+    s.cast = cast;
+    this.touch();
+    this.markJudged(this.judgedPairs, s.participantId, contextKey(aId, bId, s.groundId));
+  }
+
+  /** The stored comparison written at log `seq`: they are appended in order. */
+  private comparisonAt(seq: number): StoredComparison | undefined {
+    const list = this.comparisons;
+    let lo = 0;
+    let hi = list.length - 1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      const at = list[mid]!.seq;
+      if (at === seq) return list[mid];
+      if (at < seq) lo = mid + 1; else hi = mid - 1;
+    }
+    return undefined;
   }
 
   // The three helpers below are the only writers the fold shares, so each
@@ -1198,16 +1277,19 @@ export class Session {
         // Diagonals lock only when an endpoint's question left play.
         locked = [c.aId, c.bId].some((id) => !raceOfMember.has(id));
       }
+      // the pair as cast, for the record; the pair it counts on now beside it
+      // where a change carried it (R-141) — both flags above read the latter
       return {
         seq: c.seq,
         t: c.t,
         participantId: c.participantId,
-        aId: c.aId,
-        bId: c.bId,
+        aId: c.cast ? c.cast.aId : c.aId,
+        bId: c.cast ? c.cast.bId : c.bId,
         kind: c.kind,
         outcome: c.outcome,
         superseded,
         locked,
+        ...(c.cast ? { carried: { aId: c.aId, bId: c.bId } } : {}),
       };
     });
   }
@@ -1645,7 +1727,50 @@ export class Session {
    */
   setStanding(t: number, settingId: string, value: unknown): void {
     this.assertOpen();
+    // **The rivals on the setting keep what is still true of them** (SPEC
+    // §9.6 → why: R-141; Ed 2026-09-24, Q1534 ruling 7). A new standing is
+    // the ground shift for every value still racing on it, and a value's
+    // document — the setting at that value — does not depend on what stands,
+    // so every live rival is carried as a covering text rival is: its
+    // judgments against the value that now stands (where a race carried it,
+    // `by`) read as judgments against the standing, those between two rivals
+    // stand, and those against the value that stood lock. Decided here, on
+    // the ground as it stands before the event, and written down after it.
+    const plan = this.planSettingCarry(settingId, value);
     this.emit({ type: 'standing-set', t, settingId, value });
+    if (plan === null) return;
+    for (const id of plan.rivals) {
+      const carried = plan.carried.get(id);
+      if (carried === undefined) continue; // nothing of its to carry
+      this.emit({ type: 'candidate-reaimed', t, id,
+        ...(plan.by !== undefined ? { by: plan.by } : {}), carried });
+    }
+  }
+
+  /**
+   * What a new standing carries on its setting's race (R-141), or null where
+   * nothing races on the setting or the value does not move. `by` is the
+   * candidate that carried this very value — the latest adopted one proposing
+   * it — and absent where the standing moved by some other road (the
+   * Founder's ✒️, a constitutional motion), which carries only the rival
+   * pairs: nobody judged anything against that act.
+   */
+  private planSettingCarry(settingId: string, value: unknown):
+    { rivals: string[]; by: string | undefined; carried: Map<string, number[]> } | null {
+    const proposed = stableStringify(value);
+    if (this.settingsMap.has(settingId) &&
+      stableStringify(this.settingsMap.get(settingId)) === proposed) return null;
+    const onSetting = [...this.candidates.values()]
+      .filter((c) => c.setting?.settingId === settingId);
+    const rivals = onSetting.filter((c) => c.state === 'live').map((c) => c.id)
+      .sort((a, b) => candidateNum(a) - candidateNum(b));
+    if (rivals.length === 0) return null;
+    const winners = onSetting.filter((c) => c.state === 'adopted' &&
+      stableStringify(c.setting!.value) === proposed).map((c) => c.id)
+      .sort((a, b) => candidateNum(a) - candidateNum(b));
+    const by = winners.length > 0 ? winners[winners.length - 1] : undefined;
+    const carried = this.planCarry(by, rivals, (a, b) => this.raceRules.pairGround(a, b));
+    return { rivals, by, carried };
   }
 
   /** The standing value of a setting, as the host last reported it. */
@@ -1885,12 +2010,16 @@ export class Session {
    *
    * **After the adoptions, and on the state they left**, not off the snapshot
    * the batch was decided on. An adoption changes the text under its own
-   * lines, which locks every judgment cast against the old wording (§4.4) —
-   * so a rival on those lines has a = o = 0 and the whole of E still to
-   * answer the moment the batch lands, and is by construction not dominated.
-   * Reading the dominations before the batch would retire it on counts the
-   * adoption had just voided, which is the one way this rule could take away
-   * a proposal nobody had refused.
+   * lines, which locks every judgment cast against the old wording (§4.4);
+   * reading the dominations before the batch would retire a rival on counts
+   * the adoption had just voided, which is the one way this rule could take
+   * away a proposal nobody had refused. **And since R-141 it is what closes a
+   * re-aimed rival the room had already refused** (Q1534 ruling 2): a rival
+   * covering the winner keeps its judgments against it, now read against the
+   * current text, so one the room preferred the winner to can be closed in
+   * the very batch that adopted the winner — R-132's old note that such a
+   * rival has a = o = 0 when the batch lands was true only while those votes
+   * were voided.
    *
    * Oldest first, one event each, off one reading: a retirement shrinks its
    * race and could in principle change what is dominated behind it, and the
@@ -1976,9 +2105,15 @@ export class Session {
    * **The ground shift, in one place** (SPEC §2.4, R-058). Every door that
    * moves the document rebases the field through this loop and no other —
    * `adopt` above, and `decreeText`'s pen — so *ground-shifted, not orphaned*
-   * cannot drift between them. A live candidate on the same footprint is
-   * rebased, or put into `rebase-pending` where the rebase genuinely
-   * conflicts; **nothing retires anything**.
+   * cannot drift between them. Every live candidate takes one of §2.4's three
+   * roads (`carryHunks`, → why: R-141): **rebased** where it touches none of
+   * the changed lines; **re-aimed** where it covers them — it stays live in
+   * its race, now replacing the words the change put there, and keeps the
+   * judgments `planCarry` finds still true of it; **stranded** into
+   * `rebase-pending` where it touches them without covering them. **Nothing
+   * here retires anything**: a re-aimed rival the room already preferred the
+   * change to is closed by the domination pass that follows the batch
+   * (R-132), never by this loop.
    *
    * Setting candidates have no text ground and are untouched (Q390).
    *
@@ -2009,32 +2144,109 @@ export class Session {
       (c) => (c.state === 'live' || c.state === 'awaiting-assent') &&
         c.id !== exceptId && c.patch !== undefined,
     );
+    // the version the change was made against: every patch in `others` is
+    // still expressed against it, and the roads are decided on it
+    const before = this.linesAt(newVersion - 1);
+    const roads = new Map(others.map((c) =>
+      [c.id, carryHunks(c.patch!.hunks, adoptedHunks, before)] as const));
     for (const c of others) {
-      const result = rebaseHunks(c.patch!.hunks, adoptedHunks);
-      if (c.state === 'awaiting-assent') {
-        const same = result.ok && result.hunks.length === c.patch!.hunks.length &&
-          result.hunks.every((h, i) => {
-            const was = c.patch!.hunks[i]!;
-            return h.lines.length === was.lines.length && h.lines.every((l, j) => l === was.lines[j]);
-          });
-        if (!same) {
-          throw new Error(
-            `adopting ${exceptId} would rebase parked ${c.id} across its own span — ` +
-            'the sweep parks and adopts nothing over a standing park (R-100)',
-          );
-        }
+      if (c.state !== 'awaiting-assent') continue;
+      const result = roads.get(c.id)!;
+      const same = result.road === 'rebased' && result.hunks.length === c.patch!.hunks.length &&
+        result.hunks.every((h, i) => {
+          const was = c.patch!.hunks[i]!;
+          return h.lines.length === was.lines.length && h.lines.every((l, j) => l === was.lines[j]);
+        });
+      if (!same) {
+        throw new Error(
+          `adopting ${exceptId} would rebase parked ${c.id} across its own span — ` +
+          'the sweep parks and adopts nothing over a standing park (R-100)',
+        );
       }
-      if (result.ok) {
+    }
+    // **The rivals that stay in the race, and the votes they keep** (R-141):
+    // decided here, on the ground as it stood a moment before the change —
+    // `pairGroundOn` over the version just left, every footprint not yet
+    // moved — and written into the log, so the fold never decides it again.
+    const reaimed = others.filter((c) => roads.get(c.id)!.road === 'reaimed').map((c) => c.id);
+    const carried = this.planCarry(exceptId, reaimed,
+      (a, b) => this.raceRules.pairGroundOn(before, a, b));
+    for (const c of others) {
+      const result = roads.get(c.id)!;
+      if (result.road === 'rebased') {
         this.emit({
           type: 'candidate-rebased',
           t,
           id: c.id,
           patch: { baseVersion: newVersion, hunks: result.hunks },
         });
+      } else if (result.road === 'reaimed') {
+        this.emit({
+          type: 'candidate-reaimed',
+          t,
+          id: c.id,
+          patch: { baseVersion: newVersion, hunks: result.hunks },
+          by: exceptId,
+          carried: carried.get(c.id) ?? [],
+        });
       } else {
         this.emit({ type: 'rebase-failed', t, id: c.id, conflicts: result.conflicts });
       }
     }
+  }
+
+  /**
+   * **Which judgments a change carries, and on which event each is written**
+   * (SPEC §4.4 → why: R-141). Asked of the rivals the change carries —
+   * `reaimed`, in the order their events will be emitted — before any of
+   * those events lands, with `groundBefore` answering what a pair's ground was
+   * just before the change.
+   *
+   * A judgment carries when it compared two documents neither of which the
+   * change touched: a carried rival against `by`, the wording or value the
+   * change put in place, or two carried rivals against each other — and when
+   * it was still standing on its own ground at that moment (the usable set's
+   * own test: the ground unmoved, and no evidence reset since it was cast).
+   * **Against the displaced text it does not**: that text has left the field
+   * and nobody proposed it, so the judgment is a fact about text that no
+   * longer stands (R-076) and locks. Superseded judgments carry with the one
+   * that superseded them, so the latest-per-pair rule goes on reading the
+   * same answer.
+   *
+   * A judgment between two carried rivals is listed on the **later** of their
+   * two events, so that when it is restamped both wordings already stand
+   * where they now stand. Each list is in log order.
+   */
+  private planCarry(
+    by: string | undefined,
+    reaimed: readonly string[],
+    groundBefore: (aId: string, bId: string) => string,
+  ): Map<string, number[]> {
+    const order = new Map(reaimed.map((id, i) => [id, i] as const));
+    const out = new Map<string, number[]>();
+    const seen = new Set<number>();
+    const current = (id: string, seq: number): boolean => {
+      if (id.startsWith(INC_PREFIX)) return true;
+      const since = this.evidenceSince.get(id);
+      return since === undefined || seq >= since;
+    };
+    for (const x of reaimed) {
+      for (const c of this.edgesByCandidate.get(x) ?? []) {
+        if (seen.has(c.seq) || c.kind !== 'edge') continue;
+        const other = c.aId === x ? c.bId : c.aId;
+        let owner: string;
+        if (by !== undefined && other === by) owner = x;
+        else if (order.has(other)) owner = order.get(other)! > order.get(x)! ? other : x;
+        else continue; // against the displaced text, or a rival the change moved
+        if (c.groundId !== groundBefore(c.aId, c.bId)) continue;
+        if (!current(c.aId, c.seq) || !current(c.bId, c.seq)) continue;
+        seen.add(c.seq);
+        const list = out.get(owner);
+        if (list) list.push(c.seq); else out.set(owner, [c.seq]);
+      }
+    }
+    for (const list of out.values()) list.sort((a, b) => a - b);
+    return out;
   }
 
   // -------------------------------------------------------------------------

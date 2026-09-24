@@ -676,6 +676,42 @@ export type Event =
       conflicts: Span[];
     }
   | {
+      /**
+       * **A rival stays in the race** (SPEC §2.4, §4.4, §9.6 → why: R-141;
+       * Ed 2026-09-24, Q1534). The change that moved the ground under this
+       * candidate left the document it would make untouched — a text patch
+       * that **covers** the change (`carryHunks`' `reaimed` road), or any live
+       * value on a setting whose standing moved — so it stays live, now
+       * measured against what stands, and the judgments listed in `carried`
+       * go on counting.
+       *
+       * **The decision is the command path's, and it is written down here**:
+       * `carried` names every judgment, by its log `seq`, that was valid on its
+       * own ground just before the change and compared exactly the two
+       * documents it would compare now — this candidate against `by`, the
+       * wording or value the change put in place (read from here on as *the
+       * current text*), or this candidate against a rival carried by the same
+       * change. The fold restamps those and nothing else, so it never
+       * re-derives the choice and a log folds to one state however the rule
+       * that chose is later worded. A pair between two carried rivals is
+       * listed on whichever of the two events comes second, so that both
+       * wordings stand where they now stand when it is restamped. Judgments
+       * against the displaced text are not listed: they lock (R-076).
+       *
+       * `patch` is the text candidate's re-aimed patch against the new version,
+       * absent for a setting candidate, whose value does not move. `by` is
+       * absent where the standing moved by no candidate (the Founder's ✒️ on a
+       * setting, a constitutional motion). No log written before v0.141 holds
+       * this event, so every earlier log folds exactly as it did.
+       */
+      type: 'candidate-reaimed';
+      t: number;
+      id: string;
+      patch?: PatchSet;
+      by?: string;
+      carried: number[];
+    }
+  | {
       /** Author confirms a rebase-failed candidate against the new text; evidence resets. */
       type: 'candidate-confirmed';
       t: number;

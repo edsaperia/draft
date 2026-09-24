@@ -224,6 +224,13 @@ interface RunOut {
    * assert that they contain some rather than hoping they do.
    */
   dominations: number;
+  /**
+   * **Rivals that stayed in the race** (Q1534, R-141): `candidate-reaimed`
+   * events, text and setting, and how many judgments they carried. The carry
+   * restamps comparisons in place inside a fold, which is a mutation the memo
+   * must see, so the scripts assert they contain some.
+   */
+  reaims: { text: number; setting: number; carried: number };
 }
 
 /**
@@ -262,7 +269,13 @@ function differential(
   expect(replayWarm.allCandidates()).toEqual(cold(() => replayCold.allCandidates()));
   return { hash: a.rollingHash(), entries: a.log.length, acts, refusals,
     dominations: a.log.filter((e) => e.event.type === 'candidate-retired'
-      && (e.event as { reason?: string }).reason === 'dominated').length };
+      && (e.event as { reason?: string }).reason === 'dominated').length,
+    reaims: a.log.reduce((r, e) => {
+      const ev = e.event;
+      if (ev.type !== 'candidate-reaimed') return r;
+      return { text: r.text + (ev.patch ? 1 : 0), setting: r.setting + (ev.patch ? 0 : 1),
+        carried: r.carried + ev.carried.length };
+    }, { text: 0, setting: 0, carried: 0 }) };
 }
 
 /**
@@ -296,6 +309,8 @@ const SCRIPT_MS = 120_000;
  * room ever refuses a wording hard enough is the seed's business.
  */
 const closings: number[] = [];
+/** And how many re-aims they made (Q1534), read at the end the same way. */
+const reaimings: RunOut['reaims'][] = [];
 
 describe('the fold-live memo derives what no memo derives (Q1326)', () => {
   for (const seed of ['moon', 'oak', 'clerk']) {
@@ -305,6 +320,7 @@ describe('the fold-live memo derives what no memo derives (Q1326)', () => {
       expect(out.acts).toBeGreaterThan(70);
       expect(out.entries).toBeGreaterThan(90);
       closings.push(out.dominations);
+      reaimings.push(out.reaims);
     }, SCRIPT_MS);
   }
 
@@ -324,6 +340,7 @@ describe('the fold-live memo derives what no memo derives (Q1326)', () => {
     // step-by-step differential is the assertion; this is its floor.
     expect(out.acts).toBeGreaterThan(60);
     closings.push(out.dominations);
+    reaimings.push(out.reaims);
   }, SCRIPT_MS);
 
   it('the races read at two clocks on one state differ only in the floor they were read at', () => {
@@ -365,6 +382,68 @@ describe('the fold-live memo derives what no memo derives (Q1326)', () => {
   it('the scripts above closed proposals the room could no longer pass (Q1440)', () => {
     expect(closings.length).toBe(4);
     expect(closings.reduce((a, x) => a + x, 0)).toBeGreaterThan(0);
+  });
+
+  it('the scripts above kept rivals in the race and carried their judgments (Q1534)', () => {
+    expect(reaimings.length).toBe(4);
+    const sum = reaimings.reduce((a, x) => ({ text: a.text + x.text,
+      setting: a.setting + x.setting, carried: a.carried + x.carried }),
+    { text: 0, setting: 0, carried: 0 });
+    expect(sum.text).toBeGreaterThan(0);
+  });
+
+  /**
+   * **The carry itself, step for step** (Q1534, R-141). The random scripts
+   * re-aim rivals by the dozen but rarely deal a rival pair, so they seldom
+   * carry a judgment; this script does it on purpose — three rivals on one
+   * line, every rival pair judged, the adoption, the carry, the domination
+   * that follows, a decree over the survivor and the settings carry — and
+   * compares the whole published picture after every act, memo off against
+   * memo live under audit.
+   */
+  it('a scripted re-aim with carried judgments agrees at every step', () => {
+    const a = cold(() => open('carry'));
+    const b = open('carry');
+    const line0 = (s: Session, words: string) => ({ baseVersion: s.currentVersion(),
+      hunks: [{ start: 0, end: 1, lines: [words] }] });
+    const race = (s: Session, id: string) => s.races().find((r) => r.members.includes(id))!;
+    const acts: Array<(s: Session, t: number) => void> = [
+      (s, t) => { s.submitCandidate(t, { author: 'p1', rationale: 'a', patch: line0(s, 'Clause 1: A.') }); },
+      (s, t) => { s.submitCandidate(t, { author: 'p2', rationale: 'b', patch: line0(s, 'Clause 1: B.') }); },
+      (s, t) => { s.submitCandidate(t, { author: 'p3', rationale: 'c', patch: line0(s, 'Clause 1: C.') }); },
+      (s, t) => { s.judge(t, 'p4', 'c1', 'c2', 'b'); },
+      (s, t) => { s.judge(t, 'p5', 'c2', 'c3', 'a'); },
+      (s, t) => { s.judge(t, 'p1', 'c1', 'c3', 'a'); },
+      (s, t) => { s.judge(t, 'p3', 'c1', 'c2', 'tie'); },
+      (s, t) => { s.judge(t, 'p5', 'c1', 'c2', 'a'); },
+      // c2 carries; c1 and c3 cover it and stay, their pairs with c2 carried
+      (s, t) => { s.judge(t, 'p4', 'c2', race(s, 'c2').incumbentId, 'a'); },
+      // p2 prefers what now stands to c1: 2 for, 2 against, nobody left — closed
+      (s, t) => { s.judge(t, 'p2', 'c1', race(s, 'c1').incumbentId, 'b'); },
+      (s, t) => { s.tick(t); },
+      (s, t) => { s.decreeText(t, { author: 'p1', rationale: 'd', patch: line0(s, 'Clause 1: D.') }); },
+      (s, t) => { s.submitCandidate(t, { author: 'p1', rationale: 'x', setting: { settingId: 's1', value: { n: 7 } } }); },
+      (s, t) => { s.submitCandidate(t, { author: 'p2', rationale: 'y', setting: { settingId: 's1', value: { n: 8 } } }); },
+      // c4 is the decree; c5 and c6 race on s1, and p3 prefers c5 to c6
+      (s, t) => { s.judge(t, 'p3', 'c5', 'c6', 'a'); },
+      (s, t) => { s.setStanding(t, 's1', { n: 9 }); },
+      (s, t) => { s.tick(t); },
+    ];
+    let t = 1000;
+    for (const [n, act] of acts.entries()) {
+      t += 60 * 60_000;
+      const refusedCold = cold(() => attempt(a, (x) => act(x, t)));
+      const refusedWarm = audited(() => attempt(b, (x) => act(x, t)));
+      expect(refusedWarm, `step ${n}`).toEqual(refusedCold);
+      expect(refusedCold, `step ${n}`).toBeNull();
+      expect(audited(() => picture(b, t)), `step ${n}`).toEqual(cold(() => picture(a, t)));
+    }
+    const reaimed = a.log.map((e) => e.event).filter((e) => e.type === 'candidate-reaimed');
+    // text re-aims from the adoption and the decree, a setting one from the standing
+    expect(reaimed.some((e) => e.type === 'candidate-reaimed' && e.patch && e.carried.length > 0)).toBe(true);
+    expect(reaimed.some((e) => e.type === 'candidate-reaimed' && !e.patch && e.carried.length > 0)).toBe(true);
+    expect(Session.replay([...b.log]).rollingHash()).toBe(a.rollingHash());
+    expect(cold(() => Session.replay([...a.log]).judgments())).toEqual(audited(() => b.judgments()));
   });
 
   it('both switches are off once the tests have had them', () => {
