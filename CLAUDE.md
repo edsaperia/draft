@@ -245,6 +245,8 @@ Use these names in all discussion, commits, and code. Literal and stable beats e
   - `demo-key` [concept] — `DRAFT_DEMO_KEY` and the `draft_demo` cookie it mints: what makes a browser Ed's. DEMO.md Stage 2.
   - `demo-panel` [concept] — Ed's controls on the demo document, bottom-left, off the design system like the `ladder-bar`: ⏸️ / ▶️, count, pace, model, reset, QR, seat. DEMO.md Stage 2.
   - `demo-join` [concept] — the stranger's *Try it* card and `POST /api/demo/join`: one tap, a made-up name, a member, one seat per device. DEMO.md Stage 3.
+    - `lapseVisitors` [symbol] — a visitor's seat resigns on the minute tick 30 minutes after its last action (D8), its departure news acknowledged for the room. SURFACE Y32; guard `demo-join.test.ts`.
+    - `demo-qr` [concept] — the panel's full-screen, black-on-white QR code for the whole room, encoding `<base>/d/demo?try=1`; drawn by the vendored `design/qr.js`. Guard `scripts/repro/demo-join.mjs`.
   - `demo-bots` [concept] — the speakers as server-side members acting through the member command path, paced, and paused by heartbeat, run clock and spend cap. DEMO.md Stages 4–5.
 - `spectator-commentary` [concept] — optional LLM commentating view for convention spectators, fed exclusively by the spectator-api; unlike the sim's omniscient `commentator`, it sees no private data (Q42, backlog).
 
