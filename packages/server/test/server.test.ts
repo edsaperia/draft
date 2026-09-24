@@ -497,8 +497,13 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     };
     const rich = async (cookie: string) => (await textView(cookie)) as unknown as RichView;
     const v1 = (await rich(bo)).textVersion;
+    // r1 rewrites the line **and** inserts a heading above it, so r2 — the
+    // line alone — touches r1 without covering it and strands when r1 carries
+    // (SPEC §2.4 → why: R-141); a rival covering the winner stays in the race
+    // instead, which `rivals-stay.test.ts` walks
     const r1 = await cmd(bo, 'propose-text', { baseVersion: v1,
-      hunks: [{ start: 0, end: 1, lines: ['The clubhouse shall be kept open every day.'] }], why: 'daily' }) as { id: string; raceId: string };
+      hunks: [{ start: 0, end: 0, lines: ['# Hours'] },
+        { start: 0, end: 1, lines: ['The clubhouse shall be kept open every day.'] }], why: 'daily' }) as { id: string; raceId: string };
     const r2 = await cmd(cy, 'propose-text', { baseVersion: v1,
       hunks: [{ start: 0, end: 1, lines: ['The clubhouse shall never close.'] }], why: 'never' }) as { id: string; raceId: string };
     expect(r2.raceId).toBe(r1.raceId);
@@ -573,8 +578,8 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     expect(stranded.state).toBe('rebase-pending');
     // one span per hunk, in the current text's coordinates: the line r1 put
     // there, not the line number r2 was written against
-    expect(stranded.at).toEqual([{ start: 0, end: 1 }]);
-    expect(strandedView.text.split('\n')[0]).toBe('The clubhouse shall be kept open every day.');
+    expect(stranded.at).toEqual([{ start: 1, end: 2 }]);
+    expect(strandedView.text.split('\n')[1]).toBe('The clubhouse shall be kept open every day.');
     // and it is cy's alone: nobody else is told anything about it
     const adaOnStranded = await (await fetch(`${base}/api/d/${created.slug}/view`,
       { headers: { cookie: ada } })).json() as MemberViewPayload;
@@ -587,7 +592,7 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     const cyWalletBefore = (await rich(cy)).wallet;
     const remade = await cmd(cy, 'rebase-text', { candidate: r2.id,
       baseVersion: strandedView.textVersion,
-      hunks: [{ start: 0, end: 1, lines: ['The clubhouse shall be kept open every day, and never closed without a week’s notice.'] }],
+      hunks: [{ start: 1, end: 2, lines: ['The clubhouse shall be kept open every day, and never closed without a week’s notice.'] }],
       why: 'the daily rule carried; this is the part of mine it left out' }) as { id: string };
     expect(remade.id).toBe(r2.id);                       // the id is kept, not re-issued
     const afterRemake = await rich(cy);

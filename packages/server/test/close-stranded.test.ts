@@ -61,11 +61,12 @@ describe('the close files a stranded proposal into the record (Q1353)', () => {
   it('carries its wording, what it displaced, and the span it now descends to', () => {
     const { doc, bridge, bo, cy } = constituted();
     const v0 = bridge.engine.currentVersion();
-    // bo rewrites the clubhouse line as two lines…
-    const winner = bridge.proposeText(10, bo, { baseVersion: v0, hunks: [{ start: 1, end: 2,
+    // bo rewrites the clubhouse line and the meetings line as one run of two…
+    const winner = bridge.proposeText(10, bo, { baseVersion: v0, hunks: [{ start: 1, end: 3,
       lines: ['The clubhouse is kept open every day.', 'It is never closed without notice.'] }] },
     'every day, with notice');
-    // …and cy rewrites the same line differently, so the two race
+    // …and cy rewrites the clubhouse line alone, so the two race — and cy's
+    // sits inside bo's, touching the change without covering it (R-141)
     const rival = bridge.proposeText(11, cy, { baseVersion: v0,
       hunks: [{ start: 1, end: 2, lines: ['The clubhouse is kept open at weekends.'] }] },
     'weekends are enough');
