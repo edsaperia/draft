@@ -41,6 +41,7 @@ import { authTable } from './routes-auth.js';
 import { memberTable } from './routes-member.js';
 import { feedTable } from './routes-feed.js';
 import { surfaceTable } from './routes-surface.js';
+import { Demo } from './demo.js';
 
 /**
  * **The route table, in the chain's own order** (Q1352 (m), (n)). The order
@@ -77,6 +78,8 @@ export interface DraftServer {
   mailer: Mailer;
   /** The durable mail queue and its sender (finding 15). */
   outbox: MailOutbox;
+  /** The demo document's host half (design/DEMO.md Stage 1). */
+  demo: Demo;
   /** Drive the clocks (§9.5/§9.5a): call periodically; safe to call any time. */
   tick(nowMs?: number): Promise<void>;
   /**
@@ -198,6 +201,19 @@ export async function createDraftServer(cfg: ServerConfig,
   const httpsOn = cfg.baseUrl.startsWith('https://');
 
   /**
+   * **The demo document** (design/DEMO.md Stage 1; Q1535): built in memory
+   * from the preset once the store has loaded, so a real document already
+   * wearing the address is seen and never shadowed. Through the write path
+   * like any document, which is what drives its engine; nothing of it
+   * reaches the store or the outbox (D1, D3).
+   */
+  const demo = new Demo({
+    store, designDir: cfg.designDir, enabled: cfg.demo === true,
+    commit: (doc, nowMs) => writes.commit(doc, nowMs),
+  });
+  await demo.boot();
+
+  /**
    * What every route family reads (Q1352 (m)). Made once; the three surface
    * fields are mutable because a surface upload (Q1347) moves where the page
    * files come from and which commit answers in `x-build`, and both the
@@ -205,7 +221,7 @@ export async function createDraftServer(cfg: ServerConfig,
    */
   const ctx: RouteContext = {
     cfg, store, persistence, auth, mailer, outbox, stash, commits, writes, pause,
-    errors, races, bootedAtMs, httpsOn,
+    errors, races, bootedAtMs, httpsOn, demo,
     designDir: cfg.designDir,
     buildSha: cfg.buildSha,
     surfaceSha: null,
@@ -353,5 +369,5 @@ export async function createDraftServer(cfg: ServerConfig,
     return closing;
   };
 
-  return { server, store, auth, mailer, outbox, tick, close };
+  return { server, store, auth, mailer, outbox, demo, tick, close };
 }

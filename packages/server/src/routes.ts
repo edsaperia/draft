@@ -37,6 +37,7 @@ import type { MailOutbox } from './outbox.js';
 import type { Stash } from './stash.js';
 import type { PauseState, WritePath } from './write-path.js';
 import type { RaceCounts } from './error-log.js';
+import type { Demo } from './demo.js';
 import { str } from './commands.js';
 
 /**
@@ -68,6 +69,8 @@ export interface RouteContext {
    *  the poll, answered by the page and counted rather than logged */
   readonly races: RaceCounts;
   readonly bootedAtMs: number;
+  /** the demo document's host half (design/DEMO.md Stage 1) — off unless `cfg.demo` */
+  readonly demo: Demo;
   /** an https baseUrl: HSTS, the proxy redirect and the cookie's Secure flag */
   readonly httpsOn: boolean;
   /** **mutable** (Q1347): where the page files are served from, and which

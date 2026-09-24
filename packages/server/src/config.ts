@@ -87,6 +87,13 @@ export interface ServerConfig {
    * like an unknown path.
    */
   adminKey?: string | null;
+  /**
+   * **The demo document** (design/DEMO.md Stage 1; Q1535): `/d/demo` built
+   * in memory from `design/demo/pizzacon-2027.md` at boot. On unless
+   * `DRAFT_DEMO=off`; a config that does not say — every test's — is off, so
+   * no existing test's document count moves.
+   */
+  demo?: boolean;
   /** HMAC secret for cookies and tokens at rest. */
   secret: string;
   /**
@@ -225,6 +232,7 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ServerConfi
     // open it to whoever sends an empty bearer
     botKey: (env.DRAFT_BOT_KEY ?? '').trim() || null,
     adminKey: (env.DRAFT_ADMIN_KEY ?? '').trim() || null,
+    demo: (env.DRAFT_DEMO ?? '').trim() !== 'off',
     notifyEmail: (env.DRAFT_NOTIFY_EMAIL ?? 'edsaperia@gmail.com') || null,
     secret: env.DRAFT_SECRET ?? persistedSecret(dataDir),
     trustProxy: env.DRAFT_TRUST_PROXY !== undefined

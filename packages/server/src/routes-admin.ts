@@ -97,6 +97,9 @@ export const healthTable: Route[] = [
         // errors below; production holds none after the wipe, so a non-zero
         // here is a data dir that has not had its own
         documentsSkipped: ctx.store.skippedPreShape().length,
+        // the demo document (design/DEMO.md Stage 1): off, built, slug-held
+        // or failed, which generation, and when — never who is in it
+        demo: ctx.demo.status(),
         // a document whose replay threw at boot (Q1322): it answers 404
         // until its log is repaired, and the count here is the only place
         // an operator sees it without the boot log
