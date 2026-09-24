@@ -38,8 +38,16 @@
       '<option value="' + esc(s.id) + '"' + (s.id === d.me ? ' selected' : '') + '>' +
       esc(s.name) + (s.founder ? ' — Founder' : '') + '</option>').join('');
     const bots = d.bots; // the bots' readout (Stages 4–5); absent on a host without them
+    // **Folds to its own button** (Ed, 2026-09-24: *the control box takes up
+    // a lot of the screen; please make it so I can toggle it*): the rest of
+    // the panel hides behind the one toggle, remembered per browser; the bots'
+    // heartbeat runs on regardless, since hiding a node stops no timer
+    let folded = false;
+    try { folded = localStorage.getItem('demoPanelFolded') === '1'; } catch (e) { /* no storage */ }
     wrap.innerHTML =
-      '<b>demo</b>' +
+      '<button id="demofold" style="' + BTN + ';font-weight:bold" title="Show or hide the demo controls">' +
+        (folded ? '▸ demo' : '▾ demo') + '</button>' +
+      '<span id="demobody" style="display:' + (folded ? 'none' : 'contents') + '">' +
       '<span style="color:#666" id="demostate">' + esc(d.state) + ' · gen ' + esc(d.generation) +
         (d.builtAt ? ' · built ' + esc(ago(d.builtAt)) : '') +
         ' · ' + esc(d.visitors || 0) + ' visitors</span>' +
@@ -50,8 +58,16 @@
       // the bot controls (Stages 4–5): ▶️/⏸️, count, pace, model and the
       // readout with the spend so far, drawn by demo-bots.js into this panel
       '<span id="demobotsrow" style="display:contents"></span>' +
-      '<span id="demomsg" style="color:#b00"></span>';
+      '<span id="demomsg" style="color:#b00"></span>' +
+      '</span>';
     document.body.appendChild(wrap);
+    const fold = document.getElementById('demofold');
+    fold.onclick = () => {
+      folded = !folded;
+      document.getElementById('demobody').style.display = folded ? 'none' : 'contents';
+      fold.textContent = folded ? '▸ demo' : '▾ demo';
+      try { localStorage.setItem('demoPanelFolded', folded ? '1' : '0'); } catch (e) { /* no storage */ }
+    };
     if (bots && window.DEMO_BOTS) window.DEMO_BOTS.mount(document.getElementById('demobotsrow'));
     const msg = (s) => { document.getElementById('demomsg').textContent = s; };
     document.getElementById('demoqr').onclick = () => qrModal(d.joinUrl || location.origin + '/d/demo?try=1', msg);
