@@ -432,6 +432,27 @@ describe('🛡️ on the Text parks per footprint (R-100)', () => {
     expect(s.getCandidate(rival.id).state).toBe('live');
   });
 
+  it('an accepted park carries the votes cast against it before it parked (R-141)', () => {
+    const s = openSession({ textAssent: true }, 5);
+    const v0 = s.currentVersion();
+    const first = s.submitCandidate(50, { author: 'p2',
+      patch: rewrite(v0, 2, 'Decisions are made by a show of hands.'), rationale: 'hands' });
+    const rival = s.submitCandidate(55, { author: 'p4',
+      patch: rewrite(v0, 2, 'Decisions are made by lot.'), rationale: 'lot' });
+    // p5 prefers the one that will park to the rival; p3 then carries `first`
+    s.judge(58, 'p5', rival.id, first.id, 'b');
+    judgeFor(s, 60, 'p3', first.id, first.raceId);
+    expect(s.getCandidate(first.id).state).toBe('awaiting-assent');
+    s.assent(90, first.id, 'accept');
+    const re = s.log.map((e) => e.event).find((e) => e.type === 'candidate-reaimed');
+    expect(re).toMatchObject({ id: rival.id, by: first.id });
+    expect(re!.type === 'candidate-reaimed' && re!.carried).toHaveLength(1);
+    const race = s.races().find((r) => r.members.includes(rival.id))!;
+    expect(race.approvals).toBe(1);   // p4's own
+    expect(race.comparisons).toBe(1); // p5's, carried as a vote for the current text
+    expect(Session.replay(s.log).rollingHash()).toBe(s.rollingHash());
+  });
+
   it('a park is rebased under an ordinary adoption too, and nothing adopts across its span', () => {
     const s = openSession({ textAssent: true }, 5);
     const v0 = s.currentVersion();
