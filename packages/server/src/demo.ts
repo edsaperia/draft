@@ -16,9 +16,26 @@
 import { readFileSync } from 'node:fs';
 import { buildDemo, DEMO_SLUG } from './demo-build.js';
 import type { DemoBuild, DemoHost, DemoSeat } from './demo-build.js';
+import { randomBytes } from 'node:crypto';
+import { visitorName } from './demo-names.js';
 import { parsePreset, presetPath } from './demo-preset.js';
 import type { PresetError } from './demo-preset.js';
+import { lastTOf } from './history-pen.js';
 import type { LoadedDoc } from './store.js';
+
+/** A visitor's seat lapses this long after its last action (D8; Q1535). */
+export const VISITOR_LAPSE_MS = 30 * 60_000;
+
+/**
+ * **The grants a visitor's seat arrives with already accepted** (D7; Q1535):
+ * 💡 proposing, ⚖️ judging and 🏛️ the constitutional voice — the page's own
+ * acknowledgement keys (`ACK_KEYS` in session-view.html), so the page adds
+ * them to what it remembers and draws the wallets full. On the demo document,
+ * for a visitor's seat, and nowhere else.
+ */
+export const VISITOR_PRE_ACKED = ['canpropose', 'canjudge', 'grant-voice'] as const;
+
+export interface DemoJoin { member: string; name: string; rejoined: boolean }
 
 export type DemoState = 'off' | 'built' | 'slug-held' | 'failed';
 
@@ -37,10 +54,118 @@ export class Demo {
   /** Why the last build or parse failed, for the log and the panel. */
   lastErrors: PresetError[] = [];
 
+  /**
+   * **The visitors of this generation** (Stage 3): each seat the join made,
+   * and the instant of its last action — the join, then every command. Memory
+   * only, like everything demo-shaped; a reset starts it empty, since the new
+   * generation's id makes every old cookie a stranger's.
+   */
+  private readonly visitors = new Map<string, number>();
+
   constructor(private readonly host: DemoHost & {
     designDir: string;
     enabled: boolean;
+    /** The write path's clock for a document (`WritePath.tOf`); absent, the
+     *  later of now and the log's last instant. */
+    tOf?: (doc: LoadedDoc, nowMs: number) => number;
+    /** How long a visitor's seat outlives its last action (D8); tests shorten it. */
+    visitorLapseMs?: number;
   }) {}
+
+  private tOf(doc: LoadedDoc, nowMs: number): number {
+    return this.host.tOf ? this.host.tOf(doc, nowMs) : Math.max(nowMs, lastTOf(doc.cs));
+  }
+
+  /** Is this member a visitor's seat of the current generation? */
+  isVisitor(member: string): boolean {
+    return this.visitors.has(member);
+  }
+
+  /** How many visitors sit in the current generation. */
+  visitorCount(): number {
+    return this.visitors.size;
+  }
+
+  /** A visitor acted: their seat's 30 minutes start again. Anybody else: nothing. */
+  touch(member: string, nowMs: number): void {
+    if (this.visitors.has(member)) this.visitors.set(member, nowMs);
+  }
+
+  /**
+   * **One tap, one seat** (Stage 3; D2): the host acts on the Founder's
+   * standing ✒️ on ✉️ — the only stagehand act after the build — inviting a
+   * made-up address that can never receive mail, arriving it at once and
+   * naming it. `seated` is the member this browser's cookie already names in
+   * this generation, if it is still a member: that seat is answered and no
+   * second one is made (one seat per device, Q1535).
+   */
+  async join(nowMs: number, seated: string | null): Promise<DemoJoin> {
+    const doc = this.doc();
+    if (doc === null) throw new Error('the demo document is not built');
+    const cs = doc.cs;
+    if (seated !== null) {
+      const rec = cs.memberRecords().get(seated);
+      if (rec && !rec.removed) {
+        this.touch(seated, nowMs);
+        return { member: seated, name: rec.name ?? '', rejoined: true };
+      }
+      if (seated === cs.convenorRecord().id) {
+        return { member: seated, name: cs.convenorRecord().name ?? '', rejoined: true };
+      }
+    }
+    const names = new Set<string>();
+    for (const m of cs.memberRecords().values()) if (m.name) names.add(m.name);
+    const conv = cs.convenorRecord().name;
+    if (conv) names.add(conv);
+    const name = visitorName(names);
+    const t = this.tOf(doc, nowMs);
+    const email = `visitor.${randomBytes(6).toString('hex')}@demo.invalid`;
+    const member = cs.invite(t, email);
+    cs.arrive(t, member);
+    cs.setIdentity(t, member, { name, picture: null });
+    this.visitors.set(member, nowMs);
+    await this.host.commit(doc, nowMs);
+    return { member, name, rejoined: false };
+  }
+
+  /**
+   * **A visitor's seat lapses 30 minutes after its last action** (D8;
+   * Q1535): on the minute tick the member resigns — the ordinary leaving
+   * road, so they stop counting in every quorum at once — and their cookie
+   * then reads the stranger's door, where a rescan joins anew. The room's
+   * news of each departure (SURFACE E31) is acknowledged for everybody in the
+   * same breath: a room of phones leaving one by one would otherwise stack a
+   * 🥾 card per visitor on every seat, the Founder's on the big screen
+   * included. Bot seats and the Founder's never lapse — they are not visitors.
+   */
+  async lapseVisitors(nowMs: number): Promise<string[]> {
+    const doc = this.doc();
+    if (doc === null || this.visitors.size === 0) return [];
+    const cs = doc.cs;
+    const lapseMs = this.host.visitorLapseMs ?? VISITOR_LAPSE_MS;
+    const gone: string[] = [];
+    for (const [member, last] of [...this.visitors]) {
+      if (nowMs - last < lapseMs) continue;
+      this.visitors.delete(member);
+      const rec = cs.memberRecords().get(member);
+      if (!rec || rec.removed) continue;
+      const t = this.tOf(doc, nowMs);
+      try {
+        cs.resign(t, member);
+      } catch (e) {
+        console.error(`[demo] a visitor's seat (${member}) did not lapse: ${(e as Error).message}`);
+        continue;
+      }
+      for (const m of cs.memberRecords().values()) {
+        if (m.departuresOwed.has(member)) {
+          try { cs.ackDeparture(t, m.id, member); } catch { /* not owed after all */ }
+        }
+      }
+      gone.push(member);
+    }
+    if (gone.length > 0) await this.host.commit(doc, nowMs);
+    return gone;
+  }
 
   private readonly beforeRebuild: Array<(old: LoadedDoc) => void> = [];
 
@@ -101,6 +226,8 @@ export class Demo {
     // bots, Stage 4): a reset is the end of their room
     if (old !== null) for (const fn of this.beforeRebuild) fn(old.doc);
     if (old !== null) this.host.store.retire(old.doc.id);
+    // every visitor went with the generation: their cookies name the old id
+    this.visitors.clear();
     try {
       this.current = await buildDemo(this.host, preset, { nowMs });
     } catch (e) {

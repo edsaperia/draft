@@ -16,6 +16,12 @@
  * Spliced into the route table before the static rows, so `/d/demo?demokey=`
  * is claimed ahead of the page; without the query the row declines and the
  * page serves as ever.
+ *
+ * **One row is public** (Stage 3): `POST /api/demo/join`, the stranger's
+ * 👋 *Try it*, which needs no key — anybody who opens the demo may join it —
+ * and is narrow in the same first way: it acts on the demo document alone,
+ * takes no id or slug, and answers an unknown path's 404 wherever there is no
+ * demo document.
  */
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { DEMO_COOKIE, DEMO_COOKIE_MS, demoDoc, demoKeyMatches, guessFailed, guessLocked, hasDemoKey,
@@ -60,13 +66,49 @@ function panelOf(ctx: RouteContext, r: Req): Record<string, unknown> {
     ...ctx.demo.status(),
     seats: ctx.demo.seats(),
     me,
+    // the QR modal's one address (Stage 3): the host's own, so production
+    // encodes exactly https://docs.vote/d/demo?try=1 whatever the tab's origin
+    joinUrl: `${ctx.cfg.baseUrl.replace(/\/+$/, '')}/d/demo?try=1`,
+    visitors: ctx.demo.visitorCount(),
     errors: ctx.demo.lastErrors,
     // Stages 4–5 fill this; drawn and dark until then
     bots: null,
   };
 }
 
+/**
+ * **The join's brake, per address** (DEMO.md §9, 1535 (c)): not a member cap
+ * — Ed ruled there is none — but a brake on a script. A room of phones on one
+ * venue Wi-Fi shares one address, so it is generous: 120 joins in ten
+ * minutes, four times the plan's first figure, since a rejoin spends one too.
+ */
+export const JOIN_PER_IP = 120;
+
 export const demoTable: Route[] = [
+  {
+    name: 'POST /api/demo/join — a visitor\'s one-tap seat (DEMO.md Stage 3)',
+    method: 'POST',
+    match: '/api/demo/join',
+    handler: async (ctx, r) => {
+      const doc = demoDoc(ctx);
+      // no demo document on this host: an unknown path, as every demo row
+      if (doc === null) { json(r.res, 404, { error: 'not found' }); return true; }
+      if (crossSite(r.req, r.res, r.baseOrigin)) return true;
+      if (r.tooMany('demo-join', JOIN_PER_IP)) return true;
+      await readJson(r.req);
+      if (doc.cs.closed) { json(r.res, 409, { error: 'the demo document has closed' }); return true; }
+      // **one seat per device** (Q1535): the member cookie this browser holds
+      // for this generation, if any, is its seat — an applicant's never is
+      const session = cookieSession(ctx.auth, r.req, doc.id);
+      const seated = session !== null && session.applicantId === null ? session.memberId : null;
+      const out = await ctx.demo.join(r.nowMs, seated);
+      if (!out.rejoined) {
+        setCookie(r.res, doc.id, ctx.auth.cookieFor(doc.id, out.member, r.nowMs), ctx.httpsOn);
+      }
+      json(r.res, 200, out);
+      return true;
+    },
+  },
   {
     name: 'GET /d/demo?demokey= — Ed sets his browser once',
     method: 'GET',

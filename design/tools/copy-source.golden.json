@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 646
+  "entries": 650
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -466,6 +466,10 @@
   "page.strjoin.sent": "Follow the link to join — the address is your identity here.",
   "page.strjoin.title": "Join",
   "page.strjoin.why": "Anyone with the link may join. Your email is your identity here — the link it sends makes you a member.",
+  "page.strtry.press": "Join as a member",
+  "page.strtry.summary": "Join in one tap",
+  "page.strtry.title": "Try It",
+  "page.strtry.why": "Join as a member under a made-up name. No email needed, and you can propose and vote straight away.",
   "page.synth.admitLead": "Admit ",
   "page.synth.admitTail": "?",
   "page.synth.anApplicant": "an applicant",

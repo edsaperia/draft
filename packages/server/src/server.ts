@@ -215,6 +215,8 @@ export async function createDraftServer(cfg: ServerConfig,
   const demo = new Demo({
     store, designDir: cfg.designDir, enabled: cfg.demo === true,
     commit: (doc, nowMs) => writes.commit(doc, nowMs),
+    // the visitors' join and lapse (Stage 3) write on the write path's clock
+    tOf: (doc, nowMs) => writes.tOf(doc, nowMs),
   });
   await demo.boot();
 
@@ -239,6 +241,17 @@ export async function createDraftServer(cfg: ServerConfig,
     // documents are each asked for their own now, which is that same wall
     // clock everywhere but a document a dev walk has moved (Q1455)
     sweepBuckets(nowMs ?? Date.now());
+    // a demo visitor's seat 30 minutes past its last action leaves (DEMO.md
+    // D8) before the documents are driven, so the tick counts the room as it
+    // now is; paused, the clock waits with the store, as `writes.tick` does
+    if (pause.now(nowMs ?? Date.now()) === null) {
+      try {
+        await demo.lapseVisitors(nowMs ?? Date.now());
+      } catch (e) {
+        noteError('tick', e);
+        console.error('[demo] the visitor lapse failed:', e);
+      }
+    }
     await writes.tick(nowMs);
   };
 
