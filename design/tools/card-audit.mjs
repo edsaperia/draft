@@ -1172,13 +1172,12 @@ function switchRules(switches) {
  * live-only switch is `card-morph`'s, measured elsewhere, and driving every
  * pair of a busy clause would be minutes for no new promise.
  *
- * **The travel is read record to record only.** A switch between a live card
- * and a record moves the strip by the record's own eyebrow row, 28.85px at
- * 1600 on § Guests, on main as on this branch: the charter holds the clause's
- * card still (`keepStill`), not the tab, and the record's head stands one row
- * lower. That is a layout question put to Ed with this rule (2026-09-24), not
- * a defect of the strip, so the payload keeps those travels (`mixed`) and no
- * finding is filed from them until he rules.
+ * **The travel is read on every switch, live to record included** (Q1524 (a),
+ * Ed 2026-09-24). A switch between a live card and a record moved the strip by
+ * the record's own eyebrow row, 28.85px at 1600 on § Guests: the charter held
+ * the clause's card still (`keepStill`), not the tab, and the record's head
+ * stands one row lower. Ed ruled the tab held as every other switch holds it,
+ * so a mixed switch (`mixed`, kept in the payload) is measured like the rest.
  */
 function stripRules(strips) {
   const out = [];
@@ -1244,7 +1243,7 @@ function stripRules(strips) {
             gained.length ? 'put ' + gained.join(', ') + ' into it' : ''].filter(Boolean).join(' and '),
         note: s.walk });
     }
-    if (!s.travel || s.mixed) continue;
+    if (!s.travel) continue;
     const [dx, dy] = s.travel;
     if (Math.abs(dx) <= SWITCH_TOL && Math.abs(dy) <= SWITCH_TOL) continue;
     out.push({ rule: 'P11', lens: 'positioning',

@@ -4454,9 +4454,24 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         // stood, so it is held there.
         const heldEl = hold ? doc.querySelector(hold) : null;
         const heldTop = heldEl ? heldEl.getBoundingClientRect().top : null;
+        // **A switch inside one strip holds the tab clicked** (Q1524 (a), Ed
+        // 2026-09-24; M12, *the tab you click does not move*). Holding the
+        // clause is not enough: a record's head stands a dateline row lower
+        // in its card than a live card's does, so a switch between the two
+        // moved the whole strip 28.85px. Where the card closing carries the
+        // opening card's tab in its own strip and no scroll was asked for —
+        // a click on that tab — the tab is measured before the swap and the
+        // page corrected by its drift after, whatever else moved.
+        const tabOf = (card) => doc.querySelector('.sugg[data-card="' + card + '"] .clausehead .achip[data-anchor="' + next + '"]');
+        const tabEl = closing && !scroll ? tabOf(closing) : null;
+        const tabTop = tabEl ? tabEl.getBoundingClientRect().top : null;
         keepStill(() => { openId = next; renderAll(); }, hold);
         focusOpenedCard(next);
-        if (heldTop !== null && !doc.querySelector(hold)) {
+        const tabNow = tabTop !== null ? tabOf(next) : null;
+        if (tabNow) {
+          const drift = tabNow.getBoundingClientRect().top - tabTop;
+          if (Math.abs(drift) > 0.5) scrollTo(0, scrollY + drift);
+        } else if (heldTop !== null && !doc.querySelector(hold)) {
           const born = [...doc.querySelectorAll('.sugg')].find((c) => c.dataset.card === next);
           const drift = born ? born.getBoundingClientRect().top - heldTop : 0;
           if (Math.abs(drift) > 0.5) scrollTo(0, scrollY + drift);
