@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 650
+  "entries": 651
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -570,6 +570,7 @@
   "session.rail.justProposed": "Proposed — the members are deciding",
   "session.rail.noReason": "no reason given yet — say what this is for",
   "session.rail.placesOf": "ƒ (n, of) => n + ' of ' + of + ' places'",
+  "session.rail.sheetMore": "ƒ (n) => '+' + n + ' more'",
   "session.rail.stillDeciding": "still deciding — click to change your mind",
   "session.rail.votedStillRunning": "you have voted on this — it is still running",
   "session.rail.wantsVote": "wants your vote",
