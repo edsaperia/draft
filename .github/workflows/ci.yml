@@ -85,7 +85,11 @@ jobs:
       # sat in the tree being nobody's job. Node-only and instant.
       - run: npm run clock-check
       - name: the server walk again, over Postgres (stage 6)
-        run: DRAFT_TEST_STORE=pg npm test -w @draft/server
+        # one file at a time: every test server holds a pool of up to 5, a
+        # file keeps its servers until its afterAll, and the demo's test
+        # files (Q1535) took the parallel run past the service's 100 clients
+        # ("sorry, too many clients already", 2026-09-24)
+        run: DRAFT_TEST_STORE=pg npm test -w @draft/server -- --no-file-parallelism
       - run: npm run build
       - name: boot smoke — refuse half-configured, serve configured, no dev routes, come up on Postgres
         run: |
