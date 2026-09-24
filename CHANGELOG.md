@@ -6,6 +6,13 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-09-24, later afternoon: a proposal that loses to a rival stays in the running
+
+### Changed
+- **When one wording wins a clause, the other proposals for that clause carry on** against the new wording, keeping the votes that compared them with the winner. Before, every one of them was handed back to its author with a red ↻, and all their votes were lost. A proposal the members had already preferred the winner to is closed straight away, and its author is told. A proposal that only partly overlapped the winner is still handed back, because nobody has voted on what it would now make.
+- **The same holds when the Founder changes the text directly,** and for rival proposals on the document's rules.
+- **A clause can now carry more than one record**, one for each time its wording changed.
+
 ## 2026-09-24, afternoon: records that show what changed
 
 ### New
