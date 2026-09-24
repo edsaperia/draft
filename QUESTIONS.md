@@ -8,8 +8,8 @@ The index, in the section's own order (nothing is pinned — Ed, 2026-09-07, Q12
 
 | # | Title | Raised | State | Pointers |
 |---|---|---|---|---|
-| 1532 | Pin one owed record, not three | 2026-09-24 | **ruled at the claim (Ed 2026-09-24)**, building | SURFACE §6 ✔ ✖ rows; Q113; `layoutQueue` |
-| 1531 | The green highlight on text records | 2026-09-24 | **ruled at the claim (Ed 2026-09-24)**, building | `sealed record`; `sealedCardHtml`, `wordingHtml` |
+| 1532 | Pin one owed record, not three | 2026-09-24 | **ruled at the claim (Ed 2026-09-24), built 2026-09-24** — `NEWS_PIN_CAP` 1 (guards `spec-check`, the session-probe's *owed records pinned*); a band news entry counts in the one queue too, a question for Ed; unpushed | SURFACE §6 ✔ ✖ rows; Q113; `layoutQueue` |
+| 1531 | The green highlight on text records | 2026-09-24 | **ruled at the claim (Ed 2026-09-24), built 2026-09-24** — `recordBaseOf`, the field and the ✔ head marked, the amendment head too (guard the session-probe's *record unmarked*); unpushed | `sealed record`; `sealedCardHtml`, `wordingHtml` |
 | 1530 | Backslash escapes, read and pasted | 2026-09-24 | **ruled and built 2026-09-24**; four builder calls await Ed | SURFACE K33; cards.js `mdPlain`, `pasteClean` |
 | 1529 | The faint wire, once its edge went | 2026-09-24 | **waiting on Ed** | SURFACE M21; A18 |
 | 1528 | The gutter's one record tab: several unread as tabs, and what its edges count | 2026-09-24 | **waiting on Ed** | SURFACE M13; card-audit P11 |

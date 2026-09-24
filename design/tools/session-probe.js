@@ -118,10 +118,34 @@
   const shownEscapes = (where, text) => (SHOWN_ESC.test(String(text || ''))
     ? [where + ': ' + JSON.stringify(String(text).match(/.{0,30}\\[!-/:-@[-`{-~].{0,30}/)[0])] : []);
 
+  // **A record shows what each wording changed** (Q1531, Ed 2026-09-24): on
+  // every sealed record the incumbent's box (*Previous text*, *the text that
+  // stood*) is never marked, and on the fixture records named here the
+  // highlighter is where the live card had it — in the field, or on the
+  // winner at the head. Checked on the live page only, like the escapes.
+  const RECORD_MARKED = { 'race-claims': 'field', 'quick-knives': 'head', 'race-nomination': 'field' };
+  function recordMarks(id, cards) {
+    const out = [];
+    for (const card of cards) {
+      if (!card.classList.contains('sealed-open')) continue;
+      if (card.querySelector('.ranked.wasthere ins')) out.push(id + ': the incumbent box is marked');
+      const want = RECORD_MARKED[id];
+      if (want === 'field' && !card.querySelector('.field .ranked:not(.wasthere) ins')) out.push(id + ': no wording in the field is marked');
+      if (want === 'head' && !card.querySelector('.clausehead .headclause ins')) out.push(id + ': the winner at the head is not marked');
+    }
+    return out;
+  }
+  // **One owed record pins** (Q1532, Ed 2026-09-24): at rest, before any
+  // card is open, the rail holds at most one pinned entry owing an OK.
+  const pinnedOwed = () => Array.from(document.querySelectorAll('.qitem.pinned'))
+    .filter((q) => q.querySelector('button.unread:not(.filed)')).map((q) => q.dataset.q);
+
   function run() {
     const payload = { meta: { label, w: window.innerWidth, h: window.innerHeight },
                       rail: [], doc: {}, cards: {} };
     setOrigin();
+    payload.pinnedOwed = pinnedOwed();
+    payload.records = [];
 
     payload.doc.anchs = rects(docEl.querySelectorAll('.anch'));
     payload.doc.chips = rects(docEl.querySelectorAll('.achip'));
@@ -151,6 +175,7 @@
       const open = measureOpenFor(id);
       if (open) {
         for (const o of open) payload.escapes.push(...shownEscapes('cards.' + id, o.shown));
+        payload.records.push(...recordMarks(id, docEl.querySelectorAll('.sugg[data-card="' + id + '"]')));
         entry.open = open.map(({ html, shown, ...rest }) => rest);
         entry.htmlHash = open.map((o) => hash(o.html)).join('|');
         entry.htmlLen = open.reduce((n, o) => n + o.html.length, 0);
@@ -212,6 +237,8 @@
       if (a !== (b === undefined ? a : b)) out.push(path + ': ' + JSON.stringify(a) + ' vs ' + JSON.stringify(b));
     };
     for (const e of live.escapes || []) out.push('ESCAPE SHOWN (ruling 13) ' + e);
+    for (const e of live.records || []) out.push('RECORD UNMARKED (Q1531) ' + e);
+    if ((live.pinnedOwed || []).length > 1) out.push('OWED RECORDS PINNED (Q1532) ' + live.pinnedOwed.length + ', one at most: ' + live.pinnedOwed.join(' · '));
     walk('doc', ref.doc, live.doc);
     walk('rail', ref.rail, live.rail);
     for (const id of new Set([...Object.keys(ref.cards), ...Object.keys(live.cards)])) {
