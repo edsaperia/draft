@@ -254,10 +254,13 @@
   // still the heading or the bullet it was.
   const srcMode = () => EDITING() && !closedMode;
   const markerOf = (l) => (l.t === 'h' ? '#'.repeat(l.level || 1) + ' ' : l.bullet ? '- ' : '');
+  // a block the host built for reading alone carries its own `html` — the
+  // closed page's amendment line, whose reason is a reason and is drawn as
+  // one (`reasonHtml`, Q1533): the host escapes it, never this
   const blockHtml = (l) =>
     (srcMode()
       ? (markerOf(l) ? '<span class="mdmark">' + esc(markerOf(l)) + '</span>' : '') + esc(l.x)
-      : mdLine(l.x));
+      : l.html != null ? l.html : mdLine(l.x));
   const bulletCls = (l) => (l.bullet ? ' bullet' : '');
 
   // ---- gap sites (backlog 204, Q261) ---------------------------------------

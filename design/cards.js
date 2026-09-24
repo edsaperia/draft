@@ -885,8 +885,12 @@ window.CARDS = (function () {
   // rationales to be able to have links in them*; markdown links too). A
   // reason is light markdown and nothing more: a bare `http(s)://` address
   // and `[words](address)` become links, the backslash escapes are read
-  // (Q1530), and bold and italic are **not** drawn — a reason is somebody's
-  // argument, not document text. Only http and https are ever a link: a
+  // (Q1530), and **the document's inline marks are drawn** — `**bold**`,
+  // `*italic*`, a backtick code span (Q1533 amended, Ed 2026-09-24: *reasons
+  // render bold and italic too*). The marks are found first on the whole
+  // source, as `mdMask` finds them for a wording, each delimiter a sentinel,
+  // so a pair round a link still pairs; no address is found inside a code
+  // span, and no address or target ever holds a sentinel. Only http and https are ever a link: a
   // `javascript:` or `data:` target, or anything the URL parser refuses,
   // stays the text that was typed. The pieces are found on the source
   // (escape-aware, so `\[` opens nothing) and each is **escaped before any
@@ -895,7 +899,7 @@ window.CARDS = (function () {
   // A link that leaves docs.vote opens a new tab, is `nofollow ugc`, and says
   // so — the ↗ drawn by the CSS (`a.extlink::after`), the words for a screen
   // reader; a docs.vote address keeps `linkify`'s in-site `.doclink`.
-  const REASON_LINK_RX = /\[((?:[^[\]\n]|\[[^[\]\n]*\])+)\]\((https?:\/\/[^\s()]+(?:\([^\s()]*\)[^\s()]*)*)\)|\bhttps?:\/\/[^\s<>]+/gi;
+  const REASON_LINK_RX = /\[((?:[^[\]\n]|\[[^[\]\n]*\])+)\]\((https?:\/\/[^\s()-]+(?:\([^\s()-]*\)[^\s()-]*)*)\)|\bhttps?:\/\/[^\s<>-]+/gi;
   // a bare address ends before trailing punctuation, and before a `)` it
   // did not open — *(see https://x.org/a_(b))* keeps its own pair
   const urlTail = (u) => {
@@ -919,12 +923,21 @@ window.CARDS = (function () {
     : '<a class="extlink" href="' + esc(u.href) + '" target="_blank" rel="noopener noreferrer nofollow ugc">' +
       wordsHtml + '<span class="sr-only">' + esc(G.reasonLink.leaves) + '</span></a>');
   // the source cut into `{ text }` and `{ url, words }` pieces, escapes
-  // still encoded in `text` and `words`, each address already read plain
+  // still encoded and marks as `MD_SENT` sentinels in `text` and `words`,
+  // each address already read plain
+  const reasonMask = (src) => escEncode(String(src ?? '')).split(MD_RX).map((part) => {
+    if (/^\*\*[\s\S]+\*\*$/.test(part)) return MD_SENT['**'] + part.slice(2, -2) + MD_SENT['**'];
+    if (/^\*[\s\S]+\*$/.test(part)) return MD_SENT['*'] + part.slice(1, -1) + MD_SENT['*'];
+    if (/^`[\s\S]+`$/.test(part)) return MD_SENT['`'] + escRaw(part.slice(1, -1)) + MD_SENT['`'];
+    return part;
+  }).join('');
+  const inCode = (s, i) => ((s.slice(0, i).match(//g) || []).length % 2) === 1;
   function reasonPieces(src) {
-    const s = escEncode(String(src ?? ''));
+    const s = reasonMask(src);
     const out = [];
     let at = 0;
     for (const m of s.matchAll(REASON_LINK_RX)) {
+      if (m.index < at || inCode(s, m.index)) continue;
       let whole = m[0], words = m[1], raw = m[2];
       if (!raw) { whole = urlTail(whole); raw = whole; }
       const u = safeUrl(escRaw(raw, true));
@@ -936,15 +949,22 @@ window.CARDS = (function () {
     if (at < s.length) out.push({ text: s.slice(at) });
     return out;
   }
-  /** A reason drawn: escaped, its links built after, its escapes read. */
-  const reasonHtml = (src) => reasonPieces(src).map((p) => (p.url
-    ? linkHtml(p.url, esc(escRaw(p.words !== null ? p.words : p.raw, true)))
-    : linkify(esc(escRaw(p.text, true))))).join('');
+  /** A reason drawn: escaped, its marks and links built after, its escapes
+   *  read. The mark state carries across the pieces (`mdRun`), every tag
+   *  closed at a piece's edge, so a pair round a link nests either side of
+   *  the anchor and inside its words. */
+  const reasonHtml = (src) => {
+    const state = {};
+    return reasonPieces(src).map((p) => (p.url
+      ? linkHtml(p.url, mdRun(p.words !== null ? p.words : p.raw, state))
+      : linkifyHtml(mdRun(p.text, state)))).join('');
+  };
   /** …and as plain words, for a rail teaser (a link cannot stand inside the
    *  entry's button) or a tooltip: a markdown link reads as its words, a
-   *  bare address as itself. Unescaped; the caller escapes. */
+   *  bare address as itself, the marks taken off. Unescaped; the caller
+   *  escapes. */
   const reasonPlain = (src) => reasonPieces(src).map((p) => escRaw(p.url
-    ? (p.words !== null ? p.words : p.raw) : p.text, true)).join('');
+    ? (p.words !== null ? p.words : p.raw) : p.text, true).replace(/[-]/g, '')).join('');
   // …and back. Walks what the browser made of a rendered editable and writes
   // the markdown for it, so editing rendered never silently drops the marks it
   // is showing. `<ins>`/`<del>` are the diff's own wrappers and contribute

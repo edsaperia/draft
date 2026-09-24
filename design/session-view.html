@@ -9850,12 +9850,16 @@
       // morning. Same formatting as the clause's own history line.
       const on = r.at ? window.CARDS.longDay(r.at) : '';
       // and a reason that already ends in a full stop does not want another
-      const reason = r.why
-        ? ' — ' + r.why + (/[.!?…]$/.test(r.why.trim()) ? '' : '.')
-        : ' — no reason given.';
-      out.push({ t: 'p', key: 'A:' + i,
-        x: on + ' · ' + what +
-          (was && now2 ? ': ' + was + ' → ' + now2 : '') + '. ' + who + reason });
+      const stop = r.why && !/[.!?…]$/.test(r.why.trim()) ? '.' : '';
+      const reason = r.why ? ' — ' + r.why + stop : ' — no reason given.';
+      const lead = on + ' · ' + what +
+        (was && now2 ? ': ' + was + ' → ' + now2 : '') + '. ' + who;
+      // the reason drawn as every reason is (`reasonHtml`, Q1533 as
+      // amended: its links live, its bold and italic drawn), the rest of the
+      // line read as the column reads it; `x` stays the plain source
+      out.push({ t: 'p', key: 'A:' + i, x: lead + reason,
+        html: window.CARDS.mdLine(lead) + (r.why
+          ? ' — ' + window.CARDS.reasonHtml(r.why) + stop : esc(reason)) });
     });
     return out;
   };

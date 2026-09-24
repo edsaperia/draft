@@ -141,6 +141,7 @@
   // `quick-books` reason draws its two, a markdown link and a bare address.
   // A rail entry is a button, so its teaser carries the words and no link.
   const REASON_LINKS = { 'quick-books': 2 };
+  const REASON_MARKS = { 'quick-books': true };
   function reasonLinks(id, cards) {
     const out = [];
     let n = 0;
@@ -155,6 +156,20 @@
       }
     }
     if (REASON_LINKS[id] !== undefined && n !== REASON_LINKS[id]) out.push(id + ': ' + n + ' reason links, want ' + REASON_LINKS[id]);
+    // …and draws the document's inline marks (Q1533 as amended, Ed
+    // 2026-09-24): the fixture's reason has one bold word and one italic,
+    // and no reason on any card shows a marker as text
+    if (REASON_MARKS[id]) {
+      const said = Array.from(cards).map((c) => c.querySelector('.speaker .said')).filter(Boolean);
+      for (const tag of ['strong', 'em']) {
+        if (!said.some((s) => s.querySelector(tag))) out.push(id + ': the reason draws no <' + tag + '>');
+      }
+    }
+    for (const card of cards) {
+      for (const s of card.querySelectorAll('.speaker .said')) {
+        if (/\*\*|(^|\s)\*\S/.test(s.innerText)) out.push(id + ': a reason shows its marks as text');
+      }
+    }
     return out;
   }
   // **One owed record pins** (Q1532, Ed 2026-09-24): at rest, before any

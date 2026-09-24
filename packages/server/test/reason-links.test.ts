@@ -65,9 +65,40 @@ describe('reasonHtml — a reason may carry links (Q1533)', () => {
     expect(C.reasonHtml('[our rules](https://docs.vote/d/hollow-oak)'))
       .toBe('<a class="doclink" href="https://docs.vote/d/hollow-oak" target="_blank" rel="noopener">our rules</a>');
   });
-  it('reads the escapes and draws no bold or italic', () => {
-    expect(C.reasonHtml('5\\. Expiry, **not** bold')).toBe('5. Expiry, **not** bold');
+  it('reads the escapes', () => {
+    expect(C.reasonHtml('5\\. Expiry')).toBe('5. Expiry');
     expect(C.reasonHtml('\\[not a link](https://example.org)')).toContain('[not a link](<a class="extlink"');
+  });
+});
+
+describe('reasonHtml — the document\'s inline marks (Q1533 amended, Ed 2026-09-24)', () => {
+  it('draws bold, italic and a code span', () => {
+    expect(C.reasonHtml('It is **plainly** *better*, see `rule 3`.'))
+      .toBe('It is <strong>plainly</strong> <em>better</em>, see <code>rule 3</code>.');
+  });
+  it('escapes inside a mark before the tag goes round it', () => {
+    expect(C.reasonHtml('**<b>x</b> & y**')).toBe('<strong>&lt;b&gt;x&lt;/b&gt; &amp; y</strong>');
+    expect(C.reasonHtml('*<img src=x onerror=alert(1)>*')).toBe('<em>&lt;img src=x onerror=alert(1)&gt;</em>');
+  });
+  it('an escaped mark is no mark', () => {
+    expect(C.reasonHtml('\\*not italic\\* and \\*\\*not bold\\*\\*')).toBe('*not italic* and **not bold**');
+  });
+  it('a mark round a link nests either side of the anchor, and inside its words', () => {
+    expect(C.reasonHtml('**see https://example.org/a**'))
+      .toBe('<strong>see </strong><a class="extlink" href="https://example.org/a" ' + EXT + '>' +
+        '<strong>https://example.org/a</strong>' + leaves + '</a>');
+    expect(C.reasonHtml('[the *minutes*](https://example.org/m)'))
+      .toBe('<a class="extlink" href="https://example.org/m" ' + EXT + '>the <em>minutes</em>' + leaves + '</a>');
+  });
+  it('finds no address inside a code span, and keeps its backslashes', () => {
+    expect(C.reasonHtml('`https://example.org/x`')).toBe('<code>https://example.org/x</code>');
+    expect(C.reasonHtml('`docs.vote/d/x`')).toBe('<code>docs.vote/d/x</code>');
+    expect(C.reasonHtml('`a\\*b`')).toBe('<code>a\\*b</code>');
+  });
+  it('keeps the link safety rules under a mark', () => {
+    const js = C.reasonHtml('**[click](javascript:alert(1))**');
+    expect(js).not.toContain('<a');
+    expect(js).toBe('<strong>[click](javascript:alert(1))</strong>');
   });
 });
 
@@ -76,6 +107,11 @@ describe('reasonPlain — a reason as words (a rail teaser)', () => {
     expect(C.reasonPlain('As [the minutes](https://example.org/m) say, see https://example.org/x.'))
       .toBe('As the minutes say, see https://example.org/x.');
     expect(C.reasonPlain('5\\. Expiry')).toBe('5. Expiry');
+  });
+  it('takes the marks off (Q1533 amended)', () => {
+    expect(C.reasonPlain('It is **plainly** *better*, see `rule 3` and [the *minutes*](https://example.org/m).'))
+      .toBe('It is plainly better, see rule 3 and the minutes.');
+    expect(C.reasonPlain('\\*kept\\*')).toBe('*kept*');
   });
 });
 
