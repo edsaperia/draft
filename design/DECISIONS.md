@@ -7298,3 +7298,5 @@ The Founder's 🛡️ refusal still reads *Rejected* on the dateline, even thoug
 ## Q1526, Q1527 and Q1524: three record-card rulings (Ed, 2026-09-24 morning)
 
 **Q1526 (a).** A record's dateline read *Rejected* for every failed motion, a Founder's 🛡️ refusal included, where STYLE T8 makes *refuse* the Founder's word and *reject* the membership's. `recordBody` now asks `heldByOf` — the view's `heldBy`, the fixture's crown questions — and a vetoed motion's dateline reads *Refused by the Founder*. The *Rejected proposal* box keeps its label: the ruling named the dateline only.
+
+**Q1527 (a).** Q1522 took the bin off every record card; 🥂 and the departure news cards kept one though nothing on them can be put back. Both lose it (band.js): the departure card's row is the OK alone, and 🥂's the signing OK alone while it is unsigned, nothing once signed or for a reader who signs nothing — the held card's shape (no row where nothing is owed), rather than CP9's close-only OK, since Q1522 ruled a filed record carries no row at all.

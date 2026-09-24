@@ -1124,16 +1124,18 @@ window.BAND = (function () {
         }
         // **A departure, in one card** (SURFACE E31, E32, E40; Q901): the
         // register's own sentence about who left and by whose act, stated
-        // once, taking one OK. The commit row is the release card's — 🗑️ and
-        // an OK — a departure having happened rather than been decided, and
+        // once, taking one OK. The commit row is the OK alone — **no 🗑️**,
+        // there being nothing on it to put back (Q1527 (a), Ed 2026-09-24;
+        // Y20, as Q1522 ruled for the records) — a departure having happened
+        // rather than been decided, and
         // the body is `departureLine`'s so the card and the grey line under
         // *Members* can never say two different things about one act.
         if (c.departure) {
           const d = owedDeparture(c.departure);
           if (!d) return cardHtml(c, ctx, '<p class="why">This is no longer outstanding.</p>',
-            binBtn(), g.cards);
+            null, g.cards);
           return cardHtml(c, ctx, '<p class="why">' + departureLine(d) + '</p>',
-            binBtn() + '<button class="btn btn-approve okbtn" data-ok="' + esc(c.k) + '">OK</button>',
+            '<button class="btn btn-approve okbtn" data-ok="' + esc(c.k) + '">OK</button>',
             g.cards);
         }
         // **A motion of yours that failed** (SURFACE E41; Q1447), and the one
@@ -1155,13 +1157,15 @@ window.BAND = (function () {
             docOpen() ? '<button class="btn btn-approve okbtn" data-ok="' + esc(c.k) + '">OK</button>' : null,
             g.cards);
         }
+        // 🥂 carries **no 🗑️** (Q1527 (a), Ed 2026-09-24; Y20): nothing on it
+        // can be put back, so the row is the signing OK alone while it is
+        // owed, and nothing once signed or for a reader who signs nothing
         if (c.isClosing) {
           const signed = signedClose();
           return cardHtml(c, ctx, closingBody(c),
             signed || !viewerIsMember()
-              ? binBtn()
-              : binBtn() +
-                '<button class="btn btn-approve okbtn" data-sign="1" title="OK signs the document; your comment goes on the record">OK</button>',
+              ? null
+              : '<button class="btn btn-approve okbtn" data-sign="1" title="OK signs the document; your comment goes on the record">OK</button>',
             g.cards);
         }
         if (c.isGate) {
