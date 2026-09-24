@@ -1497,6 +1497,12 @@
      The founder's column carries no span, its blocks being typed into in
      place, so the source view answers for it by the column's own class. */
   .mdmark { color: var(--muted); }
+  /* a backslash escape is read, not shown (Ed, 2026-09-24, ruling 13): the
+     backslash stays in the DOM, so a rendered block the founder's column
+     reads back (`htmlToMd`) keeps it, and is hidden here; the source view
+     shows it, being the source (Q1467) */
+  .mdesc { display: none; }
+  .prose.mdsrc .mdesc { display: inline; }
   .lp.bullet:has(.mdmark) { padding-left: 0; }
   .lp.bullet:has(.mdmark)::before, .doc .bullet:has(> .mdmark)::before { content: none; }
   .doc .bullet:has(> .mdmark) { padding-left: 0; }

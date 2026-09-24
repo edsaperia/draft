@@ -96,7 +96,9 @@ window.CARDS = (function () {
 
   // The rail is already a margin against the document; the section sign is a
   // citation mark, and nothing here is being cited (Ed, 188).
-  const plainLabel = (t) => String(t ?? '').replace(/^§\s*/, '');
+  // …and a title is read, its backslash escapes hidden (Ed, 2026-09-24,
+  // ruling 13; `mdUnescape` below, called at run time)
+  const plainLabel = (t) => mdUnescape(String(t ?? '').replace(/^§\s*/, ''));
 
   // **The drawn ✓ is a control, not a mark** (Q1360). It was the same constant
   // as the adopted mark from 2026-08-17 until Q1360 gave the marks their own
@@ -551,12 +553,19 @@ window.CARDS = (function () {
   // could not: a piece holding one `**` of a pair printed it.
   const MD_SENT = { '**': '\uE000', '*': '\uE001', '`': '\uE002' };
   const MD_TAG = { '\uE000': 'strong', '\uE001': 'em', '\uE002': 'code' };
-  const mdMask = (src) => String(src).split(MD_RX).map((part) => {
+  // **A backslash escape is read, not shown** (Ed, 2026-09-24, ruling 13):
+  // the escapes are found first (`escEncode`), so an escaped `*` or backtick
+  // never pairs into a mark, and then every escape but a line-leading `#` or
+  // `-` becomes its plain character (`escPlain`) \u2014 so `5\.` and `5.` mask to
+  // the same string and a change that only adds or takes away a backslash is
+  // no change the reader can see. Inside a code span the backslash stays, as
+  // CommonMark keeps it there.
+  const mdMask = (src) => escPlain(escEncode(src).split(MD_RX).map((part) => {
     if (/^\*\*[\s\S]+\*\*$/.test(part)) return MD_SENT['**'] + part.slice(2, -2) + MD_SENT['**'];
     if (/^\*[\s\S]+\*$/.test(part)) return MD_SENT['*'] + part.slice(1, -1) + MD_SENT['*'];
-    if (/^`[\s\S]+`$/.test(part)) return MD_SENT['`'] + part.slice(1, -1) + MD_SENT['`'];
+    if (/^`[\s\S]+`$/.test(part)) return MD_SENT['`'] + escRaw(part.slice(1, -1)) + MD_SENT['`'];
     return part;
-  }).join('');
+  }).join(''));
   const mdDiffPieces = (oldText, newText, withDel) =>
     diffPieces(mdMask(oldText), mdMask(newText), withDel);
   // one piece's text as HTML: a sentinel toggles its tag in `state`, and every
@@ -565,7 +574,7 @@ window.CARDS = (function () {
   const mdRun = (t, state) => {
     let out = '', buf = '';
     const wrap = (s) => {
-      let h = esc(s);
+      let h = esc(escRaw(s, true));
       for (const tag of ['code', 'em', 'strong']) if (state[tag]) h = '<' + tag + '>' + h + '</' + tag + '>';
       return h;
     };
@@ -737,12 +746,106 @@ window.CARDS = (function () {
   // link syntax (a docs.vote address is already a link by `linkify`, and any
   // other target is a door out of the document).
   const MD_RX = /(\*\*[^*\n]+\*\*|\*[^*\n]+\*|`[^`\n]+`)/g;
+
+  // ---- backslash escapes (Ed, 2026-09-24, rulings 13 and 14) ---------------
+  // Text pasted out of a markdown editor arrives escaped — `5\. Expiry`,
+  // `Section 2\.` — and docs.vote speaks only a sliver of markdown, so until
+  // this every one of those backslashes was printed. **Reading hides an
+  // escape; storage is never rewritten**: a backslash before an ASCII
+  // punctuation character is read as CommonMark reads it — hidden, the
+  // character shown as itself and never taken for a mark — and a backslash
+  // before anything else is an ordinary character. Edit mode is the source
+  // (Q1467), so the backslashes stand there. And **a paste drops the escapes
+  // docs.vote does not need** (`pasteClean`), keeping the ones it does.
+  //
+  // `escEncode` turns each escape into one private-use character standing for
+  // the escaped character (U+E121–U+E17E, clear of `MD_SENT`), so the mark
+  // finder cannot see an escaped `*` or backtick; `escRaw` turns them back —
+  // into the two characters as typed, or with `plain` into the character
+  // alone.
+  const ESC_PUNCT = /\\([!-/:-@[-`{-~])/g;
+  const ESC_BASE = 0xE100;
+  const ESC_SENT = /[-]/g;
+  const escEncode = (src) => String(src).replace(ESC_PUNCT,
+    (m, c) => String.fromCharCode(ESC_BASE + c.charCodeAt(0)));
+  const escChar = (ch) => String.fromCharCode(ch.charCodeAt(0) - ESC_BASE);
+  const escRaw = (s, plain) => String(s).replace(ESC_SENT, (ch) => (plain ? '' : '\\') + escChar(ch));
+  // every escape to its plain character, except a `#` or `-` with nothing but
+  // hashes before it on its line — plain there, `\# x` would read as the
+  // heading it was escaped out of being (`mdBlock`)
+  const escPlain = (s) => {
+    let line = '';
+    return String(s).replace(/[-]|\n|[^-\n]+/g, (tok) => {
+      if (tok === '\n') { line = ''; return tok; }
+      const code = tok.charCodeAt(0);
+      if (tok.length === 1 && code >= 0xE121 && code <= 0xE17E) {
+        const c = escChar(tok);
+        const out = (c === '#' || c === '-') && /^[#]*$/.test(line) ? tok : c;
+        line += out;
+        return out;
+      }
+      line += tok;
+      return tok;
+    });
+  };
+  // **The plain reading** (ruling 13): a text with its escapes read and
+  // nothing else touched — for a title, a label, a heading in the contents
+  // rail, anywhere a line is printed as words rather than rendered.
+  const mdUnescape = (src) => String(src ?? '').replace(ESC_PUNCT, '$1');
+  // …and the plain words of a line: its block marker and inline marks taken
+  // off, escape-aware, then the escapes read. For a caller that wants a title
+  // out of a heading (`\*not bold\*` stays `*not bold*`; `**bold**` is `bold`).
+  const mdPlain = (src) => {
+    const line = String(src ?? '');
+    const b = mdBlock(line);
+    return escRaw(escEncode(b ? b.text : line).replace(MD_RX, (m) =>
+      (m.startsWith('**') ? m.slice(2, -2) : m.slice(1, -1))), true);
+  };
+  // **A paste keeps only the escapes docs.vote needs** (ruling 14): an escape
+  // stays where taking it away would make docs.vote read the character as a
+  // mark — `\*`, `\_`, a backtick, `\\`, and a `\#` or `\-` whose line would
+  // otherwise become a heading or a bullet — and goes everywhere else (`5\.`,
+  // `\(`, `\!`, `\[`). Typed text never passes here, and nothing stored does.
+  const PASTE_KEEP = new Set(['*', '_', '`', '\\']);
+  function pasteClean(text) {
+    return String(text ?? '').split('\n').map((line) => {
+      let out = '';
+      let i = 0;
+      while (i < line.length) {
+        const ch = line[i], nx = line[i + 1];
+        if (ch === '\\' && nx !== undefined && /[!-/:-@[-`{-~]/.test(nx)) {
+          let keep = PASTE_KEEP.has(nx);
+          if (!keep && (nx === '#' || nx === '-')) {
+            const rest = line.slice(i + 2);
+            const a = mdBlock(out + '\\' + nx + rest), b = mdBlock(out + nx + rest);
+            keep = !!a !== !!b || (a && b && (a.t !== b.t || a.level !== b.level));
+          }
+          out += keep ? ch + nx : nx;
+          i += 2;
+          continue;
+        }
+        out += ch;
+        i += 1;
+      }
+      return out;
+    }).join('\n');
+  }
+
+  // **The reading of a line's inline marks** — and, since ruling 13, of its
+  // escapes: an escaped character is never a mark, and its backslash is
+  // drawn in a `.mdesc` span that system.css hides. Hidden rather than
+  // dropped because the founder's column before 🍾 is rendered *and* read
+  // back (`htmlToMd` over its text nodes, `remarkInline`), so a backslash the
+  // DOM did not hold would be a backslash the stored text lost — and `\*x\*`
+  // would come back as italic.
+  const escShow = (s) => esc(s).replace(ESC_SENT,
+    (ch) => '<span class="mdesc">\\</span>' + esc(escChar(ch)));
   function mdToHtml(src) {
-    return String(src).split(MD_RX).map((part) => {
-      if (/^\*\*[\s\S]+\*\*$/.test(part)) return '<strong>' + esc(part.slice(2, -2)) + '</strong>';
-      if (/^\*[\s\S]+\*$/.test(part)) return '<em>' + esc(part.slice(1, -1)) + '</em>';
-      if (/^`[\s\S]+`$/.test(part)) return '<code>' + esc(part.slice(1, -1)) + '</code>';
-      return esc(part);
+    return escEncode(src).split(MD_RX).map((part) => {
+      if (/^\*\*[\s\S]+\*\*$/.test(part)) return '<strong>' + escShow(part.slice(2, -2)) + '</strong>';
+      if (/^\*[\s\S]+\*$/.test(part)) return '<em>' + escShow(part.slice(1, -1)) + '</em>';
+      if (/^`[\s\S]+`$/.test(part)) return '<code>' + esc(escRaw(part.slice(1, -1))) + '</code>';
+      return escShow(part);
     }).join('');
   }
   // The one reading of a line's block marker — the page's `blocksOf`,
@@ -799,8 +902,12 @@ window.CARDS = (function () {
     return out;
   }
   // Plain words, for measuring a change rather than showing one.
-  const mdStrip = (src) => String(src).replace(MD_RX, (m) =>
-    m.startsWith('**') ? m.slice(2, -2) : m.slice(1, -1));
+  // Escape-aware as `mdToHtml` is (an escaped `*` is no mark), and it keeps
+  // the backslashes: its length is counted against the rendered block, which
+  // holds them in its hidden `.mdesc` spans (`sourceToRich`), and it names a
+  // heading's fold (`data-h`). A reader wanting the words takes `mdPlain`.
+  const mdStrip = (src) => escRaw(escEncode(src).replace(MD_RX, (m) =>
+    m.startsWith('**') ? m.slice(2, -2) : m.slice(1, -1)));
 
   // A caret offset does **not** mean the same thing in a rendered block and in
   // its source: the source shows the syntax characters and the rendering does
@@ -814,13 +921,15 @@ window.CARDS = (function () {
   const MD_ONE = /^(\*\*[^*\n]+\*\*|\*[^*\n]+\*|`[^`\n]+`)$/;
   const mdLead = (p) => (p.startsWith('**') ? 2 : 1);
   const mdInner = (p) => (p.startsWith('**') ? p.slice(2, -2) : p.slice(1, -1));
-  const mdParts = (src) => String(src).split(MD_RX).filter((p) => p !== '' && p != null);
+  // the parts found escape-aware (`mdToHtml`'s own split), each handed back as
+  // typed; `mark` is read before the escapes return, so an escaped `*` inside
+  // a mark does not unmake it
+  const mdParts = (src) => escEncode(src).split(MD_RX).filter((p) => p !== '' && p != null)
+    .map((p) => { const mark = MD_ONE.test(p); return { mark, part: escRaw(p), inner: mark ? escRaw(mdInner(p)) : escRaw(p) }; });
 
   function sourceToRich(src, off) {
     let s = 0, r = 0;
-    for (const part of mdParts(src)) {
-      const mark = MD_ONE.test(part);
-      const inner = mark ? mdInner(part) : part;
+    for (const { mark, part, inner } of mdParts(src)) {
       if (off <= s + part.length) {
         return r + Math.max(0, Math.min(inner.length, off - s - (mark ? mdLead(part) : 0)));
       }
@@ -1872,6 +1981,7 @@ window.CARDS = (function () {
     GLYPH, glyphKey, glyphHtml, glyphify, glyphTextOf,
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks, mdDiffPieces, mdPiecesHtml, mdDiffHtml, mdBlocksHtml,
     originText, MD_RX, mdToHtml, htmlToMd, mdStrip, mdBlock, linkify, linkifyHtml, mdLine,
+    mdUnescape, mdPlain, pasteClean,
     MD_ONE, mdLead, mdInner, mdParts, sourceToRich, readLane, sentText,
     abstainHhmm, abstainLeft, abstainNoteHtml, tickAbstain,
     laneSeed, laneProposeHtml, laneCtlHtml, laneNameId, laneGroupAttrs, speakerHtml, railSpeakerHtml, secToggleHtml, fieldHtml, fieldOf, groundNote,

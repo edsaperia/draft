@@ -2471,7 +2471,7 @@
       hs.map((b, i) => {
       b.id = 'h' + i;
       const lvl = b.dataset.lvl || (b.className.match(/lvl(\d)/) || [0, 2])[1];
-      return '<li class="lvl' + lvl + '">' + secToggleHtml('ph:' + b.dataset.h) + '<a href="#h' + i + '">' + esc(b.dataset.h) + '</a></li>';
+      return '<li class="lvl' + lvl + '">' + secToggleHtml('ph:' + b.dataset.h) + '<a href="#h' + i + '">' + esc(window.CARDS.mdUnescape(b.dataset.h)) + '</a></li>';
     }).join('');
   }
   function renderToc() { SESSION.renderToc(); }
@@ -2496,7 +2496,10 @@
     // Windows hands over `\r\n`, and a `\r` left on a line defeats the heading
     // re-mark below and rides into every block. The lane's own paste
     // (session.js) already strips it; so does this one.
-    let lines = txt.replace(/\r/g, '').split(/\n{2,}|\n/).filter((l) => l.trim());
+    // **Nor does an escape docs.vote does not need** (Ed, 2026-09-24, ruling
+    // 14): `5\. Expiry` out of a markdown editor arrives as `5. Expiry`
+    // (`pasteClean`, cards.js, the composer's own paste rule)
+    let lines = window.CARDS.pasteClean(txt.replace(/\r/g, '')).split(/\n{2,}|\n/).filter((l) => l.trim());
     const first = lines[0] && lines[0].match(/^#\s+(.+)$/);
     if (first && !S.title) { S.title = first[1]; lines = lines.slice(1);
       S.seen.add('title');

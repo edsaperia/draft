@@ -30,6 +30,7 @@
     "picture-walk": "node design/tools/picture-walk.mjs",
     "rail-font-walk": "node design/tools/rail-font-walk.mjs",
     "crlf-paste": "node scripts/repro/crlf-paste.mjs",
+    "escape-paste": "node scripts/repro/escape-paste.mjs",
     "head-insertion-aim": "node scripts/repro/head-insertion-aim.mjs",
     "poll-race": "node scripts/repro/poll-race.mjs",
     "overlapping-sites": "node scripts/repro/overlapping-sites.mjs",

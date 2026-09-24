@@ -104,8 +104,19 @@
       commit: rect(card.querySelector('.commitrow')),
       blocks: rects(card.querySelectorAll('.propblock')),
       html: norm(card.outerHTML),
+      shown: card.innerText,
     }));
   }
+
+  // **No backslash escape is ever shown** (Ed, 2026-09-24, ruling 13): the
+  // text a reader sees — `innerText`, so the hidden `.mdesc` spans are not
+  // counted — on every open card, the rail, the contents rail and the column,
+  // and the titles a tab or a mark is named by, holds no backslash before
+  // ASCII punctuation. The fixture's `race-expiry` and its clause carry the
+  // escapes nh2026's pasted text did. Checked on the live page only.
+  const SHOWN_ESC = /\\[!-/:-@[-`{-~]/;
+  const shownEscapes = (where, text) => (SHOWN_ESC.test(String(text || ''))
+    ? [where + ': ' + JSON.stringify(String(text).match(/.{0,30}\\[!-/:-@[-`{-~].{0,30}/)[0])] : []);
 
   function run() {
     const payload = { meta: { label, w: window.innerWidth, h: window.innerHeight },
@@ -125,6 +136,13 @@
     const tocAs = Array.from(document.querySelectorAll('#toc a[data-toc]'));
     const toy = tocAs.length ? tocAs[0].getBoundingClientRect().top + window.scrollY : 0;
     payload.doc.toc = tocAs.map((a) => rect(a, toy));
+    payload.escapes = [].concat(
+      ...Array.from(document.querySelectorAll('.qitem')).map((q, i) => shownEscapes('rail[' + i + ']', q.innerText)),
+      shownEscapes('toc', (document.getElementById('toc') || {}).innerText),
+      shownEscapes('column', (docEl.querySelector('.prose') || {}).innerText),
+      ...Array.from(document.querySelectorAll('[title], [aria-label]')).map((el) =>
+        shownEscapes('title of ' + el.tagName.toLowerCase() + (el.className ? '.' + String(el.className).split(' ')[0] : ''),
+          (el.getAttribute('title') || '') + ' ' + (el.getAttribute('aria-label') || ''))));
 
     const ids = suggIds();
     for (const id of ids) {
@@ -132,7 +150,8 @@
       try { toggleCard(id); } catch (e) { entry.err = String(e); }
       const open = measureOpenFor(id);
       if (open) {
-        entry.open = open.map(({ html, ...rest }) => rest);
+        for (const o of open) payload.escapes.push(...shownEscapes('cards.' + id, o.shown));
+        entry.open = open.map(({ html, shown, ...rest }) => rest);
         entry.htmlHash = open.map((o) => hash(o.html)).join('|');
         entry.htmlLen = open.reduce((n, o) => n + o.html.length, 0);
         try { localStorage.setItem('probe:' + label + ':html:' + id, open.map((o) => o.html).join('\n@@CARD@@\n')); }
@@ -192,6 +211,7 @@
       }
       if (a !== (b === undefined ? a : b)) out.push(path + ': ' + JSON.stringify(a) + ' vs ' + JSON.stringify(b));
     };
+    for (const e of live.escapes || []) out.push('ESCAPE SHOWN (ruling 13) ' + e);
     walk('doc', ref.doc, live.doc);
     walk('rail', ref.rail, live.rail);
     for (const id of new Set([...Object.keys(ref.cards), ...Object.keys(live.cards)])) {

@@ -117,7 +117,7 @@
     // eyebrow, and the glyphs inside the charter column's own sentences
     glyphHtml, glyphify,
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks, mdBlocksHtml,
-    originText, mdToHtml, mdStrip, mdLine, readLane,
+    originText, mdToHtml, mdStrip, mdLine, readLane, mdPlain, mdUnescape, pasteClean,
     laneSeed, laneProposeHtml, laneCtlHtml, laneNameId, laneGroupAttrs, speakerHtml, fieldHtml, fieldOf, groundNote,
     headOnlyHeight, cardBody, COLLAPSE_MS, EXPAND_MS,
     // the abstention clock: the note the rail draws beside a live entry
@@ -309,7 +309,7 @@
     const prev = DOC[at];
     const after = DOC.slice(at + 1).some((l) => !l.gap && l.key);
     if (!after) return T.gap.atEnd;
-    const words = String(prev.x || '').trim();
+    const words = mdUnescape(String(prev.x || '')).trim();   // read, escapes hidden (ruling 13)
     return T.gap.after(words.length > 40 ? words.slice(0, 40).replace(/\s+\S*$/, '') + '…' : words);
   };
 
@@ -1639,52 +1639,15 @@
       : (el.dataset && el.dataset.washkey ? el : el.querySelector('[data-washkey]'));
     const raw = host ? getComputedStyle(host).getPropertyValue('--washcol').trim() : '';
     const m = raw.match(/^rgba\((.+?),\s*([\d.]+)\s*\)$/);
-    if (!m) {
-      const rgb = 'rgb(var(--lc-' + ((g && anchHue(g)) || 'closed') + '))';
-      return { rgb, a: 0.16, edge: wireEdge(rgb) };
-    }
+    if (!m) return { rgb: 'rgb(var(--lc-' + ((g && anchHue(g)) || 'closed') + '))', a: 0.16 };
     const a = +m[2];
     const ga = groundAOf(host.dataset.washkey);   // a rail entry's doubled ground, else GROUND_A
-    return { rgb: 'rgb(' + m[1] + ')', a: +(a + ga * (1 - a)).toFixed(3), edge: wireEdge('rgb(' + m[1] + ')') };
+    return { rgb: 'rgb(' + m[1] + ')', a: +(a + ga * (1 - a)).toFixed(3) };
   };
-  // **The wire's edge: its own hue, dark enough to be seen** (Q1516 (6), Ed
-  // 2026-09-23: *the faint yellow wire's contrast fixed alongside* the paper).
-  // The cable is the entry's composited colour, and an entry is a pale wash,
-  // so every cable was a pale line: measured on the fixture, a quiet yellow
-  // 1.13∶1 on the sheet and 1∶1 on the desk, the grey 1.41∶1, even the red
-  // 2.16∶1 — against the 3∶1 SC 1.4.11 asks of a graphic you need to read the
-  // page. Darkening the cable would break the rule it has kept since
-  // 2026-08-17, *identical as a colour* to the card it leaves. So the cable
-  // keeps its colour and gains an **edge**: one pixel either side
-  // (`WIRE_EDGE_W`, the cap one pixel wider) in the entry's own hue at full
-  // strength, taken toward black only as far as it must go to stand 3∶1 off
-  // both grounds it crosses — the sheet (`--bg`) and the desk (the body's own
-  // ground). One rule for every hue, as the cable's own mix is: a hue already
-  // dark enough (the red) is not darkened at all. Guard: `a11y-audit`'s A18.
-  const WIRE_EDGE_W = 8;   // system.css's `#wires .edge path` states it too, the stylesheet winning
-  const WIRE_EDGE_R = 8;
-  const edgeCache = new Map();
-  const wireEdge = (css) => {
-    const desk = getComputedStyle(document.body).backgroundColor;
-    const key = css + '|' + desk;
-    if (edgeCache.has(key)) return edgeCache.get(key);
-    const probe = document.createElement('span');
-    document.body.appendChild(probe);
-    const rgbOf = (c) => { probe.style.color = c; return (getComputedStyle(probe).color.match(/[\d.]+/g) || []).slice(0, 3).map(Number); };
-    const hue = rgbOf(css), grounds = [rgbOf('var(--bg)'), rgbOf(desk)];
-    probe.remove();
-    const lin = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
-    const lum = ([r, g2, b]) => 0.2126 * lin(r) + 0.7152 * lin(g2) + 0.0722 * lin(b);
-    const ratio = (p, q) => { const [x, y] = [lum(p), lum(q)].sort((s, t) => t - s); return (x + 0.05) / (y + 0.05); };
-    let edge = hue;
-    for (let k = 0; k <= 1; k += 0.02) {
-      edge = hue.map((c) => Math.round(c * (1 - k)));
-      if (grounds.every((gr) => gr.length !== 3 || ratio(edge, gr) >= 3)) break;
-    }
-    const out = hue.length === 3 ? 'rgb(' + edge.join(', ') + ')' : css;
-    edgeCache.set(key, out);
-    return out;
-  };
+  // **The cable has no edge** (Ed, 2026-09-24: *the cables … have a border
+  // now … can you remove it?*). Q1516 (6) gave it a 1px darker rim to stand
+  // 3∶1 off the sheet and the desk; the rim read as a border and went. The
+  // cable is its entry's colour and nothing else, as it was before.
   const WIRE_UNDER = '#FFFFFF';
   const SVGNS = 'http://www.w3.org/2000/svg';
 
@@ -1766,7 +1729,7 @@
     const lines = [], dots = [];
     const dot = (x, y) => dots.push([x, y]);
     const line = (d) => lines.push(d);
-    const shapes = (g, col, w, r = 7) => {
+    const shapes = (g, col, w) => {
       for (const d of lines) {
         const p = document.createElementNS(SVGNS, 'path');
         p.setAttribute('d', d);
@@ -1777,16 +1740,15 @@
       for (const [x, y] of dots) {
         const c = document.createElementNS(SVGNS, 'circle');
         c.setAttribute('class', 'cap');
-        c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', r);
+        c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', 7);
         c.setAttribute('fill', col);
         g.appendChild(c);
       }
     };
-    const paint = (col, alpha, w, r, cls) => {
+    const paint = (col, alpha) => {
       const g = document.createElementNS(SVGNS, 'g');
       if (alpha != null) { g.setAttribute('class', 'ink'); g.setAttribute('opacity', alpha); }
-      if (cls) g.setAttribute('class', cls);
-      shapes(g, col, w, r);
+      shapes(g, col);
       wiresEl.appendChild(g);
       return g;
     };
@@ -1961,6 +1923,7 @@
     clipHoles();
     shadow(1, 1, 0.13);
     shadow(3, 3, 0.20);
+    paint(WIRE_UNDER, null);
     // **A cable changes colour when its card does** (Ed, 2026-08-17), and by
     // the same means the washes do: the wire is rebuilt from scratch on every
     // draw, so a CSS transition has nothing to run from unless the new shapes
@@ -1968,16 +1931,7 @@
     // forced reflow. Keyed by the judgment, so a wire that is simply redrawn at
     // a new scroll position does not re-run the fade.
     const from = prevWire.get(id) || color;
-    // the edge first, a pixel wider all round (`wireEdge`, Q1516 (6)), then
-    // the white the cable composites over, then the cable itself
-    const edge = paint(from.edge || color.edge, null, WIRE_EDGE_W, WIRE_EDGE_R, 'edge');
-    paint(WIRE_UNDER, null);
     const ink = paint(from.rgb, from.a);
-    if (from.edge !== color.edge) {
-      void wiresEl.getBoundingClientRect();
-      edge.querySelectorAll('path').forEach((p) => p.setAttribute('stroke', color.edge));
-      edge.querySelectorAll('circle').forEach((c) => c.setAttribute('fill', color.edge));
-    }
     if (from.rgb !== color.rgb || from.a !== color.a) {
       void wiresEl.getBoundingClientRect();
       ink.setAttribute('opacity', color.a);
@@ -2102,7 +2056,9 @@
       (s.replaced
         ? '<div class="field"><div class="ranked wasthere">' +
           '<div class="rtag"><span class="rsub">' + T.record.replaced + '</span></div>' +
-          '<div class="rtext">' + esc(s.replaced) + '</div></div></div>'
+          // read as every wording on a card is read (Q1406) — its escapes
+          // hidden with the rest (Ed, 2026-09-24, ruling 13)
+          '<div class="rtext">' + mdBlocksHtml(null, s.replaced) + '</div></div></div>'
         : '') +
       (isUnread(s)
         ? '<div class="race-mid commitrow"><span></span>' +
@@ -2766,7 +2722,7 @@
         return '<div class="propblock">' +
           '<div class="rtag" id="' + nameId + '">' + esc(c.name) + '</div>' +
           '<div class="rtext">' + esc(c.why) + '</div>' +
-          '<div class="qclause">' + esc(currentTextFor(c.key)) + '</div>' +
+          '<div class="qclause">' + mdLine(currentTextFor(c.key)) + '</div>' +
           laneBarHtml(s, v, { edit: false, nameId }) + '</div>';
       };
       return (
@@ -3893,7 +3849,9 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       el.addEventListener('paste', (ev) => {
         ev.preventDefault();
         const t = (ev.clipboardData && ev.clipboardData.getData('text/plain')) || '';
-        document.execCommand('insertText', false, t.replace(/\r/g, ''));
+        // …and without the escapes docs.vote does not need (Ed, 2026-09-24,
+        // ruling 14; `pasteClean`)
+        document.execCommand('insertText', false, pasteClean(t.replace(/\r/g, '')));
       });
     });
     // Choosing: marks the selection in place, so the document doesn't move
@@ -4602,7 +4560,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // The first few words are enough to recognise, and they are the words the
     // member actually chose rather than a position on a screen.
     // the words alone: a text carries its block markers since Q1406
-    const quote = (t) => '“' + String(t || '').replace(/^(#{1,3}|-)\s+/gm, '').split(/\s+/).slice(0, 6).join(' ') + '…”';
+    const quote = (t) => '“' + mdUnescape(String(t || '').replace(/^(#{1,3}|-)\s+/gm, '')).split(/\s+/).slice(0, 6).join(' ') + '…”';
     // the verdict names the item's own pair (Q1367)
     const sv = s;
     const verdict =
@@ -4866,17 +4824,32 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // happened here*, which is a different question with a different answer.
     // The `+n` tally counts what it hides, so a section of nothing but filed
     // decisions now reads as empty rather than as a row of ticks.
-    const marks = entriesForSection(n).map(markKindOf).filter((k) => !FILED_KINDS.has(k));
+    const marks = entriesForSection(n).map((g) => ({ g, k: markKindOf(g) })).filter((m) => !FILED_KINDS.has(m.k));
     if (!marks.length) return '';
     // choose by what is actionable, then draw in document order
-    const keep = new Set(marks.map((m, i) => [m, i])
+    const keep = new Set(marks.map((m, i) => [m.k, i])
       .sort((a, b) => keepRank(a[0]) - keepRank(b[0]) || a[1] - b[1])
       .slice(0, TOC_MARKS).map(([, i]) => i));
     const shown = marks.filter((_, i) => keep.has(i));
+    // **each mark is a control that opens its own card** (Q1520, Ed
+    // 2026-09-23: *clicking on the icons next to the table of contents should
+    // open those cards*) — the rail entry's own act, bound in `renderToc` —
+    // named by the entry's title and what it wants of you, so it is no longer
+    // hidden from a screen reader. **The `+n` tally goes to the section**, as
+    // the heading's own link does: what it counts is not drawn, so there is
+    // no one card for it to open.
+    const markBtn = ({ g, k }) => {
+      // escaped piece by piece, where the member-written title enters
+      const name = T.toc.markName(esc(plainLabel(g.qLabel)), esc(T.toc.markState[k] || ''));
+      return '<button type="button" class="tocmark" data-tocq="' + esc(g.id) + '" aria-label="' + name +
+        '" title="' + name + '">' + mkHtml(k) + '</button>';
+    };
+    const more = marks.length - shown.length;
     // the `.run` is the marks' own box — their ground and their width — inside
     // a zero-width span, so they queue rightwards out of the rail (Q1384)
-    return '<span class="tocmarks" aria-hidden="true"><span class="run">' + shown.map(mkHtml).join('') +
-      (marks.length > shown.length ? '<span class="more">+' + (marks.length - shown.length) + '</span>' : '') +
+    return '<span class="tocmarks"><span class="run">' + shown.map(markBtn).join('') +
+      (more > 0 ? '<button type="button" class="more" data-tocmore="' + n + '" aria-label="' + esc(T.toc.more(more)) +
+        '" title="' + esc(T.toc.more(more)) + '">+' + more + '</button>' : '') +
       '</span></span>';
   }
 
@@ -4885,25 +4858,35 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     tocEl.innerHTML = (extra && extra.tocLead ? extra.tocLead() : '') + heads
       .map((h, i) => buriedBy(i) ? '' :        // a folded part closes its branch of the rail too
         '<li class="lvl' + (h.level ?? 1) + '">' + toggleHtml(i) +
-        '<a href="#sec-' + i + '" data-toc="' + i + '">' + esc(h.x) + '</a>' + tocMarksHtml(i) + '</li>')
+        // a heading's words, read (Ed, 2026-09-24, ruling 13): its escapes
+        // hidden and its marks taken off, as the founder's rail reads `data-h`
+        '<a href="#sec-' + i + '" data-toc="' + i + '">' + esc(mdPlain(h.x)) + '</a>' + tocMarksHtml(i) + '</li>')
       .join('');
     tocEl.querySelectorAll('[data-sec-toggle]').forEach((b) => {
       if (!/^\d+$/.test(b.dataset.secToggle)) return;   // the host's own fold keys are its business
       b.addEventListener('click', (ev) => { ev.preventDefault(); toggleSection(+b.dataset.secToggle); });
     });
+    const toHeading = (n) => {
+      // A heading with exactly one question in it *is* that question, so
+      // clicking it opens the card rather than merely arriving nearby
+      // (Ed, 179). With several, there is nothing to disambiguate on and it
+      // stays what it was: navigation.
+      const only = entriesForSection(n);
+      if (only.length === 1 && openId !== only[0].id) return toggle(only[0].id, true);
+      // same owned animation as the queue-wire, and clear of the sticky navbar
+      travelToHeading('sec-' + n);
+    };
     tocEl.querySelectorAll('[data-toc]').forEach((a) =>
-      a.addEventListener('click', (ev) => {
-        ev.preventDefault();
-        const n = +a.dataset.toc;
-        // A heading with exactly one question in it *is* that question, so
-        // clicking it opens the card rather than merely arriving nearby
-        // (Ed, 179). With several, there is nothing to disambiguate on and it
-        // stays what it was: navigation.
-        const only = entriesForSection(n);
-        if (only.length === 1 && openId !== only[0].id) return toggle(only[0].id, true);
-        // same owned animation as the queue-wire, and clear of the sticky navbar
-        travelToHeading('sec-' + n);
-      })
+      a.addEventListener('click', (ev) => { ev.preventDefault(); toHeading(+a.dataset.toc); })
+    );
+    // **a mark opens its card, a tally goes to its section** (Q1520): the mark
+    // is the rail entry's own act — `toggle(id, true)`, which travels through
+    // `bringIntoView` — and the tally is the heading's
+    tocEl.querySelectorAll('[data-tocq]').forEach((b) =>
+      b.addEventListener('click', (ev) => { ev.preventDefault(); toggle(b.dataset.tocq, true); })
+    );
+    tocEl.querySelectorAll('[data-tocmore]').forEach((b) =>
+      b.addEventListener('click', (ev) => { ev.preventDefault(); toHeading(+b.dataset.tocmore); })
     );
     // Everything the host contributed above the charter's own headings — the
     // Constitution pile head, one entry per live constitution section, the

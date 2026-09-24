@@ -252,6 +252,9 @@ case "$GROUP" in
     # a Windows paste puts no carriage return in a draft (Q1491). Serves
     # design/ itself
     walk "crlf-paste" npm run crlf-paste
+    # a paste keeps only the backslash escapes docs.vote needs (Ed,
+    # 2026-09-24, ruling 14). Serves design/ itself
+    walk "escape-paste" npm run escape-paste
     # 👥 born untouched, and its two blocks (Q779, Q1162). Serves design/
     # itself
     walk "slider-walk" npm run slider-walk

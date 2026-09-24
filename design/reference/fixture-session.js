@@ -273,6 +273,12 @@ window.FIXTURE_SESSION = (function () {
     { t: 'p', x: 'The Club may dissolve itself by a reserved decision at two consecutive meetings, so that nobody dissolves it in an evening.' },
     { t: 'p', x: 'On dissolution the purse pays what is owed, returns any member’s loan, and gives what remains to a society of the same kind, chosen at the last meeting.' },
     { t: 'p', x: 'The house and its fabric return to the Trust, and the tools return to whoever brought them, if they can remember.' },
+    // **escaped as a markdown editor escapes** (Ed, 2026-09-24, rulings 13–14;
+    // nh2026's text): the heading and clause below carry backslash escapes,
+    // which every reading site hides — the column, the rail, a card's head,
+    // the race's two wordings — and edit mode shows, being the source
+    { t: 'h', level: 3, x: '5\\. Expiry' },
+    { t: 'p', key: 'expiry', x: 'The lease under Section 2\\. ends on 29 November 2026\\. The Club asks the Trust to renew it \\*before\\* the spring meeting, not after it\\!' },
     { t: 'h', level: 3, x: 'The Last Meeting' },
     { t: 'p', x: 'The last meeting of the Club is held at the table, over dinner, and is not quorate for any purpose except deciding that it is the last.' },
     { t: 'p', x: 'Adopted at the house, by the fourteen, over pasta.' },
@@ -971,6 +977,23 @@ window.FIXTURE_SESSION = (function () {
           text: 'A candidate for membership is nominated by any two members.',
           rationale: 'The household bar reads as suspicion of our own members. Two names are two names — and if the house has doubts, the meeting is where they belong.',
           p: 0.29
+        }
+      }
+    },
+    // the escaped clause's race (rulings 13–14): both wordings keep the
+    // escapes, and a card, a rail entry and its title show none of them
+    {
+      id: 'race-expiry', kind: 'race', keys: ['expiry'], state: 'needs',
+      qLabel: '§ 5\\. Expiry', urgency: 0.15,
+      pct: 20, cap: 'one of the fourteen has voted — quorum is 5',
+      race: {
+        a: {
+          text: 'The lease under Section 2\\. ends on 29 November 2026\\. The Steward writes to the Trust about renewing it in September\\.',
+          rationale: 'Asking before the spring meeting is too early to know the rent. September leaves two months, which has always been enough.'
+        },
+        b: {
+          text: 'The lease under Section 2\\. ends on 29 November 2026\\. The Club asks the Trust to renew it \\*before\\* the spring meeting \\(and says so in the Members’ Book\\)\\.',
+          rationale: 'Write the asking down, so the next Steward can see that it was done.'
         }
       }
     },

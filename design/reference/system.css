@@ -655,6 +655,17 @@
     flex: none; display: flex; align-items: center; gap: 1px;
     padding: 1px 3px; background: var(--bg); border-radius: var(--r-sm);
   }
+  /* **a mark is a control** (Q1520): it opens its own entry's card, the
+     `+n` tally goes to the section. Buttons drawn exactly as the spans they
+     were — the user agent's padding, font, spacing and ground taken off — so
+     nothing in the run moves; `.tocmarks .more` below restores the tally's
+     own size, colour and gap. */
+  .tocmarks .tocmark, .tocmarks .more {
+    appearance: none; background: none; border: 0; padding: 0; margin: 0;
+    font: inherit; color: inherit; letter-spacing: inherit; line-height: inherit;
+    text-align: inherit; cursor: pointer;
+  }
+  .tocmarks .tocmark:focus-visible, .tocmarks .more:focus-visible { outline-offset: 1px; border-radius: 2px; }
   /* **The marks alphabet: Fluent Emoji, Flat, in colour — except ⏸ and ↻**
      (Ed, 2026-09-15, Q1360: *Fluent Flat is perfect!*, and the same afternoon
      *keep the hand-drawn ⏸ and ↻ for those two alone*). Q288 had every mark
@@ -1486,6 +1497,12 @@
      The founder's column carries no span, its blocks being typed into in
      place, so the source view answers for it by the column's own class. */
   .mdmark { color: var(--muted); }
+  /* a backslash escape is read, not shown (Ed, 2026-09-24, ruling 13): the
+     backslash stays in the DOM, so a rendered block the founder's column
+     reads back (`htmlToMd`) keeps it, and is hidden here; the source view
+     shows it, being the source (Q1467) */
+  .mdesc { display: none; }
+  .prose.mdsrc .mdesc { display: inline; }
   .lp.bullet:has(.mdmark) { padding-left: 0; }
   .lp.bullet:has(.mdmark)::before, .doc .bullet:has(> .mdmark)::before { content: none; }
   .doc .bullet:has(> .mdmark) { padding-left: 0; }
@@ -2861,13 +2878,8 @@
   #wires .ink { transition: opacity var(--wash-ms) ease; }
   #wires .ink path { transition: stroke var(--wash-ms) ease; }
   #wires .ink .cap { transition: fill var(--wash-ms) ease; }
-  /* **the edge** (Q1516 (6)): one pixel either side of the cable, in its own
-     hue darkened to stand 3∶1 off the sheet and the desk (`wireEdge`,
-     session.js), fading with it */
-  #wires .edge path { stroke-width: 8; transition: stroke var(--wash-ms) ease; }
-  #wires .edge .cap { transition: fill var(--wash-ms) ease; }
   @media (prefers-reduced-motion: reduce) {
-    #wires .ink, #wires .ink path, #wires .ink .cap, #wires .edge path, #wires .edge .cap { transition: none; }
+    #wires .ink, #wires .ink path, #wires .ink .cap { transition: none; }
   }
   /* NARROW_Q */
   @media (max-width: 900px) { #wires { display: none; } }

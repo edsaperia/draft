@@ -1,6 +1,6 @@
 {
  "meta": {
-  "cards": 263,
+  "cards": 265,
   "walks": [
    "answers",
    "charter",
@@ -1821,6 +1821,29 @@
      "n of m weighed in · quorum was 5 · you voted on three pairs — twice for the wording that stood"
     ]
    },
+   "race-expiry": {
+    "eyebrow": "The clause as it stands",
+    "head": "The lease under Section 2. ends on D Month YYYY. The Club asks the Trust to renew it *before* the spring meeting, not after it!",
+    "lock": "",
+    "body": "Proposed · 2 rival proposalsThe lease under Section 2. ends on D Month YYYY. The Steward writes to the Trust about renewing it in September.Asking before the spring meeting is too early to know the rent. September leaves two months, which has always been enough.Prefer this✏️ propose editThe lease under Section 2. ends on D Month YYYY. The Club asks the Trust to renew it *before* the spring meeting (and says so in the Members’ Book).Write the asking down, so the next Steward can see that it was done.Prefer this✏️ propose edit",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "Choose one of the three first",
+      "title": "Choose one of the three first"
+     }
+    ],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record.",
+     "Say you prefer this proposal — nothing leaves the card until you submit",
+     "Write your own version of this proposal. Free to open — proposing costs one edit.",
+     "I can’t split them",
+     "Choose one of the three first"
+    ],
+    "helpers": []
+   },
    "race-guests-notice": {
     "eyebrow": "The clause as it stands",
     "head": "Friends of the house are welcome whenever a member is in.",
@@ -2838,6 +2861,23 @@
     "helpers": [
      "n of m weighed in · quorum was 5 · you voted on three pairs — twice for the wording that stood"
     ]
+   },
+   "race-expiry": {
+    "eyebrow": "The clause as it stands",
+    "head": "The lease under Section 2. ends on D Month YYYY. The Club asks the Trust to renew it *before* the spring meeting, not after it!",
+    "lock": "",
+    "body": "Proposed · 2 rival proposalsThe lease under Section 2. ends on D Month YYYY. The Steward writes to the Trust about renewing it in September.Asking before the spring meeting is too early to know the rent. September leaves two months, which has always been enough.Prefer this✏️ propose editThe lease under Section 2. ends on D Month YYYY. The Club asks the Trust to renew it *before* the spring meeting (and says so in the Members’ Book).Write the asking down, so the next Steward can see that it was done.Prefer this✏️ propose edit",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record.",
+     "Say you prefer this proposal — nothing leaves the card until you submit",
+     "Write your own version of this proposal. Free to open — proposing costs one edit.",
+     "I can’t split them"
+    ],
+    "helpers": []
    },
    "race-guests-notice": {
     "eyebrow": "The clause as it stands",
