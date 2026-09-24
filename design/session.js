@@ -126,7 +126,7 @@
     // from a render
     abstainNoteHtml, tickAbstain,
     // a rail entry's title and its moment (Q1523)
-    railChange, railPair, railWhen, railTitleHtml, longWhen, reasonPlain,
+    railChange, railPair, railWhen, railTitleHtml, longWhen, longDay, reasonPlain,
   } = window.CARDS;
   // **A power is not held until it has been acknowledged** (Ed, 2026-08-21).
   // The host says whether this reader may propose and may judge; both default
@@ -5947,13 +5947,12 @@ document.addEventListener('paste', (ev) => {
   // 10-minute steps inside the hour — never finer, never seconds. Every
   // figure rounds *down* to its step, so the clock is never optimistic.
   // Cold at every distance: the last hours' urgency belongs to the questions.
-  const MONTHS = T.clock.months;
   // a date in words, the year only when it is not this one (STYLE §2: raw
-  // values are not copy); `todayMs` is a seam for the check script
+  // values are not copy, T16); `todayMs` is a seam for the check script. One
+  // helper for the date alone, cards.js's `longDay`, and one list of month
+  // words, `grammar.longWhen`'s (Ed, 2026-09-24)
   function dateWords(ms, todayMs) {
-    const d = new Date(ms), now = new Date(todayMs ?? Date.now());
-    return d.getDate() + ' ' + MONTHS[d.getMonth()] +
-      (d.getFullYear() === now.getFullYear() ? '' : ' ' + d.getFullYear());
+    return longDay(ms, todayMs ?? Date.now());
   }
   const MIN = 60_000, HOUR = 60 * MIN, DAY = 24 * HOUR;
   // state: {kind:'none'} | {kind:'left', ms} | {kind:'closed', atMs, todayMs?}

@@ -18,7 +18,8 @@
 (function () {
   'use strict';
   const T = window.COPY.feed;
-  const MONTHS = window.COPY.session.clock.months;
+  // the one list of month words (`grammar.longWhen`, cards.js's `longDay`)
+  const MONTHS = window.COPY.grammar.longWhen.months;
   const C = window.CARDS;
   const esc = C.esc;
   const $ = (id) => document.getElementById(id);

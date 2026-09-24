@@ -536,10 +536,9 @@ window.COPY = (function () {
       indifferent: 'indifferent',
       skipped: 'skipped (recirculates with decay)',
     },
-    // the session-clock's ladder (Q466/Q471) and the date in words
+    // the session-clock's ladder (Q466/Q471); the date in words is
+    // `grammar.longWhen`'s, through cards.js's `longDay`
     clock: {
-      months: ['January', 'February', 'March', 'April', 'May', 'June', 'July',
-        'August', 'September', 'October', 'November', 'December'],
       closed: (dateWords) => 'Closed ' + dateWords,
       closingNow: 'closing now',
       daysLeft: (d) => d + ' days left',
