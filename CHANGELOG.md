@@ -6,6 +6,22 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-09-24, afternoon: records that show what changed
+
+### New
+- **Links in reasons.** A reason can now carry a web address or a `[link](address)`, and **bold** and *italic* words. Links to other sites open in a new tab and say so.
+
+### Changed
+- **A record shows what changed, in green.** On a passed change the new words are highlighted green; the wordings that lost keep the yellow they had while racing. On a change that was turned down, the words the proposal would have removed are highlighted green in the text that stayed.
+- **One record at a time stays pinned** in your task list while you owe it an OK, instead of three; news about the rules and new powers still pin as before.
+- **A proposal the Founder vetoed says so**: its record reads *Refused by the Founder*, and its box *Refused proposal*.
+- **Task titles are tidier.** Removed words are shown struck through; a rule set for the first time shows its value; a quorum count reads as the number alone; a rewritten passage fills the line.
+- **Dates read the same everywhere**, on the 24-hour clock and in docs.vote's own words, whatever language your browser is set to. Cards show the full date, the task list the short one.
+- **Fewer buttons that do nothing.** The closing card and the card saying a member left have no bin, and no buttons at all once you have answered them.
+
+### Fixed
+- **Clicking between tabs on a clause no longer makes the card jump** when one of them is a decided change.
+
 ## 2026-09-24, night: tasks you can tell apart, and records that read cleanly
 
 ### Changed
