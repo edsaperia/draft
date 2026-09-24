@@ -1397,6 +1397,10 @@
       if (badge) badge.textContent = String(rows.length);
       const door = document.getElementById('drawerright');
       if (door) door.classList.toggle('asks', rows.length > 0);
+      // …and the `task-sheet` (Ed, 2026-09-24) hears what the list now is:
+      // its bar mirrors the first entry's own title line and counts the rest.
+      // The page's sheet script listens; the list stays this one.
+      document.dispatchEvent(new CustomEvent('tasks-laid', { detail: { top: rows.length ? rows[0].el : null, n: rows.length } }));
       return;
     }
     const railRect = queueEl.getBoundingClientRect();

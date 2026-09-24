@@ -1,37 +1,51 @@
 /**
- * The phone's task drawer: its spacing and its closing (Q1387, Q1388; Ed's
- * phone QA, 2026-09-12 and 2026-09-15).
+ * The phone's `task-sheet` (Ed, 2026-09-24), and what the task drawer it
+ * replaced was guarded for (Q1387, Q1388, Q1484 (c)).
  *
- *   npm run drawer-walk
+ *   npm run drawer-walk                     (--shots=<dir> saves the peek and the raised sheet)
  *
- * At 390×844 on the session fixture, the right-hand door open:
+ * At 390×844 on the session fixture, touch on:
  *
- *   1. every two neighbouring entries are exactly `--s2` (8px) apart, in the
- *      drawer's *visual* order — the column sorts with flex `order`, so the
- *      DOM's last child can stand anywhere, and Q1387 was a `:last-child`
- *      margin rule taking the gap from under whichever entry was born last;
- *      the list is spaced by its `gap`, and no entry carries a margin;
- *   2. a tap on the drawer's own empty space — inside the panel, on no entry —
- *      closes it, by mouse and by touch (iOS reaches the page as a pointerup,
- *      the desktop as a click; both paths are driven);
- *   3. a drag on that same empty space does not close it: the pointer moved,
- *      so it was a scroll and not a tap;
- *   4. a tap on an entry still opens the entry's card and closes the drawer
- *      a beat later, as the first cut had it.
+ *   1. at rest the sheet peeks: its bar stands at the window's foot, says the
+ *      first entry's own title line, and *+n more* for the rest of the door's
+ *      count; nothing of the list shows above the glass;
+ *   2. a tap on the bar raises it, three quarters of the window at most, over
+ *      the darkened ground; the ≣ door says it is expanded;
+ *   3. raised, every two neighbouring entries are exactly `--s2` (8px) apart
+ *      in the list's *visual* order (Q1387 — the column sorts with flex
+ *      `order`, so the DOM's last child can stand anywhere), and no entry
+ *      carries a margin; ↻ stands in the list, red (Q1484 (c));
+ *   4. a tap on the ground lowers it; a tap on the list's own empty space
+ *      lowers it (Q1388); a drag on that space does not;
+ *   5. a finger on the bar is followed: mid-drag the sheet is where the
+ *      finger put it and the root says a press is in flight
+ *      (`data-sheetdrag`), a rail rebuild under the drag changes nothing, and
+ *      let go past half way it rises, short of it it falls back; a quick
+ *      flick rises by its speed; a drag down lowers it; a real touch drag too;
+ *   6. a tap on an entry opens its card and the sheet goes back to the peek,
+ *      the peek now naming the open entry; closing the card, the peek names
+ *      the most urgent entry again;
+ *   7. reading down slides the peek out of view, any scroll up brings it
+ *      back, and at the document's foot it stays;
+ *   8. the ≣ door raises it too;
+ *   9. no horizontal overflow, no page errors; with reduced motion nothing
+ *      eases; at 1600 there is no sheet at all.
  *
  * Exit 1 on any failure; every line printed is an assertion.
  */
 import { createServer } from 'node:http';
-import { readFile, stat } from 'node:fs/promises';
+import { readFile, stat, mkdir } from 'node:fs/promises';
 import { join, extname, normalize, sep, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { browserFor } from '../../scripts/lib/walk.mjs';
 
 const DESIGN = join(resolve(fileURLToPath(new URL('../..', import.meta.url))), 'design');
-const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.txt': 'text/plain' };
+const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.txt': 'text/plain', '.svg': 'image/svg+xml', '.woff2': 'font/woff2' };
 const SIZE = { width: 390, height: 844 };
 const FIXTURE = '/session-view.html?fixture=session&band=1';
 const GAP = 8;   // --s2
+const shotsArg = process.argv.find((a) => a.startsWith('--shots='));
+const SHOTS = shotsArg ? shotsArg.slice('--shots='.length) : null;
 
 function serveDesign() {
   const server = createServer(async (req, res) => {
@@ -50,8 +64,9 @@ function serveDesign() {
 
 const fails = [];
 const say = (ok, line) => { console.log((ok ? '  ok   ' : '  FAIL ') + line); if (!ok) fails.push(line); };
+const px = (n) => (Math.round(n * 10) / 10) + 'px';
 
-/** the visible entries in drawer order, each with its box and margins */
+/** the visible entries in list order, each with its box, margins and title line */
 const entries = (page) => page.evaluate(() => {
   const ul = document.querySelector('.layout > .queue ul');
   const all = [...ul.querySelectorAll('.qitem')];
@@ -62,71 +77,108 @@ const entries = (page) => page.evaluate(() => {
     rowGap: cs.rowGap, display: cs.display,
     rows: shown.map((el) => {
       const r = el.getBoundingClientRect(); const s = getComputedStyle(el);
-      return { id: el.dataset.q, top: r.top, bottom: r.bottom, left: r.left, right: r.right, mt: s.marginTop, mb: s.marginBottom, last: el === ul.lastElementChild };
+      const ql = el.querySelector('.ql');
+      return { id: el.dataset.q, top: r.top, bottom: r.bottom, left: r.left, right: r.right, mt: s.marginTop, mb: s.marginBottom,
+        last: el === ul.lastElementChild, title: (ql ? ql.textContent : el.textContent).replace(/\s+/g, ' ').trim() };
     }),
   };
 });
-const drawer = (page) => page.evaluate(() => document.documentElement.getAttribute('data-drawer'));
-const openRight = async (page) => {
-  if (await drawer(page) !== 'right') await page.click('#drawerright');
-  await page.waitForTimeout(250);
-};
-/** a point inside the panel that no entry covers: below the last entry, inside the panel's box */
-const emptySpot = async (page) => {
-  const q = await page.evaluate(() => { const r = document.querySelector('.layout > .queue').getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom }; });
-  const e = await entries(page);
-  const lastBottom = e.rows.length ? Math.max(...e.rows.map((r) => r.bottom)) : q.top;
-  const y = Math.min(lastBottom + 40, q.bottom - 20);
-  const x = (q.left + q.right) / 2;
-  const on = await page.evaluate(([x, y]) => { const el = document.elementFromPoint(x, y); return el ? el.tagName + (el.className ? '.' + String(el.className).split(' ')[0] : '') + (el.closest('li, a, button') ? ' (in an entry)' : '') : 'nothing'; }, [x, y]);
-  return { x, y, on };
-};
+/** the sheet as the page holds it: its state, its box, its bar's box and words */
+const sheet = (page) => page.evaluate(() => {
+  const root = document.documentElement;
+  const q = document.querySelector('.layout > .queue');
+  const bar = document.querySelector('.sheetbar');
+  const r = q.getBoundingClientRect(); const b = bar ? bar.getBoundingClientRect() : null;
+  const line = bar ? bar.querySelector('.sheetline') : null;
+  return {
+    state: root.getAttribute('data-sheet'), hide: root.hasAttribute('data-sheethide'), drag: root.hasAttribute('data-sheetdrag'),
+    top: r.top, bottom: r.bottom, height: r.height, vis: getComputedStyle(q).visibility,
+    bar: b && { top: b.top, bottom: b.bottom, left: b.left, right: b.right, height: b.height },
+    line: line ? line.textContent.replace(/\s+/g, ' ').trim() : null,
+    more: bar ? bar.querySelector('.sheetmore').textContent : null,
+    count: +(document.getElementById('drawercount') || {}).textContent || 0,
+    door: document.getElementById('drawerright').getAttribute('aria-expanded'),
+    ground: getComputedStyle(document.body, '::after').content,
+    vw: innerWidth, vh: innerHeight, sw: document.scrollingElement.scrollWidth,
+  };
+});
+const settle = (page, ms = 450) => page.waitForTimeout(ms);
+const barMid = (s) => ({ x: (s.bar.left + s.bar.right) / 2, y: (s.bar.top + s.bar.bottom) / 2 });
+
+/** a mouse drag on the bar, in steps; `hold` waits before letting go, so the release carries no speed */
+async function mouseDrag(page, from, dy, { steps = 8, stepMs = 16, hold = 160, mid } = {}) {
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  for (let i = 1; i <= steps; i++) { await page.mouse.move(from.x, from.y + (dy * i) / steps); await page.waitForTimeout(stepMs); }
+  if (mid) await mid();
+  if (hold) await page.waitForTimeout(hold);
+  await page.mouse.up();
+}
 
 const server = await serveDesign();
 const base = 'http://127.0.0.1:' + server.address().port;
-const browser = await browserFor().launch();
+const engine = browserFor();
+const browser = await engine.launch();
 const context = await browser.newContext({ viewport: SIZE, deviceScaleFactor: 1, hasTouch: true, locale: 'en-GB', timezoneId: 'Europe/London' });
 const page = await context.newPage();
 const pageErrors = [];
 page.on('pageerror', (e) => pageErrors.push(String(e)));
 await page.goto(base + FIXTURE);
-await page.waitForTimeout(900);
-console.log('drawer-walk @ ' + SIZE.width + '×' + SIZE.height + ' — ' + FIXTURE);
+await page.waitForTimeout(1200);
+console.log('drawer-walk (the task sheet) @ ' + SIZE.width + '×' + SIZE.height + ' — ' + FIXTURE);
+if (SHOTS) await mkdir(SHOTS, { recursive: true });
 
-// 1. spacing
-await openRight(page);
-say(await drawer(page) === 'right', 'the right door opens the task drawer');
-const e = await entries(page);
+// 1. the peek
+let s = await sheet(page);
+let e = await entries(page);
+say(s.state === 'peek', 'at rest the sheet peeks (data-sheet=' + s.state + ')');
+say(!!s.bar && s.bar.bottom <= s.vh + 0.5 && s.bar.top >= s.vh - 56 - 0.5 && s.bar.top < s.vh,
+  'its bar stands at the window\'s foot: ' + (s.bar ? px(s.bar.top) + '–' + px(s.bar.bottom) : 'no bar') + ' of ' + s.vh);
+say(e.rows.length >= 3 && e.rows[0].top >= s.vh - 0.5, 'nothing of the list shows above the glass (first entry at ' + px(e.rows[0] ? e.rows[0].top : -1) + ')');
+say(s.line === e.rows[0].title, 'the bar says the first entry\'s own title line: «' + s.line + '»' + (s.line === e.rows[0].title ? '' : ' — the entry says «' + e.rows[0].title + '»'));
+say(s.count === e.rows.length, 'the door counts the list: ' + s.count + ' of ' + e.rows.length);
+say(s.more === '+' + (s.count - 1) + ' more', 'and the bar counts the rest: «' + s.more + '»');
+say(s.sw <= s.vw, 'no horizontal overflow at rest (' + s.sw + ' of ' + s.vw + ')');
+if (SHOTS) await page.screenshot({ path: join(SHOTS, 'sheet-peek.png') });
+const firstTitle = e.rows[0].title;
+
+// 2. a tap raises it
+await page.touchscreen.tap(barMid(s).x, barMid(s).y);
+await settle(page);
+s = await sheet(page);
+say(s.state === 'open', 'a tap on the bar raises the sheet');
+say(Math.abs(s.bottom - s.vh) < 1 && s.height <= s.vh * 0.75 + 1, 'raised, it stands on the foot, ' + px(s.height) + ' tall (at most ' + px(s.vh * 0.75) + ')');
+say(s.ground !== 'none' && s.ground !== 'normal', 'over the darkened ground');
+say(s.door === 'true', 'and the ≣ door says it is expanded');
+if (SHOTS) await page.screenshot({ path: join(SHOTS, 'sheet-open.png') });
+
+// 3. spacing, and ↻
+e = await entries(page);
 say(e.display === 'flex' && e.rowGap === GAP + 'px', 'the list is a flex column spaced by its gap (' + e.rowGap + ')');
-say(e.rows.length >= 3, 'the drawer holds ' + e.rows.length + ' entries (enough to measure)');
 say(e.rows.every((r) => r.mt === '0px' && r.mb === '0px'), 'no entry carries a margin of its own');
 for (let i = 1; i < e.rows.length; i++) {
   const g = e.rows[i].top - e.rows[i - 1].bottom;
   say(Math.abs(g - GAP) < 0.5, 'gap under ' + e.rows[i - 1].id + ' → ' + e.rows[i].id + ' is ' + g.toFixed(1) + 'px' + (e.rows[i - 1].last ? ' (the DOM\'s last child, sorted mid-list)' : ''));
 }
-// the case Ed's phone met: the DOM's last child sorted into the middle. The
-// fixture's newest entry may be filed and hidden, so the case is staged —
-// the last child shown and ordered first — and measured like any other.
+// the case Ed's phone met: the DOM's last child sorted into the middle,
+// staged — the last child shown and ordered first — and measured
 const staged = await page.evaluate(() => {
   const ul = document.querySelector('.layout > .queue ul');
   const last = ul.lastElementChild; if (!last) return null;
+  const was = [last.style.display, last.style.order];
   last.style.display = ''; last.style.order = '-1';
   const shown = [...ul.querySelectorAll('.qitem')].filter((el) => getComputedStyle(el).display !== 'none');
   shown.sort((a, b) => (+a.style.order || 0) - (+b.style.order || 0));
   const i = shown.indexOf(last);
   const next = shown[i + 1];
   const out = next ? { id: last.dataset.q, next: next.dataset.q, gap: next.getBoundingClientRect().top - last.getBoundingClientRect().bottom } : null;
-  last.style.display = 'none'; last.style.order = '';
+  last.style.display = was[0]; last.style.order = was[1];
   return out;
 });
 if (staged) say(Math.abs(staged.gap - GAP) < 0.5, 'the DOM\'s last child sorted first keeps its gap: ' + staged.gap.toFixed(1) + 'px under ' + staged.id + ' → ' + staged.next);
-
-// 1b. **↻ is in the drawer** (Q1484 (c), the nh2026 convention 2026-09-20).
-// The wide rail lists `stranded` among the entries that pin and the drawer's
-// own list did not, so on a phone a proposal the text had moved out from
-// under was in neither the one list of what asks something of you nor the
-// door's count. The page is asked which entry is stranded rather than told:
-// a check that cannot find its subject has not run, and says so.
+// **↻ is in the list** (Q1484 (c)), and red: the page is asked which entry
+// is stranded rather than told — a check that cannot find its subject has
+// not run, and says so
 const stranded = await page.evaluate(() => {
   const ul = document.querySelector('.layout > .queue ul');
   const mine = (window.SESSION.SUGGS || []).filter((g) => g.mine && g.stranded && !g.unproposed);
@@ -136,65 +188,177 @@ const stranded = await page.evaluate(() => {
   return { any: mine.length, id: mine[0] ? mine[0].id : null, there: !!el,
     shown: !!el && getComputedStyle(el).display !== 'none',
     mark: mk ? mk.className : (el ? el.className : null),
-    // **and it is red** (Q1484, Ed 2026-09-21: *Red entry, words unchanged*).
-    // The entry's ground is a wash of the surface's one red and the ↻ is
-    // painted it; at 390 the drawer is the only list there is, so the rule
-    // has to hold here as well as in the wide rail.
     wash: btn ? getComputedStyle(btn).getPropertyValue('--washcol').trim() : null,
     ink: mk ? getComputedStyle(mk).color : null,
-    red: getComputedStyle(document.documentElement).getPropertyValue('--lc-wrong').trim(),
-    count: (document.querySelector('#drawerright .dcount') || {}).textContent || null };
+    red: getComputedStyle(document.documentElement).getPropertyValue('--lc-wrong').trim() };
 });
 say(stranded.any > 0, 'the fixture holds a stranded proposal to look for' + (stranded.id ? ' (' + stranded.id + ')' : ''));
-say(stranded.shown, 'the stranded proposal ↻ stands in the drawer' +
+say(stranded.shown, 'the stranded proposal ↻ stands in the sheet' +
   (stranded.shown ? ' as ' + stranded.mark : ': there ' + stranded.there + ', shown ' + stranded.shown));
-// the channels as the stylesheet holds them, read back rather than written
-// down here, so the walk cannot disagree with the palette about what red is
 const chans = (stranded.red || '').split(',').map((x) => x.trim()).filter(Boolean);
 const wantRgb = chans.length === 3 ? 'rgb(' + chans.join(', ') + ')' : null;
-const washRed = !!wantRgb && (stranded.wash || '').replace(/\s+/g, ' ')
-  .startsWith('rgba(' + chans.join(', ') + ',');
+const washRed = !!wantRgb && (stranded.wash || '').replace(/\s+/g, ' ').startsWith('rgba(' + chans.join(', ') + ',');
 say(!!wantRgb && washRed && stranded.ink === wantRgb,
-  'the stranded entry is red in the drawer: ground ' + stranded.wash + ', ↻ ' + stranded.ink +
+  'the stranded entry is red in the sheet: ground ' + stranded.wash + ', ↻ ' + stranded.ink +
   (wantRgb ? ' (--lc-wrong is ' + wantRgb + ')' : ' — the palette has no --lc-wrong'));
 
-// 2. a tap on the empty space closes it — by mouse
-const spot = await emptySpot(page);
-say(!spot.on.includes('(in an entry)'), 'the empty spot (' + spot.x.toFixed(0) + ',' + spot.y.toFixed(0) + ') is on ' + spot.on);
-await page.mouse.click(spot.x, spot.y);
-await page.waitForTimeout(150);
-say(await drawer(page) === null, 'a mouse click on the drawer\'s empty space closes it');
-// — and by touch (the pointerup path, iOS's)
-await openRight(page);
-await page.touchscreen.tap(spot.x, spot.y);
-await page.waitForTimeout(150);
-say(await drawer(page) === null, 'a touch tap on the drawer\'s empty space closes it');
-
-// 3. a drag on the empty space does not
-await openRight(page);
-await page.mouse.move(spot.x, spot.y);
-await page.mouse.down();
+// 4. the ground lowers it; the list's empty space lowers it; a drag there does not
+s = await sheet(page);
+await page.touchscreen.tap(SIZE.width / 2, Math.max(s.top - 40, 200));
+await settle(page);
+say((await sheet(page)).state === 'peek', 'a tap on the darkened ground lowers it to the peek');
+const openAgain = async () => { const t = await sheet(page); if (t.state !== 'open') { await page.touchscreen.tap(barMid(t).x, barMid(t).y); await settle(page); } };
+await openAgain();
+// the list's empty space: its side padding, low down, where no entry reaches
+const spot = await page.evaluate(() => {
+  const ul = document.querySelector('.layout > .queue ul'); const r = ul.getBoundingClientRect();
+  const x = r.left + 6, y = r.bottom - 6;
+  const el = document.elementFromPoint(x, y);
+  return { x, y, on: el ? el.tagName + (el.closest('li, a, button') ? ' (in an entry)' : '') : 'nothing' };
+});
+say(!spot.on.includes('(in an entry)'), 'the list\'s empty spot (' + spot.x.toFixed(0) + ',' + spot.y.toFixed(0) + ') is on ' + spot.on);
+await page.mouse.move(spot.x, spot.y); await page.mouse.down();
 for (let i = 1; i <= 6; i++) await page.mouse.move(spot.x, spot.y - 20 * i);
 await page.mouse.up();
 await page.waitForTimeout(150);
-say(await drawer(page) === 'right', 'a drag of 120px on the empty space leaves the drawer open');
+say((await sheet(page)).state === 'open', 'a drag of 120px on the list\'s empty space leaves it raised');
+// by mouse: a finger's tap this near an entry is moved onto the entry by the
+// browser's touch adjustment, which is the browser being kind, not the page
+await page.mouse.click(spot.x, spot.y);
+await settle(page);
+say((await sheet(page)).state === 'peek', 'a click on the list\'s empty space lowers it (Q1388)');
+// the ground's own tap is a pointerup the page lowers the sheet on, and the
+// click Chromium fires after it hit-tests the document the ground no longer
+// covers: that click is eaten, so it reaches no clause and no tab
+await openAgain();
+await page.evaluate(() => { window.__fell = null; document.addEventListener('click', (ev) => { window.__fell = ev.target.tagName + '.' + ev.target.className; }, { once: true }); });
+await page.touchscreen.tap(SIZE.width / 2, 200);
+await settle(page);
+const fell = await page.evaluate(() => window.__fell);
+say((await sheet(page)).state === 'peek' && fell === null, 'a tap on the ground lowers it and its click reaches nothing beneath' + (fell ? ' — it reached ' + fell : ''));
 
-// 4. an entry still opens and the drawer follows. Measured again here: the
-// drawer has been opened and closed three times since the spacing pass, and
-// the list is laid out by flex `order`, so an entry's box then is not a
-// promise about its box now.
-const now = await entries(page);
-const first = now.rows[0] || e.rows[0];
-await page.mouse.click((first.left + first.right) / 2, (first.top + first.bottom) / 2);
+// 5. the drag
+s = await sheet(page);
+const peekTop = s.top;
+const travel = s.height - s.bar.height;              // the whole way from peek to raised
+let mid = null;
+await mouseDrag(page, barMid(s), -(travel * 0.3), { mid: async () => {
+  const before = await sheet(page);
+  // a rail rebuild under the finger, as the 4 s poll's would be if it came
+  await page.evaluate(() => { if (window.SESSION.renderAll) window.SESSION.renderAll(); dispatchEvent(new Event('resize')); });
+  await page.waitForTimeout(60);
+  mid = { before, after: await sheet(page) };
+} });
+await settle(page);
+say(!!mid && mid.before.drag && Math.abs((peekTop - mid.before.top) - travel * 0.3) < 2,
+  'mid-drag the sheet is under the finger: ' + (mid ? px(peekTop - mid.before.top) + ' up for ' + px(travel * 0.3) : '—') + ', a press in flight (data-sheetdrag)');
+say(!!mid && mid.after.drag && mid.after.state === 'peek' && Math.abs(mid.after.top - mid.before.top) < 1 && !!mid.after.bar,
+  'a rail rebuild under the drag moves nothing (' + (mid ? px(mid.after.top - mid.before.top) : '—') + ') and keeps the state');
+s = await sheet(page);
+say(s.state === 'peek' && !s.drag, 'let go short of half way, it falls back to the peek');
+await mouseDrag(page, barMid(s), -(travel * 0.7));
+await settle(page);
+s = await sheet(page);
+say(s.state === 'open' && Math.abs(s.bottom - s.vh) < 1, 'let go past half way, it rises and settles raised');
+await mouseDrag(page, barMid(s), travel * 0.7);
+await settle(page);
+s = await sheet(page);
+say(s.state === 'peek', 'a drag down lowers it');
+await mouseDrag(page, barMid(s), -60, { steps: 3, stepMs: 8, hold: 0 });
+await settle(page);
+s = await sheet(page);
+say(s.state === 'open', 'a quick flick of 60px up raises it by its speed');
+await mouseDrag(page, barMid(s), 60, { steps: 3, stepMs: 8, hold: 0 });
+await settle(page);
+s = await sheet(page);
+say(s.state === 'peek', 'and a quick flick down lowers it');
+// a real touch drag, on the engine that can send one
+if (engine.name() === 'chromium') {
+  const cdp = await context.newCDPSession(page);
+  const m = barMid(s);
+  const tp = (y) => [{ x: m.x, y }];
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: tp(m.y) });
+  for (let i = 1; i <= 10; i++) { await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: tp(m.y - travel * 0.08 * i) }); await page.waitForTimeout(16); }
+  await page.waitForTimeout(160);
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await settle(page);
+  s = await sheet(page);
+  say(s.state === 'open', 'a touch drag of 80% raises it');
+  await page.touchscreen.tap(SIZE.width / 2, Math.max(s.top - 40, 200));
+  await settle(page);
+}
+
+// 6. an entry opens its card; the peek follows
+await openAgain();
+e = await entries(page);
+// an entry that is not the most urgent, so the peek has something to change to
+// — a clause's entry, whose card `SESSION.openId` names (a setting's is the
+// band's), and not one of your own, which on a phone opens no composer
+const charterIds = await page.evaluate(() => (window.SESSION.SUGGS || []).filter((g) => !g.mine).map((g) => g.id));
+const pick = e.rows.find((r) => r.title !== firstTitle && charterIds.includes(r.id) && r.bottom < SIZE.height - 20) || e.rows[1];
+await page.touchscreen.tap((pick.left + pick.right) / 2, (pick.top + pick.bottom) / 2);
+// the card opens once the page has travelled to it, so the walk waits on the page
+await page.waitForFunction((id) => window.SESSION.openId === id, pick.id, { timeout: 4000 }).catch(() => {});
+await page.waitForTimeout(500);
+s = await sheet(page);
+const opened = await page.evaluate(() => window.SESSION.openId);
+say(opened === pick.id, 'a tap on an entry opens its card (' + opened + ')');
+say(s.state === 'peek', 'and the sheet goes back to the peek');
+say(s.line === pick.title, 'the peek names the open entry: «' + s.line + '»');
+await page.evaluate(() => window.SESSION.closeCard());
 await page.waitForTimeout(900);
-const opened = await page.evaluate(() => {
-  const el = document.querySelector('[class*="-open"]');
-  return el ? el.className : null;
-});
-say(await drawer(page) === null, 'a tap on an entry closes the drawer a beat later');
-say(!!opened, 'and the entry\'s card is open on the page' + (opened ? ' (' + opened + ')' : ''));
+s = await sheet(page);
+say(s.line === firstTitle, 'closing the card, the peek names the most urgent entry again: «' + s.line + '»');
 
+// 7. reading down hides it, up shows it, the foot keeps it
+await page.evaluate(() => scrollTo(0, 0));
+await page.waitForTimeout(1400);   // past the quiet a choice's own scroll gets
+for (let i = 0; i < 4; i++) { await page.mouse.wheel(0, 120); await page.waitForTimeout(80); }
+await page.waitForTimeout(350);
+s = await sheet(page);
+say(s.hide && s.top >= s.vh, 'reading down slides the peek out of view (' + px(s.top) + ' of ' + s.vh + ')');
+await page.mouse.wheel(0, -60);
+await page.waitForTimeout(350);
+s = await sheet(page);
+say(!s.hide && s.bar.top < s.vh && s.bar.bottom <= s.vh + 0.5, 'a scroll up brings it back (' + (s.hide ? 'still hidden' : 'bar at ' + px(s.bar.top)) + ')');
+await page.evaluate(() => scrollTo(0, document.scrollingElement.scrollHeight));
+await page.waitForTimeout(350);
+s = await sheet(page);
+say(!s.hide && s.bar.top < s.vh, 'at the document\'s foot it stays');
+const foot = await page.evaluate(() => {
+  const d = document.querySelector('.layout > main') || document.querySelector('.doc');
+  return d ? d.getBoundingClientRect().bottom : null;
+});
+say(foot !== null && foot <= s.bar.top + 0.5, 'and the document\'s foot ends above the bar (' + px(foot) + ' ≤ ' + px(s.bar.top) + ')');
+
+// 8. the door
+await page.click('#drawerright');
+await settle(page);
+s = await sheet(page);
+say(s.state === 'open', 'the ≣ door raises the sheet');
+await page.click('#drawerright');
+await settle(page);
+say((await sheet(page)).state === 'peek', 'and lowers it again');
+
+// 9. overflow, errors, reduced motion, wide
+s = await sheet(page);
+say(s.sw <= s.vw, 'no horizontal overflow (' + s.sw + ' of ' + s.vw + ')');
 say(pageErrors.length === 0, 'no page errors' + (pageErrors.length ? ': ' + pageErrors.join(' | ') : ''));
+
+const still = await browser.newContext({ viewport: SIZE, deviceScaleFactor: 1, hasTouch: true, reducedMotion: 'reduce' });
+const sp = await still.newPage();
+await sp.goto(base + FIXTURE); await sp.waitForTimeout(900);
+const eased = await sp.evaluate(() => getComputedStyle(document.querySelector('.layout > .queue')).transitionDuration);
+say(/^0s(, 0s)*$/.test(eased), 'with reduced motion the sheet does not ease (' + eased + ')');
+await still.close();
+
+const wide = await browser.newContext({ viewport: { width: 1600, height: 1000 }, deviceScaleFactor: 1 });
+const wp = await wide.newPage();
+await wp.goto(base + FIXTURE); await wp.waitForTimeout(900);
+const w = await wp.evaluate(() => ({ bar: !!document.querySelector('.sheetbar'), attr: document.documentElement.getAttribute('data-sheet') }));
+say(!w.bar && w.attr === null, 'at 1600 there is no sheet at all (bar ' + w.bar + ', data-sheet ' + w.attr + ')');
+await wide.close();
+
 await browser.close();
 server.close();
 console.log(fails.length ? '\n' + fails.length + ' failed' : '\nall green');
