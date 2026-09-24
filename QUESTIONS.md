@@ -179,6 +179,7 @@ What it needs a ruling on is the evidence. A revision is a **new candidate**: an
 
 | # | Title | Raised | State | Pointers |
 |---|---|---|---|---|
+| 1540 | Proposing and voting gated until membership is accepted | 2026-09-24 | backlog by Ed 2026-09-24 evening (*for later, after the demo; proposals and voting should be gated after accepting membership*); which act counts as *accepting* is unasked — condition to act: the demo of 2026-09-24 is over and Ed has said which act it is | `mayPropose`, `mayJudge`, `acked`; SURFACE E8 |
 | 1537 | Markdown tables in a document | 2026-09-24 | backlog by Ed 2026-09-24 (*no tables, but leave it as a question*) | `mdBlock`, `blocksOf`; SURFACE K31 |
 | 1350 | Edit mode on a phone is hidden, not gated: a paired keyboard still enters it | 2026-09-12 | backlog by Ed 2026-09-12 (*leave it for now — see if we can make it work nicely in the future*): the doors are `display: none` below 900px and the prose takes no caret, but a physical key still calls `setEditMode` / `typeAt`; the mobile composer stage (MOBILE.md §1.7's lane door) is where it gets a real answer | `edit-mode`; `design/system.css` (the narrow block hiding `#ridetab`); MOBILE.md §1.7 |
 | 1343 | `REPORT-deferred-evidence.md` is pinned to spec v0.12 and its numbers moved under Q1337 | 2026-09-11 | backlog by Ed 2026-09-11 22:38 (*leave it, file as backlog*): `npm run evidence -w @draft/sim-harness` re-runs it deterministically; the report wants a rewrite against v0.116 when it is next read for a decision | `sim-harness`; `packages/sim-harness/REPORT-deferred-evidence.md`; Q1337 |
@@ -254,7 +255,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1540** — claim by writing the block here, then commit it alone.
+**The next free number is 1541** — claim by writing the block here, then commit it alone.
+
+**1540 is gating proposing and voting until membership is accepted** (claimed 2026-09-24; Ed, mid-build before the demo: *for later, after the demo*). In the Backlog.
 
 **1539 is ranking the leader within the Smith set** (claimed 2026-09-24; Ed pasted the proposal). The leader is the Bradley–Terry top **among the Smith set** of the direct pairwise-majority table, so a Condorcet winner always leads and a weak clone cannot carry its original past the current text (the 15-member worked case reproduced exactly with `fitDavidson`: {cur, X} cur 0.070; {cur, X, Y} X 0.594). Depends on 1538 and must never merge without it (A alone makes clones worse). Plan: `design/spec-pass/plan-q1538-rivals-and-smith.md` (SPEC v0.142 drafts, R-142/R-143). **Ed 2026-09-24:** his take is good; build after tonight's demo. Known limitation, to be stated: clones inside a genuine cycle can still sway the fit. The plan's twelve questions await Ed. Condition to act: Ed rules the plan's questions (2026-09-25).
 
