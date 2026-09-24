@@ -264,6 +264,9 @@ window.COPY = (function () {
       justProposed: 'Proposed — the members are deciding',
       noReason: 'no reason given yet — say what this is for',
       placesOf: (n, of) => n + ' of ' + of + ' places',
+      // the `task-sheet`'s bar on a phone (Ed, 2026-09-24): beside the most
+      // urgent entry's own title, how many more the sheet holds
+      sheetMore: (n) => '+' + n + ' more',
       // a live race's tooltip (Q1200): it wants your vote while the router
       // holds a pair for you on it — voted on or not — and says you have
       // voted only once nothing is left to ask

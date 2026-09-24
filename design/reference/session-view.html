@@ -345,21 +345,56 @@
       report('rejection: ' + ((r && r.message) || String(r)), '', 0, 0);
     });
   })();
-  // The drawers (narrow only): one attribute on the root names the open one,
-  // the doors toggle it, and a tap anywhere outside the open drawer — the
-  // darkened ground, the document — closes it. Choosing inside a drawer
-  // closes it too, after the choice has landed: a rail entry opens its card
-  // in the document and a heading travels there, and both want the drawer
-  // out of the way to be seen. Self-contained on purpose: nothing else on the
-  // page knows a drawer exists.
+  // The contents drawer and the task sheet (narrow only).
+  //
+  // The contents rail is a **drawer**: `data-drawer="left"` on the root names
+  // it open, ☰ toggles it, and a tap anywhere outside it — the darkened
+  // ground, the document — closes it; choosing a heading closes it after the
+  // choice has landed.
+  //
+  // The task rail is a **sheet that peeks** (`task-sheet`, Ed 2026-09-24,
+  // replacing the right-hand drawer of 2026-09-12): a bar at the foot of the
+  // window says the most urgent thing that asks you, in its rail entry's own
+  // words, and how many more there are; a swipe up or a tap raises the whole
+  // list, a swipe down, a tap on the ground or a choice puts it back. Reading
+  // down the document slides the bar away and any scroll up brings it back.
+  // `data-sheet` on the root is `peek` or `open`, absent while nothing asks
+  // you; `data-sheethide` says the peek is scrolled away; `data-sheetdrag`
+  // that a finger is on it, which is a press in flight, so the 4 s poll
+  // defers (`pressInFlight`). The list is the rail's own: `layoutQueue`'s
+  // narrow branch sorts it and announces the result as `tasks-laid`. All of
+  // it lives on the root, never in the list, so a rail rebuild cannot reset
+  // it. Self-contained otherwise: nothing else on the page knows a drawer or
+  // a sheet exists.
   (() => {
     const root = document.documentElement;
+    const mq = matchMedia('(max-width: 900px)');
     const doors = { left: document.getElementById('drawerleft'), right: document.getElementById('drawerright') };
+    const queueEl = () => document.querySelector('.layout > .queue');
+    const sheet = () => root.getAttribute('data-sheet');
+    // a sheet act's own scroll (an entry travelling to its card) never hides
+    // the bar it has just put back
+    let quietUntil = 0;
+    let bar = null, line = null, more = null, topKey = null;
+    const sheetTo = (s) => {
+      if (!sheet()) return;                       // nothing asks: nothing to raise
+      root.setAttribute('data-sheet', s);
+      root.removeAttribute('data-sheethide');
+      doors.right.setAttribute('aria-expanded', String(s === 'open'));
+      if (bar) bar.setAttribute('aria-expanded', String(s === 'open'));
+      if (s === 'open' && root.getAttribute('data-drawer')) set(null);
+      quietUntil = Date.now() + 1200;
+    };
     const set = (side) => {
       if (side) root.setAttribute('data-drawer', side); else root.removeAttribute('data-drawer');
-      for (const k of Object.keys(doors)) doors[k].setAttribute('aria-expanded', String(side === k));
+      doors.left.setAttribute('aria-expanded', String(side === 'left'));
+      if (side && sheet() === 'open') sheetTo('peek');
     };
-    const open = () => root.getAttribute('data-drawer');
+    // the open panel, if any, and how to put it away: the drawer, or the
+    // sheet raised (a peeking sheet is not open — it asks for no ground)
+    const open = () => root.getAttribute('data-drawer') ? 'left' : sheet() === 'open' ? 'sheet' : null;
+    const panelOf = (side) => side === 'left' ? document.querySelector('.layout > .toc') : queueEl();
+    const shut = (side) => { if (side === 'left') set(null); else sheetTo('peek'); };
     // what a tap inside a drawer can be *on*: an entry (a list item on either
     // side) or a control; anything else in the drawer is its empty space
     const ENTRY = 'li, a, button, input, textarea, select, label, [role="button"]';
@@ -370,48 +405,182 @@
     document.addEventListener('pointerdown', (ev) => { down = { x: ev.clientX, y: ev.clientY }; }, { passive: true });
     const dragged = (ev) => !!down && Math.hypot(ev.clientX - down.x, ev.clientY - down.y) > 8;
     doors.left.addEventListener('click', () => set(open() === 'left' ? null : 'left'));
-    doors.right.addEventListener('click', () => set(open() === 'right' ? null : 'right'));
+    // the ≣ door, kept as the way in it always was: it raises the sheet
+    doors.right.addEventListener('click', () => sheetTo(sheet() === 'open' ? 'peek' : 'open'));
     document.addEventListener('click', (ev) => {
       const side = open();
       if (!side) return;
       if (ev.target.closest('.drawerbtn')) return;
-      const drawer = document.querySelector(side === 'left' ? '.layout > .toc' : '.layout > .queue');
+      if (bar && bar.contains(ev.target)) return;   // the bar answers its own taps
+      const drawer = panelOf(side);
       if (drawer && drawer.contains(ev.target)) {
-        if (ev.target.closest('a, button')) setTimeout(() => set(null), 60);
+        if (ev.target.closest('a, button')) setTimeout(() => shut(side), 60);
         // **A tap on the drawer's own empty space closes it too** (Q1388, Ed,
         // 2026-09-15: *clicking somewhere there is no queue card should close
         // the drawer*): a tap that reaches no entry and no control is a tap on
         // the ground, wherever it lands. A click never follows a touch that
         // scrolled, and a mouse drag is told by its distance, so dragging the
         // list stays a drag.
-        else if (!dragged(ev) && !ev.target.closest(ENTRY)) set(null);
+        else if (!dragged(ev) && !ev.target.closest(ENTRY)) shut(side);
         return;
       }
-      set(null);
+      shut(side);
     });
     // iOS dispatches no click for a tap on plain content unless something
     // under it is clickable, so the ground's tap arrives as a pointerup
     // instead (the CSS also gives the ground a pointer cursor while a drawer
     // is open, the other half of the same WebKit rule). Inside the drawer the
     // same tap closes it from here too (Q1388), unless it was a drag.
+    //
+    // **And the click that tap still fires is eaten** (found building the
+    // `task-sheet`, 2026-09-24): Chromium hit-tests a touch's click after its
+    // pointerup has run, and by then the ground is gone and the sheet is on
+    // its way down, so the click landed on whatever lay beneath — measured on
+    // a clause, and a gutter tab there would open a card nobody asked for.
+    // Only the ground's tap and a panel's empty space are eaten; a press on
+    // the topbar with a panel open still does what it says. Guard:
+    // `npm run drawer-walk`.
+    let eat = null;
+    const shutByPointer = (side, ev) => { eat = { t: Date.now(), x: ev.clientX, y: ev.clientY }; shut(side); };
+    addEventListener('click', (ev) => {
+      const e = eat; eat = null;
+      if (!e || Date.now() - e.t > 600 || Math.hypot(ev.clientX - e.x, ev.clientY - e.y) > 12) return;
+      ev.preventDefault(); ev.stopImmediatePropagation();
+    }, true);
     document.addEventListener('pointerup', (ev) => {
       const side = open();
       if (!side || ev.target.closest('.drawerbtn')) return;
-      const drawer = document.querySelector(side === 'left' ? '.layout > .toc' : '.layout > .queue');
+      if (bar && bar.contains(ev.target)) return;
+      const drawer = panelOf(side);
       if (drawer && drawer.contains(ev.target)) {
-        if (!dragged(ev) && !ev.target.closest(ENTRY)) set(null);
+        if (!dragged(ev) && !ev.target.closest(ENTRY)) shutByPointer(side, ev);
         return;
       }
-      set(null);
+      // the ground is the body's own `::after`; anything else outside the
+      // panel (the topbar) keeps its press
+      if (ev.target === document.body || ev.target === root) shutByPointer(side, ev); else shut(side);
     });
-    document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && open()) set(null); });
-    matchMedia('(max-width: 900px)').addEventListener('change', (ev) => { if (!ev.matches) set(null); });
+    document.addEventListener('keydown', (ev) => { const side = open(); if (ev.key === 'Escape' && side) shut(side); });
+    mq.addEventListener('change', (ev) => {
+      if (ev.matches) return;
+      set(null);
+      // wide: the rail is a rail again, and nothing of the sheet may stay on it
+      for (const a of ['data-sheet', 'data-sheethide', 'data-sheetdrag']) root.removeAttribute(a);
+      const q = queueEl(); if (q) q.style.transform = '';
+      doors.right.setAttribute('aria-expanded', 'false');
+    });
+
+    // ---- the task sheet's bar ------------------------------------------------
+    // Made on the first narrow layout, never on a wide page (the probes read
+    // the wide one): a grab handle, the most urgent entry's own title line —
+    // its `.ql`, cloned from the entry as the rail drew it, so the bar says
+    // exactly what the entry says — and *+n more*.
+    const build = () => {
+      const q = queueEl();
+      if (bar || !q) return;
+      bar = document.createElement('div');
+      bar.className = 'sheetbar';
+      bar.setAttribute('role', 'button');
+      bar.setAttribute('aria-controls', 'rail');
+      bar.setAttribute('aria-expanded', 'false');
+      bar.tabIndex = 0;
+      bar.innerHTML = '<span class="grab" aria-hidden="true"></span><span class="sheetline"></span><span class="sheetmore"></span>';
+      line = bar.querySelector('.sheetline');
+      more = bar.querySelector('.sheetmore');
+      q.insertBefore(bar, q.firstChild);
+      wire();
+    };
+    document.addEventListener('tasks-laid', (ev) => {
+      if (!mq.matches) return;
+      build();
+      if (!bar) return;
+      const { top, n } = ev.detail || {};
+      if (!n || !top) {
+        root.removeAttribute('data-sheet'); root.removeAttribute('data-sheethide');
+        doors.right.setAttribute('aria-expanded', 'false');
+        topKey = null;
+        return;
+      }
+      if (!sheet()) { root.setAttribute('data-sheet', 'peek'); bar.setAttribute('aria-expanded', 'false'); }
+      const ql = top.querySelector('.ql');
+      const key = (top.dataset.q || '') + '\u0001' + (ql ? ql.innerHTML : top.textContent);
+      if (key !== topKey) {
+        topKey = key;
+        const c = ql ? ql.cloneNode(true) : document.createTextNode(top.textContent.trim());
+        if (c.querySelectorAll) for (const el of c.querySelectorAll('[id]')) el.removeAttribute('id');
+        line.replaceChildren(c);
+      }
+      const words = n > 1 ? window.COPY.session.rail.sheetMore(n - 1) : '';
+      if (more.textContent !== words) more.textContent = words;
+    });
+
+    // **The bar follows the finger** and settles to the nearer rest when it
+    // lets go — or to the one it was flung towards. A tap is told from a drag
+    // by travel, the drawer's 8px (Q1388); a tap raises or lowers it by the
+    // click it fires, so the keyboard's Enter is the same act.
+    const wire = () => {
+      let d = null, swallow = 0;
+      bar.addEventListener('pointerdown', (ev) => {
+        if (!sheet() || (ev.pointerType === 'mouse' && ev.button !== 0)) return;
+        const max = Math.max(0, queueEl().offsetHeight - bar.offsetHeight);
+        d = { id: ev.pointerId, y0: ev.clientY, from: sheet() === 'open' ? 0 : max, max, off: null, s: [[ev.timeStamp, ev.clientY]] };
+        try { bar.setPointerCapture(ev.pointerId); } catch (e) { /* a synthetic pointer */ }
+      });
+      bar.addEventListener('pointermove', (ev) => {
+        if (!d || ev.pointerId !== d.id) return;
+        const dy = ev.clientY - d.y0;
+        if (d.off === null && Math.abs(dy) <= 8) return;
+        if (d.off === null) root.setAttribute('data-sheetdrag', '');
+        d.off = Math.min(d.max, Math.max(0, d.from + dy));
+        queueEl().style.transform = 'translateY(' + d.off + 'px)';
+        d.s.push([ev.timeStamp, ev.clientY]);
+        while (d.s.length > 2 && ev.timeStamp - d.s[0][0] > 100) d.s.shift();
+      });
+      const release = (ev) => {
+        if (!d || ev.pointerId !== d.id) return;
+        const g = d; d = null;
+        if (g.off === null) return;               // a tap: its click decides
+        swallow = Date.now();
+        const [t0, y0] = g.s[0];
+        const [t1, y1] = ev.type === 'pointercancel' ? g.s[g.s.length - 1] : [ev.timeStamp, ev.clientY];
+        const v = t1 > t0 ? (y1 - y0) / (t1 - t0) : 0;   // px per ms, down positive
+        const to = v < -0.4 ? 'open' : v > 0.4 ? 'peek' : (g.off < g.max / 2 ? 'open' : 'peek');
+        queueEl().style.transform = '';
+        root.removeAttribute('data-sheetdrag');
+        sheetTo(to);
+      };
+      bar.addEventListener('pointerup', release);
+      bar.addEventListener('pointercancel', release);
+      bar.addEventListener('click', () => {
+        if (Date.now() - swallow < 400) return;   // the click a drag leaves behind
+        sheetTo(sheet() === 'open' ? 'peek' : 'open');
+      });
+      bar.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); bar.click(); }
+      });
+    };
+
+    // **Reading down slides the bar away; any scroll up brings it back** (the
+    // browser toolbar's own manners). Never while the sheet is raised or a
+    // finger is on it, never on the scroll a choice set off, and near the
+    // foot of the document it stays, there being nothing further to read.
+    let lastY = scrollY, readDown = 0;
+    addEventListener('scroll', () => {
+      const y = scrollY, dy = y - lastY;
+      lastY = y;
+      if (!mq.matches || sheet() !== 'peek' || root.hasAttribute('data-sheetdrag')) { readDown = 0; return; }
+      const atFoot = y + innerHeight >= root.scrollHeight - 48;
+      if (dy < 0 || atFoot) { readDown = 0; root.removeAttribute('data-sheethide'); return; }
+      readDown += dy;
+      const busy = Date.now() < quietUntil || (window.SESSION && window.SESSION.travelling);
+      if (readDown > 24 && y > 80 && !busy) root.setAttribute('data-sheethide', '');
+    }, { passive: true });
+
     // **The bar's height is measured on narrow** (Q1351): two rows wrap by
     // content, so `--nav-h` — what the drawers, the ground and the reading
     // line hang from — is written from the bar itself, and the stylesheet's
     // literal is the first paint's guess. Wide keeps the stylesheet's.
     const nav = document.querySelector('.navbar');
-    const mq = matchMedia('(max-width: 900px)');
     const fit = () => {
       if (mq.matches && nav) root.style.setProperty('--nav-h', nav.offsetHeight + 'px');
       else root.style.removeProperty('--nav-h');
@@ -2617,7 +2786,9 @@
     // key on. ⚖️ has neither: a right is not an object and nothing flies.
     { k: 'canpropose', g: '💡', t: PAGE_COPY.gate.canpropose.title, own: 'you', isGate: true,
       grants: '✏️', textcard: true,
-      hide: () => !constituted(),
+      // not shown to a member before 🏛️'s OK (Q1540, Ed 2026-09-24: *until
+      // you've accepted 🏛️, you're not shown ✏️ or ⚖️*; SURFACE E8)
+      hide: () => !constituted() || voiceUnaccepted(),
       open: () => !!cs && !!viewerId() && cs.canPropose(viewerId()),
       // **The body says what a proposal is** (Ed, 2026-09-01, Q1129, T45). It
       // used to explain *when* proposing opens — *Anybody can read the document
@@ -2634,7 +2805,7 @@
       done: PAGE_COPY.gate.canpropose.done,
       blockers: () => (constituted() ? [] : [card('text'), card('begin')].filter((c) => c && !settled(c))) },
     { k: 'canjudge', g: '⚖️', t: PAGE_COPY.gate.canjudge.title, own: 'you', isGate: true, textcard: true,
-      hide: () => !constituted(),
+      hide: () => !constituted() || voiceUnaccepted(),
       open: () => canJudge(),
       // **And ⚖️'s says what a vote is** (Ed, 2026-09-01, Q1129, T45). Its old
       // body — *A vote counts towards quorum, and whether your name goes on it
@@ -5197,6 +5368,8 @@
   const GATE_KEYS = ['canpropose', 'canjudge'];
   const gateSelfSet = (k) => GATE_KEYS.includes(k) && amFounder();
   const acked = (k) => S.okd.has(k) || gateSelfSet(k);
+  // a member who has not yet accepted 🏛️ is shown neither 💡 ✏️ nor ⚖️ (Q1540)
+  const voiceUnaccepted = () => viewerIsMember() && !acked('grant-voice');
   const mayPropose = () => canPropose() && viewerIsMember() && acked('canpropose');
   const mayJudge = () => canJudge() && viewerIsMember() && acked('canjudge');
   const mayVoice = () => !!cs && viewerIsMember() && !!viewerRow().in && acked('grant-voice');
@@ -9296,8 +9469,11 @@
   // a consequence of the switch, and it holds in both positions.
   // …and a travel (Ed, 2026-09-16): a rail click's scroll to its card is a
   // gesture in flight too, and a poll landing inside it lost the card
+  // …and a finger on the phone's `task-sheet` (Ed, 2026-09-24): a drag is a
+  // press held down, and a rebuild under it would move the list it carries
   const pressInFlight = () => WAL.penHold || SESSION.holding || SESSION.travelling || assembly ||
-    (sliderHold && Date.now() - sliderHold < 30_000) || dateInFlight();
+    (sliderHold && Date.now() - sliderHold < 30_000) || dateInFlight() ||
+    document.documentElement.hasAttribute('data-sheetdrag');
   // A lane rebuilt on every keystroke would lose the caret, so typing repaints
   // the bar and the rail and leaves the card alone — only the commit control,
   // which is about what you have just typed, is set directly.

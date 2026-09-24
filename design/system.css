@@ -1259,7 +1259,7 @@
      one treatment, one meaning; in edit mode the text *is* the open card). */
   .ridetab.editing .achip[data-tab="text"] {
     width: 42px; padding-left: 8px; padding-right: 0;
-    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 34%, var(--bg));
+    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) var(--chipmixa, 34%), var(--bg));
   }
   /* In edit mode the text is the open card, so the pile is a strip and takes
      the strip's own tuck-under (`.clausehead .achip`'s -2px) — on every tab,
@@ -2221,15 +2221,21 @@
        throws away the one thing it is there to say. It is deepened instead,
        against the lighter marks stacked under it, and the join is carried by
        the width and the lift rather than by the ground. */
-    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 34%, var(--bg));
-    box-shadow: -1px 1px 1px rgba(0, 0, 0, 0.07), -3px 2px 4px rgba(0, 0, 0, 0.13);
+    /* …**except the grey, which is white here too** (Ed, 2026-09-24: *the
+       active tab is grey but it should be white*): a tab in the palette's
+       grey is a white slip at rest (cards.js `PLAIN_CHIP`), and the same
+       style attribute zeroes the active mixes, so the tab you opened is the
+       slip it was. Its hairline stops at the card: top, left and foot only,
+       since the right edge is the joint. */
+    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) var(--chipmixa, 34%), var(--bg));
+    box-shadow: -1px 1px 1px rgba(0, 0, 0, 0.07), -3px 2px 4px rgba(0, 0, 0, 0.13), var(--chipringa, 0 0 0 0 transparent);
     position: relative; z-index: 1;
   }
   .clausehead .achip.wmark:hover {
     /* the active tab keeps the hover lift every other tab has (Ed,
        2026-09-06; a `transform: none` here had pinned it flat) */
-    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 42%, var(--bg));
-    box-shadow: -1px 1px 1px rgba(0, 0, 0, 0.09), -4px 3px 6px rgba(0, 0, 0, 0.16);
+    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) var(--chipmixah, 42%), var(--bg));
+    box-shadow: -1px 1px 1px rgba(0, 0, 0, 0.09), -4px 3px 6px rgba(0, 0, 0, 0.16), var(--chipringa, 0 0 0 0 transparent);
   }
   .clausehead .achip.wmark:active { transform: none; }
   .clausehead .headlab {
@@ -2279,6 +2285,17 @@
   .setupcard.nohead .field,
   .setupcard.textcard .field,
   .setupcard.rulehead .field { border-top: 0; padding-top: 0; }
+  /* **…and a separator stands only between two things** (Ed, 2026-09-24:
+     *two hairlines with nothing between them on a card is a defect and must
+     never appear*). A band with nothing in it is not drawn — an empty field,
+     an empty row — so its hairline cannot face another across the gap it
+     left; and a row that follows the settled rule with no field between
+     them takes the rule's own hairline as its separator, the rule closing
+     the head off exactly as it closes it off from the alternatives. Guard:
+     `card-audit`'s P12. */
+  .sugg .field:empty, .sugg .race-mid.commitrow:empty { display: none; }
+  .sugg .clausehead:has(.headrule.asblock) + .field:empty + .race-mid.commitrow,
+  .sugg .clausehead:has(.headrule.asblock) + .race-mid.commitrow { border-top: 0; padding-top: 0; }
   .fieldlab { margin-bottom: var(--s2); }
   /* **A motion record's second rule stands in a box** (Q1522, Ed 2026-09-24):
      *Previous rule* under a passed record, *Rejected proposal* under a failed

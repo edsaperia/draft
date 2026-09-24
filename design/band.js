@@ -1407,7 +1407,13 @@ window.BAND = (function () {
           // running count all leave the delegated cards; provenance is the
           // standing block's own chosen radio, and the per-question counts move
           // to 🍾 (design finished with Q1169).
-          ? readBody(c, ctx)
+          // **🪶's standing block is the whole of its read** (Ed, 2026-09-24:
+          // *the "Set to … Set by the founder when the document was made." part
+          // of the card isn't necessary*): the clause quotes the title
+          // verbatim and the standing block's radio says who chose it, so
+          // `readBody`'s *Set to* and its lockline said both again. The card
+          // is the head and its row.
+          ? (c.k === 'title' ? '' : readBody(c, ctx))
           : BODY[c.k]() + delegateRung(c);
         // **The route left the card bodies** (Ed's copy pass, 2026-08-19,
         // finishing what the kind-eyebrow removal started): every card carried

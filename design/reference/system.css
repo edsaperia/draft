@@ -498,6 +498,7 @@
     .layout > .toc { display: none; }
   }
   .drawerbtn { display: none; }   /* the two drawer doors exist below 900px only */
+  .sheetbar { display: none; }    /* and the task sheet's bar (task-sheet) */
   /* **Narrow: one column, the rail a dock, the contents rail gone** — the
      first cut of design/MOBILE.md (§1.2, 2026-09-12). The literal is
      `NARROW_Q` in session.js; the two must agree. The dock is fixed at the
@@ -519,7 +520,7 @@
        under the topbar, the window's height, and off its own edge until
        `html[data-drawer]` names it. The document keeps the middle and the
        tabs keep the left gutter. */
-    .layout > .toc, .layout > .queue {
+    .layout > .toc {
       position: fixed; top: var(--nav-h); bottom: 0; z-index: 45; display: flex; flex-direction: column;
       width: min(86vw, 360px); max-height: none; margin: 0 !important; box-sizing: border-box;
       overflow-y: auto; overscroll-behavior: contain; background: var(--bg);
@@ -527,21 +528,59 @@
       transition: transform 220ms ease; will-change: transform;
     }
     .layout > .toc { left: 0; transform: translateX(-100%); border-right: 1px solid var(--border); box-shadow: none; }
-    .layout > .queue { right: 0; transform: translateX(100%); border-left: 1px solid var(--border); }
-    html[data-drawer="left"] .layout > .toc, html[data-drawer="right"] .layout > .queue { transform: none; box-shadow: var(--shadow-lg); }
+    html[data-drawer="left"] .layout > .toc { transform: none; box-shadow: var(--shadow-lg); }
     .layout > .toc ul { overflow: visible; }
+    /* **The task rail is a sheet that peeks** (`task-sheet`, Ed 2026-09-24,
+       replacing the right-hand drawer): fixed to the window's foot, full
+       width, as tall as its list up to three quarters of the window. At rest
+       (`data-sheet="peek"`) all but its bar is below the glass; raised
+       (`open`) it stands whole over the darkened ground; scrolled away
+       (`data-sheethide`) the bar goes too; while nothing asks you it is not
+       there at all. A finger on it (`data-sheetdrag`) writes the offset
+       inline and switches the easing off, so the sheet is exactly under the
+       finger and settles from wherever it is let go. The bar is
+       `--sheet-peek` tall above the home indicator's inset, which it keeps
+       as its own padding, so the peek is the bar and nothing of the list. */
+    :root { --sheet-peek: 56px; }
+    .layout > .queue {
+      position: fixed; left: 0; right: 0; top: auto; bottom: 0; z-index: 43; display: flex; flex-direction: column;
+      width: auto; max-height: 74vh; max-height: 74dvh; margin: 0 !important; box-sizing: border-box; overflow: hidden;
+      background: var(--bg); border-radius: var(--r-lg) var(--r-lg) 0 0; box-shadow: var(--shadow-lg);
+      border-top: 1px solid var(--border);   /* the peek's edge: the shadow falls downwards and says little above */
+      transform: translateY(calc(100% + 24px)); visibility: hidden; will-change: transform;
+      transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s linear 260ms;
+    }
+    /* `html` in front: setup.css's `.queue.stack` padding comes later and ties */
+    html .layout > .queue { padding: 0 0 env(safe-area-inset-bottom, 0px); }
+    html[data-sheet] .layout > .queue { visibility: visible; transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s; }
+    html[data-sheet="peek"] .layout > .queue { transform: translateY(calc(100% - var(--sheet-peek) - env(safe-area-inset-bottom, 0px))); }
+    html[data-sheet="peek"][data-sheethide] .layout > .queue { transform: translateY(calc(100% + 24px)); }
+    html[data-sheet="open"] .layout > .queue { transform: none; z-index: 46; }
+    html[data-sheet][data-sheetdrag] .layout > .queue { transition: none; z-index: 46; }
+    /* the document's foot is never under the bar */
+    html[data-sheet] .layout { padding-bottom: calc(var(--sheet-peek) + env(safe-area-inset-bottom, 0px)); }
+    .layout > .queue .sheetbar {
+      flex: none; position: relative; box-sizing: content-box; height: calc(var(--sheet-peek) - 14px);
+      padding: 14px var(--s3) env(safe-area-inset-bottom, 0px); display: grid;
+      grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: var(--s2);
+      cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent; font-family: var(--font-ui);
+    }
+    .sheetbar:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; border-radius: var(--r-lg) var(--r-lg) 0 0; }
+    .sheetbar .grab { position: absolute; top: 6px; left: 50%; width: 36px; height: 4px; margin-left: -18px; border-radius: 2px; background: var(--border); }
+    .sheetbar .sheetline { min-width: 0; overflow: hidden; }
+    .sheetbar .sheetline .ql { display: flex; align-items: baseline; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--fg); }
+    .sheetbar .sheetline .ql > :not(.qmark):not(.mk) { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    .sheetbar .sheetmore { font-size: var(--t-small); color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .sheetbar .sheetline, .sheetbar .sheetmore { transition: opacity 160ms ease; }
+    /* raised, the list says it all: the bar keeps its place, as the handle */
+    html[data-sheet="open"] .sheetbar .sheetline, html[data-sheet="open"] .sheetbar .sheetmore { opacity: 0; }
     /* `.layout > .queue` on both: the base `.qitem` rule is later in the sheet
        and would win a specificity tie */
-    /* **The task drawer is see-through** (Ed, 2026-09-12 pm: *so it looks
-       like the queue cards slide out over the document*): the entries come
-       out over the dimmed page as cards on no sheet — the panel keeps its
-       box, since it scrolls, and loses its ground, its border and its
-       shadow. A card's wash is translucent and was laid over the rail's
-       white; here the white is the entry's own and the wash rides on
-       `::after` beneath the bar and the text, so the fade over `--wash-ms`
-       survives and the dimmed document never shows through a card. */
-    .layout > .queue { background: transparent; border-left: 0; }
-    html[data-drawer="right"] .layout > .queue { box-shadow: none; }
+    /* A card's wash is translucent and was laid over the rail's white; here
+       the white is the entry's own and the wash rides on `::after` beneath
+       the bar and the text, so the fade over `--wash-ms` survives whatever
+       ground the sheet has (the drawer of 2026-09-12 had none). */
     .layout > .queue button:not(.sealdot) { background-color: var(--bg); isolation: isolate; }
     .layout > .queue button:not(.sealdot)::after {
       content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
@@ -554,7 +593,11 @@
        foot of the list took the gap from under whichever entry was born last.
        `gap` follows the visual order and never doubles at the end. Guard:
        `npm run drawer-walk`. */
-    .layout > .queue ul { position: static; height: auto !important; display: flex; flex-direction: column; gap: var(--s2); }
+    .layout > .queue ul {
+      position: static; height: auto !important; display: flex; flex-direction: column; gap: var(--s2);
+      flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+      padding: var(--s1) var(--s3) var(--s3);
+    }
     .layout > .queue .qitem { position: static; width: 100%; transition: none; margin: 0; }
     /* the two doors, in the topbar; a count on the right one says how many
        tasks the rail holds */
@@ -568,10 +611,13 @@
        sufficient*), held to a box wide enough to be a target */
     .drawerbtn .n { font-size: var(--t-ui); font-variant-numeric: tabular-nums; font-weight: 600; }
     #drawerright { min-width: 34px; justify-content: center; }
-    /* the ground darkens behind an open drawer; a tap on it closes */
-    html[data-drawer] body::after { content: ''; position: fixed; left: 0; right: 0; top: var(--nav-h); bottom: 0; background: rgba(0, 0, 0, 0.22); z-index: 44; }
-    html[data-drawer] body { cursor: pointer; }
-    @media (prefers-reduced-motion: reduce) { .layout > .toc, .layout > .queue { transition: none; } }
+    /* the ground darkens behind an open drawer or a raised sheet; a tap on
+       it closes the one or lowers the other */
+    html[data-drawer] body::after, html[data-sheet="open"] body::after { content: ''; position: fixed; left: 0; right: 0; top: var(--nav-h); bottom: 0; background: rgba(0, 0, 0, 0.22); z-index: 44; }
+    html[data-drawer] body, html[data-sheet="open"] body { cursor: pointer; }
+    @media (prefers-reduced-motion: reduce) {
+      .layout > .toc, .layout > .queue, html[data-sheet] .layout > .queue, .sheetbar .sheetline, .sheetbar .sheetmore { transition: none; }
+    }
   }
 
   /* left rail: contents-rail, built from the document's own headings. A charter
@@ -1213,7 +1259,7 @@
      one treatment, one meaning; in edit mode the text *is* the open card). */
   .ridetab.editing .achip[data-tab="text"] {
     width: 42px; padding-left: 8px; padding-right: 0;
-    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 34%, var(--bg));
+    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) var(--chipmixa, 34%), var(--bg));
   }
   /* In edit mode the text is the open card, so the pile is a strip and takes
      the strip's own tuck-under (`.clausehead .achip`'s -2px) — on every tab,
@@ -2175,15 +2221,21 @@
        throws away the one thing it is there to say. It is deepened instead,
        against the lighter marks stacked under it, and the join is carried by
        the width and the lift rather than by the ground. */
-    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 34%, var(--bg));
-    box-shadow: -1px 1px 1px rgba(0, 0, 0, 0.07), -3px 2px 4px rgba(0, 0, 0, 0.13);
+    /* …**except the grey, which is white here too** (Ed, 2026-09-24: *the
+       active tab is grey but it should be white*): a tab in the palette's
+       grey is a white slip at rest (cards.js `PLAIN_CHIP`), and the same
+       style attribute zeroes the active mixes, so the tab you opened is the
+       slip it was. Its hairline stops at the card: top, left and foot only,
+       since the right edge is the joint. */
+    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) var(--chipmixa, 34%), var(--bg));
+    box-shadow: -1px 1px 1px rgba(0, 0, 0, 0.07), -3px 2px 4px rgba(0, 0, 0, 0.13), var(--chipringa, 0 0 0 0 transparent);
     position: relative; z-index: 1;
   }
   .clausehead .achip.wmark:hover {
     /* the active tab keeps the hover lift every other tab has (Ed,
        2026-09-06; a `transform: none` here had pinned it flat) */
-    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 42%, var(--bg));
-    box-shadow: -1px 1px 1px rgba(0, 0, 0, 0.09), -4px 3px 6px rgba(0, 0, 0, 0.16);
+    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) var(--chipmixah, 42%), var(--bg));
+    box-shadow: -1px 1px 1px rgba(0, 0, 0, 0.09), -4px 3px 6px rgba(0, 0, 0, 0.16), var(--chipringa, 0 0 0 0 transparent);
   }
   .clausehead .achip.wmark:active { transform: none; }
   .clausehead .headlab {
@@ -2233,6 +2285,17 @@
   .setupcard.nohead .field,
   .setupcard.textcard .field,
   .setupcard.rulehead .field { border-top: 0; padding-top: 0; }
+  /* **…and a separator stands only between two things** (Ed, 2026-09-24:
+     *two hairlines with nothing between them on a card is a defect and must
+     never appear*). A band with nothing in it is not drawn — an empty field,
+     an empty row — so its hairline cannot face another across the gap it
+     left; and a row that follows the settled rule with no field between
+     them takes the rule's own hairline as its separator, the rule closing
+     the head off exactly as it closes it off from the alternatives. Guard:
+     `card-audit`'s P12. */
+  .sugg .field:empty, .sugg .race-mid.commitrow:empty { display: none; }
+  .sugg .clausehead:has(.headrule.asblock) + .field:empty + .race-mid.commitrow,
+  .sugg .clausehead:has(.headrule.asblock) + .race-mid.commitrow { border-top: 0; padding-top: 0; }
   .fieldlab { margin-bottom: var(--s2); }
   /* **A motion record's second rule stands in a box** (Q1522, Ed 2026-09-24):
      *Previous rule* under a passed record, *Rejected proposal* under a failed
@@ -3325,6 +3388,8 @@
     html.desk .sheet { border-radius: 0; }
     /* the contents drawer is a gutter too; it slides in on the desk's colour */
     html.desk .layout > .toc { background: var(--desk); }
+    /* and the task sheet is a piece of the desk, its entries white slips on it */
+    html.desk .layout > .queue { background: var(--desk); }
     /* in the drawer there is no sheet edge for a run to ride, so no tag */
     html.desk .tocmarks .run { background: transparent; box-shadow: none; }
   }
