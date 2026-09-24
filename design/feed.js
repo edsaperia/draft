@@ -122,7 +122,7 @@
   function changeHtml(e, ch) {
     const before = text(ch.before);
     const after = text(ch.after);
-    const where = '<p class="fwhere">' + (ch.heading ? '§ ' + esc(ch.heading) : esc(T.top)) + '</p>';
+    const where = '<p class="fwhere">' + (ch.heading ? '§ ' + esc(C.mdPlain(ch.heading)) : esc(T.top)) + '</p>';
     const short = before.length <= SHORT && after.length <= SHORT;
     // an insertion has no clause that stood: its left column says where it goes
     const left = ch.before.length

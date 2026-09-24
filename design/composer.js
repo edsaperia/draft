@@ -525,9 +525,13 @@ window.COMPOSER = (function () {
     // replaced was not the wording they replaced. The engine's doors
     // normalise too, so nothing gets in from any client; this is so the draft
     // never holds one at all and the lane shows exactly what will be sent.
+    // **Nor does an escape docs.vote does not need** (Ed, 2026-09-24, ruling
+    // 14): a markdown editor's `5\.` arrives as `5.`, while `\*`, `\_`, a
+    // backtick, `\\` and a line-leading `\#` or `\-` keep their backslash
+    // (`pasteClean`, cards.js). Typed text never passes here.
     function pastedText(ev) {
       const t = (ev.dataTransfer && ev.dataTransfer.getData('text/plain')) || '';
-      return t.replace(/\r\n?/g, '\n');
+      return window.CARDS.pasteClean(t.replace(/\r\n?/g, '\n'));
     }
 
     // The first keystroke in a clause. Every input is intercepted: the charter

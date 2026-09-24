@@ -117,7 +117,7 @@
     // eyebrow, and the glyphs inside the charter column's own sentences
     glyphHtml, glyphify,
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks, mdBlocksHtml,
-    originText, mdToHtml, mdStrip, mdLine, readLane,
+    originText, mdToHtml, mdStrip, mdLine, readLane, mdPlain, mdUnescape, pasteClean,
     laneSeed, laneProposeHtml, laneCtlHtml, laneNameId, laneGroupAttrs, speakerHtml, fieldHtml, fieldOf, groundNote,
     headOnlyHeight, cardBody, COLLAPSE_MS, EXPAND_MS,
     // the abstention clock: the note the rail draws beside a live entry
@@ -309,7 +309,7 @@
     const prev = DOC[at];
     const after = DOC.slice(at + 1).some((l) => !l.gap && l.key);
     if (!after) return T.gap.atEnd;
-    const words = String(prev.x || '').trim();
+    const words = mdUnescape(String(prev.x || '')).trim();   // read, escapes hidden (ruling 13)
     return T.gap.after(words.length > 40 ? words.slice(0, 40).replace(/\s+\S*$/, '') + '…' : words);
   };
 
@@ -2056,7 +2056,9 @@
       (s.replaced
         ? '<div class="field"><div class="ranked wasthere">' +
           '<div class="rtag"><span class="rsub">' + T.record.replaced + '</span></div>' +
-          '<div class="rtext">' + esc(s.replaced) + '</div></div></div>'
+          // read as every wording on a card is read (Q1406) — its escapes
+          // hidden with the rest (Ed, 2026-09-24, ruling 13)
+          '<div class="rtext">' + mdBlocksHtml(null, s.replaced) + '</div></div></div>'
         : '') +
       (isUnread(s)
         ? '<div class="race-mid commitrow"><span></span>' +
@@ -2720,7 +2722,7 @@
         return '<div class="propblock">' +
           '<div class="rtag" id="' + nameId + '">' + esc(c.name) + '</div>' +
           '<div class="rtext">' + esc(c.why) + '</div>' +
-          '<div class="qclause">' + esc(currentTextFor(c.key)) + '</div>' +
+          '<div class="qclause">' + mdLine(currentTextFor(c.key)) + '</div>' +
           laneBarHtml(s, v, { edit: false, nameId }) + '</div>';
       };
       return (
@@ -3847,7 +3849,9 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       el.addEventListener('paste', (ev) => {
         ev.preventDefault();
         const t = (ev.clipboardData && ev.clipboardData.getData('text/plain')) || '';
-        document.execCommand('insertText', false, t.replace(/\r/g, ''));
+        // …and without the escapes docs.vote does not need (Ed, 2026-09-24,
+        // ruling 14; `pasteClean`)
+        document.execCommand('insertText', false, pasteClean(t.replace(/\r/g, '')));
       });
     });
     // Choosing: marks the selection in place, so the document doesn't move
@@ -4556,7 +4560,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // The first few words are enough to recognise, and they are the words the
     // member actually chose rather than a position on a screen.
     // the words alone: a text carries its block markers since Q1406
-    const quote = (t) => '“' + String(t || '').replace(/^(#{1,3}|-)\s+/gm, '').split(/\s+/).slice(0, 6).join(' ') + '…”';
+    const quote = (t) => '“' + mdUnescape(String(t || '').replace(/^(#{1,3}|-)\s+/gm, '')).split(/\s+/).slice(0, 6).join(' ') + '…”';
     // the verdict names the item's own pair (Q1367)
     const sv = s;
     const verdict =
@@ -4854,7 +4858,9 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     tocEl.innerHTML = (extra && extra.tocLead ? extra.tocLead() : '') + heads
       .map((h, i) => buriedBy(i) ? '' :        // a folded part closes its branch of the rail too
         '<li class="lvl' + (h.level ?? 1) + '">' + toggleHtml(i) +
-        '<a href="#sec-' + i + '" data-toc="' + i + '">' + esc(h.x) + '</a>' + tocMarksHtml(i) + '</li>')
+        // a heading's words, read (Ed, 2026-09-24, ruling 13): its escapes
+        // hidden and its marks taken off, as the founder's rail reads `data-h`
+        '<a href="#sec-' + i + '" data-toc="' + i + '">' + esc(mdPlain(h.x)) + '</a>' + tocMarksHtml(i) + '</li>')
       .join('');
     tocEl.querySelectorAll('[data-sec-toggle]').forEach((b) => {
       if (!/^\d+$/.test(b.dataset.secToggle)) return;   // the host's own fold keys are its business
