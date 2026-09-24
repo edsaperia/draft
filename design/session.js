@@ -1302,7 +1302,14 @@
   // does. Each OK pins the next oldest. Nothing announces the count — an
   // "and n more" line would be the tally 2026-08-17 retired, an apology for a
   // limit nobody experiences as one.
+  // **The cap of one is the text records' alone** (Q1532 amended, Ed
+  // 2026-09-24): the charter's owed decisions — ✔ ✖, the entries of the
+  // charter's own family — pin one at a time, while the Rules' news and
+  // grants — a rule changed over your head, a power granted at the founding,
+  // the band's family — pin as Q113 had them, up to three. Two queues now,
+  // each in its own arrival order, each cut at its own cap.
   const NEWS_PIN_CAP = 1;
+  const BAND_PIN_CAP = 3;
   // A deadlocked race ranks above every ordinary question (Ed, 223). It can
   // out-rank the flame in the *order*, which costs nothing: the flame is kept
   // regardless of room, so its primacy rests on the exemption rather than on
@@ -1503,17 +1510,22 @@
         kind === 'weigh' || isUnread(g) || holdsFocus(el);
       (live ? pinned : flow).push(row);
     }
-    // The cap, applied across both populations as one queue (Q113, Ed
-    // 2026-09-14; one since Q1532): the oldest `NEWS_PIN_CAP` owed pin, the rest are
-    // demoted to the flow, where they stand at their own clauses. Whatever is
-    // open pins for being open whatever its state (C6), so an owed decision you
-    // have opened from further down the queue keeps its place while it is open —
-    // the cap counts it, it simply does not evict it.
+    // The cap, one queue per family (Q113, Ed 2026-09-14; split by Q1532 as
+    // amended, Ed 2026-09-24): the oldest `BAND_PIN_CAP` of the Rules' owed
+    // news and grants pin (`fam` 0), and the oldest `NEWS_PIN_CAP` of the
+    // charter's owed records (`fam` 1); the rest of each are demoted to the
+    // flow, where they stand at their own clauses. Whatever is open pins for
+    // being open whatever its state (C6), so an owed decision you have opened
+    // from further down its queue keeps its place while it is open — the cap
+    // counts it, it simply does not evict it.
     const owed = pinned.filter((r) => r.news).sort((x, y) => x.fam - y.fam || x.i - y.i);
-    for (const r of owed.slice(NEWS_PIN_CAP)) {
-      if (holdsFocus(r.el)) continue;
-      pinned.splice(pinned.indexOf(r), 1);
-      flow.push(r);
+    const capOf = (fam) => (fam === 0 ? BAND_PIN_CAP : NEWS_PIN_CAP);
+    for (const fam of [0, 1]) {
+      for (const r of owed.filter((o) => o.fam === fam).slice(capOf(fam))) {
+        if (holdsFocus(r.el)) continue;
+        pinned.splice(pinned.indexOf(r), 1);
+        flow.push(r);
+      }
     }
     // Position, then the tab stack's lifecycle order, then urgency. The third
     // key matters more than it looks: two 💡 at one clause tie on the second,

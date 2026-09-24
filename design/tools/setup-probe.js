@@ -109,6 +109,13 @@
     snap.geo.cparas = Array.from(document.querySelectorAll('.cpara')).map(rect);
     snap.geo.rail = Array.from(document.querySelectorAll('#rail .qitem')).map(rect);
     snap.geo.chips = Array.from(document.querySelectorAll('.achip')).map(rect);
+    // **The Rules' news pins up to three** (Q113; Q1532 as amended, Ed
+    // 2026-09-24: the cap of one is the text records' alone): the band's owed
+    // news entries in the rail and how many of them pin. Not compared across
+    // the sides — asserted on the live side after the run
+    const news = Array.from(document.querySelectorAll('#rail .qitem'))
+      .filter((li) => li.style.display !== 'none' && li.querySelector('button.st-news'));
+    snap.bandNews = { owed: news.length, pinned: news.filter((li) => li.classList.contains('pinned')).length };
     return snap;
   }
 
@@ -433,6 +440,25 @@
     catch (e) { return null; }
   })();
   const report = { side: SIDE, compared: false, diffs: [], allowed: [], steps: 0 };
+  // the band news cap, on this side's own run: at every step the oldest
+  // three owed pin (fewer where fewer are owed), never more — an open card
+  // pins for being open, so it may add one. The most owed at any step is
+  // reported, so a run that never met two owed at once says so
+  report.bandNewsMost = 0;
+  if (SIDE === 'live') {
+    for (const [scName, steps] of Object.entries(run)) {
+      for (const [stName, snap] of steps) {
+        const n = snap && snap.bandNews;
+        if (!n) continue;
+        report.bandNewsMost = Math.max(report.bandNewsMost, n.owed);
+        const want = Math.min(3, n.owed);
+        if (n.pinned < want || n.pinned > want + 1) {
+          report.diffs.push(scName + ':' + stName + ':band-news — BAND NEWS PINNED (Q113, Q1532 amended) ' +
+            n.pinned + ' of ' + n.owed + ' owed, want ' + want);
+        }
+      }
+    }
+  }
   if (otherRaw) {
     report.compared = true;
     const mine = run;

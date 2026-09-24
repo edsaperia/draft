@@ -211,7 +211,8 @@ const PROBES = [
     ready: () => !!document.querySelector('#rail .qitem'),
     verdict: (r) => ({
       ok: r.compared && r.diffs.length === 0,
-      line: r.compared ? `${r.steps} steps, ${r.diffs.length} diffs, ${r.allowed.length} allowed` : 'not compared',
+      line: r.compared ? `${r.steps} steps, ${r.diffs.length} diffs, ${r.allowed.length} allowed` +
+        (r.bandNewsMost !== undefined ? `, the Rules' news at most ${r.bandNewsMost} owed at once` : '') : 'not compared',
       diffs: r.diffs,
       allowed: r.allowed,
     }),

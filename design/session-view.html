@@ -7502,10 +7502,10 @@
       .replace(/ data-washkey="[^"]*"/, '')
       .replace(/ style="--washcol: ([^;]+); --washbg: [^;]+; --fill: ([^"]+)"/,
         (m, col, fill) => SESSION.washAttrs('set:' + c.k, col, fill));
-    // `news` is what the rail's `NEWS_PIN_CAP` counts (Q113, Ed 2026-09-14): a
-    // setting owing you an OK is the same thing as an unread sealed record, so
-    // the band's news entries and the charter's are one queue, oldest first, and
-    // only the oldest of the two together pins (Q1532). It rides beside `pinned`
+    // `news` is what the rail's `BAND_PIN_CAP` counts (Q113, Ed 2026-09-14;
+    // Q1532 as amended, Ed 2026-09-24): a setting owing you an OK is the
+    // Rules' own queue, oldest first, the oldest three pinning, apart from the
+    // charter's text records, which pin one at a time. It rides beside `pinned`
     // rather than narrowing it, because *this* entry is still a pinning kind —
     // whether it gets to pin is a question about the whole queue, and only
     // `layoutQueue`, which can see both populations at once, can answer it.
