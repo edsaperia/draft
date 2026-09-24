@@ -1344,15 +1344,10 @@ window.LIVE = (function () {
       }
       return h || cs_titleNow() || ((SESSION.DOC.find((l) => l.key === key) || {}).x || '').split(/\s+/).slice(0, 5).join(' ');
     };
-    // **Raw values are not copy**: a record's moment reads like a diary entry
-    const whenOf = (ms) => {
-      const d = new Date(ms), today = new Date();
-      const hm = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const same = (a, b) => a.toDateString() === b.toDateString();
-      const y = new Date(today); y.setDate(today.getDate() - 1);
-      return (same(d, today) ? 'today' : same(d, y) ? 'yesterday'
-        : d.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })) + ', ' + hm;
-    };
+    // **Raw values are not copy**: a moment reads like a diary entry, in
+    // full, 24-hour and in the page's own words (STYLE T16, Q1523 (a)) — it
+    // was the browser's locale, *Sunday, September 20, 03:25 PM*
+    const whenOf = (ms) => window.CARDS.longWhen(ms) || '';
     // read state survives a reload: one key per document and seat
     const seenKey = () => 'draft:seen:' + LIVESLUG + ':' + ((env.cs && env.cs.v && env.cs.v.me) || '');
     const loadSeen = () => { try { return JSON.parse(localStorage.getItem(seenKey()) || '[]'); } catch (e) { return []; } };
@@ -1518,7 +1513,7 @@ window.LIVE = (function () {
             const c = A.inc ? B : A;
             return { ...base, ...extra, id: pairId(A.id, B.id), kind: 'quick', card,
               marked: c.marked || markedOf(plain(lines, sp), c.text || ''), rationale: c.rationale, by: c.by || null,
-              // both texts, for the rail's title (Q????): the current one first, as the card presents it
+              // both texts, for the rail's title (Q1523): the current one first, as the card presents it
               was: plain(lines, sp), now: c.text || '',
               candId: c.id, src: c.src, ...slate };
           }
@@ -1850,7 +1845,7 @@ window.LIVE = (function () {
             // `o.threshold` is still on the record row — the engine's own,
             // pinned (R-117) — and nothing reads it: the eyebrow stopped
             // comparing the reading to a line with the line itself (Q1362)
-            // the moment itself, worded by the rail's one helper (Q????)
+            // the moment itself, worded by the rail's one helper (Q1523)
             at: o.when, p: o.p == null && best ? best.p : o.p, judges: o.judges,
             // **how many preferred it** (Q1439, ruling a): the quorum counts
             // approvals, so the record carries the winner's approvals beside

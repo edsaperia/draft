@@ -5,7 +5,7 @@
  * script. Hand-authored: content, progress and state ride each item — never
  * parallel literals kept in sync by hand. */
 window.FIXTURE_SESSION = (function () {
-  // **The fixture's own moment** (Q????): noon on Wednesday 30 September
+  // **The fixture's own moment** (Q1523): noon on Wednesday 30 September
   // 2026, in the reader's own zone. Every record here is dated against it
   // and the rail reads its dates against it too (`railNow`), so *Tue 20:15*
   // and *09:20* read the same on every run and the probes can freeze them.
@@ -427,7 +427,9 @@ window.FIXTURE_SESSION = (function () {
       qLabel: '§ The Library Corner', urgency: 0.31,
       pct: 40, cap: 'two of the fourteen have voted — quorum is 5',
       marked: 'Books belonging to a member and left in the Corner become the house’s after <del>a year</del> <ins>two years</ins>, unless the member says otherwise in the book on the shelf.',
-      rationale: 'A year is one long absence. Two years still clears the shelves of anything genuinely abandoned, without swallowing the library of somebody who spent a winter abroad.'
+      // a reason with both kinds of link in it (Q1533): a markdown link and a
+      // bare address, each drawn as a link that says it leaves docs.vote
+      rationale: 'A year is one long absence. The [lending library’s own rule](https://www.example.org/lending) is two, and https://www.example.org/abandoned-books says why. Two years still clears the shelves without swallowing the library of somebody who spent a winter abroad.'
     },
     {
       id: 'quick-powertools', kind: 'quick', keys: ['powertools'], state: 'needs', beneath: 3,
@@ -1063,7 +1065,7 @@ window.FIXTURE_SESSION = (function () {
   // the drip is one edit per tenth of it, which is what the wallet counts down
   const SESSION_MINUTES = 8 * 60;
 
-  // **The rules have a history too** (Q????, Ed 2026-09-24: the rail filled
+  // **The rules have a history too** (Q1523, Ed 2026-09-24: the rail filled
   // with rule changes that read alike). Motions the fixture's two members put
   // on the settings once the document began, each carrying its own mover,
   // value, reason and end: two ⏱️ changes that carried, filed behind the rule

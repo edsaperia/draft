@@ -881,6 +881,70 @@ window.CARDS = (function () {
     }).join('');
   }
   const mdLine = (src) => linkifyHtml(mdToHtml(src));
+  // **A reason may carry links** (Q1533, Ed 2026-09-24: *it would be nice for
+  // rationales to be able to have links in them*; markdown links too). A
+  // reason is light markdown and nothing more: a bare `http(s)://` address
+  // and `[words](address)` become links, the backslash escapes are read
+  // (Q1530), and bold and italic are **not** drawn — a reason is somebody's
+  // argument, not document text. Only http and https are ever a link: a
+  // `javascript:` or `data:` target, or anything the URL parser refuses,
+  // stays the text that was typed. The pieces are found on the source
+  // (escape-aware, so `\[` opens nothing) and each is **escaped before any
+  // markup is built round it** — the words, the text between, and the
+  // address, which also goes through the parser's own percent-encoding.
+  // A link that leaves docs.vote opens a new tab, is `nofollow ugc`, and says
+  // so — the ↗ drawn by the CSS (`a.extlink::after`), the words for a screen
+  // reader; a docs.vote address keeps `linkify`'s in-site `.doclink`.
+  const REASON_LINK_RX = /\[((?:[^[\]\n]|\[[^[\]\n]*\])+)\]\((https?:\/\/[^\s()]+(?:\([^\s()]*\)[^\s()]*)*)\)|\bhttps?:\/\/[^\s<>]+/gi;
+  // a bare address ends before trailing punctuation, and before a `)` it
+  // did not open — *(see https://x.org/a_(b))* keeps its own pair
+  const urlTail = (u) => {
+    let t = u;
+    for (;;) {
+      const last = t[t.length - 1];
+      if (/[.,;:!?'"’”\]*_…]/.test(last)) { t = t.slice(0, -1); continue; }
+      if (last === ')' && (t.match(/\(/g) || []).length < (t.match(/\)/g) || []).length) { t = t.slice(0, -1); continue; }
+      return t;
+    }
+  };
+  const safeUrl = (raw) => {
+    try {
+      const u = new URL(raw);
+      return u.protocol === 'http:' || u.protocol === 'https:' ? u : null;
+    } catch (e) { return null; }
+  };
+  const isDocsVote = (u) => /^(?:www\.)?docs\.vote$/i.test(u.hostname);
+  const linkHtml = (u, wordsHtml) => (isDocsVote(u)
+    ? '<a class="doclink" href="' + esc(u.href) + '" target="_blank" rel="noopener">' + wordsHtml + '</a>'
+    : '<a class="extlink" href="' + esc(u.href) + '" target="_blank" rel="noopener noreferrer nofollow ugc">' +
+      wordsHtml + '<span class="sr-only">' + esc(G.reasonLink.leaves) + '</span></a>');
+  // the source cut into `{ text }` and `{ url, words }` pieces, escapes
+  // still encoded in `text` and `words`, each address already read plain
+  function reasonPieces(src) {
+    const s = escEncode(String(src ?? ''));
+    const out = [];
+    let at = 0;
+    for (const m of s.matchAll(REASON_LINK_RX)) {
+      let whole = m[0], words = m[1], raw = m[2];
+      if (!raw) { whole = urlTail(whole); raw = whole; }
+      const u = safeUrl(escRaw(raw, true));
+      if (!u) continue;
+      if (m.index > at) out.push({ text: s.slice(at, m.index) });
+      out.push({ url: u, words: words !== undefined ? words : null, raw: whole });
+      at = m.index + whole.length;
+    }
+    if (at < s.length) out.push({ text: s.slice(at) });
+    return out;
+  }
+  /** A reason drawn: escaped, its links built after, its escapes read. */
+  const reasonHtml = (src) => reasonPieces(src).map((p) => (p.url
+    ? linkHtml(p.url, esc(escRaw(p.words !== null ? p.words : p.raw, true)))
+    : linkify(esc(escRaw(p.text, true))))).join('');
+  /** …and as plain words, for a rail teaser (a link cannot stand inside the
+   *  entry's button) or a tooltip: a markdown link reads as its words, a
+   *  bare address as itself. Unescaped; the caller escapes. */
+  const reasonPlain = (src) => reasonPieces(src).map((p) => escRaw(p.url
+    ? (p.words !== null ? p.words : p.raw) : p.text, true)).join('');
   // …and back. Walks what the browser made of a rendered editable and writes
   // the markdown for it, so editing rendered never silently drops the marks it
   // is showing. `<ins>`/`<del>` are the diff's own wrappers and contribute
@@ -909,7 +973,7 @@ window.CARDS = (function () {
   const mdStrip = (src) => escRaw(escEncode(src).replace(MD_RX, (m) =>
     m.startsWith('**') ? m.slice(2, -2) : m.slice(1, -1)));
 
-  // ---- rail titles (Q????, Ed 2026-09-24) ---------------------------------
+  // ---- rail titles (Q1523, Ed 2026-09-24) ---------------------------------
   // **An entry's title names its own subject, computed from the entry alone,
   // never by comparison with its neighbours**: a title must not change
   // because another entry appeared. The rail had filled with lines that read
@@ -928,20 +992,23 @@ window.CARDS = (function () {
   // share it, and each cut is inside its own snippet, so neither side is lost
   const RAIL_ROOM = 34;
   const sideOf = (room) => Math.max(8, Math.floor((room - 7) / 2));   // two quotes each, and ' → '
-  const RAIL_LEAD = 5;      // the first words of a rewrite
+  // **Words taken out are struck through** (Q1523 (c), Ed 2026-09-24), where
+  // the title said *without ‘…’* and *with or without ‘…’*. A title stays
+  // plain text: the struck quote is fenced by two private-use characters
+  // (clear of `MD_SENT` and the escapes' U+E121–U+E17E), which `railTitleHtml`
+  // turns into `<del>` after escaping and `railTitleText` back into the words.
+  // `railPlain` takes them out of member text, so nobody can type one.
+  const STRUCK = '', STRUCK_PAIR = '', STRUCK_END = '';
+  const STRUCK_ANY = /[]/g;
+  const STRUCK_RX = /([])([^]*)/g;
+  const struck = (q) => STRUCK + q + STRUCK_END;
+  const struckPair = (q) => STRUCK_PAIR + q + STRUCK_END;
   /** The words a reader sees: markers, a heading's `# `, a bullet's `- `
    *  and backslash escapes off, whitespace folded to one space. */
-  // (an escaped character is set aside before the markers are read, so `\*`
-  // stays a star rather than opening an emphasis, and comes back after)
-  // MERGE NOTE: main now carries `mdPlain` (merge a2eeab54, md-escapes: a
-  // line's marker and marks off, escapes read); at the merge this becomes
-  // `mdPlain` per line and the whitespace fold, and the stripper here goes.
-  const railPlain = (src) => mdStrip(String(src == null ? '' : src).replace(/\r/g, '')
-      .replace(/^[ \t]*#{1,6}[ \t]+/gm, '').replace(/^[ \t]*-[ \t]+/gm, '')
-      .replace(/\\([\\`*_{}[\]()#+\-.!>~|])/g, (m, ch) => String.fromCharCode(0xE100 + ch.charCodeAt(0))))
-    .replace(/\*\*/g, '')
-    .replace(/[-]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xE100))
-    .replace(/\s+/g, ' ').trim();
+  // — `mdPlain` per line (the escapes' own reader, Q1530), then the fold
+  const railPlain = (src) => String(src == null ? '' : src).replace(/\r/g, '').replace(STRUCK_ANY, '')
+    .split('\n').map((line) => mdPlain(line.replace(/^[ \t]+(?=#{1,6}[ \t]|-[ \t])/, '')))
+    .join(' ').replace(/\s+/g, ' ').trim();
   /** A snippet's edges carry no punctuation or space of their own. */
   const railTrim = (s) => String(s).replace(/^[\s,;:.!?—–-]+|[\s,;:.!?—–-]+$/g, '');
   /** Cut at a word, inside the snippet, marked with the ellipsis. */
@@ -954,11 +1021,10 @@ window.CARDS = (function () {
     return railTrim(sp > n / 2 ? cut.slice(0, sp) : cut) + RT.more;
   };
   const railQ = (s, n) => RT.quote(railClip(s, n));
-  const railLead = (s, room) => {
-    const w = railTrim(s).split(' ');
-    const lead = railTrim(w.slice(0, RAIL_LEAD).join(' '));
-    return RT.quote(lead.length > room - 3 ? railClip(lead, room - 3) : lead + (w.length > RAIL_LEAD ? RT.more : ''));
-  };
+  // **a whole rewrite fills the line** (Q1523 (f), Ed 2026-09-24): as many
+  // words of the new wording as the room holds, cut at a word, where it was
+  // the first five
+  const railLead = (s, room) => railQ(s, room - 3);
   const onlyPunct = (a, b) => a.replace(/[\s\p{P}]+/gu, '') === b.replace(/[\s\p{P}]+/gu, '');
   /**
    * The runs where two wordings differ, in order: `{ del, ins }` each, the
@@ -1032,9 +1098,10 @@ window.CARDS = (function () {
   /**
    * **A change's title** — a record, decided either way, and a proposal of
    * your own: the words it took out and the words it put in, *‘monthly’ →
-   * ‘quarterly’*; what went in alone where nothing was removed; *without
-   * ‘…’* where nothing went in; the first words of the new wording where it
-   * is a rewrite with no short difference; the clause's `name` with
+   * ‘quarterly’*; what went in alone where nothing was removed; the words
+   * taken out struck through where nothing went in (`struck`, Q1523 (c));
+   * as much of the new wording as fits where it is a rewrite with no short
+   * difference (Q1523 (f)); the clause's `name` with
    * *(punctuation)* where only punctuation or spacing moved, and the name
    * alone where nothing did. Where it changed several places, the first that
    * says anything is shown and the ellipsis says there is more.
@@ -1045,19 +1112,20 @@ window.CARDS = (function () {
     if (a === b) return name;
     if (onlyPunct(a, b)) return RT.punctuation(name);
     if (!a) return railQ(b, one);
-    if (!b) return RT.without(railQ(a, one - 8));
+    if (!b) return struck(railQ(a, one));
     const runs = changeRuns(a, b);
     if (rewrite(runs)) return railLead(b, room);
     if (!runs.length) return RT.punctuation(name);
     const r = mainRun(runs);
     const t = r.del && r.ins ? RT.arrow(railQ(r.del, side), railQ(r.ins, side))
-      : r.ins ? railQ(r.ins, one) : RT.without(railQ(r.del, one - 8));
+      : r.ins ? railQ(r.ins, one) : struck(railQ(r.del, one));
     return moreThan(runs, r) ? t + ' ' + RT.more : t;
   }
   /**
    * **A pair's title** — two wordings put to you, `a` first as the card
-   * presents it: the words where they differ, *‘six’ or ‘seven’*; *with or
-   * without ‘…’* where one side simply has words the other lacks. Two
+   * presents it: the words where they differ, *‘six’ or ‘seven’*; those
+   * words struck through where one side simply has words the other lacks
+   * (`struckPair`, read *with or without ‘…’*, Q1523 (c)). Two
    * rewrites of one sentence are read from where they stop agreeing, so the
    * words shown are the ones that tell them apart.
    */
@@ -1066,7 +1134,7 @@ window.CARDS = (function () {
     const a = railPlain(aText), b = railPlain(bText);
     if (a === b) return name;
     if (onlyPunct(a, b)) return RT.punctuation(name);
-    if (!a || !b) return RT.withOrWithout(railQ(a || b, one - 16));
+    if (!a || !b) return struckPair(railQ(a || b, one));
     const runs = changeRuns(a, b);
     if (rewrite(runs)) {
       const [x, y] = afterCommon(a, b);
@@ -1075,11 +1143,26 @@ window.CARDS = (function () {
     if (!runs.length) return RT.punctuation(name);
     const r = mainRun(runs);
     const t = r.del && r.ins ? RT.or(railQ(r.del, side), railQ(r.ins, side))
-      : RT.withOrWithout(railQ(r.del || r.ins, one - 16));
+      : struckPair(railQ(r.del || r.ins, one));
     return moreThan(runs, r) ? t + ' ' + RT.more : t;
   }
   /**
-   * **A rail entry's moment** (Q????): 24-hour, shortest by distance from
+   * **A title printed** — the one renderer of a title the builders above
+   * made: the `§` off and the escapes read (`plainLabel`), **escaped**, and
+   * only then each struck quote drawn as `<del>` with its meaning said to a
+   * screen reader in a visually hidden span (*without*, *with or without*),
+   * since a strike alone says nothing to one. The words inside were escaped
+   * with the rest, so the markup is the page's and nothing of the member's.
+   */
+  const railTitleHtml = (t) => esc(plainLabel(t)).replace(STRUCK_RX, (m, kind, q) =>
+    '<del class="struck"><span class="sr-only">' + esc(kind === STRUCK_PAIR ? RT.struckPair : RT.struck) +
+    '</span>' + q + '</del>');
+  /** …and as words, for a tooltip or anything else that is not markup:
+   *  *without ‘…’*, *with or without ‘…’* — unescaped, the caller escapes. */
+  const railTitleText = (t) => plainLabel(t).replace(STRUCK_RX, (m, kind, q) =>
+    (kind === STRUCK_PAIR ? RT.withOrWithout(q) : RT.without(q)));
+  /**
+   * **A rail entry's moment** (Q1523): 24-hour, shortest by distance from
    * `nowMs` — *15:25* the same day, *Sun 15:25* within the last seven days,
    * *20 Sep* earlier this year, *20 Sep 2025* before that. The one helper
    * every dated rail entry reads. Null for no moment.
@@ -1113,9 +1196,29 @@ window.CARDS = (function () {
       (d.getFullYear() === n.getFullYear() ? '' : ' ' + d.getFullYear()) + ' ' + hm;
   }
   /**
+   * **A moment on a card, in full** (Q1523 (a), Ed 2026-09-24): the diary
+   * form, always 24-hour and in the page's own words, never the browser's
+   * locale (STYLE T16) — *Sunday, 20 September, 11:12*, the year after the
+   * month where it is not this one. The rail keeps the short ladder
+   * (`railWhen`); a card's head, a record's dateline and a rule's sentence
+   * take this. `longDay` is the date alone, *20 September*. Null for no moment.
+   */
+  const LW = G.longWhen;
+  const hhmm = (d) => String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  function longDay(ms, nowMs) {
+    if (ms === null || ms === undefined || !isFinite(ms)) return null;
+    const d = new Date(ms), n = new Date(nowMs === undefined ? Date.now() : nowMs);
+    return LW.day(d.getDate(), LW.months[d.getMonth()], d.getFullYear() === n.getFullYear() ? '' : d.getFullYear());
+  }
+  function longWhen(ms, nowMs) {
+    if (ms === null || ms === undefined || !isFinite(ms)) return null;
+    const d = new Date(ms);
+    return LW.full(LW.days[d.getDay()], longDay(ms, nowMs), hhmm(d));
+  }
+  /**
    * Old → new for a rule's value, with a shared tail said once where both
-   * are a number followed by the same words: *10 → 5 minutes*, *6 → 8 of
-   * 12*; otherwise both whole, *members only → public*.
+   * are a number followed by the same words: *10 → 5 minutes*; otherwise
+   * both whole, *6 → 8*, *members only → public*.
    */
   function railArrow(was, now) {
     const a = String(was).split(' '), b = String(now).split(' ');
@@ -1482,7 +1585,7 @@ window.CARDS = (function () {
         : '<span class="disc" aria-hidden="true" title="' + ttl + '"></span>') +
       (p ? '<span class="who">' + esc(name) + '</span>' : '') +
       (why
-        ? '<div class="said">' + esc(why) + '</div>'
+        ? '<div class="said">' + reasonHtml(why) + '</div>'
         : '<div class="said none">' + G.speaker.noReason + '</div>') +
       '</div>';
   };
@@ -1499,7 +1602,7 @@ window.CARDS = (function () {
     const p = personOf(who);
     return '<span class="qwhy spoke"><span class="qface" aria-hidden="true">' +
       (p ? avHtml(p) : '<span class="disc"></span>') +
-      '</span><span class="qsaid">' + esc(why) + '</span></span>';
+      '</span><span class="qsaid">' + esc(reasonPlain(why)) + '</span></span>';
   };
 
   // The fold triangle — one control on every surface (2026-08-19, lifted
@@ -2197,7 +2300,8 @@ window.CARDS = (function () {
     TICK, ARROW_OUT, PAUSE, VS16, MARK, DRAWN, mkHtml, markHtml,
     GLYPH, glyphKey, glyphHtml, glyphify, glyphTextOf,
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks, mdDiffPieces, mdPiecesHtml, mdDiffHtml, mdBlocksHtml,
-    railPlain, railChange, railPair, railWhen, railAt, railArrow,
+    railPlain, railChange, railPair, railWhen, railAt, railArrow, railTitleHtml, railTitleText, longWhen, longDay,
+    reasonHtml, reasonPlain,
     originText, MD_RX, mdToHtml, htmlToMd, mdStrip, mdBlock, linkify, linkifyHtml, mdLine,
     mdUnescape, mdPlain, pasteClean,
     MD_ONE, mdLead, mdInner, mdParts, sourceToRich, readLane, sentText,

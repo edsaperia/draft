@@ -125,8 +125,8 @@
     // card and rail alike, run from a timer of its own in `init` and never
     // from a render
     abstainNoteHtml, tickAbstain,
-    // a rail entry's title and its moment (Q????)
-    railChange, railPair, railWhen,
+    // a rail entry's title and its moment (Q1523)
+    railChange, railPair, railWhen, railTitleHtml, longWhen, reasonPlain,
   } = window.CARDS;
   // **A power is not held until it has been acknowledged** (Ed, 2026-08-21).
   // The host says whether this reader may propose and may judge; both default
@@ -782,7 +782,7 @@
     ? '<span class="qwhy">' + esc(t.why) + '</span>'
     : window.CARDS.railSpeakerHtml(t.why, t.by));
 
-  // **An entry's title names its own subject** (Q????, Ed 2026-09-24): the
+  // **An entry's title names its own subject** (Q1523, Ed 2026-09-24): the
   // words this entry is about, from this entry alone — never the clause's
   // name, which every entry on one clause shares, and never by comparison
   // with its neighbours, so a title cannot change because another entry
@@ -805,6 +805,16 @@
   const siteWas = (site) => (site.seed != null ? site.seed
     : site.origin ? site.origin.map((o) => (o.text != null ? o.text : o.x || '')).join('\n')
     : (site.keys || [site.key]).filter(Boolean).map(sourceTextFor).join('\n'));
+  // **What a record's wordings were proposed against** (Q1523's rail title;
+  // the record card's highlight since Q1531, Ed 2026-09-24): the text the race
+  // displaced where the record kept it (`replaced`, the host's `displaced`;
+  // `optionA` in the fixture), else — where nothing displaced was kept — the
+  // clause where the incumbent held, which is what stood, and nothing where a
+  // wording carried, which is an insertion into a gap. `carried` is whether
+  // any wording carried (adopted, or the best at the close).
+  const recordBaseOf = (g, carried) => (g.replaced !== undefined ? g.replaced
+    : g.optionA !== undefined ? g.optionA
+    : carried ? '' : (g.keys || []).map(sourceTextFor).join('\n'));
   // a line that also carries a moment (a record) or a place count (*1 of 3
   // places*) leaves its title less room than the rail's 34 characters
   const RAIL_DATED = 26;
@@ -830,9 +840,7 @@
         const field = fieldOf(g).filter((c) => c.text != null);
         const pick = field.find((c) => c.won) || field.slice().sort((x, y) => (y.p ?? -1) - (x.p ?? -1))[0];
         if (!pick) return name;
-        const was = g.replaced !== undefined ? g.replaced : g.optionA !== undefined ? g.optionA
-          : pick.won ? '' : (g.keys || []).map(sourceTextFor).join('\n');
-        return railChange(was, pick.text, name, RAIL_DATED);
+        return railChange(recordBaseOf(g, pick.won), pick.text, name, RAIL_DATED);
       }
       if (g.race && g.race.a && g.race.b) return railPair(g.race.a.text || '', g.race.b.text || '', name);
       const two = bothOf(g);
@@ -844,6 +852,10 @@
   // every run
   let RAIL_NOW = () => Date.now();
   const whenText = (d) => (d && d.at != null ? railWhen(d.at, RAIL_NOW()) || '' : (d && d.when) || '');
+  // …and a card's head says it in full (Q1523 (a), Ed 2026-09-24): *Sunday,
+  // 20 September, 11:12*, 24-hour and in the page's words, where the rail
+  // keeps the short ladder
+  const longText = (d) => (d && d.at != null ? longWhen(d.at, RAIL_NOW()) || '' : (d && d.when) || '');
 
   function queueEntries() {
     const out = [];
@@ -990,7 +1002,7 @@
           ' title="' + esc(d.outcome || 'sealed') +
           (isUnread(g) ? ' — you haven’t opened this one yet' : '') + '">' +
           '<span class="ql">' + markHtml(markKindOf(g)) +
-          '<span class="qt">' + esc(plainLabel(railTitleOf(g, e))) + '</span>' +
+          '<span class="qt">' + railTitleHtml(railTitleOf(g, e)) + '</span>' +
           '<span class="qv when">' + esc(whenText(d)) + '</span></span>' +
           '</button></li>';
         continue;
@@ -1034,10 +1046,10 @@
             // ✏️, or ↻ where the text moved out from under a site of it
             // (Q1463): the gutter tab reads `markKindOf` and the rail said
             // `propose` whatever had happened, so the two disagreed
-            ? '<span class="ql">' + markHtml(markKindOf(g)) + '<span>' + esc(plainLabel(railTitleOf(g, e))) + '</span></span>' +
+            ? '<span class="ql">' + markHtml(markKindOf(g)) + '<span>' + railTitleHtml(railTitleOf(g, e)) + '</span></span>' +
               where +
               '<span class="qwhy' + (why ? '' : ' empty') + '">' +
-              (why ? esc(why) : T.rail.noReason) + '</span>' +
+              (why ? esc(reasonPlain(why)) : T.rail.noReason) + '</span>' +
               ''
             // **✏️ does not say "yours"** (Ed, 2026-08-17). The pencil means *you
             // wrote this* and the entry is the accent blue; a word saying it a third
@@ -1047,7 +1059,7 @@
             // hard-coded ✏️, so a stranded proposal of yours wore ↻ in the
             // gutter and the contents rail and ✏️ here, at the same moment.
             // SURFACE §6 is one alphabet in all three columns.
-            : '<span class="ql">' + markHtml(markKindOf(g)) + esc(plainLabel(railTitleOf(g, e))) +
+            : '<span class="ql">' + markHtml(markKindOf(g)) + railTitleHtml(railTitleOf(g, e)) +
               (e.of > 1 ? '<span class="qv"> · ' + T.rail.placesOf(e.n, e.of) + '</span>' : '') + '</span>' +
               // **and for a few seconds after the press, one sentence** (Q1485
               // (A)): the card has just closed, so without this the whole of
@@ -1136,7 +1148,7 @@
           // it looks like something you are failing to read. The mark already says you
           // have judged; the card says what you said, in full, when you open it.
           ? '<span class="ql">' + markHtml(g.shifted ? 'shifted' : 'deciding') +
-            esc(plainLabel(railTitleOf(g, e))) + '</span>'
+            railTitleHtml(railTitleOf(g, e)) + '</span>'
           : '<span class="ql">' +
             markHtml(markKindOf(g)) +
             (e.prio
@@ -1144,7 +1156,7 @@
               // rather than colliding and truncating on one (Ed, 284)
               ? '<span class="qprio">Prioritise:<b>' + esc(plainLabel(e.prio[0])) +
                 '</b><i>vs</i><b>' + esc(plainLabel(e.prio[1])) + '</b></span>'
-              : '<span>' + esc(plainLabel(railTitleOf(g, e))) + '</span>') +
+              : '<span>' + railTitleHtml(railTitleOf(g, e)) + '</span>') +
             // **The entry carries the clock too, in the last day** (Q1460
             // (e), Ed 2026-09-19: *the rail should only show the clock when
             // it's less than 24 hrs*). A vote you have not cast can hide
@@ -1274,19 +1286,20 @@
   // A flow entry that would end up underneath a pinned card is hidden rather
   // than nudged: nudging makes the whole rail crawl as you scroll.
   const QGAP = 8, BAND_TOP = 70, BAND_BOT = 24;
-  // **At most three unacknowledged decisions pin at once, oldest first** (Q113,
-  // Ed 2026-09-14). A pinned entry is exempt from the fit cap and hides any flow
+  // **One unacknowledged decision pins at once, the oldest** (Q1532, Ed
+  // 2026-09-24: *At the moment we pin three green ✔️s; I think we only need to
+  // pin one* — Q113's cap of three, 2026-09-14, cut to one). A pinned entry is exempt from the fit cap and hides any flow
   // entry that would fall underneath it, so the one population that nothing
   // expires — a decision owed you an OK — was the one that could crowd the
   // margin out on its own: come back after a long absence and the rail is a wall
   // of green ticks with the document's live work hidden behind it. The cap is on
-  // *pinning*, not on the entries: the fourth owed decision and every one after
+  // *pinning*, not on the entries: the second owed decision and every one after
   // it stands at its own clause as an ordinary green entry, shown when it fits,
   // scrolling with the text, opening and taking its OK exactly as a pinned one
   // does. Each OK pins the next oldest. Nothing announces the count — an
   // "and n more" line would be the tally 2026-08-17 retired, an apology for a
   // limit nobody experiences as one.
-  const NEWS_PIN_CAP = 3;
+  const NEWS_PIN_CAP = 1;
   // A deadlocked race ranks above every ordinary question (Ed, 223). It can
   // out-rank the flame in the *order*, which costs nothing: the flame is kept
   // regardless of room, so its primacy rests on the exemption rather than on
@@ -1326,7 +1339,7 @@
     // cap is a rule about *pinning*, and pinning is a wide-margin fact: it buys
     // exemption from the fit cap and hides the flow underneath. A drawer has
     // neither — it is an ordered list that scrolls — so capping here would not
-    // demote a fourth owed decision to a flow position, there being none; it
+    // demote a second owed decision to a flow position, there being none; it
     // would delete it from the one place a phone lists what asks something of
     // you, and an OK you are owed asks something of you.
     if (NARROW()) {
@@ -1488,7 +1501,7 @@
       (live ? pinned : flow).push(row);
     }
     // The cap, applied across both populations as one queue (Q113, Ed
-    // 2026-09-14): the oldest `NEWS_PIN_CAP` owed decisions pin, the rest are
+    // 2026-09-14; one since Q1532): the oldest `NEWS_PIN_CAP` owed pin, the rest are
     // demoted to the flow, where they stand at their own clauses. Whatever is
     // open pins for being open whatever its state (C6), so an owed decision you
     // have opened from further down the queue keeps its place while it is open —
@@ -2108,12 +2121,16 @@
       '<div class="sugg sealed-open" data-card="' + s.id + '"' +
       (skey ? ' data-site="' + skey + '"' : '') + '>' +
       '<div class="rechead"><span>' + T.record.amended + '</span>' +
-      '<span class="sub">' + esc(whenText(s.decided)) + '</span></div>' +
+      '<span class="sub">' + esc(longText(s.decided)) + '</span></div>' +
       (skey
-        ? clauseHeadHtml(s, {
+        ? clauseHeadHtml(s, Object.assign({
             text: sourceTextFor(skey), key: skey, chips: chipsFor(skey, s.id),
             label: null,
-          })
+          // the amended wording, its changes marked against the text it
+          // replaced (Q1531), as the sealed record's winner is; plain where
+          // the server could not say what stood before
+          }, s.replaced && sourceTextFor(skey).trim()
+            ? { html: wordingHtml(s.replaced, sourceTextFor(skey)) } : {}))
         : '') +
       speakerHtml(s.rationale, undefined, s.by || T.record.founder) +
       // in the same `rsub` vocabulary the record uses for *the text that
@@ -2233,6 +2250,24 @@
     // — so the top entry prints in the field like everything else: the head
     // keeps its machinery and a line under it says why the two differ.
     const rest = s.changedSince ? ranked : ranked.filter((c) => c !== top);
+    // **Every wording shows what it changed** (Q1531, Ed 2026-09-24: *keep the
+    // green text highlight, so it's easier to see what the change was*): each
+    // proposal in the field, and the winner at the head, is drawn as the live
+    // card drew it — `wordingHtml` against the text it was proposed against,
+    // the floor and all — while the incumbent, *Previous text* or *the text
+    // that stood*, stays plain, since it is what the others are read against.
+    const base = recordBaseOf(s, !held);
+    const markedText = (c) => (c.incumbent ? mdBlocksHtml(null, c.text) : wordingHtml(base, c.text));
+    // The head carries it only where it is a proposal's wording — a winner, or
+    // the best at the close — and still reads as the record left it; the
+    // incumbent at the head, and a clause changed since, stay the clause. Its
+    // `<ins>` takes no padding there (`.sealed-open .headclause ins`), so the
+    // head keeps the paragraph's box to the pixel.
+    const headOf = () => {
+      const o = headOpts(s, skey);
+      return !top.incumbent && !s.changedSince && o.text != null && String(o.text).trim()
+        ? Object.assign(o, { html: wordingHtml(base, o.text) }) : o;
+    };
 
     // Where the incumbent is in the list its right-hand slot now names it, so the
     // left-hand tag would be saying it twice; where it is at the *head* it kept
@@ -2303,7 +2338,7 @@
       // tried.
       '<div class="rechead">' +
       '<span>' + (und ? T.record.undecided : T.record.decided) + ' · ' + (d.judges ?? 0) + '/' + ROSTER + PEOPLE + '</span>' +
-      '<span class="sub">' + esc(whenText(d)) + '</span></div>' +
+      '<span class="sub">' + esc(longText(d)) + '</span></div>' +
       // **The counts are printed, not hovered** (Q1452, Ed 2026-09-18: *print the
       // count line on the card*): the sentence was a `title` on the head, which a
       // phone never shows and a mouse only finds by resting — and it is the
@@ -2341,7 +2376,7 @@
       // a deleted clause's record heads with its gap, as a race on a gap does
       // (M19, `headOpts`): the two neighbours named, no text
       (top
-        ? clauseHeadHtml(s, Object.assign(headOpts(s, skey), {
+        ? clauseHeadHtml(s, Object.assign(headOf(), {
             key: skey, chips: chipsFor(skey, s.id), label: null,
           })) +
           // **This clause has changed again since** (Q1333): one line under
@@ -2360,7 +2395,8 @@
             return '<div class="ranked' + (c.incumbent ? ' wasthere' : '') + '">' +
             '<div class="rtag">' + tag(c) + line(c) + '</div>' +
             // read as the clause is (Q1368): a candidate's text is markdown
-            '<div class="rtext">' + mdBlocksHtml(null, c.text) + '</div>' +
+            // …its changes marked against what it was proposed against (Q1531)
+            '<div class="rtext">' + markedText(c) + '</div>' +
             // the same blank disc a live card gives it: whoever argued for this is
             // still sealed unless the session's visibility setting says otherwise
             spk(c) + '</div>';
@@ -3196,6 +3232,20 @@ document.addEventListener('pointerdown', (ev) => {
 });
 document.addEventListener('pointerup', () => { if (GESTURE === 'hold') flyStop(false); });
 document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flyStop(false); });
+// **A paste into a reason drops the escapes docs.vote does not need** (Q1533,
+// Ed 2026-09-24): a reason is light markdown now — its links drawn, its
+// escapes read — so Q1530's paste rule reaches it as it reaches a clause.
+// One listener for every reason field on the page, the composer's, the
+// deadlock desk's and the band's motion and Founder fields alike, taking the
+// plain text only; typed text never passes here.
+document.addEventListener('paste', (ev) => {
+  const el = ev.target && ev.target.closest && ev.target.closest('.edit-why, [data-why], [data-deadwhy]');
+  if (!el) return;
+  const t = (ev.clipboardData && ev.clipboardData.getData('text/plain')) || '';
+  if (!t) return;
+  ev.preventDefault();
+  document.execCommand('insertText', false, pasteClean(t.replace(/\r\n?/g, '\n')));
+}, true);
 
   // ---- the document, in its passes (refactor Q1352 (g), 2026-09-14) -------
   // `renderDoc` was one 665-line function doing four unrelated jobs in a row,
@@ -4422,9 +4472,24 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         // stood, so it is held there.
         const heldEl = hold ? doc.querySelector(hold) : null;
         const heldTop = heldEl ? heldEl.getBoundingClientRect().top : null;
+        // **A switch inside one strip holds the tab clicked** (Q1524 (a), Ed
+        // 2026-09-24; M12, *the tab you click does not move*). Holding the
+        // clause is not enough: a record's head stands a dateline row lower
+        // in its card than a live card's does, so a switch between the two
+        // moved the whole strip 28.85px. Where the card closing carries the
+        // opening card's tab in its own strip and no scroll was asked for —
+        // a click on that tab — the tab is measured before the swap and the
+        // page corrected by its drift after, whatever else moved.
+        const tabOf = (card) => doc.querySelector('.sugg[data-card="' + card + '"] .clausehead .achip[data-anchor="' + next + '"]');
+        const tabEl = closing && !scroll ? tabOf(closing) : null;
+        const tabTop = tabEl ? tabEl.getBoundingClientRect().top : null;
         keepStill(() => { openId = next; renderAll(); }, hold);
         focusOpenedCard(next);
-        if (heldTop !== null && !doc.querySelector(hold)) {
+        const tabNow = tabTop !== null ? tabOf(next) : null;
+        if (tabNow) {
+          const drift = tabNow.getBoundingClientRect().top - tabTop;
+          if (Math.abs(drift) > 0.5) scrollTo(0, scrollY + drift);
+        } else if (heldTop !== null && !doc.querySelector(hold)) {
           const born = [...doc.querySelectorAll('.sugg')].find((c) => c.dataset.card === next);
           const drift = born ? born.getBoundingClientRect().top - heldTop : 0;
           if (Math.abs(drift) > 0.5) scrollTo(0, scrollY + drift);
@@ -5355,7 +5420,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // and the speaker's two (K30): the rung whole, and the viewer's own face
     if (env.authorRung) AUTHOR_RUNG = env.authorRung;
     if (env.signerPerson) SIGNER_PERSON = env.signerPerson;
-    // the rail's clock (Q????): the fixture pins it, so a record's moment
+    // the rail's clock (Q1523): the fixture pins it, so a record's moment
     // reads the same on every run and the probes can freeze it
     if (env.railNow) RAIL_NOW = env.railNow;
     SESSION_MINUTES = env.SESSION_MINUTES ?? 8 * 60;
