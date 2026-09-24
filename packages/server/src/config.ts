@@ -87,6 +87,20 @@ export interface ServerConfig {
    * like an unknown path.
    */
   adminKey?: string | null;
+  /**
+   * **The demo key** (`DRAFT_DEMO_KEY`, design/DEMO.md Stage 2; Q1535): what
+   * makes a browser Ed's on the demo document — the `draft_demo` cookie is an
+   * HMAC keyed on it (`demo-key.ts`), so rotating it kills every cookie.
+   * Unset, every demo control answers 404 like an unknown path.
+   */
+  demoKey?: string | null;
+  /**
+   * **The demo bots' Claude key** (`DRAFT_DEMO_ANTHROPIC_KEY`, DEMO.md Stage 5):
+   * a name of its own, so a key set on the host for anything else never
+   * silently lets the demo spend. Unset, the bots cannot start on Claude and
+   * the panel says so.
+   */
+  demoAnthropicKey?: string | null;
   /** HMAC secret for cookies and tokens at rest. */
   secret: string;
   /**
@@ -225,6 +239,8 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ServerConfi
     // open it to whoever sends an empty bearer
     botKey: (env.DRAFT_BOT_KEY ?? '').trim() || null,
     adminKey: (env.DRAFT_ADMIN_KEY ?? '').trim() || null,
+    demoKey: (env.DRAFT_DEMO_KEY ?? '').trim() || null,
+    demoAnthropicKey: (env.DRAFT_DEMO_ANTHROPIC_KEY ?? '').trim() || null,
     notifyEmail: (env.DRAFT_NOTIFY_EMAIL ?? 'edsaperia@gmail.com') || null,
     secret: env.DRAFT_SECRET ?? persistedSecret(dataDir),
     trustProxy: env.DRAFT_TRUST_PROXY !== undefined

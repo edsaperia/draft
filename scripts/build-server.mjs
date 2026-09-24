@@ -33,7 +33,15 @@ const NEVER_IN_PROD = ['dev-ladder', 'ladder.invalid', 'Bellamy', '/api/dev/',
   // it, and a sentence only its refusals carry. `/api/dev/` above already
   // covers the route path; these two say the module behind it was never
   // resolved into the bundle either.
-  'dev-clock', 'a dev clock advances and never rewinds'];
+  'dev-clock', 'a dev clock advances and never rewinds',
+  // **The demo bots' stand-in brain and short clocks** (design/DEMO.md Stage
+  // 4). The Claude model, the bots and their routes ship by design (the demo
+  // exception, DEMO.md §0.2); the stub model, the switch that loads it and the
+  // walk's shortened lapse, run clock and cap must not — a production host
+  // runs bots on Claude or not at all, and pauses at two minutes, ten minutes
+  // and $3. The dev target route is covered by `/api/dev/` above.
+  'StubDemoModel', 'demo-model-stub', 'DRAFT_DEMO_STUB', 'DRAFT_DEMO_LAPSE_MS',
+  'devLapseMs', 'devRunMs', 'devCapUsd'];
 /**
  * **And the one seam the dev clock leaves in code that ships** (Q1455). Unlike
  * the ladder, this dev control needs a foothold in a production path —

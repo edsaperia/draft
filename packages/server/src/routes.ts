@@ -37,6 +37,7 @@ import type { MailOutbox } from './outbox.js';
 import type { Stash } from './stash.js';
 import type { PauseState, WritePath } from './write-path.js';
 import type { RaceCounts } from './error-log.js';
+import type { DemoBots } from './demo-bots.js';
 import { str } from './commands.js';
 
 /**
@@ -67,6 +68,8 @@ export interface RouteContext {
   /** the refusals a member did nothing wrong to meet (Q1493 (a)): a race with
    *  the poll, answered by the page and counted rather than logged */
   readonly races: RaceCounts;
+  /** the demo's bots (design/DEMO.md Stage 4): idle until the panel's ▶️ */
+  readonly demoBots: DemoBots;
   readonly bootedAtMs: number;
   /** an https baseUrl: HSTS, the proxy redirect and the cookie's Secure flag */
   readonly httpsOn: boolean;
