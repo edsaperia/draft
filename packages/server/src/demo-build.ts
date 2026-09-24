@@ -44,7 +44,7 @@ const PAST = 3 * HOUR;
  * the preset may state but never move.
  */
 export const DEMO_DEFAULTS: ReadonlyMap<SettingId, SettingValue> = new Map<SettingId, SettingValue>([
-  ['quorum', { form: 'count', n: 3 }],
+  ['quorum', { form: 'count', n: 6 }],
   ['rate', { grant: 3, cap: 3, dripMinutes: 2 }],
   ['lapse', { afterMs: null }],
   ['authorship', { rung: 'public' }],

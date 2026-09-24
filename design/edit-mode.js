@@ -114,6 +114,17 @@ window.EDIT_MODE = (function () {
       const door = ed && ed.querySelector('[data-act="edit-door"]');
       if (!door) return;
       const chip = document.querySelector('#ridetab .achip[data-tab="text"]');
+      // **The door straddles the page's right edge** (Ed, 2026-09-24, before
+      // the demo): its centre on the sheet's edge, never nearer the window's
+      // edge than `--s5`; measured, since the column is centred in its track
+      const row = ed.querySelector('[data-editdoor]');
+      const sheet = document.querySelector('.sheet-text');
+      const page = sheet && sheet.offsetWidth ? sheet : document.querySelector('.doc');
+      if (row && page && door.offsetWidth) {
+        const s5 = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--s5')) || 32;
+        const edge = page.getBoundingClientRect().right;
+        row.style.right = Math.max(s5, document.documentElement.clientWidth - edge - door.offsetWidth / 2) + 'px';
+      }
       const below = !!chip && chip.getBoundingClientRect().bottom > door.getBoundingClientRect().top;
       ed.classList.toggle('belowtab', below);
     }

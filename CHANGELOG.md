@@ -6,6 +6,13 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-09-24, late evening: the demo, tuned
+
+### Changed
+- **The 📝 button sits on the right edge of the page** rather than in the window's corner, and the 📝 on it is twice the size.
+- **The red that says something needs your attention is lighter.**
+- **In the demo document, a proposal needs six members' votes to pass** rather than three, so most proposals are still open when you arrive and your vote can count.
+
 ## 2026-09-24, evening: a demo anyone can try
 
 ### New

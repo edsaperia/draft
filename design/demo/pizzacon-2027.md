@@ -446,8 +446,8 @@ Who proposes what, at a glance: Ferrante D2, G2, Decided 4 · Wierzbicki C2 · F
 Each line is a setting's catalogue id and its value as the server reads it, with the plain words beneath. Visibility, closing date, applications and admissions are the demo's own and fixed (`design/DEMO.md` §3.1): they may be stated here, but only at the value shown.
 
 <!-- @rules -->
-quorum: {"form":"count","n":3}
-> 👥 Quorum — a fixed three members. With the bots voting quickly and a few phones, a wording is adopted within a minute or two of being proposed; 3 stops a single bot's vote deciding anything alone.
+quorum: {"form":"count","n":6}
+> 👥 Quorum — a fixed six members (Ed, 2026-09-24: at three the proposals were too close to passing, so viewers mostly saw green passed marks). A seeded proposal now needs a few more votes before it passes, so a visitor's vote can still matter.
 rate: {"grant":3,"cap":3,"dripMinutes":2}
 > ⏱️ Proposal rate — members start with 3 proposals, up to a maximum of 3 (R-083, as every document), and get another every 2 minutes.
 ending: {"endsAtMs":null}

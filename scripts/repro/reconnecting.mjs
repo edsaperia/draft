@@ -148,7 +148,7 @@ if (!only || only === 'offline') {
     !!b && /^Reconnecting…/.test(b.text) && /offline/i.test(b.text) && !!b.live, JSON.stringify({ b, after }));
   // along the top: flush under the topbar, the window's full width, in the one red
   check('offline · the bar runs the full width, flush under the topbar, in the surface\'s one red',
-    !!b && b.nav !== null && Math.abs(b.top - b.nav) <= 1 && b.w === b.vw && b.bg === 'rgb(142, 33, 22)', JSON.stringify(b));
+    !!b && b.nav !== null && Math.abs(b.top - b.nav) <= 1 && b.w === b.vw && b.bg === 'rgb(222, 72, 58)', JSON.stringify(b));
   // readable and scrollable: no modal, the page moves under the wheel
   await page.mouse.move(800, 450);
   await page.mouse.wheel(0, 700); await sleep(600);

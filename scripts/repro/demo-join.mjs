@@ -229,9 +229,10 @@ if (hasPanel) {
     const modal = document.getElementById('demoqrmodal');
     if (!modal) return null;
     const box = document.getElementById('demoqrbox').getBoundingClientRect();
+    const card = modal.getBoundingClientRect();
     const addr = document.getElementById('demoqraddr');
-    return { url: modal.dataset.url, side: Math.min(box.width, box.height),
-      short: Math.min(window.innerWidth, window.innerHeight), addr: addr.textContent,
+    return { url: modal.dataset.url, side: Math.min(box.width, box.height), card: [card.left, card.top, card.width, card.height],
+      short: Math.min(window.innerWidth, window.innerHeight), vw: window.innerWidth, addr: addr.textContent,
       addrPx: parseFloat(getComputedStyle(addr).fontSize),
       fill: getComputedStyle(document.querySelector('#demoqrcode path')).fill,
       bg: getComputedStyle(modal).backgroundColor };
@@ -239,9 +240,9 @@ if (hasPanel) {
   check('qr · the modal opens', !!m, 'no modal');
   if (m) {
     check('qr · it encodes exactly the join address', m.url === B + '/d/demo?try=1', m.url);
-    check('qr · the code fills most of the screen', m.side >= 0.7 * m.short, `${m.side}px of ${m.short}px`);
+    check('qr · a card in the top-left, the screen left free (Ed, 2026-09-24)', m.card[0] < 40 && m.card[1] < 140 && m.card[2] < 0.4 * m.vw && m.side >= 180, JSON.stringify(m.card) + ' code ' + m.side + 'px');
     check('qr · black on white', /rgb\(0, 0, 0\)/.test(m.fill) && m.bg === 'rgb(255, 255, 255)', m.fill + ' on ' + m.bg);
-    check('qr · the address under it in large type', m.addrPx >= 28 && B.replace(/^https?:\/\//, '').startsWith(m.addr.split('/')[0]),
+    check('qr · the address under it in large type', m.addrPx >= 16 && B.replace(/^https?:\/\//, '').startsWith(m.addr.split('/')[0]),
       m.addr + ' at ' + m.addrPx + 'px');
     await shot(ed, 'qr-modal-1600.png');
     if (JSQR && existsSync(JSQR)) {
@@ -265,9 +266,9 @@ if (hasPanel) {
     } else {
       say('SKIP · qr decode (pass --jsqr=<path to jsQR.js> to decode)');
     }
-    await ed.keyboard.press('Escape');
+    await ed.click('#demoqrclose');
     await sleep(300);
-    check('qr · Escape closes it', !(await ed.evaluate(() => !!document.getElementById('demoqrmodal'))));
+    check('qr · ✕ closes it', !(await ed.evaluate(() => !!document.getElementById('demoqrmodal'))));
   }
 }
 

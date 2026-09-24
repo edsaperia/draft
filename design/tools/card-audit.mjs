@@ -1952,7 +1952,12 @@ async function walkDoor(page, doors, errors, walk) {
   // the window as a fixed box sees it — the visual viewport, never
   // `documentElement`'s client box, which is the whole document on this page
   const win = await page.evaluate(() => ({ w: visualViewport.width, h: visualViewport.height,
-    s5: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--s5')) }));
+    s5: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--s5')),
+    edge: (() => {
+      const sh = document.querySelector('.sheet-text');
+      const el = sh && sh.offsetWidth ? sh : document.querySelector('.doc');
+      return el ? el.getBoundingClientRect().right : null;
+    })() }));
   await page.click(DOOR);
   await wait(page, 400);
   const commit = await box(ROW);
@@ -2173,15 +2178,16 @@ function doorRules(doors) {
     // 2026-09-23 — it had stood in the row's ✏️'s own box since Q1335): the
     // door's right and bottom edges `--s5` off the window's, its diameter 1.5×
     // the row's ✏️'s, and the same box before and after a round trip
-    const said = 'the floating 📝 stands in its own corner — right and bottom `--s5` off the window\'s edges — at 1.5× the proposal-row\'s circles, the same box before and after edit mode (Q1516 (3), (4))';
+    const said = 'the floating 📝 straddles the page\'s right edge (Ed, 2026-09-24), `--s5` off the window\'s foot, at 1.5× the proposal-row\'s circles, the same box before and after edit mode (Q1516 (3), (4))';
     if (!d.editing || !d.commit) {
       out.push({ rule: 'D1', lens: 'positioning', said, saw: 'pressing the door ' + (d.editing ? 'drew no row' : 'did not enter edit mode'), note: d.walk });
       continue;
     }
     if (d.doorWhileEditing) out.push({ rule: 'D1', lens: 'positioning', said, saw: 'the door is still drawn in edit mode, beside the row', note: d.walk });
     const offRight = d.win.w - (d.before.r[0] + d.before.r[2]), offBottom = d.win.h - (d.before.r[1] + d.before.r[3]);
-    if (Math.abs(offRight - d.win.s5) > 0.5 || Math.abs(offBottom - d.win.s5) > 0.5) out.push({ rule: 'D1', lens: 'positioning', said,
-      saw: 'the door stands ' + Math.round(offRight * 100) / 100 + 'px off the window\'s right and ' + Math.round(offBottom * 100) / 100 + 'px off its foot, against ' + d.win.s5, note: d.walk });
+    const wantRight = d.win.edge == null ? d.win.s5 : Math.max(d.win.s5, d.win.w - d.win.edge - d.before.r[2] / 2);
+    if (Math.abs(offRight - wantRight) > 0.5 || Math.abs(offBottom - d.win.s5) > 0.5) out.push({ rule: 'D1', lens: 'positioning', said,
+      saw: 'the door stands ' + Math.round(offRight * 100) / 100 + 'px off the window\'s right and ' + Math.round(offBottom * 100) / 100 + 'px off its foot, against ' + Math.round(wantRight * 100) / 100 + ' and ' + d.win.s5, note: d.walk });
     if (Math.abs(d.before.r[2] - 1.5 * d.commit.r[2]) > 1) out.push({ rule: 'D1', lens: 'positioning', said,
       saw: 'the door ' + d.before.r[2] + 'px across, the row\'s ✏️ ' + d.commit.r[2] + 'px (1.5× is ' + Math.round(1.5 * d.commit.r[2] * 100) / 100 + ')', note: d.walk });
     if (!same(d.before, d.after)) out.push({ rule: 'D1', lens: 'positioning', said,
@@ -2210,7 +2216,7 @@ function doorRules(doors) {
       saw: 'in a 160px window the tab\'s bottom is at ' + Math.round(d.short.chipBottom) + ' and the door\'s top at ' + Math.round(d.short.doorTop) + ', and the door is ' + (d.short.hidden ? 'hidden' : 'shown'), note: d.walk });
     if (d.restoredHidden || !same(d.before, d.restored)) out.push({ rule: 'D3', lens: 'positioning', said: shortSaid,
       saw: 'the window restored, the door is ' + (d.restoredHidden ? 'still hidden' : 'at ' + (d.restored ? d.restored.r.join('×') : 'gone') + ' against ' + d.before.r.join('×')), note: d.walk });
-    if (!near(d.before.fontSize, 21.6, 0.3)) out.push({ rule: 'B6', lens: 'buttons', said: 'a glyph commit is 1.35rem (21.6px) inert, armed or held',
+    if (!near(d.before.fontSize, 43.2, 0.3)) out.push({ rule: 'B6', lens: 'buttons', said: 'the floating 📝 glyph is twice B6\'s size, 2.7rem (43.2px) (Ed, 2026-09-24)',
       saw: 'the floating 📝 at ' + d.before.fontSize + 'px', note: d.walk });
   }
   return out;

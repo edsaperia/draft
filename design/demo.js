@@ -13,7 +13,7 @@
  */
 (function () {
   'use strict';
-  const STYLE = 'position:fixed;bottom:84px;left:10px;z-index:61;display:flex;flex-wrap:wrap;' +
+  const STYLE = 'position:fixed;bottom:10px;left:10px;z-index:61;display:flex;flex-wrap:wrap;' +
     'gap:.35rem;align-items:center;max-width:calc(100vw - 20px);box-sizing:border-box;' +
     'font:12px ui-monospace,monospace;border:1px dashed #b60;background:#fff8ef;padding:.3rem .5rem';
   const BTN = 'border:1px dashed #b60;background:#fff;cursor:pointer;padding:.2rem .5rem;font:inherit';
@@ -70,7 +70,9 @@
     };
     if (bots && window.DEMO_BOTS) window.DEMO_BOTS.mount(document.getElementById('demobotsrow'));
     const msg = (s) => { document.getElementById('demomsg').textContent = s; };
-    document.getElementById('demoqr').onclick = () => qrModal(d.joinUrl || location.origin + '/d/demo?try=1', msg);
+    const joinUrl = d.joinUrl || location.origin + '/d/demo?try=1';
+    document.getElementById('demoqr').onclick = () => qrToggle(joinUrl, msg);
+    if (qrRemembered() && !document.getElementById('demoqrmodal')) qrModal(joinUrl, msg);
     document.getElementById('demoseat').onchange = (e) => {
       const member = e.target.value;
       if (!member) return;
@@ -95,11 +97,13 @@
   }
 
   /**
-   * **The QR modal** (Stage 3; `demo-qr`): one code for the whole room, which
-   * Ed puts on the presentation screen — so it is big and high-contrast,
-   * black on white, readable from the back: the code fills most of the
-   * viewport, the address stands under it in large type, and ✕, Escape or a
-   * click on the white round it closes it. The encoder is `design/qr.js`
+   * **The QR card** (Stage 3; `demo-qr`): one code for the whole room, which
+   * Ed leaves on the presentation screen while the demo runs, so people can
+   * go on joining — pinned top-left under the topbar, over the contents rail,
+   * never over the document (Ed, 2026-09-24: *where it can be left during
+   * the demo … not cover the whole screen*). Black on white, the address
+   * under it; ▦ QR toggles it, ✕ closes it, and it is remembered open across
+   * the reloads a Reset or a seat switch makes. The encoder is `design/qr.js`
    * (qrcode-generator, MIT, Kazuhiko Arase — vendored, licence header kept),
    * fetched on the first open, so a visitor's page never loads it.
    */
@@ -134,6 +138,14 @@
       'role="img" aria-label="QR code for ' + esc(text) + '"><path fill="#000" d="' + d + '"/></svg>';
   }
 
+  const QR_KEY = 'demoQrOpen';
+  const qrRemember = (open) => { try { localStorage.setItem(QR_KEY, open ? '1' : '0'); } catch (e) { /* no storage */ } };
+  const qrRemembered = () => { try { return localStorage.getItem(QR_KEY) === '1'; } catch (e) { return false; } };
+  function qrToggle(url, msg) {
+    const old = document.getElementById('demoqrmodal');
+    if (old) { old.remove(); qrRemember(false); return; }
+    qrModal(url, msg);
+  }
   function qrModal(url, msg) {
     loadQr().then((qrcode) => {
       const old = document.getElementById('demoqrmodal');
@@ -142,22 +154,20 @@
       const m = document.createElement('div');
       m.id = 'demoqrmodal';
       m.dataset.url = url;
-      m.style.cssText = 'position:fixed;inset:0;z-index:1000;background:#fff;color:#000;display:flex;' +
-        'flex-direction:column;align-items:center;justify-content:center;gap:2vh;padding:2vh;box-sizing:border-box';
+      m.style.cssText = 'position:fixed;top:calc(var(--nav-h, 58px) + 10px);left:10px;z-index:1000;' +
+        'background:#fff;color:#000;display:flex;flex-direction:column;align-items:center;gap:8px;' +
+        'padding:12px;box-sizing:border-box;border:2px solid #000;border-radius:8px;' +
+        'box-shadow:0 4px 18px rgba(0,0,0,.18)';
       m.innerHTML =
-        '<button id="demoqrclose" aria-label="Close" style="position:absolute;top:1.5vh;right:1.5vw;' +
-          'font:bold 40px/1 system-ui,sans-serif;background:#fff;color:#000;border:3px solid #000;' +
-          'border-radius:8px;width:64px;height:64px;cursor:pointer">✕</button>' +
-        '<div id="demoqrbox" style="width:min(80vh,92vw);height:min(80vh,92vw)">' + qrSvg(qrcode, url) + '</div>' +
-        '<div id="demoqraddr" style="font:bold clamp(28px,6vh,72px)/1.1 system-ui,sans-serif;' +
-          'letter-spacing:.01em;text-align:center;word-break:break-all">' + esc(shown) + '</div>';
+        '<button id="demoqrclose" aria-label="Close" style="position:absolute;top:4px;right:4px;' +
+          'font:bold 14px/1 system-ui,sans-serif;background:#fff;color:#000;border:1px solid #000;' +
+          'border-radius:4px;width:22px;height:22px;padding:0;cursor:pointer">✕</button>' +
+        '<div id="demoqrbox" style="width:min(260px,34vh);height:min(260px,34vh)">' + qrSvg(qrcode, url) + '</div>' +
+        '<div id="demoqraddr" style="font:bold 18px/1.15 system-ui,sans-serif;max-width:min(260px,34vh);' +
+          'text-align:center;word-break:break-all">' + esc(shown) + '</div>';
       document.body.appendChild(m);
-      const close = () => { m.remove(); document.removeEventListener('keydown', onKey); };
-      const onKey = (e) => { if (e.key === 'Escape') close(); };
-      document.addEventListener('keydown', onKey);
-      m.addEventListener('click', (e) => {
-        if (e.target === m || e.target.id === 'demoqrclose') close();
-      });
+      qrRemember(true);
+      m.querySelector('#demoqrclose').onclick = () => { m.remove(); qrRemember(false); };
     }, (e) => msg(e.message));
   }
 
