@@ -11,10 +11,11 @@
  * backslash printed for ever. `pasteClean` (design/cards.js) drops those at
  * the paste and keeps the ones docs.vote needs: `\*`, `\_`, a backtick,
  * `\\`, and a line-leading `\#` or `\-` that would otherwise become a
- * heading or a bullet. Three roads are driven: a paste into a clause in edit
+ * heading or a bullet. Four roads are driven: a paste into a clause in edit
  * mode (the composer's `pastedText`), a paste into the lane that opens (the
- * lane's own `paste` listener, session.js), and a paste into the founder's
- * column before 🍾 (the page's `#prose` listener).
+ * lane's own `paste` listener, session.js), a paste into the draft's reason
+ * (session.js's document-level reason listener, Q1533), and a paste into the
+ * founder's column before 🍾 (the page's `#prose` listener).
  *
  * It needs no server — `design/` is static, served here as `crlf-paste`
  * does — and changes nothing: no proposal is sent.
@@ -133,6 +134,27 @@ window.__clipPaste = (el, text) => {
   if (JSON.stringify(tail) !== JSON.stringify(WANT_LINES)) {
     fails.push(`lane: the draft's last lines are ${JSON.stringify(tail)}, wanted ${JSON.stringify(WANT_LINES)}`);
   } else say(`lane      · the draft's last lines are ${JSON.stringify(WANT_LINES)}`);
+
+  // …and the reason under it (Q1533, Ed 2026-09-24): a reason is light
+  // markdown now, so the one document-level listener (session.js) cleans a
+  // paste into it too
+  const werr = await page.evaluate((text) => {
+    const why = document.querySelector('.edit-why');
+    if (!why) return 'no reason field on the draft';
+    why.focus();
+    const r = document.createRange(); r.selectNodeContents(why); r.collapse(false);
+    const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    window.__clipPaste(why, text);
+    return null;
+  }, PASTED);
+  if (werr) die(`the reason: ${werr}`);
+  await T(page, 600);
+  const why = await page.evaluate(() => {
+    const d = (window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours');
+    return d ? d.rationale : null;
+  });
+  if (!why || !why.endsWith(WANT)) fails.push(`reason: the draft's reason is ${JSON.stringify(why)}, wanted …${JSON.stringify(WANT)}`);
+  else say(`reason    · the draft's reason holds ${JSON.stringify(WANT)}`);
   await page.close();
 }
 
@@ -174,4 +196,4 @@ if (fails.length) {
   process.exit(1);
 }
 say('');
-say('escape-paste · green: a markdown editor\'s escapes are cleaned at the paste, by all three roads');
+say('escape-paste · green: a markdown editor\'s escapes are cleaned at the paste, by all four roads');

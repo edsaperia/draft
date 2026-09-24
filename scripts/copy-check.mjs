@@ -195,7 +195,7 @@ if (broken.length) {
  * so a reader of the file knows what a green run is silent about. Lifted from
  * `founding-golden`'s own `norm`; **do not widen it** — a wider net hides copy.
  */
-const NORMALISED = ['HH:MM', 'D Month YYYY', 'Last amended D Month', 'weekday', 'n of m', 'whitespace'];
+const NORMALISED = ['HH:MM', 'D Month YYYY', 'Last amended D Month', 'D Month', 'weekday', 'n of m', 'whitespace'];
 const norm = (s) => String(s == null ? '' : s)
   // "Founded by AB Ash Bellamy 👑 at 15:19 on 26 August 2026" (the ⏳ grant heads)
   .replace(/\b\d{1,2}:\d{2}\b/g, 'HH:MM')
@@ -208,6 +208,12 @@ const norm = (s) => String(s == null ? '' : s)
   // by its own label rather than by a bare "D Month", which would swallow
   // every month name a sentence uses.
   .replace(/Last amended \d{1,2} [A-Z][a-z]+/g, 'Last amended D Month')
+  // …and since STYLE T16 was amended (Q1523, 2026-09-24) every date is in the
+  // page's own words with the year only where it is not this one — *Sunday,
+  // 20 September, 11:12*, *Founded … on 24 September* — so a day and a full
+  // month name, the twelve names spelled out and a day number before them,
+  // which no sentence uses but a date
+  .replace(/\b\d{1,2} (January|February|March|April|May|June|July|August|September|October|November|December)\b/g, 'D Month')
   // "The drafting process will end on Thursday at 18:00" (⏰, and the clock line)
   .replace(/\b(Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day\b/g, 'Weekday')
   // "3 of 3 have opened it", "1 of 1 have answered", "1 of 14"

@@ -35,6 +35,8 @@ const raw = JSON.parse(run.stdout.slice(run.stdout.indexOf('{')));
 const norm = (s) => String(s || '')
   .replace(/\b\d{1,2}:\d{2}\b/g, 'HH:MM')
   .replace(/\b\d{1,2} [A-Z][a-z]+ \d{4}\b/g, 'D Month YYYY')
+  // a date in the page's own words carries no year in this one (STYLE T16, Q1523)
+  .replace(/\b\d{1,2} (January|February|March|April|May|June|July|August|September|October|November|December)\b/g, 'D Month')
   .replace(/\b(Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day\b/g, 'Weekday')
   .replace(/\b\d+ of \d+\b/g, 'n of m')
   .replace(/\s+/g, ' ').trim();

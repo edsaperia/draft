@@ -65,7 +65,14 @@ Glyph names are stable (tabulated 2026-09-07, Q1208; the founding order's own gl
   ratio. A quorum share is `50%`; a time is *at 14:00 on 3 September*; a countdown
   follows the `session-clock` ladder (days beyond a week, hours inside one,
   20-minute steps inside six hours, 10-minute steps inside the hour, never
-  finer, never seconds).
+  finer, never seconds). **A date goes through the page's own date words in
+  `design/copy.js`, always 24-hour, never the browser's locale** (Ed,
+  2026-09-24, Q1523; no `toLocaleString` / `toLocaleDateString`): a rail entry
+  takes the short ladder (`railWhen`, `railAt` — *15:25*, *Sun 15:25*, *20
+  Sep*), a card the long form (`longWhen` — *Sunday, 20 September, 11:12*; the
+  date alone `longDay`, *20 September*), the clock line `dateWords`; the year
+  only where it is not this one. `copy-check` refuses a `toLocale…String` in
+  `design/`.
 - **T12 · A count, never a direction**, wherever a question is still running:
   *4 of 9 have answered*, never *leaning to keep*.
 - **T13 · A value, never a guess**: an undecided rule says who is deciding it,
@@ -230,7 +237,7 @@ The rules the audit log (§7) audits against, lifted from CLAUDE.md's glossary a
 | T13 | §2 · A value, never a guess | *The Founder is deciding [x]* |
 | T14 | §2 · No spec references | — |
 | T15 | §1 · No project-speak, no engine jargon — every word in §1's *Never* column, *threshold* now among them. **Q1156's amendment is retired** (Q1362, 2026-09-15): it let 🌡️'s method note name Bradley–Terry–Davidson and link `/pairwise`, and both the note and the page have gone with the bar they explained — so the rule has no exception again | *the standard rate*; *approval threshold*; *threshold* |
-| T16 | §2 · Raw values are not copy | dates through `toLocaleString`; whole percents |
+| T16 | §2 · Raw values are not copy | dates through the page's own date words in copy.js (`railWhen`, `longWhen`, `dateWords`), 24-hour, never the browser's locale (Q1523); whole percents |
 | T17 | §5 · The price is said in words exactly once, at the act | the ✏️ hold's tooltip; the 🪶 bubble |
 | T18 | §5 · Decided is a word, not a glyph — OK on anything that only wants to have been seen; a grant not yet accepted reads *Accept ‹glyph›* (Q1501) | `data-seen`, `data-ok`; `grants`, and no `take` |
 | T19 | §5 · Grey means nothing is being asked | `HUE` |
