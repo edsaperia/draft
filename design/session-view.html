@@ -3642,7 +3642,8 @@
       } else {
         said = (was ? '<div class="pick on"><span class="opttext">' + esc(was) + '</span>' +
             chosenRadio(provOf(k)) + '</div>' : '') +
-          recBox(R.rejectedProposal,
+          // *Refused proposal* where the Founder's 🛡️ held it (Q1526 amended)
+          recBox(heldByOf(rec) === 'crown' ? R.refusedProposal : R.rejectedProposal,
             '<div class="pick"><span class="opttext">' + esc(now2 || '') + '</span>' + speaker + '</div>');
       }
       return '<div class="body changed recbody">' + eyebrow + said + '</div>';

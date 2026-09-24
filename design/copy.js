@@ -1017,6 +1017,9 @@ window.COPY = (function () {
       // the labels of the record's second box (Q1522 (3), (4), Ed 2026-09-24)
       previousRule: 'Previous rule',
       rejectedProposal: 'Rejected proposal',
+      // …and on a record the Founder's 🛡️ refused, its box says so (Q1526
+      // amended, Ed 2026-09-24; STYLE T8)
+      refusedProposal: 'Refused proposal',
       // *the Founder*, never *the reserve* — the engine's word (Q386's follow-up,
       // Ed 2026-09-14); the one-power path says the same
       reserveReturned: (what) => 'The membership returned ' + what + ' to the Founder.',
