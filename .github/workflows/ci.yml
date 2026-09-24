@@ -71,6 +71,10 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run spec-check
+      # the demo preset against its contract, parsed and built in memory
+      # (design/DEMO.md §3.2, Q1535): Ed hand-edits it, and an edit that
+      # would not build is red here rather than a demo that is off on the host
+      - run: npm run demo-check
       # the words themselves, in seconds: design/copy.js against its own
       # golden (static mode; the rendered golden stays in `probe` behind --walk)
       - run: npm run copy-check

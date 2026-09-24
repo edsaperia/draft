@@ -63,6 +63,9 @@ in the repo).
 | `DRAFT_NOTIFY_EMAIL` | Operator notification: every document birth is mailed here | `edsaperia@gmail.com`, compiled in | Not set. Setting it **empty** switches the notification off |
 | `DRAFT_BOT_KEY` | The key to the bot outbox (§10, Q1310): mail to any address at `bots.docs.vote` is filed on the host instead of sent, and `GET /api/bots/outbox` serves the file to the bearer of this key. Unset or empty, the route is a 404 like any unknown path | unset | Dashboard, `sync: false`, on both services. Rotate by changing it; a restart applies it — **§3's *Restarting the live host* first**. Since issue #10 it opens the bot outbox and nothing else |
 | `DRAFT_ADMIN_KEY` | The key to the host itself (issue #10; Ed, 2026-09-22, option 1): `POST /api/admin/pause`, `/resume` and `/surface`. **Whoever holds it can freeze every room or replace the page every member runs.** Unset or empty, the three routes are 404s like any unknown path | unset | Dashboard, `sync: false`, on **`draft` only — never draft-dev**, and the `DRAFT_ADMIN_KEY` repository secret, the same value; nowhere else, never handed to a room-bots user. Rotate both in one sitting, **the dashboard first**: a push that bears a key the host does not hold is refused its pause and its surface upload and deploys unpaused on the full lane, and CI stays green |
+| `DRAFT_DEMO` | The demo document at `/d/demo` (§12, design/DEMO.md): `off` switches it off; anything else, or unset, builds it at boot | on | Not set. Set `off` to take the demo off a host |
+| `DRAFT_DEMO_ANTHROPIC_KEY` | The demo bots' Claude key (§12, design/DEMO.md Stage 5): the only key the bots spend on. Unset, the panel reads *No Claude key on this host* and ▶️ stays dark; everything else in the demo works | unset | Dashboard, `sync: false` (`render.yaml` declares it), production only; a key from its own Anthropic Console workspace, with a monthly limit set there — the host's own backstop is $3 a run |
+| `DRAFT_DEMO_KEY` | The key to Ed's demo panel (§12): visiting `/d/demo?demokey=<key>` sets a `draft_demo` cookie holding an HMAC of it, never the key. A passphrase is fine — five wrong tries a minute from one address lock that address out for five minutes. Unset or empty, every `/api/demo/*` control but the public join is a 404 like an unknown path | unset | Dashboard, `sync: false` (`render.yaml` declares it); a **different** value on draft and draft-dev. Changing it kills every cookie minted under the old one |
 | `DRAFT_STORE` | `file` or `pg` — where the bytes live. Absent means `file`. An unrecognised value is a **boot refusal**, never a fallback | `file` — the code's default (`config.ts`, `storeRaw`), **not production's value** | **`pg` in production**, and has been since the cutover of 2026-08-20 23:30 (§1, §7). Dashboard: `render.yaml` declares the key `sync: false`, so the value is not in the repo and a blueprint sync does not set it. This is the Postgres cutover switch, so **a service brought up without it boots on the file store** — which since 498(b) is an empty directory on the ephemeral instance filesystem, wiped at the next deploy. `/healthz` `store` says which one answered; on docs.vote it must read `pg` |
 | `DATABASE_URL` | Postgres connection string; required when `DRAFT_STORE=pg` | unset | Dashboard, when it exists — the frankfurt database's **internal** connection string |
 | `DRAFT_TRUST_PROXY` | `1`/`0`. Trust `x-forwarded-*` for the client IP and the original protocol | On in the built artifact, off in dev | Not set — the build's default is already right on Render |
@@ -960,3 +963,86 @@ under the card the command left from, and a stagehand's line at the foot of
 the window — the sentence, then the command, its arguments, the document,
 the seat and the time — so a member's screenshot and a line in this file
 can be matched on the seat and the timestamp.
+
+## 12. The demo document — docs.vote/d/demo
+
+**What it is.** `/d/demo` is a busy, half-decided document — *PizzaCon
+2027*, built from Ed's preset `design/demo/pizzacon-2027.md` — that Ed opens
+to show somebody what docs.vote is. The plan and its rulings are
+`design/DEMO.md` (Q1535); this section is what an operator needs.
+
+- **Memory only.** Built at boot from the preset (`Demo.boot`,
+  `packages/server/src/demo.ts`; `buildDemo` in `demo-build.ts`) as an
+  *ephemeral* document: never written to the store, never in an export,
+  never mailed, no token and no outbox row (`LoadedDoc.ephemeral`;
+  `WritePath.commit` skips the relay; the 📧 Log In and 🪪 Apply doors
+  answer without minting or sending on it). A restart or a deploy forgets
+  everything in it — the visitors, their proposals — and builds a fresh
+  generation at a new id. `/healthz` says `demo: { state, generation,
+  builtAt }`; `state` is `built`, `off`, `failed` (the preset did not
+  parse or build — the boot log names why) or `slug-held` (a real document
+  already holds `demo`, which is never shadowed).
+- **Taking it off.** Set `DRAFT_DEMO=off` and restart. Nothing else holds
+  the address; the birth refuses `demo` only while the demo holds it.
+
+**Ed's browser, set once.** With `DRAFT_DEMO_KEY` set on the host, visit
+`https://docs.vote/d/demo?demokey=<the key>`: the host compares it in
+constant time, sets the `draft_demo` cookie (`HttpOnly`, `Secure`,
+`SameSite=Strict`, a year) and redirects to `/d/demo`, taking the key out of
+the address bar. From then on that browser draws the **demo panel** at the
+bottom left (`design/demo.js`), off the design system like the ladder bar;
+no other browser does. Five wrong keys a minute from one address lock it out
+for five minutes (`guessFailed`, `demo-access.ts`). A new key, and a
+restart, kills every old cookie — visit the address again with the new one.
+
+**The panel.** Every control acts on the demo document alone and takes no
+document from the request (`routes-demo.ts`, `demoTable`):
+
+- **↺ Reset** (with a confirm): reads the preset afresh from disk, builds a
+  new generation and retires the old from memory (`POST /api/demo/reset`). A
+  preset that does not parse keeps the old generation and says why in the
+  panel. **Every visitor goes with the old generation** — their cookies name
+  the old id, so their pages read the stranger's door again. Reset is the
+  remedy for anything a visitor wrote.
+- **The seat**: sit in the Founder's seat or any cast member's
+  (`POST /api/demo/seat`) — the only way to the Founder's seat; a visitor
+  is never the Founder.
+- **▦ QR**: a full-screen, black-on-white QR code for the whole room, for
+  the presentation screen. It encodes `<DRAFT_BASE_URL>/d/demo?try=1` —
+  exactly `https://docs.vote/d/demo?try=1` on production — and prints
+  `docs.vote/d/demo` under it. ✕, Escape or a click on the white closes it.
+  The encoder is `design/qr.js` (qrcode-generator, MIT, vendored), loaded
+  on the first open only; no outside service is asked.
+- **The bots** (Stages 4–5, `demo-bots.ts`, `routes-demo-bots.ts`,
+  `design/demo-bots.js`): ▶️ / ⏸️, how many (4 up to the cast less the
+  Founder), the pace (calm · lively · frantic — never frantic while a real
+  room sits on the host), the model (Haiku 4.5, the default, · Sonnet 5 ·
+  Opus 5.5; changed only between runs) and a readout with the run's clock
+  and spend. The bots are the preset's speakers, never the Founder's seat
+  and never a visitor's; they act through the member command path alone
+  (`applyCommand`). A run **pauses** by itself two minutes after the
+  panel's last heartbeat (close the tab and the room goes quiet), after ten
+  minutes of running, and at $3 of Claude spend; ▶️ resumes it with a fresh
+  clock and total. **Reset stops them**, as does the host's announced pause
+  and any restart. They need `DRAFT_DEMO_ANTHROPIC_KEY` (§2).
+
+**Visitors** (DEMO.md Stage 3, D2 D7 D8). Anybody who opens `/d/demo` — the
+QR code lands on `?try=1`, which opens the card at once — meets one card on
+the door, 👋 *Try It*. One tap (`POST /api/demo/join`, public, no key) makes
+them a member under a made-up name (*Crispy Basil*: an adjective and a
+topping, `demo-names.ts`, unique in the generation) at an address that can
+never receive mail (`visitor.<hex>@demo.invalid`), their ✏️ ⚖️ 🏛️ grants
+already accepted. **One seat per device**: the join reads the member cookie
+the browser already holds for this generation and returns that seat. **No
+member cap**; a per-address brake of 120 joins in ten minutes, for a room of
+phones on one Wi-Fi (`JOIN_PER_IP`). **A visitor's seat lapses 30 minutes
+after its last action** — the join, then every command they send; reading
+alone does not count — on the minute tick (`Demo.lapseVisitors`): the member
+resigns, leaving every quorum, and the room's departure news for it is
+acknowledged for everybody so no screen stacks a 🥾 card per phone. Their
+page then reads the door, where a rescan joins anew under a new name.
+
+A visitor may invite an address through ✉️ (the demo's 🪪 is at ✒️): the
+invitation is recorded in memory and **nothing is sent** — the demo relays
+no mail, and Log In on the demo mails nobody — so the invitee can never
+arrive. The address is visible to the room until the next Reset.

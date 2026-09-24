@@ -91,6 +91,18 @@ services:
       # (docs/OPERATING.md §3).
       - key: DRAFT_ADMIN_KEY
         sync: false
+      # Ed's key to the demo panel at /d/demo (design/DEMO.md Stage 2, Q1535):
+      # Reset and the seat switch on the demo document alone. A passphrase is
+      # fine; wrong guesses lock an address out. Unset, the panel is a 404.
+      # A different value on each host, and never the admin key.
+      - key: DRAFT_DEMO_KEY
+        sync: false
+      # The demo bots' Claude key (design/DEMO.md Stage 5, Q1535): its own
+      # name, so no key set for anything else lets the demo spend. Best a key
+      # from its own Anthropic Console workspace with a monthly limit. Unset,
+      # the panel says so and ▶️ stays dark; the rest of the demo still works.
+      - key: DRAFT_DEMO_ANTHROPIC_KEY
+        sync: false
 
   # The dev host — dev.docs.vote (Ed, 2026-09-01): the *dev path* at a
   # public URL, so the phase ladder's ⏭ bar, the seat switcher and the 📬

@@ -87,6 +87,28 @@ export interface ServerConfig {
    * like an unknown path.
    */
   adminKey?: string | null;
+  /**
+   * **The demo document** (design/DEMO.md Stage 1; Q1535): `/d/demo` built
+   * in memory from `design/demo/pizzacon-2027.md` at boot. On unless
+   * `DRAFT_DEMO=off`; a config that does not say — every test's — is off, so
+   * no existing test's document count moves.
+   */
+  demo?: boolean;
+  /**
+   * **Ed's key to the demo panel** (`DRAFT_DEMO_KEY`, design/DEMO.md Stage 2):
+   * visiting `/d/demo?demokey=<key>` sets the `draft_demo` cookie, and the
+   * cookie opens the panel, Reset and the seat switch — on the demo document
+   * alone. Unset (or empty), every demo control answers 404 like an unknown
+   * path. Never the admin key: that one pauses every room.
+   */
+  demoKey?: string | null;
+  /**
+   * **The demo bots' Claude key** (`DRAFT_DEMO_ANTHROPIC_KEY`, DEMO.md Stage 5):
+   * a name of its own, so a key set on the host for anything else never
+   * silently lets the demo spend. Unset, the bots cannot start on Claude and
+   * the panel says so.
+   */
+  demoAnthropicKey?: string | null;
   /** HMAC secret for cookies and tokens at rest. */
   secret: string;
   /**
@@ -225,6 +247,9 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ServerConfi
     // open it to whoever sends an empty bearer
     botKey: (env.DRAFT_BOT_KEY ?? '').trim() || null,
     adminKey: (env.DRAFT_ADMIN_KEY ?? '').trim() || null,
+    demo: (env.DRAFT_DEMO ?? '').trim() !== 'off',
+    demoKey: (env.DRAFT_DEMO_KEY ?? '').trim() || null,
+    demoAnthropicKey: (env.DRAFT_DEMO_ANTHROPIC_KEY ?? '').trim() || null,
     notifyEmail: (env.DRAFT_NOTIFY_EMAIL ?? 'edsaperia@gmail.com') || null,
     secret: env.DRAFT_SECRET ?? persistedSecret(dataDir),
     trustProxy: env.DRAFT_TRUST_PROXY !== undefined

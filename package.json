@@ -45,6 +45,9 @@
     "proposal-shapes": "node scripts/proposal-shapes.mjs",
     "room-walk": "node scripts/room-walk.mjs",
     "room-bots": "node scripts/room-bots.mjs",
+    "demo-walk": "node scripts/demo-walk.mjs",
+    "demo-bots-walk": "node scripts/demo-bots-walk.mjs",
+    "demo-bots-smoke": "node scripts/demo-bots-smoke.mjs",
     "slug-walk": "node scripts/slug-walk.mjs",
     "slider-walk": "node scripts/slider-walk.mjs",
     "ladder": "node scripts/ladder-walk.mjs",
@@ -59,6 +62,7 @@
     "type-measure": "node design/tools/type-measure.mjs",
     "founder-answers": "node scripts/founding-walk.mjs --delegate=chamber",
     "spec-check": "node scripts/spec-check.mjs",
+    "demo-check": "tsx scripts/demo-check.mjs",
     "design": "node scripts/design-server.mjs"
   },
   "devDependencies": {

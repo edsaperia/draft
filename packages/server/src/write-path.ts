@@ -449,6 +449,9 @@ export class WritePath {
       // landing meanwhile lengthens the log and may advance `persisted`
       // through another path, and this pass must only claim what it relayed.
       const end = doc.persisted;
+      // an ephemeral document mails nobody and mints no token (design/DEMO.md
+      // D3): its addresses are made up, and nothing of it is kept
+      if (doc.ephemeral === true) doc.relayed = end;
       if (doc.relayed < end) {
         await this.relay(doc, doc.cs.logEntries().slice(doc.relayed, end), nowMs);
         doc.relayed = end;

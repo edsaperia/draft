@@ -29,11 +29,24 @@ import { readFileSync } from 'node:fs';
  * failure would be silent, so the build checks its own work.
  */
 const NEVER_IN_PROD = ['dev-ladder', 'ladder.invalid', 'Bellamy', '/api/dev/',
+  // **The demo's dev half** (design/DEMO.md Stages 2 and 4): the demo panel
+  // and its routes ship by design (§0.2) — the one sanctioned exception, which
+  // is why `/api/demo/` is not a needle — but its stub model and the two
+  // variables that switch it on and shorten the heartbeat are dev-only —
+  // listed once, with the bots' own needles, below
   // **The dev clock** (Q1455): the module's name as its dynamic import spells
   // it, and a sentence only its refusals carry. `/api/dev/` above already
   // covers the route path; these two say the module behind it was never
   // resolved into the bundle either.
-  'dev-clock', 'a dev clock advances and never rewinds'];
+  'dev-clock', 'a dev clock advances and never rewinds',
+  // **The demo bots' stand-in brain and short clocks** (design/DEMO.md Stage
+  // 4). The Claude model, the bots and their routes ship by design (the demo
+  // exception, DEMO.md §0.2); the stub model, the switch that loads it and the
+  // walk's shortened lapse, run clock and cap must not — a production host
+  // runs bots on Claude or not at all, and pauses at two minutes, ten minutes
+  // and $3. The dev target route is covered by `/api/dev/` above.
+  'StubDemoModel', 'demo-model-stub', 'DRAFT_DEMO_STUB', 'DRAFT_DEMO_LAPSE_MS',
+  'devLapseMs', 'devRunMs', 'devCapUsd'];
 /**
  * **And the one seam the dev clock leaves in code that ships** (Q1455). Unlike
  * the ladder, this dev control needs a foothold in a production path —
