@@ -4755,6 +4755,30 @@ if (caret) {
       }
       await T(4600);                                 // the guest's poll takes the motion
     }
+    // **💡 and ⚖️ wait for 🏛️'s OK** (Q1540, Ed 2026-09-24: *until you've
+    // accepted 🏛️, you're not shown ✏️ or ⚖️*): before it the member's rail
+    // holds neither, after it both
+    {
+      const before = await guestPage.evaluate(() => ['canpropose', 'canjudge']
+        .filter((k) => document.querySelector('#rail [data-card="' + k + '"]')));
+      const pressed = await guestPage.evaluate(async () => {
+        const b = document.querySelector('#rail [data-card="grant-voice"]');
+        if (!b) return 'no 🏛️ entry';
+        b.click();
+        await new Promise((r) => setTimeout(r, 900));
+        const ok = document.querySelector('.setupcard[data-setupcard="grant-voice"] [data-ok]');
+        if (!ok) return 'no Activate 🏛️';
+        ok.click();
+        return null;
+      });
+      await T(1500);
+      const after = await guestPage.evaluate(() => ['canpropose', 'canjudge']
+        .filter((k) => document.querySelector('#rail [data-card="' + k + '"]')));
+      const gated = !pressed && before.length === 0 && after.length === 2;
+      say('🏛️ first   · ' + (gated ? 'neither 💡 nor ⚖️ is served before 🏛️ is activated, both after'
+        : 'FAIL: ' + (pressed || 'before ' + JSON.stringify(before) + ' · after ' + JSON.stringify(after))));
+      if (!gated) stuck.push('💡 ⚖️ before 🏛️ (Q1540)');
+    }
     const railOf = () => guestPage.evaluate(() => ({
       rail: [...document.querySelectorAll('#rail li')].map((li) => li.dataset.q ||
         ((li.querySelector('[data-card]') || { dataset: {} }).dataset.card) || '?'),
