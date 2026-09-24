@@ -12,7 +12,8 @@ import { join } from 'node:path';
 import type { AddressInfo } from 'node:net';
 import { afterAll, describe, expect, it } from 'vitest';
 import { createDraftServer } from '../src/server.js';
-import type { DraftServer } from '../src/server.js';
+import type { DraftServer, DraftServerOptions } from '../src/server.js';
+import { StubDemoModel } from '../src/demo-model-stub.js';
 import { FilePersistence } from '../src/persistence.js';
 import type { Persistence } from '../src/persistence.js';
 import { asEngineDoc } from '../src/engine-host.js';
@@ -41,7 +42,7 @@ function spied(inner: Persistence): { p: Persistence; calls: { name: string; id:
 interface Booted { base: string; draft: DraftServer; calls: { name: string; id: string }[] }
 const booted: Booted[] = [];
 
-async function boot(demo = true): Promise<Booted> {
+async function boot(demo = true, options: DraftServerOptions = {}): Promise<Booted> {
   const dataDir = mkdtempSync(join(tmpdir(), 'draft-demojoin-'));
   const cfg = {
     port: 0, dataDir, baseUrl: 'http://127.0.0.1', designDir: DESIGN_DIR,
@@ -52,7 +53,7 @@ async function boot(demo = true): Promise<Booted> {
     demo, demoKey: null,
   };
   const { p, calls } = spied(new FilePersistence(dataDir));
-  const draft = await createDraftServer(cfg, p);
+  const draft = await createDraftServer(cfg, p, options);
   await new Promise<void>((r) => draft.server.listen(0, '127.0.0.1', r));
   cfg.baseUrl = `http://127.0.0.1:${(draft.server.address() as AddressInfo).port}`;
   const b = { base: cfg.baseUrl, draft, calls };
@@ -203,6 +204,35 @@ describe('visitors on the demo document (DEMO.md Stage 3)', () => {
     const door = await view(b, cookie);
     expect(door.stranger).toBe(true);
   });
+
+  it('the bots are the cast minus the Founder, never a visitor, and never keep a visitor’s seat alive', async () => {
+    // the stub brain and a fast pace, so four bots act within the second
+    const b = await boot(true, { demoModel: (info) => new StubDemoModel(info),
+      demoBots: { paceMs: [20, 40], watchMs: 50 } });
+    const idle = cookieOf(await join_(b))!;
+    const busy = cookieOf(await join_(b))!;
+    const joinedBy = Date.now();
+    const [idleId, busyId] = [(await view(b, idle)).me!, (await view(b, busy)).me!];
+    const doc = b.draft.demo.doc()!;
+    const seats = b.draft.demo.botSeats();
+    const cast = b.draft.demo.seats();
+    expect(seats.map((x) => x.id)).toEqual(cast.filter((x) => !x.founder).map((x) => x.id));
+    expect(seats.map((x) => x.id)).not.toContain(doc.cs.convenorRecord().id);
+    expect(seats.map((x) => x.id)).not.toContain(idleId);
+    expect(seats.every((x) => x.persona.length > 0)).toBe(true);
+    expect(b.draft.demoBots.start({ count: 4, pace: 'frantic' })).toEqual({ ok: true });
+    await new Promise((r) => setTimeout(r, 1_500));
+    // a visitor's own command restarts their clock — even one the module refuses
+    await cmd(b, busy, 'judge-race', { a: 'nothing', b: 'nothing', outcome: 'a' });
+    const st = b.draft.demoBots.stats();
+    b.draft.demoBots.stop('hand');
+    expect(st.acts.judgments + st.acts.proposals + st.acts.passes + st.acts.stale).toBeGreaterThan(0);
+    // thirty minutes after the joins: the idle phone lapses, since no bot act
+    // touched it; the phone that acted since does not
+    const gone = await b.draft.demo.lapseVisitors(joinedBy + VISITOR_LAPSE_MS);
+    expect(gone).toContain(idleId);
+    expect(gone).not.toContain(busyId);
+  }, 30_000);
 
   it('nowhere but the demo: the join is an unknown path where there is no demo document', async () => {
     const b = await boot(false);
