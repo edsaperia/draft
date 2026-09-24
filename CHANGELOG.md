@@ -6,6 +6,12 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-09-24, evening: a demo anyone can try
+
+### New
+- **[docs.vote/d/demo](https://docs.vote/d/demo), a demonstration document.** It holds the agenda of *PizzaCon 2027*, a fictional three-day conference, with proposals already racing on its sessions. Anyone who opens it can tap **👋 Try It** to join as a member with a made-up name and start voting and proposing at once; a phone keeps its seat when it comes back, and an idle seat ends after half an hour. The document is reset from time to time, and nothing written there is kept.
+- **The conference's speakers can take part as AI members** during a live demonstration, proposing and voting in character. They only act while the presenter has started them, and they sit out when stopped.
+
 ## 2026-09-24, later afternoon: a proposal that loses to a rival stays in the running
 
 ### Changed
