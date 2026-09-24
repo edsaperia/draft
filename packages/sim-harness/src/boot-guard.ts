@@ -55,7 +55,12 @@ const say = (s: string): void => { process.stdout.write(s + '\n'); };
 /** A fresh process's boot replay over `dir`, in milliseconds. */
 function replayOnce(dir: string): number {
   const r = spawnSync(process.execPath, [...process.execArgv, fileURLToPath(import.meta.url),
-    '--replay', dir], { encoding: 'utf8', cwd: join(HERE, '..', '..', 'server') });
+    '--replay', dir], {
+    encoding: 'utf8', cwd: join(HERE, '..', '..', 'server'),
+    // the demo document (Q1535) builds at every boot, in memory; the guard
+    // times the stored set's replay, so it boots with the demo off
+    env: { ...process.env, DRAFT_DEMO: 'off' },
+  });
   const m = /replay-ms (\d+(?:\.\d+)?) docs (\d+) quarantined (\d+)/.exec(r.stdout ?? '');
   if (r.status !== 0 || m === null) throw new Error(`the replay child failed: ${r.stderr}`);
   if (Number(m[2]) !== SET_DOCS || Number(m[3]) !== 0) {
