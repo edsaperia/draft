@@ -13,13 +13,20 @@
  *    off, slug-held or failed). Its `cs` is the ConstitutionSession and
  *    `asEngineDoc(doc).bridge` the engine, exactly as for any document.
  *  - `isDemoDoc(ctx, doc)` — is this document the demo's current generation?
+ *  - `demoRefused(ctx, r)` — **the one gate** every Ed-only demo route asks,
+ *    the panel's (`routes-demo.ts`) and the bots' (`routes-demo-bots.ts`)
+ *    alike: no key on the host is an unknown path's 404, a locked-out address
+ *    a 429, a missing or bad cookie a counted wrong try and a 401, and a
+ *    cross-site POST a 403. One cookie format, one lock, one place the door
+ *    can be wrong.
  *
  * The key itself is compared once, where it is typed (`/d/demo?demokey=`),
  * in constant time; everything after that reads the cookie.
  */
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
-import type { RouteContext } from './routes.js';
+import { ipOf, json } from './routes.js';
+import type { Req, RouteContext } from './routes.js';
 import type { LoadedDoc } from './store.js';
 
 export const DEMO_COOKIE = 'draft_demo';
@@ -113,6 +120,40 @@ export function hasDemoKey(ctx: RouteContext, req: IncomingMessage, nowMs: numbe
 /** The demo's current document, or null where there is none. */
 export function demoDoc(ctx: RouteContext): LoadedDoc | null {
   return ctx.demo.doc();
+}
+
+/** A locked-out address's answer: the same for a right key as a wrong one. */
+export function demoLocked(r: Req): void {
+  json(r.res, 429, { error: 'too many wrong tries — try again in a few minutes' });
+}
+
+/** A cross-site POST is refused before anything else (the dev routes' check). True means answered. */
+export function demoCrossSite(r: Req): boolean {
+  const origin = r.req.headers.origin;
+  if (origin !== undefined && origin !== r.baseOrigin) {
+    json(r.res, 403, { error: 'cross-site request refused' });
+    return true;
+  }
+  return false;
+}
+
+/**
+ * **The gate every Ed-only demo route passes** — the panel, Reset, the seat
+ * switch, the bots' start, pause, resume, settings and heartbeat: an unknown
+ * path's 404 with no key configured, the guess lock's 429, a counted wrong
+ * try and a 401 without the cookie, and — on a POST — the cross-site 403.
+ * True means the request has been answered.
+ */
+export function demoRefused(ctx: RouteContext, r: Req): boolean {
+  if (!ctx.cfg.demoKey) { json(r.res, 404, { error: 'not found' }); return true; }
+  const ip = ipOf(r.req, ctx.cfg);
+  if (guessLocked(ip, r.nowMs)) { demoLocked(r); return true; }
+  if (!hasDemoKey(ctx, r.req, r.nowMs)) {
+    guessFailed(ip, r.nowMs);
+    json(r.res, 401, { error: 'unauthorized' });
+    return true;
+  }
+  return r.req.method === 'POST' && demoCrossSite(r);
 }
 
 /** Is `doc` the demo's current generation? */

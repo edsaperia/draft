@@ -102,6 +102,13 @@ export interface ServerConfig {
    * path. Never the admin key: that one pauses every room.
    */
   demoKey?: string | null;
+  /**
+   * **The demo bots' Claude key** (`DRAFT_DEMO_ANTHROPIC_KEY`, DEMO.md Stage 5):
+   * a name of its own, so a key set on the host for anything else never
+   * silently lets the demo spend. Unset, the bots cannot start on Claude and
+   * the panel says so.
+   */
+  demoAnthropicKey?: string | null;
   /** HMAC secret for cookies and tokens at rest. */
   secret: string;
   /**
@@ -242,6 +249,7 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ServerConfi
     adminKey: (env.DRAFT_ADMIN_KEY ?? '').trim() || null,
     demo: (env.DRAFT_DEMO ?? '').trim() !== 'off',
     demoKey: (env.DRAFT_DEMO_KEY ?? '').trim() || null,
+    demoAnthropicKey: (env.DRAFT_DEMO_ANTHROPIC_KEY ?? '').trim() || null,
     notifyEmail: (env.DRAFT_NOTIFY_EMAIL ?? 'edsaperia@gmail.com') || null,
     secret: env.DRAFT_SECRET ?? persistedSecret(dataDir),
     trustProxy: env.DRAFT_TRUST_PROXY !== undefined

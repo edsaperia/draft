@@ -44,7 +44,7 @@ case "$GROUP" in
   seat-clerk)  PORT_MAIN=8163 ;;
   journey)     PORT_MAIN=8165 ;;
   motions)     PORT_MAIN=8167 ;;
-  doors)       PORT_MAIN=8169; PORT_ROOM=8162 ;;
+  doors)       PORT_MAIN=8169; PORT_ROOM=8162; PORT_DEMO=8168 ;;
   repros)      PORT_MAIN=8171; PORT_DESIGN=8164 ;;
   repros-b)    PORT_MAIN=8173; PORT_DESIGN=8166 ;;
   *) echo "usage: ci-walks.sh seat-member|seat-clerk|journey|motions|doors|repros|repros-b"; exit 2 ;;
@@ -239,6 +239,11 @@ case "$GROUP" in
     # the whole loop: propose → every member served → vote → adopt, twice,
     # then the 🛡️ park-and-crown path on a ladder document (Q1178)
     walk "room-walk" npm run room-walk -- "$ROOM_BASE"
+    # **the demo's bots** (design/DEMO.md Stage 4, Q1535) on their own server:
+    # the stub model, so CI never calls Claude, the walk's demo key, and a
+    # ten-second heartbeat lapse — ▶️, ⏸️, the lapse, the run clock and the cap
+    boot demo "$PORT_DEMO" DRAFT_DEMO_KEY=walk DRAFT_DEMO_STUB=1 DRAFT_DEMO_LAPSE_MS=10000; DEMO_BASE=$BOOTED
+    walk "demo-bots-walk" npm run demo-bots-walk -- "$DEMO_BASE"
     ;;
 
   # **The guards that ran nowhere** (plan-ci-speed.md Stage 4; the shape

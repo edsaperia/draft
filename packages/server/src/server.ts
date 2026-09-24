@@ -43,6 +43,13 @@ import { feedTable } from './routes-feed.js';
 import { surfaceTable } from './routes-surface.js';
 import { Demo } from './demo.js';
 import { demoTable } from './routes-demo.js';
+import { demoBotsTable } from './routes-demo-bots.js';
+import { DemoBots } from './demo-bots.js';
+import type { DemoBotsDeps } from './demo-bots.js';
+import { ClaudeDemoModel, modelInfo } from './demo-model.js';
+import type { DemoModel, DemoModelInfo } from './demo-model.js';
+import { demoTargetOf } from './demo-target.js';
+import type { DemoTarget } from './demo-target.js';
 
 /**
  * **The route table, in the chain's own order** (Q1352 (m), (n)). The order
@@ -73,6 +80,9 @@ const ROUTES: Route[] = [
   // `/d/demo?demokey=` is claimed ahead of the page; the row declines
   // without the query, and the API paths are disjoint from every other row
   ...demoTable,
+  // the demo panel's bot controls (design/DEMO.md Stage 4): `/api/demo/*`
+  // and one dev row, claimed by no row above or below
+  ...demoBotsTable,
   ...surfaceTable,
 ];
 
@@ -85,6 +95,8 @@ export interface DraftServer {
   outbox: MailOutbox;
   /** The demo document's host half (design/DEMO.md Stage 1). */
   demo: Demo;
+  /** The demo's bots (design/DEMO.md Stage 4): idle until the panel's ▶️. */
+  demoBots: DemoBots;
   /** Drive the clocks (§9.5/§9.5a): call periodically; safe to call any time. */
   tick(nowMs?: number): Promise<void>;
   /**
@@ -106,8 +118,19 @@ export async function openPersistence(cfg: ServerConfig): Promise<Persistence> {
   return new FilePersistence(cfg.dataDir);
 }
 
+/**
+ * What a test may hand the server beside its config (design/DEMO.md Stage 4):
+ * the demo bots' brain — so a test never reaches the Claude API — the
+ * document they act in, and shorter clocks.
+ */
+export interface DraftServerOptions {
+  demoModel?: (info: DemoModelInfo) => DemoModel;
+  demoTarget?: DemoTarget;
+  demoBots?: Pick<DemoBotsDeps, 'lapseMs' | 'runMs' | 'capUsd' | 'paceMs' | 'watchMs' | 'log'>;
+}
+
 export async function createDraftServer(cfg: ServerConfig,
-  injected?: Persistence): Promise<DraftServer> {
+  injected?: Persistence, options: DraftServerOptions = {}): Promise<DraftServer> {
   const bootedAtMs = Date.now();
   let closing: Promise<void> | null = null;
 
@@ -221,6 +244,50 @@ export async function createDraftServer(cfg: ServerConfig,
   await demo.boot();
 
   /**
+   * **The demo's bots** (design/DEMO.md Stages 4–5; Q1535). Idle until the
+   * panel's ▶️; they act through `applyCommand` over exactly the slice of the
+   * host a member's command reads. Their brain is Claude where the host holds
+   * `DRAFT_DEMO_ANTHROPIC_KEY` — and **only** there: `ClaudeDemoModel` is never
+   * constructed without it (Stage 5 criterion 4). A dev host may run the
+   * deterministic stub instead (`DRAFT_DEMO_STUB=1`), reached through a dynamic
+   * import inside the label, so the production artifact holds no stub at all.
+   * The heartbeat lapse is shortened the same way (`DRAFT_DEMO_LAPSE_MS`).
+   *
+   * **The target is the demo document** (`demoTargetOf(demo)`,
+   * demo-target.ts): its current generation, and the preset's cast minus the
+   * Founder as the bots' seats — never a visitor's seat, never the Founder's,
+   * which is Ed's. Built after the demo boots, and stopped before every
+   * rebuild retires the generation it acts in. A test may name another
+   * target; the dev route may re-point it (`POST /api/dev/demo-target`).
+   */
+  let stubModel = options.demoModel ?? null;
+  const tuning: DraftServerOptions['demoBots'] = { ...options.demoBots };
+  DEV: {
+    if (process.env.DRAFT_DEMO_STUB === '1' && stubModel === null) {
+      const { StubDemoModel } = await import('./demo-model-stub.js');
+      stubModel = (info) => new StubDemoModel(info);
+    }
+    const lapse = Number(process.env.DRAFT_DEMO_LAPSE_MS);
+    if (Number.isFinite(lapse) && lapse > 0) tuning.lapseMs = lapse;
+  }
+  const demoBots = new DemoBots({
+    host: { store, persistence, pause, writes, races },
+    target: options.demoTarget ?? demoTargetOf(demo),
+    claudeKey: stubModel !== null || !!cfg.demoAnthropicKey,
+    brain: stubModel !== null ? 'stub' : cfg.demoAnthropicKey ? 'claude' : null,
+    modelFor: (id) => {
+      const info = modelInfo(id);
+      if (info === null) return null;
+      if (stubModel !== null) return stubModel(info);
+      return cfg.demoAnthropicKey ? new ClaudeDemoModel(info, cfg.demoAnthropicKey) : null;
+    },
+    ...tuning,
+  });
+  // a rebuild by any road ends the bots' room before the old generation goes
+  // (the Reset route also stops them first, before it reads the preset)
+  demo.onRebuild(() => demoBots.stop('reset'));
+
+  /**
    * What every route family reads (Q1352 (m)). Made once; the three surface
    * fields are mutable because a surface upload (Q1347) moves where the page
    * files come from and which commit answers in `x-build`, and both the
@@ -228,7 +295,7 @@ export async function createDraftServer(cfg: ServerConfig,
    */
   const ctx: RouteContext = {
     cfg, store, persistence, auth, mailer, outbox, stash, commits, writes, pause,
-    errors, races, bootedAtMs, httpsOn, demo,
+    errors, races, demoBots, bootedAtMs, httpsOn, demo,
     designDir: cfg.designDir,
     buildSha: cfg.buildSha,
     surfaceSha: null,
@@ -368,6 +435,8 @@ export async function createDraftServer(cfg: ServerConfig,
 
   const close = (): Promise<void> => {
     closing ??= (async () => {
+      // the bots first: nothing of theirs may start a commit behind the drain
+      demoBots.stop('closing');
       // stop accepting, drop idle keep-alives, and give requests in flight
       // a moment to finish — but never wait on them indefinitely (review
       // #2, finding 5): one stalled POST must not stop the drain, the store
@@ -387,5 +456,5 @@ export async function createDraftServer(cfg: ServerConfig,
     return closing;
   };
 
-  return { server, store, auth, mailer, outbox, demo, tick, close };
+  return { server, store, auth, mailer, outbox, demo, demoBots, tick, close };
 }

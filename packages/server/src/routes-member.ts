@@ -20,12 +20,12 @@
 import { ConstitutionSession, view } from '../../constitution/src/index.js';
 import type { ApplicantRecord } from '../../constitution/src/index.js';
 import { ParticipantApi } from '../../engine-core/src/participant-api.js';
-import { LIMITS, cap, runCommand } from './commands.js';
-import { PAGE_ERRORS_PER_MINUTE, logError, noteRace, pageErrorOf, raceRefusal } from './error-log.js';
+import { LIMITS, cap } from './commands.js';
+import { PAGE_ERRORS_PER_MINUTE, logError, pageErrorOf } from './error-log.js';
 import { asEngineDoc } from './engine-host.js';
 import type { LoadedDoc } from './store.js';
 import { raceView, strangerView } from './views.js';
-import { PauseState } from './write-path.js';
+import { applyCommand } from './apply-command.js';
 import { cookieSession, expectString, ipOf, json, pathOf, rateLimited, readJson } from './routes.js';
 import type { Route } from './routes.js';
 import { hasDemoKey, isDemoDoc } from './demo-access.js';
@@ -282,77 +282,13 @@ export const memberTable: Route[] = [
         const body = await readJson(req);
         const cmd = expectString(body, 'cmd');
         const args = (body.args ?? {}) as Record<string, unknown>;
-        const t = writes.tOf(doc);
-        // paused (Q1345): refused before anything is applied, with the
-        // pause itself in the answer so the page draws the modal and not a
-        // refusal; a 503, since the document is whole and merely waiting
-        if (pause.now(nowMs) !== null) {
-          json(res, 503, { error: PauseState.MESSAGE, paused: pause.payload(nowMs) });
-          return true;
-        }
-        // **every refusal lands in the error log** (Q1330): the document,
-        // the seat as its id — never the address — the command, its
-        // arguments and the reason, so a refusal a member met on the page
-        // can be looked up on the host afterwards
-        // **…except the ones nobody did anything wrong to meet** (Q1493 (a),
-        // Ed 2026-09-21: *The page handles both*). A judgment on a pair that
-        // closed since the card was drawn, and a proposal pressed in the
-        // second after somebody else's adoption, are races with the 4 s poll
-        // rather than anything a member got wrong — the page answers both
-        // itself now, so they are tallied on `/healthz` and kept out of a
-        // log whose whole use is that an operator reads every line of it.
-        const refused = (status: number, reason: string): void => {
-          const race = raceRefusal(cmd, reason);
-          if (race !== null) { noteRace(ctx.races, race, nowMs); return; }
-          logError(ctx.persistence, {
-            kind: 'refused', status, method: 'POST', path: pathOf(req),
-            doc: doc.id, slug: doc.cs.slug, seat: applicantId ?? memberId, cmd, args, reason });
-        };
-        // an applicant's two acts: submit, and the OK on a door that shut
-        // under them (SURFACE E33, Q901) — nothing else speaks for them
-        if (applicantId !== null && cmd !== 'submit-application' && cmd !== 'ack-apply-shut') {
-          refused(403, 'applicants may only submit their application');
-          json(res, 403, { error: 'applicants may only submit their application' });
-          return true;
-        }
-        // a demo visitor's act restarts their seat's 30 minutes (DEMO.md D8)
-        if (isDemoDoc(ctx, doc)) ctx.demo.touch(memberId, nowMs);
-        const me = doc.cs.memberRecords().get(memberId);
-        if (me?.lapsed) doc.cs.memberReturn(t, memberId); // any act revives
-        let result: unknown;
-        try {
-          result = runCommand(doc.cs, { memberId, isFounder, applicantId },
-            t, cmd, args, asEngineDoc(doc).bridge);
-        } catch (e) {
-          // whatever the module emitted before the refusal — a revival, a
-          // motion whose engine race then refused — is real, and must not
-          // sit in memory waiting to ride an unrelated commit (review #1,
-          // finding 6): memory and disk never diverge, even on a 400
-          await writes.commit(doc, nowMs);
-          // logged here, where the command and the seat are known; the
-          // catch in server.ts sees it once more and skips it (`logged`). A
-          // throw carrying a system code is the route failing, not a refusal,
-          // and stays that catch's to log as `failed`.
-          if (typeof (e as { code?: unknown }).code !== 'string') {
-            refused(400, e instanceof Error ? e.message : String(e));
-            (e as { logged?: boolean }).logged = true;
-          }
-          throw e;
-        }
-        // confirming the starting text supersedes the provisional draft
-        if (doc.cs.textConfirmed && doc.provisional !== null) {
-          await store.setProvisional(doc, null);
-        }
-        const seq = await writes.commit(doc, nowMs);
-        // the pause landed while this waited behind the chain (issue #9):
-        // nothing was persisted, so this is the same refusal the check
-        // above makes, answered in the same words — a 200 with a `seq`
-        // would be a promise of durability the store never made
-        if (seq === null) {
-          json(res, 503, { error: PauseState.MESSAGE, paused: pause.payload(nowMs) });
-          return true;
-        }
-        json(res, 200, { ok: true, seq, ...(result !== undefined ? { result } : {}) });
+        // **the one member command path** (design/DEMO.md Stage 4): the
+        // pause, the applicant gate, the revival, the whitelist, the refusal
+        // log and the commit are `applyCommand`, which the demo's bots call
+        // too — so a bot has no way in that this route does not also take
+        const out = await applyCommand(ctx, doc, { memberId, applicantId, isFounder },
+          cmd, args, nowMs, { path: pathOf(req) });
+        json(res, out.status, out.body);
         return true;
       }
       // a living seat asking for neither: the old chain fell out of this

@@ -19,7 +19,7 @@ import type { DemoBuild, DemoHost, DemoSeat } from './demo-build.js';
 import { randomBytes } from 'node:crypto';
 import { visitorName } from './demo-names.js';
 import { parsePreset, presetPath } from './demo-preset.js';
-import type { PresetError } from './demo-preset.js';
+import type { PresetCastMember, PresetError } from './demo-preset.js';
 import { lastTOf } from './history-pen.js';
 import type { LoadedDoc } from './store.js';
 
@@ -51,6 +51,8 @@ export class Demo {
   private generation_ = 0;
   private builtAt_: number | null = null;
   private current: DemoBuild | null = null;
+  /** The preset's cast of the current generation — the bots' personas. */
+  private cast: readonly PresetCastMember[] = [];
   /** Why the last build or parse failed, for the log and the panel. */
   lastErrors: PresetError[] = [];
 
@@ -183,6 +185,27 @@ export class Demo {
     return this.current?.seats ?? [];
   }
 
+  /**
+   * **The bots' seats** (Stage 4): the preset's cast minus the Founder — Ed's
+   * seat, never a bot's — in file order, each with its cast line as the
+   * persona, and only while it is still a member of this generation. A
+   * visitor is never here: visitors are not in the cast.
+   */
+  botSeats(): Array<{ id: string; name: string; persona: string }> {
+    const doc = this.doc();
+    if (doc === null) return [];
+    const persona = new Map(this.cast.map((c) => [c.name, c.persona]));
+    const founder = doc.cs.convenorRecord().id;
+    const out: Array<{ id: string; name: string; persona: string }> = [];
+    for (const s of this.seats()) {
+      if (s.founder || s.id === founder || this.visitors.has(s.id)) continue;
+      const rec = doc.cs.memberRecords().get(s.id);
+      if (!rec || rec.removed) continue;
+      out.push({ id: s.id, name: s.name, persona: persona.get(s.name) ?? '' });
+    }
+    return out;
+  }
+
   status(): DemoStatus {
     return { state: this.state_, generation: this.generation_, builtAt: this.builtAt_ };
   }
@@ -234,6 +257,9 @@ export class Demo {
       this.current = null;
       return this.fail([{ line: 0, rule: 'build', message: (e as Error).message }], true);
     }
+    // the bots' personas (Stage 4): each cast line, kept with the generation
+    // it built, so a bot seat is always paired with the words it was given
+    this.cast = preset.cast;
     for (const s of this.current.skipped) console.error(`[demo] build skipped: ${s}`);
     this.state_ = 'built';
     this.generation_ += 1;

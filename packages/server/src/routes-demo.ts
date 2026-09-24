@@ -23,40 +23,19 @@
  * takes no id or slug, and answers an unknown path's 404 wherever there is no
  * demo document.
  */
-import type { IncomingMessage, ServerResponse } from 'node:http';
-import { DEMO_COOKIE, DEMO_COOKIE_MS, demoDoc, demoKeyMatches, guessFailed, guessLocked, hasDemoKey,
-  mintDemoCookie } from './demo-access.js';
+import { DEMO_COOKIE, DEMO_COOKIE_MS, demoCrossSite, demoDoc, demoKeyMatches, demoLocked, demoRefused,
+  guessFailed, guessLocked, mintDemoCookie } from './demo-access.js';
 import { cookieSession, ipOf, json, readJson, redirect, setCookie } from './routes.js';
 import type { Req, Route, RouteContext } from './routes.js';
 
-/** A locked-out address's answer: the same for a right key as a wrong one. */
-const locked = (r: Req): void => {
-  json(r.res, 429, { error: 'too many wrong tries — try again in a few minutes' });
-};
-
-/** A cross-site POST is refused before anything else (the dev routes' check). */
-function crossSite(req: IncomingMessage, res: ServerResponse, expected: string): boolean {
-  const origin = req.headers.origin;
-  if (origin !== undefined && origin !== expected) {
-    json(res, 403, { error: 'cross-site request refused' });
-    return true;
-  }
-  return false;
-}
-
 /**
- * The gate every `/api/demo/*` row passes: an unknown path with no key
- * configured, the limiter and a 401 without the cookie. True means answered.
+ * **The one gate** (`demoRefused`, demo-access.ts): the rows here and the
+ * bots' rows (`routes-demo-bots.ts`) ask the same function, so there is one
+ * cookie format, one guess lock and one place the door can be wrong.
  */
-function refused(ctx: RouteContext, r: Req): boolean {
-  if (!ctx.cfg.demoKey) { json(r.res, 404, { error: 'not found' }); return true; }
-  const ip = ipOf(r.req, ctx.cfg);
-  if (guessLocked(ip, r.nowMs)) { locked(r); return true; }
-  if (hasDemoKey(ctx, r.req, r.nowMs)) return false;
-  guessFailed(ip, r.nowMs);
-  json(r.res, 401, { error: 'unauthorized' });
-  return true;
-}
+const refused = demoRefused;
+const locked = demoLocked;
+const crossSite = demoCrossSite;
 
 /** What the panel draws: the generation, the seats, and whose seat this browser sits in. */
 function panelOf(ctx: RouteContext, r: Req): Record<string, unknown> {
@@ -71,8 +50,8 @@ function panelOf(ctx: RouteContext, r: Req): Record<string, unknown> {
     joinUrl: `${ctx.cfg.baseUrl.replace(/\/+$/, '')}/d/demo?try=1`,
     visitors: ctx.demo.visitorCount(),
     errors: ctx.demo.lastErrors,
-    // Stages 4–5 fill this; drawn and dark until then
-    bots: null,
+    // the bots' readout (Stages 4–5): the same object `GET /api/demo/bots` serves
+    bots: ctx.demoBots.stats(),
   };
 }
 
@@ -93,7 +72,7 @@ export const demoTable: Route[] = [
       const doc = demoDoc(ctx);
       // no demo document on this host: an unknown path, as every demo row
       if (doc === null) { json(r.res, 404, { error: 'not found' }); return true; }
-      if (crossSite(r.req, r.res, r.baseOrigin)) return true;
+      if (crossSite(r)) return true;
       if (r.tooMany('demo-join', JOIN_PER_IP)) return true;
       await readJson(r.req);
       if (doc.cs.closed) { json(r.res, 409, { error: 'the demo document has closed' }); return true; }
@@ -151,8 +130,11 @@ export const demoTable: Route[] = [
     match: '/api/demo/reset',
     handler: async (ctx, r) => {
       if (refused(ctx, r)) return true;
-      if (crossSite(r.req, r.res, r.baseOrigin)) return true;
+      if (crossSite(r)) return true;
       await readJson(r.req);
+      // the bots stop first (DEMO.md Stage 4): a reset is the end of their
+      // room, and a stopped run is not resumed onto the new generation
+      ctx.demoBots.stop('reset');
       const out = await ctx.demo.rebuild(r.nowMs);
       if (!out.ok) { json(r.res, 422, { error: 'the preset did not build', errors: out.errors }); return true; }
       json(r.res, 200, panelOf(ctx, r));
@@ -165,7 +147,7 @@ export const demoTable: Route[] = [
     match: '/api/demo/seat',
     handler: async (ctx, r) => {
       if (refused(ctx, r)) return true;
-      if (crossSite(r.req, r.res, r.baseOrigin)) return true;
+      if (crossSite(r)) return true;
       const body = await readJson(r.req) as { member?: unknown };
       const doc = demoDoc(ctx);
       if (doc === null) { json(r.res, 404, { error: 'the demo document is not built' }); return true; }
