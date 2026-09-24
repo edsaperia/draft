@@ -346,7 +346,8 @@ window.SETUP = (function () {
     return '<span class="achip st-' + st + (o.active ? ' wmark' : '') + (o.inert ? ' behind' : '') + '"' +
     ' data-chip="' + c.k + '"' +
     (o.inert ? ' aria-hidden="true"' : ' role="button" tabindex="0" data-tab="' + c.k + '"') +
-    ' style="--chiphue: var(--lc-' + hueFor(c, st) + ')' + (o.z ? '; z-index:' + o.z : '') + '"' +
+    ' style="--chiphue: var(--lc-' + hueFor(c, st) + ')' +
+    (window.CARDS.PLAIN_HUE.has(hueFor(c, st)) ? '; ' + window.CARDS.PLAIN_CHIP : '') + (o.z ? '; z-index:' + o.z : '') + '"' +
     (o.inert ? '' : ' title="' + esc(labelOf(c, ctx) + (o.active ? ' — close it'
       : st === 'ask' ? ' — waiting on you' : st === 'wait' ? ' — waiting on others'
       : st === 'news' ? (c.grants ? ' — yours to take' : ' — decided; it waits for your OK')

@@ -127,6 +127,7 @@
     abstainNoteHtml, tickAbstain,
     // a rail entry's title and its moment (Q1523)
     railChange, railPair, railWhen, railTitleHtml, longWhen, longDay, reasonPlain,
+    PLAIN_HUE, PLAIN_CHIP,
   } = window.CARDS;
   // **A power is not held until it has been acknowledged** (Ed, 2026-08-21).
   // The host says whether this reader may propose and may judge; both default
@@ -721,8 +722,15 @@
   const scaledCol = (col) => String(col).replace(/([\d.]+)(\s*\)\s*)$/,
     (_, a, tail) => Math.min(1, +a * QUEUE_WASH_K).toFixed(3) + tail);
   const groundOf = (col, key) => String(col).replace(/[\d.]+\s*\)\s*$/, groundAOf(key) + ')');
+  // **A grey slip is a white slip** (Ed, 2026-09-24: *since the right rail is
+  // now grey, we could make the colour of closed amendments white instead of
+  // grey throughout*, closed and deciding alike, and *this will also apply to
+  // the cables*): on the desk the palette's one grey reads as more desk, so a
+  // rail entry in it paints white, and its cable — which reads the entry's
+  // own `--washcol` (`wireColor`) — follows. The clause washes keep the grey.
+  const PLAIN_WASH = /var\(--lc-(?:closed|deciding)\)/;
   function washAttrs(key, col, fill) {
-    if (isQueueWash(key)) col = scaledCol(col);
+    if (isQueueWash(key)) col = scaledCol(String(col).replace(PLAIN_WASH, '255, 255, 255'));
     const from = prevWash.get(key) || { col, fill };
     const varsOf = (w) => '--washcol: ' + w.col + '; --washbg: ' + groundOf(w.col, key) +
       (fill == null ? '' : '; --fill: ' + w.fill);
@@ -2552,8 +2560,14 @@
   // into the head instead.
   // A gutter mark wears its own lifecycle hue as a resting ground, so the chip
   // and the rail's sealed dot are visibly the same object in two columns.
-  const chipStyle = (g, extra) => ' style="--chiphue: var(--lc-' + (anchHue(g) || 'closed') + ')' +
-    (extra ? '; ' + extra : '') + '"';
+  // **A grey tab is a white slip** (Ed, 2026-09-24: *white backgrounds instead
+  // of grey*): the closed and deciding hue take no tint and a hairline, so the
+  // tabs that carry a colour are the ones that stand out
+  const chipStyle = (g, extra) => {
+    const hue = anchHue(g) || 'closed';
+    return ' style="--chiphue: var(--lc-' + hue + ')' + (PLAIN_HUE.has(hue) ? '; ' + PLAIN_CHIP : '') +
+      (extra ? '; ' + extra : '') + '"';
+  };
 
   // **The pile is fitted to the gutter it has, not to a constant.** This is the
   // half of Ed's suggestion that makes the collision *structurally* impossible
@@ -3479,7 +3493,7 @@ document.addEventListener('paste', (ev) => {
         const behind = i > 0;
         return '<span class="achip held' + (behind ? ' behind' : '') + '"' +
           (behind ? ' aria-hidden="true"' : ' title="' + T.chip.held + '"') +
-          ' style="--chiphue: var(--lc-closed); z-index:' + (stack.length - i) + '">' +
+          ' style="--chiphue: var(--lc-closed); ' + PLAIN_CHIP + '; z-index:' + (stack.length - i) + '">' +
           mkHtml('deciding') + '</span>';
       }).join('');
       return '<span class="chipcol' + (stack.length > 1 ? ' stack' : '') +

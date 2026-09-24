@@ -82,8 +82,14 @@
     const sx = window.scrollX, sy = window.scrollY;
     const wrap = doc.closest('.wrap');
     const bleed = NARROW.matches && wrap ? parseFloat(getComputedStyle(wrap).paddingLeft) || 0 : 0;
-    // the drawn edge comes in by --sheet-trim over the tab gutter (system.css)
-    const trim = NARROW.matches ? 0 : token('--sheet-trim');
+    // the drawn edge comes in over the tab gutter to `--s5` short of the tabs
+    // (system.css): measured off the tab column, since that column steps in
+    // below 1440 and a constant `--sheet-trim` left the tabs 9px of paper
+    // there (Ed, 2026-09-24: *on narrow desktop screens the tabs look
+    // cluttered*); the token stands where no tab is drawn. 88px at 1600.
+    const col = NARROW.matches ? null : [...doc.querySelectorAll('.chipcol')].find((c) => c.offsetWidth);
+    const trim = NARROW.matches ? 0
+      : col ? Math.max(0, col.getBoundingClientRect().left - r.left - token('--s5')) : token('--sheet-trim');
     const left = r.left + sx - bleed + trim, width = r.width + 2 * bleed - trim;
     const top = r.top + sy;
     // the last line's box stands --s4 above the runway's top (a block's own

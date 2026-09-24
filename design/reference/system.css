@@ -1775,8 +1775,8 @@
        shadow showed straight through the overlap, so the join it exists to make
        was the one place you could see the seam. The colour is the same colour;
        it is mixed with the page instead of laid over it. */
-    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 18%, var(--bg));
-    box-shadow: var(--shadow-sm);
+    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) var(--chipmix, 18%), var(--bg));
+    box-shadow: var(--shadow-sm), var(--chipring, 0 0 0 0 transparent);
     white-space: nowrap; user-select: none; cursor: pointer;
     transition: background 120ms ease, transform 120ms ease, box-shadow 120ms ease;
   }
@@ -1856,7 +1856,7 @@
   .filedpile:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: var(--r-sm); }
   .achip:hover {
     transform: translateY(-1px);
-    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 30%, var(--bg));
+    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) var(--chipmixh, 30%), var(--bg));
     box-shadow: var(--shadow-md);
   }
   .achip:active { transform: translateY(1px); box-shadow: none; }
@@ -1872,7 +1872,7 @@
   .achip.held { cursor: default; }
   .achip.held .mk { filter: grayscale(1); opacity: 0.85; }
   .achip.held:hover { transform: none; box-shadow: var(--shadow-sm);
-    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 18%, var(--bg)); }
+    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) var(--chipmix, 18%), var(--bg)); }
   .achip.held:active { transform: none; box-shadow: var(--shadow-sm); }
   /* Narrow keeps the gutter a column (MOBILE.md §1.0: `fitStacks` and
      `fitBand` measure a vertical gutter) **at the desktop's own 14px**
@@ -3217,7 +3217,11 @@
        (84px at 1600), and the tabs keep `--s5` of paper to their left (16px
        for the open tab, which grows 8px leftward — M12). Only the drawn sheet
        moves; the column, its tabs and its cards stay where they were. At
-       narrow the sheet runs to the glass and no trim applies.
+       narrow the sheet runs to the glass and no trim applies. **Since Ed,
+       2026-09-24, paper.js measures it** — the tab column's left less `--s5`,
+       88px at 1600 — because the tab column steps 15px in below 1440 and the
+       constant left the tabs 9px of paper there; the token is the fallback
+       where no tab is drawn.
      ========================================================================== */
   html.desk {
     --desk: #EEF0F2;

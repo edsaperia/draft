@@ -127,6 +127,12 @@ window.CARDS = (function () {
   // whose contents you cannot make out. Two bars on the tick's own stroke say
   // the same thing and stay in the alphabet. ↻ is the same ruling; see `MARK`.
   const PAUSE = "<svg class=\"mkg\" viewBox=\"0 0 12 12\" aria-hidden=\"true\"><path d=\"M4.3 2.9 L4.3 9.1 M7.7 2.9 L7.7 9.1\"/></svg>";
+  // **A grey tab is a white slip** (Ed, 2026-09-24: *white backgrounds instead
+  // of grey*): a clause tab in the palette's one grey takes no tint and a
+  // hairline (system.css `.achip`), so a tab carrying a colour stands out.
+  // Both tab painters, session.js's and setup.js's, add it to the style.
+  const PLAIN_HUE = new Set(['closed', 'deciding']);
+  const PLAIN_CHIP = '--chipmix: 0%; --chipmixh: 0%; --chipring: 0 0 0 1px rgba(0, 0, 0, 0.07)';
   const VS16 = "︎";
   // **The alphabet is Fluent Emoji, Flat, in colour — except ⏸ and ↻** (Ed,
   // 2026-09-15, Q1360: *Fluent Flat is perfect!*, and the same day: *keep the
@@ -2317,7 +2323,7 @@ window.CARDS = (function () {
   return {
     esc, resultOnly, laneHtml, removedHtml, stripTags, pct, plainLabel, URG_LO, URG_HI,
     RULES, clauseOf, clauseRungs,
-    TICK, ARROW_OUT, PAUSE, VS16, MARK, DRAWN, mkHtml, markHtml,
+    TICK, ARROW_OUT, PAUSE, VS16, MARK, DRAWN, mkHtml, markHtml, PLAIN_HUE, PLAIN_CHIP,
     GLYPH, glyphKey, glyphHtml, glyphify, glyphTextOf,
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks, mdDiffPieces, mdPiecesHtml, mdDiffHtml, mdBlocksHtml,
     railPlain, railChange, railPair, railWhen, railAt, railArrow, railTitleHtml, railTitleText, longWhen, longDay,
