@@ -126,7 +126,7 @@
     // from a render
     abstainNoteHtml, tickAbstain,
     // a rail entry's title and its moment (Q1523)
-    railChange, railPair, railWhen,
+    railChange, railPair, railWhen, railTitleHtml, longWhen, reasonPlain,
   } = window.CARDS;
   // **A power is not held until it has been acknowledged** (Ed, 2026-08-21).
   // The host says whether this reader may propose and may judge; both default
@@ -852,6 +852,10 @@
   // every run
   let RAIL_NOW = () => Date.now();
   const whenText = (d) => (d && d.at != null ? railWhen(d.at, RAIL_NOW()) || '' : (d && d.when) || '');
+  // …and a card's head says it in full (Q1523 (a), Ed 2026-09-24): *Sunday,
+  // 20 September, 11:12*, 24-hour and in the page's words, where the rail
+  // keeps the short ladder
+  const longText = (d) => (d && d.at != null ? longWhen(d.at, RAIL_NOW()) || '' : (d && d.when) || '');
 
   function queueEntries() {
     const out = [];
@@ -998,7 +1002,7 @@
           ' title="' + esc(d.outcome || 'sealed') +
           (isUnread(g) ? ' — you haven’t opened this one yet' : '') + '">' +
           '<span class="ql">' + markHtml(markKindOf(g)) +
-          '<span class="qt">' + esc(plainLabel(railTitleOf(g, e))) + '</span>' +
+          '<span class="qt">' + railTitleHtml(railTitleOf(g, e)) + '</span>' +
           '<span class="qv when">' + esc(whenText(d)) + '</span></span>' +
           '</button></li>';
         continue;
@@ -1042,10 +1046,10 @@
             // ✏️, or ↻ where the text moved out from under a site of it
             // (Q1463): the gutter tab reads `markKindOf` and the rail said
             // `propose` whatever had happened, so the two disagreed
-            ? '<span class="ql">' + markHtml(markKindOf(g)) + '<span>' + esc(plainLabel(railTitleOf(g, e))) + '</span></span>' +
+            ? '<span class="ql">' + markHtml(markKindOf(g)) + '<span>' + railTitleHtml(railTitleOf(g, e)) + '</span></span>' +
               where +
               '<span class="qwhy' + (why ? '' : ' empty') + '">' +
-              (why ? esc(why) : T.rail.noReason) + '</span>' +
+              (why ? esc(reasonPlain(why)) : T.rail.noReason) + '</span>' +
               ''
             // **✏️ does not say "yours"** (Ed, 2026-08-17). The pencil means *you
             // wrote this* and the entry is the accent blue; a word saying it a third
@@ -1055,7 +1059,7 @@
             // hard-coded ✏️, so a stranded proposal of yours wore ↻ in the
             // gutter and the contents rail and ✏️ here, at the same moment.
             // SURFACE §6 is one alphabet in all three columns.
-            : '<span class="ql">' + markHtml(markKindOf(g)) + esc(plainLabel(railTitleOf(g, e))) +
+            : '<span class="ql">' + markHtml(markKindOf(g)) + railTitleHtml(railTitleOf(g, e)) +
               (e.of > 1 ? '<span class="qv"> · ' + T.rail.placesOf(e.n, e.of) + '</span>' : '') + '</span>' +
               // **and for a few seconds after the press, one sentence** (Q1485
               // (A)): the card has just closed, so without this the whole of
@@ -1144,7 +1148,7 @@
           // it looks like something you are failing to read. The mark already says you
           // have judged; the card says what you said, in full, when you open it.
           ? '<span class="ql">' + markHtml(g.shifted ? 'shifted' : 'deciding') +
-            esc(plainLabel(railTitleOf(g, e))) + '</span>'
+            railTitleHtml(railTitleOf(g, e)) + '</span>'
           : '<span class="ql">' +
             markHtml(markKindOf(g)) +
             (e.prio
@@ -1152,7 +1156,7 @@
               // rather than colliding and truncating on one (Ed, 284)
               ? '<span class="qprio">Prioritise:<b>' + esc(plainLabel(e.prio[0])) +
                 '</b><i>vs</i><b>' + esc(plainLabel(e.prio[1])) + '</b></span>'
-              : '<span>' + esc(plainLabel(railTitleOf(g, e))) + '</span>') +
+              : '<span>' + railTitleHtml(railTitleOf(g, e)) + '</span>') +
             // **The entry carries the clock too, in the last day** (Q1460
             // (e), Ed 2026-09-19: *the rail should only show the clock when
             // it's less than 24 hrs*). A vote you have not cast can hide
@@ -2117,7 +2121,7 @@
       '<div class="sugg sealed-open" data-card="' + s.id + '"' +
       (skey ? ' data-site="' + skey + '"' : '') + '>' +
       '<div class="rechead"><span>' + T.record.amended + '</span>' +
-      '<span class="sub">' + esc(whenText(s.decided)) + '</span></div>' +
+      '<span class="sub">' + esc(longText(s.decided)) + '</span></div>' +
       (skey
         ? clauseHeadHtml(s, Object.assign({
             text: sourceTextFor(skey), key: skey, chips: chipsFor(skey, s.id),
@@ -2334,7 +2338,7 @@
       // tried.
       '<div class="rechead">' +
       '<span>' + (und ? T.record.undecided : T.record.decided) + ' · ' + (d.judges ?? 0) + '/' + ROSTER + PEOPLE + '</span>' +
-      '<span class="sub">' + esc(whenText(d)) + '</span></div>' +
+      '<span class="sub">' + esc(longText(d)) + '</span></div>' +
       // **The counts are printed, not hovered** (Q1452, Ed 2026-09-18: *print the
       // count line on the card*): the sentence was a `title` on the head, which a
       // phone never shows and a mouse only finds by resting — and it is the
@@ -3228,6 +3232,20 @@ document.addEventListener('pointerdown', (ev) => {
 });
 document.addEventListener('pointerup', () => { if (GESTURE === 'hold') flyStop(false); });
 document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flyStop(false); });
+// **A paste into a reason drops the escapes docs.vote does not need** (Q1533,
+// Ed 2026-09-24): a reason is light markdown now — its links drawn, its
+// escapes read — so Q1530's paste rule reaches it as it reaches a clause.
+// One listener for every reason field on the page, the composer's, the
+// deadlock desk's and the band's motion and Founder fields alike, taking the
+// plain text only; typed text never passes here.
+document.addEventListener('paste', (ev) => {
+  const el = ev.target && ev.target.closest && ev.target.closest('.edit-why, [data-why], [data-deadwhy]');
+  if (!el) return;
+  const t = (ev.clipboardData && ev.clipboardData.getData('text/plain')) || '';
+  if (!t) return;
+  ev.preventDefault();
+  document.execCommand('insertText', false, pasteClean(t.replace(/\r\n?/g, '\n')));
+}, true);
 
   // ---- the document, in its passes (refactor Q1352 (g), 2026-09-14) -------
   // `renderDoc` was one 665-line function doing four unrelated jobs in a row,

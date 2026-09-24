@@ -1224,7 +1224,8 @@
   // sentence per departure — the office, never the name (C10); nothing is
   // asked (C7) — and the door says the same to the person it happened to.
   // A day-only date: the act is news for a day, not a timestamp to audit.
-  const dayOf = (ms) => new Date(ms).toLocaleDateString(undefined, { day: 'numeric', month: 'long' });
+  // In the page's own words, never the browser's locale (STYLE T16, Q1523).
+  const dayOf = (ms) => window.CARDS.longDay(ms);
   const DEPARTED = {
     convenor: (d) => PAGE_COPY.departed.byFounder(dayOf(d.t)),
     self: (d) => PAGE_COPY.departed.bySelf(dayOf(d.t)),
@@ -3577,8 +3578,8 @@
     if (!rec) return '<p class="why">' + PAGE_COPY.motionRec.gone + '</p>';
     const carried = rec.status === 'carried';
     const at = recAt(rec);
-    const when = at ? esc(new Date(at).toLocaleDateString(undefined,
-      { day: 'numeric', month: 'long', year: 'numeric' })) + ' · ' : '';
+    // the dateline in full, 24-hour, in the page's words (Q1523 (a), STYLE T16)
+    const when = at ? esc(window.CARDS.longWhen(at)) + ' · ' : '';
     // **The outcome is the route's** (Q1522 (1), Ed 2026-09-24; Q1514): a ✒️
     // change was put to nobody, so it did not *pass* — it was changed by the
     // Founder. A carried motion passed; a failed one was rejected — or, where
@@ -4979,8 +4980,7 @@
     chamber: () => ({ link: 'Anyone with the link', closed: 'Members only',
       public: 'Public' }[takenOf('chamber') || S.chamber]),
     ending: () => (perpetual() ? 'Never — it runs until too few members are active'
-      : new Date(endingVal() || S.endsAt).toLocaleString(undefined,
-        { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false })),
+      : window.CARDS.longWhen(new Date(endingVal() || S.endsAt).getTime())),
     quorum: () => (S.quorumForm === 'count'
       ? PAGE_COPY.val.quorumOf(Math.min(takenOf('quorum') || S.quorumN, E()), E())
       : PAGE_COPY.val.quorumPct(takenOf('quorum') || S.quorumPct,
@@ -5382,7 +5382,7 @@
       case 'title': return RV.title(v.text);
       case 'slug': return RV.slug(v.slug);
       case 'ending': return v.endsAtMs === null ? RV.never : window.CARDS.railAt(v.endsAtMs);
-      case 'quorum': return v.form === 'share' ? RV.quorumShare(v.n) : RV.quorumCount(v.n, E());
+      case 'quorum': return v.form === 'share' ? RV.quorumShare(v.n) : RV.quorumCount(v.n);
       case 'authorship': case 'judgments': case 'chamber': return RV[k][v.rung] || null;
       case 'rate': { const p = dripParts(v.dripMinutes); return p ? RV.rate(p.n, p.unit) : null; }
       case 'lapse': return v.afterMs === null ? RV.never : RV.lapse(M.spellWords(v.afterMs));
@@ -5414,10 +5414,13 @@
       }
       // a rule changed over your head, owed your OK: what it was, what it is
       if (!c.ansFor && !c.isGate && !c.power && !c.door && MANAGED_KEYS.includes(c.k) && stateOf(c, ctx) === 'news') {
+        // …or, where nothing stood before it, the value alone (Q1523 (b), Ed
+        // 2026-09-24: *👥 6*, *⏱️ 5 minutes*), where the noun label stood
         const from = changedFrom(c.k), st = csState(c.k);
-        if (!from || !st || st.value === null) return null;
-        const was = railVal(c.k, from), now2 = railVal(c.k, st.value);
-        return was && now2 ? c.g + ' ' + window.CARDS.railArrow(was, now2) : null;
+        if (!st || st.value === null) return null;
+        const was = from ? railVal(c.k, from) : null, now2 = railVal(c.k, st.value);
+        if (!now2) return null;
+        return c.g + ' ' + (was ? window.CARDS.railArrow(was, now2) : now2);
       }
     } catch (e) { return null; }
     return null;
@@ -5821,8 +5824,7 @@
     removal: (v) => ({ consent: 'all members agreeing, them included',
       assembly: 'all other members agreeing', proposal: 'the membership deciding' }[v.price] || v.price),
     ending: (v) => (v.endsAtMs === null ? 'never'
-      : new Date(v.endsAtMs).toLocaleString(undefined,
-        { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false })),
+      : window.CARDS.longWhen(v.endsAtMs)),
     quorum: (v) => (v.form === 'share' ? v.n + '% of the members' : v.n + ' members'),
     authorship: (v) => ({ anonymous: 'nobody ever named',
       anonymousElective: 'nobody named unless they choose to be',
@@ -5883,7 +5885,7 @@
     return '<div class="speaker founderspoke">' + avHtml(f) +
       '<div class="spksaid"><span class="who">' + esc((f.n || '').trim() || PAGE_COPY.theFounder) +
       ' <span title="' + PAGE_COPY.crownHand + '">' + glyphHtml('👑') + '</span></span>' +
-      (why ? '<div class="said">' + esc(why) + '</div>'
+      (why ? '<div class="said">' + window.CARDS.reasonHtml(why) + '</div>'
         : '<div class="said none">' + window.COPY.grammar.speaker.noReason + '</div>') + '</div></div>';
   };
   // the same speaker, with the reason still being written. It is the
@@ -6296,7 +6298,7 @@
     quorum: (v) => (S.quorumForm === 'count' ? v + ' of the membership'
       : shareWords(v, E()) + ' of the membership'),
     ending: (v) => (v === 'never' ? 'Never — it runs until too few members are active'
-      : new Date(v).toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false })),
+      : window.CARDS.longWhen(new Date(v).getTime())),
     rate: () => { const tv = takenValOf('rate');
       return 'a new proposal every ' + dripPhrase(tv ? tv.dripMinutes : S.dripMin); },
   };
@@ -6897,8 +6899,9 @@
     (S.admission === 'roster' || !S.admission ? 'assembly' : S.admission);
   const policyNow = () => { const v = takenValOf('applications');
     return v ? (mayApply(v) ? 'apply' : 'invite') : (S.joinBy || 'invite'); };
-  const endFmtOf = (v) => new Date(v).toLocaleString(undefined,
-    { weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false }).replace(' ', ' at ');
+  // the long form, in the page's words (STYLE T16, Q1523): *Sunday, 20
+  // September, 17:10*, where the browser's locale gave *Sunday at 17:10*
+  const endFmtOf = (v) => window.CARDS.longWhen(new Date(v).getTime());
   // which datetime the ⏰ clause is about — the room's answer where there is
   // one, the founder's field otherwise; named once, since `ENDING_RULE` does
   // the wording for both the clause and the *You said* readback
@@ -8267,8 +8270,7 @@
     }
     if (ev.target.matches('[data-mdate]')) {
       S.draft.to = ev.target.value
-        ? new Date(ev.target.value).toLocaleString(undefined,
-          { weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false }) : '';
+        ? window.CARDS.longWhen(Date.parse(ev.target.value)) : '';
       S.draft.val = ev.target.value ? { endsAtMs: Date.parse(ev.target.value) } : null;
       // **In place, never a render** (Q1289): Chrome's picker fires `change`
       // on each pick and stays open, with no OK of its own — so a render
@@ -9705,7 +9707,7 @@
       wrap.style.cssText = 'position:fixed;inset:0;background:rgba(20,20,20,.45);z-index:70;overflow:auto;padding:6vh 1rem';
       const mails = ((d && d.mails) || []).map((m) =>
         '<div style="border-bottom:1px solid #ddd;padding:.7rem 0">' +
-        '<div style="color:#666;font-size:12px">' + esc(new Date(m.at).toLocaleTimeString()) + ' · to ' + esc(m.to) + '</div>' +
+        '<div style="color:#666;font-size:12px">' + esc(new Date(m.at).toLocaleTimeString()) /* T16-exempt: the dev outbox, off the design system */ + ' · to ' + esc(m.to) + '</div>' +
         '<div style="font-weight:700;margin:.15rem 0">' + esc(m.subject) + '</div>' +
         '<div style="white-space:pre-wrap;font-size:13px;color:#333">' + esc(m.text) + '</div>' +
         (m.link ? '<a href="' + esc(m.link) + '" style="display:inline-block;margin-top:.4rem;background:#1a73e8;color:#fff;text-decoration:none;padding:.4rem .8rem;border-radius:3px">Follow the magic link →</a>' : '') +
@@ -9846,8 +9848,7 @@
       // an absolute date, not `whenOf`'s relative one: the record is read
       // long after the day it describes, and *today, 11:28* is false by
       // morning. Same formatting as the clause's own history line.
-      const on = r.at ? new Date(r.at).toLocaleDateString(undefined,
-        { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+      const on = r.at ? window.CARDS.longDay(r.at) : '';
       // and a reason that already ends in a full stop does not want another
       const reason = r.why
         ? ' — ' + r.why + (/[.!?…]$/.test(r.why.trim()) ? '' : '.')

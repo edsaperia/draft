@@ -216,13 +216,17 @@ cases.push(...ticked);
 // the words where two wordings differ, read from the two texts alone, and a
 // rail entry's moment on one ladder. Pure string functions in cards.js, so
 // every recipe is read here rather than only on a page.
-const { railPair, railChange, railWhen, railAt, railArrow, railPlain } = ctx.window.CARDS;
+const { railWhen, railAt, railArrow, railPlain, railTitleHtml, railTitleText, longWhen, longDay } = ctx.window.CARDS;
+// a title is read as its tooltip reads it: a struck quote as *without ‘…’*
+// (Q1523 (c)); `railTitleHtml` is checked on its own below
+const railPair = (...a) => railTitleText(ctx.window.CARDS.railPair(...a));
+const railChange = (...a) => railTitleText(ctx.window.CARDS.railChange(...a));
 const G = 'Guests';
 const titles = [
   // a pair: the two sides as the card presents them
   [railPair('A quorum is six members.', 'A quorum is seven members.', G), '‘six’ or ‘seven’'],
   [railPair('Guests are welcome.', 'Guests are welcome, and until the quiet hours begin.', G),
-    'with or without ‘and until the…’'],
+    'with or without ‘and until the quiet hours begin’'],   // struck: the words *with or without* no longer take room
   [railPair('Guests come whenever a member is in, up to three at a time without telling anybody.',
     'Guests come whenever a member is in, and until the quiet hours begin.', G),
     '‘up to three…’ or ‘and until the…’'],
@@ -234,8 +238,13 @@ const titles = [
     '‘monthly’ → ‘quarterly’'],
   [railChange('Friends of the house are welcome.', 'Friends of the house are welcome, and so are their dogs.', G),
     '‘and so are their dogs’'],
-  [railChange('The Club has no head, and has managed without one.', 'The Club has no head.', G), 'without ‘and has managed without…’'],
-  // a rewrite with no short difference: the first words of the new wording
+  [railChange('The Club has no head, and has managed without one.', 'The Club has no head.', G), 'without ‘and has managed without one’'],
+  // a long rewrite fills the line, cut at a word
+  [railChange('Short.', 'Members meet on the first Tuesday of every month in the long room upstairs.', G),
+    '‘Members meet on the first…’'],
+  [railChange('Short.', 'Members meet on the first Tuesday of every month in the long room upstairs.', G, 26),
+    '‘Members meet on the…’'],             // beside a date, less room
+  // a rewrite with no short difference: as much of the new wording as fits (Q1523 (f))
   [railChange('One two three four five six seven.', 'Completely different words entirely in this new sentence.', G),
     '‘Completely different words…’'],
   // punctuation or spacing alone: the clause's name, said so; nothing at all: the name
@@ -259,7 +268,7 @@ const titles = [
     '‘and not more’ or ‘No further…’'],
   // a rule's value, old → new, a shared tail said once
   [railArrow('10 minutes', '5 minutes'), '10 → 5 minutes'],
-  [railArrow('6 of 12', '8 of 12'), '6 → 8 of 12'],
+  [railArrow('6', '8'), '6 → 8'],                           // a count alone (Q1523 (e))
   [railArrow('1 hour', '30 minutes'), '1 hour → 30 minutes'],
   [railArrow('members only', 'public'), 'members only → public'],
   [railArrow('all agree', 'all others agree'), 'all agree → all others agree'],
@@ -281,6 +290,22 @@ titles.push(
   [railAt(on(2026, 10, 4, 17, 10), T0), 'Sun 17:10'],
   [railAt(on(2026, 10, 20, 17, 10), T0), '20 Oct 17:10'],
   [railAt(on(2027, 1, 3, 9, 0), T0), '3 Jan 2027 09:00'],
+  // a card's moment in full, 24-hour, the year only when not this one (Q1523 (a))
+  [longWhen(on(2026, 9, 20, 11, 12), T0), 'Sunday, 20 September, 11:12'],
+  [longWhen(on(2026, 9, 30, 9, 5), T0), 'Wednesday, 30 September, 09:05'],
+  [longWhen(on(2025, 12, 31, 23, 59), T0), 'Wednesday, 31 December 2025, 23:59'],
+  [longDay(on(2026, 9, 20, 11, 12), T0), '20 September'],
+  [longDay(on(2025, 9, 20, 11, 12), T0), '20 September 2025'],
+  [longWhen(null, T0), null],
+  // a struck quote is `<del>` with its meaning for a screen reader, and
+  // everything a member wrote is escaped before the markup goes round it
+  [railTitleHtml(ctx.window.CARDS.railChange('Keep <b>it</b> & more.', 'Keep.', G)),
+    '<del class="struck"><span class="sr-only">without </span>‘&lt;b&gt;it&lt;/b&gt; &amp; more’</del>'],
+  [railTitleHtml(ctx.window.CARDS.railPair('Members may vote.', 'Members may not vote.', G)),
+    '<del class="struck"><span class="sr-only">with or without </span>‘not’</del>'],
+  [railTitleHtml('§ A <script>‘x’'), 'A &lt;script&gt;<del class="struck"><span class="sr-only">without </span>‘x’</del>'],
+  // …and a member cannot type the fence: it is taken out of the text
+  [railPlain('a b c'), 'a b c'],
 );
 for (const [got, want] of titles) {
   if (got !== want) {

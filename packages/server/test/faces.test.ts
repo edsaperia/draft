@@ -35,6 +35,21 @@ describe('the rail escapes what members wrote', () => {
     }
     expect(bare).toEqual([]);
   });
+  // Since Q1523 (c) a rail title can carry a struck quote, so it is printed by
+  // `railTitleHtml` — which escapes the whole title first (`esc(plainLabel(…))`
+  // inside it) and only then draws the `<del>` — rather than by `esc(` at the
+  // call site. Every title the rail prints goes through it; its escaping is
+  // asserted in reason-links.test.ts.
+  it('every railTitleOf( in design/session.js is printed by railTitleHtml(', () => {
+    const src = readFileSync(SESSION_JS, 'utf8');
+    const bare: number[] = [];
+    for (let i = src.indexOf('railTitleOf('); i !== -1; i = src.indexOf('railTitleOf(', i + 1)) {
+      if (src.slice(i - 'railTitleHtml('.length, i) === 'railTitleHtml(') continue;
+      if (src.slice(i - 'function '.length, i) === 'function ') continue;   // its definition
+      bare.push(src.slice(0, i).split('\n').length);
+    }
+    expect(bare).toEqual([]);
+  });
 });
 
 describe('the lists are the page\'s', () => {

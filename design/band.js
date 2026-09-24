@@ -172,8 +172,8 @@ window.BAND = (function () {
       if (!env.cs || env.cs.constitutedAtT === null) return '';
       const d0 = new Date(env.cs.constitutedAtT);
       const p2 = (x) => String(x).padStart(2, '0');
-      return ' at ' + p2(d0.getHours()) + ':' + p2(d0.getMinutes()) + ' on ' +
-        d0.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+      // the date in the page's own words, never the browser's locale (STYLE T16, Q1523)
+      return ' at ' + p2(d0.getHours()) + ':' + p2(d0.getMinutes()) + ' on ' + window.CARDS.longDay(d0.getTime());
     };
     // **The Founded line is a clause, not a colophon** (Q639 (a), Ed 2026-08-22).
     // It is where ✒️ and 🛡️ hang their tabs now, so the sentence has to be
@@ -192,8 +192,8 @@ window.BAND = (function () {
       if (!env.cs || !env.cs.closed || env.cs.closedAt == null) return '';
       const d0 = new Date(env.cs.closedAt);
       const p2 = (x) => String(x).padStart(2, '0');
-      return ' at ' + p2(d0.getHours()) + ':' + p2(d0.getMinutes()) + ' on ' +
-        d0.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+      // the date in the page's own words, never the browser's locale (STYLE T16, Q1523)
+      return ' at ' + p2(d0.getHours()) + ':' + p2(d0.getMinutes()) + ' on ' + window.CARDS.longDay(d0.getTime());
     };
     // **The percent ladder left with the percent** (Q1362, 2026-09-15).
     // `pctRung` drew entry 165's rungs — the number in small type after the
@@ -1500,8 +1500,7 @@ window.BAND = (function () {
           // date itself or it reads as something that has just happened.
           const dated = stateOf(cc, ctx) === 'news' ? ''
             : '<p class="eyebrow fieldlab">Last amended' +
-              (am.at ? ' ' + esc(new Date(am.at).toLocaleDateString(undefined,
-                { day: 'numeric', month: 'long' })) : '') + '</p>';
+              (am.at ? ' ' + esc(window.CARDS.longDay(am.at)) : '') + '</p>';
           // **A 💤 change names the members it returned** (SURFACE Y26, Q902):
           // turning it off or lengthening it past somebody's quiet returns them
           // at once (entry 97), and who the change put back is part of what

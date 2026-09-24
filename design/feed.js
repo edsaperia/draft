@@ -96,8 +96,7 @@
       case 'rate': return dripPhrase(v.dripMinutes) ? T.rule.rate(dripPhrase(v.dripMinutes)) : '';
       case 'lapse': return v.afterMs === null ? T.rule.lapseNever : (spell ? T.rule.lapseAfter(spell) : '');
       case 'ending': return v.endsAtMs === null ? T.rule.endingNever
-        : T.rule.endingAfter(new Date(v.endsAtMs).toLocaleString(undefined,
-          { weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false }).replace(' ', ' at '));
+        : T.rule.endingAfter(C.longWhen(v.endsAtMs));   // the page's words, 24-hour (STYLE T16)
       case 'title': return v.text ? P.titledLead + v.text + '.' : '';
       case 'link': return v.slug ? T.rule.address(v.slug) : '';
       default: return '';
@@ -190,7 +189,8 @@
       // margin and pointing at it. The mark rides inside the title so a phone,
       // which has no rule for it to sit on, can set it inline.
       '<div class="fmain"><p class="ftitle"><span class="fnode">' + mark + '</span>' + sentence(title) + '</p>' +
-      (why ? '<p class="fwhy">' + esc(why) + '</p>' : '') +
+      // a reason may carry links (Q1533), escaped first and built after
+      (why ? '<p class="fwhy">' + C.reasonHtml(why) + '</p>' : '') +
       body +
       '</div></article>';
   }
