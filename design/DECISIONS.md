@@ -7273,7 +7273,7 @@ The Founder's 🛡️ refusal still reads *Rejected* on the dateline, even thoug
 
 **Guards.** `packages/server/test/md-escapes.test.ts` (both helpers, the column's hidden span and its round trip, the diff cases); the session-probe's *escape shown* check over the fixture's `race-expiry` and its escaped heading and clause (`innerText` of every open card, the rail, the contents rail, the column, and every `title`/`aria-label`); `npm run escape-paste` (`scripts/repro/escape-paste.mjs`, CI's `repros` group), red on a `pasteClean` that does nothing.
 
-## Q????: a rail entry's title names its own subject, and one date ladder (Ed, 2026-09-24)
+## Q1523: a rail entry's title names its own subject, and one date ladder (Ed, 2026-09-24)
 
 **What happened.** Ed's screenshot of the nh2026 room after the close (`bugs/Screenshot 2026-09-24 002805.png`): three ✔ entries in the rail all reading *Members…* beside *Sunday, September 20, 03:25 PM*. Three causes compounded. Titles led with what entries share — every pair on a clause wore the clause's heading, and a rule-change record read *Passed:* or *Changed by the Founder:* plus the rule's sentence, most of which start *Members may…*; the one-line title was truncated at its end, which is where the difference was; and the date, `whenOf`'s diary form, took half the line.
 

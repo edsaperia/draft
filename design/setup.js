@@ -671,7 +671,7 @@ window.SETUP = (function () {
     const fill = ctx.fillOf ? ctx.fillOf(c)
       : c.racePct !== undefined ? c.racePct + '%'
       : room ? Math.min(100, Math.round(got / ctx.E * 100)) + '%' : '100%';
-    // **the entry's title names its own subject** (Q????, Ed 2026-09-24): a
+    // **the entry's title names its own subject** (Q1523, Ed 2026-09-24): a
     // surface may word it (`ctx.railTitle` — a rule change as its glyph and
     // its value, old → new), else it is the card's label. The title leads
     // with the rule's glyph, so where the mark already is that glyph — a

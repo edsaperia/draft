@@ -212,7 +212,7 @@ for (const [got, want] of ticked) {
 }
 cases.push(...ticked);
 
-// **A rail entry's title names its own subject** (Q????, Ed 2026-09-24):
+// **A rail entry's title names its own subject** (Q1523, Ed 2026-09-24):
 // the words where two wordings differ, read from the two texts alone, and a
 // rail entry's moment on one ladder. Pure string functions in cards.js, so
 // every recipe is read here rather than only on a page.

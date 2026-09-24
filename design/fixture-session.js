@@ -5,7 +5,7 @@
  * script. Hand-authored: content, progress and state ride each item — never
  * parallel literals kept in sync by hand. */
 window.FIXTURE_SESSION = (function () {
-  // **The fixture's own moment** (Q????): noon on Wednesday 30 September
+  // **The fixture's own moment** (Q1523): noon on Wednesday 30 September
   // 2026, in the reader's own zone. Every record here is dated against it
   // and the rail reads its dates against it too (`railNow`), so *Tue 20:15*
   // and *09:20* read the same on every run and the probes can freeze them.
@@ -1063,7 +1063,7 @@ window.FIXTURE_SESSION = (function () {
   // the drip is one edit per tenth of it, which is what the wallet counts down
   const SESSION_MINUTES = 8 * 60;
 
-  // **The rules have a history too** (Q????, Ed 2026-09-24: the rail filled
+  // **The rules have a history too** (Q1523, Ed 2026-09-24: the rail filled
   // with rule changes that read alike). Motions the fixture's two members put
   // on the settings once the document began, each carrying its own mover,
   // value, reason and end: two ⏱️ changes that carried, filed behind the rule

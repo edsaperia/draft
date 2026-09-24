@@ -125,7 +125,7 @@
     // card and rail alike, run from a timer of its own in `init` and never
     // from a render
     abstainNoteHtml, tickAbstain,
-    // a rail entry's title and its moment (Q????)
+    // a rail entry's title and its moment (Q1523)
     railChange, railPair, railWhen,
   } = window.CARDS;
   // **A power is not held until it has been acknowledged** (Ed, 2026-08-21).
@@ -782,7 +782,7 @@
     ? '<span class="qwhy">' + esc(t.why) + '</span>'
     : window.CARDS.railSpeakerHtml(t.why, t.by));
 
-  // **An entry's title names its own subject** (Q????, Ed 2026-09-24): the
+  // **An entry's title names its own subject** (Q1523, Ed 2026-09-24): the
   // words this entry is about, from this entry alone — never the clause's
   // name, which every entry on one clause shares, and never by comparison
   // with its neighbours, so a title cannot change because another entry
@@ -5355,7 +5355,7 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // and the speaker's two (K30): the rung whole, and the viewer's own face
     if (env.authorRung) AUTHOR_RUNG = env.authorRung;
     if (env.signerPerson) SIGNER_PERSON = env.signerPerson;
-    // the rail's clock (Q????): the fixture pins it, so a record's moment
+    // the rail's clock (Q1523): the fixture pins it, so a record's moment
     // reads the same on every run and the probes can freeze it
     if (env.railNow) RAIL_NOW = env.railNow;
     SESSION_MINUTES = env.SESSION_MINUTES ?? 8 * 60;

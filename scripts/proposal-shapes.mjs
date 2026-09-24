@@ -488,7 +488,7 @@ function IN_PAGE() {
       h: Math.round(a.getBoundingClientRect().height * 100) / 100 }));
   // the entry's own title: a sealed row says it in `.qt`, a live one in a bare
   // span inside `.ql`, and a one-line judged row as a text node beside the mark.
-  // **Since Q???? the title is the entry's own words** (SURFACE M22), so the
+  // **Since Q1523 the title is the entry's own words** (SURFACE M22), so the
   // clause's name `labelFor` gives (Q1411) is read where it still lives — the
   // item's own label, the name a title falls back to — never off the rail
   const labelOfItem = (id, siteKey) => {

@@ -5365,7 +5365,7 @@
     if (k === 'rate') return 'a new proposal every ' + dripPhrase(p.value.dripMinutes);
     return STANDS[k] ? STANDS[k](PAGEVAL[k](p.value)) : JSON.stringify(p.value);
   };
-  // **A rule change's rail title** (Q????, Ed 2026-09-24): the rule's own
+  // **A rule change's rail title** (Q1523, Ed 2026-09-24): the rule's own
   // glyph and its value, old → new — *⏱️ 10 → 5 minutes*, *👥 6 → 8 of 12* —
   // computed from the entry alone. The words *Passed:*, *Changed by the
   // Founder:* and *Your proposal did not pass:* stay on the card's own title
@@ -7439,7 +7439,7 @@
         ? PAGE_COPY.lockline.members
         : PAGE_COPY.lockline.founder; },
     summary, value, isRoom,
-    // a rule change's own words on its rail entry (Q????)
+    // a rule change's own words on its rail entry (Q1523)
     railTitle: (c) => railRuleTitle(c),
   };
 
@@ -9874,7 +9874,7 @@
         (sg.t ? ' · ' + whenOf(sg.t) : ''), key: 'S:' + i }));
     return out;
   };
-  // **the fixture's rule changes** (Q????): `FIX.MOTIONS`, each put by the
+  // **the fixture's rule changes** (Q1523): `FIX.MOTIONS`, each put by the
   // member it names — real commands, so the records file behind their rule
   // and the running ones stand in the rail as any motion does
   function fixtureMotions() {
@@ -10104,7 +10104,7 @@
     ...(LIVEMODE ? { SESSION_MINUTES: Infinity, editsHeld: 0, editsToNext: 0, fixturePulse: false } : {}),
     ...(fix ? { ROSTER: fix.ROSTER, FLOOR: fix.FLOOR, EDIT_RULES: fix.EDIT_RULES,
       SESSION_MINUTES: fix.SESSION_MINUTES, editsHeld: fix.editsHeld, editsToNext: fix.editsToNext,
-      // the fixture's own moment (Q????): its records are dated against it, so
+      // the fixture's own moment (Q1523): its records are dated against it, so
       // the rail reads *Sun 15:25* on every run rather than drifting by the day
       railNow: () => fix.NOW } : {}),
     mounts: { doc: document.getElementById('charter'), queue: rail,
