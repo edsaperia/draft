@@ -6,6 +6,13 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-09-24, night: calmer margins and bigger headings
+
+### Changed
+- **The document's headings are larger.** Every level is one step bigger, so even the smallest heading now stands above the text beneath it.
+- **Tabs and entries that need nothing from you are white** rather than grey, in the margin, in the list of tasks and on the lines that join them, so the ones with a colour stand out.
+- **On a narrower desktop window the tabs keep their space** from the page's edge, as they do on a wide one.
+
 ## 2026-09-24, late evening: the demo, tuned
 
 ### Changed
