@@ -14,7 +14,7 @@ The index, in the section's own order (nothing is pinned — Ed, 2026-09-07, Q12
 | 1529 | The faint wire, once its edge went | 2026-09-24 | **waiting on Ed** | SURFACE M21; A18 |
 | 1528 | The gutter's one record tab: several unread as tabs, and what its edges count | 2026-09-24 | **waiting on Ed** | SURFACE M13; card-audit P11 |
 | 1527 | 🗑️ on the 🥂 and departure news cards | 2026-09-24 | **waiting on Ed** | Y20; band.js |
-| 1526 | *Refused by the Founder* on a vetoed motion's record | 2026-09-24 | **waiting on Ed** | `recordBody`; STYLE T8 |
+| 1526 | *Refused by the Founder* on a vetoed motion's record | 2026-09-24 | **ruled by Ed 2026-09-24: (a); built** — `motionRec.refusedByFounder`, `recordBody` by `heldByOf` (guard `journey`'s *rejected ▭*); unpushed | `recordBody`; STYLE T8 |
 | 1525 | The text titles' lost subject: the clause name over the changed words | 2026-09-24 | **waiting on Ed** (after seeing Q1523 live) | M22; `railTitleOf` |
 | 1524 | The strip jumping 29px between a live card and a record | 2026-09-24 | **waiting on Ed** | M12; card-audit P11 |
 | 1523 | The rail's titles and dates | 2026-09-24 | **ruled and built 2026-09-24**; seven builder calls and a STYLE T16 conflict await Ed | SURFACE M22, M23; `railTitleOf` |
@@ -261,7 +261,7 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 **1527 is 🗑️ on the 🥂 and departure news cards** (claimed 2026-09-24; raised building Q1522). Q1522 took the bin off every record card (Y20); the closing card and the departure news cards still carry one though nothing on them can be discarded. **Readings:** (a) take it off both; (b) leave it. Condition to act: Ed's ruling. Pointers: SURFACE Y20, E31, §9's 🥂 row; band.js.
 
-**1526 is the word for a Founder's 🛡️ refusal on a record** (claimed 2026-09-24; raised building Q1522). A record's dateline reads *Rejected* for any failed motion; the view's `heldBy: 'crown'` tells a Founder's veto apart, and STYLE T8 makes *refuse* the Founder's word. **Readings:** (a) *Refused by the Founder* on a vetoed motion's dateline; (b) *Rejected* for all, as built. Condition to act: Ed's ruling. Pointers: `recordBody` (session-view.html); STYLE T8; Q1522.
+**1526 is the word for a Founder's 🛡️ refusal on a record** (claimed 2026-09-24; raised building Q1522). A record's dateline reads *Rejected* for any failed motion; the view's `heldBy: 'crown'` tells a Founder's veto apart, and STYLE T8 makes *refuse* the Founder's word. **Readings:** (a) *Refused by the Founder* on a vetoed motion's dateline; (b) *Rejected* for all, as built. Condition to act: Ed's ruling. Pointers: `recordBody` (session-view.html); STYLE T8; Q1522. **Ruled by Ed 2026-09-24: (a). Built 2026-09-24**: a Founder's 🛡️ refusal's record dateline reads *Refused by the Founder*; every other failed motion still *Rejected*. SURFACE §9's settled-motion-record row.
 
 **1525 is the text titles' lost subject** (claimed 2026-09-24; raised reviewing Q1523's screenshots). Q1523 titles a text entry by the words that differ (*‘or the garden’*, *with or without ‘and a member…’*): every entry is now distinct, but an entry pinned at the rail's top or foot no longer says which clause it is about, and several fragments open on joining words. **Proposal:** two lines — the clause name as before, the changed words beneath at `--t-small`. Ed chose to ship Q1523 as built (2026-09-24, ~02:20) and judge it live. Condition to act: Ed's ruling after seeing it live. Pointers: SURFACE M22; `railTitleOf` (session.js), `railChange` / `railPair` (cards.js).
 

@@ -3581,9 +3581,12 @@
       { day: 'numeric', month: 'long', year: 'numeric' })) + ' · ' : '';
     // **The outcome is the route's** (Q1522 (1), Ed 2026-09-24; Q1514): a ✒️
     // change was put to nobody, so it did not *pass* — it was changed by the
-    // Founder. A carried motion passed; a failed one was rejected.
+    // Founder. A carried motion passed; a failed one was rejected — or, where
+    // the Founder's 🛡️ held it, refused (Q1526 (a), Ed 2026-09-24; STYLE T8:
+    // *refuse* is the Founder's word), which `heldBy` tells apart.
     const R = PAGE_COPY.motionRec;
-    const outcome = !carried ? R.rejected : rec.route === 'pen' ? R.changedByFounder : R.passed;
+    const outcome = !carried ? (heldByOf(rec) === 'crown' ? R.refusedByFounder : R.rejected)
+      : rec.route === 'pen' ? R.changedByFounder : R.passed;
     const eyebrow = '<p class="eyebrow fieldlab">' + when + outcome + '</p>';
     // a labelled box for the rule the record sets beside the headline one —
     // *Previous rule* on a passed record, *Rejected proposal* on a failed one

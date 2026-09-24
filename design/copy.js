@@ -989,6 +989,9 @@ window.COPY = (function () {
       rejected: 'Rejected',
       // a ✒️ change was put to nobody, so it did not pass (Q1514, Q1522 (1))
       changedByFounder: 'Changed by the Founder',
+      // a Founder's 🛡️ refusal: *refuse* is the Founder's word, *reject* the
+      // membership's (STYLE T8; Q1526 (a), Ed 2026-09-24)
+      refusedByFounder: 'Refused by the Founder',
       // the labels of the record's second box (Q1522 (3), (4), Ed 2026-09-24)
       previousRule: 'Previous rule',
       rejectedProposal: 'Rejected proposal',

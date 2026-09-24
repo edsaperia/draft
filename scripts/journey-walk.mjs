@@ -1715,7 +1715,9 @@ const heldNewsOnRefusal = async () => {
   await guestPage.waitForTimeout(500);
   // **the record's shape, owed** (Q1522, Ed 2026-09-24): no head, the
   // dateline and *Rejected* first, the rule that stands, the refused wording
-  // in a *Rejected proposal* box, and a row holding the OK alone — no 🗑️
+  // in a *Rejected proposal* box, and a row holding the OK alone — no 🗑️.
+  // The founder refused it with 🛡️ above, so the dateline says so in the
+  // Founder's word, *Refused by the Founder* (Q1526 (a), Ed 2026-09-24)
   const heldShape = await guestPage.evaluate((k) => {
     const c = document.querySelector('.setupcard[data-setupcard="' + k + '"]');
     if (!c) return null;
@@ -1727,7 +1729,7 @@ const heldNewsOnRefusal = async () => {
       bin: !!c.querySelector('[data-revert]'),
       row: [...c.querySelectorAll('.commitrow button')].map((b) => b.textContent.trim()) };
   }, hKey);
-  const heldShaped = !!heldShape && !heldShape.head && /Rejected$/.test(heldShape.eyebrow) &&
+  const heldShaped = !!heldShape && !heldShape.head && /Refused by the Founder$/.test(heldShape.eyebrow) &&
     heldShape.box === 'Rejected proposal' && !heldShape.bin &&
     JSON.stringify(heldShape.row) === '["OK"]' &&
     JSON.stringify(heldShape.order) === JSON.stringify(['eyebrow fieldlab', 'pick on', 'recbox']);
