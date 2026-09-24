@@ -3217,7 +3217,11 @@
        (84px at 1600), and the tabs keep `--s5` of paper to their left (16px
        for the open tab, which grows 8px leftward — M12). Only the drawn sheet
        moves; the column, its tabs and its cards stay where they were. At
-       narrow the sheet runs to the glass and no trim applies.
+       narrow the sheet runs to the glass and no trim applies. **Since Ed,
+       2026-09-24, paper.js measures it** — the tab column's left less `--s5`,
+       88px at 1600 — because the tab column steps 15px in below 1440 and the
+       constant left the tabs 9px of paper there; the token is the fallback
+       where no tab is drawn.
      ========================================================================== */
   html.desk {
     --desk: #EEF0F2;
