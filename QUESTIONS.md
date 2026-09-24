@@ -254,7 +254,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1541** — claim by writing the block here, then commit it alone.
+**The next free number is 1542** — claim by writing the block here, then commit it alone.
+
+**1541 is the surface redesign** (claimed 2026-09-25; Ed, after the title card's four faults: *if you think hard enough, you could do a better job designing the cards and the overall layout than I can*). A long autonomous run audits the whole surface and proposes one consistent grammar. Ed's three rulings: **the whole surface** in scope; **free, but every break with a ruling flagged** as a numbered question; **mockups plus a clickable prototype**. Phase one changes no product code. Its questions are numbered 1541.1, 1541.2, … inside the run's artifact. Plan: `design/proposal/PLAN.md`.
 
 **1540 is gating proposing and voting until membership is accepted** (claimed 2026-09-24; Ed, mid-build before the demo: *for later, after the demo*). **Ruled by Ed the same night:** *until you've accepted 🏛️, you're not shown ✏️ or ⚖️* — folded into SURFACE E8 and built (`voiceUnaccepted` in session-view.html).
 
