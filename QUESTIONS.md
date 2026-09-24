@@ -8,6 +8,8 @@ The index, in the section's own order (nothing is pinned — Ed, 2026-09-07, Q12
 
 | # | Title | Raised | State | Pointers |
 |---|---|---|---|---|
+| 1532 | Pin one owed record, not three | 2026-09-24 | **ruled at the claim (Ed 2026-09-24)**, building | SURFACE §6 ✔ ✖ rows; Q113; `layoutQueue` |
+| 1531 | The green highlight on text records | 2026-09-24 | **ruled at the claim (Ed 2026-09-24)**, building | `sealed record`; `sealedCardHtml`, `wordingHtml` |
 | 1530 | Backslash escapes, read and pasted | 2026-09-24 | **ruled and built 2026-09-24**; four builder calls await Ed | SURFACE K33; cards.js `mdPlain`, `pasteClean` |
 | 1529 | The faint wire, once its edge went | 2026-09-24 | **waiting on Ed** | SURFACE M21; A18 |
 | 1528 | The gutter's one record tab: several unread as tabs, and what its edges count | 2026-09-24 | **waiting on Ed** | SURFACE M13; card-audit P11 |
@@ -245,7 +247,11 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1531** — claim by writing the block here, then commit it alone.
+**The next free number is 1533** — claim by writing the block here, then commit it alone.
+
+**1532 is pinning one owed record, not three** (claimed 2026-09-24; Ed: *At the moment we pin three green ✔️s; I think we only need to pin one.*). **Ruled by Ed at the claim:** only the oldest record the viewer owes an OK on is pinned, whichever mark it wears (✔ adopted or an owed ✖ retired); once it is OK'd the next oldest takes its place; the rest sit beside their clauses. Replaces Q113's *among the oldest three owed*. Pointers: SURFACE §6's mark table, rows ✔ and ✖; `layoutQueue` (session.js).
+
+**1531 is the green highlight on text records** (claimed 2026-09-24; Ed: *When I look at ✔️ and ✖️ cards, it would be nice to keep the green text highlight, so it's easier to see what the change was.*). **Ruled by Ed at the claim:** text records only (clause changes); settings records (Q1522's `recordBody`) stay as they are. Each proposed wording on a ✔ or ✖ record shows its changes against the text it was proposed against, as the live card did; the *Previous text* box stays plain. Pointers: `sealedCardHtml` (session.js), `wordingHtml` / `mdDiffHtml` (cards.js); CLAUDE.md `sealed record`.
 
 **1530 is backslash escapes, read and pasted** (claimed 2026-09-24; Ed, from nh2026's *5\. Expiry*). **Ruled by Ed:** (13) reading hides a backslash before punctuation everywhere text is drawn, the stored text unchanged, edit mode still showing the source; (14) a paste drops the escapes docs.vote does not need and keeps those it does. **Built 2026-09-24** (branch `md-escapes`, merged a2eeab54): `escEncode` / `mdUnescape` / `mdPlain` / `pasteClean` in cards.js; SURFACE K33; guards `md-escapes.test.ts`, the session-probe's *escape shown*, `npm run escape-paste`. **The builder's own calls, for Ed to confirm:** (a) rationale fields are left out of both rules — plain text, never markdown; (b) the document title is left as typed; (c) the charter's contents rail drops `**`, `*` and backticks too; (d) *Previous text* on an amendment record and the salience diagonal's clause now render markdown rather than source. Condition to act: Ed overrules one of (a)–(d).
 
