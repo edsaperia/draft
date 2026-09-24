@@ -125,6 +125,8 @@
     // card and rail alike, run from a timer of its own in `init` and never
     // from a render
     abstainNoteHtml, tickAbstain,
+    // a rail entry's title and its moment (Q????)
+    railChange, railPair, railWhen,
   } = window.CARDS;
   // **A power is not held until it has been acknowledged** (Ed, 2026-08-21).
   // The host says whether this reader may propose and may judge; both default
@@ -780,6 +782,69 @@
     ? '<span class="qwhy">' + esc(t.why) + '</span>'
     : window.CARDS.railSpeakerHtml(t.why, t.by));
 
+  // **An entry's title names its own subject** (Q????, Ed 2026-09-24): the
+  // words this entry is about, from this entry alone — never the clause's
+  // name, which every entry on one clause shares, and never by comparison
+  // with its neighbours, so a title cannot change because another entry
+  // arrived. A pair to judge reads its two sides as the card presents them
+  // (*‘six’ or ‘seven’*); a decided change and a proposal of your own read
+  // what they changed (*‘monthly’ → ‘quarterly’*). The clause's name stays
+  // where nothing is about words — a diagonal, a park, a deadlock, which is
+  // about the whole field — and is what `railChange` falls back to.
+  // A marked wording as its two texts: the hand-authored fixture carries
+  // its changes as `<del>`/`<ins>` in one string, and the live page hands
+  // both texts over (`was`, `now`) where it knows them.
+  const unmark = (html, drop) => String(html || '')
+    .replace(new RegExp('<' + drop + '>[\\s\\S]*?</' + drop + '>', 'g'), '')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
+  const bothOf = (x) => (x.was !== undefined && x.now !== undefined ? [x.was, x.now]
+    : x.marked ? [unmark(x.marked, 'ins'), unmark(x.marked, 'del')] : null);
+  // what a site of your own replaces: its origin where it carries one (the
+  // fixture writes `x`, the live page `text`), else the blocks it stands on
+  const siteWas = (site) => (site.seed != null ? site.seed
+    : site.origin ? site.origin.map((o) => (o.text != null ? o.text : o.x || '')).join('\n')
+    : (site.keys || [site.key]).filter(Boolean).map(sourceTextFor).join('\n'));
+  // a line that also carries a moment (a record) or a place count (*1 of 3
+  // places*) leaves its title less room than the rail's 34 characters
+  const RAIL_DATED = 26;
+  function railTitleOf(g, e) {
+    // the clause's own name, as its fallback; its `§` comes off where the
+    // caller escapes it (`esc(plainLabel(…))`, the rail's one escaping rule)
+    const name = String(e.label || g.qLabel || '');
+    if (g.kind === 'diagonal' || g.kind === 'park' || stuck(g)) return name;
+    try {
+      if (g.kind === 'draft') {
+        const site = (g.sites || [])[(e.n || 1) - 1];
+        return site ? railChange(siteWas(site), site.text, name, e.of > 1 ? RAIL_DATED : undefined) : name;
+      }
+      if (g.kind === 'patch') {
+        const site = (g.sites || [])[(e.n || 1) - 1];
+        const two = site && bothOf(site);
+        return two ? railPair(two[0], two[1], name) : name;
+      }
+      // a record: the wording that carried, or where none did the best of
+      // what was tried, against what it replaced — the text it displaced
+      // where the record kept it, else the clause, which is what stood
+      if (stateOf(g) === 'sealed') {
+        const field = fieldOf(g).filter((c) => c.text != null);
+        const pick = field.find((c) => c.won) || field.slice().sort((x, y) => (y.p ?? -1) - (x.p ?? -1))[0];
+        if (!pick) return name;
+        const was = g.replaced !== undefined ? g.replaced : g.optionA !== undefined ? g.optionA
+          : pick.won ? '' : (g.keys || []).map(sourceTextFor).join('\n');
+        return railChange(was, pick.text, name, RAIL_DATED);
+      }
+      if (g.race && g.race.a && g.race.b) return railPair(g.race.a.text || '', g.race.b.text || '', name);
+      const two = bothOf(g);
+      return two ? railPair(two[0], two[1], name) : name;
+    } catch (err) { return name; }
+  }
+  // …and its moment, where it has one: the one helper (`railWhen`) against
+  // the page's clock, which the fixture pins so its dates read the same on
+  // every run
+  let RAIL_NOW = () => Date.now();
+  const whenText = (d) => (d && d.at != null ? railWhen(d.at, RAIL_NOW()) || '' : (d && d.when) || '');
+
   function queueEntries() {
     const out = [];
     for (const g of SUGGS) {
@@ -925,8 +990,8 @@
           ' title="' + esc(d.outcome || 'sealed') +
           (isUnread(g) ? ' — you haven’t opened this one yet' : '') + '">' +
           '<span class="ql">' + markHtml(markKindOf(g)) +
-          '<span class="qt">' + esc(plainLabel(e.label || g.qLabel)) + '</span>' +
-          '<span class="qv when">' + esc(d.when || '') + '</span></span>' +
+          '<span class="qt">' + esc(plainLabel(railTitleOf(g, e))) + '</span>' +
+          '<span class="qv when">' + esc(whenText(d)) + '</span></span>' +
           '</button></li>';
         continue;
       }
@@ -969,7 +1034,7 @@
             // ✏️, or ↻ where the text moved out from under a site of it
             // (Q1463): the gutter tab reads `markKindOf` and the rail said
             // `propose` whatever had happened, so the two disagreed
-            ? '<span class="ql">' + markHtml(markKindOf(g)) + '<span>' + esc(plainLabel(e.label || g.qLabel)) + '</span></span>' +
+            ? '<span class="ql">' + markHtml(markKindOf(g)) + '<span>' + esc(plainLabel(railTitleOf(g, e))) + '</span></span>' +
               where +
               '<span class="qwhy' + (why ? '' : ' empty') + '">' +
               (why ? esc(why) : T.rail.noReason) + '</span>' +
@@ -982,7 +1047,7 @@
             // hard-coded ✏️, so a stranded proposal of yours wore ↻ in the
             // gutter and the contents rail and ✏️ here, at the same moment.
             // SURFACE §6 is one alphabet in all three columns.
-            : '<span class="ql">' + markHtml(markKindOf(g)) + esc(plainLabel(e.label || g.qLabel)) +
+            : '<span class="ql">' + markHtml(markKindOf(g)) + esc(plainLabel(railTitleOf(g, e))) +
               (e.of > 1 ? '<span class="qv"> · ' + T.rail.placesOf(e.n, e.of) + '</span>' : '') + '</span>' +
               // **and for a few seconds after the press, one sentence** (Q1485
               // (A)): the card has just closed, so without this the whole of
@@ -1071,7 +1136,7 @@
           // it looks like something you are failing to read. The mark already says you
           // have judged; the card says what you said, in full, when you open it.
           ? '<span class="ql">' + markHtml(g.shifted ? 'shifted' : 'deciding') +
-            esc(plainLabel(e.label || g.qLabel)) + '</span>'
+            esc(plainLabel(railTitleOf(g, e))) + '</span>'
           : '<span class="ql">' +
             markHtml(markKindOf(g)) +
             (e.prio
@@ -1079,7 +1144,7 @@
               // rather than colliding and truncating on one (Ed, 284)
               ? '<span class="qprio">Prioritise:<b>' + esc(plainLabel(e.prio[0])) +
                 '</b><i>vs</i><b>' + esc(plainLabel(e.prio[1])) + '</b></span>'
-              : '<span>' + esc(plainLabel(e.label || g.qLabel)) + '</span>') +
+              : '<span>' + esc(plainLabel(railTitleOf(g, e))) + '</span>') +
             // **The entry carries the clock too, in the last day** (Q1460
             // (e), Ed 2026-09-19: *the rail should only show the clock when
             // it's less than 24 hrs*). A vote you have not cast can hide
@@ -2043,7 +2108,7 @@
       '<div class="sugg sealed-open" data-card="' + s.id + '"' +
       (skey ? ' data-site="' + skey + '"' : '') + '>' +
       '<div class="rechead"><span>' + T.record.amended + '</span>' +
-      '<span class="sub">' + esc((s.decided || {}).when || '') + '</span></div>' +
+      '<span class="sub">' + esc(whenText(s.decided)) + '</span></div>' +
       (skey
         ? clauseHeadHtml(s, {
             text: sourceTextFor(skey), key: skey, chips: chipsFor(skey, s.id),
@@ -2238,7 +2303,7 @@
       // tried.
       '<div class="rechead">' +
       '<span>' + (und ? T.record.undecided : T.record.decided) + ' · ' + (d.judges ?? 0) + '/' + ROSTER + PEOPLE + '</span>' +
-      '<span class="sub">' + esc(d.when || '') + '</span></div>' +
+      '<span class="sub">' + esc(whenText(d)) + '</span></div>' +
       // **The counts are printed, not hovered** (Q1452, Ed 2026-09-18: *print the
       // count line on the card*): the sentence was a `title` on the head, which a
       // phone never shows and a mouse only finds by resting — and it is the
@@ -5290,6 +5355,9 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // and the speaker's two (K30): the rung whole, and the viewer's own face
     if (env.authorRung) AUTHOR_RUNG = env.authorRung;
     if (env.signerPerson) SIGNER_PERSON = env.signerPerson;
+    // the rail's clock (Q????): the fixture pins it, so a record's moment
+    // reads the same on every run and the probes can freeze it
+    if (env.railNow) RAIL_NOW = env.railNow;
     SESSION_MINUTES = env.SESSION_MINUTES ?? 8 * 60;
     editsHeld = env.editsHeld ?? 5; editsToNext = env.editsToNext ?? 0.6;
     bindData(env.DOC || [], env.SUGGS || []);

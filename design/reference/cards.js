@@ -909,6 +909,223 @@ window.CARDS = (function () {
   const mdStrip = (src) => escRaw(escEncode(src).replace(MD_RX, (m) =>
     m.startsWith('**') ? m.slice(2, -2) : m.slice(1, -1)));
 
+  // ---- rail titles (Q????, Ed 2026-09-24) ---------------------------------
+  // **An entry's title names its own subject, computed from the entry alone,
+  // never by comparison with its neighbours**: a title must not change
+  // because another entry appeared. The rail had filled with lines that read
+  // alike — every pair on a clause wearing the clause's name, every record
+  // leading with what records share — and the one-line title was cut at its
+  // end, which is where the difference was. So the words carry the subject,
+  // distinguishing words first: the mark already says the kind.
+  //
+  // Pure, and plain text in and plain text out: the snippet is member text,
+  // and the renderer escapes it after it is built (escaping first would count
+  // an entity as five characters and could cut one in half).
+  const RT = G.railTitle;
+  // **the room a title has, in characters**: one rail line at 1600 holds about
+  // 34 of the rail's own sans; a dated entry gives some 8 of them to its moment.
+  // A caller passes the room its line leaves; the sides of a pair or an arrow
+  // share it, and each cut is inside its own snippet, so neither side is lost
+  const RAIL_ROOM = 34;
+  const sideOf = (room) => Math.max(8, Math.floor((room - 7) / 2));   // two quotes each, and ' → '
+  const RAIL_LEAD = 5;      // the first words of a rewrite
+  /** The words a reader sees: markers, a heading's `# `, a bullet's `- `
+   *  and backslash escapes off, whitespace folded to one space. */
+  // (an escaped character is set aside before the markers are read, so `\*`
+  // stays a star rather than opening an emphasis, and comes back after)
+  // MERGE NOTE: main now carries `mdPlain` (merge a2eeab54, md-escapes: a
+  // line's marker and marks off, escapes read); at the merge this becomes
+  // `mdPlain` per line and the whitespace fold, and the stripper here goes.
+  const railPlain = (src) => mdStrip(String(src == null ? '' : src).replace(/\r/g, '')
+      .replace(/^[ \t]*#{1,6}[ \t]+/gm, '').replace(/^[ \t]*-[ \t]+/gm, '')
+      .replace(/\\([\\`*_{}[\]()#+\-.!>~|])/g, (m, ch) => String.fromCharCode(0xE100 + ch.charCodeAt(0))))
+    .replace(/\*\*/g, '')
+    .replace(/[-]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xE100))
+    .replace(/\s+/g, ' ').trim();
+  /** A snippet's edges carry no punctuation or space of their own. */
+  const railTrim = (s) => String(s).replace(/^[\s,;:.!?—–-]+|[\s,;:.!?—–-]+$/g, '');
+  /** Cut at a word, inside the snippet, marked with the ellipsis. */
+  const railClip = (s, n) => {
+    const t = railTrim(s);
+    if (t.length <= n) return t;
+    const cut = t.slice(0, n);
+    // a word ending exactly at the cut is whole, and stays
+    const sp = t[n] === ' ' ? n : cut.lastIndexOf(' ');
+    return railTrim(sp > n / 2 ? cut.slice(0, sp) : cut) + RT.more;
+  };
+  const railQ = (s, n) => RT.quote(railClip(s, n));
+  const railLead = (s, room) => {
+    const w = railTrim(s).split(' ');
+    const lead = railTrim(w.slice(0, RAIL_LEAD).join(' '));
+    return RT.quote(lead.length > room - 3 ? railClip(lead, room - 3) : lead + (w.length > RAIL_LEAD ? RT.more : ''));
+  };
+  const onlyPunct = (a, b) => a.replace(/[\s\p{P}]+/gu, '') === b.replace(/[\s\p{P}]+/gu, '');
+  /**
+   * The runs where two wordings differ, in order: `{ del, ins }` each, the
+   * words the first has and the second has in their place. Whitespace
+   * between two changes keeps them one run (`diffPieces` already joins
+   * like marks across a space); a common word ends it. A run whose words
+   * are punctuation alone says nothing a title could, and is dropped.
+   */
+  // `diffPieces`' own tokens, the spaces left out of the comparison and each
+  // word keeping where it stands, so a run is cut out of the text itself and
+  // keeps its own spacing and punctuation
+  const wordsAt = (s) => {
+    const out = [];
+    let at = 0;
+    for (const t of tokens(s)) { if (/\S/.test(t)) out.push({ t, s: at, e: at + t.length }); at += t.length; }
+    return out;
+  };
+  function changeRuns(a, b) {
+    const A = wordsAt(a), B = wordsAt(b);
+    const n = A.length, m = B.length;
+    const dp = Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
+    for (let i = n - 1; i >= 0; i--)
+      for (let j = m - 1; j >= 0; j--)
+        dp[i][j] = A[i].t === B[j].t ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    const spans = [];
+    let i = 0, j = 0, kept = 0;
+    const cut = (W, s, lo, hi) => (lo < hi ? s.slice(W[lo].s, W[hi - 1].e) : '');
+    // only punctuation stands between two changes: they are one change —
+    // *and not more.* becoming *. No further reminder is given* matches its
+    // full stop, and read as two it was a cut and an addition, each half a story
+    const onlyMarks = (lo, hi) => A.slice(lo, hi).every((w) => !/[\p{L}\p{N}]/u.test(w.t));
+    while (i < n || j < m) {
+      if (i < n && j < m && A[i].t === B[j].t) { kept += A[i].t.length; i++; j++; continue; }
+      const i0 = i, j0 = j;
+      while ((i < n || j < m) && !(i < n && j < m && A[i].t === B[j].t)) {
+        if (j >= m || (i < n && dp[i + 1][j] >= dp[i][j + 1])) i++; else j++;
+      }
+      const last = spans[spans.length - 1];
+      if (last && onlyMarks(last.i1, i0)) { last.i1 = i; last.j1 = j; }
+      else spans.push({ i0, i1: i, j0, j1: j });
+    }
+    const out = spans.map((x) => ({ del: railTrim(cut(A, a, x.i0, x.i1)), ins: railTrim(cut(B, b, x.j0, x.j1)) }))
+      .filter((r) => r.del || r.ins);
+    // how much of each text stands in the other, as a share of its letters
+    const letters = (W) => W.reduce((k, w) => k + w.t.length, 0) || 1;
+    out.keptA = kept / letters(A);
+    out.keptB = kept / letters(B);
+    return out;
+  }
+  /** Below `MARK_FLOOR` on both sides the second is a rewrite, not an edit
+   *  (Q92's floor): a clause grown by a sentence keeps all of the first. */
+  const rewrite = (runs) => runs.keptA < MARK_FLOOR && runs.keptB < MARK_FLOOR;
+  /** The run a title shows: the first — distinguishing words first — unless
+   *  it is a scrap, the joining words alone (*or* → *and*, a *the* cut),
+   *  which names nothing; then the first run that names something. *not* is
+   *  never a scrap: it turns a rule round. The others are the ellipsis. */
+  const SCRAP = new Set(('a an the and or nor but so of to in on at by for from with as ' +
+    'that this these those which who it its is are be was were').split(' '));
+  const scrap = (r) => (r.del + ' ' + r.ins).toLowerCase().split(/[^\p{L}\p{N}’']+/u)
+    .filter(Boolean).every((w) => SCRAP.has(w));
+  const mainRun = (runs) => runs.find((r) => !scrap(r)) || runs[0];
+  // …and the ellipsis says there is more only where the more names something
+  const moreThan = (runs, main) => runs.some((r) => r !== main && !scrap(r));
+  /** Where two wordings stop agreeing, word by word: each side from there on. */
+  const afterCommon = (a, b) => {
+    const A = tokens(a), B = tokens(b);
+    let i = 0;
+    while (i < A.length && i < B.length && A[i] === B[i]) i++;
+    return [A.slice(i).join(''), B.slice(i).join('')];
+  };
+  /**
+   * **A change's title** — a record, decided either way, and a proposal of
+   * your own: the words it took out and the words it put in, *‘monthly’ →
+   * ‘quarterly’*; what went in alone where nothing was removed; *without
+   * ‘…’* where nothing went in; the first words of the new wording where it
+   * is a rewrite with no short difference; the clause's `name` with
+   * *(punctuation)* where only punctuation or spacing moved, and the name
+   * alone where nothing did. Where it changed several places, the first that
+   * says anything is shown and the ellipsis says there is more.
+   */
+  function railChange(was, now, name, room = RAIL_ROOM) {
+    const one = room - 2, side = sideOf(room);
+    const a = railPlain(was), b = railPlain(now);
+    if (a === b) return name;
+    if (onlyPunct(a, b)) return RT.punctuation(name);
+    if (!a) return railQ(b, one);
+    if (!b) return RT.without(railQ(a, one - 8));
+    const runs = changeRuns(a, b);
+    if (rewrite(runs)) return railLead(b, room);
+    if (!runs.length) return RT.punctuation(name);
+    const r = mainRun(runs);
+    const t = r.del && r.ins ? RT.arrow(railQ(r.del, side), railQ(r.ins, side))
+      : r.ins ? railQ(r.ins, one) : RT.without(railQ(r.del, one - 8));
+    return moreThan(runs, r) ? t + ' ' + RT.more : t;
+  }
+  /**
+   * **A pair's title** — two wordings put to you, `a` first as the card
+   * presents it: the words where they differ, *‘six’ or ‘seven’*; *with or
+   * without ‘…’* where one side simply has words the other lacks. Two
+   * rewrites of one sentence are read from where they stop agreeing, so the
+   * words shown are the ones that tell them apart.
+   */
+  function railPair(aText, bText, name, room = RAIL_ROOM) {
+    const one = room - 2, side = Math.max(8, Math.floor((room - 8) / 2));   // two quotes each, and ' or '
+    const a = railPlain(aText), b = railPlain(bText);
+    if (a === b) return name;
+    if (onlyPunct(a, b)) return RT.punctuation(name);
+    if (!a || !b) return RT.withOrWithout(railQ(a || b, one - 16));
+    const runs = changeRuns(a, b);
+    if (rewrite(runs)) {
+      const [x, y] = afterCommon(a, b);
+      return RT.or(railQ(x, side), railQ(y, side));
+    }
+    if (!runs.length) return RT.punctuation(name);
+    const r = mainRun(runs);
+    const t = r.del && r.ins ? RT.or(railQ(r.del, side), railQ(r.ins, side))
+      : RT.withOrWithout(railQ(r.del || r.ins, one - 16));
+    return moreThan(runs, r) ? t + ' ' + RT.more : t;
+  }
+  /**
+   * **A rail entry's moment** (Q????): 24-hour, shortest by distance from
+   * `nowMs` — *15:25* the same day, *Sun 15:25* within the last seven days,
+   * *20 Sep* earlier this year, *20 Sep 2025* before that. The one helper
+   * every dated rail entry reads. Null for no moment.
+   */
+  function railWhen(ms, nowMs) {
+    if (ms === null || ms === undefined || !isFinite(ms)) return null;
+    const W = G.railWhen;
+    const d = new Date(ms), n = new Date(nowMs === undefined ? Date.now() : nowMs);
+    const hm = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    if (d.toDateString() === n.toDateString()) return hm;
+    const dayStart = new Date(n.getFullYear(), n.getMonth(), n.getDate()).getTime();
+    if (ms < dayStart && ms >= dayStart - 6 * 86400000) return W.days[d.getDay()] + ' ' + hm;
+    return d.getDate() + ' ' + W.months[d.getMonth()] +
+      (d.getFullYear() === n.getFullYear() ? '' : ' ' + d.getFullYear());
+  }
+  /**
+   * **A moment a rule names** — ⏰'s close, which is as often ahead as behind
+   * — in the same words, always with its time: *17:10* the same day, *Sun
+   * 17:10* within six days either way, *20 Sep 17:10* further off, the year
+   * where it is not this one.
+   */
+  function railAt(ms, nowMs) {
+    if (ms === null || ms === undefined || !isFinite(ms)) return null;
+    const W = G.railWhen;
+    const d = new Date(ms), n = new Date(nowMs === undefined ? Date.now() : nowMs);
+    const hm = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    if (d.toDateString() === n.toDateString()) return hm;
+    const day = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+    if (Math.abs(day(d) - day(n)) <= 6 * 86400000 + 3600000) return W.days[d.getDay()] + ' ' + hm;
+    return d.getDate() + ' ' + W.months[d.getMonth()] +
+      (d.getFullYear() === n.getFullYear() ? '' : ' ' + d.getFullYear()) + ' ' + hm;
+  }
+  /**
+   * Old → new for a rule's value, with a shared tail said once where both
+   * are a number followed by the same words: *10 → 5 minutes*, *6 → 8 of
+   * 12*; otherwise both whole, *members only → public*.
+   */
+  function railArrow(was, now) {
+    const a = String(was).split(' '), b = String(now).split(' ');
+    const numeric = /^\d/.test(a[0]) && /^\d/.test(b[0]);
+    if (numeric && a.length > 1 && a.length === b.length && a.slice(1).join(' ') === b.slice(1).join(' ')) {
+      return RT.arrow(a[0], String(now));
+    }
+    return RT.arrow(String(was), String(now));
+  }
+
   // A caret offset does **not** mean the same thing in a rendered block and in
   // its source: the source shows the syntax characters and the rendering does
   // not, so the same place in the text is a different number of characters
@@ -1980,6 +2197,7 @@ window.CARDS = (function () {
     TICK, ARROW_OUT, PAUSE, VS16, MARK, DRAWN, mkHtml, markHtml,
     GLYPH, glyphKey, glyphHtml, glyphify, glyphTextOf,
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks, mdDiffPieces, mdPiecesHtml, mdDiffHtml, mdBlocksHtml,
+    railPlain, railChange, railPair, railWhen, railAt, railArrow,
     originText, MD_RX, mdToHtml, htmlToMd, mdStrip, mdBlock, linkify, linkifyHtml, mdLine,
     mdUnescape, mdPlain, pasteClean,
     MD_ONE, mdLead, mdInner, mdParts, sourceToRich, readLane, sentText,

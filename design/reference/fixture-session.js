@@ -5,6 +5,13 @@
  * script. Hand-authored: content, progress and state ride each item — never
  * parallel literals kept in sync by hand. */
 window.FIXTURE_SESSION = (function () {
+  // **The fixture's own moment** (Q????): noon on Wednesday 30 September
+  // 2026, in the reader's own zone. Every record here is dated against it
+  // and the rail reads its dates against it too (`railNow`), so *Tue 20:15*
+  // and *09:20* read the same on every run and the probes can freeze them.
+  const NOW = new Date(2026, 8, 30, 12, 0).getTime();
+  // a moment in September 2026, by day of the month
+  const at = (day, h, m) => new Date(2026, 8, day, h, m).getTime();
   // The charter: parts (level 1), chapters (level 2), sections (level 3).
   // A heading owns everything until the next heading of the same level or above.
   const DOC = [
@@ -534,7 +541,7 @@ window.FIXTURE_SESSION = (function () {
       pct: 100, cap: 'sealed — the current text stood · vote locked',
       // the oldest decision at this clause, and it is declared first because the
       // filed pile reads declaration order as time
-      decided: { outcome: 'retired — the current text stood', when: 'Monday, 17:40', p: 0.38, judges: 6 },
+      decided: { outcome: 'retired — the current text stood', at: at(21, 17, 40), p: 0.38, judges: 6 },
       optionA: 'Friends of the house are welcome.',
       optionB: 'Friends of the house are welcome, and so are their dogs, on the ground floor.',
       rationale: 'Hollis’s lurcher has been coming for two years and nobody has ever objected. Write down what we already do.'
@@ -558,7 +565,7 @@ window.FIXTURE_SESSION = (function () {
       // time it carried and one still had time — so the group was ten, the
       // floor five, and six approvals took it. The one record on the page
       // that says so; the rest ran out nobody's clock.
-      decided: { outcome: 'adopted', when: 'Tuesday, 11:20', p: 0.81, judges: 9, approvals: 6,
+      decided: { outcome: 'adopted', at: at(22, 11, 20), p: 0.81, judges: 9, approvals: 6,
         abstained: 4 },
       optionA: 'Friends of the house are welcome.',
       optionB: 'Friends of the house are welcome whenever a member is in.',
@@ -569,7 +576,7 @@ window.FIXTURE_SESSION = (function () {
       verdict: 'kept the current text', pick: 'keep',
       qLabel: '§ Guests — how many at once', urgency: 0,
       pct: 100, cap: 'sealed — the current text stood',
-      decided: { outcome: 'retired — the current text stood', when: 'Wednesday, 09:05', p: 0.31, judges: 8 },
+      decided: { outcome: 'retired — the current text stood', at: at(23, 9, 5), p: 0.31, judges: 8 },
       optionA: 'Friends of the house are welcome whenever a member is in.',
       optionB: 'Friends of the house are welcome whenever a member is in, to a maximum of three at a time.',
       rationale: 'The Common Room holds nine at a push. Four of us bringing three friends each is not an evening, it is an incident.'
@@ -579,7 +586,7 @@ window.FIXTURE_SESSION = (function () {
       verdict: 'kept the current text', pick: 'keep',
       qLabel: '§ Guests — signing in', urgency: 0,
       pct: 100, cap: 'sealed — the current text stood',
-      decided: { outcome: 'retired — the current text stood', when: 'Thursday, 19:44', p: 0.44, judges: 7 },
+      decided: { outcome: 'retired — the current text stood', at: at(24, 19, 44), p: 0.44, judges: 7 },
       optionA: 'Friends of the house are welcome whenever a member is in.',
       optionB: 'Friends of the house are welcome whenever a member is in, and are written in the book on the landing.',
       rationale: 'If the house burns down we should know who was in it. It costs a line of a pen.'
@@ -589,7 +596,7 @@ window.FIXTURE_SESSION = (function () {
       verdict: 'kept the current text', pick: 'keep',
       qLabel: '§ Guests — children', urgency: 0,
       pct: 100, cap: 'sealed — the current text stood',
-      decided: { outcome: 'retired — the current text stood', when: 'Thursday, 20:12', p: 0.22, judges: 7 },
+      decided: { outcome: 'retired — the current text stood', at: at(24, 20, 12), p: 0.22, judges: 7 },
       optionA: 'Friends of the house are welcome whenever a member is in.',
       optionB: 'Friends of the house are welcome whenever a member is in; children under twelve are welcome in the Garden only.',
       rationale: 'The Library Corner is not a place for a four-year-old and none of us wants to be the one who says so.'
@@ -599,7 +606,7 @@ window.FIXTURE_SESSION = (function () {
       verdict: 'kept the current text', pick: 'keep',
       qLabel: '§ Guests — arriving late', urgency: 0,
       pct: 100, cap: 'sealed — the current text stood',
-      decided: { outcome: 'retired — the current text stood', when: 'Friday, 08:31', p: 0.49, judges: 10 },
+      decided: { outcome: 'retired — the current text stood', at: at(25, 8, 31), p: 0.49, judges: 10 },
       optionA: 'Friends of the house are welcome whenever a member is in.',
       optionB: 'Friends of the house are welcome whenever a member is in, and are not brought in after ten in the evening.',
       rationale: 'The Upper Floors hear everything. Ten is not early and the rule would be kind to whoever is asleep.'
@@ -609,7 +616,7 @@ window.FIXTURE_SESSION = (function () {
       verdict: 'preferred the new wording', pick: 'b',
       qLabel: '§ Guests — at the Thursday Dinner', urgency: 0,
       pct: 100, cap: 'sealed — the current text stood',
-      decided: { outcome: 'retired — the current text stood', when: 'Friday, 12:07', p: 0.66, judges: 11 },
+      decided: { outcome: 'retired — the current text stood', at: at(25, 12, 7), p: 0.66, judges: 11 },
       optionA: 'Friends of the house are welcome whenever a member is in.',
       optionB: 'Friends of the house are welcome whenever a member is in, though not at the Thursday Dinner unless the cook is told the day before.',
       rationale: 'The cook buys for the number they are given. A guest nobody mentioned is somebody else going without.'
@@ -619,7 +626,7 @@ window.FIXTURE_SESSION = (function () {
       verdict: 'kept the current text', pick: 'keep',
       qLabel: '§ Guests — bringing something', urgency: 0,
       pct: 100, cap: 'sealed — the current text stood',
-      decided: { outcome: 'retired — the current text stood', when: 'Friday, 16:55', p: 0.18, judges: 6 },
+      decided: { outcome: 'retired — the current text stood', at: at(25, 16, 55), p: 0.18, judges: 6 },
       optionA: 'Friends of the house are welcome whenever a member is in.',
       optionB: 'Friends of the house are welcome whenever a member is in; a member bringing the same guest twice in a week brings the wine.',
       rationale: 'Half a joke, but the house does keep buying drink for people who are not in it.'
@@ -843,7 +850,7 @@ window.FIXTURE_SESSION = (function () {
       qLabel: '§ The Guest Bedroom — claims',
       urgency: 0,
       pct: 100, cap: 'sealed — adopted · vote locked',
-      decided: { outcome: 'adopted', when: 'yesterday, 20:15', p: 0.86, judges: 7 },
+      decided: { outcome: 'adopted', at: at(29, 20, 15), p: 0.86, judges: 7 },
       // the text the winner displaced — the document no longer holds it
       replaced: 'A claim is made by writing in the book on the landing. A claim more than a month ahead may be displaced by a member with a nearer need, on notice and with apologies.',
       slate: [
@@ -887,7 +894,7 @@ window.FIXTURE_SESSION = (function () {
       optionA: 'The Kitchen is common to all members and is to be kept clean and tidy at all times.',
       optionB: 'The Kitchen is common to all members and is governed by one rule: you leave it as you would wish to find it at seven in the morning.',
       won: 'b',
-      decided: { outcome: 'adopted', when: 'yesterday, 16:05', p: 0.84, judges: 6 },
+      decided: { outcome: 'adopted', at: at(29, 16, 5), p: 0.84, judges: 6 },
       rationale: '"Clean and tidy" is what everyone already thinks they are being. A test you can picture settles arguments that an adjective cannot.'
     },
     {
@@ -902,7 +909,7 @@ window.FIXTURE_SESSION = (function () {
       optionA: 'Food in the larder marked with a name belongs to that member. Food not marked belongs to the house and may be eaten by anyone.',
       optionB: 'Food in the larder belongs to the house after a fortnight, marked or not, and may be eaten by anyone.',
       won: 'a',
-      decided: { outcome: 'retired — the current text stood', when: 'yesterday, 18:12', p: 0.41, judges: 6 },
+      decided: { outcome: 'retired — the current text stood', at: at(29, 18, 12), p: 0.41, judges: 6 },
       rationale: 'Half the marked food in there is somebody’s week of lunches. A fortnight rule turns the larder into a race.'
     },
     {
@@ -914,7 +921,7 @@ window.FIXTURE_SESSION = (function () {
       optionA: 'The good knives are sharpened by the Steward and are not to be used on bone or frozen food.',
       optionB: 'The good knives are sharpened by the Steward and are not to be used on bone, frozen food, or the garden.',
       won: 'b',
-      decided: { outcome: 'adopted', when: 'this morning, 09:20', p: 0.88, judges: 5 },
+      decided: { outcome: 'adopted', at: at(30, 9, 20), p: 0.88, judges: 5 },
       rationale: 'Somebody cut twine with the carving knife. Naming the garden costs three words and saves an edge.'
     },
     // These two were the old `CHANGES` fixture — adoptions that had happened
@@ -930,7 +937,7 @@ window.FIXTURE_SESSION = (function () {
       optionA: 'House matters are settled by whoever is in the room when they come up.',
       optionB: 'House matters are decided at a meeting called with at least seven days’ notice to all members, by majority of those present, with the proposal and result minuted in the Members’ Book.',
       won: 'b',
-      decided: { outcome: 'adopted', when: 'a few minutes ago', p: 0.87, judges: 6 },
+      decided: { outcome: 'adopted', at: at(30, 11, 52), p: 0.87, judges: 6 },
       rationale: '"Whoever is in the room" is how a house ends up governed by whoever happens to be free on a Tuesday. Notice, a majority, and a line in the book — the smallest thing that makes a decision findable afterwards.'
     },
     // **One clause, records read and one not** (Ed, 2026-09-24, the green
@@ -976,7 +983,7 @@ window.FIXTURE_SESSION = (function () {
       optionA: 'The last member out locks the front door and puts out the lamp in the Common Room.',
       optionB: 'The last member out locks the front door, closes the Workshop, and puts out the lamp in the Common Room.',
       won: 'b',
-      decided: { outcome: 'adopted', when: 'a few minutes ago', p: 0.79, judges: 5 },
+      decided: { outcome: 'adopted', at: at(30, 11, 56), p: 0.79, judges: 5 },
       rationale: 'The Workshop door swings open in a draught and nobody thinks to check it. Add it to the same list as the lamp and it gets done with everything else.'
     },
     {
@@ -988,7 +995,7 @@ window.FIXTURE_SESSION = (function () {
       optionA: 'Notice of a meeting shall be effected by entry in the Members’ Book and by such further communication to each member as the Steward shall deem sufficient in the circumstances.',
       optionB: 'Notice of a meeting is given by writing it in the Members’ Book and telling every member by whatever means reaches them.',
       won: 'b',
-      decided: { outcome: 'adopted', when: 'yesterday, 19:40', p: 0.91, judges: 7 },
+      decided: { outcome: 'adopted', at: at(29, 19, 40), p: 0.91, judges: 7 },
       rationale: 'We are fourteen people in a house, not a company with a secretary. Say it the way we would say it.'
     },
     {
@@ -1000,7 +1007,7 @@ window.FIXTURE_SESSION = (function () {
       // neither challenger reached the top of the ranking, so the current
       // text stood: no winner
       won: null,
-      decided: { outcome: 'retired — the current text stood', when: 'yesterday, 21:03', p: 0.52, judges: 5 },
+      decided: { outcome: 'retired — the current text stood', at: at(29, 21, 3), p: 0.52, judges: 5 },
       race: {
         a: {
           text: 'A candidate for membership is nominated by one member and seconded by another, neither of whom may be the candidate’s household.',
@@ -1056,5 +1063,29 @@ window.FIXTURE_SESSION = (function () {
   // the drip is one edit per tenth of it, which is what the wallet counts down
   const SESSION_MINUTES = 8 * 60;
 
-  return { DOC, SUGGS, ROSTER, FLOOR, EDIT_RULES, SESSION_MINUTES, editsHeld, editsToNext };
+  // **The rules have a history too** (Q????, Ed 2026-09-24: the rail filled
+  // with rule changes that read alike). Motions the fixture's two members put
+  // on the settings once the document began, each carrying its own mover,
+  // value, reason and end: two ⏱️ changes that carried, filed behind the rule
+  // as ✔ records, a change the Founder made with the pen (✔ news to the
+  // others), and two still running, each its own rail entry. `by` is a
+  // member's address; `pen` marks the Founder's own amendment; `end` is
+  // `carry` or `hold`, and absent for a motion still running. The page puts
+  // them after ⏩, on the band view (`fixtureMotions`).
+  const rate = (dripMinutes) => ({ kind: 'set', setting: 'rate', value: { grant: 3, cap: 3, dripMinutes } });
+  const MOTIONS = [
+    { by: 'ivy@hollowoak.org', payload: rate(120), end: 'carry',
+      why: 'Three hours between proposals is a long time to sit on a good idea.' },
+    { by: 'moss@hollowoak.org', payload: rate(60), end: 'carry',
+      why: 'The first week is when the charter moves most. An hour keeps up with it.' },
+    // the Founder's ✒️ on the same rule — news to every other member (Q530)
+    { by: 'ash@hollowoak.org', pen: true, payload: rate(45),
+      why: 'Somewhere between the two: an hour was too slow for the first week.' },
+    { by: 'ivy@hollowoak.org', payload: rate(30),
+      why: 'Half an hour, for the last day, when everybody is finally reading.' },
+    { by: 'moss@hollowoak.org', payload: { kind: 'set', setting: 'quorum', value: { n: 2, form: 'count' } },
+      why: 'A third of three is one person. Two is the least that is still a decision.' },
+  ];
+
+  return { DOC, SUGGS, ROSTER, FLOOR, EDIT_RULES, SESSION_MINUTES, editsHeld, editsToNext, NOW, MOTIONS };
 })();

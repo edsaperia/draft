@@ -211,5 +211,83 @@ for (const [got, want] of ticked) {
   }
 }
 cases.push(...ticked);
+
+// **A rail entry's title names its own subject** (Q????, Ed 2026-09-24):
+// the words where two wordings differ, read from the two texts alone, and a
+// rail entry's moment on one ladder. Pure string functions in cards.js, so
+// every recipe is read here rather than only on a page.
+const { railPair, railChange, railWhen, railAt, railArrow, railPlain } = ctx.window.CARDS;
+const G = 'Guests';
+const titles = [
+  // a pair: the two sides as the card presents them
+  [railPair('A quorum is six members.', 'A quorum is seven members.', G), '‘six’ or ‘seven’'],
+  [railPair('Guests are welcome.', 'Guests are welcome, and until the quiet hours begin.', G),
+    'with or without ‘and until the…’'],
+  [railPair('Guests come whenever a member is in, up to three at a time without telling anybody.',
+    'Guests come whenever a member is in, and until the quiet hours begin.', G),
+    '‘up to three…’ or ‘and until the…’'],
+  // two rewrites are read from where they stop agreeing
+  [railPair('The Purse-holder pays only bills approved under the budget.',
+    'The Purse-holder pays the house’s bills as good sense directs.', G), '‘only bills…’ or ‘the house’s…’'],
+  // a decided change: what went out, what came in
+  [railChange('Subscriptions are reviewed monthly by the house.', 'Subscriptions are reviewed quarterly by the house.', G),
+    '‘monthly’ → ‘quarterly’'],
+  [railChange('Friends of the house are welcome.', 'Friends of the house are welcome, and so are their dogs.', G),
+    '‘and so are their dogs’'],
+  [railChange('The Club has no head, and has managed without one.', 'The Club has no head.', G), 'without ‘and has managed without…’'],
+  // a rewrite with no short difference: the first words of the new wording
+  [railChange('One two three four five six seven.', 'Completely different words entirely in this new sentence.', G),
+    '‘Completely different words…’'],
+  // punctuation or spacing alone: the clause's name, said so; nothing at all: the name
+  [railChange('A b c.', 'A b c!', G), 'Guests (punctuation)'],
+  [railPair('A,  b c', 'A b c', G), 'Guests (punctuation)'],
+  [railChange('Same words.', 'Same  words.', G), 'Guests'],
+  // a gap: all of it went in
+  [railChange('', 'A new clause.', G), '‘A new clause’'],
+  // markdown never reaches a title
+  [railChange('# **The Kitchen** is open', '# **The Kitchen** is shut', G), '‘open’ → ‘shut’'],
+  [railPlain('- *good* coffee, \\*not\\* the tin'), 'good coffee, *not* the tin'],
+  // several changes: the first that says anything, and the ellipsis where
+  // the rest says anything too — a scrap (*or* → *and*) is no reason for one
+  [railChange('It is open in May, and closed in winter.', 'It is shut in May, and heated in winter.', G), '‘open’ → ‘shut’ …'],
+  [railChange('It is open in May or June, daily.', 'It is shut in May and June, daily.', G), '‘open’ → ‘shut’'],
+  [railChange('Knives are not used on bone or frozen food.', 'Knives are not used on bone, frozen food, or the garden.', G), '‘or the garden’'],
+  // *not* is never a scrap
+  [railPair('Members may vote.', 'Members may not vote.', G), 'with or without ‘not’'],
+  // only punctuation between two changes: one change
+  [railPair('It is said once and not more.', 'It is said once. No further reminder is given.', G),
+    '‘and not more’ or ‘No further…’'],
+  // a rule's value, old → new, a shared tail said once
+  [railArrow('10 minutes', '5 minutes'), '10 → 5 minutes'],
+  [railArrow('6 of 12', '8 of 12'), '6 → 8 of 12'],
+  [railArrow('1 hour', '30 minutes'), '1 hour → 30 minutes'],
+  [railArrow('members only', 'public'), 'members only → public'],
+  [railArrow('all agree', 'all others agree'), 'all agree → all others agree'],
+];
+// the rail's moment: 24-hour, shortest by distance, against a pinned now
+const T0 = new Date(2026, 8, 30, 12, 0).getTime();        // Wednesday 30 September 2026, noon
+const on = (y, m, d, h, mi) => new Date(y, m - 1, d, h, mi).getTime();
+titles.push(
+  [railWhen(on(2026, 9, 30, 9, 5), T0), '09:05'],          // today
+  [railWhen(on(2026, 9, 30, 23, 59), T0), '23:59'],
+  [railWhen(on(2026, 9, 29, 15, 25), T0), 'Tue 15:25'],    // the last seven days
+  [railWhen(on(2026, 9, 24, 0, 1), T0), 'Thu 00:01'],
+  [railWhen(on(2026, 9, 23, 15, 25), T0), '23 Sep'],       // a week ago: the weekday would repeat
+  [railWhen(on(2026, 1, 2, 8, 0), T0), '2 Jan'],
+  [railWhen(on(2025, 9, 20, 15, 25), T0), '20 Sep 2025'],  // another year
+  [railWhen(undefined, T0), null],
+  // a rule's moment either side of now, always with its time
+  [railAt(on(2026, 9, 30, 17, 10), T0), '17:10'],
+  [railAt(on(2026, 10, 4, 17, 10), T0), 'Sun 17:10'],
+  [railAt(on(2026, 10, 20, 17, 10), T0), '20 Oct 17:10'],
+  [railAt(on(2027, 1, 3, 9, 0), T0), '3 Jan 2027 09:00'],
+);
+for (const [got, want] of titles) {
+  if (got !== want) {
+    failed++;
+    console.error(`✗ rail title: got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`);
+  }
+}
+cases.push(...titles);
 console.log(failed ? `clock-check: ${failed} of ${cases.length} failed` : `clock-check: ${cases.length} cases ok`);
 process.exit(failed ? 1 : 0);
