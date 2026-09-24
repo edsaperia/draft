@@ -64,6 +64,18 @@
     return w;
   }
 
+  // a resting tab's width, read off the design system's own `.achip` rather
+  // than written here a second time
+  function restingTab() {
+    const t = document.createElement('span');
+    t.className = 'achip';
+    t.style.cssText = 'position:absolute;visibility:hidden;left:-9999px;top:0';
+    document.body.appendChild(t);
+    const w = t.getBoundingClientRect().width;
+    t.remove();
+    return w;
+  }
+
   // where the text ends: the top of the scroll runway, which is `#runway`
   // after 🍾 in read mode and the column's `::after` otherwise (system.css,
   // *the runway is content*); in edit mode the card's foot is the page's
@@ -87,9 +99,16 @@
     // below 1440 and a constant `--sheet-trim` left the tabs 9px of paper
     // there (Ed, 2026-09-24: *on narrow desktop screens the tabs look
     // cluttered*); the token stands where no tab is drawn. 88px at 1600.
+    // **…off the column's right edge, less a resting tab** (Ed, 2026-09-24:
+    // *the left edge of the document moves when I open the tab*): a column's
+    // left edge is its widest tab's, and an open card's active tab grows 8px
+    // out to the left (M12) — so where the first column on the page was an
+    // open card's strip, 🪶's at the head of the Rules, the sheet stepped 8px
+    // with it. The right edge is the joint every tab keeps still, open or
+    // resting, which is why the glyph moves 0px (P2).
     const col = NARROW.matches ? null : [...doc.querySelectorAll('.chipcol')].find((c) => c.offsetWidth);
     const trim = NARROW.matches ? 0
-      : col ? Math.max(0, col.getBoundingClientRect().left - r.left - token('--s5')) : token('--sheet-trim');
+      : col ? Math.max(0, col.getBoundingClientRect().right - restingTab() - r.left - token('--s5')) : token('--sheet-trim');
     const left = r.left + sx - bleed + trim, width = r.width + 2 * bleed - trim;
     const top = r.top + sy;
     // the last line's box stands --s4 above the runway's top (a block's own

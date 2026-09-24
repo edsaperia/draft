@@ -305,6 +305,70 @@ const IN_PAGE = () => {
   };
 
   /**
+   * **P12's reading — the card's hairlines, and what stands between them**
+   * (Ed, 2026-09-24: *two hairlines with nothing between them on a card is a
+   * defect and must never appear*). A hairline is a separator, not a box: an
+   * element drawing a top or a bottom border and no side one (a `.recbox` or
+   * a lane is boxed, and is content), or an `<hr>`. Content is what a reader
+   * can see — a text run, a control, a picture, a box a caret can go in —
+   * measured by its rect, never by the DOM order, since an empty `.field` or
+   * a margin is exactly the nothing this is about. The strip is not the
+   * card's body: its tabs hang outside the card's left edge.
+   */
+  const hairlines = (card) => {
+    const vis = (el) => {
+      for (let n = el; n && n !== card.parentElement; n = n.parentElement) {
+        const s = getComputedStyle(n);
+        if (s.display === 'none' || s.visibility === 'hidden' || s.opacity === '0') return false;
+      }
+      return true;
+    };
+    const inStrip = (el) => !!el.closest('.chipcol');
+    const shown = (s, side) => px(s['border' + side + 'Width']) > 0 && s['border' + side + 'Style'] !== 'none' &&
+      !/rgba\(0, 0, 0, 0\)|transparent/.test(s['border' + side + 'Color']);
+    const name = (el) => el.tagName.toLowerCase() + (el.classList.length ? '.' + [...el.classList].slice(0, 3).join('.') : '');
+    const lines = [];
+    const content = [];
+    const CONTENT = 'img, svg, input, textarea, select, button, canvas, video, [contenteditable="true"], ' +
+      '[contenteditable="plaintext-only"], .av, .emojiface, .lanebox, .recbox';
+    for (const el of card.querySelectorAll('*')) {
+      if (inStrip(el)) continue;
+      const r = el.getBoundingClientRect();
+      if (!r.width && !r.height) continue;
+      if (!vis(el)) continue;
+      const s = getComputedStyle(el);
+      if (el.matches(CONTENT)) { content.push([r.top, r.bottom]); continue; }
+      if (el.tagName === 'HR') { lines.push({ y: r.top, el: name(el) }); continue; }
+      if (el.closest('button, .btn, .lanepick, .lanebox, .recbox, .av')) continue;
+      if (shown(s, 'Left') || shown(s, 'Right')) continue;
+      if (shown(s, 'Top')) lines.push({ y: r.top, el: name(el) + ' (top)' });
+      if (shown(s, 'Bottom')) lines.push({ y: r.bottom, el: name(el) + ' (bottom)' });
+    }
+    // every visible text run, by its own line boxes
+    const walker = document.createTreeWalker(card, NodeFilter.SHOW_TEXT);
+    for (let t = walker.nextNode(); t; t = walker.nextNode()) {
+      if (!t.textContent.trim() || !t.parentElement || inStrip(t.parentElement) || !vis(t.parentElement)) continue;
+      const range = document.createRange();
+      range.selectNodeContents(t);
+      for (const r of range.getClientRects()) if (r.width && r.height) content.push([r.top, r.bottom]);
+    }
+    lines.sort((a, b) => a.y - b.y);
+    const between = (lo, hi) => content.some(([t, b]) => (t + b) / 2 > lo && (t + b) / 2 < hi);
+    const out = [];
+    if (lines.length && !between(-Infinity, lines[0].y)) out.push({ kind: 'top', a: lines[0].el });
+    for (let i = 1; i < lines.length; i++) {
+      // one line drawn twice at one height (a border and its neighbour's) is
+      // one hairline to the eye, and a doubled weight is not this rule's
+      if (lines[i].y - lines[i - 1].y < 1.5) continue;
+      if (!between(lines[i - 1].y, lines[i].y)) {
+        out.push({ kind: 'pair', a: lines[i - 1].el, b: lines[i].el, gap: R2(lines[i].y - lines[i - 1].y) });
+      }
+    }
+    if (lines.length && !between(lines[lines.length - 1].y, Infinity)) out.push({ kind: 'bottom', a: lines[lines.length - 1].el });
+    return out;
+  };
+
+  /**
    * **The glyph, not the tab.** The active tab is *supposed* to grow 8px out
    * to the left — the 8px goes on `padding-left` as well as on `width`, so
    * with `border-box` the content box stays 34px and the glyph still centres
@@ -625,6 +689,7 @@ const IN_PAGE = () => {
         radios: radios(card),
         helpers: helpers(card),
         boxes: boxes(card),
+        hairlines: hairlines(card),
         // the screen the card was measured on: a box wider than the layout
         // viewport, or a viewport the page has pushed wider than the window,
         // is a card a phone cannot show whole (V1, Q1389)
@@ -842,6 +907,18 @@ function rulesFor(card, tok) {
   if (card.tab.outside) {
     at('P10', 'positioning', 'one tab per open card — the strip\'s, none outside it (Q1379)',
       card.tab.outside + ' tab' + (card.tab.outside === 1 ? '' : 's') + ' for this card stand outside it while it is open');
+  }
+  // **P12 — a hairline has something on both sides of it** (Ed, 2026-09-24:
+  // *two hairlines with nothing between them on a card is a defect and must
+  // never appear*). The 🪶 card's standing block gone left the head's rule
+  // and the commit row's facing each other across an empty field; a card's
+  // separators are read off the page, and a pair with no visible content
+  // between them, or one with nothing above it or below it in the card's
+  // body, is the finding (`hairlines`, above).
+  for (const h of card.hairlines || []) {
+    at('P12', 'positioning', 'a hairline separates two things — never two hairlines with nothing between, never one at the top or foot of a card',
+      h.kind === 'pair' ? h.a + ' and ' + h.b + ' face each other ' + h.gap + 'px apart with nothing between'
+        : h.a + ' is the ' + (h.kind === 'top' ? 'first' : 'last') + ' thing on the card');
   }
   // **P9 — a held-open gap is the height of a tab** (Q1334, Ed 2026-09-11:
   // *gaps for proposed insertions should be the same vertical height as a

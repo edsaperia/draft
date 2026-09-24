@@ -131,8 +131,15 @@ window.CARDS = (function () {
   // of grey*): a clause tab in the palette's one grey takes no tint and a
   // hairline (system.css `.achip`), so a tab carrying a colour stands out.
   // Both tab painters, session.js's and setup.js's, add it to the style.
+  // **…the active tab included** (Ed, 2026-09-24: *the active tab is grey but
+  // it should be white*): `--chipmixa`/`--chipmixah` are the open card's own
+  // tab (`.clausehead .achip.wmark`, the riding 📝 in edit mode), and
+  // `--chipringa` its hairline, drawn on three sides since the fourth is the
+  // joint with the card.
   const PLAIN_HUE = new Set(['closed', 'deciding']);
-  const PLAIN_CHIP = '--chipmix: 0%; --chipmixh: 0%; --chipring: 0 0 0 1px rgba(0, 0, 0, 0.07)';
+  const PLAIN_CHIP = '--chipmix: 0%; --chipmixh: 0%; --chipring: 0 0 0 1px rgba(0, 0, 0, 0.07); ' +
+    '--chipmixa: 0%; --chipmixah: 0%; --chipringa: inset 1px 0 0 rgba(0, 0, 0, 0.07), ' +
+    'inset 0 1px 0 rgba(0, 0, 0, 0.07), inset 0 -1px 0 rgba(0, 0, 0, 0.07)';
   const VS16 = "︎";
   // **The alphabet is Fluent Emoji, Flat, in colour — except ⏸ and ↻** (Ed,
   // 2026-09-15, Q1360: *Fluent Flat is perfect!*, and the same day: *keep the
