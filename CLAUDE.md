@@ -409,6 +409,7 @@ The post-mortems: what broke, why it broke, and the shape of the mistake so it i
 - **The road that lifts a hold ran no resolution check** (Q1482): withdrawing an unopened invitation re-checked the room only `if (wasInE)`, and somebody who never arrived was never in E, so a delegated question with every answer sat unresolved under a 🍾 that refused. Guard: `begin.test.ts`'s withdrawal case.
 - **A record's span mixed two line spaces** (Q1488): the field's union was sliced at the record's version while a rival closed early kept its patch at its own base, so *Previous text* began a line high. Each member is carried to the record's version by `spanNow`. Guard: the server test beside `close-stranded.test.ts`; `wrong-line-room.mjs --case=record`.
 - **A seed is not an origin** (Q1483): ✏️ *propose edit* remembered the wording you started from as what the draft replaces, so the misaim guard refused every press as *the text moved*, and on a card headed by a run it seeded the first line alone. Guards: `journey`'s *run edit 1 · 2*, `scripts/repro/wrong-line-room.mjs --case=shapes`.
+- **A record owed its OK was in neither half of the strip** (Ed, 2026-09-24, the green tab): the live half is unsealed and the filed half is read, so an unread ✔ stood only as the open card's own tab, and clicking the grey tab beside it dropped it. Guard: `card-audit` P11.
 
 ## The spec pass
 

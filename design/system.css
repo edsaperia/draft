@@ -1800,12 +1800,47 @@
   .filedpile { display: flex; flex-direction: column; align-items: flex-end; margin-top: 5px; }
   .filedpile:not(.open) { gap: 0; cursor: pointer; }
   .filedpile:not(.open) .achip { pointer-events: none; }
-  .filedpile:not(.open) .achip + .achip { margin-top: -26px; }
-  .filedpile:not(.open) .achip + .achip {
-    background: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 42%, var(--bg));
-    border-radius: 0 0 var(--r-sm) var(--r-sm);
-  }
+  /* **Closed, the pile is its front tab and its edges** (Ed, 2026-09-24, from
+     nh2026's Expiry clause: two acknowledged records read as one tab). The 4px
+     slivers it drew here before were grey on a grey tab and said nothing, so
+     the tabs behind the front one are not drawn at all while it is closed —
+     the front tab wears the rail's queue card stack instead (`.achip[data-pile]`
+     below; Q1462, M20): one edge per record behind it, capped at four, depth
+     only. Opened, the edges go and the records line up as tabs. */
+  .filedpile:not(.open) .achip + .achip { display: none; }
   .filedpile.open { gap: 3px; }
+  /* **A tab with records beneath it** — the closed filed pile's front tab, and
+     the gutter's record door where one clause holds more than one record. The
+     queue card stack's own edges, a tab's width, 3px each (2px of face and a
+     1px rule), opaque mixes of the tab's lifecycle hue into the ground, as
+     box-shadow so the pile takes no room and moves nothing: the tab's box is
+     the box it always was. The hover and press keep the edges, since a press
+     that shed them would say the pile had gone. */
+  .achip[data-pile] {
+    --pilefill: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 28%, var(--bg));
+    --pileline: color-mix(in srgb, rgb(var(--chiphue, var(--lc-closed))) 62%, var(--bg));
+    box-shadow: var(--shadow-sm), var(--pile);
+  }
+  .achip[data-pile="1"] {
+    --pile: 0 2px 0 0 var(--pilefill), 0 3px 0 0 var(--pileline);
+  }
+  .achip[data-pile="2"] {
+    --pile: 0 2px 0 0 var(--pilefill), 0 3px 0 0 var(--pileline),
+            0 5px 0 0 var(--pilefill), 0 6px 0 0 var(--pileline);
+  }
+  .achip[data-pile="3"] {
+    --pile: 0 2px 0 0 var(--pilefill), 0 3px 0 0 var(--pileline),
+            0 5px 0 0 var(--pilefill), 0 6px 0 0 var(--pileline),
+            0 8px 0 0 var(--pilefill), 0 9px 0 0 var(--pileline);
+  }
+  .achip[data-pile="4"] {
+    --pile: 0 2px 0 0 var(--pilefill), 0 3px 0 0 var(--pileline),
+            0 5px 0 0 var(--pilefill), 0 6px 0 0 var(--pileline),
+            0 8px 0 0 var(--pilefill), 0 9px 0 0 var(--pileline),
+            0 11px 0 0 var(--pilefill), 0 12px 0 0 var(--pileline);
+  }
+  .achip[data-pile]:hover { box-shadow: var(--shadow-md), var(--pile); }
+  .achip[data-pile]:active { box-shadow: var(--pile); }
   .filedpile:not(.open):hover .achip:first-child { transform: translateY(-1px); }
   .filedpile:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: var(--r-sm); }
   .achip:hover {

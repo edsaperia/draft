@@ -933,6 +933,40 @@ window.FIXTURE_SESSION = (function () {
       decided: { outcome: 'adopted', when: 'a few minutes ago', p: 0.87, judges: 6 },
       rationale: '"Whoever is in the room" is how a house ends up governed by whoever happens to be free on a Tuesday. Notice, a majority, and a line in the book — the smallest thing that makes a decision findable afterwards.'
     },
+    // **One clause, records read and one not** (Ed, 2026-09-24, the green
+    // tab): § Locking Up was decided twice last week, and those records are
+    // read and filed — a grey ✖ and a grey ✔ — while the change beside them is
+    // still owed its OK. Declared first, since the filed pile reads
+    // declaration order as time, and first is also where the record door used
+    // to find a read record standing over the unread one. Every tab stays in
+    // the strip whichever card is open; card-audit's P11 switches between
+    // them. **Two read records make a pile of two** (Ed, the same day, from
+    // nh2026's Expiry clause: two acknowledged records read as one tab), so
+    // the pile's one edge and the door's two are measured too.
+    {
+      id: 'quick-lockup-first', kind: 'quick', keys: ['lockup'], state: 'sealed',
+      verdict: 'kept the current text', pick: 'keep',
+      qLabel: '§ Locking Up — the key',
+      urgency: 0,
+      pct: 100, cap: 'sealed — the current text stood',
+      optionA: 'The last member out locks the front door.',
+      optionB: 'The last member out locks the front door and leaves the key with the Steward.',
+      won: 'a',
+      decided: { outcome: 'retired — the current text stood', when: 'last Monday, 21:30', p: 0.34, judges: 7 },
+      rationale: 'Eleven keys and nobody knows who has one. The Steward should hold the spare, not a flowerpot.'
+    },
+    {
+      id: 'quick-lockup-lamp', kind: 'quick', keys: ['lockup'], state: 'sealed',
+      verdict: 'preferred this wording', pick: 'approve',
+      qLabel: '§ Locking Up — the lamp',
+      urgency: 0,
+      pct: 100, cap: 'sealed — adopted · vote locked',
+      optionA: 'The last member out locks the front door.',
+      optionB: 'The last member out locks the front door and puts out the lamp in the Common Room.',
+      won: 'b',
+      decided: { outcome: 'adopted', when: 'last Thursday, 22:10', p: 0.83, judges: 6 },
+      rationale: 'The lamp in the Common Room has been found burning at breakfast three times this month. Whoever locks up is already walking past it.'
+    },
     {
       id: 'quick-lockup', kind: 'quick', keys: ['lockup'], state: 'sealed', unread: true,
       verdict: 'preferred this wording', pick: 'approve',

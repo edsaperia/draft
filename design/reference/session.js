@@ -2476,6 +2476,19 @@
     return key ? SUGGS.filter((g) => tabAt(g, key) &&
       stateOf(g) === 'sealed' && !isUnread(g)) : [];
   }
+  // …and the other half of that note, which nothing drew (Ed, 2026-09-24,
+  // the green tab): `suggFor` is *live and unsealed* and `filedFor` is *sealed
+  // and read*, so a record decided and still owed its OK was in neither — it
+  // stood in the strip only while it was the open card, `clauseHeadHtml`
+  // prepending the card's own tab, and a click on the filed tab beside it took
+  // the green ✔ out of the strip altogether. These are that record's places:
+  // the live part of the strip and the live pile in the gutter, at its first
+  // block (Q1418), until its OK files it. `suggFor` keeps its meaning — its
+  // other readers ask *is anything still racing here* — so this is joined to
+  // it by the sites that draw a pile, never folded into it.
+  function unreadFor(key) {
+    return key ? SUGGS.filter((g) => tabAt(g, key) && isUnread(g)) : [];
+  }
 
   // The tab of the card you are reading: the same control it was in the gutter,
   // in the same place, so the thing you clicked to open the card is the thing
@@ -2487,7 +2500,8 @@
   const achipHtml = (g, key, o) =>
     '<span class="achip' + (o.inert ? ' behind' : '') + '"' +
     (o.inert ? ' aria-hidden="true"' : ' role="button" tabindex="0"') +
-    ' data-anchor="' + g.id + '"' + chipStyle(g, o.z ? 'z-index:' + o.z : '') +
+    ' data-anchor="' + g.id + '"' + (o.pile ? ' data-pile="' + o.pile + '"' : '') +
+    chipStyle(g, o.z ? 'z-index:' + o.z : '') +
     (o.inert ? '' : ' title="' + esc(plainLabel(g.qLabel)) +
       (g.kind === 'patch'
         ? T.nav.placeOf(g.sites.findIndex((x) => x.key === key) + 1, g.sites.length)
@@ -2512,6 +2526,14 @@
   // reads down into the past, which is how every record anybody keeps is read.
   // Ranking it by anything other than time would be a claim about which past
   // decision mattered, and nothing here is entitled to make one.
+  //
+  // **Closed, the pile is one tab with its edges beneath it** (Ed, 2026-09-24,
+  // from nh2026's Expiry clause: two acknowledged records read as one tab).
+  // The 4px slivers it drew before were a grey on a grey tab and said nothing;
+  // the rail's queue card stack already says *there are more beneath this* in
+  // the one way the surface has for it (Q1462, M20), so the pile borrows it
+  // whole: its front tab alone, and one card edge per record behind it, depth
+  // only, capped at four (`PILE_EDGES_MAX`) — five cards drawn, no number.
   function filedPileHtml(key, gs0, activeId) {
     const gs = gs0.slice().reverse();
     // **A pile never closes over the card you are reading.** If the active card
@@ -2525,15 +2547,20 @@
       (open ? '' : ' role="button" tabindex="0" title="' + T.chip.filedPile(gs.length) + '"') + '>' +
       gs.map((g, i) => (g.id === activeId ? ownChipHtml(g) : achipHtml(g, key, {
         inert: !open, z: gs.length - i, title: T.chip.theRecord,
+        pile: !open && i === 0 ? pileEdges(gs.length - 1) : 0,
       }))).join('') + '</span>';
   }
+  // the edges a pile of records draws beneath its front tab: one per record
+  // behind it, never more than four (the green tab's pile, Ed 2026-09-24)
+  const PILE_EDGES_MAX = 4;
+  const pileEdges = (behind) => Math.max(0, Math.min(behind, PILE_EDGES_MAX));
 
   function chipsFor(key, activeId) {
     // Same order as the gutter stack, for the same reason (see `stackOrder`):
     // the card's tab strip is that stack expanded, so the two must not disagree
     // about what sits where. The active card's tab is marked **in place** and
     // never lifted (Ed, 2026-08-17) — see `clauseHeadHtml`.
-    const live = stackOrder(key ? suggFor(key) : [])
+    const live = stackOrder(key ? suggFor(key).concat(unreadFor(key)) : [])
       .map((g) => (g.id === activeId ? ownChipHtml(g) : achipHtml(g, key, {}))).join('');
     const filed = filedFor(key);
     return live + (filed.length ? filedPileHtml(key, filed, activeId) : '');
@@ -3424,14 +3451,16 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         // defect again, one branch over. The mark still shows the front one.
         const hOpen = line.key && !hlive.length
           ? SUGGS.find((g) => g.id === openId && hSealedAt(g)) : undefined;
+        // …and where one record is still owed its OK, that one is the front
+        // (the green tab, 2026-09-24): a filed ✔ found first hid it
         const hDecided = line.key && !hlive.length
-          ? (hOpen || SUGGS.find(hSealedAt))
+          ? (hOpen || SUGGS.find((g) => hSealedAt(g) && isUnread(g)) || SUGGS.find(hSealedAt))
           : undefined;
         let marks = '';
         if (hlive.length) {
           const swallow = swallowOpen(line.key, hlive);
           if (swallow.swallowed) { html += swallow.html + gapsAfter(line.key); continue; }
-          marks = chipStackHtml(hlive, line.key);
+          marks = chipStackHtml(hlive.concat(unreadFor(line.key)), line.key);
         } else if (hDecided) {
           if (openId === hDecided.id && !cardDone) {
             html += '</div>' + suggCardHtml(hDecided) + PROSE();
@@ -3439,7 +3468,10 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
             html += gapsAfter(line.key);
             continue;
           }
+          // the other records here as the pile's edges (Ed, 2026-09-24)
+          const hPile = pileEdges(SUGGS.filter(hSealedAt).length - 1);
           marks = '<span class="chipcol" contenteditable="false"><span class="achip" tabindex="0"' +
+            (hPile ? ' data-pile="' + hPile + '"' : '') +
             chipStyle(hDecided) + ' data-anchor="' + hDecided.id + '" title="' +
             esc(plainLabel(hDecided.qLabel)) + T.chip.decided + '">' + mkHtml(markKindOf(hDecided)) + '</span></span>';
         }
@@ -3467,8 +3499,12 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       // first in `SUGGS` order is otherwise the only one this door can draw
       // …and it stands at the run's first block alone (Q1418)
       const sealedAt = (g) => (resolved.has(frontKeyOf(g)) || g.state === 'sealed') && tabAt(g, line.key);
+      // …and the one still owed its OK before any filed one (the green tab,
+      // 2026-09-24): the door draws one tab, and a read record found first in
+      // `SUGGS` order stood over the unread one and hid it from the gutter
       const wasResolved = line.key && !live.length
-        ? (SUGGS.find((g) => g.id === openId && sealedAt(g)) ?? SUGGS.find(sealedAt))
+        ? (SUGGS.find((g) => g.id === openId && sealedAt(g)) ??
+          SUGGS.find((g) => sealedAt(g) && isUnread(g)) ?? SUGGS.find(sealedAt))
         : undefined;
 
       if (live.length) {
@@ -3481,7 +3517,8 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
             '<p class="anch editable' + (openId === primary.id ? ' active' : '') + bulletCls(line) + '" data-key="' + line.key +
             '" data-anchor="' + primary.id + '"' +
             anchWash(primary, openId === primary.id, line.key) + '>' +
-            chipStackHtml(live, line.key) + blockHtml(line) + '</p>';
+            // the unread records ride the live pile (the green tab, 2026-09-24)
+            chipStackHtml(live.concat(unreadFor(line.key)), line.key) + blockHtml(line) + '</p>';
         }
       } else {
         // a settled clause opens its record the same way — the record's head is
@@ -3502,6 +3539,9 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
           // accepted Voting — the gutter is one column wide and the live or
           // filed tab already says there is something here.
           const heldHere = wasResolved ? [] : heldFor(line.key);
+          // the door is one tab, and the other records at this clause are its
+          // pile's edges beneath it (Ed, 2026-09-24: two read as one tab)
+          const doorPile = wasResolved ? pileEdges(SUGGS.filter(sealedAt).length - 1) : 0;
           // …and the gap block takes the same treatment with its own sentence
           // (Q1090: one rule, two sentences — the rule is the geometry)
           html += '<p class="editable' + (wasResolved ? ' anch resolved' : '') + (heldHere.length ? ' anch held' : '') + (blank ? ' blank' : '') + (line.gap ? ' gap' : '') + bulletCls(line) + '"' +
@@ -3511,7 +3551,8 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
             (blank ? ' data-placeholder="' + (line.gap ? T.blank.gap : MAY_PROPOSE()
               ? T.blank.mayPropose
               : T.blank.plain) + '"' : '') + '>' +
-            (wasResolved ? '<span class="chipcol" contenteditable="false"><span class="achip" tabindex="0"' + chipStyle(wasResolved) + ' data-anchor="' + wasResolved.id +
+            (wasResolved ? '<span class="chipcol" contenteditable="false"><span class="achip" tabindex="0"' +
+              (doorPile ? ' data-pile="' + doorPile + '"' : '') + chipStyle(wasResolved) + ' data-anchor="' + wasResolved.id +
               '" title="' + esc(plainLabel(wasResolved.qLabel)) + T.chip.decided + '">' + mkHtml(markKindOf(wasResolved)) + '</span></span>' : '') +
             (heldHere.length ? heldStackHtml(heldHere) : '') +
             blockHtml(line) + '</p>';
