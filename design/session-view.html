@@ -2617,7 +2617,9 @@
     // key on. ⚖️ has neither: a right is not an object and nothing flies.
     { k: 'canpropose', g: '💡', t: PAGE_COPY.gate.canpropose.title, own: 'you', isGate: true,
       grants: '✏️', textcard: true,
-      hide: () => !constituted(),
+      // not shown to a member before 🏛️'s OK (Q1540, Ed 2026-09-24: *until
+      // you've accepted 🏛️, you're not shown ✏️ or ⚖️*; SURFACE E8)
+      hide: () => !constituted() || voiceUnaccepted(),
       open: () => !!cs && !!viewerId() && cs.canPropose(viewerId()),
       // **The body says what a proposal is** (Ed, 2026-09-01, Q1129, T45). It
       // used to explain *when* proposing opens — *Anybody can read the document
@@ -2634,7 +2636,7 @@
       done: PAGE_COPY.gate.canpropose.done,
       blockers: () => (constituted() ? [] : [card('text'), card('begin')].filter((c) => c && !settled(c))) },
     { k: 'canjudge', g: '⚖️', t: PAGE_COPY.gate.canjudge.title, own: 'you', isGate: true, textcard: true,
-      hide: () => !constituted(),
+      hide: () => !constituted() || voiceUnaccepted(),
       open: () => canJudge(),
       // **And ⚖️'s says what a vote is** (Ed, 2026-09-01, Q1129, T45). Its old
       // body — *A vote counts towards quorum, and whether your name goes on it
@@ -5197,6 +5199,8 @@
   const GATE_KEYS = ['canpropose', 'canjudge'];
   const gateSelfSet = (k) => GATE_KEYS.includes(k) && amFounder();
   const acked = (k) => S.okd.has(k) || gateSelfSet(k);
+  // a member who has not yet accepted 🏛️ is shown neither 💡 ✏️ nor ⚖️ (Q1540)
+  const voiceUnaccepted = () => viewerIsMember() && !acked('grant-voice');
   const mayPropose = () => canPropose() && viewerIsMember() && acked('canpropose');
   const mayJudge = () => canJudge() && viewerIsMember() && acked('canjudge');
   const mayVoice = () => !!cs && viewerIsMember() && !!viewerRow().in && acked('grant-voice');
