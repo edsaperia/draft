@@ -293,6 +293,12 @@ window.DOOR = (function () {
       // it mails is the joining (`/auth/apply` admits at ✒️)
       const apply = { k: 'strapply', g: '🪪', t: joining() ? PAGE_COPY.strjoin.title : 'Apply for Membership',
         kind: 'personal', own: 'you', done: () => false };
+      // **the demo's 👋 Try It** (design/DEMO.md Stage 3; Q1535): on the demo
+      // document the door's one card is the one-tap seat. 📧 Log In is not
+      // offered there — the demo mails nobody (D3), so its link could never
+      // come — and nor is 🪪, the demo's 🤝 being shut
+      if (p.demoJoin) return [{ k: 'strtry', g: '👋', t: PAGE_COPY.strtry.title, kind: 'personal',
+        own: 'you', done: () => false }];
       return (p.applyOpen || p.joinOpen) ? [login, apply] : [login];
     };
     // an open door with no application to make: the 🪪 card is a Join
@@ -307,7 +313,8 @@ window.DOOR = (function () {
       // the login card carries no title head (Ed's card review round 3, 66):
       // its tab says what it is, and the field is the whole of the card
       noTitleHead: (c) => c.k === 'strlogin',
-      summary: (c) => (STRS.sent === c.k ? 'Check your inbox'
+      summary: (c) => (c.k === 'strtry' ? PAGE_COPY.strtry.summary
+        : STRS.sent === c.k ? 'Check your inbox'
         : c.k === 'strapply' ? (joining() ? 'Anyone with the link may join' : 'Membership is by application')
         : (strPayload() || {}).joinOpen ? 'Anyone with the link may join' : 'Members log in by email'),
       value: (c) => strRailCtx.summary(c), isRoom: () => false,
@@ -315,6 +322,14 @@ window.DOOR = (function () {
     function strangerCardHtml() {
       const c = STRCARDS().find((x) => x.k === S.open);
       if (!c) return '';
+      // 👋 Try It: one sentence and one commit, the glyph alone (T47); a
+      // refused join is said under the card, as a refused send is (Y25)
+      if (c.k === 'strtry') {
+        return cardHtml(c, strRailCtx, '<p class="why">' + esc(PAGE_COPY.strtry.why) + '</p>' +
+          (doorErrHtml ? doorErrHtml(c.k) : ''),
+        binBtn() + '<button class="btn btn-approve glyphbtn emojibtn" data-strtry="1" title="' +
+          esc(PAGE_COPY.strtry.press) + '">' + glyphHtml('👋') + '</button>', [c]);
+      }
       const okAddr = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(STRS.email.trim());
       const p = strPayload() || {};
       // **📧 Log In is a field and a commit** (Ed's card review round 3,
@@ -358,6 +373,29 @@ window.DOOR = (function () {
       if (b) b.disabled = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(STRS.email.trim());
     });
     document.addEventListener('click', (ev) => {
+      // **👋 Try It** (design/DEMO.md Stage 3): the host seats this browser on
+      // the demo document under a made-up name and sets its cookie; the page
+      // then reloads into the seat, with `?try=1` dropped from the address
+      const tryIt = ev.target.closest('[data-strtry]');
+      if (tryIt) {
+        if (!LIVEMODE) return undefined;
+        tryIt.disabled = true;
+        const path = '/api/demo/join';
+        const no = (error, status) => {
+          tryIt.disabled = false;
+          if (setDoorErr) setDoorErr('strtry', PAGE_COPY.refused(plainRefusal ? plainRefusal(error) : error));
+          if (showErrLine) showErrLine({ name: 'POST ' + path, args: {}, error, status, at: Date.now() });
+          render();
+        };
+        fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })
+          .then((r) => r.json().then((j) => ({ status: r.status, j }), () => ({ status: r.status, j: null })))
+          .then(({ status, j }) => {
+            if (j && j.member) { location.replace('/d/' + LIVESLUG); return; }
+            no((j && j.error) || PAGE_COPY.noAnswer(status), status);
+          })
+          .catch(() => no(PAGE_COPY.noAnswer(0), 0));
+        return undefined;
+      }
       const send = ev.target.closest('[data-strsend]');
       if (send) {
         const k = send.dataset.strsend;

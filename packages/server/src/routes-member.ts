@@ -28,6 +28,8 @@ import { raceView, strangerView } from './views.js';
 import { PauseState } from './write-path.js';
 import { cookieSession, expectString, ipOf, json, pathOf, rateLimited, readJson } from './routes.js';
 import type { Route } from './routes.js';
+import { hasDemoKey, isDemoDoc } from './demo-access.js';
+import { VISITOR_PRE_ACKED } from './demo.js';
 
 export const memberTable: Route[] = [
   {
@@ -77,7 +79,14 @@ export const memberTable: Route[] = [
               paused: pause.payload(nowMs), stalled: !!doc.stalled });
             return true;
           }
-          json(res, 200, { seq, eseq, devMail: mailer.dev, ...strangerView(doc, nowMs, pause.payload(nowMs), session) });
+          json(res, 200, { seq, eseq, devMail: mailer.dev,
+            // Ed's demo panel reaches a seatless page too (DEMO.md Stage 2):
+            // he may open the demo before sitting anywhere
+            ...(isDemoDoc(ctx, doc) && hasDemoKey(ctx, req, nowMs) ? { demoPanel: true } : {}),
+            // the demo's 👋 Try it (DEMO.md Stage 3): a public fact about a
+            // public document, on the demo alone
+            ...(isDemoDoc(ctx, doc) ? { demoJoin: true } : {}),
+            ...strangerView(doc, nowMs, pause.payload(nowMs), session) });
           return true;
         }
         json(res, 401, { error: 'log in first' });
@@ -190,6 +199,14 @@ export const memberTable: Route[] = [
           me: memberId,
           isFounder,
           devMail: mailer.dev,
+          // Ed's demo panel (design/DEMO.md Stage 2): the demo document, and
+          // a browser holding the demo key's cookie — nowhere else, ever
+          ...(isDemoDoc(ctx, doc) && hasDemoKey(ctx, req, nowMs) ? { demoPanel: true } : {}),
+          // a demo visitor's grants arrive accepted (DEMO.md D7; Q1535): the
+          // page adds these to what it remembers — a visitor's seat on the
+          // demo document, and nowhere else
+          ...(isDemoDoc(ctx, doc) && ctx.demo.isVisitor(memberId)
+            ? { preAcked: [...VISITOR_PRE_ACKED] } : {}),
           title: doc.cs.titleOf,
           slug: doc.cs.slug,
           constitutedAtT: doc.cs.constitutedAtT,
@@ -298,6 +315,8 @@ export const memberTable: Route[] = [
           json(res, 403, { error: 'applicants may only submit their application' });
           return true;
         }
+        // a demo visitor's act restarts their seat's 30 minutes (DEMO.md D8)
+        if (isDemoDoc(ctx, doc)) ctx.demo.touch(memberId, nowMs);
         const me = doc.cs.memberRecords().get(memberId);
         if (me?.lapsed) doc.cs.memberReturn(t, memberId); // any act revives
         let result: unknown;

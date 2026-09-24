@@ -375,7 +375,11 @@ export const authTable: Route[] = [
         return true;
       }
       const memberId = memberIdByEmail(doc.cs, email);
-      if (memberId === null) {
+      // **an ephemeral document mails nobody** (design/DEMO.md D3): the demo's
+      // addresses are made up — except one a visitor typed into ✉️, which is
+      // real and never proved, so a login mail here would be the demo mailing
+      // a stranger's inbox on anybody's say. The same plain answer, no token
+      if (memberId === null || doc.ephemeral === true) {
         // an unknown address is told nothing (the roster is not readable
         // from outside); the response is the same either way
         json(res, 200, { ok: true });
@@ -413,6 +417,11 @@ export const authTable: Route[] = [
       // nothing to the log — the write moved to POST /auth/apply, where
       // the address has proved it works
       if (!mayApply(doc.cs.settingState('applications').value as ApplicationsValue | null)) {
+        json(res, 400, { error: 'this document is invitation-only (§9.7½)' });
+        return true;
+      }
+      // an ephemeral document mails nobody (DEMO.md D3), whatever 🤝 says
+      if (doc.ephemeral === true) {
         json(res, 400, { error: 'this document is invitation-only (§9.7½)' });
         return true;
       }

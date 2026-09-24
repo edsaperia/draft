@@ -200,6 +200,8 @@ export function driveBridge(doc: LoadedDoc, t: number,
 export async function persistEngine(persistence: Persistence, doc: LoadedDoc): Promise<void> {
   const d = asEngineDoc(doc);
   if (d.bridge === null) return;
+  // an ephemeral document writes nothing (design/DEMO.md D1)
+  if (doc.ephemeral === true) return;
   const log = d.bridge.engine.log as unknown as EngineLogEntry[];
   const fresh = log.slice(d.enginePersisted);
   const state = JSON.stringify(d.bridge.state());

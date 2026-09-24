@@ -94,6 +94,14 @@ export interface LoadedDoc {
    *  a 23505 under Postgres — or null while saves land. The page reads it
    *  as `stalled` and flies a red flag (Q1346). */
   stalled?: number | null;
+  /**
+   * **An ephemeral document is persisted by nobody** (design/DEMO.md D1,
+   * Stage 1): the demo document lives in memory only, rebuilt from its preset
+   * at every boot and every reset. `persist` advances its cursor and writes
+   * nothing, the engine persist returns at once, and the write path relays no
+   * mail for it (D3). Absent on every other document.
+   */
+  ephemeral?: true;
 }
 
 /** The one loud line a skipped document earns at boot (decision 1253). */
@@ -168,6 +176,41 @@ export class DocStore {
     return doc;
   }
 
+  /**
+   * **A document the store never writes** (design/DEMO.md Stage 1): `create`
+   * without `persistence.createDoc`, marked `ephemeral` so every later
+   * persist is a cursor move and nothing more. Its slugs route like any
+   * document's, which is what makes `/d/demo` serve and the birth's slug
+   * check refuse the address.
+   */
+  createEphemeral(id: string, input: OpenInput, t: number): LoadedDoc {
+    if (this.docs.has(id)) throw new Error(`document '${id}' already exists`);
+    const people = new StorePeople();
+    const cs = ConstitutionSession.open(input, t, people);
+    const doc: LoadedDoc = { id, cs, people, persisted: 0, relayed: 0,
+      provisional: null, ephemeral: true };
+    this.register(doc);
+    doc.persisted = cs.logEntries().length;
+    doc.relayed = doc.persisted;
+    return doc;
+  }
+
+  /**
+   * **Retire an ephemeral document** (design/DEMO.md Stage 2's reset): gone
+   * from memory and every slug it wore unrouted, so its id answers nothing and
+   * its address is free for the next generation. The store has no deletion
+   * for a real document and gains none: a persisted id is refused.
+   */
+  retire(id: string): void {
+    const doc = this.docs.get(id);
+    if (doc === undefined) return;
+    if (doc.ephemeral !== true) {
+      throw new Error(`document '${id}' is not ephemeral — the store deletes nothing`);
+    }
+    this.docs.delete(id);
+    for (const [slug, owner] of this.slugIndex) if (owner === id) this.slugIndex.delete(slug);
+  }
+
   /** Set or clear the provisional starting text (§9.7a v0.55). */
   async setProvisional(doc: LoadedDoc, text: string | null): Promise<void> {
     doc.provisional = text !== null && text.length > 0 ? text : null;
@@ -197,6 +240,13 @@ export class DocStore {
     const log = doc.cs.logEntries();
     const fresh = log.slice(doc.persisted);
     const rows = doc.people.takeDirty();
+    if (doc.ephemeral === true) {
+      // nothing reaches the store (design/DEMO.md D1): the cursor moves as if
+      // it had, so everything downstream of `persisted` reads alike
+      doc.persisted += fresh.length;
+      for (const slug of doc.cs.slugs) this.slugIndex.set(slug, doc.id);
+      return [...fresh];
+    }
     if (fresh.length > 0 || rows.length > 0) {
       try {
         await this.persistence.appendDocLog(doc.id, fresh, rows);

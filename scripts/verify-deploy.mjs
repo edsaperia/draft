@@ -323,6 +323,34 @@ await check('the bot outbox is closed to a stranger (Q1310)', async () => {
     : `401 without the key · ${wrong.status} with a wrong one`;
 });
 
+// **The demo door ships by design** (design/DEMO.md Stage 2, §0.2; Q1535):
+// every control is an unknown path without DRAFT_DEMO_KEY on the host and a
+// 401 without the cookie it mints, and a wrong key mints nothing. Four wrong
+// tries here, one short of the lock (five a minute), so a re-run a minute on
+// is never itself locked out.
+await check('the demo panel is closed to a stranger (Q1535)', async () => {
+  const panel = await get('/api/demo/panel');
+  const posts = await Promise.all(['/api/demo/reset', '/api/demo/seat'].map((p) =>
+    fetch(base + p, { method: 'POST', redirect: 'manual',
+      headers: { 'content-type': 'application/json' }, body: '{}' })));
+  for (const r of [panel, ...posts]) {
+    expect([401, 403, 404, 429].includes(r.status), `${r.url} answered ${r.status} — the demo panel answered a stranger`);
+  }
+  const key = await get('/d/demo?demokey=not-the-demo-key');
+  expect(!(key.headers.get('set-cookie') ?? '').includes('draft_demo='),
+    'a wrong demo key set the demo cookie');
+  return panel.status === 404 ? '404 — no DRAFT_DEMO_KEY on this host'
+    : `${panel.status} on the panel · ${posts.map((r) => r.status).join(' · ')} on reset and seat · no cookie for a wrong key`;
+});
+
+await check('the demo document serves (Q1535)', async () => {
+  const r = await get('/d/demo');
+  expect(r.status === 200, `GET /d/demo answered ${r.status}`);
+  const h = await (await get('/healthz')).json();
+  expect(h.demo && h.demo.state === 'built', `/healthz demo is ${JSON.stringify(h.demo)}`);
+  return `generation ${h.demo.generation}`;
+});
+
 await check('api responses are never cached (finding 10)', async () => {
   const r = await get('/api/dev/outbox');
   expect((r.headers.get('cache-control') ?? '') === 'no-store',
