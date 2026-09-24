@@ -909,7 +909,7 @@ window.CARDS = (function () {
   const mdStrip = (src) => escRaw(escEncode(src).replace(MD_RX, (m) =>
     m.startsWith('**') ? m.slice(2, -2) : m.slice(1, -1)));
 
-  // ---- rail titles (Q????, Ed 2026-09-24) ---------------------------------
+  // ---- rail titles (Q1523, Ed 2026-09-24) ---------------------------------
   // **An entry's title names its own subject, computed from the entry alone,
   // never by comparison with its neighbours**: a title must not change
   // because another entry appeared. The rail had filled with lines that read
@@ -931,17 +931,10 @@ window.CARDS = (function () {
   const RAIL_LEAD = 5;      // the first words of a rewrite
   /** The words a reader sees: markers, a heading's `# `, a bullet's `- `
    *  and backslash escapes off, whitespace folded to one space. */
-  // (an escaped character is set aside before the markers are read, so `\*`
-  // stays a star rather than opening an emphasis, and comes back after)
-  // MERGE NOTE: main now carries `mdPlain` (merge a2eeab54, md-escapes: a
-  // line's marker and marks off, escapes read); at the merge this becomes
-  // `mdPlain` per line and the whitespace fold, and the stripper here goes.
-  const railPlain = (src) => mdStrip(String(src == null ? '' : src).replace(/\r/g, '')
-      .replace(/^[ \t]*#{1,6}[ \t]+/gm, '').replace(/^[ \t]*-[ \t]+/gm, '')
-      .replace(/\\([\\`*_{}[\]()#+\-.!>~|])/g, (m, ch) => String.fromCharCode(0xE100 + ch.charCodeAt(0))))
-    .replace(/\*\*/g, '')
-    .replace(/[-]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xE100))
-    .replace(/\s+/g, ' ').trim();
+  // — `mdPlain` per line (the escapes' own reader, Q1530), then the fold
+  const railPlain = (src) => String(src == null ? '' : src).replace(/\r/g, '')
+    .split('\n').map((line) => mdPlain(line.replace(/^[ \t]+(?=#{1,6}[ \t]|-[ \t])/, '')))
+    .join(' ').replace(/\s+/g, ' ').trim();
   /** A snippet's edges carry no punctuation or space of their own. */
   const railTrim = (s) => String(s).replace(/^[\s,;:.!?—–-]+|[\s,;:.!?—–-]+$/g, '');
   /** Cut at a word, inside the snippet, marked with the ellipsis. */
@@ -1079,7 +1072,7 @@ window.CARDS = (function () {
     return moreThan(runs, r) ? t + ' ' + RT.more : t;
   }
   /**
-   * **A rail entry's moment** (Q????): 24-hour, shortest by distance from
+   * **A rail entry's moment** (Q1523): 24-hour, shortest by distance from
    * `nowMs` — *15:25* the same day, *Sun 15:25* within the last seven days,
    * *20 Sep* earlier this year, *20 Sep 2025* before that. The one helper
    * every dated rail entry reads. Null for no moment.

@@ -81,7 +81,7 @@ window.COPY = (function () {
   // its reference in cards.js, so a copy edit can be traced to its card site
   // in one grep.
   const grammar = {
-    // **A rail entry's title names its own subject** (Q????, Ed 2026-09-24):
+    // **A rail entry's title names its own subject** (Q1523, Ed 2026-09-24):
     // the words a change is about, computed from the entry alone — never
     // by comparison with its neighbours. `railChange` / `railPair` in
     // cards.js are the only builders; the snippet inside a quote is member
@@ -546,7 +546,7 @@ window.COPY = (function () {
     ? '' : ' (' + n + ' of ' + e + ')');
   const page = {
     // **A rule change's rail title is the rule's glyph and its value, old →
-    // new** (Q????, Ed 2026-09-24: *⏱️ 10 → 5 minutes*, *👥 6 → 8 of 12*,
+    // new** (Q1523, Ed 2026-09-24: *⏱️ 10 → 5 minutes*, *👥 6 → 8 of 12*,
     // *⏰ Sun 17:10 → never*). One short phrase per value, the words the
     // clause sentence already carries wherever it has them; the glyph says
     // which rule, the mark and the card say who changed it and how it ended.
@@ -989,6 +989,9 @@ window.COPY = (function () {
       rejected: 'Rejected',
       // a ✒️ change was put to nobody, so it did not pass (Q1514, Q1522 (1))
       changedByFounder: 'Changed by the Founder',
+      // a Founder's 🛡️ refusal: *refuse* is the Founder's word, *reject* the
+      // membership's (STYLE T8; Q1526 (a), Ed 2026-09-24)
+      refusedByFounder: 'Refused by the Founder',
       // the labels of the record's second box (Q1522 (3), (4), Ed 2026-09-24)
       previousRule: 'Previous rule',
       rejectedProposal: 'Rejected proposal',

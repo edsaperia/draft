@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 632
+  "entries": 633
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -311,6 +311,7 @@
   "page.motionRec.previousRule": "Previous rule",
   "page.motionRec.provMembers": "Chosen by the membership",
   "page.motionRec.provPen": "Chosen by the Founder ✒️",
+  "page.motionRec.refusedByFounder": "Refused by the Founder",
   "page.motionRec.rejected": "Rejected",
   "page.motionRec.rejectedProposal": "Rejected proposal",
   "page.motionRec.reserveKept": "ƒ (what) => 'The membership kept ' + what + ' with the membership.'",

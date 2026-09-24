@@ -3581,9 +3581,12 @@
       { day: 'numeric', month: 'long', year: 'numeric' })) + ' · ' : '';
     // **The outcome is the route's** (Q1522 (1), Ed 2026-09-24; Q1514): a ✒️
     // change was put to nobody, so it did not *pass* — it was changed by the
-    // Founder. A carried motion passed; a failed one was rejected.
+    // Founder. A carried motion passed; a failed one was rejected — or, where
+    // the Founder's 🛡️ held it, refused (Q1526 (a), Ed 2026-09-24; STYLE T8:
+    // *refuse* is the Founder's word), which `heldBy` tells apart.
     const R = PAGE_COPY.motionRec;
-    const outcome = !carried ? R.rejected : rec.route === 'pen' ? R.changedByFounder : R.passed;
+    const outcome = !carried ? (heldByOf(rec) === 'crown' ? R.refusedByFounder : R.rejected)
+      : rec.route === 'pen' ? R.changedByFounder : R.passed;
     const eyebrow = '<p class="eyebrow fieldlab">' + when + outcome + '</p>';
     // a labelled box for the rule the record sets beside the headline one —
     // *Previous rule* on a passed record, *Rejected proposal* on a failed one
@@ -5365,7 +5368,7 @@
     if (k === 'rate') return 'a new proposal every ' + dripPhrase(p.value.dripMinutes);
     return STANDS[k] ? STANDS[k](PAGEVAL[k](p.value)) : JSON.stringify(p.value);
   };
-  // **A rule change's rail title** (Q????, Ed 2026-09-24): the rule's own
+  // **A rule change's rail title** (Q1523, Ed 2026-09-24): the rule's own
   // glyph and its value, old → new — *⏱️ 10 → 5 minutes*, *👥 6 → 8 of 12* —
   // computed from the entry alone. The words *Passed:*, *Changed by the
   // Founder:* and *Your proposal did not pass:* stay on the card's own title
@@ -7439,7 +7442,7 @@
         ? PAGE_COPY.lockline.members
         : PAGE_COPY.lockline.founder; },
     summary, value, isRoom,
-    // a rule change's own words on its rail entry (Q????)
+    // a rule change's own words on its rail entry (Q1523)
     railTitle: (c) => railRuleTitle(c),
   };
 
@@ -7499,7 +7502,7 @@
     // `news` is what the rail's `NEWS_PIN_CAP` counts (Q113, Ed 2026-09-14): a
     // setting owing you an OK is the same thing as an unread sealed record, so
     // the band's news entries and the charter's are one queue, oldest first, and
-    // only the oldest three of the two together pin. It rides beside `pinned`
+    // only the oldest of the two together pins (Q1532). It rides beside `pinned`
     // rather than narrowing it, because *this* entry is still a pinning kind —
     // whether it gets to pin is a question about the whole queue, and only
     // `layoutQueue`, which can see both populations at once, can answer it.
@@ -9874,7 +9877,7 @@
         (sg.t ? ' · ' + whenOf(sg.t) : ''), key: 'S:' + i }));
     return out;
   };
-  // **the fixture's rule changes** (Q????): `FIX.MOTIONS`, each put by the
+  // **the fixture's rule changes** (Q1523): `FIX.MOTIONS`, each put by the
   // member it names — real commands, so the records file behind their rule
   // and the running ones stand in the rail as any motion does
   function fixtureMotions() {
@@ -10104,7 +10107,7 @@
     ...(LIVEMODE ? { SESSION_MINUTES: Infinity, editsHeld: 0, editsToNext: 0, fixturePulse: false } : {}),
     ...(fix ? { ROSTER: fix.ROSTER, FLOOR: fix.FLOOR, EDIT_RULES: fix.EDIT_RULES,
       SESSION_MINUTES: fix.SESSION_MINUTES, editsHeld: fix.editsHeld, editsToNext: fix.editsToNext,
-      // the fixture's own moment (Q????): its records are dated against it, so
+      // the fixture's own moment (Q1523): its records are dated against it, so
       // the rail reads *Sun 15:25* on every run rather than drifting by the day
       railNow: () => fix.NOW } : {}),
     mounts: { doc: document.getElementById('charter'), queue: rail,
