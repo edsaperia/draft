@@ -1715,9 +1715,10 @@ const heldNewsOnRefusal = async () => {
   await guestPage.waitForTimeout(500);
   // **the record's shape, owed** (Q1522, Ed 2026-09-24): no head, the
   // dateline and *Rejected* first, the rule that stands, the refused wording
-  // in a *Rejected proposal* box, and a row holding the OK alone — no 🗑️.
-  // The founder refused it with 🛡️ above, so the dateline says so in the
-  // Founder's word, *Refused by the Founder* (Q1526 (a), Ed 2026-09-24)
+  // in a box, and a row holding the OK alone — no 🗑️. The founder refused
+  // it with 🛡️ above, so the dateline says so in the Founder's word,
+  // *Refused by the Founder* (Q1526 (a), Ed 2026-09-24), and the box reads
+  // *Refused proposal* (Q1526 as amended, the same day)
   const heldShape = await guestPage.evaluate((k) => {
     const c = document.querySelector('.setupcard[data-setupcard="' + k + '"]');
     if (!c) return null;
@@ -1730,7 +1731,7 @@ const heldNewsOnRefusal = async () => {
       row: [...c.querySelectorAll('.commitrow button')].map((b) => b.textContent.trim()) };
   }, hKey);
   const heldShaped = !!heldShape && !heldShape.head && /Refused by the Founder$/.test(heldShape.eyebrow) &&
-    heldShape.box === 'Rejected proposal' && !heldShape.bin &&
+    heldShape.box === 'Refused proposal' && !heldShape.bin &&
     JSON.stringify(heldShape.row) === '["OK"]' &&
     JSON.stringify(heldShape.order) === JSON.stringify(['eyebrow fieldlab', 'pick on', 'recbox']);
   say('rejected ▭ · ' + (heldShaped ? 'the record’s shape: dateline, the rule that stands, the refused one boxed, OK alone'
