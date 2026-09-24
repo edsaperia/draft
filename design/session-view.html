@@ -522,7 +522,7 @@
       let d = null, swallow = 0;
       bar.addEventListener('pointerdown', (ev) => {
         if (!sheet() || (ev.pointerType === 'mouse' && ev.button !== 0)) return;
-        const max = Math.max(0, queueEl().offsetHeight - bar.offsetHeight);
+        const max = Math.max(0, queueEl().offsetHeight - queueEl().clientTop - bar.offsetHeight);   // the peek: edge + bar
         d = { id: ev.pointerId, y0: ev.clientY, from: sheet() === 'open' ? 0 : max, max, off: null, s: [[ev.timeStamp, ev.clientY]] };
         try { bar.setPointerCapture(ev.pointerId); } catch (e) { /* a synthetic pointer */ }
       });

@@ -541,24 +541,26 @@
        finger and settles from wherever it is let go. The bar is
        `--sheet-peek` tall above the home indicator's inset, which it keeps
        as its own padding, so the peek is the bar and nothing of the list. */
-    :root { --sheet-peek: 56px; }
+    /* `--sheet-edge` is the peek's border-top, which stands above the bar:
+       the peek shows edge + bar, or the bar's last pixel is under the glass */
+    :root { --sheet-peek: 56px; --sheet-edge: 1px; }
     .layout > .queue {
       position: fixed; left: 0; right: 0; top: auto; bottom: 0; z-index: 43; display: flex; flex-direction: column;
       width: auto; max-height: 74vh; max-height: 74dvh; margin: 0 !important; box-sizing: border-box; overflow: hidden;
       background: var(--bg); border-radius: var(--r-lg) var(--r-lg) 0 0; box-shadow: var(--shadow-lg);
-      border-top: 1px solid var(--border);   /* the peek's edge: the shadow falls downwards and says little above */
+      border-top: var(--sheet-edge) solid var(--border);   /* the peek's edge: the shadow falls downwards and says little above */
       transform: translateY(calc(100% + 24px)); visibility: hidden; will-change: transform;
       transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s linear 260ms;
     }
     /* `html` in front: setup.css's `.queue.stack` padding comes later and ties */
     html .layout > .queue { padding: 0 0 env(safe-area-inset-bottom, 0px); }
     html[data-sheet] .layout > .queue { visibility: visible; transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s; }
-    html[data-sheet="peek"] .layout > .queue { transform: translateY(calc(100% - var(--sheet-peek) - env(safe-area-inset-bottom, 0px))); }
+    html[data-sheet="peek"] .layout > .queue { transform: translateY(calc(100% - var(--sheet-edge) - var(--sheet-peek) - env(safe-area-inset-bottom, 0px))); }
     html[data-sheet="peek"][data-sheethide] .layout > .queue { transform: translateY(calc(100% + 24px)); }
     html[data-sheet="open"] .layout > .queue { transform: none; z-index: 46; }
     html[data-sheet][data-sheetdrag] .layout > .queue { transition: none; z-index: 46; }
     /* the document's foot is never under the bar */
-    html[data-sheet] .layout { padding-bottom: calc(var(--sheet-peek) + env(safe-area-inset-bottom, 0px)); }
+    html[data-sheet] .layout { padding-bottom: calc(var(--sheet-edge) + var(--sheet-peek) + env(safe-area-inset-bottom, 0px)); }
     .layout > .queue .sheetbar {
       flex: none; position: relative; box-sizing: content-box; height: calc(var(--sheet-peek) - 14px);
       padding: 14px var(--s3) env(safe-area-inset-bottom, 0px); display: grid;

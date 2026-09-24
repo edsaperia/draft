@@ -102,7 +102,13 @@ const sheet = (page) => page.evaluate(() => {
     vw: innerWidth, vh: innerHeight, sw: document.scrollingElement.scrollWidth,
   };
 });
-const settle = (page, ms = 450) => page.waitForTimeout(ms);
+/** the sheet at rest: no transition still running on it — a box read mid-ease is
+ *  wherever the ease had got to (a cold first run met the peek at its start) */
+const atRest = (page) => page.evaluate(() => {
+  const q = document.querySelector('.layout > .queue');
+  return q ? Promise.all(q.getAnimations().map((a) => a.finished.catch(() => {}))) : null;
+});
+const settle = async (page, ms = 450) => { await page.waitForTimeout(ms); await atRest(page); };
 const barMid = (s) => ({ x: (s.bar.left + s.bar.right) / 2, y: (s.bar.top + s.bar.bottom) / 2 });
 
 /** a mouse drag on the bar, in steps; `hold` waits before letting go, so the release carries no speed */
@@ -125,6 +131,8 @@ const pageErrors = [];
 page.on('pageerror', (e) => pageErrors.push(String(e)));
 await page.goto(base + FIXTURE);
 await page.waitForTimeout(1200);
+await page.waitForFunction(() => document.documentElement.hasAttribute('data-sheet'), null, { timeout: 8000 }).catch(() => {});
+await settle(page, 0);
 console.log('drawer-walk (the task sheet) @ ' + SIZE.width + '×' + SIZE.height + ' — ' + FIXTURE);
 if (SHOTS) await mkdir(SHOTS, { recursive: true });
 
@@ -133,7 +141,7 @@ let s = await sheet(page);
 let e = await entries(page);
 say(s.state === 'peek', 'at rest the sheet peeks (data-sheet=' + s.state + ')');
 say(!!s.bar && s.bar.bottom <= s.vh + 0.5 && s.bar.top >= s.vh - 56 - 0.5 && s.bar.top < s.vh,
-  'its bar stands at the window\'s foot: ' + (s.bar ? px(s.bar.top) + '–' + px(s.bar.bottom) : 'no bar') + ' of ' + s.vh);
+  'its bar stands at the window\'s foot: ' + (s.bar ? px(s.bar.top) + '–' + px(s.bar.bottom) : 'no bar') + ' of ' + s.vh + (s.hide ? ' — scrolled away (data-sheethide)' : ''));
 say(e.rows.length >= 3 && e.rows[0].top >= s.vh - 0.5, 'nothing of the list shows above the glass (first entry at ' + px(e.rows[0] ? e.rows[0].top : -1) + ')');
 say(s.line === e.rows[0].title, 'the bar says the first entry\'s own title line: «' + s.line + '»' + (s.line === e.rows[0].title ? '' : ' — the entry says «' + e.rows[0].title + '»'));
 say(s.count === e.rows.length, 'the door counts the list: ' + s.count + ' of ' + e.rows.length);
@@ -314,15 +322,15 @@ say(s.line === firstTitle, 'closing the card, the peek names the most urgent ent
 await page.evaluate(() => scrollTo(0, 0));
 await page.waitForTimeout(1400);   // past the quiet a choice's own scroll gets
 for (let i = 0; i < 4; i++) { await page.mouse.wheel(0, 120); await page.waitForTimeout(80); }
-await page.waitForTimeout(350);
+await settle(page, 350);
 s = await sheet(page);
 say(s.hide && s.top >= s.vh, 'reading down slides the peek out of view (' + px(s.top) + ' of ' + s.vh + ')');
 await page.mouse.wheel(0, -60);
-await page.waitForTimeout(350);
+await settle(page, 350);
 s = await sheet(page);
 say(!s.hide && s.bar.top < s.vh && s.bar.bottom <= s.vh + 0.5, 'a scroll up brings it back (' + (s.hide ? 'still hidden' : 'bar at ' + px(s.bar.top)) + ')');
 await page.evaluate(() => scrollTo(0, document.scrollingElement.scrollHeight));
-await page.waitForTimeout(350);
+await settle(page, 350);
 s = await sheet(page);
 say(!s.hide && s.bar.top < s.vh, 'at the document\'s foot it stays');
 const foot = await page.evaluate(() => {
