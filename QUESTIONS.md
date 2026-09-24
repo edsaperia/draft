@@ -177,6 +177,7 @@ What it needs a ruling on is the evidence. A revision is a **new candidate**: an
 
 | # | Title | Raised | State | Pointers |
 |---|---|---|---|---|
+| 1537 | Markdown tables in a document | 2026-09-24 | backlog by Ed 2026-09-24 (*no tables, but leave it as a question*) | `mdBlock`, `blocksOf`; SURFACE K31 |
 | 1350 | Edit mode on a phone is hidden, not gated: a paired keyboard still enters it | 2026-09-12 | backlog by Ed 2026-09-12 (*leave it for now — see if we can make it work nicely in the future*): the doors are `display: none` below 900px and the prose takes no caret, but a physical key still calls `setEditMode` / `typeAt`; the mobile composer stage (MOBILE.md §1.7's lane door) is where it gets a real answer | `edit-mode`; `design/system.css` (the narrow block hiding `#ridetab`); MOBILE.md §1.7 |
 | 1343 | `REPORT-deferred-evidence.md` is pinned to spec v0.12 and its numbers moved under Q1337 | 2026-09-11 | backlog by Ed 2026-09-11 22:38 (*leave it, file as backlog*): `npm run evidence -w @draft/sim-harness` re-runs it deterministically; the report wants a rewrite against v0.116 when it is next read for a decision | `sim-harness`; `packages/sim-harness/REPORT-deferred-evidence.md`; Q1337 |
 | 1287 | The erase route on the running server: row and memory in one act | 2026-09-08 | answered (a), owed **at go-live** — the operator route, not before; (b) closed, `[redacted]` (STYLE T49) | `people`; `draft-tools erase`; `docs/OPERATING.md` §5; PRODUCTION.md stage 12 |
@@ -251,7 +252,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1537** — claim by writing the block here, then commit it alone.
+**The next free number is 1538** — claim by writing the block here, then commit it alone.
+
+**1537 is markdown tables** (claimed 2026-09-24; Ed: *do docs render markdown tables?*). No: `mdBlock` (design/cards.js) knows a heading, a bullet and a paragraph, one block per line (`blocksOf`), so a row like `| 09:30 | Opening |` is a paragraph with its pipes printed. Tables would fit the model — each row is already its own line, so a proposal replaces a row and a reordering swaps rows — but need consecutive `|` lines drawn as one table while each row keeps its own block, tab and card; a card showing one row changed inside its table; a narrow layout at 390; and edit mode showing the pipes as source. **Ed 2026-09-24: no tables for now, leave it as a question.** Condition to act: a real document needs a table, or Ed asks for a mockup.
 
 **1536 is the review walk and one OK per clause** (claimed 2026-09-24; Ed: *if the doc is busy, someone can come back to a page with dozens of green ticks to acknowledge, which is a lot of clicks*). **Ruled by Ed 2026-09-24: options 3 + 4.** (3) **The review walk**: OK on an owed record closes it and opens the next one owed, in **document order**, scrolling to it; Enter presses OK. (4) **One OK per clause**: a clause with several records owed shows one entry and one card with the **net change** (the text before the first unseen change against the text now), each change's own record listed inside and openable, one OK acknowledging them all; **records of the viewer's own proposals are never folded in** (a ✔ where yours passed, a ✖ where yours lost keep their own entry and OK), a ✖ owed only because you judged folds in. The pinned record (Q1532) is the next clause card in document order. Acknowledging stays per clause (option 1's *reviewed the document as it stands* not taken). Condition to act: the records builder of 2026-09-24 merged; then build.
 
