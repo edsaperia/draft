@@ -478,7 +478,7 @@
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "?: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
-    "ending: No more changes to the document may be made after Weekday at",
+    "ending: No more changes to the document may be made after Weekday, D",
     "quorum: The Founder is deciding how many members must prefer a propo"
    ]
   },
@@ -499,7 +499,7 @@
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "?: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
-    "ending: No more changes to the document may be made after Weekday at"
+    "ending: No more changes to the document may be made after Weekday, D"
    ]
   },
   {
@@ -519,7 +519,7 @@
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "?: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
-    "ending: No more changes to the document may be made after Weekday at",
+    "ending: No more changes to the document may be made after Weekday, D",
     "quorum: A proposal ✏️ cannot pass until it is preferred by at least ",
     "authorship: The Founder is deciding whether anonymous proposers are reve"
    ]
@@ -541,7 +541,7 @@
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "?: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
-    "ending: No more changes to the document may be made after Weekday at",
+    "ending: No more changes to the document may be made after Weekday, D",
     "authorship: The Founder is deciding whether anonymous proposers are reve"
    ]
   },
@@ -562,7 +562,7 @@
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "?: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
-    "ending: No more changes to the document may be made after Weekday at",
+    "ending: No more changes to the document may be made after Weekday, D",
     "quorum: A proposal ✏️ cannot pass until it is preferred by at least ",
     "authorship: The Founder is deciding whether anonymous proposers are reve"
    ]
@@ -584,7 +584,7 @@
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "?: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
-    "ending: No more changes to the document may be made after Weekday at",
+    "ending: No more changes to the document may be made after Weekday, D",
     "quorum: A proposal ✏️ cannot pass until it is preferred by at least "
    ]
   },
@@ -605,7 +605,7 @@
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "?: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
-    "ending: No more changes to the document may be made after Weekday at",
+    "ending: No more changes to the document may be made after Weekday, D",
     "quorum: A proposal ✏️ cannot pass until it is preferred by at least ",
     "authorship: All proposals are made anonymously. The Founder may amend th",
     "judgments: The Founder is deciding whether votes are revealed with the "
@@ -628,7 +628,7 @@
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "?: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
-    "ending: No more changes to the document may be made after Weekday at",
+    "ending: No more changes to the document may be made after Weekday, D",
     "quorum: A proposal ✏️ cannot pass until it is preferred by at least ",
     "authorship: All proposals are made anonymously. The Founder may amend th"
    ]
@@ -650,7 +650,7 @@
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "begin: When the document begins, members may propose changes to rul",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
-    "ending: No more changes to the document may be made after Weekday at",
+    "ending: No more changes to the document may be made after Weekday, D",
     "quorum: A proposal ✏️ cannot pass until it is preferred by at least ",
     "authorship: All proposals are made anonymously. The Founder may amend th",
     "judgments: Votes are never revealed. The Founder may amend this at will"
@@ -672,7 +672,7 @@
     "lapse: After 5 days, inactive members lapse and automatically absta",
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
-    "ending: No more changes to the document may be made after Weekday at",
+    "ending: No more changes to the document may be made after Weekday, D",
     "quorum: A proposal ✏️ cannot pass until it is preferred by at least ",
     "authorship: All proposals are made anonymously. The Founder may amend th",
     "judgments: Votes are never revealed. The Founder may amend this at will"
@@ -685,14 +685,14 @@
     "title: The document is titled “Hollow Oak Club Charter”. The Founde",
     "slug: The document lives at docs.vote/d/hollow-oak-club-charter. T",
     "chamber: The document can only be seen by members. The Founder may am",
-    "founded: Founded by AL Ada Lovell 👑 at HH:MM on D Month YYYY.",
+    "founded: Founded by AL Ada Lovell 👑 at HH:MM on D Month.",
     "admission: Any member may propose to invite someone to join the members",
     "applications: New members may only join by invitation. The Founder may ame",
     "lapse: After 5 days, inactive members lapse and automatically absta",
     "removal: To remove a member, all members must agree 🏛️. The Founder ",
     "begin: Members may propose changes to rules as soon as they arrive,",
     "rate: Members may make a new proposal ✏️ every 10 minutes. The Fou",
-    "ending: No more changes to the document may be made after Weekday at",
+    "ending: No more changes to the document may be made after Weekday, D",
     "quorum: A proposal ✏️ cannot pass until it is preferred by at least ",
     "authorship: All proposals are made anonymously. The Founder may amend th",
     "judgments: Votes are never revealed. The Founder may amend this at will"

@@ -663,6 +663,9 @@ const tocMarkProbe = () => {
  * grounds are the two it crosses: the sheet (`--bg`) and the desk (the body's
  * own background). Null where the card draws no wire.
  */
+// Ed's ruling that a wire under 3∶1 stands (Q1529): A18 still measures every
+// wire and says how many are pale, but raises no finding for them
+const WIRE_ACCEPTED = 'Q1529 (Ed, 2026-09-24: the shadow is enough to make them visible)';
 const wireProbe = () => {
   const wires = document.getElementById('wires');
   if (!wires) return null;
@@ -972,9 +975,14 @@ async function main() {
         add('A19 marks', 'a contents-rail mark is a named control that opens its card (Q1520)', b.why, b.path, s.name);
       }
     }
+    // **A pale wire is an accepted exception, not a finding** (Q1529, Ed
+    // 2026-09-24: *leave the colours — the shadow is enough to make them
+    // visible*): a wire under 3∶1 is counted and named in A18's summary line
+    // below, and raises no row. Remove WIRE_ACCEPTED to make it a finding again.
     for (const c of s.cards || []) {
       const w = c.wire;
       if (!w || w.min >= 3) continue;
+      if (WIRE_ACCEPTED) continue;
       add('A18 wire', 'the wire from a rail entry to its clause stands 3∶1 off the sheet and the desk it crosses (SC 1.4.11)',
         'a ' + w.hue + ' wire under 3∶1', c.id + ' ' + w.onSheet + '∶1 on the sheet, ' + w.onDesk + '∶1 on the desk', s.name + '·' + c.id);
     }
@@ -1054,6 +1062,11 @@ async function main() {
     const low = wires.reduce((a, b) => (b.min < a.min ? b : a));
     console.log('\nA18 wires: ' + wires.length + ' measured · lowest ' + low.onSheet + '∶1 on the sheet, ' +
       low.onDesk + '∶1 on the desk (' + low.hue + ', ' + low.id + ')' + (low.edged ? ' · edged' : ''));
+    const under = wires.filter((w) => w.min < 3);
+    if (under.length && WIRE_ACCEPTED) {
+      console.log('  ' + under.length + ' under 3∶1 (' + [...new Set(under.map((w) => w.hue))].join(', ') +
+        ') — an accepted exception, ' + WIRE_ACCEPTED);
+    }
   } else console.log('\nA18 wires: none measured — no card drew a wire');
 
   if (errors.length) {

@@ -135,6 +135,28 @@
     }
     return out;
   }
+  // **A reason may carry links** (Q1533, Ed 2026-09-24): on every open card a
+  // reason's link is an http(s) `<a>` opening a new tab — `nofollow ugc` and
+  // saying it leaves where it leaves docs.vote — and the fixture's
+  // `quick-books` reason draws its two, a markdown link and a bare address.
+  // A rail entry is a button, so its teaser carries the words and no link.
+  const REASON_LINKS = { 'quick-books': 2 };
+  function reasonLinks(id, cards) {
+    const out = [];
+    let n = 0;
+    for (const card of cards) {
+      for (const a of card.querySelectorAll('.speaker .said a')) {
+        n++;
+        const ext = a.classList.contains('extlink');
+        if (!/^https?:\/\//.test(a.getAttribute('href') || '')) out.push(id + ': a reason link to ' + a.getAttribute('href'));
+        if (a.getAttribute('target') !== '_blank') out.push(id + ': a reason link opens in the same tab');
+        if (ext && a.getAttribute('rel') !== 'noopener noreferrer nofollow ugc') out.push(id + ': rel ' + a.getAttribute('rel'));
+        if (ext && !a.querySelector('.sr-only')) out.push(id + ': a link out of docs.vote does not say so');
+      }
+    }
+    if (REASON_LINKS[id] !== undefined && n !== REASON_LINKS[id]) out.push(id + ': ' + n + ' reason links, want ' + REASON_LINKS[id]);
+    return out;
+  }
   // **One owed record pins** (Q1532, Ed 2026-09-24): at rest, before any
   // card is open, the rail holds at most one pinned entry owing an OK.
   const pinnedOwed = () => Array.from(document.querySelectorAll('.qitem.pinned'))
@@ -146,6 +168,7 @@
     setOrigin();
     payload.pinnedOwed = pinnedOwed();
     payload.records = [];
+    payload.links = Array.from(document.querySelectorAll('.qitem a')).map((a) => 'a link inside a rail entry: ' + a.outerHTML.slice(0, 80));
 
     payload.doc.anchs = rects(docEl.querySelectorAll('.anch'));
     payload.doc.chips = rects(docEl.querySelectorAll('.achip'));
@@ -176,6 +199,7 @@
       if (open) {
         for (const o of open) payload.escapes.push(...shownEscapes('cards.' + id, o.shown));
         payload.records.push(...recordMarks(id, docEl.querySelectorAll('.sugg[data-card="' + id + '"]')));
+        payload.links.push(...reasonLinks(id, docEl.querySelectorAll('.sugg[data-card="' + id + '"]')));
         entry.open = open.map(({ html, shown, ...rest }) => rest);
         entry.htmlHash = open.map((o) => hash(o.html)).join('|');
         entry.htmlLen = open.reduce((n, o) => n + o.html.length, 0);
@@ -238,6 +262,7 @@
     };
     for (const e of live.escapes || []) out.push('ESCAPE SHOWN (ruling 13) ' + e);
     for (const e of live.records || []) out.push('RECORD UNMARKED (Q1531) ' + e);
+    for (const e of live.links || []) out.push('REASON LINK (Q1533) ' + e);
     if ((live.pinnedOwed || []).length > 1) out.push('OWED RECORDS PINNED (Q1532) ' + live.pinnedOwed.length + ', one at most: ' + live.pinnedOwed.join(' · '));
     walk('doc', ref.doc, live.doc);
     walk('rail', ref.rail, live.rail);

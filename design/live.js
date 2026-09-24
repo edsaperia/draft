@@ -1344,15 +1344,10 @@ window.LIVE = (function () {
       }
       return h || cs_titleNow() || ((SESSION.DOC.find((l) => l.key === key) || {}).x || '').split(/\s+/).slice(0, 5).join(' ');
     };
-    // **Raw values are not copy**: a record's moment reads like a diary entry
-    const whenOf = (ms) => {
-      const d = new Date(ms), today = new Date();
-      const hm = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const same = (a, b) => a.toDateString() === b.toDateString();
-      const y = new Date(today); y.setDate(today.getDate() - 1);
-      return (same(d, today) ? 'today' : same(d, y) ? 'yesterday'
-        : d.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })) + ', ' + hm;
-    };
+    // **Raw values are not copy**: a moment reads like a diary entry, in
+    // full, 24-hour and in the page's own words (STYLE T16, Q1523 (a)) — it
+    // was the browser's locale, *Sunday, September 20, 03:25 PM*
+    const whenOf = (ms) => window.CARDS.longWhen(ms) || '';
     // read state survives a reload: one key per document and seat
     const seenKey = () => 'draft:seen:' + LIVESLUG + ':' + ((env.cs && env.cs.v && env.cs.v.me) || '');
     const loadSeen = () => { try { return JSON.parse(localStorage.getItem(seenKey()) || '[]'); } catch (e) { return []; } };

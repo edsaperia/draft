@@ -427,7 +427,9 @@ window.FIXTURE_SESSION = (function () {
       qLabel: '§ The Library Corner', urgency: 0.31,
       pct: 40, cap: 'two of the fourteen have voted — quorum is 5',
       marked: 'Books belonging to a member and left in the Corner become the house’s after <del>a year</del> <ins>two years</ins>, unless the member says otherwise in the book on the shelf.',
-      rationale: 'A year is one long absence. Two years still clears the shelves of anything genuinely abandoned, without swallowing the library of somebody who spent a winter abroad.'
+      // a reason with both kinds of link in it (Q1533): a markdown link and a
+      // bare address, each drawn as a link that says it leaves docs.vote
+      rationale: 'A year is one long absence. The [lending library’s own rule](https://www.example.org/lending) is two, and https://www.example.org/abandoned-books says why. Two years still clears the shelves without swallowing the library of somebody who spent a winter abroad.'
     },
     {
       id: 'quick-powertools', kind: 'quick', keys: ['powertools'], state: 'needs', beneath: 3,

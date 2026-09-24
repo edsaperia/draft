@@ -52,7 +52,7 @@
  * known one is a fact on the file, and fixing one is a diff somebody reads.
  */
 import { spawnSync } from 'node:child_process';
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
@@ -113,6 +113,24 @@ function staticMode() {
   }
   if (missing.size) {
     console.error(`design/session.js reads copy that design/copy.js does not hold: ${[...missing].join(', ')}`);
+    process.exit(1);
+  }
+  // **A date is in the page's own words, never the browser's locale** (STYLE
+  // T16 as amended by Ed, 2026-09-24, Q1523): `railWhen`, `railAt`,
+  // `longWhen`, `longDay` in cards.js and `dateWords` in session.js say every
+  // date a member reads, 24-hour, from copy.js — so no surface file calls
+  // `toLocale…String`. A line off the design system (the dev outbox) says
+  // `T16-exempt` and why.
+  const localeSites = [];
+  for (const f of readdirSync(join(ROOT, 'design'))) {
+    if (!/\.(js|html)$/.test(f)) continue;
+    readFileSync(join(ROOT, 'design', f), 'utf8').split('\n').forEach((line, i) => {
+      if (/\.toLocale(Date|Time)?String\(/.test(line) && !line.includes('T16-exempt')) localeSites.push(`design/${f}:${i + 1}`);
+    });
+  }
+  if (localeSites.length) {
+    console.error(`a date printed through the browser's locale (STYLE T16): ${localeSites.join(', ')}\n` +
+      'say it with cards.js\'s longWhen / longDay / railWhen, in copy.js\'s words');
     process.exit(1);
   }
   const out = { meta: { entries: Object.keys(entries).length }, entries };
@@ -177,7 +195,7 @@ if (broken.length) {
  * so a reader of the file knows what a green run is silent about. Lifted from
  * `founding-golden`'s own `norm`; **do not widen it** — a wider net hides copy.
  */
-const NORMALISED = ['HH:MM', 'D Month YYYY', 'Last amended D Month', 'weekday', 'n of m', 'whitespace'];
+const NORMALISED = ['HH:MM', 'D Month YYYY', 'Last amended D Month', 'D Month', 'weekday', 'n of m', 'whitespace'];
 const norm = (s) => String(s == null ? '' : s)
   // "Founded by AB Ash Bellamy 👑 at 15:19 on 26 August 2026" (the ⏳ grant heads)
   .replace(/\b\d{1,2}:\d{2}\b/g, 'HH:MM')
@@ -190,6 +208,12 @@ const norm = (s) => String(s == null ? '' : s)
   // by its own label rather than by a bare "D Month", which would swallow
   // every month name a sentence uses.
   .replace(/Last amended \d{1,2} [A-Z][a-z]+/g, 'Last amended D Month')
+  // …and since STYLE T16 was amended (Q1523, 2026-09-24) every date is in the
+  // page's own words with the year only where it is not this one — *Sunday,
+  // 20 September, 11:12*, *Founded … on 24 September* — so a day and a full
+  // month name, the twelve names spelled out and a day number before them,
+  // which no sentence uses but a date
+  .replace(/\b\d{1,2} (January|February|March|April|May|June|July|August|September|October|November|December)\b/g, 'D Month')
   // "The drafting process will end on Thursday at 18:00" (⏰, and the clock line)
   .replace(/\b(Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day\b/g, 'Weekday')
   // "3 of 3 have opened it", "1 of 1 have answered", "1 of 14"
