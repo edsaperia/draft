@@ -53,6 +53,23 @@ export class Demo {
   private current: DemoBuild | null = null;
   /** The preset's cast of the current generation — the bots' personas. */
   private cast: readonly PresetCastMember[] = [];
+  /**
+   * **The seat Ed holds** — the member the demo key's seat switch last sat
+   * him in, this generation. The host's own record, never read from a
+   * request: the bots skip this seat while he holds it (a bot never acts in
+   * the seat Ed is sitting in), and it clears with the generation.
+   */
+  private heldSeat_: string | null = null;
+
+  /** The seat switch sat the key-holder in `member` (routes-demo.ts). */
+  holdSeat(member: string): void {
+    this.heldSeat_ = member;
+  }
+
+  /** The seat the key-holder holds in this generation, or null. */
+  heldSeat(): string | null {
+    return this.heldSeat_;
+  }
   /** Why the last build or parse failed, for the log and the panel. */
   lastErrors: PresetError[] = [];
 
@@ -251,6 +268,7 @@ export class Demo {
     if (old !== null) this.host.store.retire(old.doc.id);
     // every visitor went with the generation: their cookies name the old id
     this.visitors.clear();
+    this.heldSeat_ = null;
     try {
       this.current = await buildDemo(this.host, preset, { nowMs });
     } catch (e) {

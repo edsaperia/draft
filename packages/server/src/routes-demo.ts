@@ -162,6 +162,8 @@ export const demoTable: Route[] = [
       }
       if (rec && rec.removed) { json(r.res, 404, { error: 'no such seat' }); return true; }
       setCookie(r.res, doc.id, ctx.auth.cookieFor(doc.id, member, r.nowMs), ctx.httpsOn);
+      // the host's own record of Ed's seat: the bot in it sits out (Demo.heldSeat)
+      ctx.demo.holdSeat(member);
       json(r.res, 200, { ok: true, member });
       return true;
     },

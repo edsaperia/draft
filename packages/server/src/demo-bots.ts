@@ -227,6 +227,8 @@ export class DemoBots {
       pausedBy: this.pausedBy,
       stoppedBy: this.stoppedBy,
       count: this.count,
+      // how many of the run's bots are sitting out because Ed holds their seat
+      held: this.bots.filter((b) => this.isHeld(b)).length,
       seats: this.deps.target.botSeats().length,
       pace: this.pace,
       paces: Object.keys(PACES),
@@ -291,6 +293,14 @@ export class DemoBots {
 
   private async wake(bot: Bot): Promise<void> {
     if (!this.watch() || bot.busy) return;
+    // **never in Ed's seat**: while the key-holder sits in this bot's seat
+    // the bot sits out, asked afresh at every wake, so it acts again the
+    // moment he switches away
+    if (this.isHeld(bot)) {
+      const [lo, hi] = this.paceRange();
+      this.schedule(bot, lo + Math.random() * (hi - lo));
+      return;
+    }
     bot.busy = true;
     try {
       const doc = this.deps.target.doc()!;
@@ -305,6 +315,11 @@ export class DemoBots {
       const [lo, hi] = this.paceRange();
       this.schedule(bot, lo + Math.random() * (hi - lo));
     }
+  }
+
+  /** Is this bot's seat the one Ed holds right now? */
+  private isHeld(bot: Bot): boolean {
+    return this.deps.target.heldSeat?.() === bot.seat.id;
   }
 
   private halt(): void {
@@ -332,6 +347,8 @@ export class DemoBots {
   private async send(bot: Bot, doc: LoadedDoc, cmd: string, args: Record<string, unknown>): Promise<boolean> {
     // a reset between the read and the write: the old generation is not ours
     if (this.deps.target.doc() !== doc || this.state !== 'running') return false;
+    // Ed sat down in this seat between the read and the write
+    if (this.isHeld(bot)) return false;
     try {
       const out = await applyCommand(this.deps.host, doc,
         { memberId: bot.seat.id, applicantId: null, isFounder: false },

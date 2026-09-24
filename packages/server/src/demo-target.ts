@@ -31,6 +31,8 @@ export interface DemoTarget {
   generation(): number;
   /** Who the bots are, in file order; a run seats the first *n*. */
   botSeats(): DemoBotSeat[];
+  /** The seat Ed holds right now (the demo's own record), which no bot acts in. */
+  heldSeat?(): string | null;
 }
 
 export const NO_TARGET: DemoTarget = { doc: () => null, generation: () => 0, botSeats: () => [] };
@@ -45,11 +47,13 @@ export function demoTargetOf(demo: {
   doc(): LoadedDoc | null;
   status(): { generation: number };
   botSeats(): DemoBotSeat[];
+  heldSeat(): string | null;
 }): DemoTarget {
   return {
     doc: () => demo.doc(),
     generation: () => demo.status().generation,
     botSeats: () => demo.botSeats(),
+    heldSeat: () => demo.heldSeat(),
   };
 }
 

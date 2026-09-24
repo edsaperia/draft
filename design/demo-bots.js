@@ -74,7 +74,7 @@
       const a = stats.acts;
       const where = !stats.claudeKey ? 'No Claude key on this host — the bots cannot start'
         : stats.seats === 0 ? 'no demo document to run bots in'
-        : running ? 'bots: ' + stats.count + ' ' + stats.pace + ' · ' + mmss(stats.runElapsedMs || 0) + ' of ' + mmss(stats.runMs)
+        : running ? 'bots: ' + stats.count + (stats.held ? ' (1 is you)' : '') + ' ' + stats.pace + ' · ' + mmss(stats.runElapsedMs || 0) + ' of ' + mmss(stats.runMs)
         : stats.state === 'paused' ? (WHY[stats.pausedBy] || 'paused')
         : stats.state === 'stopped' ? 'stopped (' + stats.stoppedBy + ')' : 'bots idle';
       $('line').textContent = where + ' · ' + a.proposals + ' proposals (' + a.swaps + ' swaps) · ' +

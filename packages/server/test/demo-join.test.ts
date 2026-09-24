@@ -14,6 +14,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { createDraftServer } from '../src/server.js';
 import type { DraftServer, DraftServerOptions } from '../src/server.js';
 import { StubDemoModel } from '../src/demo-model-stub.js';
+import { DEMO_COOKIE, mintDemoCookie } from '../src/demo-access.js';
 import { FilePersistence } from '../src/persistence.js';
 import type { Persistence } from '../src/persistence.js';
 import { asEngineDoc } from '../src/engine-host.js';
@@ -42,7 +43,7 @@ function spied(inner: Persistence): { p: Persistence; calls: { name: string; id:
 interface Booted { base: string; draft: DraftServer; calls: { name: string; id: string }[] }
 const booted: Booted[] = [];
 
-async function boot(demo = true, options: DraftServerOptions = {}): Promise<Booted> {
+async function boot(demo = true, options: DraftServerOptions = {}, demoKey: string | null = null): Promise<Booted> {
   const dataDir = mkdtempSync(join(tmpdir(), 'draft-demojoin-'));
   const cfg = {
     port: 0, dataDir, baseUrl: 'http://127.0.0.1', designDir: DESIGN_DIR,
@@ -50,7 +51,7 @@ async function boot(demo = true, options: DraftServerOptions = {}): Promise<Boot
     secret: 'test-secret', store: 'file' as const, databaseUrl: null,
     trustProxy: true, buildSha: null, notifyEmail: null,
     engineTuning: { cooldownMs: 0 },
-    demo, demoKey: null,
+    demo, demoKey,
   };
   const { p, calls } = spied(new FilePersistence(dataDir));
   const draft = await createDraftServer(cfg, p, options);
@@ -232,6 +233,33 @@ describe('visitors on the demo document (DEMO.md Stage 3)', () => {
     const gone = await b.draft.demo.lapseVisitors(joinedBy + VISITOR_LAPSE_MS);
     expect(gone).toContain(idleId);
     expect(gone).not.toContain(busyId);
+  }, 30_000);
+
+  it('a bot never acts in the seat Ed holds, and acts again once he switches away', async () => {
+    const lines: string[] = [];
+    const b = await boot(true, { demoModel: (info) => new StubDemoModel(info),
+      demoBots: { paceMs: [20, 40], watchMs: 50, log: (l) => lines.push(l) } }, 'walk');
+    const ed = `${DEMO_COOKIE}=${mintDemoCookie('walk', Date.now())}`;
+    const sit = (member: string) => fetch(b.base + '/api/demo/seat', { method: 'POST',
+      headers: { 'content-type': 'application/json', origin: b.base, cookie: ed }, body: JSON.stringify({ member }) });
+    const x = b.draft.demo.botSeats()[0]!;
+    const founder = b.draft.demo.doc()!.cs.convenorRecord().id;
+    const fromX = () => lines.filter((l) => l.slice(9).startsWith(`${x.name}:`)).length;
+    expect((await sit(x.id)).status).toBe(200);
+    expect(b.draft.demo.heldSeat()).toBe(x.id);
+    expect(b.draft.demoBots.start({ count: 4, pace: 'frantic' })).toEqual({ ok: true });
+    await new Promise((r) => setTimeout(r, 1_500));
+    const st = b.draft.demoBots.stats();
+    expect(st.held).toBe(1);
+    // the other three acted; the one in Ed's seat said and sent nothing
+    expect(lines.filter((l) => !l.includes('▶️')).length).toBeGreaterThan(0);
+    expect(fromX()).toBe(0);
+    // Ed switches to the Founder: the bot takes its seat back
+    expect((await sit(founder)).status).toBe(200);
+    await new Promise((r) => setTimeout(r, 2_500));
+    b.draft.demoBots.stop('hand');
+    expect(b.draft.demoBots.stats().held).toBe(0);
+    expect(fromX()).toBeGreaterThan(0);
   }, 30_000);
 
   it('nowhere but the demo: the join is an unknown path where there is no demo document', async () => {

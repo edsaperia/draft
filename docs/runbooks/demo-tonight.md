@@ -33,9 +33,10 @@ steps for the evening; where it and OPERATING disagree, OPERATING wins.
   many phones have joined it.
 - **The seat** — who you are sitting as. Pick **Professor Lucia Ferrante — Founder** to show the
   Founder's side, or any speaker to show an ordinary member's. The page reloads as that person.
-  Tip: the bots sit in the speakers' seats in list order (with 4 bots, the first four speakers
-  under the Founder); sit in a later speaker's seat, or the Founder's, so a bot is not also
-  acting as you.
+  The bots sit in the speakers' seats in list order (with 4 bots, the first four speakers under
+  the Founder). Sit in a bot's seat and **that bot sits out** while you are there — the readout
+  says *4 (1 is you)* — and it picks up again as soon as you switch away. You never share a
+  seat with a bot.
 - **↺ Reset** — asks to confirm, then throws the whole demo away and rebuilds it from the prepared
   programme: every visitor, every proposal, every vote, gone. It also stops the bots.
 - **▦ QR** — the join code, full screen (below).
