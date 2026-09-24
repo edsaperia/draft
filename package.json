@@ -59,6 +59,7 @@
     "type-measure": "node design/tools/type-measure.mjs",
     "founder-answers": "node scripts/founding-walk.mjs --delegate=chamber",
     "spec-check": "node scripts/spec-check.mjs",
+    "demo-check": "tsx scripts/demo-check.mjs",
     "design": "node scripts/design-server.mjs"
   },
   "devDependencies": {

@@ -54,6 +54,7 @@ import type { DocStore } from './store.js';
 import { asEngineDoc } from './engine-host.js';
 import { FACE_EMOJI } from './faces.js';
 import { CHARTER_LINES, CHARTER_TEXT, REWRITES } from './dev-ladder-charter.js';
+import { Pen, lastTOf } from './history-pen.js';
 
 // ---------------------------------------------------------------------------
 // The rungs
@@ -235,43 +236,9 @@ function answerFor(setting: SettingId, target: SettingValue, rnd: () => number):
 }
 
 // ---------------------------------------------------------------------------
-// The clock the ladder writes on
-
-/**
- * A monotonic pen. Every write goes through it, and `guard` is what keeps the
- * whole scheme honest: a timestamp past real now would make `tOf` clamp every
- * later command up to it, quietly moving the document into the future.
- */
-class Pen {
-  private readonly ceiling: number;
-  constructor(private t: number, ceiling: number) {
-    // **The ceiling can never be behind the log.** Something else may have
-    // moved the document's clock since the last rung — a real command, or
-    // simply somebody reading it, since presence is a write (§9.5a). Clamping
-    // down to a ceiling already passed would emit backwards, which is refused.
-    // Room then runs out instead, and out of room means *the same instant*:
-    // equal timestamps are legal, and standing still is the one thing that
-    // is always safe.
-    this.ceiling = Math.max(ceiling, t);
-  }
-  /** The next instant: at most `gap` on, never past the ceiling, never back. */
-  next(gap = 1): number {
-    this.t += Math.min(Math.max(gap, 0), Math.max(0, this.ceiling - this.t));
-    return this.t;
-  }
-  at(when: number): number {
-    this.t = Math.max(this.t, Math.min(when, this.ceiling));
-    return this.t;
-  }
-  /** How much synthetic history is left to spend. */
-  get room(): number { return Math.max(0, this.ceiling - this.t); }
-  get now(): number { return this.t; }
-}
-
-const lastTOf = (cs: ConstitutionSession): number => {
-  const log = cs.logEntries();
-  return log.length > 0 ? log[log.length - 1]!.event.t : 0;
-};
+// The clock the ladder writes on: `Pen` and `lastTOf`, in `history-pen.ts`
+// since the demo document writes its past the same way (design/DEMO.md
+// Stage 1) — the machinery ships, the ladder's cast and charter do not.
 
 // ---------------------------------------------------------------------------
 // The build
