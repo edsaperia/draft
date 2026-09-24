@@ -158,7 +158,8 @@
        Colour is the only signal here by Ed's choice: he was told beforehand
        that it says nothing to a colour-blind member and that the entry still
        reads only its heading, and chose *words unchanged*. */
-    --lc-wrong: 142, 33, 22;      /* ↻ red — yours, and it went wrong  */
+    --lc-wrong: 222, 72, 58;      /* ↻ red — yours, and it went wrong; lighter
+                                     since Ed, 2026-09-24: *too dark*      */
     --stuck-ink: #8A6D00;         /* the one caption that instructs    */
     /* **New wording is highlighter yellow, not green** (Ed, 2026-09-14, Q264):
        green means *decided* and only that (--ok); an added word inside a
@@ -1455,6 +1456,10 @@
     position: fixed; right: var(--s5); bottom: var(--s5); left: auto; top: auto;
     width: auto; max-width: none; height: auto; margin: 0; padding: 0;
   }
+  /* …and its picture twice B6's glyph size (Ed, 2026-09-24: *the circle is a
+     good size, the icon that's on it should be larger*); `right` is set by
+     `syncEditDoor`, straddling the page's right edge */
+  #editdoor [data-act="edit-door"].btn.glyphbtn { font-size: 2.7rem; }
   #editdoor [data-editdoor] .rowmid { display: none; }
   /* …hidden while the resting 📝 tab is still below it (Q1380; `syncEditDoor`
      in edit-mode.js measures both), the box kept for D1 */

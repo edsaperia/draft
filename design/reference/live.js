@@ -1122,6 +1122,9 @@ window.LIVE = (function () {
         // page has no view to read and still probes; its flag is Q1349's
         // owed half, on `/healthz`.
         if (data.devMail) { devInboxButton(); ladderBar(); }
+        // Ed's demo panel (design/DEMO.md Stage 2): the host sends the flag on
+        // the demo document to a browser holding the demo key, and nowhere else
+        if (data.demoPanel && window.DEMO) window.DEMO.panel();
         // **There is no login screen** (Q456): a stranger arrives at the three
         // columns like everybody else — the rules, the text's shape, one
         // sentence, and a rail holding the 📧 task
@@ -1130,6 +1133,9 @@ window.LIVE = (function () {
           env.cs = remoteCS(strangerAsView(data));
           S.viewer = 'stranger';
           hydrateS();
+          // the demo's QR code lands on `?try=1` (DEMO.md Stage 3): 👋 opens
+          // at once, so a phone that scanned is one tap from a seat
+          if (data.demoJoin && new URLSearchParams(location.search).get('try') === '1') S.open = 'strtry';
           render();
           setInterval(() => {
           // **Nothing rebuilds under a press.** A pen hold is a gesture in
@@ -1176,6 +1182,15 @@ window.LIVE = (function () {
           f.n = (data.me === data.convenor.id ? data.view.identity.name : data.convenor.name) || f.n || ''; }
         hydrateS();
         for (const k of loadGrants()) S.okd.add(k);
+        // a demo visitor's grants arrive accepted (DEMO.md D7; Q1535): the
+        // host names them for a visitor's seat on the demo document alone, on
+        // every boot, so nothing needs remembering
+        if (Array.isArray(data.preAcked)) for (const k of data.preAcked) S.okd.add(k);
+        // a seated device that scanned the QR code again is simply home: the
+        // address loses its `?try=1`
+        if (new URLSearchParams(location.search).has('try')) {
+          try { history.replaceState(null, '', location.pathname); } catch (e) { /* the address stays */ }
+        }
         if (data.text) setProse(data.text);
         else if (data.provisionalText) setProse(data.provisionalText);
         render();

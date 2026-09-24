@@ -782,6 +782,15 @@ window.COPY = (function () {
     // the applicant's five tasks (APPCARDS): not settings, one label each,
     // moved here from the page unchanged (Q1209's build) because a member
     // reads them
+    // **the demo's one-tap seat** (design/DEMO.md Stage 3; Q1535): the
+    // stranger's card on the demo document alone, where joining needs no
+    // address — a made-up name, the grants already accepted
+    strtry: {
+      title: 'Try It',
+      why: 'Join as a member under a made-up name. No email needed, and you can propose and vote straight away.',
+      summary: 'Join in one tap',
+      press: 'Join as a member',
+    },
     // **the Join card on an open-door document** (issue #36 F1; Q509 (a), whose
     // ruling ended *the Join affordance comes back*): 🤝 yes with 🪪 at ✒️, where
     // arriving is joining — the door's 🪪 card becomes a join, and its link seats
