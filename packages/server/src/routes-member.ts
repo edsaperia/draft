@@ -28,6 +28,7 @@ import { raceView, strangerView } from './views.js';
 import { PauseState } from './write-path.js';
 import { cookieSession, expectString, ipOf, json, pathOf, rateLimited, readJson } from './routes.js';
 import type { Route } from './routes.js';
+import { hasDemoKey, isDemoDoc } from './demo-access.js';
 
 export const memberTable: Route[] = [
   {
@@ -77,7 +78,11 @@ export const memberTable: Route[] = [
               paused: pause.payload(nowMs), stalled: !!doc.stalled });
             return true;
           }
-          json(res, 200, { seq, eseq, devMail: mailer.dev, ...strangerView(doc, nowMs, pause.payload(nowMs), session) });
+          json(res, 200, { seq, eseq, devMail: mailer.dev,
+            // Ed's demo panel reaches a seatless page too (DEMO.md Stage 2):
+            // he may open the demo before sitting anywhere
+            ...(isDemoDoc(ctx, doc) && hasDemoKey(ctx, req, nowMs) ? { demoPanel: true } : {}),
+            ...strangerView(doc, nowMs, pause.payload(nowMs), session) });
           return true;
         }
         json(res, 401, { error: 'log in first' });
@@ -190,6 +195,9 @@ export const memberTable: Route[] = [
           me: memberId,
           isFounder,
           devMail: mailer.dev,
+          // Ed's demo panel (design/DEMO.md Stage 2): the demo document, and
+          // a browser holding the demo key's cookie — nowhere else, ever
+          ...(isDemoDoc(ctx, doc) && hasDemoKey(ctx, req, nowMs) ? { demoPanel: true } : {}),
           title: doc.cs.titleOf,
           slug: doc.cs.slug,
           constitutedAtT: doc.cs.constitutedAtT,

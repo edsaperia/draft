@@ -42,6 +42,13 @@ export class Demo {
     enabled: boolean;
   }) {}
 
+  private readonly beforeRebuild: Array<(old: LoadedDoc) => void> = [];
+
+  /** Run `fn` with the outgoing document before every rebuild retires it. */
+  onRebuild(fn: (old: LoadedDoc) => void): void {
+    this.beforeRebuild.push(fn);
+  }
+
   /** The document of the current generation, or null. */
   doc(): LoadedDoc | null {
     return this.current?.doc ?? null;
@@ -90,6 +97,9 @@ export class Demo {
     const { preset, errors } = parsePreset(src);
     if (preset === null) return this.fail(errors);
     const old = this.current;
+    // whatever runs against the old generation stops before it goes (the
+    // bots, Stage 4): a reset is the end of their room
+    if (old !== null) for (const fn of this.beforeRebuild) fn(old.doc);
     if (old !== null) this.host.store.retire(old.doc.id);
     try {
       this.current = await buildDemo(this.host, preset, { nowMs });

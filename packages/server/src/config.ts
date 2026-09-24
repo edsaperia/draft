@@ -94,6 +94,14 @@ export interface ServerConfig {
    * no existing test's document count moves.
    */
   demo?: boolean;
+  /**
+   * **Ed's key to the demo panel** (`DRAFT_DEMO_KEY`, design/DEMO.md Stage 2):
+   * visiting `/d/demo?demokey=<key>` sets the `draft_demo` cookie, and the
+   * cookie opens the panel, Reset and the seat switch — on the demo document
+   * alone. Unset (or empty), every demo control answers 404 like an unknown
+   * path. Never the admin key: that one pauses every room.
+   */
+  demoKey?: string | null;
   /** HMAC secret for cookies and tokens at rest. */
   secret: string;
   /**
@@ -233,6 +241,7 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ServerConfi
     botKey: (env.DRAFT_BOT_KEY ?? '').trim() || null,
     adminKey: (env.DRAFT_ADMIN_KEY ?? '').trim() || null,
     demo: (env.DRAFT_DEMO ?? '').trim() !== 'off',
+    demoKey: (env.DRAFT_DEMO_KEY ?? '').trim() || null,
     notifyEmail: (env.DRAFT_NOTIFY_EMAIL ?? 'edsaperia@gmail.com') || null,
     secret: env.DRAFT_SECRET ?? persistedSecret(dataDir),
     trustProxy: env.DRAFT_TRUST_PROXY !== undefined

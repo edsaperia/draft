@@ -6,8 +6,9 @@ Line numbers below are evidence as of `da09af48` (main, 2026-09-24): they say wh
 
 ## Status
 
-- **Stage 1 — building on branch `demo`** (2026-09-24). Not pushed.
-- Stages 2–6: not started.
+- **Stage 1 — built on branch `demo`** (2026-09-24): the preset converted to §3's contract and held by `npm run demo-check` in CI; `/d/demo` built in memory at boot from it, nothing stored or mailed. Not pushed.
+- **Stage 2 — built on branch `demo`** (2026-09-24): `DRAFT_DEMO_KEY` (a passphrase is fine), the `draft_demo` cookie, **wrong guesses locked out** (five a minute from one address lock it for five minutes — Ed, 2026-09-24), the panel with Reset and the seat switch; the bot controls are drawn and dark. The questions every demo route asks are one module, `packages/server/src/demo-access.ts` (`hasDemoKey`, `demoDoc`, `isDemoDoc`), and `Demo.onRebuild` is the hook a reset stops the bots through. Not pushed.
+- Stages 3–6: not started (Stages 4–5 building separately on branch `demo-bots`).
 
 ## 0. What it is, in plain words
 
@@ -198,7 +199,7 @@ Each stage is independently shippable and leaves the tree green. **A push is a d
 **Acceptance criteria** (file:line where each lands):
 1. A dev server started with `DRAFT_DEMO` unset serves `/d/demo` with the preset's title at the head, the decided changes applied, and every seeded proposal a live race — asserted by `demo-check`'s P11 and by `demo-store.test.ts`.
 2. **Nothing of the demo reaches the store**: over a full build, a reset and a run of commands, a spy `Persistence` records zero calls naming a `d-demo-` id — `appendDocLog`, `createDoc`, `appendEngineLog`, `writeBridgeState`, `saveToken`, `enqueue`.
-3. A restart rebuilds a fresh generation at a new id; `/healthz` `demo.generation` changes; `documents` counts it and `documentsQuarantined` stays 0.
+3. A restart rebuilds a fresh generation at a new id (`demo.generation` counts builds within one process, so a restart starts it at 1 again and `builtAt` moves); `documents` counts it and `documentsQuarantined` stays 0.
 4. With a persisted document holding the slug `demo`, boot leaves it serving and the demo off, `/healthz` `demo.state: 'slug-held'`.
 5. `GET /api/slug/demo` answers `available: false` once the demo is built, so the birth cannot take it (`routes-auth.ts:37`, `slugFree` → `store.slugTaken`).
 6. `dev-ladder.ts` imports `Pen` from `history-pen.ts` and `npm run ladder` is unchanged, green; `build-server.mjs`'s needles still find nothing.
@@ -213,20 +214,20 @@ Each stage is independently shippable and leaves the tree green. **A push is a d
 
 **Built.**
 - `config.ts` — `demoKey` from `DRAFT_DEMO_KEY`, trimmed, empty ⇒ null (the `adminKey` shape).
-- `packages/server/src/demo-key.ts` — `mintDemoCookie(key, nowMs)`, `demoCookieOk(req, key, nowMs)`: `<exp>.<base64url hmac-sha256(key, 'draft-demo.' + exp)>`, compared with `timingSafeEqual`; a year's expiry.
+- `packages/server/src/demo-access.ts` — the questions every demo route asks, in one module: `mintDemoCookie(key, nowMs)` and `demoCookieValid`: `<exp>.<base64url hmac-sha256(key, 'draft-demo.' + exp)>`, compared with `timingSafeEqual`, a year's expiry; `demoKeyMatches` (the typed passphrase, constant time); `hasDemoKey(ctx, req)`; `demoDoc(ctx)`, `isDemoDoc(ctx, doc)`; and **the guess lock** — `guessFailed` / `guessLocked`: five wrong tries a minute from one address lock it out of every key-checking row for five minutes, the right key included (Ed, 2026-09-24). The key is never logged: the request log and the error log drop the query.
 - `packages/server/src/routes-demo.ts` — `demoTable`, spliced into `ROUTES` (`server.ts:59–72`) **before `surfaceTable`** so it claims `/d/demo?demokey=` ahead of the page row. Rows:
-  - `GET /d/demo` **with** `?demokey=` — key right: set the cookie, 302 to `/d/demo`; wrong: `tooMany('demo')`, then a plain 302 with no cookie (never say which). Without `?demokey=` the row declines and the page serves as ever.
+  - `GET /d/demo` **with** `?demokey=` — key right: set the cookie, 302 to `/d/demo`; wrong: counted against the address, then a plain 302 with no cookie (never say which), or 429 once the address is locked. Without `?demokey=` the row declines and the page serves as ever.
   - `GET /api/demo/panel` — the panel's readout: `{ generation, builtAt, seats, me, bots: {...} }` (the bot fields drawn and dark until Stage 4).
   - `POST /api/demo/reset` — stops the bots, reads the preset afresh (Q1535), `buildDemo` a new generation, `store.retire` the old, answers the new generation; a parse failure answers 422 with the error list and keeps the old.
   - `POST /api/demo/seat { member }` — the dev seat switch's body (`routes-dev.ts:240–262`) scoped to the demo document: the Founder's seat or any member's of the current generation, cookie set for it.
-  - Every row: `ctx.cfg.demoKey` unset ⇒ 404 with an unknown path's body; cookie missing or bad ⇒ 401 after `tooMany('demo')` — the `bearerRefused` pattern (`routes.ts:191–196`); POSTs carry the dev routes' Origin check (`devCrossSite`, `routes-dev.ts:36`) and `readJson`'s content-type gate.
+  - Every row: `ctx.cfg.demoKey` unset ⇒ 404 with an unknown path's body; cookie missing or bad ⇒ 401, counted as a wrong try, and 429 while the address is locked; POSTs carry the dev routes' Origin check (`devCrossSite`, `routes-dev.ts:36`) and `readJson`'s content-type gate.
 - The view (`routes-member.ts:220`) carries `demoPanel: true` on the demo document only when the request bears a valid demo cookie — never a key, never on another slug.
 - `design/demo.js` — the panel, a top-level surface file (so it rides the surface lane, `surface.ts:27`): built only when the view says `demoPanel`; bottom-left like `ladderBar` (`session-view.html:9641–9656`, `LADDER_STYLE`), off the design system, strings exempt from STYLE as the ladder bar's are (`T16-exempt` marker). Controls: **⏸️ / ▶️** · **count** (4 … the preset's bot cast) · **pace** (calm / lively / frantic, default lively) · **model** (Haiku 4.5 · Sonnet 5 · Opus 5.5) · **Reset** (confirm) · **QR** (Stage 3) · **seat** (Founder / each member), a line of readout (*bots: 8 lively · 142 acts · $0.31 of $3 · 6:12 of 10:00*). The bot controls are drawn and disabled until Stage 4.
 - `live.js:1124` — beside `devInboxButton(); ladderBar();`, `if (data.demoPanel) DEMO.panel(env)`; `session-view.html`'s script block loads `demo.js` after `live.js`.
 
 **Acceptance criteria.**
 1. With `DRAFT_DEMO_KEY` unset, every `/api/demo/*` path is a 404 byte-identical to an unknown path's, and `/d/demo?demokey=x` sets no cookie.
-2. With it set: a wrong key sets nothing and the eleventh wrong try in ten minutes from one IP is a 429; the right key sets `draft_demo` `HttpOnly; Secure; SameSite=Strict` and redirects to a URL with no `demokey`.
+2. With it set — a passphrase such as `oven-marble-quiet-harbour-seven` — a wrong key sets nothing; the fifth wrong try in a minute from one address is a 429 and locks it for five minutes, the right key included, on every key-checking row; the right key sets `draft_demo` `HttpOnly; SameSite=Strict` (and `Secure` over https) and redirects to a URL with no `demokey`.
 3. Changing `DRAFT_DEMO_KEY` and restarting makes every previously minted cookie a 401.
 4. Reset makes a new generation: the old id 404s through `store.byId`, the old member cookie reads the stranger's door on `/d/demo`, `/healthz` `demo.generation` moves.
 5. The seat switch refuses any member not in the current generation.

@@ -42,6 +42,7 @@ import { memberTable } from './routes-member.js';
 import { feedTable } from './routes-feed.js';
 import { surfaceTable } from './routes-surface.js';
 import { Demo } from './demo.js';
+import { demoTable } from './routes-demo.js';
 
 /**
  * **The route table, in the chain's own order** (Q1352 (m), (n)). The order
@@ -68,6 +69,10 @@ const ROUTES: Route[] = [
   // below claims, so where it stands among them is free — beside the member
   // read it is the sibling of
   ...feedTable,
+  // Ed's demo controls (design/DEMO.md Stage 2): before the static rows, so
+  // `/d/demo?demokey=` is claimed ahead of the page; the row declines
+  // without the query, and the API paths are disjoint from every other row
+  ...demoTable,
   ...surfaceTable,
 ];
 

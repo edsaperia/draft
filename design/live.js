@@ -1122,6 +1122,9 @@ window.LIVE = (function () {
         // page has no view to read and still probes; its flag is Q1349's
         // owed half, on `/healthz`.
         if (data.devMail) { devInboxButton(); ladderBar(); }
+        // Ed's demo panel (design/DEMO.md Stage 2): the host sends the flag on
+        // the demo document to a browser holding the demo key, and nowhere else
+        if (data.demoPanel && window.DEMO) window.DEMO.panel();
         // **There is no login screen** (Q456): a stranger arrives at the three
         // columns like everybody else — the rules, the text's shape, one
         // sentence, and a rail holding the 📧 task
