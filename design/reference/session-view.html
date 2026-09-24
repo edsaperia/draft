@@ -3642,7 +3642,8 @@
       } else {
         said = (was ? '<div class="pick on"><span class="opttext">' + esc(was) + '</span>' +
             chosenRadio(provOf(k)) + '</div>' : '') +
-          recBox(R.rejectedProposal,
+          // *Refused proposal* where the Founder's 🛡️ held it (Q1526 amended)
+          recBox(heldByOf(rec) === 'crown' ? R.refusedProposal : R.rejectedProposal,
             '<div class="pick"><span class="opttext">' + esc(now2 || '') + '</span>' + speaker + '</div>');
       }
       return '<div class="body changed recbody">' + eyebrow + said + '</div>';
@@ -7502,10 +7503,10 @@
       .replace(/ data-washkey="[^"]*"/, '')
       .replace(/ style="--washcol: ([^;]+); --washbg: [^;]+; --fill: ([^"]+)"/,
         (m, col, fill) => SESSION.washAttrs('set:' + c.k, col, fill));
-    // `news` is what the rail's `NEWS_PIN_CAP` counts (Q113, Ed 2026-09-14): a
-    // setting owing you an OK is the same thing as an unread sealed record, so
-    // the band's news entries and the charter's are one queue, oldest first, and
-    // only the oldest of the two together pins (Q1532). It rides beside `pinned`
+    // `news` is what the rail's `BAND_PIN_CAP` counts (Q113, Ed 2026-09-14;
+    // Q1532 as amended, Ed 2026-09-24): a setting owing you an OK is the
+    // Rules' own queue, oldest first, the oldest three pinning, apart from the
+    // charter's text records, which pin one at a time. It rides beside `pinned`
     // rather than narrowing it, because *this* entry is still a pinning kind —
     // whether it gets to pin is a question about the whole queue, and only
     // `layoutQueue`, which can see both populations at once, can answer it.
@@ -9850,12 +9851,16 @@
       // morning. Same formatting as the clause's own history line.
       const on = r.at ? window.CARDS.longDay(r.at) : '';
       // and a reason that already ends in a full stop does not want another
-      const reason = r.why
-        ? ' — ' + r.why + (/[.!?…]$/.test(r.why.trim()) ? '' : '.')
-        : ' — no reason given.';
-      out.push({ t: 'p', key: 'A:' + i,
-        x: on + ' · ' + what +
-          (was && now2 ? ': ' + was + ' → ' + now2 : '') + '. ' + who + reason });
+      const stop = r.why && !/[.!?…]$/.test(r.why.trim()) ? '.' : '';
+      const reason = r.why ? ' — ' + r.why + stop : ' — no reason given.';
+      const lead = on + ' · ' + what +
+        (was && now2 ? ': ' + was + ' → ' + now2 : '') + '. ' + who;
+      // the reason drawn as every reason is (`reasonHtml`, Q1533 as
+      // amended: its links live, its bold and italic drawn), the rest of the
+      // line read as the column reads it; `x` stays the plain source
+      out.push({ t: 'p', key: 'A:' + i, x: lead + reason,
+        html: window.CARDS.mdLine(lead) + (r.why
+          ? ' — ' + window.CARDS.reasonHtml(r.why) + stop : esc(reason)) });
     });
     return out;
   };

@@ -126,7 +126,7 @@
     // from a render
     abstainNoteHtml, tickAbstain,
     // a rail entry's title and its moment (Q1523)
-    railChange, railPair, railWhen,
+    railChange, railPair, railWhen, railTitleHtml, longWhen, longDay, reasonPlain,
   } = window.CARDS;
   // **A power is not held until it has been acknowledged** (Ed, 2026-08-21).
   // The host says whether this reader may propose and may judge; both default
@@ -254,10 +254,13 @@
   // still the heading or the bullet it was.
   const srcMode = () => EDITING() && !closedMode;
   const markerOf = (l) => (l.t === 'h' ? '#'.repeat(l.level || 1) + ' ' : l.bullet ? '- ' : '');
+  // a block the host built for reading alone carries its own `html` — the
+  // closed page's amendment line, whose reason is a reason and is drawn as
+  // one (`reasonHtml`, Q1533): the host escapes it, never this
   const blockHtml = (l) =>
     (srcMode()
       ? (markerOf(l) ? '<span class="mdmark">' + esc(markerOf(l)) + '</span>' : '') + esc(l.x)
-      : mdLine(l.x));
+      : l.html != null ? l.html : mdLine(l.x));
   const bulletCls = (l) => (l.bullet ? ' bullet' : '');
 
   // ---- gap sites (backlog 204, Q261) ---------------------------------------
@@ -852,6 +855,10 @@
   // every run
   let RAIL_NOW = () => Date.now();
   const whenText = (d) => (d && d.at != null ? railWhen(d.at, RAIL_NOW()) || '' : (d && d.when) || '');
+  // …and a card's head says it in full (Q1523 (a), Ed 2026-09-24): *Sunday,
+  // 20 September, 11:12*, 24-hour and in the page's words, where the rail
+  // keeps the short ladder
+  const longText = (d) => (d && d.at != null ? longWhen(d.at, RAIL_NOW()) || '' : (d && d.when) || '');
 
   function queueEntries() {
     const out = [];
@@ -998,7 +1005,7 @@
           ' title="' + esc(d.outcome || 'sealed') +
           (isUnread(g) ? ' — you haven’t opened this one yet' : '') + '">' +
           '<span class="ql">' + markHtml(markKindOf(g)) +
-          '<span class="qt">' + esc(plainLabel(railTitleOf(g, e))) + '</span>' +
+          '<span class="qt">' + railTitleHtml(railTitleOf(g, e)) + '</span>' +
           '<span class="qv when">' + esc(whenText(d)) + '</span></span>' +
           '</button></li>';
         continue;
@@ -1042,10 +1049,10 @@
             // ✏️, or ↻ where the text moved out from under a site of it
             // (Q1463): the gutter tab reads `markKindOf` and the rail said
             // `propose` whatever had happened, so the two disagreed
-            ? '<span class="ql">' + markHtml(markKindOf(g)) + '<span>' + esc(plainLabel(railTitleOf(g, e))) + '</span></span>' +
+            ? '<span class="ql">' + markHtml(markKindOf(g)) + '<span>' + railTitleHtml(railTitleOf(g, e)) + '</span></span>' +
               where +
               '<span class="qwhy' + (why ? '' : ' empty') + '">' +
-              (why ? esc(why) : T.rail.noReason) + '</span>' +
+              (why ? esc(reasonPlain(why)) : T.rail.noReason) + '</span>' +
               ''
             // **✏️ does not say "yours"** (Ed, 2026-08-17). The pencil means *you
             // wrote this* and the entry is the accent blue; a word saying it a third
@@ -1055,7 +1062,7 @@
             // hard-coded ✏️, so a stranded proposal of yours wore ↻ in the
             // gutter and the contents rail and ✏️ here, at the same moment.
             // SURFACE §6 is one alphabet in all three columns.
-            : '<span class="ql">' + markHtml(markKindOf(g)) + esc(plainLabel(railTitleOf(g, e))) +
+            : '<span class="ql">' + markHtml(markKindOf(g)) + railTitleHtml(railTitleOf(g, e)) +
               (e.of > 1 ? '<span class="qv"> · ' + T.rail.placesOf(e.n, e.of) + '</span>' : '') + '</span>' +
               // **and for a few seconds after the press, one sentence** (Q1485
               // (A)): the card has just closed, so without this the whole of
@@ -1144,7 +1151,7 @@
           // it looks like something you are failing to read. The mark already says you
           // have judged; the card says what you said, in full, when you open it.
           ? '<span class="ql">' + markHtml(g.shifted ? 'shifted' : 'deciding') +
-            esc(plainLabel(railTitleOf(g, e))) + '</span>'
+            railTitleHtml(railTitleOf(g, e)) + '</span>'
           : '<span class="ql">' +
             markHtml(markKindOf(g)) +
             (e.prio
@@ -1152,7 +1159,7 @@
               // rather than colliding and truncating on one (Ed, 284)
               ? '<span class="qprio">Prioritise:<b>' + esc(plainLabel(e.prio[0])) +
                 '</b><i>vs</i><b>' + esc(plainLabel(e.prio[1])) + '</b></span>'
-              : '<span>' + esc(plainLabel(railTitleOf(g, e))) + '</span>') +
+              : '<span>' + railTitleHtml(railTitleOf(g, e)) + '</span>') +
             // **The entry carries the clock too, in the last day** (Q1460
             // (e), Ed 2026-09-19: *the rail should only show the clock when
             // it's less than 24 hrs*). A vote you have not cast can hide
@@ -1295,7 +1302,14 @@
   // does. Each OK pins the next oldest. Nothing announces the count — an
   // "and n more" line would be the tally 2026-08-17 retired, an apology for a
   // limit nobody experiences as one.
+  // **The cap of one is the text records' alone** (Q1532 amended, Ed
+  // 2026-09-24): the charter's owed decisions — ✔ ✖, the entries of the
+  // charter's own family — pin one at a time, while the Rules' news and
+  // grants — a rule changed over your head, a power granted at the founding,
+  // the band's family — pin as Q113 had them, up to three. Two queues now,
+  // each in its own arrival order, each cut at its own cap.
   const NEWS_PIN_CAP = 1;
+  const BAND_PIN_CAP = 3;
   // A deadlocked race ranks above every ordinary question (Ed, 223). It can
   // out-rank the flame in the *order*, which costs nothing: the flame is kept
   // regardless of room, so its primacy rests on the exemption rather than on
@@ -1496,17 +1510,22 @@
         kind === 'weigh' || isUnread(g) || holdsFocus(el);
       (live ? pinned : flow).push(row);
     }
-    // The cap, applied across both populations as one queue (Q113, Ed
-    // 2026-09-14; one since Q1532): the oldest `NEWS_PIN_CAP` owed pin, the rest are
-    // demoted to the flow, where they stand at their own clauses. Whatever is
-    // open pins for being open whatever its state (C6), so an owed decision you
-    // have opened from further down the queue keeps its place while it is open —
-    // the cap counts it, it simply does not evict it.
+    // The cap, one queue per family (Q113, Ed 2026-09-14; split by Q1532 as
+    // amended, Ed 2026-09-24): the oldest `BAND_PIN_CAP` of the Rules' owed
+    // news and grants pin (`fam` 0), and the oldest `NEWS_PIN_CAP` of the
+    // charter's owed records (`fam` 1); the rest of each are demoted to the
+    // flow, where they stand at their own clauses. Whatever is open pins for
+    // being open whatever its state (C6), so an owed decision you have opened
+    // from further down its queue keeps its place while it is open — the cap
+    // counts it, it simply does not evict it.
     const owed = pinned.filter((r) => r.news).sort((x, y) => x.fam - y.fam || x.i - y.i);
-    for (const r of owed.slice(NEWS_PIN_CAP)) {
-      if (holdsFocus(r.el)) continue;
-      pinned.splice(pinned.indexOf(r), 1);
-      flow.push(r);
+    const capOf = (fam) => (fam === 0 ? BAND_PIN_CAP : NEWS_PIN_CAP);
+    for (const fam of [0, 1]) {
+      for (const r of owed.filter((o) => o.fam === fam).slice(capOf(fam))) {
+        if (holdsFocus(r.el)) continue;
+        pinned.splice(pinned.indexOf(r), 1);
+        flow.push(r);
+      }
     }
     // Position, then the tab stack's lifecycle order, then urgency. The third
     // key matters more than it looks: two 💡 at one clause tie on the second,
@@ -2114,10 +2133,12 @@
   function amendmentCardHtml(s) {
     const skey = (s.keys ?? [])[0];
     return (
-      '<div class="sugg sealed-open" data-card="' + s.id + '"' +
+      // an amendment passed, so its marks are the record's green (Q1531 as
+      // amended, Ed 2026-09-24)
+      '<div class="sugg sealed-open recpass" data-card="' + s.id + '"' +
       (skey ? ' data-site="' + skey + '"' : '') + '>' +
       '<div class="rechead"><span>' + T.record.amended + '</span>' +
-      '<span class="sub">' + esc(whenText(s.decided)) + '</span></div>' +
+      '<span class="sub">' + esc(longText(s.decided)) + '</span></div>' +
       (skey
         ? clauseHeadHtml(s, Object.assign({
             text: sourceTextFor(skey), key: skey, chips: chipsFor(skey, s.id),
@@ -2253,17 +2274,38 @@
     // the floor and all — while the incumbent, *Previous text* or *the text
     // that stood*, stays plain, since it is what the others are read against.
     const base = recordBaseOf(s, !held);
-    const markedText = (c) => (c.incumbent ? mdBlocksHtml(null, c.text) : wordingHtml(base, c.text));
+    // **What passed is green, what lost stays yellow** (Q1531 amended, Ed
+    // 2026-09-24): on a ✔ record the winner's marks are the record's green
+    // (`.ranked.passed`, `.recpass`), the losing rivals' the highlighter. On
+    // a ✖ record the kept text *passed against* the losers — *as if the
+    // status quo "passed" against it* — so its box marks, in green, what it
+    // has that the top-ranked loser would have removed or changed: the kept
+    // text against that loser, the loser as the base. Undecided at the close,
+    // and a wording closed early while its race runs, passed nothing.
+    const keptPassed = held && !s.undecided && !s.early;
+    const topLoser = keptPassed ? field.filter((c) => !c.won && c.text != null)
+      .sort((x, y) => (y.p ?? -1) - (x.p ?? -1))[0] || null : null;
+    const keptHtml = (text) => (topLoser && String(text ?? '').trim() ? wordingHtml(topLoser.text, text) : null);
+    const passedBox = (c) => (c.won || (c.incumbent && !!topLoser));
+    const markedText = (c) => (c.incumbent
+      ? (topLoser ? keptHtml(c.text) || mdBlocksHtml(null, c.text) : mdBlocksHtml(null, c.text))
+      : wordingHtml(base, c.text));
     // The head carries it only where it is a proposal's wording — a winner, or
     // the best at the close — and still reads as the record left it; the
-    // incumbent at the head, and a clause changed since, stay the clause. Its
+    // incumbent at the head, and a clause changed since, stay the clause —
+    // except the kept text on a ✖ record, marked against its top loser. Its
     // `<ins>` takes no padding there (`.sealed-open .headclause ins`), so the
     // head keeps the paragraph's box to the pixel.
     const headOf = () => {
       const o = headOpts(s, skey);
-      return !top.incumbent && !s.changedSince && o.text != null && String(o.text).trim()
-        ? Object.assign(o, { html: wordingHtml(base, o.text) }) : o;
+      if (s.changedSince || o.text == null || !String(o.text).trim()) return o;
+      if (!top.incumbent) return Object.assign(o, { html: wordingHtml(base, o.text) });
+      const kept = keptHtml(o.text);
+      return kept ? Object.assign(o, { html: kept }) : o;
     };
+    // the head is green where it holds what passed and reads as the record
+    // left it: the winner, or the kept text on a ✖ record
+    const headPassed = !!top && !s.changedSince && (top.won || (top.incumbent && !!topLoser));
 
     // Where the incumbent is in the list its right-hand slot now names it, so the
     // left-hand tag would be saying it twice; where it is at the *head* it kept
@@ -2299,7 +2341,7 @@
     const spk = (c) => (c.why || c.by || c.underNote || c.refusal
       ? speakerHtml(c.why, undefined, c.by) + under(c) + refused(c) : '');
     return (
-      '<div class="sugg sealed-open" data-card="' + s.id + '"' +
+      '<div class="sugg sealed-open' + (headPassed ? ' recpass' : '') + '" data-card="' + s.id + '"' +
       (skey ? ' data-site="' + skey + '"' : '') + '>' +
       // **A wording closed early carries no eyebrow at all** (Q1451, Ed
       // 2026-09-18). Its author is told at once, while the clause is still
@@ -2334,7 +2376,7 @@
       // tried.
       '<div class="rechead">' +
       '<span>' + (und ? T.record.undecided : T.record.decided) + ' · ' + (d.judges ?? 0) + '/' + ROSTER + PEOPLE + '</span>' +
-      '<span class="sub">' + esc(whenText(d)) + '</span></div>' +
+      '<span class="sub">' + esc(longText(d)) + '</span></div>' +
       // **The counts are printed, not hovered** (Q1452, Ed 2026-09-18: *print the
       // count line on the card*): the sentence was a `title` on the head, which a
       // phone never shows and a mouse only finds by resting — and it is the
@@ -2388,7 +2430,7 @@
       (rest.length
         ? '<div class="field">' +
           rest.map((c) => {
-            return '<div class="ranked' + (c.incumbent ? ' wasthere' : '') + '">' +
+            return '<div class="ranked' + (c.incumbent ? ' wasthere' : '') + (passedBox(c) ? ' passed' : '') + '">' +
             '<div class="rtag">' + tag(c) + line(c) + '</div>' +
             // read as the clause is (Q1368): a candidate's text is markdown
             // …its changes marked against what it was proposed against (Q1531)
@@ -3228,6 +3270,20 @@ document.addEventListener('pointerdown', (ev) => {
 });
 document.addEventListener('pointerup', () => { if (GESTURE === 'hold') flyStop(false); });
 document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flyStop(false); });
+// **A paste into a reason drops the escapes docs.vote does not need** (Q1533,
+// Ed 2026-09-24): a reason is light markdown now — its links drawn, its
+// escapes read — so Q1530's paste rule reaches it as it reaches a clause.
+// One listener for every reason field on the page, the composer's, the
+// deadlock desk's and the band's motion and Founder fields alike, taking the
+// plain text only; typed text never passes here.
+document.addEventListener('paste', (ev) => {
+  const el = ev.target && ev.target.closest && ev.target.closest('.edit-why, [data-why], [data-deadwhy]');
+  if (!el) return;
+  const t = (ev.clipboardData && ev.clipboardData.getData('text/plain')) || '';
+  if (!t) return;
+  ev.preventDefault();
+  document.execCommand('insertText', false, pasteClean(t.replace(/\r\n?/g, '\n')));
+}, true);
 
   // ---- the document, in its passes (refactor Q1352 (g), 2026-09-14) -------
   // `renderDoc` was one 665-line function doing four unrelated jobs in a row,
@@ -5891,13 +5947,12 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
   // 10-minute steps inside the hour — never finer, never seconds. Every
   // figure rounds *down* to its step, so the clock is never optimistic.
   // Cold at every distance: the last hours' urgency belongs to the questions.
-  const MONTHS = T.clock.months;
   // a date in words, the year only when it is not this one (STYLE §2: raw
-  // values are not copy); `todayMs` is a seam for the check script
+  // values are not copy, T16); `todayMs` is a seam for the check script. One
+  // helper for the date alone, cards.js's `longDay`, and one list of month
+  // words, `grammar.longWhen`'s (Ed, 2026-09-24)
   function dateWords(ms, todayMs) {
-    const d = new Date(ms), now = new Date(todayMs ?? Date.now());
-    return d.getDate() + ' ' + MONTHS[d.getMonth()] +
-      (d.getFullYear() === now.getFullYear() ? '' : ' ' + d.getFullYear());
+    return longDay(ms, todayMs ?? Date.now());
   }
   const MIN = 60_000, HOUR = 60 * MIN, DAY = 24 * HOUR;
   // state: {kind:'none'} | {kind:'left', ms} | {kind:'closed', atMs, todayMs?}

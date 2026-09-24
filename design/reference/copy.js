@@ -92,10 +92,14 @@ window.COPY = (function () {
       arrow: (was, now) => was + ' → ' + now,
       // two wordings put side by side, as the card presents them
       or: (a, b) => a + ' or ' + b,
-      // a pair where one side simply has words the other lacks
+      // a pair where one side simply has words the other lacks — drawn as the
+      // words struck through (Q1523 (c)); this is the tooltip's reading, and
+      // `struckPair` the words a screen reader hears before the struck quote
       withOrWithout: (q) => 'with or without ' + q,
-      // a decided change that only took words out
+      // a decided change that only took words out, the same way
       without: (q) => 'without ' + q,
+      struck: 'without ',
+      struckPair: 'with or without ',
       // a change of punctuation or spacing alone: the clause's own name, said so
       punctuation: (name) => name + ' (punctuation)',
       // a snippet cut short, and a change with more to it than the title shows
@@ -106,6 +110,21 @@ window.COPY = (function () {
     railWhen: {
       days: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
       months: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    },
+    // `longWhen` / `longDay`: a moment on a card, in full and always 24-hour
+    // (Q1523 (a), STYLE T16) — *Sunday, 20 September, 11:12*, the year after
+    // the month where it is not this one; `longDay` the date alone
+    longWhen: {
+      days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+      months: ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+        'August', 'September', 'October', 'November', 'December'],
+      day: (d, month, year) => d + ' ' + month + (year ? ' ' + year : ''),
+      full: (weekday, day, hm) => weekday + ', ' + day + ', ' + hm,
+    },
+    // `reasonHtml`: a link in a reason that leaves docs.vote (Q1533) — what a
+    // screen reader hears after the link's words; the ↗ is drawn by the CSS
+    reasonLink: {
+      leaves: ' (opens outside docs.vote)',
     },
     // laneSeed: the note under a draft opened from an existing proposal
     seedNote: 'the proposal you are editing',
@@ -517,10 +536,9 @@ window.COPY = (function () {
       indifferent: 'indifferent',
       skipped: 'skipped (recirculates with decay)',
     },
-    // the session-clock's ladder (Q466/Q471) and the date in words
+    // the session-clock's ladder (Q466/Q471); the date in words is
+    // `grammar.longWhen`'s, through cards.js's `longDay`
     clock: {
-      months: ['January', 'February', 'March', 'April', 'May', 'June', 'July',
-        'August', 'September', 'October', 'November', 'December'],
       closed: (dateWords) => 'Closed ' + dateWords,
       closingNow: 'closing now',
       daysLeft: (d) => d + ' days left',
@@ -546,8 +564,9 @@ window.COPY = (function () {
     ? '' : ' (' + n + ' of ' + e + ')');
   const page = {
     // **A rule change's rail title is the rule's glyph and its value, old →
-    // new** (Q1523, Ed 2026-09-24: *⏱️ 10 → 5 minutes*, *👥 6 → 8 of 12*,
-    // *⏰ Sun 17:10 → never*). One short phrase per value, the words the
+    // new** (Q1523, Ed 2026-09-24: *⏱️ 10 → 5 minutes*, *👥 6 → 8*, *⏰ Sun
+    // 17:10 → never*), the value alone where nothing stood before it (Q1523
+    // (b)). One short phrase per value, the words the
     // clause sentence already carries wherever it has them; the glyph says
     // which rule, the mark and the card say who changed it and how it ended.
     // Read by the page's `railRuleTitle`, one value at a time.
@@ -555,7 +574,9 @@ window.COPY = (function () {
       title: (text) => grammar.railTitle.quote(text),
       slug: (slug) => slug,
       never: 'never',
-      quorumCount: (n, e) => n + ' of ' + e,
+      // the count alone (Q1523 (e), Ed 2026-09-24): the membership moves, so
+      // *of 12* would print today's number against an older change
+      quorumCount: (n) => String(n),
       quorumShare: (pct) => pct + '%',
       authorship: { anonymous: 'never named', anonymousElective: 'named by choice',
         sealed: 'named at the close', sealedElective: 'at the close, or by choice',
@@ -995,6 +1016,9 @@ window.COPY = (function () {
       // the labels of the record's second box (Q1522 (3), (4), Ed 2026-09-24)
       previousRule: 'Previous rule',
       rejectedProposal: 'Rejected proposal',
+      // …and on a record the Founder's 🛡️ refused, its box says so (Q1526
+      // amended, Ed 2026-09-24; STYLE T8)
+      refusedProposal: 'Refused proposal',
       // *the Founder*, never *the reserve* — the engine's word (Q386's follow-up,
       // Ed 2026-09-14); the one-power path says the same
       reserveReturned: (what) => 'The membership returned ' + what + ' to the Founder.',
