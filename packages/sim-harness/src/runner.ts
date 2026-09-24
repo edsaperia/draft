@@ -139,6 +139,12 @@ export async function runSession(config: RunConfig): Promise<RunResult> {
         config.onProgress?.(
           `[${fmt(e.t)}] ${e.id} needs a rebase: its ground changed under it`,
         );
+      } else if (e.type === 'candidate-reaimed' && e.patch !== undefined) {
+        // a rival covering the winner stays in the race (R-141)
+        config.onProgress?.(
+          `[${fmt(e.t)}] ${e.id} stays in the race against the new text, ` +
+            `${e.carried.length} judgment(s) carried`,
+        );
       }
     }
   };

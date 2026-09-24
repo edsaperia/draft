@@ -455,6 +455,14 @@ describe('an invitation is its own race at ✏️ (issue #6, §9.7½)', () => {
 describe('a text proposal races in the engine (stage 8, Q418)', () => {
   const patch = (baseVersion: number, lines: string[]) =>
     ({ baseVersion, hunks: [{ start: 0, end: 1, lines }] });
+  /**
+   * The line rewritten **and** a preamble inserted above it: a change a
+   * one-line rival touches without covering, since the insertion would be in
+   * the rival's document and nobody judged that one (SPEC §2.4 → why: R-141).
+   */
+  const withPreamble = (baseVersion: number, line: string) =>
+    ({ baseVersion, hunks: [{ start: 0, end: 0, lines: ['Preamble.'] },
+      { start: 0, end: 1, lines: [line] }] });
 
   it('stakes, races against the incumbent text, adopts at the bar, and the document changes', () => {
     const { s, bo, cy } = buildConstituted();
@@ -490,7 +498,7 @@ describe('a text proposal races in the engine (stage 8, Q418)', () => {
     expect(bridge.engine.getCandidate(other.id)).not.toHaveProperty('signed');
   });
 
-  it('a rival on the same lines joins the race and is left behind by the adoption', () => {
+  it('a rival on the same lines joins the race and stays in it after the adoption, against the new text (R-141)', () => {
     const { s, bo, cy } = buildConstituted();
     const bridge = new EngineBridge(s, { t: 3, rngSeed: 'text-rival' });
     const v0 = bridge.engine.currentVersion();
@@ -502,9 +510,11 @@ describe('a text proposal races in the engine (stage 8, Q418)', () => {
     // ada prefers bo's over the incumbent; with bo's own that clears F=2
     bridge.judge(20, 'ada', a.id, race.incumbentId, 'a');
     expect(bridge.engine.document()).toBe('Open always.');
+    // cy's covers bo's line, so it is re-aimed at bo's words (SPEC §2.4)
     const rival = bridge.engine.getCandidate(b.id);
-    expect(rival.state).not.toBe('live');
-    expect(['retired', 'displaced', 'rebase-pending', 'withdrawn']).toContain(rival.state);
+    expect(rival.state).toBe('live');
+    expect(rival.patch).toEqual(patch(v0 + 1, ['Open on Sundays.']));
+    expect(bridge.engine.races().find((r) => r.members.includes(b.id))).toBeDefined();
   });
 
   it('withdrawal refunds the stake whole, and only the proposer may do it', () => {
@@ -522,15 +532,16 @@ describe('a text proposal races in the engine (stage 8, Q418)', () => {
   /**
    * **The two doors out of `rebase-pending`** (Ed, 2026-09-14, Q170; SPEC
    * §2.4, §2.6; SURFACE E38), over the bridge the server's `rebase-text` and
-   * `withdraw-text` call. A rival left behind by an adoption on its own lines
-   * is stranded: re-making it keeps its id and the edit it already paid,
+   * `withdraw-text` call. A rival an adoption touched without covering — here
+   * the winner also inserts a line above it (R-141) — is stranded: re-making
+   * it keeps its id and the edit it already paid,
    * withdrawing it hands the edit back, and neither is anybody else's to do.
    */
   it('a stranded proposal is re-made through the bridge, or withdrawn for a full refund (Q170)', () => {
     const { s, bo, cy } = buildConstituted();
     const bridge = new EngineBridge(s, { t: 3, rngSeed: 'text-stranded' });
     const v0 = bridge.engine.currentVersion();
-    const a = bridge.proposeText(10, bo, patch(v0, ['Open always.']), '');
+    const a = bridge.proposeText(10, bo, withPreamble(v0, 'Open always.'), '');
     const b = bridge.proposeText(11, cy, patch(v0, ['Open on Sundays.']), 'Sundays');
     const race = bridge.engine.races().find((r) => r.id === a.raceId)!;
     bridge.judge(20, 'ada', a.id, race.incumbentId, 'a');
@@ -558,7 +569,7 @@ describe('a text proposal races in the engine (stage 8, Q418)', () => {
     const bridge = new EngineBridge(s, { t: 3, rngSeed: 'text-stranded-drop' });
     const v0 = bridge.engine.currentVersion();
     const before = bridge.engine.balance(cy, 10);
-    const a = bridge.proposeText(10, bo, patch(v0, ['Open always.']), '');
+    const a = bridge.proposeText(10, bo, withPreamble(v0, 'Open always.'), '');
     const b = bridge.proposeText(11, cy, patch(v0, ['Open on Sundays.']), 'Sundays');
     bridge.judge(20, 'ada', a.id, bridge.engine.races().find((r) => r.id === a.raceId)!.incumbentId, 'a');
     expect(bridge.engine.getCandidate(b.id).state).toBe('rebase-pending');
@@ -710,5 +721,69 @@ describe('an ordinary motion the engine closes (Q1440)', () => {
     const again = bridge.openSetMotion(30, cy, 'ending', { endsAtMs: 2_000_000 });
     expect(s.motionRecords().get(again.motion)!.status).toBe('running');
     expect(again.candidate).not.toBe(first.candidate);
+  });
+});
+
+/**
+ * **A rival motion keeps the votes that are still true of it** (Ed
+ * 2026-09-24, Q1534 ruling 7; SPEC §9.6 → why: R-141). Two ordinary ⏱️
+ * motions race on one setting; one carries, through the 🛡️ this fixture keeps
+ * on ⏱️, and the standing the bridge relays is the ground shift for the other.
+ * Its value's meaning does not depend on what stands, so it stays in the race:
+ * a judgment of it against the value that carried now reads as a judgment
+ * against what stands, and one against the value that stood locks.
+ */
+describe('a rival ⏱️ motion keeps its votes against the value that carried (Q1534)', () => {
+  it('the carried judgment counts against the rival, and the next answer holds it', () => {
+    const { s, bo, cy } = buildConstituted();
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'rate-rivals' });
+    const six = bridge.openSetMotion(10, bo, 'rate', { grant: 6, cap: 8, dripMinutes: 240 }, 'six');
+    const five = bridge.openSetMotion(11, cy, 'rate', { grant: 5, cap: 8, dripMinutes: 240 }, 'five');
+    const race = bridge.engine.races().find((r) => r.settingId === 'rate')!;
+    expect(race.members.sort()).toEqual([six.candidate, five.candidate].sort());
+    // ada prefers six to five, and five to what stands; then six to what stands
+    bridge.judge(20, 'ada', six.candidate!, five.candidate!, 'a');
+    bridge.judge(21, 'ada', five.candidate!, race.incumbentId, 'a');
+    expect(s.motionRecords().get(five.motion)!.status).toBe('running');
+    bridge.judge(22, 'ada', six.candidate!, race.incumbentId, 'a');
+    // six carries, and waits on the crown: nothing has moved under five yet
+    expect(s.motionRecords().get(six.motion)!.status).toBe('awaiting-crown');
+    const q = s.logEntries().map((e) => e.event)
+      .find((e) => e.type === 'crown-question-opened' && e.motion === six.motion) as
+      { question: string };
+    s.answerCrownQuestion(30, q.question, 'accept');
+    bridge.sync(31);
+    expect(bridge.engine.standing('rate')).toEqual({ grant: 6, cap: 8, dripMinutes: 240 });
+
+    // five stays in the race, its pair with six carried as five against what stands
+    const reaimed = bridge.engine.log.map((e) => e.event)
+      .filter((e): e is Extract<EngineEvent, { type: 'candidate-reaimed' }> =>
+        e.type === 'candidate-reaimed');
+    expect(reaimed).toHaveLength(1);
+    expect(reaimed[0]).toMatchObject({ id: five.candidate, by: six.candidate });
+    expect(reaimed[0]!.patch).toBeUndefined();
+    expect(reaimed[0]!.carried).toHaveLength(1);
+    expect(s.motionRecords().get(five.motion)!.status).toBe('running');
+    const now = bridge.engine.races().find((r) => r.settingId === 'rate')!;
+    expect(now.members).toEqual([five.candidate]);
+    expect(now.comparisons).toBe(1);   // the carried one; five-vs-what-stood locked
+    expect(now.approvals).toBe(1);     // cy's own
+    const ada = bridge.engine.judgments().filter((j) => j.participantId === 'ada');
+    const carried = ada.find((j) => j.carried)!;
+    expect([carried.aId, carried.bId]).toEqual([six.candidate, five.candidate]);
+    expect(carried.carried!.bId).toBe(five.candidate);
+    expect(carried.carried!.aId).toBe(now.incumbentId);
+    expect(carried.locked).toBe(false);
+    expect(ada.find((j) => j.aId === five.candidate && j.bId === race.incumbentId)!.locked)
+      .toBe(true);
+
+    // bo prefers what now stands: 1 + 0 ≤ 2, no answer still to come could
+    // carry five, and the room holds it (R-132, E41)
+    bridge.judge(40, bo, five.candidate!, now.incumbentId, 'b');
+    // the domination pass rides the batch, and the batch waits out the cooldown
+    bridge.tick(22 + bridge.engine.constitution.cooldownMs + 1);
+    expect(bridge.engine.getCandidate(five.candidate!).state).toBe('retired');
+    expect(s.motionRecords().get(five.motion)!.status).toBe('held');
+    expect(s.memberRecords().get(cy)!.heldOwed).toEqual(new Set([five.motion]));
   });
 });

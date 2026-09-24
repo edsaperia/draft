@@ -481,7 +481,8 @@ export function manifestOf(doc: LoadedDoc | null, nowMs: number): LadderManifest
   say(`${many(n('candidate-submitted'), 'candidate')} submitted, ` +
     `${many(n('comparison'), 'comparison')}`);
   // last, because it is the line that explains a thin document
-  say(`${n('rebase-failed')} rebase-failed`);
+  // …beside the rivals that stayed in the race against a winner (R-141)
+  say(`${n('rebase-failed')} rebase-failed, ${n('candidate-reaimed')} re-aimed`);
 
   const apps = [...cs.applicantRecords().values()];
   if (apps.length > 0) {

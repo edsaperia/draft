@@ -225,8 +225,19 @@ describe('sim regression: dedup off is byte-identical to before the gate existed
   // **And pinned a third time the same morning, at the merge of those two**:
   // Q1452's pin (73e1f486…) and Q1454's (2aee2d31…) were each taken on a branch
   // that lacked the other's change, so neither is the hash of a tree holding
-  // both. This one is — both variants below produced it, twice over.
-  const PINNED = '66e2eebe398fb8ab8bc068cce1c971b9d7268c3c886305e84d612bb7a2092a31';
+  // both. This one is — both variants below produced it, twice over
+  // (was 66e2eebe398fb8ab8bc068cce1c971b9d7268c3c886305e84d612bb7a2092a31).
+  // Re-pinned 2026-09-24 (Q1534, SPEC §2.4 v0.141, R-141): a rival covering
+  // the winner stays in the race. The run held exactly one `rebase-failed` —
+  // a rival on the winner's own line, which no persona here ever re-makes, so
+  // it sat stranded to the close — and it is a `candidate-reaimed` now, still
+  // racing; the field every fit after it reads is one larger and the run goes
+  // its own way from there (65 adoptions against 79, 47 closed as dominated
+  // against 44, none left undecided). The old pin was reproduced on the tree
+  // this branch left, both variants produced this one, a second no-gate run
+  // agreed and `Session.replay` reproduces it — which is the invariant this
+  // test defends.
+  const PINNED = '9436912095904373d0a21cacb85a0848effa3789453f4d03414341ce069a5a93';
 
   const run = (withGate: boolean) =>
     runSession({
