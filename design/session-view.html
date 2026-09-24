@@ -3553,8 +3553,8 @@
   const powerHeadless = (c) => !!c.power && !(cs && cs.constitutedAtT !== null) &&
     amFounder() && docOpen() && !motionOn(c);
   /**
-   * **What a settled motion says about itself** (Q942): passed or rejected and
-   * when, what was proposed (the head), what changed, and the reason. The
+   * **What a settled motion says about itself** (Q942; the shape is Q1522,
+   * Ed 2026-09-24): how it ended and when, what changed, and the reason. The
    * office by route, never the mover — a raised motion's author is sealed
    * (§3.4) and stays sealed in the record, so the reason wears the featureless
    * disc and a ✒️ amendment wears the founder's own face, exactly the rule
@@ -3576,7 +3576,16 @@
     const at = recAt(rec);
     const when = at ? esc(new Date(at).toLocaleDateString(undefined,
       { day: 'numeric', month: 'long', year: 'numeric' })) + ' · ' : '';
-    const eyebrow = '<p class="eyebrow fieldlab">' + when + (carried ? PAGE_COPY.motionRec.passed : PAGE_COPY.motionRec.rejected) + '</p>';
+    // **The outcome is the route's** (Q1522 (1), Ed 2026-09-24; Q1514): a ✒️
+    // change was put to nobody, so it did not *pass* — it was changed by the
+    // Founder. A carried motion passed; a failed one was rejected.
+    const R = PAGE_COPY.motionRec;
+    const outcome = !carried ? R.rejected : rec.route === 'pen' ? R.changedByFounder : R.passed;
+    const eyebrow = '<p class="eyebrow fieldlab">' + when + outcome + '</p>';
+    // a labelled box for the rule the record sets beside the headline one —
+    // *Previous rule* on a passed record, *Rejected proposal* on a failed one
+    const recBox = (label, inner) => '<div class="recbox"><p class="eyebrow fieldlab">' +
+      label + '</p>' + inner + '</div>';
     const speaker = rec.route === 'pen' ? founderSpeaker(rec.why)
       : window.CARDS.speakerHtml(rec.why);
     let said;
@@ -3612,18 +3621,26 @@
         ? '<p class="setnote">' + (moot === 'pen'
           ? PAGE_COPY.motionRec.mootPen : PAGE_COPY.motionRec.mootMembers) + '</p>'
         : '';
+      // **The headline rule first, the other in a labelled box** (Q1522 (3),
+      // (4), Ed 2026-09-24): a passed record leads with the rule it made —
+      // its speaker and provenance beneath — and keeps the rule it replaced
+      // in a *Previous rule* box; a rejected one leads with the rule that
+      // still stands, its provenance beneath, and keeps the proposal that
+      // failed, with its mover's reason, in a *Rejected proposal* box.
       if (carried) {
-        said = (was ? '<div class="pick"><span class="opttext">' + esc(was) + '</span></div>' : '') +
-          '<div class="pick on"><span class="opttext">' + esc(now2 || '') + '</span>' +
-          speaker + chosenRadio(prov) + '</div>' + mootNote;
+        said = '<div class="pick on"><span class="opttext">' + esc(now2 || '') + '</span>' +
+          speaker + chosenRadio(prov) + '</div>' + mootNote +
+          (was ? recBox(R.previousRule,
+            '<div class="pick"><span class="opttext">' + esc(was) + '</span></div>') : '');
       } else {
         said = (was ? '<div class="pick on"><span class="opttext">' + esc(was) + '</span>' +
             chosenRadio(provOf(k)) + '</div>' : '') +
-          '<div class="pick"><span class="opttext">' + esc(now2 || '') + '</span>' + speaker + '</div>';
+          recBox(R.rejectedProposal,
+            '<div class="pick"><span class="opttext">' + esc(now2 || '') + '</span>' + speaker + '</div>');
       }
-      return '<div class="body changed">' + eyebrow + said + '</div>';
+      return '<div class="body changed recbody">' + eyebrow + said + '</div>';
     }
-    return '<div class="body changed">' + eyebrow + said + speaker + '</div>';
+    return '<div class="body changed recbody">' + eyebrow + said + speaker + '</div>';
   };
   /**
    * **What a failed motion's news card says** (SURFACE E41; Q1447). Where the
@@ -3641,10 +3658,17 @@
    * fail on its merits at all: nobody decided anything, and the sentence says
    * so and says where the proposal went.
    */
+  // whether E41's card is a record's (a `set` or a `reserve` filed one), and
+  // so takes the record's shape whole: its body, and no head (Q1522 (2))
+  const heldIsRecord = (c) => {
+    if (!c || !c.held) return false;
+    const rec = recOf(c);
+    return !!(rec && rec.payload && (rec.payload.kind === 'set' || rec.payload.kind === 'reserve'));
+  };
   const heldBody = (c) => {
     const rec = recOf(c);
     if (!rec) return '<p class="why">' + PAGE_COPY.motionRec.gone + '</p>';
-    if (rec.payload.kind === 'set' || rec.payload.kind === 'reserve') return recordBody(c);
+    if (heldIsRecord(c)) return recordBody(c);
     const what = motionDisplay(rec);
     const R = PAGE_COPY.heldNews;
     const by = heldByOf(rec);
@@ -7113,10 +7137,6 @@
       // whole choice (Q1430); `noTitleHead` below carries the same test, so
       // the name does not come back in the head's place
       if (c.power) return powerHeadless(c) ? null : esc(powerHeadLine(c, true));
-      // **A record's head is what was proposed** (Q942) — the way the top of
-      // the ranking is a sealed text record's head (SURFACE §9). The outcome
-      // and its date are the field's first line, not the clause.
-      if (c.record) { const rec = recOf(c); return rec ? esc(motionDisplay(rec)) : esc(c.t); }
       // **a door heads with its people** (CP6, Q1101): the pile's list first,
       // then the rule as it stands beneath it, both inside the one head
       if (c.door) {
@@ -7134,8 +7154,11 @@
         return doorPeople(c) + (rule ? '<div class="doorrule">' + rule + '</div>' : '');
       }
       // a record has no head (Ed's card review round 3, 2026-09-05, 32/56,
-      // Q1186): the eyebrow dates it and its blocks say what it did
-      if (c.record) return null;
+      // Q1186; Q1522 (2) — Q942's head, the motion's short title, had stood
+      // in front of this and kept it from ever running): the eyebrow dates it
+      // and its blocks say what it did. E41's news card on a rule is the
+      // same record, so it is headless too.
+      if (c.record || heldIsRecord(c)) return null;
       // post-save the title card opens at its own clause, so its head is
       // the clause sentence (the headdoct span stays: refreshCommit types
       // into it live); at the birth it is still the big heading itself
@@ -7219,7 +7242,7 @@
     // answer completely. The name stays on the entry, the tooltip and the
     // record, exactly as it does for the thirteen.
     noTitleHead: (c) => c.textcard || powerHeadless(c) || (!c.power && !c.isGate && !c.door &&
-      (c.record || (c.k === 'slug' && !cs) ||
+      (c.record || heldIsRecord(c) || (c.k === 'slug' && !cs) ||
         OPTHEADLESS.has(c.k) || (c.ansFor && OPTHEADLESS.has(c.ansFor)) ||
         (c.k !== 'title' && !atTheDoor() && !!motionOn(c)))),
     // 🪶 at the birth has a head — the title itself, or its placeholder —

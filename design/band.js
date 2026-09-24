@@ -1145,9 +1145,14 @@ window.BAND = (function () {
         // rather than a close. A door's motion files no record, so there the
         // body is the one sentence saying what happened, `departureLine`'s
         // shape and for its reason.
+        // **No 🗑️ on a record, and OK only while it is owed** (Q1522 (6), Ed
+        // 2026-09-24; Y20): this card exists only while the mover owes the
+        // OK (`heldKeys`), so the OK is the whole row — until the document
+        // closes, when the module refuses the acknowledgement and nothing on
+        // the closed page is pressable, so the row goes with it.
         if (c.held) {
           return cardHtml(c, ctx, heldBody(c),
-            binBtn() + '<button class="btn btn-approve okbtn" data-ok="' + esc(c.k) + '">OK</button>',
+            docOpen() ? '<button class="btn btn-approve okbtn" data-ok="' + esc(c.k) + '">OK</button>' : null,
             g.cards);
         }
         if (c.isClosing) {
@@ -1205,14 +1210,15 @@ window.BAND = (function () {
                 ' data-ok="' + c.k + '">' + esc(c.k === 'grant-voice' ? PAGE_COPY.gate.voice.accept
                   : PAGE_COPY.gate.accept(c.grants || c.g)) + '</button>', g.cards);
         }
-        // **A record, opened** (Q942): what was proposed at its head, the outcome
-        // and the reason in the field, and 🗑️ alone at the foot — a record asks
-        // nothing, so it has no OK (SURFACE §9, the sealed record's *nothing*).
-        // The bin is the band's one always-live close (Q613 (a)).
-        // **the record's OK only closes** (Q1167 b): a word, not a glyph — no
-        // ACK_KEYS entry, nothing tracked, nobody owes a press
-        if (c.record) return cardHtml(c, ctx, recordBody(c),
-          binBtn() + '<button class="btn btn-approve okbtn" data-close="1">OK</button>', g.cards);
+        // **A record, opened** (Q942, Q1186): no head, the dateline and the
+        // outcome leading the field, the rules and the reason beneath.
+        // (Q1167 b's close-only OK and the bin both retired with Q1522.)
+        // **…and since Q1522 (6)** (Ed 2026-09-24) it has no row at all: a
+        // filed record is owed nobody's OK (the mover's owed one is the
+        // `c.held` card above), so neither the bin nor a close-only OK is
+        // drawn — the tab and a click elsewhere close it. `null` tells
+        // `cardHtml` to leave the commit row out, hairline and all.
+        if (c.record) return cardHtml(c, ctx, recordBody(c), null, g.cards);
         // 403/405 (Ed, 2026-08-19): a power tab, opened — the ✒️ or 🛡️
         // half of a setting's governance, its head the rule as it stands
         if (c.power) {

@@ -444,6 +444,59 @@ SCENARIOS['empty-wallet'] = async (s, cookie, name) => {
     ' · the press posted ' + put.length +
     (put[0] ? ' → ' + put[0].status + ' ' + JSON.stringify(put[0].answer).slice(0, 160) : ' (nothing)') +
     ' · the words the card added: “' + ((c2 && c2.text) || '').slice(-160) + '”');
+  // **the decree's filed record, opened** (Q1522, Ed 2026-09-24): no head, the
+  // dateline and *Changed by the Founder* first, the new rule as block one,
+  // the rule it replaced in a *Previous rule* box, and — nothing being owed
+  // on a filed record — no 🗑️, no OK and no commit row at all
+  const recTab = await s.page.evaluate(() => {
+    const ts = [...document.querySelectorAll('#band [data-tab^="rec:rate:"]')];
+    // this scenario's own decree — a lane shares its document with decree-under's
+    const t = ts.find((x) => /Changed by the Founder: a new proposal every 4 minutes/
+      .test(x.title || x.getAttribute('aria-label') || ''));
+    if (!t) return null;
+    t.scrollIntoView({ block: 'center' });
+    const r = t.getBoundingClientRect();
+    return { key: t.dataset.tab, x: r.x + r.width / 2, y: r.y + r.height / 2 };
+  });
+  if (!recTab) { verdict(name + ' · record', false, 'no filed record tab on ⏱️ after the decree'); return; }
+  if (s.narrow) await s.page.touchscreen.tap(recTab.x, recTab.y); else await s.page.mouse.click(recTab.x, recTab.y);
+  await s.page.waitForTimeout(1200);
+  await shot(s, name + '-3-record');
+  const rc = await s.page.evaluate((k) => {
+    const c = document.querySelector('.setupcard[data-setupcard="' + k + '"]');
+    if (!c) return null;
+    const tab = c.querySelector('[data-tab="' + k + '"]');
+    const tr = tab ? tab.getBoundingClientRect() : null;
+    const hr = c.querySelector('.clausehead');
+    const hb = hr ? hr.getBoundingClientRect() : null;
+    const G = window.CARDS && window.CARDS.glyphTextOf;
+    const txt = (n) => (n ? ((G ? G(n) : n.textContent) || '').replace(/\s+/g, ' ').trim() : null);
+    const field = c.querySelector('.field');
+    const body = field && field.querySelector('.body');
+    return {
+      head: !!c.querySelector('.headtitle, .headrule'),
+      nohead: c.classList.contains('nohead'),
+      eyebrow: txt(field && field.querySelector('.eyebrow')),
+      first: txt(field && field.querySelector('.pick')),
+      boxLabel: txt(c.querySelector('.recbox .eyebrow')),
+      order: body ? [...body.children].map((n) => n.className) : null,
+      // no hairline over nothing: neither the field nor the body rules off the empty head
+      rules: [field, body].map((n) => (n ? getComputedStyle(n).borderTopWidth : null)),
+      bin: !!c.querySelector('[data-revert]'),
+      row: !!c.querySelector('.commitrow'),
+      tabAt: tr ? { x: Math.round((tr.x + tr.width / 2) * 10) / 10, y: Math.round((tr.y + tr.height / 2) * 10) / 10 } : null,
+      headH: hb ? Math.round(hb.height * 10) / 10 : null,
+    };
+  }, recTab.key);
+  // an instrument, not asserted: the tab's centre before the click and in the open strip
+  say('   the record tab: before ' + JSON.stringify({ x: Math.round(recTab.x * 10) / 10, y: Math.round(recTab.y * 10) / 10 }) +
+    ' · open ' + JSON.stringify(rc && rc.tabAt) + ' · head ' + (rc && rc.headH) + 'px');
+  say('   the decree’s record: ' + JSON.stringify(rc));
+  const shape = !!rc && !rc.head && rc.nohead && /Changed by the Founder$/.test(rc.eyebrow || '') &&
+    /every 4 minutes/.test(rc.first || '') && rc.boxLabel === 'Previous rule' && !rc.bin && !rc.row &&
+    JSON.stringify(rc.rules) === '["0px","0px"]' &&
+    JSON.stringify(rc.order) === JSON.stringify(['eyebrow fieldlab', 'pick on', 'recbox']);
+  verdict(name + ' · record', shape, 'the decree’s record card: ' + JSON.stringify(rc));
 };
 SCENARIOS['decree-under'] = async (s, cookie, name) => {
   await openRate(s);

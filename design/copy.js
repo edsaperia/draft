@@ -936,6 +936,11 @@ window.COPY = (function () {
       gone: 'This record is no longer on the document.',
       passed: 'Passed',
       rejected: 'Rejected',
+      // a ✒️ change was put to nobody, so it did not pass (Q1514, Q1522 (1))
+      changedByFounder: 'Changed by the Founder',
+      // the labels of the record's second box (Q1522 (3), (4), Ed 2026-09-24)
+      previousRule: 'Previous rule',
+      rejectedProposal: 'Rejected proposal',
       // *the Founder*, never *the reserve* — the engine's word (Q386's follow-up,
       // Ed 2026-09-14); the one-power path says the same
       reserveReturned: (what) => 'The membership returned ' + what + ' to the Founder.',

@@ -4695,16 +4695,12 @@
    },
    "held:mo-2": {
     "eyebrow": "",
-    "head": "Your proposal did not pass: a new proposal every 90 minutes",
+    "head": "",
     "lock": "",
-    "body": "D Month YYYY · RejectedMembers may make a new proposal ✏️ every 3 hours.Chosen by the Founder ✒️Members may make a new proposal ✏️ every 90 minutes.Half the wait would let people write while the thought is warm.",
+    "body": "D Month YYYY · RejectedMembers may make a new proposal ✏️ every 3 hours.Chosen by the Founder ✒️Rejected proposalMembers may make a new proposal ✏️ every 90 minutes.Half the wait would let people write while the thought is warm.",
     "options": [],
     "inputs": [],
     "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
      {
       "label": "OK",
       "title": null
@@ -4716,8 +4712,7 @@
      "Set the Proposal Rate — yours, being voted on",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "Put it back as it stands"
+     "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": []
    },
@@ -5459,54 +5454,34 @@
    },
    "rec:chamber:0": {
     "eyebrow": "",
-    "head": "Anyone with the link",
+    "head": "",
     "lock": "",
-    "body": "D Month YYYY · PassedThe document can only be seen by members.The document can be seen by anyone with the link.ABAsh Bellamy 👑Readers who are not members should see what we are building.Chosen by the Founder ✒️",
+    "body": "D Month YYYY · Changed by the FounderThe document can be seen by anyone with the link.ABAsh Bellamy 👑Readers who are not members should see what we are building.Chosen by the Founder ✒️Previous ruleThe document can only be seen by members.",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Visibility — decided; it waits for your OK",
      "Who Can See the Document? — waiting on others",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Changed by the Founder: Anyone with the link — close it",
-     "The founder’s own hand — a Founder Action ✒️, not a proposal",
-     "Put it back as it stands"
+     "The founder’s own hand — a Founder Action ✒️, not a proposal"
     ],
     "helpers": []
    },
    "rec:quorum:0": {
     "eyebrow": "",
-    "head": "38% (n of m) of the membership",
+    "head": "",
     "lock": "",
     "body": "D Month YYYY · PassedA proposal ✏️ cannot pass until it is preferred by at least 38% of the membership (n of m).The charter should not change until more of us have had our say.Chosen by the membership",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Quorum — settled",
      "Passed: 38% (n of m) of the membership — close it",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "Put it back as it stands"
+     "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": []
    },
@@ -6158,80 +6133,50 @@
    },
    "rec:chamber:0": {
     "eyebrow": "",
-    "head": "Anyone with the link",
+    "head": "",
     "lock": "",
-    "body": "D Month YYYY · PassedThe document can only be seen by members.The document can be seen by anyone with the link.ABAsh Bellamy 👑Readers who are not members should see what we are building.Chosen by the Founder ✒️",
+    "body": "D Month YYYY · Changed by the FounderThe document can be seen by anyone with the link.ABAsh Bellamy 👑Readers who are not members should see what we are building.Chosen by the Founder ✒️Previous ruleThe document can only be seen by members.",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Visibility — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Changed by the Founder: Anyone with the link — close it",
-     "The founder’s own hand — a Founder Action ✒️, not a proposal",
-     "Put it back as it stands"
+     "The founder’s own hand — a Founder Action ✒️, not a proposal"
     ],
     "helpers": []
    },
    "rec:quorum:0": {
     "eyebrow": "",
-    "head": "38% (n of m) of the membership",
+    "head": "",
     "lock": "",
     "body": "D Month YYYY · PassedA proposal ✏️ cannot pass until it is preferred by at least 38% of the membership (n of m).The charter should not change until more of us have had our say.Chosen by the membership",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Quorum — settled",
      "Passed: 38% (n of m) of the membership — close it",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "Put it back as it stands"
+     "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": []
    },
    "rec:rate:0": {
     "eyebrow": "",
-    "head": "a new proposal every 90 minutes",
+    "head": "",
     "lock": "",
-    "body": "D Month YYYY · RejectedMembers may make a new proposal ✏️ every 3 hours.Chosen by the Founder ✒️Members may make a new proposal ✏️ every 90 minutes.Half the wait would let people write while the thought is warm.",
+    "body": "D Month YYYY · RejectedMembers may make a new proposal ✏️ every 3 hours.Chosen by the Founder ✒️Rejected proposalMembers may make a new proposal ✏️ every 90 minutes.Half the wait would let people write while the thought is warm.",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Proposal Rate — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Rejected: a new proposal every 90 minutes — close it",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "Put it back as it stands"
+     "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": []
    },
@@ -7588,82 +7533,52 @@
    },
    "rec:chamber:0": {
     "eyebrow": "",
-    "head": "Anyone with the link",
+    "head": "",
     "lock": "",
-    "body": "D Month YYYY · PassedThe document can only be seen by members.The document can be seen by anyone with the link.ABAsh Bellamy 👑Readers who are not members should see what we are building.Chosen by the Founder ✒️",
+    "body": "D Month YYYY · Changed by the FounderThe document can be seen by anyone with the link.ABAsh Bellamy 👑Readers who are not members should see what we are building.Chosen by the Founder ✒️Previous ruleThe document can only be seen by members.",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Visibility — settled",
      "Who Can See the Document? — waiting on you",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Changed by the Founder: Anyone with the link — close it",
-     "The founder’s own hand — a Founder Action ✒️, not a proposal",
-     "Put it back as it stands"
+     "The founder’s own hand — a Founder Action ✒️, not a proposal"
     ],
     "helpers": []
    },
    "rec:quorum:0": {
     "eyebrow": "",
-    "head": "38% (n of m) of the membership",
+    "head": "",
     "lock": "",
     "body": "D Month YYYY · PassedA proposal ✏️ cannot pass until it is preferred by at least 38% of the membership (n of m).The charter should not change until more of us have had our say.Chosen by the membership",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Quorum — settled",
      "Passed: 38% (n of m) of the membership — close it",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "Put it back as it stands"
+     "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": []
    },
    "rec:rate:0": {
     "eyebrow": "",
-    "head": "a new proposal every 90 minutes",
+    "head": "",
     "lock": "",
-    "body": "D Month YYYY · RejectedMembers may make a new proposal ✏️ every 3 hours.Chosen by the Founder ✒️Members may make a new proposal ✏️ every 90 minutes.Half the wait would let people write while the thought is warm.",
+    "body": "D Month YYYY · RejectedMembers may make a new proposal ✏️ every 3 hours.Chosen by the Founder ✒️Rejected proposalMembers may make a new proposal ✏️ every 90 minutes.Half the wait would let people write while the thought is warm.",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Proposal Rate — settled",
      "Set the Proposal Rate — waiting on you",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Rejected: a new proposal every 90 minutes — close it",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "Put it back as it stands"
+     "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": []
    },

@@ -2179,6 +2179,17 @@
   .setupcard.textcard .field,
   .setupcard.rulehead .field { border-top: 0; padding-top: 0; }
   .fieldlab { margin-bottom: var(--s2); }
+  /* **A motion record's second rule stands in a box** (Q1522, Ed 2026-09-24):
+     *Previous rule* under a passed record, *Rejected proposal* under a failed
+     one — reference, not a control, so a quiet ground and a hairline edge
+     rather than depth, and its label the dateline's own eyebrow. */
+  /* …and the record has no head, so the body's own hairline (setup.css's
+     `.setupcard .body`) would rule off nothing — the empty strip Ed saw */
+  .setupcard .body.recbody { border-top: 0; padding-top: 0; margin-top: 0; }
+  .recbox {
+    margin-top: var(--s3); padding: var(--s3);
+    background: var(--light); border: 1px solid var(--border); border-radius: var(--r-md);
+  }
   .propblock + .propblock {
     border-top: 1px solid var(--border); margin-top: var(--s3); padding-top: var(--s3);
   }

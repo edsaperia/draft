@@ -778,7 +778,9 @@ window.SETUP = (function () {
         v: oo.v, edit: false,
       }) +
       '<div class="field">' + body + '</div>' +
-      '<div class="race-mid commitrow">' + foot + '</div></div>');
+      // a `null` foot is a card that commits nothing and closes by its tab —
+      // a filed motion record (Q1522 (6)) — so it has no row and no hairline
+      (foot === null ? '' : '<div class="race-mid commitrow">' + foot + '</div>') + '</div>');
   }
 
   /* ---- the bodies that are the same on both surfaces ----------------------- */

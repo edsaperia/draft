@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 577
+  "entries": 580
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -274,6 +274,7 @@
   "page.lapseReturned": "ƒ (names, n) => names + (n === 1 ? ' is' : ' are') +\n      ' active again — ' + (n === 1 ? 'their membership had' : 'their memberships had') +\n      ' lapsed under the old rule.'",
   "page.lockline.founder": "Set by the founder when the document was made.",
   "page.lockline.members": "Decided by the members.",
+  "page.motionRec.changedByFounder": "Changed by the Founder",
   "page.motionRec.gone": "This record is no longer on the document.",
   "page.motionRec.keptAsStood": " as it stood",
   "page.motionRec.keptAsStoodWas": " as it stood: ",
@@ -281,9 +282,11 @@
   "page.motionRec.mootMembers": "Another proposal had already set this rule, so nothing changed.",
   "page.motionRec.mootPen": "The Founder ✒️ had already set this rule, so nothing changed.",
   "page.motionRec.passed": "Passed",
+  "page.motionRec.previousRule": "Previous rule",
   "page.motionRec.provMembers": "Chosen by the membership",
   "page.motionRec.provPen": "Chosen by the Founder ✒️",
   "page.motionRec.rejected": "Rejected",
+  "page.motionRec.rejectedProposal": "Rejected proposal",
   "page.motionRec.reserveKept": "ƒ (what) => 'The membership kept ' + what + ' with the membership.'",
   "page.motionRec.reserveReturned": "ƒ (what) => 'The membership returned ' + what + ' to the Founder.'",
   "page.motionRec.returnsTitle": "ƒ (what) => 'Returns ' + what + ' to the Founder'",
