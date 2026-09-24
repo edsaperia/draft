@@ -570,6 +570,9 @@ const IN_PAGE = () => {
     tokens, rect, txt,
     specimen,
     tokens, rect, txt,
+    /** the glyph's box inside a tab, **as seen** — against the window, not the
+     *  page, since the promise is kept by scrolling (P11's strip pass) */
+    seen: (tab) => { const b = glyphBox(tab); return b && [R2(b[0] - window.scrollX), R2(b[1] - window.scrollY), b[2], b[3]]; },
     /** every card the surface is currently offering, by key, wherever it stands */
     offered: () => {
       const keys = new Set();
@@ -1144,6 +1147,111 @@ function switchRules(switches) {
       saw: 'with ' + s.open + ' open, clicking ' + s.click + ' moves its glyph ' +
         dx + 'px across and ' + dy + 'px down',
       note: s.walk + ' · ' + s.room + 'px of page stood above the tab when it was pressed' });
+  }
+  return out;
+}
+
+/**
+ * **P11 — a card's strip is its clause's, and a switch inside it is a morph**
+ * (Ed, 2026-09-24, the green tab; SURFACE M12, M13). A clause carrying one
+ * record still owed its OK and one filed: with the green ✔ open the strip held
+ * both, and a click on the grey tab opened the filed record and took the green
+ * one out of the strip — it had stood there only as the open card's own tab,
+ * being in neither the live strip nor the filed pile. So two readings, both
+ * charter-only, both over every clause carrying a sealed record:
+ *
+ * - **the same tabs whichever card is open** — every card opened at one clause
+ *   draws the same set of tabs in its strip; a tab that is there only while
+ *   its own card is open is the defect.
+ * - **a switch keeps the strip and the tab** — with one card open, a click on
+ *   another tab of the strip (opening the filed pile first where the tab is in
+ *   it) leaves the strip holding the same tabs, and the tab clicked within
+ *   `SWITCH_TOL` of where it was (M12: *the tab you click does not move*).
+ *
+ * Only switches with a sealed record on at least one side are driven: the
+ * live-only switch is `card-morph`'s, measured elsewhere, and driving every
+ * pair of a busy clause would be minutes for no new promise.
+ *
+ * **The travel is read record to record only.** A switch between a live card
+ * and a record moves the strip by the record's own eyebrow row, 28.85px at
+ * 1600 on § Guests, on main as on this branch: the charter holds the clause's
+ * card still (`keepStill`), not the tab, and the record's head stands one row
+ * lower. That is a layout question put to Ed with this rule (2026-09-24), not
+ * a defect of the strip, so the payload keeps those travels (`mixed`) and no
+ * finding is filed from them until he rules.
+ */
+function stripRules(strips) {
+  const out = [];
+  const byKey = new Map();
+  for (const s of strips.filter((x) => x.kind === 'open')) {
+    if (!byKey.has(s.key)) byKey.set(s.key, []);
+    byKey.get(s.key).push(s);
+  }
+  for (const [key, ss] of byKey) {
+    const all = [...new Set(ss.flatMap((s) => s.tabs))];
+    for (const s of ss) {
+      const missing = all.filter((t) => !s.tabs.includes(t));
+      if (!missing.length) continue;
+      out.push({ rule: 'P11', lens: 'positioning',
+        said: 'a card\'s strip is its clause\'s — the same tabs whichever card at the clause is open (M12, M13; the green tab, 2026-09-24)',
+        saw: 'at ' + key + ', with ' + s.id + ' open the strip lacks ' + missing.join(', '),
+        note: s.walk });
+    }
+  }
+  // **the pile says how deep it is** (Ed, 2026-09-24: a pile of two records
+  // read as one tab): closed, its front tab wears one edge per record behind
+  // it, capped at four; opened by a click, no edges at all
+  const edgesFor = (behind) => Math.max(0, Math.min(behind, 4));
+  for (const s of strips.filter((x) => x.kind === 'open' && x.pile && !x.pile.open)) {
+    if (s.pile.edges === edgesFor(s.pile.n - 1)) continue;
+    out.push({ rule: 'P11', lens: 'positioning',
+      said: 'a closed filed pile draws one edge per record behind its front tab, capped at four (the queue card stack\'s edges; Ed, 2026-09-24)',
+      saw: 'at ' + s.key + ', with ' + s.id + ' open, a closed pile of ' + s.pile.n + ' draws ' + s.pile.edges + ' edge(s)',
+      note: s.walk });
+  }
+  for (const s of strips.filter((x) => x.kind === 'pile' || (x.kind === 'open' && x.pile && x.pile.open))) {
+    if (!s.pile.anyEdges) continue;
+    out.push({ rule: 'P11', lens: 'positioning',
+      said: 'an open filed pile draws no edges — its records stand as tabs (Ed, 2026-09-24)',
+      saw: 'at ' + s.key + ', with ' + s.id + ' open, the open pile still draws edges on ' + s.pile.anyEdges + ' tab(s)',
+      note: s.walk });
+  }
+  const UNREAD_KINDS = new Set(['adopted', 'retired']);
+  for (const d of strips.filter((x) => x.kind === 'door')) {
+    // the door is the record still owed its OK, where there is one (the green tab)
+    const unread = [...new Set(strips.filter((x) => x.kind === 'open' && x.key === d.key)
+      .flatMap((x) => Object.entries(x.kinds || {}).filter(([, k]) => UNREAD_KINDS.has(k)).map(([id]) => id)))];
+    if (unread.length && !UNREAD_KINDS.has(d.mark)) {
+      out.push({ rule: 'P11', lens: 'positioning',
+        said: 'a record still owed its OK is the one the gutter shows — the door never stands a read record over it (the green tab, 2026-09-24)',
+        saw: 'at ' + d.key + ', the door shows ' + d.door + ' (' + d.mark + ') over ' + unread.join(', '),
+        note: d.walk });
+    }
+    if (d.edges === edgesFor(d.records - 1)) continue;
+    out.push({ rule: 'P11', lens: 'positioning',
+      said: 'a record door in the gutter draws one edge per other record at its clause, capped at four (Ed, 2026-09-24)',
+      saw: 'at ' + d.key + ', ' + d.records + ' records stand behind a door (' + d.door + ') drawing ' + d.edges + ' edge(s)',
+      note: d.walk });
+  }
+  for (const s of strips.filter((x) => x.kind === 'switch')) {
+    const lost = s.before.filter((t) => !s.after.includes(t));
+    const gained = s.after.filter((t) => !s.before.includes(t));
+    if (lost.length || gained.length) {
+      out.push({ rule: 'P11', lens: 'positioning',
+        said: 'a switch inside a strip keeps the strip — the same tabs before and after (M12, M13; the green tab, 2026-09-24)',
+        saw: 'at ' + s.key + ', with ' + s.open + ' open, clicking ' + s.click + ' ' +
+          [lost.length ? 'took ' + lost.join(', ') + ' out of the strip' : '',
+            gained.length ? 'put ' + gained.join(', ') + ' into it' : ''].filter(Boolean).join(' and '),
+        note: s.walk });
+    }
+    if (!s.travel || s.mixed) continue;
+    const [dx, dy] = s.travel;
+    if (Math.abs(dx) <= SWITCH_TOL && Math.abs(dy) <= SWITCH_TOL) continue;
+    out.push({ rule: 'P11', lens: 'positioning',
+      said: 'the tab you click inside a strip does not move — within ' + SWITCH_TOL + 'px of 0 in both axes (M12)',
+      saw: 'at ' + s.key + ', with ' + s.open + ' open, clicking ' + s.click + ' moves its glyph ' +
+        dx + 'px across and ' + dy + 'px down',
+      note: s.walk });
   }
   return out;
 }
@@ -2109,7 +2217,141 @@ function doorRules(doors) {
   return out;
 }
 
-async function walkCharter(page, base, cards, errors, { closed, doors, rails } = {}) {
+/**
+ * P11's pass (see `stripRules`): every card at a clause carrying a sealed
+ * record opened in turn and its strip read, then every switch from it to a
+ * tab of its strip where either side is a record. Driven by `toggle` to open
+ * and by a click to switch, since the switch is the thing the promise is about.
+ */
+async function stripPass(page, walk, strips, errors) {
+  const q = (k) => String(k).replace(/["\\]/g, '\\$&');
+  const plan = await page.evaluate(() => {
+    const S = window.SESSION;
+    const keyOf = (g) => (S.clauseKeysOf(g.id) || [])[0];
+    const recKeys = new Set(S.SUGGS.filter((g) => g.state === 'sealed').map(keyOf).filter(Boolean));
+    return S.SUGGS.filter((g) => recKeys.has(keyOf(g)) && g.kind !== 'diagonal')
+      .map((g) => ({ id: g.id, sealed: g.state === 'sealed' }));
+  });
+  const sealed = new Set(plan.filter((p) => p.sealed).map((p) => p.id));
+  // the gutter first, every card closed: a clause whose one tab is a record's
+  // door, and how many records stand there to be its edges
+  await page.evaluate(() => {
+    const open = window.SESSION.openId;
+    if (open) { try { window.SESSION.toggle(open, false); } catch (e) { /* already closed */ } }
+  });
+  await wait(page, 200);
+  const doorsSeen = await page.evaluate(() => {
+    const S = window.SESSION;
+    const keyOf = (g) => (S.clauseKeysOf(g.id) || [])[0];
+    const recs = new Map();
+    for (const g of S.SUGGS.filter((x) => x.state === 'sealed')) {
+      const k = keyOf(g);
+      if (k) recs.set(k, (recs.get(k) || 0) + 1);
+    }
+    const out = [];
+    for (const [key, n] of recs) {
+      const block = document.querySelector('#charter [data-key="' + key + '"]');
+      const chips = block ? [...block.querySelectorAll(':scope > .chipcol > .achip')] : [];
+      if (chips.length !== 1) continue;                  // a live pile, not a door
+      const g = S.SUGGS.find((x) => x.id === chips[0].dataset.anchor);
+      if (!g || g.state !== 'sealed') continue;
+      const kindOf = (el) => { const m = el.querySelector('.mk'); const c = m && [...m.classList].find((x) => x.startsWith('mk-')); return c ? c.slice(3) : null; };
+      out.push({ key, door: g.id, mark: kindOf(chips[0]), records: n, edges: +(chips[0].dataset.pile || 0) });
+    }
+    return out;
+  });
+  for (const d of doorsSeen) strips.push({ walk, kind: 'door', ...d });
+  // the strip of the open card, as the anchors it holds, and the clause it heads
+  const readStrip = (id) => page.evaluate((sel) => {
+    const card = document.querySelector(sel);
+    if (!card) return null;
+    const head = card.querySelector('.clausehead .headclause');
+    // the filed pile, if the strip has one: how many records, whether it is
+    // open, and the edges its front tab wears (`data-pile`, none drawn as 0)
+    const pile = card.querySelector('.clausehead .filedpile');
+    const front = pile && pile.querySelector('.achip');
+    return { key: head ? head.dataset.key || null : null,
+      tabs: [...card.querySelectorAll('.clausehead .chipcol .achip[data-anchor]')].map((el) => el.dataset.anchor),
+      // each tab's mark kind, so the gutter's door can be read against them
+      kinds: Object.fromEntries([...card.querySelectorAll('.clausehead .chipcol .achip[data-anchor]')].map((el) => {
+        const m = el.querySelector('.mk'); const c = m && [...m.classList].find((x) => x.startsWith('mk-'));
+        return [el.dataset.anchor, c ? c.slice(3) : null];
+      })),
+      pile: pile ? { n: pile.querySelectorAll('.achip').length, open: pile.classList.contains('open'),
+        edges: front ? +(front.dataset.pile || 0) : 0,
+        anyEdges: pile.querySelectorAll('.achip[data-pile]').length } : null };
+  }, '#charter .sugg[data-card="' + q(id) + '"]');
+  const closeAll = () => page.evaluate(() => {
+    const open = window.SESSION.openId;
+    if (open) { try { window.SESSION.toggle(open, false); } catch (e) { /* already closed */ } }
+  });
+  const openOne = async (id) => {
+    await closeAll();
+    await wait(page, 120);
+    await page.evaluate((k) => window.SESSION.toggle(k, false), id);
+    await wait(page, 200);
+  };
+  for (const { id } of plan) {
+    await openOne(id);
+    const s = await readStrip(id);
+    if (!s) { errors.push(walk + ': P11 — ' + id + ' opened no card at its clause'); continue; }
+    strips.push({ walk, kind: 'open', id, key: s.key, tabs: s.tabs, kinds: s.kinds, pile: s.pile });
+    // …and the same pile opened by a click, where it was closed: no edges then
+    if (s.pile && !s.pile.open) {
+      await page.evaluate((sel) => { const p = document.querySelector(sel); if (p) p.click(); },
+        '#charter .sugg[data-card="' + q(id) + '"] .clausehead .filedpile[data-filed]');
+      await wait(page, 200);
+      const o = await readStrip(id);
+      if (o && o.pile) strips.push({ walk, kind: 'pile', id, key: s.key, pile: o.pile });
+    }
+    for (const t of s.tabs) {
+      if (t === id || (!sealed.has(id) && !sealed.has(t))) continue;
+      await openOne(id);
+      const card = '#charter .sugg[data-card="' + q(id) + '"]';
+      // a tab inside a closed filed pile is inert: the pile opens first, and
+      // the tab is measured once it stands where the click will find it
+      await page.evaluate((a) => {
+        const tab = document.querySelector(a[0] + ' .clausehead .achip[data-anchor="' + a[1] + '"]');
+        const pile = tab && tab.closest('.filedpile[data-filed]:not(.open)');
+        if (pile) pile.click();
+      }, [card, q(t)]);
+      await wait(page, 200);
+      // centred, so the page has room to scroll either way: the promise is
+      // kept by a scroll correction, and at scroll 0 none is possible (P7)
+      await page.evaluate((a) => {
+        const tab = document.querySelector(a[0] + ' .clausehead .achip[data-anchor="' + a[1] + '"]');
+        if (tab) tab.scrollIntoView({ block: 'center' });
+      }, [card, q(t)]);
+      await wait(page, 150);
+      const before = await page.evaluate((a) => {
+        const tab = document.querySelector(a[0] + ' .clausehead .achip[data-anchor="' + a[1] + '"]');
+        return tab ? window.__CA.seen(tab) : null;
+      }, [card, q(t)]);
+      const beforeTabs = (await readStrip(id) || { tabs: [] }).tabs;
+      const clicked = await page.evaluate((a) => {
+        const tab = document.querySelector(a[0] + ' .clausehead .achip[data-anchor="' + a[1] + '"]');
+        if (!tab) return false;
+        tab.click();
+        return true;
+      }, [card, q(t)]);
+      if (!clicked) { errors.push(walk + ': P11 — with ' + id + ' open, no tab for ' + t + ' to click'); continue; }
+      await wait(page, 320);
+      const after = await readStrip(t);
+      if (!after) { errors.push(walk + ': P11 — with ' + id + ' open, clicking ' + t + ' opened no card'); continue; }
+      const glyph = await page.evaluate((sel) => {
+        const tab = document.querySelector(sel);
+        return tab ? window.__CA.seen(tab) : null;
+      }, '#charter .sugg[data-card="' + q(t) + '"] .clausehead .achip[data-anchor="' + q(t) + '"]');
+      strips.push({ walk, kind: 'switch', key: s.key, open: id, click: t, before: beforeTabs, after: after.tabs,
+        mixed: sealed.has(id) !== sealed.has(t),
+        travel: before && glyph ? [r2(glyph[0] - before[0]), r2(glyph[1] - before[1])] : null });
+    }
+  }
+  await closeAll();
+  await wait(page, 150);
+}
+
+async function walkCharter(page, base, cards, errors, { closed, doors, rails, strips } = {}) {
   await page.goto(withQuery(base + '/session-view.html?fixture=session' + (closed ? '&closed=1&band=1' : '')));
   await page.waitForFunction(() => !!(window.SESSION && window.SESSION.SUGGS.length && document.querySelector('.qitem')),
     null, { timeout: 20_000 });
@@ -2184,6 +2426,8 @@ async function walkCharter(page, base, cards, errors, { closed, doors, rails } =
   // the rail's own pile (R1, Q1462)  the live charter only; a closed page
   // asks nothing of anybody, so nothing on it stands for a race still running
   if (!closed && rails) await walkRail(page, rails, walk);
+  // the strips at every clause holding a record (P11, the green tab)
+  if (!closed && strips) await stripPass(page, walk, strips, errors);
   if (closed) {
     // **The backlog's own records, checked rather than re-opened** (Q1339).
     // A backlog paragraph is keyed `U:<raceId>` **as a block of the document**
@@ -2231,6 +2475,7 @@ async function main() {
   const piles = [];
   const doors = [];
   const rails = [];
+  const strips = [];
   const t0 = Date.now();
   const run = async (name, fn) => {
     if (!WALKS.includes(name)) return;
@@ -2265,7 +2510,7 @@ async function main() {
       if (cards.length === n) errors.push('seat:' + seat + ' offered no cards — nothing was measured for it');
     }
   });
-  await run('charter', () => walkCharter(page, base, cards, errors, { doors, rails }));
+  await run('charter', () => walkCharter(page, base, cards, errors, { doors, rails, strips }));
   await run('closed', () => walkCharter(page, base, cards, errors, { closed: true }));
 
   const tok = await page.evaluate(() => window.__CA.tokens());
@@ -2273,7 +2518,7 @@ async function main() {
   server.close();
 
   for (const c of cards) c.findings = rulesFor(c, tok);
-  const cross = [...crossCard(cards), ...switchRules(switches), ...pileRules(piles), ...doorRules(doors), ...railRules(rails)];
+  const cross = [...crossCard(cards), ...switchRules(switches), ...pileRules(piles), ...doorRules(doors), ...railRules(rails), ...stripRules(strips)];
   /**
    * **The rollup is the finding; the card is where it shows.** A stylesheet
    * fact — `.headclause` padded 6px, an OK label at --t-cap — is one defect
@@ -2337,7 +2582,7 @@ async function main() {
   const payload = {
     meta: { viewport: VIEWPORT, walks: WALKS, cards: cards.length, seconds: Math.round((Date.now() - t0) / 100) / 10,
       ...(BROWSER === 'chromium' ? {} : { browser: BROWSER, browserVersion: version }) },
-    tokens: tok, cards, switches, doors, rails, rollup, cross, errors,
+    tokens: tok, cards, switches, doors, rails, strips, rollup, cross, errors,
   };
 
   /**

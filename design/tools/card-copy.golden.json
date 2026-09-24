@@ -1,6 +1,6 @@
 {
  "meta": {
-  "cards": 263,
+  "cards": 267,
   "walks": [
    "answers",
    "charter",
@@ -1614,8 +1614,45 @@
     ],
     "hints": [
      "Close this one",
+     "2 decided and filed at this clause — open them",
      "A member wrote this. Who, is sealed until the closing record.",
      "It leaves your margin and stays in the record"
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you preferred this wording"
+    ]
+   },
+   "quick-lockup-first": {
+    "eyebrow": "",
+    "head": "The last member out locks the front door, closes the Workshop, and puts out the lamp in the Common Room.",
+    "lock": "",
+    "body": "34%The last member out locks the front door and leaves the key with the Steward.Eleven keys and nobody knows who has one. The Steward should hold the spare, not a flowerpot.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Locking Up — open it",
+     "Locking Up — the lamp — the record",
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you kept the current text"
+    ]
+   },
+   "quick-lockup-lamp": {
+    "eyebrow": "",
+    "head": "The last member out locks the front door, closes the Workshop, and puts out the lamp in the Common Room.",
+    "lock": "",
+    "body": "Previous textThe last member out locks the front door.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Locking Up — open it",
+     "Close this one",
+     "Locking Up — the key — the record",
+     "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
      "n of m weighed in · quorum was 5 · you preferred this wording"
@@ -2674,8 +2711,45 @@
     ],
     "hints": [
      "Close this one",
+     "2 decided and filed at this clause — open them",
      "A member wrote this. Who, is sealed until the closing record.",
      "It leaves your margin and stays in the record"
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you preferred this wording"
+    ]
+   },
+   "quick-lockup-first": {
+    "eyebrow": "",
+    "head": "The last member out locks the front door, closes the Workshop, and puts out the lamp in the Common Room.",
+    "lock": "",
+    "body": "34%The last member out locks the front door and leaves the key with the Steward.Eleven keys and nobody knows who has one. The Steward should hold the spare, not a flowerpot.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Locking Up — open it",
+     "Locking Up — the lamp — the record",
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you kept the current text"
+    ]
+   },
+   "quick-lockup-lamp": {
+    "eyebrow": "",
+    "head": "The last member out locks the front door, closes the Workshop, and puts out the lamp in the Common Room.",
+    "lock": "",
+    "body": "Previous textThe last member out locks the front door.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Locking Up — open it",
+     "Close this one",
+     "Locking Up — the key — the record",
+     "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
      "n of m weighed in · quorum was 5 · you preferred this wording"

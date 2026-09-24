@@ -421,6 +421,29 @@ window.COPY = (function () {
       // yet.
       held: 'The membership is deciding this — it is yours to vote on once you accept Voting',
     },
+    // **a contents-rail mark is a control** (Q1520, Ed 2026-09-23: *clicking
+    // on the icons next to the table of contents should open those cards*):
+    // it opens its own entry's card, and its name is the entry's title and
+    // what it wants of you — the rail's own words where the rail has them,
+    // SURFACE §6's *wants* column where it does not. Filed marks are never
+    // in the contents rail (M10), so they have no words here.
+    toc: {
+      markState: {
+        needs: 'wants your vote',
+        urgent: 'wants your vote first',
+        stuck: 'deadlocked — wants a new proposal',
+        weigh: 'asks which of two questions matters more',
+        deciding: 'you have voted — it is still running',
+        shifted: 'the wording changed after you voted — you will be asked again',
+        adopted: 'passed — the text changed here',
+        retired: 'rejected — the text stands',
+        propose: 'your proposal',
+        stranded: 'your proposal — the text moved under it',
+      },
+      markName: (label, state) => label + (state ? ' — ' + state : ''),
+      // the `+n` tally goes to the section, as the heading does
+      more: (n) => n + ' more in this section — go to it',
+    },
     // the deadlock card: the reading room and the desk
     dead: {
       headLabel: 'The clause as it stands — and it is still standing',

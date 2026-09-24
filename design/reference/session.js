@@ -1639,52 +1639,15 @@
       : (el.dataset && el.dataset.washkey ? el : el.querySelector('[data-washkey]'));
     const raw = host ? getComputedStyle(host).getPropertyValue('--washcol').trim() : '';
     const m = raw.match(/^rgba\((.+?),\s*([\d.]+)\s*\)$/);
-    if (!m) {
-      const rgb = 'rgb(var(--lc-' + ((g && anchHue(g)) || 'closed') + '))';
-      return { rgb, a: 0.16, edge: wireEdge(rgb) };
-    }
+    if (!m) return { rgb: 'rgb(var(--lc-' + ((g && anchHue(g)) || 'closed') + '))', a: 0.16 };
     const a = +m[2];
     const ga = groundAOf(host.dataset.washkey);   // a rail entry's doubled ground, else GROUND_A
-    return { rgb: 'rgb(' + m[1] + ')', a: +(a + ga * (1 - a)).toFixed(3), edge: wireEdge('rgb(' + m[1] + ')') };
+    return { rgb: 'rgb(' + m[1] + ')', a: +(a + ga * (1 - a)).toFixed(3) };
   };
-  // **The wire's edge: its own hue, dark enough to be seen** (Q1516 (6), Ed
-  // 2026-09-23: *the faint yellow wire's contrast fixed alongside* the paper).
-  // The cable is the entry's composited colour, and an entry is a pale wash,
-  // so every cable was a pale line: measured on the fixture, a quiet yellow
-  // 1.13∶1 on the sheet and 1∶1 on the desk, the grey 1.41∶1, even the red
-  // 2.16∶1 — against the 3∶1 SC 1.4.11 asks of a graphic you need to read the
-  // page. Darkening the cable would break the rule it has kept since
-  // 2026-08-17, *identical as a colour* to the card it leaves. So the cable
-  // keeps its colour and gains an **edge**: one pixel either side
-  // (`WIRE_EDGE_W`, the cap one pixel wider) in the entry's own hue at full
-  // strength, taken toward black only as far as it must go to stand 3∶1 off
-  // both grounds it crosses — the sheet (`--bg`) and the desk (the body's own
-  // ground). One rule for every hue, as the cable's own mix is: a hue already
-  // dark enough (the red) is not darkened at all. Guard: `a11y-audit`'s A18.
-  const WIRE_EDGE_W = 8;   // system.css's `#wires .edge path` states it too, the stylesheet winning
-  const WIRE_EDGE_R = 8;
-  const edgeCache = new Map();
-  const wireEdge = (css) => {
-    const desk = getComputedStyle(document.body).backgroundColor;
-    const key = css + '|' + desk;
-    if (edgeCache.has(key)) return edgeCache.get(key);
-    const probe = document.createElement('span');
-    document.body.appendChild(probe);
-    const rgbOf = (c) => { probe.style.color = c; return (getComputedStyle(probe).color.match(/[\d.]+/g) || []).slice(0, 3).map(Number); };
-    const hue = rgbOf(css), grounds = [rgbOf('var(--bg)'), rgbOf(desk)];
-    probe.remove();
-    const lin = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
-    const lum = ([r, g2, b]) => 0.2126 * lin(r) + 0.7152 * lin(g2) + 0.0722 * lin(b);
-    const ratio = (p, q) => { const [x, y] = [lum(p), lum(q)].sort((s, t) => t - s); return (x + 0.05) / (y + 0.05); };
-    let edge = hue;
-    for (let k = 0; k <= 1; k += 0.02) {
-      edge = hue.map((c) => Math.round(c * (1 - k)));
-      if (grounds.every((gr) => gr.length !== 3 || ratio(edge, gr) >= 3)) break;
-    }
-    const out = hue.length === 3 ? 'rgb(' + edge.join(', ') + ')' : css;
-    edgeCache.set(key, out);
-    return out;
-  };
+  // **The cable has no edge** (Ed, 2026-09-24: *the cables … have a border
+  // now … can you remove it?*). Q1516 (6) gave it a 1px darker rim to stand
+  // 3∶1 off the sheet and the desk; the rim read as a border and went. The
+  // cable is its entry's colour and nothing else, as it was before.
   const WIRE_UNDER = '#FFFFFF';
   const SVGNS = 'http://www.w3.org/2000/svg';
 
@@ -1766,7 +1729,7 @@
     const lines = [], dots = [];
     const dot = (x, y) => dots.push([x, y]);
     const line = (d) => lines.push(d);
-    const shapes = (g, col, w, r = 7) => {
+    const shapes = (g, col, w) => {
       for (const d of lines) {
         const p = document.createElementNS(SVGNS, 'path');
         p.setAttribute('d', d);
@@ -1777,16 +1740,15 @@
       for (const [x, y] of dots) {
         const c = document.createElementNS(SVGNS, 'circle');
         c.setAttribute('class', 'cap');
-        c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', r);
+        c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', 7);
         c.setAttribute('fill', col);
         g.appendChild(c);
       }
     };
-    const paint = (col, alpha, w, r, cls) => {
+    const paint = (col, alpha) => {
       const g = document.createElementNS(SVGNS, 'g');
       if (alpha != null) { g.setAttribute('class', 'ink'); g.setAttribute('opacity', alpha); }
-      if (cls) g.setAttribute('class', cls);
-      shapes(g, col, w, r);
+      shapes(g, col);
       wiresEl.appendChild(g);
       return g;
     };
@@ -1961,6 +1923,7 @@
     clipHoles();
     shadow(1, 1, 0.13);
     shadow(3, 3, 0.20);
+    paint(WIRE_UNDER, null);
     // **A cable changes colour when its card does** (Ed, 2026-08-17), and by
     // the same means the washes do: the wire is rebuilt from scratch on every
     // draw, so a CSS transition has nothing to run from unless the new shapes
@@ -1968,16 +1931,7 @@
     // forced reflow. Keyed by the judgment, so a wire that is simply redrawn at
     // a new scroll position does not re-run the fade.
     const from = prevWire.get(id) || color;
-    // the edge first, a pixel wider all round (`wireEdge`, Q1516 (6)), then
-    // the white the cable composites over, then the cable itself
-    const edge = paint(from.edge || color.edge, null, WIRE_EDGE_W, WIRE_EDGE_R, 'edge');
-    paint(WIRE_UNDER, null);
     const ink = paint(from.rgb, from.a);
-    if (from.edge !== color.edge) {
-      void wiresEl.getBoundingClientRect();
-      edge.querySelectorAll('path').forEach((p) => p.setAttribute('stroke', color.edge));
-      edge.querySelectorAll('circle').forEach((c) => c.setAttribute('fill', color.edge));
-    }
     if (from.rgb !== color.rgb || from.a !== color.a) {
       void wiresEl.getBoundingClientRect();
       ink.setAttribute('opacity', color.a);
@@ -2520,6 +2474,19 @@
     return key ? SUGGS.filter((g) => tabAt(g, key) &&
       stateOf(g) === 'sealed' && !isUnread(g)) : [];
   }
+  // …and the other half of that note, which nothing drew (Ed, 2026-09-24,
+  // the green tab): `suggFor` is *live and unsealed* and `filedFor` is *sealed
+  // and read*, so a record decided and still owed its OK was in neither — it
+  // stood in the strip only while it was the open card, `clauseHeadHtml`
+  // prepending the card's own tab, and a click on the filed tab beside it took
+  // the green ✔ out of the strip altogether. These are that record's places:
+  // the live part of the strip and the live pile in the gutter, at its first
+  // block (Q1418), until its OK files it. `suggFor` keeps its meaning — its
+  // other readers ask *is anything still racing here* — so this is joined to
+  // it by the sites that draw a pile, never folded into it.
+  function unreadFor(key) {
+    return key ? SUGGS.filter((g) => tabAt(g, key) && isUnread(g)) : [];
+  }
 
   // The tab of the card you are reading: the same control it was in the gutter,
   // in the same place, so the thing you clicked to open the card is the thing
@@ -2531,7 +2498,8 @@
   const achipHtml = (g, key, o) =>
     '<span class="achip' + (o.inert ? ' behind' : '') + '"' +
     (o.inert ? ' aria-hidden="true"' : ' role="button" tabindex="0"') +
-    ' data-anchor="' + g.id + '"' + chipStyle(g, o.z ? 'z-index:' + o.z : '') +
+    ' data-anchor="' + g.id + '"' + (o.pile ? ' data-pile="' + o.pile + '"' : '') +
+    chipStyle(g, o.z ? 'z-index:' + o.z : '') +
     (o.inert ? '' : ' title="' + esc(plainLabel(g.qLabel)) +
       (g.kind === 'patch'
         ? T.nav.placeOf(g.sites.findIndex((x) => x.key === key) + 1, g.sites.length)
@@ -2556,6 +2524,14 @@
   // reads down into the past, which is how every record anybody keeps is read.
   // Ranking it by anything other than time would be a claim about which past
   // decision mattered, and nothing here is entitled to make one.
+  //
+  // **Closed, the pile is one tab with its edges beneath it** (Ed, 2026-09-24,
+  // from nh2026's Expiry clause: two acknowledged records read as one tab).
+  // The 4px slivers it drew before were a grey on a grey tab and said nothing;
+  // the rail's queue card stack already says *there are more beneath this* in
+  // the one way the surface has for it (Q1462, M20), so the pile borrows it
+  // whole: its front tab alone, and one card edge per record behind it, depth
+  // only, capped at four (`PILE_EDGES_MAX`) — five cards drawn, no number.
   function filedPileHtml(key, gs0, activeId) {
     const gs = gs0.slice().reverse();
     // **A pile never closes over the card you are reading.** If the active card
@@ -2569,15 +2545,20 @@
       (open ? '' : ' role="button" tabindex="0" title="' + T.chip.filedPile(gs.length) + '"') + '>' +
       gs.map((g, i) => (g.id === activeId ? ownChipHtml(g) : achipHtml(g, key, {
         inert: !open, z: gs.length - i, title: T.chip.theRecord,
+        pile: !open && i === 0 ? pileEdges(gs.length - 1) : 0,
       }))).join('') + '</span>';
   }
+  // the edges a pile of records draws beneath its front tab: one per record
+  // behind it, never more than four (the green tab's pile, Ed 2026-09-24)
+  const PILE_EDGES_MAX = 4;
+  const pileEdges = (behind) => Math.max(0, Math.min(behind, PILE_EDGES_MAX));
 
   function chipsFor(key, activeId) {
     // Same order as the gutter stack, for the same reason (see `stackOrder`):
     // the card's tab strip is that stack expanded, so the two must not disagree
     // about what sits where. The active card's tab is marked **in place** and
     // never lifted (Ed, 2026-08-17) — see `clauseHeadHtml`.
-    const live = stackOrder(key ? suggFor(key) : [])
+    const live = stackOrder(key ? suggFor(key).concat(unreadFor(key)) : [])
       .map((g) => (g.id === activeId ? ownChipHtml(g) : achipHtml(g, key, {}))).join('');
     const filed = filedFor(key);
     return live + (filed.length ? filedPileHtml(key, filed, activeId) : '');
@@ -3468,14 +3449,16 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
         // defect again, one branch over. The mark still shows the front one.
         const hOpen = line.key && !hlive.length
           ? SUGGS.find((g) => g.id === openId && hSealedAt(g)) : undefined;
+        // …and where one record is still owed its OK, that one is the front
+        // (the green tab, 2026-09-24): a filed ✔ found first hid it
         const hDecided = line.key && !hlive.length
-          ? (hOpen || SUGGS.find(hSealedAt))
+          ? (hOpen || SUGGS.find((g) => hSealedAt(g) && isUnread(g)) || SUGGS.find(hSealedAt))
           : undefined;
         let marks = '';
         if (hlive.length) {
           const swallow = swallowOpen(line.key, hlive);
           if (swallow.swallowed) { html += swallow.html + gapsAfter(line.key); continue; }
-          marks = chipStackHtml(hlive, line.key);
+          marks = chipStackHtml(hlive.concat(unreadFor(line.key)), line.key);
         } else if (hDecided) {
           if (openId === hDecided.id && !cardDone) {
             html += '</div>' + suggCardHtml(hDecided) + PROSE();
@@ -3483,7 +3466,10 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
             html += gapsAfter(line.key);
             continue;
           }
+          // the other records here as the pile's edges (Ed, 2026-09-24)
+          const hPile = pileEdges(SUGGS.filter(hSealedAt).length - 1);
           marks = '<span class="chipcol" contenteditable="false"><span class="achip" tabindex="0"' +
+            (hPile ? ' data-pile="' + hPile + '"' : '') +
             chipStyle(hDecided) + ' data-anchor="' + hDecided.id + '" title="' +
             esc(plainLabel(hDecided.qLabel)) + T.chip.decided + '">' + mkHtml(markKindOf(hDecided)) + '</span></span>';
         }
@@ -3511,8 +3497,12 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       // first in `SUGGS` order is otherwise the only one this door can draw
       // …and it stands at the run's first block alone (Q1418)
       const sealedAt = (g) => (resolved.has(frontKeyOf(g)) || g.state === 'sealed') && tabAt(g, line.key);
+      // …and the one still owed its OK before any filed one (the green tab,
+      // 2026-09-24): the door draws one tab, and a read record found first in
+      // `SUGGS` order stood over the unread one and hid it from the gutter
       const wasResolved = line.key && !live.length
-        ? (SUGGS.find((g) => g.id === openId && sealedAt(g)) ?? SUGGS.find(sealedAt))
+        ? (SUGGS.find((g) => g.id === openId && sealedAt(g)) ??
+          SUGGS.find((g) => sealedAt(g) && isUnread(g)) ?? SUGGS.find(sealedAt))
         : undefined;
 
       if (live.length) {
@@ -3525,7 +3515,8 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
             '<p class="anch editable' + (openId === primary.id ? ' active' : '') + bulletCls(line) + '" data-key="' + line.key +
             '" data-anchor="' + primary.id + '"' +
             anchWash(primary, openId === primary.id, line.key) + '>' +
-            chipStackHtml(live, line.key) + blockHtml(line) + '</p>';
+            // the unread records ride the live pile (the green tab, 2026-09-24)
+            chipStackHtml(live.concat(unreadFor(line.key)), line.key) + blockHtml(line) + '</p>';
         }
       } else {
         // a settled clause opens its record the same way — the record's head is
@@ -3546,6 +3537,9 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
           // accepted Voting — the gutter is one column wide and the live or
           // filed tab already says there is something here.
           const heldHere = wasResolved ? [] : heldFor(line.key);
+          // the door is one tab, and the other records at this clause are its
+          // pile's edges beneath it (Ed, 2026-09-24: two read as one tab)
+          const doorPile = wasResolved ? pileEdges(SUGGS.filter(sealedAt).length - 1) : 0;
           // …and the gap block takes the same treatment with its own sentence
           // (Q1090: one rule, two sentences — the rule is the geometry)
           html += '<p class="editable' + (wasResolved ? ' anch resolved' : '') + (heldHere.length ? ' anch held' : '') + (blank ? ' blank' : '') + (line.gap ? ' gap' : '') + bulletCls(line) + '"' +
@@ -3555,7 +3549,8 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
             (blank ? ' data-placeholder="' + (line.gap ? T.blank.gap : MAY_PROPOSE()
               ? T.blank.mayPropose
               : T.blank.plain) + '"' : '') + '>' +
-            (wasResolved ? '<span class="chipcol" contenteditable="false"><span class="achip" tabindex="0"' + chipStyle(wasResolved) + ' data-anchor="' + wasResolved.id +
+            (wasResolved ? '<span class="chipcol" contenteditable="false"><span class="achip" tabindex="0"' +
+              (doorPile ? ' data-pile="' + doorPile + '"' : '') + chipStyle(wasResolved) + ' data-anchor="' + wasResolved.id +
               '" title="' + esc(plainLabel(wasResolved.qLabel)) + T.chip.decided + '">' + mkHtml(markKindOf(wasResolved)) + '</span></span>' : '') +
             (heldHere.length ? heldStackHtml(heldHere) : '') +
             blockHtml(line) + '</p>';
@@ -4866,17 +4861,32 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
     // happened here*, which is a different question with a different answer.
     // The `+n` tally counts what it hides, so a section of nothing but filed
     // decisions now reads as empty rather than as a row of ticks.
-    const marks = entriesForSection(n).map(markKindOf).filter((k) => !FILED_KINDS.has(k));
+    const marks = entriesForSection(n).map((g) => ({ g, k: markKindOf(g) })).filter((m) => !FILED_KINDS.has(m.k));
     if (!marks.length) return '';
     // choose by what is actionable, then draw in document order
-    const keep = new Set(marks.map((m, i) => [m, i])
+    const keep = new Set(marks.map((m, i) => [m.k, i])
       .sort((a, b) => keepRank(a[0]) - keepRank(b[0]) || a[1] - b[1])
       .slice(0, TOC_MARKS).map(([, i]) => i));
     const shown = marks.filter((_, i) => keep.has(i));
+    // **each mark is a control that opens its own card** (Q1520, Ed
+    // 2026-09-23: *clicking on the icons next to the table of contents should
+    // open those cards*) — the rail entry's own act, bound in `renderToc` —
+    // named by the entry's title and what it wants of you, so it is no longer
+    // hidden from a screen reader. **The `+n` tally goes to the section**, as
+    // the heading's own link does: what it counts is not drawn, so there is
+    // no one card for it to open.
+    const markBtn = ({ g, k }) => {
+      // escaped piece by piece, where the member-written title enters
+      const name = T.toc.markName(esc(plainLabel(g.qLabel)), esc(T.toc.markState[k] || ''));
+      return '<button type="button" class="tocmark" data-tocq="' + esc(g.id) + '" aria-label="' + name +
+        '" title="' + name + '">' + mkHtml(k) + '</button>';
+    };
+    const more = marks.length - shown.length;
     // the `.run` is the marks' own box — their ground and their width — inside
     // a zero-width span, so they queue rightwards out of the rail (Q1384)
-    return '<span class="tocmarks" aria-hidden="true"><span class="run">' + shown.map(mkHtml).join('') +
-      (marks.length > shown.length ? '<span class="more">+' + (marks.length - shown.length) + '</span>' : '') +
+    return '<span class="tocmarks"><span class="run">' + shown.map(markBtn).join('') +
+      (more > 0 ? '<button type="button" class="more" data-tocmore="' + n + '" aria-label="' + esc(T.toc.more(more)) +
+        '" title="' + esc(T.toc.more(more)) + '">+' + more + '</button>' : '') +
       '</span></span>';
   }
 
@@ -4891,19 +4901,27 @@ document.addEventListener('pointercancel', () => { if (GESTURE === 'hold') flySt
       if (!/^\d+$/.test(b.dataset.secToggle)) return;   // the host's own fold keys are its business
       b.addEventListener('click', (ev) => { ev.preventDefault(); toggleSection(+b.dataset.secToggle); });
     });
+    const toHeading = (n) => {
+      // A heading with exactly one question in it *is* that question, so
+      // clicking it opens the card rather than merely arriving nearby
+      // (Ed, 179). With several, there is nothing to disambiguate on and it
+      // stays what it was: navigation.
+      const only = entriesForSection(n);
+      if (only.length === 1 && openId !== only[0].id) return toggle(only[0].id, true);
+      // same owned animation as the queue-wire, and clear of the sticky navbar
+      travelToHeading('sec-' + n);
+    };
     tocEl.querySelectorAll('[data-toc]').forEach((a) =>
-      a.addEventListener('click', (ev) => {
-        ev.preventDefault();
-        const n = +a.dataset.toc;
-        // A heading with exactly one question in it *is* that question, so
-        // clicking it opens the card rather than merely arriving nearby
-        // (Ed, 179). With several, there is nothing to disambiguate on and it
-        // stays what it was: navigation.
-        const only = entriesForSection(n);
-        if (only.length === 1 && openId !== only[0].id) return toggle(only[0].id, true);
-        // same owned animation as the queue-wire, and clear of the sticky navbar
-        travelToHeading('sec-' + n);
-      })
+      a.addEventListener('click', (ev) => { ev.preventDefault(); toHeading(+a.dataset.toc); })
+    );
+    // **a mark opens its card, a tally goes to its section** (Q1520): the mark
+    // is the rail entry's own act — `toggle(id, true)`, which travels through
+    // `bringIntoView` — and the tally is the heading's
+    tocEl.querySelectorAll('[data-tocq]').forEach((b) =>
+      b.addEventListener('click', (ev) => { ev.preventDefault(); toggle(b.dataset.tocq, true); })
+    );
+    tocEl.querySelectorAll('[data-tocmore]').forEach((b) =>
+      b.addEventListener('click', (ev) => { ev.preventDefault(); toHeading(+b.dataset.tocmore); })
     );
     // Everything the host contributed above the charter's own headings — the
     // Constitution pile head, one entry per live constitution section, the
