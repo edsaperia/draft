@@ -6,6 +6,15 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-09-25: a task list for phones
+
+### New
+- **On a phone, your tasks sit in a sheet at the bottom of the screen.** Its edge peeks up with the most urgent task's title and how many more are waiting; tap it, swipe it up or press ≣ to raise it, and it tucks away while you read down the document.
+
+### Changed
+- **Proposing and voting arrive once you have activated your membership.** A new member meets 🏛️ first, and 💡 Proposals and ⚖️ Voting follow after, so nobody is asked to vote before they are a full member.
+- **The title card is tidier.** Its open tab is white like the others that need nothing from you, the page's edge no longer moves when the card opens, and the card never shows two lines with nothing between them.
+
 ## 2026-09-24, night: calmer margins and bigger headings
 
 ### Changed
