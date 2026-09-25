@@ -29,6 +29,8 @@ Rule files hold rules; `design/DECISIONS.md` holds their history. Where two disa
 
 ## V1 product decisions
 
+- **The guiding light is user acceptance, and the edge is speed** (Ed, 2026-09-25): *normal users are incredibly uninterested in the details of the model; they're happy to just click buttons and be happy when their proposals pass; they're unhappy when the cards look funny because they assume something is broken … every session is a fun experiment … in almost every room, there will be very few close races / cycles. The edge of this software is proposal and voting SPEED rather than a clever voting scheme.* Weigh every mechanism change by what it costs in votes and time per change; weigh every surface change by whether a card could look broken.
+
 - Target context: constitutional conventions for Newspeak House cohorts. Rosters typically 5–10, conventions 15–20; design must not preclude 100+/1000+ instances, but v1 tunes to small rosters (data-efficiency over throughput).
 - Hosted multi-tenant web service; magic-link auth against roster emails. Invitations send from **docs.vote** via **Resend** — the sending domain was the real hosting decision.
 - Documents are Markdown, rendered as rich text; usually a few pages, long-document behavior stays in scope for sim experiments.
