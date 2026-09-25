@@ -167,6 +167,7 @@ P11 is what stops a seeded proposal adopting by accident when Ed changes 👥 or
 - **The text first published** is `@text` with the decided entries worked backwards, newest first: each `Adopted:` run put back to its `As it was:`. That text is what the Founder confirms before 🍾.
 - **Decided entries** are adopted in file order, oldest first, one per stride of synthetic time: proposed by their proposer (and a losing rival by its proposer, on the same site), then judged by as many members as the floor needs, all preferring the adopted wording to the current text and to the rival.
 - **Proposals and insertions** are then submitted, each one patch of as many hunks as it has sites, and judged by `State:`, **never past the floor**: `fresh` — nobody; `leaning` — one member approves; `contested` — one member approves and one or two prefer the current text (and, where the race holds rivals, they are judged against each other). The approver is never the author, and with the author's own derived preference that makes two approvals, which is under a 👥 of three. Rivals are whichever entries touch the same lines: the engine decides who races whom (SPEC §4), and the file does not say.
+- **A seeded race with rivals is more than one vote from passing** (SPEC v0.142, Q1538; Ed's ruling 9 (b), 2026-09-25: *accept a slower demo*). Since v0.142 a leader passes only once it has been voted on directly against every live rival by that pair's own floor (R-142), and the builder does not seed those pairs, so a visitor's one approval no longer carries a multi-rival race: its rival pairs have to be voted too, and the router serves them next. As built, the three-way title race's leader stands at 2 of 6 approvals with 0 of its 2 rival pairs measured (the Q1538 builder's reading on the branch). `demo-check`'s P11 asserts *not adopted* and stays green; it does not assert *one vote from passing*.
 - **The judges** are drawn from the cast in a fixed order, the author and the rival's author excluded, so a rebuild of an unchanged file is the same document.
 
 **Guards:** `packages/server/test/demo-preset.test.ts` (each rule P1–P10 with a failing fixture string, and the real file passing); `demo-check` in CI's `ci` job beside `spec-check`.
@@ -363,6 +364,7 @@ So the $3 cap (Q1535) lets any lively ten-minute run finish on any model and pau
 - **Ed's seat switchable** between the Founder and a member.
 - **The spectator feed** as for any document.
 - **The preset read at every Reset.**
+- **A slower demo accepted under v0.142** (Ed, 2026-09-25, Q1538 ruling 9 (b)): the seeded rival races are not re-seeded with their rival-pair votes (§3.3).
 - **Times stay in the session headings** (`### 09:30 · Title`); a swap writes each slot's time back (Stage 4).
 - The preset's rules as drafted except **every proposal signed** — named from the start, 👤 at *public* — and the wallet **3 up to 3** (R-083, unchanged), refilling **every 2 minutes**; **all three reorderings kept**; the clinic insertion and the invented names left as drafted.
 

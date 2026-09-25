@@ -154,7 +154,14 @@ export function assignmentWelfare(scenario: Scenario, assignment: Assignment): n
  * is NOT the per-issue argmax — that is the point.
  */
 export function optimalAssignment(scenario: Scenario): Assignment {
-  const issues = scenario.issues;
+  // **A strictly dominated alternative is never in the optimum** (the Smith
+  // study's clones, Q1539): one at the same position as another and of lower
+  // quality is worth less to every persona and to every coupling, so it is
+  // left off the menu — which keeps the product enumerable and changes no
+  // result, the optimum being strictly better than any assignment holding it.
+  const issues = scenario.issues.map((issue) => ({ ...issue,
+    alternatives: issue.alternatives.filter((a) => !issue.alternatives.some((b) =>
+      b !== a && b.position === a.position && b.quality > a.quality)) }));
   // Precompute roster-summed base utility per (issue, alternative).
   const baseSums = issues.map((issue) =>
     issue.alternatives.map((alt) =>

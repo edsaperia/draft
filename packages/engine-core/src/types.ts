@@ -253,7 +253,8 @@ export interface Candidate {
    */
   awaiting?: { raceId: string; p: number; threshold: number;
     cappedFit?: { iterations: number; gradMax: number };
-    decided?: { approvals: number; floor: number; abstained: number } };
+    decided?: { approvals: number; floor: number; abstained: number;
+      rivals?: { measured: number; of: number } } };
 }
 
 /**
@@ -374,16 +375,16 @@ export interface RaceView {
   deadlocked: boolean;
   /**
    * Closeness to resolution as a magnitude, never a direction (SPEC §8.3:
-   * "closeness-to-resolution as a single number"): **the leader's judges over
-   * the floor**, `min(1, leaderJudges / F)` (Q1362 (c), Ed 2026-09-15,
-   * R-118). Voters so far over voters required — the one number the room
-   * controls, and the only distance a race still has to cover, the bar having
-   * left the test (R-117; R-101's lesser-of-two-distances is superseded with
-   * it). A fresh race sits at 1/F, its author being one judge of their own
-   * text (§3.3), and each new judge of the leader is a step. A race about to
-   * carry and a race the current text is about to see off both read 1 once
-   * the floor is met: the number says how far the room has got, never which
-   * way it is going.
+   * "closeness-to-resolution as a single number"): **`meter-need`** since
+   * v0.142 (Q1538 ruling 1 → why: R-118, R-142) — the votes cast on every
+   * pair the leader waits on, over the votes those pairs still need. The
+   * leader against the current text counts distinct answers (*Indifferent*
+   * and the author's derived preference among them) to its floor, and once
+   * there always needs one more than it has; each rival pair short of
+   * measured counts to its own floor, a measured one drops out. Answers,
+   * never approvals, so a vote either way moves it alike; a rival arriving
+   * adds its pair's floor to the denominator; and it is **never 1 on a live
+   * race** — Ed: *the progress bar must not fill and then fail to adopt*.
    */
   closeness: number;
   /**
@@ -394,12 +395,45 @@ export interface RaceView {
   rivalGateOpen: boolean;
   /**
    * **The members of this race that can no longer win** (SPEC §4.4, Q1440 →
-   * why: R-132), oldest first, empty on almost every race. Time-free, like
-   * the counts it is read off — a domination needs no clock and no event, and
-   * one arrives only when a judgment does. The sweep retires them with the
-   * adoption batch; nothing else in the engine gates on it.
+   * why: R-132), oldest first, empty on almost every race. The counts are
+   * time-free; the ranking the two guards read is smith-rank since v0.142
+   * (R-143), which moves when a pair becomes measured — so a domination can
+   * arrive when a silence runs its period as well as with a judgment. The
+   * sweep retires them with the adoption batch; nothing else gates on it.
    */
   dominated: Domination[];
+  /**
+   * **The Smith set** (SPEC §4.2 → why: R-143; Q1539), at the time the view
+   * was taken: every wording — the current text among them, by its
+   * `incumbentId` — that reaches every other through **measured** results it
+   * did not lose, an unmeasured pair a gap. Empty until something reaches
+   * everything, when the fit's order stands for the ranking and nothing is
+   * carried. The top of the ranking is its strongest member by the fit.
+   */
+  smith: string[];
+  /**
+   * **Wordings the fit rates above the current text that a direct majority
+   * preferred the current text to** (Q1539 ruling 6 → why: R-143), oldest
+   * first: `p` the fit's P(it beats the current text), `n` of `m` members who
+   * answered that pair preferring the text (*Indifferent* counted in `m`).
+   * What a retirement or an undecided close stamps, for the record's
+   * ranked-note; nothing gates on it.
+   */
+  headToHead: Array<{ id: string; p: number; n: number; m: number }>;
+  /**
+   * **The pairs the leader still waits on** (SPEC §4.2, §8.2 → why: R-142;
+   * Q1538), as `pairKey`s in the order the router asks them: the leader
+   * against each live rival short of measured, oldest first, then the pairs
+   * among the wordings beating the leader head to head, the current text's
+   * first. Moves with the clock, as a pair's floor does.
+   */
+  measureShort: string[];
+  /**
+   * **How many of its live rivals the leader has been measured against**
+   * (SPEC §4.2, §4.6 → why: R-142): a rival the batch will close is not
+   * counted. `{ measured: 0, of: 0 }` on a race of one candidate.
+   */
+  rivals: { measured: number; of: number };
   /**
    * **Waiting behind a park** (SPEC §4.2, R-100; Q1179): the leader is ready
    * to carry — the sweep's own readiness test, one function for both — and
@@ -513,6 +547,19 @@ export type Event =
        * written before the rule folds unedited.
        */
       reason?: string;
+      /**
+       * **The ranked-note's numbers** (Q1539 → why: R-143; Ed 2026-09-25, ruling
+       * 6): the wording ended with the fit rating it above the text that stood,
+       * while a direct majority of those who answered it against that text
+       * preferred the text — so the record shows its percentage, higher than the
+       * text's, and says why it did not pass. `p` is the fit's P(it beats the
+       * current text); `n` of `m` preferred the current text, `m` counting every
+       * member who answered the pair, *Indifferent* included, and its author by
+       * their standing preference (§3.3). Stamped when the wording ends, so the
+       * record never re-derives it (R-141's lesson); absent otherwise, and on
+       * every older log.
+       */
+      ranked?: { p: number; n: number; m: number };
     }
   | {
       /**
@@ -554,7 +601,8 @@ export type Event =
        * optional on `cappedFit`'s own terms — absent, never `undefined`, so
        * every log written before the field existed folds byte for byte.
        */
-      decided?: { approvals: number; floor: number; abstained: number };
+      decided?: { approvals: number; floor: number; abstained: number;
+        rivals?: { measured: number; of: number } };
     }
   | {
       /**
@@ -569,6 +617,8 @@ export type Event =
       id: string;
       raceId: string;
       refund: number;
+      /** As on `candidate-retired` (Q1539): the fit above, a direct majority for the text. */
+      ranked?: { p: number; n: number; m: number };
     }
   | {
       /** Author folds their support into an existing candidate (SPEC §5.1). */
@@ -636,6 +686,14 @@ export type Event =
        * where zero means a room in which nobody ran out of time.
        */
       abstained?: number;
+      /**
+       * **How many of its live rivals the winner was measured against** (Q1538;
+       * SPEC §4.2, §4.6 → why: R-142), snapshotted by the batch with the
+       * three numbers above. Written only where the winner had rivals, so a
+       * race of one candidate adopts exactly as before; `measured` below `of` only at
+       * the close, where the wait is waived. Absent on every older log.
+       */
+      rivals?: { measured: number; of: number };
     }
   | {
       /**

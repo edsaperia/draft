@@ -246,12 +246,15 @@ describe('a text change voids the pairs it touches, and only those (R-076 kept)'
       author: 'p2', rationale: 'r', patch: span(0, 0, 1, 'Clause one is reworded.') });
     s.judge(2000, 'p3', a, w, 'b');
     s.judge(2100, 'p4', w, raceOf(s, w).incumbentId, 'a');
+    // W waits until it is measured against A (R-142): p4 answers that pair too
+    expect(s.getCandidate(w).state).toBe('live');
+    s.judge(2110, 'p4', a, w, 'b');
     expect(s.getCandidate(w).state).toBe('adopted');
     // carried: A against W is now A against the current text, and it counts
     const carried = standing(s, 'p3', a, w)!;
     expect(carried.carried).toBeDefined();
     expect(carried.locked).toBe(false);
-    expect(raceOf(s, a).comparisons).toBe(1);
+    expect(raceOf(s, a).comparisons).toBe(2);
     // the text under A's line changes again: that judgment compared A with
     // wording that no longer stands, so this time it locks
     s.decreeText(3000, { author: 'p1', rationale: '',

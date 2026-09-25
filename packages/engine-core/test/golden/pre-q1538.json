@@ -1,0 +1,236 @@
+{
+ "log": [
+  {
+   "seq": 0,
+   "hash": "4f35c0e7ad5f2d7c09dfc54e5a3283de89e0a83f47a4e5e344631413b7ee523e",
+   "prevHash": "",
+   "event": {
+    "type": "opened",
+    "t": 0,
+    "constitution": {
+     "adoptionThresholdStart": 0.5,
+     "adoptionThresholdEnd": 0.5,
+     "adoptionFloorMax": 12,
+     "quorum": {
+      "form": "count",
+      "n": 3
+     },
+     "deadlockMinComparisons": 20,
+     "deadlockEpsilon": 0.02,
+     "cooldownMs": 0,
+     "redraftLimit": 2,
+     "tokenGrant": 4,
+     "tokenDripMinutes": 240,
+     "tokenCap": 8,
+     "stake": 1,
+     "rationaleMaxChars": 300,
+     "boutGapMs": 90000,
+     "hotSetSize": 3,
+     "explorationEvery": 7,
+     "salienceEvery": 10,
+     "authorshipVisibility": "sealed",
+     "rivalGateProb": 0.5,
+     "rivalGateMinComparisons": 3,
+     "reopenedBoost": 1.5,
+     "windowStartMs": 0,
+     "windowEndMs": 360000000,
+     "rngSeed": "pre-q1538"
+    },
+    "text": "# Charter\nMembership is open to anyone.\nDecisions are made by consensus.",
+    "roster": [
+     {
+      "id": "p1",
+      "handle": "P1"
+     },
+     {
+      "id": "p2",
+      "handle": "P2"
+     },
+     {
+      "id": "p3",
+      "handle": "P3"
+     },
+     {
+      "id": "p4",
+      "handle": "P4"
+     },
+     {
+      "id": "p5",
+      "handle": "P5"
+     }
+    ]
+   },
+   "schemaVersion": 1
+  },
+  {
+   "seq": 1,
+   "hash": "d0b91293a7120b5209ece5b6b7e3fbdb632a19b0bf3c870e402d4ef8467a28ae",
+   "prevHash": "4f35c0e7ad5f2d7c09dfc54e5a3283de89e0a83f47a4e5e344631413b7ee523e",
+   "event": {
+    "type": "candidate-submitted",
+    "t": 1000,
+    "id": "c1",
+    "author": "p1",
+    "patch": {
+     "baseVersion": 0,
+     "hunks": [
+      {
+       "start": 1,
+       "end": 2,
+       "lines": [
+        "Membership is open to members."
+       ]
+      }
+     ]
+    },
+    "rationale": "x",
+    "disclosure": "sealed"
+   },
+   "schemaVersion": 1
+  },
+  {
+   "seq": 2,
+   "hash": "deeca12ac2dc6da670b1ec4c859df83494bf369d71d9bf3330f4fd5e47dd589c",
+   "prevHash": "d0b91293a7120b5209ece5b6b7e3fbdb632a19b0bf3c870e402d4ef8467a28ae",
+   "event": {
+    "type": "candidate-submitted",
+    "t": 2000,
+    "id": "c2",
+    "author": "p2",
+    "patch": {
+     "baseVersion": 0,
+     "hunks": [
+      {
+       "start": 1,
+       "end": 2,
+       "lines": [
+        "Membership is open to all."
+       ]
+      }
+     ]
+    },
+    "rationale": "y",
+    "disclosure": "sealed"
+   },
+   "schemaVersion": 1
+  },
+  {
+   "seq": 3,
+   "hash": "7568d91901e590ec9af1f9b48f405ce4a0ab00e0c281d83721a2a8a3f982c427",
+   "prevHash": "deeca12ac2dc6da670b1ec4c859df83494bf369d71d9bf3330f4fd5e47dd589c",
+   "event": {
+    "type": "comparison",
+    "t": 3000,
+    "participantId": "p3",
+    "aId": "c1",
+    "bId": "inc:3e0d9282b89337d1",
+    "kind": "edge",
+    "outcome": "a"
+   },
+   "schemaVersion": 1
+  },
+  {
+   "seq": 4,
+   "hash": "b588b492fe66af658e5ede93e7be46c1cd54e8bc05cc68b8a5b732a1457f2a35",
+   "prevHash": "7568d91901e590ec9af1f9b48f405ce4a0ab00e0c281d83721a2a8a3f982c427",
+   "event": {
+    "type": "comparison",
+    "t": 4000,
+    "participantId": "p4",
+    "aId": "c1",
+    "bId": "inc:3e0d9282b89337d1",
+    "kind": "edge",
+    "outcome": "a"
+   },
+   "schemaVersion": 1
+  },
+  {
+   "seq": 5,
+   "hash": "884997f3bd463a52d6b2ff9a2d3a5ce8e84f8481ab0a70c6dc0880209cb94907",
+   "prevHash": "b588b492fe66af658e5ede93e7be46c1cd54e8bc05cc68b8a5b732a1457f2a35",
+   "event": {
+    "type": "adopted",
+    "t": 4000,
+    "candidateId": "c1",
+    "raceId": "r:c1",
+    "newVersion": 1,
+    "p": 0.9435837740338977,
+    "threshold": 0.5,
+    "approvals": 3,
+    "floor": 3,
+    "abstained": 0
+   },
+   "schemaVersion": 1
+  },
+  {
+   "seq": 6,
+   "hash": "32478df114b72b69e0e392fa39e7a168cef1c09b595e8f17700b1c4ec91b0730",
+   "prevHash": "884997f3bd463a52d6b2ff9a2d3a5ce8e84f8481ab0a70c6dc0880209cb94907",
+   "event": {
+    "type": "candidate-reaimed",
+    "t": 4000,
+    "id": "c2",
+    "patch": {
+     "baseVersion": 1,
+     "hunks": [
+      {
+       "start": 1,
+       "end": 2,
+       "lines": [
+        "Membership is open to all."
+       ]
+      }
+     ]
+    },
+    "by": "c1",
+    "carried": []
+   },
+   "schemaVersion": 1
+  }
+ ],
+ "summary": {
+  "hash": "32478df114b72b69e0e392fa39e7a168cef1c09b595e8f17700b1c4ec91b0730",
+  "states": {
+   "c1": "adopted",
+   "c2": "live"
+  },
+  "judgments": [
+   {
+    "seq": 3,
+    "t": 3000,
+    "participantId": "p3",
+    "aId": "c1",
+    "bId": "inc:3e0d9282b89337d1",
+    "kind": "edge",
+    "outcome": "a",
+    "superseded": false,
+    "locked": true
+   },
+   {
+    "seq": 4,
+    "t": 4000,
+    "participantId": "p4",
+    "aId": "c1",
+    "bId": "inc:3e0d9282b89337d1",
+    "kind": "edge",
+    "outcome": "a",
+    "superseded": false,
+    "locked": true
+   }
+  ],
+  "document": "# Charter\nMembership is open to members.\nDecisions are made by consensus.",
+  "types": [
+   "opened",
+   "candidate-submitted",
+   "candidate-submitted",
+   "comparison",
+   "comparison",
+   "adopted",
+   "candidate-reaimed"
+  ],
+  "ids": {
+   "X": "c1",
+   "Y": "c2"
+  }
+ }
+}

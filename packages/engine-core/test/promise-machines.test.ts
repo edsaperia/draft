@@ -84,6 +84,11 @@ function walk(machineAuthored: boolean): Session {
     if (s.getCandidate(a.id).state !== 'live') break;
     const inc = s.races().find((r) => r.members.includes(a.id))!.incumbentId;
     s.judge(4000 + i * 100, p, a.id, inc, 'a');
+    // A waits until it is measured against B (R-142): the same member answers
+    const short = s.races().find((r) => r.members.includes(a.id))?.measureShort ?? [];
+    if (s.getCandidate(a.id).state === 'live' && short.length > 0) {
+      s.judge(4000 + i * 100 + 50, p, a.id, b.id, 'a');
+    }
   }
   s.tick(7000);
   return s;

@@ -217,6 +217,7 @@ export class Routing {
     participantId: string,
     rivalGateOpen: boolean,
     leaderFirst: string | null = null,
+    measureFirst: readonly string[] = [],
   ): BestPair | null {
     const ids = [...members, incumbentId];
     const scan = (
@@ -252,6 +253,18 @@ export class Routing {
       const decisive = scan((a, b) =>
         (a === leaderFirst && b === incumbentId) || (b === leaderFirst && a === incumbentId));
       if (decisive !== null) return decisive;
+    }
+    // **Then the pairs the leader waits on** (Q1538; SPEC §8.2 → why: R-142):
+    // the leader against each live rival short of measured, oldest rival
+    // first, then the pairs among the wordings that beat it head to head —
+    // asked at the moment their silence would be foreclosed, and before the
+    // value order, since active sampling would never ask a pair the model
+    // thinks it already knows (§5.3's exception). The caller passes them only
+    // once they are worth asking; the scan's own exclusions still apply.
+    for (const key of measureFirst) {
+      const [x, y] = key.split('|') as [string, string];
+      const hit = scan((a, b) => (a === x && b === y) || (a === y && b === x));
+      if (hit !== null) return hit;
     }
     if (rivalGateOpen) return scan(() => true);
     const isIncumbentPair = (a: string, b: string): boolean =>
@@ -295,7 +308,23 @@ export class Routing {
     // against the current text is the pair that decides it, and it goes first
     const decisive = r.leaderId !== null && r.approvals < r.floor ? r.leaderId : null;
     return this.bestPairFor(
-      fit, r.members, r.incumbentId, participantId, r.rivalGateOpen, decisive);
+      fit, r.members, r.incumbentId, participantId, r.rivalGateOpen, decisive,
+      this.measureServed(r) ? r.measureShort : []);
+  }
+
+  /**
+   * **When the pairs the leader waits on are asked** (Q1538 ruling 5; SPEC
+   * §8.2, §8.3 → why: R-142): at the rival gate — once some proposal looks
+   * likely to beat the current text — and, whatever the gate says, once the
+   * leader is on top and has met its floor, so that nothing but those pairs
+   * stands between it and the batch. The gate's minimum of three measured
+   * comparisons is not met in a small room whose leader carries on its
+   * author and one seconder, and there the wait would otherwise be served
+   * only as the fallback after every current-text pair.
+   */
+  private measureServed(r: RaceView): boolean {
+    return r.measureShort.length > 0 &&
+      (r.rivalGateOpen || (r.leaderOnTop && r.approvals >= r.floor));
   }
 
   /** The edge card `feed` deals for a pair `askOnRace` found on a race. */
@@ -364,8 +393,13 @@ export class Routing {
     // room measured (91% of a saturated host).
     const races = this.host.races(t);
     const short = races.filter((r) => r.approvals < r.floor).map((r) => r.id).join(',');
+    // …and the pairs each leader waits on (Q1538), which move with the clock
+    // exactly as `short` does, and change both the order a race asks in and
+    // whether it takes the unheard boost
+    const waiting = races.filter((r) => this.measureServed(r))
+      .map((r) => `${r.id}:${r.measureShort.join(';')}`).join(',');
     return this.host
-      .derived(`feed|${participantId}|${n}|${short}`,
+      .derived(`feed|${participantId}|${n}|${short}|${waiting}`,
         () => this.dealFeed(participantId, n, t, races))
       .slice();
   }
@@ -406,7 +440,9 @@ export class Routing {
     const valued = races
       .map((r) => {
         let v = ((r.leaderP ?? 0.5) / threshold) * (weights.get(r.id) ?? 1);
-        if (r.approvals < r.floor && !judgedRaces.has(r.id)) v *= 1.25;
+        // and on a leader short of measured against its rivals (Q1538): the
+        // same foreclosed silence, on the pairs the leader now waits on
+        if ((r.approvals < r.floor || this.measureServed(r)) && !judgedRaces.has(r.id)) v *= 1.25;
         if (r.comparisons < r.members.length && this.hasLockedEvidence(r)) {
           v *= constitution.reopenedBoost;
         }

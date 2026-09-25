@@ -183,7 +183,7 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
   // page is told *when* and works out *whether* against its own clock, which
   // is the one number a browser can be trusted with.
   const abstainAt = (raceId: string): { abstainAt?: number } => {
-    const at = engine.abstainDeadline(raceId, memberId);
+    const at = engine.abstainDeadline(raceId, memberId, nowMs);
     return at !== null ? { abstainAt: at } : {};
   };
   // **At this poll's own clock** (Q1439): who has abstained, and so what each
@@ -396,6 +396,9 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
      *  silences 💤's period had already taken out of the group when the batch
      *  decided. Absent on a record older than the rule; zero is a number. */
     abstained?: number;
+    /** How many of its live rivals the winner was measured against (Q1538, §4.6): the
+     *  measured-note, where `measured` is below `of` — a wording passed at the close. */
+    rivals?: { measured: number; of: number };
     /**
      * **Where the record stands now** (Q1333): the field's span, decided in
      * `version`'s coordinates, carried through every adoption and decree
@@ -411,6 +414,8 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
       rationale: string; judgedByMe: boolean;
       /** *Proposal refused by ‹name› 🛡️* — the reason the author reads (R-056). */
       reason?: string;
+      /** The ranked-note (Q1539 ruling 6): *‹n› of ‹m› members preferred the current text to this*. */
+      ranked?: { n: number; m: number };
       cappedFit?: { iterations: number; gradMax: number };
       author?: { id: string; name: string | null; picture: string | null } }> };
   const byRace = new Map<string, Rec>();
@@ -501,6 +506,7 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
     const entry = { candidateId: o.candidateId, outcome: o.outcome, p: o.p ?? null,
       threshold: o.threshold ?? null, hunks: c.patch.hunks, rationale: c.rationale,
       judgedByMe: mineJ, ...(o.reason ? { reason: o.reason } : {}),
+      ...(o.ranked ? { ranked: o.ranked } : {}),
       ...(o.cappedFit ? { cappedFit: o.cappedFit } : {}),
       ...(author ? { author } : {}) };
     let rec = byRace.get(key);
@@ -530,6 +536,7 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
       if (typeof o.approvals === 'number') rec.approvals = o.approvals; else delete rec.approvals;
       if (typeof o.floor === 'number') rec.floor = o.floor; else delete rec.floor;
       if (typeof o.abstained === 'number') rec.abstained = o.abstained; else delete rec.abstained;
+      if (o.rivals) rec.rivals = o.rivals; else delete rec.rivals;
     }
   }
   // **A record's span, carried to the current text** (Q1333): once per

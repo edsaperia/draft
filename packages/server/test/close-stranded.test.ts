@@ -75,6 +75,9 @@ describe('the close files a stranded proposal into the record (Q1353)', () => {
     // cy's patch cannot be carried across the line it rewrote (SPEC §2.4)
     const inc = bridge.engine.races().find((r) => r.id === winner.raceId)!.incumbentId;
     bridge.judge(20, 'ada', winner.id, inc, 'a');
+    // …once it is measured against cy's (Q1538 → why: R-142): ada and cy split
+    bridge.judge(21, 'ada', winner.id, rival.id, 'a');
+    bridge.judge(22, cy, winner.id, rival.id, 'b');
     expect(bridge.engine.getCandidate(winner.id).state).toBe('adopted');
     expect(bridge.engine.getCandidate(rival.id).state).toBe('rebase-pending');
 

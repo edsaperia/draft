@@ -86,6 +86,13 @@ say('\n== motion-race: an ordinary motion is the race machinery whole (Q390) =='
   eq(race.members.length, 2, 'rival values join ONE race (Q390)');
   check(race.contested.length === 0, 'a setting race contests no text');
 
+  say('  t=15  dee and eve prefer bo’s date to cy’s, cy their own: the pair of the');
+  say('        two values is measured — three answers, its floor — before either can');
+  say('        carry (Q1538, §4.2), and cy’s is still in reach of what stands');
+  bridge.judge(15, dee, a.candidate!, b.candidate!, 'a');
+  bridge.judge(15, eve, a.candidate!, b.candidate!, 'a');
+  bridge.judge(15, cy, a.candidate!, b.candidate!, 'b');
+
   say('  t=20  dee, then eve, judge bo’s date over what stands — and that is');
   say('        enough: the floor counts judges of the winner (Q1337, §4.2), bo’s');
   say('        own voice among them, so three judges of bo’s value meet F=3;');
