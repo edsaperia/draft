@@ -140,3 +140,18 @@ These replace grammar.md §1. They enter SURFACE's opening as each build stage m
 10. **Nothing you are in the middle of is taken by the page updating** — caret, press, drag, half-typed value. *Not built* until the re-render stage.
 
 The floating 📝 door is not a principle: it is a named exception in `zone-overlap` (1541.17, *the fact that it sometimes overlaps things is what makes it stand out*).
+
+## Part 6 — BUILD.md §6's ten points, ruled (Ed 2026-09-25, one at a time)
+
+| # | Point | Ruling |
+|---|---|---|
+| 6.1 | 👑's label | **Ask while owed, then the rule**: *Accept This Change?* while the seat's OK is owed; *Current rule* once pressed or never owed — `labelOf`'s ask-then-noun pattern. |
+| 6.2 | Label size | **Every label at `--t-cap`**, the card's and each block's alike (principle 9 read literally; 1541.45's *eyebrow treatment* means the drawing, not the step). |
+| 6.3 | The two homeless lines | **Keep the record's participation line** (*7 of 20 weighed in · quorum was 7*) as its one fact line; **the power card's holder line goes** — the pill on its clause says it. |
+| 6.4 | *At the page's top* | **Wherever room runs out**: the page scrolls as far as it can and the first line moves down only by the shortfall, wherever the label would land above the visible area or under the topbar. |
+| 6.5 | Close and switch | **The same rule both ways**: closing and switching take the room back above, the clause still on screen. |
+| 6.6 | Closed document's powers | **Both go**: the powers sentence leaves the Rules paragraphs as well as the cards and tabs. |
+| 6.7 | The subject-naming clause | **Card only**: the Rules paragraph keeps *this*. |
+| 6.8 | 🍾 while Q1542 is open | **Convert 🍾 in stage 2** with today's title as its label; the Q1542 session reworks it again. (Reverses BUILD.md's assumption.) |
+| 6.9 | Stage 1's second pilot | **A filed sealed record on a clause**, as proposed. |
+| 6.10 | A cut-off proposal's label | **The live label plus *· Ran out of time***: *Proposed by ‹name› · Ran out of time* signed, *Proposed · Ran out of time* anonymous. |
