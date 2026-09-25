@@ -1,0 +1,88 @@
+/* grammar.css — the prototype's layer over system.css and setup.css
+   (Q1541 stage 5; grammar.md §2.4, §2.6, §4). Loaded after both. Everything
+   here is scoped to `.gcard`, the one shell's root, so a card the shell has
+   not taken keeps today's drawing. */
+
+/* §4's three aliases — onto the spacing scale, never new values */
+.gcard { --slot-gap: var(--s3); --block-pad: var(--s3); }
+
+/* ---- H1: a hairline belongs to a gap, never to a slot ------------------- */
+/* every border a slot or block used to own, taken off; the `.ghair` elements
+   the shell writes between two drawn things are the only rules left */
+.gcard .field, .gcard .race-mid.commitrow, .gcard .setupcard .body, .gcard .body,
+.gcard .pick + .pick, .gcard .choice.delegrung > .pick, .gcard .propblock + .propblock,
+.gcard .vinblock, .gcard .clausehead .headrule.asblock {
+  border-top: 0; border-bottom: 0; padding-top: 0; padding-bottom: 0; margin-top: 0; margin-bottom: 0;
+}
+.gcard .ranked, .gcard .ranked.wasthere {
+  border: 0; border-radius: 0; background: none; padding: 0; margin: 0;
+}
+.gcard .ghair {
+  height: 0; border: 0; border-top: 1px solid var(--border);
+  margin: var(--block-pad) 0;
+}
+
+/* ---- L1: slots in order, one rhythm between those without a hairline ---- */
+.gcard > [data-slot] { margin-top: 0; margin-bottom: 0; }
+.gcard > [data-slot] + [data-slot] { margin-top: var(--slot-gap); }
+.gcard > .clausehead { margin-bottom: 0; }
+.gcard [hidden] { display: none !important; }
+/* a body's last paragraph and a block's own trailing margins do not add to a gap */
+.gcard > [data-slot] > :last-child, .gcard .gblocks .pick > :last-child { margin-bottom: 0; }
+.gcard > [data-slot] > :first-child { margin-top: 0; }
+.gcard .gbody > * + * { margin-top: var(--s2); }
+.gcard .gbody p { margin: 0; }
+.gcard .ginput > * + * { margin-top: var(--s3); }
+
+/* ---- G1 / P1: the head's first line lands on the paragraph's -------------
+   The band's head is the paragraph's own `.cpv`, so it takes the paragraph's
+   own offsets and nothing else. The charter card stood its head a padding
+   lower than the clause (14px) plus the eyebrow (19px); the eyebrow is gone
+   (G2), and the card box now starts a padding above the clause's box, so the
+   washed block — the same box as `.anch` — lands where the clause stood. */
+.gcard .clausehead .rtext.gplace > .cpv { margin: 0; }
+.gcard .clausehead .rtext.gplace { padding-top: 0; }
+#charter .gcard.sugg, .doc .gcard.sugg:not(.setupcard) { margin-top: -14px; }
+
+/* ---- the fact line (§2.7): text, never a control ----------------------- */
+.gcard .gfact {
+  font-family: var(--font-ui); font-size: var(--t-small); line-height: 1.45;
+  color: var(--muted);
+}
+
+/* ---- O1 (a): a block's label lives in its lane, beside its radio -------- */
+.gcard .lanebar .glabel, .gcard .glabel {
+  font-family: var(--font-ui); font-size: var(--t-cap); color: var(--muted);
+  margin-left: var(--s2); margin-right: auto;
+}
+.gcard .lanebar { justify-content: flex-start; }
+/* a block with no lane (a record's, the 👑 card's) wears its label as the last line */
+.gcard .propblock > .glabel, .gcard .pick > .glabel, .gcard .ranked > .glabel {
+  display: block; margin: var(--s2) 0 0;
+}
+
+/* ---- §2.6: the row's three places ---------------------------------------- */
+.gcard .grow { display: flex; align-items: center; gap: var(--s2); }
+.gcard .grow .gleft { display: flex; gap: var(--s2); }
+.gcard .grow .gnote { flex: 1; min-width: 0; font-size: var(--t-cap); color: var(--muted); }
+.gcard .grow .rightpair { display: flex; gap: var(--s2); margin-left: auto; }
+
+/* ---- B10 / R1: ✓ is a glyph commit like every other, never solid green —
+   green is *decided* and lives on marks and the record's highlight ------- */
+.gcard .btn.btn-approve.glyphbtn:not([disabled]):not([aria-pressed="true"]) {
+  background: var(--bg); border-color: var(--border); color: var(--fg); font-weight: 400;
+}
+.gcard .btn.btn-approve.glyphbtn:not([disabled]):not([aria-pressed="true"]):hover {
+  background: var(--light); border-color: var(--primary-hover); color: var(--fg);
+}
+
+/* ---- the prototype's own note (off the design system, like the demo panel) */
+#gnote {
+  position: fixed; left: 8px; bottom: 36px; z-index: 60; max-width: 300px;
+  font: 11px/1.35 ui-monospace, Consolas, monospace; color: #333;
+  background: #fffbe6; border: 1px solid #d9c46a; border-radius: 4px; padding: 6px 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12); opacity: 0.92;
+}
+#gnote summary { cursor: pointer; font-weight: 700; }
+#gnote ul { margin: 4px 0 0; padding-left: 14px; }
+@media (max-width: 900px) { #gnote { bottom: 8px; max-width: 220px; } }
