@@ -1087,6 +1087,28 @@
     if (y >= 100 && y <= 300) return;
     SESSION.smoothScrollBy(y - 150, () => { SESSION.layoutQueue(); SESSION.drawWires(); });
   });
+  // **The review walk, arriving at a Rules card** (Q1536, Ed 2026-09-25):
+  // opened as a rail click opens it — travelling there — with the keyboard on
+  // its own tab, where Enter presses its OK (C18). Asked by the walk from a
+  // Rules OK (`walkOn`, from inside `closeThen`) and from a text record's OK
+  // (session.js's `extra.walkTo`, with nothing of the band's open). The tab
+  // is focused a turn later, after `closeThen` has handed the keyboard back.
+  const bandWalkTo = (k) => {
+    if (S.editMode) setEditMode(false);
+    S.open = k;
+    scrollToCard(k);
+    setTimeout(() => {
+      if (S.open !== k) return;
+      const t = tabFor(k);
+      if (t) { try { t.focus({ preventScroll: true }); } catch (e) { /* gone */ } }
+    }, 0);
+  };
+  // where the walk goes from a Rules OK: the next Rules card, set open before
+  // `closeThen` renders, or the next text record, opened once it has
+  const walkOn = (t) => {
+    if (t.band != null) bandWalkTo(t.band);
+    else if (t.text != null) setTimeout(() => SESSION.toggle(t.text, true), 0);
+  };
   // switch the open card in place: the box's height glides from the old
   // card's to the new card's while the contents crossfade — the strip in the
   // gutter belongs to both, so it never moves and never blinks
@@ -8707,6 +8729,14 @@
       });
     }
     const okb = ev.target.closest('[data-ok]');
+    // **the review walk takes the Rules' news too** (Q1536; Ed 2026-09-25, on
+    // the builder's call 5: *it should go downwards in the document, and when
+    // it gets to the bottom it should go back to the top, and include rules
+    // news*): an OK on an owed Rules card does what it always did, and then
+    // the next thing owed in document order opens — the Rules' own below this
+    // one, then the text's records, then back to the top (`walkFromBand`).
+    // Asked before the press, while this entry is still owed and standing.
+    const walked = okb && S.open && SESSION.bandOwes(S.open) ? SESSION.walkFromBand(S.open) : null;
     if (okb) return closeThen(() => { const kk = okb.dataset.ok;
       S.okd.add(kk); S.open = null;
       // the grant's object flies into your wallet from this press (Q448) —
@@ -8737,7 +8767,8 @@
       // same way — `holdOkInFlight` is what makes it one press (Q846)
       if (cs && kk.startsWith('held:') && viewerId()) {
         try { holdOkInFlight(kk, cs.ackHeld(now(), viewerId(), kk.slice(5))); } catch (e) {}
-      } });
+      }
+      if (walked) walkOn(walked); });
     const toggleFold = (k2) => {
       if (S.folded.has(k2)) S.folded.delete(k2); else S.folded.add(k2); };
     const stg = ev.target.closest('[data-sec-toggle]');
@@ -10308,6 +10339,8 @@
     entries: () => railEntries,
     isOpen: (id) => S.open === id,
     openId: () => S.open,
+    // the review walk arriving at a Rules card from a text record's OK (Q1536)
+    walkTo: (k) => { bandWalkTo(k); render(); },
     closeOthers: (mine) => {
       // one card at a time (backlog 204): a charter card opening leaves edit
       // mode — the draft is kept — with no render of its own, since `toggle`

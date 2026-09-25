@@ -462,7 +462,7 @@ window.BEGIN = (function () {
     // whose names the record reveals
     const closingBody = (c) => {
       const rec = env.cs && env.cs.isRemote ? env.cs.record : null;
-      const adopted = rec ? rec.adopted.length : (env.FIX ? SESSION.SUGGS.filter((g) => g.state === 'sealed' && g.won).length : 0);
+      const adopted = rec ? rec.adopted.length : (env.FIX ? SESSION.SUGGS.filter((g) => g.state === 'sealed' && g.won && !g.fold).length : 0);
       const undecided = rec ? rec.undecided.length : SESSION.SUGGS.filter((g) => g.undecided).length;
       const motionRecs = env.cs ? [...env.cs.motionRecords().values()] : [];
       const carried = motionRecs.filter((m) => m.status === 'carried').length;

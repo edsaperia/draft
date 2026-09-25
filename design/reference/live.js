@@ -1761,11 +1761,27 @@ window.LIVE = (function () {
       // (Q620) — and they are resolved here rather than in `session.js`, which
       // draws the card and has no access to `S`
       const rungNow = v.record ? v.record.rungNow : null;
-      const underNoteOf = (f) => {
+      const madeUnderOf = (f) => {
         const u = f && madeUnder.get(f.id || f.candidateId);
         if (!u || !rungNow || u === rungNow) return undefined;
         const w = STANDS.authorship(u);
         return w ? 'made under ' + w + ', before the rule changed' : undefined;
+      };
+      // **The record's two lines of v0.142** (Q1538, Q1539; SPEC §4.2, §4.6):
+      // under a wording passed at the close before it was put against every
+      // rival, how many it was put against (`rivals` on the record); under a
+      // losing wording the fit rated above the text that stood, how many
+      // preferred the text to it head to head (`ranked` on its field entry).
+      // Both are stamped by the engine as the race ended, never re-derived.
+      const REC_NOTE = window.COPY.session.record;
+      const underNoteOf = (f, o) => {
+        const notes = [madeUnderOf(f)];
+        if (f && f.outcome === 'adopted' && o && o.rivals && o.rivals.measured < o.rivals.of) {
+          notes.push(REC_NOTE.measuredAtClose(o.rivals.measured, o.rivals.of));
+        }
+        if (f && f.ranked) notes.push(REC_NOTE.rankedBelow(f.ranked.n, f.ranked.m));
+        const said = notes.filter(Boolean);
+        return said.length ? said.join(' · ') : undefined;
       };
       // **The engine's one reserved reason, put into words here** (Q1440).
       // `candidate-retired.reason` is host prose everywhere else — the
@@ -1825,7 +1841,7 @@ window.LIVE = (function () {
         const slate = field.length > 1
           ? { slate: field.map((f) => ({ text: textOfF(f), src: f.hunks.flatMap((h) => h.lines).join('\n'),
               rationale: f.rationale, by: byName(f),
-              underNote: underNoteOf(f), refusal: reasonOf(f),
+              underNote: underNoteOf(f, o), refusal: reasonOf(f),
               p: f.p == null ? undefined : f.p, won: f === winner && (adopted || undecided) })) } : {};
         // **The card says which text it changed** where the clause under it has
         // changed again since (Q1333): the head is the clause as it stands, so
@@ -1889,7 +1905,7 @@ window.LIVE = (function () {
           undecided,
           won: adopted || undecided ? 'b' : undefined,
           optionB: textOfF(winner), replaced,
-          rationale: winner.rationale, by: byName(winner), underNote: underNoteOf(winner),
+          rationale: winner.rationale, by: byName(winner), underNote: underNoteOf(winner, o),
           // *Proposal refused by ‹name› 🛡️* (R-056): where the resolution had a
           // reason, the record is where its author reads it
           refusal: reasonOf(winner),

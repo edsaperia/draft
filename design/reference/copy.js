@@ -390,6 +390,35 @@ window.COPY = (function () {
       // Founder's (STYLE T8); the verb is *pass*, never *carry* and never
       // *adopted*.
       dominated: 'Rejected — it could no longer pass',
+      // **A wording passed at the close before it was put against every rival**
+      // (Q1538, Ed 2026-09-25, ruling 7): the wait for rivals is waived when
+      // the clock runs out (SPEC §4.6), and the record says how far it got —
+      // a count, never a verdict (T12). Under the wording that passed.
+      measuredAtClose: (k, m) => 'Passed when the document closed, voted against ' + k +
+        ' of its ' + m + (m === 1 ? ' rival' : ' rivals'),
+      // **Why a wording showing the higher percentage did not pass** (Q1539,
+      // Ed 2026-09-25, ruling 6: *can we say exactly how many members
+      // preferred the current text to this?* — the majority's count only).
+      // The percentages rank every vote in the race together; a head-to-head
+      // majority for the text is what kept it. `m` is everyone who answered
+      // the pair, Indifferent included. Under the losing wording.
+      rankedBelow: (n, m) => n + ' of ' + m + ' members preferred the current text to this',
+      // **One OK per clause** (Q1536, Ed 2026-09-24): a clause with several
+      // records owed is one rail entry and one card — its eyebrow, the rail
+      // entry's caption and tooltip, the line under a head marked with the
+      // net change, the line under a head nothing changed, the label over the
+      // list of its records, each row's tooltip, the way back to that list
+      // from one of its records, and the OK's tooltip. **Shorter, please**
+      // (Ed, 2026-09-25, on the builder's call 10): the fewest words that
+      // stay clear.
+      foldHead: (n) => n + ' decisions',
+      foldCap: (n) => n + ' new decisions',
+      foldSince: 'Marked against the text before them',
+      foldSame: 'Unchanged: none passed',
+      foldList: 'Oldest first',
+      foldOpen: 'Open',
+      foldBack: 'Back',
+      foldOkTitle: (n) => 'All ' + n + ' leave your margin',
       // **what a sealed record's own entry says it is** (Q1493's list, the
       // nh2026 convention 2026-09-20): the rail entry's tooltip, and the
       // caption under the mark. They were four literals in `live.js`, on the
