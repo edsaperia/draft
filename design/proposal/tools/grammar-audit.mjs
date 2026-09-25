@@ -3221,6 +3221,13 @@ async function main() {
     viewport: VIEWPORT, deviceScaleFactor: 1, locale: 'en-GB', timezoneId: 'Europe/London',
   });
   await context.addInitScript(IN_PAGE);
+  // stage 4: `--hide=<selector>` hides furniture that would cover a crop (the
+  // prototype's own *what is not converted* note sits over cards at 390)
+  const HIDE = arg('hide', null);
+  if (HIDE) await context.addInitScript((sel) => {
+    const put = () => { const s = document.createElement('style'); s.textContent = sel + '{display:none!important}'; (document.head || document.documentElement).appendChild(s); };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', put); else put();
+  }, HIDE);
   if (SPECIMENS) await context.addInitScript(() => { window.__CA_SPEC = true; });
   if (SPECIMENS && HEAVY) await context.addInitScript((h) => { window.__CA_HEAVY = h; }, HEAVY);
   const page = await context.newPage();
