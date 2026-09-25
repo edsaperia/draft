@@ -357,8 +357,29 @@ const IN_PAGE = () => {
     .filter((el) => focusable(el))
     .map((el) => ({ path: pathOf(el), name: accName(el).slice(0, 60) }));
 
+  /**
+   * **A heading is what reaches the accessibility tree, not what the tag says**
+   * (2026-09-25, Q1394's loose ends). The topbar's title is a `span` with
+   * `role="heading" aria-level="1"` (Q1394 (b)), and a tag-only read missed it
+   * both ways: it could not see the page's one real level-one heading, nor that
+   * birth and band then carried two. So: every `h1`–`h6` and every
+   * `[role="heading"]`, minus what is not rendered (display or visibility —
+   * opacity does not take a node out of the tree), what sits under
+   * `aria-hidden`, and what has had its role taken away; the level is
+   * `aria-level` where given, else the tag's.
+   */
+  const headingsInTree = (root) => [...(root || document).querySelectorAll('h1,h2,h3,h4,h5,h6,[role="heading"]')]
+    .filter((h) => {
+      if (h.closest('[aria-hidden="true"]')) return false;
+      const role = h.getAttribute('role') || '';
+      if (role && role !== 'heading') return false;
+      try { return h.checkVisibility({ visibilityProperty: true }); }
+      catch { const cs = getComputedStyle(h); return cs.display !== 'none' && cs.visibility !== 'hidden'; }
+    })
+    .map((h) => ({ el: h, lvl: +(h.getAttribute('aria-level') || (/^H[1-6]$/.test(h.tagName) ? h.tagName[1] : 2)) }));
+
   window.__A11Y = {
-    pathOf, accName, glyphOnly, focusable, visible, census, tabStops, box, R2,
+    pathOf, accName, glyphOnly, focusable, visible, census, tabStops, box, R2, headingsInTree,
 
     /**
      * A1 · a control with no accessible name at all. An `aria-hidden` one is
@@ -446,9 +467,8 @@ const IN_PAGE = () => {
 
     /** A10 · a heading level stepped over */
     headingSkips: (root) => {
-      const hs = [...(root || document).querySelectorAll('h1,h2,h3,h4,h5,h6')]
-        .filter((h) => window.__A11Y.visible(h))
-        .map((h) => ({ lvl: +h.tagName[1], text: (h.textContent || '').trim().slice(0, 50), path: window.__A11Y.pathOf(h) }));
+      const hs = window.__A11Y.headingsInTree(root)
+        .map((h) => ({ lvl: h.lvl, text: (h.el.textContent || '').trim().slice(0, 50), path: window.__A11Y.pathOf(h.el) }));
       const out = [];
       let prev = 0;
       for (const h of hs) {
@@ -473,7 +493,8 @@ const IN_PAGE = () => {
     page: () => ({
       lang: document.documentElement.getAttribute('lang') || '',
       title: (document.title || '').slice(0, 80),
-      h1: document.querySelectorAll('h1').length,
+      // level-one headings as the tree has them, not `h1` tags (see headingsInTree)
+      h1: window.__A11Y.headingsInTree(document).filter((h) => h.lvl === 1).length,
       skipLink: !!document.querySelector('a[href^="#"].skip, a[href^="#"][class*="skip"]'),
     }),
   };
@@ -947,6 +968,7 @@ async function main() {
     if (p.landmarks && !p.landmarks.length) add('A9 landmarks', 'the page has landmarks to navigate by', 'no main, nav, header, footer or aside', s.name, s.name);
     if (!p.page.lang) add('A15 lang', 'the document declares its language', 'no lang on <html>', s.name, s.name);
     if (p.page.h1 === 0) add('A15 h1', 'the page has one first-level heading', 'no h1', s.name, s.name);
+    if (p.page.h1 > 1) add('A15 h1', 'the page has one first-level heading', p.page.h1 + ' level-one headings in the tree', s.name, s.name);
     if (p.headings.n && p.headings.first && p.headings.first.lvl !== 1) add('A10 headings', 'the first heading is h1', 'the first heading is h' + p.headings.first.lvl, p.headings.first.path, s.name);
     if (s.focusRules && !s.focusRules.some((r) => r.visible)) add('A12 focus ring', 'a focused control is visibly focused', 'no :focus-visible rule in any stylesheet', s.name, s.name);
     if (s.focus) {
