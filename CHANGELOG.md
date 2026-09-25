@@ -2,9 +2,17 @@
 
 **[docs.vote](https://docs.vote)** is a place for a group to write a document together. Anybody may propose a change; rival wordings of the same passage race each other; the membership votes on them in blind pairs (*which of these two wordings?*, no names attached, no scores shown), and the wording that comes out on top is adopted once enough of the membership has voted. The document's own rules are decided the same way, inside the document.
 
-docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first, back to the project's first commit on 2026-08-13. The mechanism's full rules are in [`SPEC.md`](SPEC.md) (v0.140 today), and what the page shows a member is in [`SURFACE.md`](SURFACE.md).
+docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first, back to the project's first commit on 2026-08-13. The mechanism's full rules are in [`SPEC.md`](SPEC.md) (v0.142 today), and what the page shows a member is in [`SURFACE.md`](SURFACE.md).
 
 ---
+
+## 2026-09-25, night: rival wordings face each other
+
+### Changed
+- **When several wordings compete for the same clause, you are now asked to choose between them directly**, not only between each one and the current text. A leading wording passes once enough members have compared it with each rival still in the running, so the one that passes is the one the members preferred to all the others.
+- **A near-copy of a losing wording can no longer carry it past the current text.** A wording passes only if no other wording beat it head to head.
+- **The progress bar on a contested clause counts every vote still needed**, including those between rivals, so it no longer reads full while a proposal is still waiting.
+- **A record can say how many members preferred the current text** to a proposal that lost, and whether a proposal that passed as the document closed had been compared with all of its rivals.
 
 ## 2026-09-25, evening: clearer for screen readers
 
