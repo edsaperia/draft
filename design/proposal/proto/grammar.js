@@ -145,10 +145,23 @@
     const place = (el, inField) => {
       const cl = el.classList;
       if (!cl) return;
+      // a reason for what stands is spoken under the head (§2.2)
+      if (cl.contains('gheadspk') && head) { [...el.children].forEach((k) => head.appendChild(k)); return; }
+      // a body that already knows its head and its fact hands them over
+      if (cl.contains('gheadtext') && head) {
+        const rt = head.querySelector('.headclause > .rtext');
+        if (rt) { rt.innerHTML = el.innerHTML; rt.classList.add('gplace'); }
+        return;
+      }
+      if (cl.contains('gfactsrc')) { out.fact.push(el); out.factIsOutcome = true; return; }
       if (cl.contains('fieldlab')) {
-        // O1 (a): a field label is a block label, and a block's label lives
-        // in its lane beside the radio. Kept for the first block.
-        out.pendingLabel = textOf(el);
+        // O1 (a): a label naming what each block is (*Proposed*) is a block
+        // label, and lives in each block's lane beside its radio. A label
+        // about the whole field (*Everything in flight · 8 proposals*, *Two
+        // rivals*) says something about the thing, so it is the body's.
+        const t = textOf(el);
+        if (/\d|everything|rivals|proposals|two|three/i.test(t)) { el.classList.add('gfieldnote'); out.body.push(el); }
+        else out.pendingLabel = t;
         return;
       }
       if (cl.contains('rechead') || (cl.contains('rsub') && !inField)) { out.fact.push(el); return; }
@@ -243,7 +256,13 @@
     // its head empty and drew what stands as a chosen block (🎩 locked, the
     // Founder's own answer), the chosen block's words are the head
     const headRt = o.head && o.head.querySelector('.headclause > .rtext');
+    // at the birth the title is being written where it will stand, so the
+    // lane it is written in is the head (the place, in the making)
     if (headRt && !textOf(headRt)) {
+      const i = o.input.findIndex((x) => x.el.querySelector && x.el.querySelector('.titlelane'));
+      if (i >= 0) { headRt.appendChild(o.input[i].el); headRt.classList.add('gplace'); o.input.splice(i, 1); o.dropped.push('title lane → head'); }
+    }
+    if (headRt && !textOf(headRt) && !headRt.querySelector('.titlelane')) {
       for (const b of o.blocks) {
         const chosen = b.matches('.pick.on') ? b : b.querySelector && b.querySelector('.pick.on');
         if (!chosen) continue;
@@ -259,7 +278,20 @@
     const headText = norm(textOf(o.head && o.head.querySelector('.rtext, .headrule')));
     const anyAct = o.rowR.length > 0 || o.rowL.length > 0;
     const keptBlocks = [];
+    // J1: a radio has a job only where a commit can send the choice — the
+    // mover's own motion card (withdraw alone), a news card (OK alone) and
+    // a read-only card draw no radios and no Indifferent (§6.4's mover)
+    const choiceAct = o.rowR.some((b) => !/^(OK|Accept|Activate)/i.test(textOf(b)));
     const visitBlock = (blk) => {
+      if (!choiceAct && !closed) {
+        const isIndiff = blk.matches('.vinblock') || [...blk.querySelectorAll('.lanepick')].some((r) => /^Indifferent$/i.test(textOf(r)));
+        if (isIndiff) { o.dropped.push('Indifferent with nothing to send'); return null; }
+        blk.querySelectorAll('.lanepick').forEach((r) => { if (/^Chosen by /i.test(textOf(r))) return;
+          const bar = r.closest('.lanebar'); if (bar && bar.querySelectorAll('button').length <= 1) bar.remove(); else r.remove(); });
+        const t0 = norm(textOf(blk.querySelector('.opttext, .rtext') || blk));
+        if (t0 && t0.length > 2 && headText && (t0 === headText || headText.includes(t0)) &&
+          !blk.querySelector('input, textarea, [contenteditable]')) { o.dropped.push('the head again, no act'); return null; }
+      }
       const radios = [...blk.querySelectorAll('.lanepick')];
       let prov = null;
       radios.forEach((r) => { const t = textOf(r);
@@ -281,13 +313,27 @@
       if (!prov && live.length && !blk.querySelector('input, textarea, [contenteditable]')) {
         const t = norm(textOf(blk.querySelector('.opttext, .rtext') || blk));
         const pressed = live.some((r) => r.getAttribute('aria-checked') === 'true' || r.getAttribute('aria-pressed') === 'true');
-        if (pressed && t && t.length > 2 && headText && (t === headText || headText.includes(t))) {
+        const same = t && t.length > 2 && headText && (t === headText || headText.includes(t));
+        if (pressed && same && !blk.closest('.choice.gpeer') && !isPeerCard(o)) {
           o.standingPressed = true; o.dropped.push('standing block, pressed (the head again)'); return null;
+        }
+        // …and where what stands is itself one of the answers (Q1362's peer:
+        // the consent and ordinary motion cards), the head carries its lane
+        // (§2.3, §6.4) — the block that restated it gives its radio to the
+        // head and goes
+        if (same && o.head && !o.lane) {
+          const bar = document.createElement('div'); bar.className = 'lanebar ghlane';
+          live.forEach((r) => bar.appendChild(r));
+          const lab = document.createElement('span'); lab.className = 'glabel'; lab.textContent = 'Current rule';
+          bar.appendChild(lab);
+          o.head.appendChild(bar); o.lane = bar;
+          o.dropped.push('standing block → the head\'s lane'); return null;
         }
       }
       if (closed || (!anyAct && dead.length && !live.length)) {
         if (blk.matches('.ranked, .recbox') || blk.querySelector('.ranked')) { dead.forEach((r) => r.remove()); return blk; }
-        if (dead.length || blk.matches('.vinblock')) { o.dropped.push('block nobody may press'); return null; }
+        // P4: on a closed document nobody chooses, so no alternative is drawn
+        if (closed || dead.length || blk.matches('.vinblock')) { o.dropped.push('block nobody may press'); return null; }
       }
       if (dead.length && live.length === 0 && !blk.matches('.ranked, .recbox')) {
         // CP11's greyed radio on a live card: the block stays readable, the
@@ -319,13 +365,40 @@
     }
     // closed: inputs go (nothing can be sent), and so does the rationale lane
     if (closed) {
-      o.input = o.input.filter((x) => { if (x.el.querySelector && x.el.querySelector('[data-sign], [data-signwhy]')) return true;
+      const signing = o.rowR.some((b) => b.hasAttribute('data-sign'));
+      o.input = o.input.filter((x) => { if (signing || (x.el.querySelector && x.el.querySelector('[data-sign], [data-signwhy]'))) return true;
         o.dropped.push('closed: input'); return false; });
+      // …and no control anywhere on the card but its tabs and 🥂's signature
+      // (P4): the ✏️ *propose edit* on a lane, a stepper, a toggle
+      const strays = [o.head, ...o.body, ...o.blocks].filter(Boolean)
+        .flatMap((e) => [...e.querySelectorAll('button, [role="button"], input, select')])
+        .filter((b) => !b.closest('.chipcol') && !b.hasAttribute('data-sign'));
+      strays.forEach((b) => { const bar = b.closest('.lanebar'); if (bar && !bar.querySelector('.glabel')) bar.remove(); else b.remove(); });
+      if (strays.length) o.dropped.push('closed: ' + strays.length + ' stray control(s)');
     }
+    // a note about the field goes with the field
+    if (!o.blocks.length) o.body = o.body.filter((e) => !e.classList.contains('gfieldnote'));
+    // B12 made general: a body line restating a moment the head already
+    // states (🥂's *final as of 01:51* under *closed at 01:51*) is the same
+    // fact twice (F1)
+    const headTxt = textOf(o.head);
+    const times = headTxt.match(/\b\d\d:\d\d\b/g) || [];
+    o.body = o.body.filter((e) => {
+      const t = textOf(e);
+      if (times.length && e.matches('.unlocks, .setnote') && times.some((x) => t.includes(x)) && t.length < 80) {
+        o.dropped.push('moment stated twice: ' + t); return false;
+      }
+      return true;
+    });
     // B13: the rationale lane rides a change
     o.input.forEach((x) => { if (x.why) { x.el.setAttribute('data-gwait', 'dirty'); if (!st.dirty) x.el.setAttribute('hidden', ''); } });
   }
 
+  // a card whose answers include Indifferent is a judgment among peers, so
+  // what stands is one of its answers rather than the head restated
+  const isPeerCard = (o) => o.blocks.some((b) => b.matches('.vinblock') ||
+    !!(b.querySelector && b.querySelector('.vinblock, .lanepick.vin, [data-v="either"]')) ||
+    [...(b.querySelectorAll ? b.querySelectorAll('.lanepick') : [])].some((r) => /^Indifferent$/i.test(textOf(r))));
   function couldHold(root, o) {
     if (root.querySelector('input:not([type=hidden]), textarea, [contenteditable="true"], [contenteditable="plaintext-only"]')) return true;
     const hasIndiff = !!root.querySelector('.vinblock, .lanepick.vin, [data-v="either"]');

@@ -1517,6 +1517,17 @@ window.BAND = (function () {
             ? '<p class="cpv">' + PAGE_COPY.lapseReturned(
               listOf(back.map((mid2) => esc(nameOfMember(mid2)))), back.length) + '</p>'
             : '';
+          // **The prototype's news** (Q1541, grammar.md §2.2, the map's news
+          // row): what stands now is the head, who chose it and when is the
+          // fact line, so the change line would say both again in other words
+          // (F1). What is left is what it replaced — a *Previous rule* block —
+          // and the reason, under the speaker of the head it argues for.
+          if (window.GRAMMAR) {
+            return '<div class="gheadspk">' + (am.route === 'pen' ? founderSpeaker(am.why)
+              : window.CARDS.speakerHtml(am.why)) + '</div>' +
+              '<div class="recbox gprev"><div class="rtext"><p class="cpv">' + esc(was) + '</p></div>' +
+              '<span class="glabel">Previous rule</span></div>' + returned;
+          }
           return '<div class="body changed">' + dated +
             (longish
               ? '<p class="cpv">' + who + what + '.</p>' +

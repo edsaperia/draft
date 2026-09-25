@@ -13,11 +13,11 @@ await p.goto(url); await p.waitForTimeout(1200);
 if (seat) { await p.selectOption('#devwho', seat); await p.waitForTimeout(800); }
 for (let i = 0; i < 6; i++) { const n = await p.evaluate(() => { const t = [...document.querySelectorAll('#band .sectoggle')].find((b) => b.getAttribute('aria-expanded') === 'false'); if (!t) return 0; t.click(); return 1; }); if (!n) break; await p.waitForTimeout(300); }
 const keys = await p.evaluate(() => [...new Set([...document.querySelectorAll('#band [data-tab], #titlepara [data-tab], #doc .achip[data-anchor], #ridetab [data-tab]')].map((e) => e.getAttribute('data-tab') || e.getAttribute('data-anchor')))]);
-const seenK = new Set(keys);
+const seenK = new Set(keys); const stripOf = new Map();
 for (let ki = 0; ki < keys.length; ki++) { const k = keys[ki];
   if (only && !only.includes(k)) continue;
-  await p.evaluate(() => window.scrollTo(0, 0));
-  const ok = await p.evaluate((k) => { const el = document.querySelector('[data-tab="' + CSS.escape(k) + '"]') || document.querySelector('.achip[data-anchor="' + CSS.escape(k) + '"]'); if (!el) return false; el.click(); return true; }, k);
+  if (!stripOf.has(k)) await p.evaluate(() => window.scrollTo(0, 0));
+  const ok = await p.evaluate((k) => { const el = document.querySelector('.clausehead .chipcol [data-tab="' + CSS.escape(k) + '"]') || document.querySelector('[data-tab="' + CSS.escape(k) + '"]') || document.querySelector('.achip[data-anchor="' + CSS.escape(k) + '"]'); if (!el) return false; el.click(); return true; }, k);
   if (!ok) continue;
   await p.waitForTimeout(350);
   const r = await p.evaluate(() => {
@@ -32,9 +32,9 @@ for (let ki = 0; ki < keys.length; ki++) { const k = keys[ki];
       dropped: c.getAttribute('data-gdropped') || '' };
   });
   console.log('## ' + k + (r ? '  [' + r.shape + ']  ' + r.seq + '\n   head: ' + r.head + (r.fact ? '\n   fact: ' + r.fact : '') + '\n   row: ' + r.row + (r.dropped ? '\n   dropped: ' + r.dropped : '') : '  (no card)'));
-  for (const t of await p.evaluate(() => [...document.querySelectorAll('.gcard .chipcol .achip[data-tab], .sugg .chipcol .achip[data-tab]')].map((e) => e.getAttribute('data-tab')))) if (!seenK.has(t)) { seenK.add(t); keys.push(t); }
+  for (const t of await p.evaluate(() => [...document.querySelectorAll('.gcard .chipcol .achip[data-tab], .sugg .chipcol .achip[data-tab]')].map((e) => e.getAttribute('data-tab')))) if (!seenK.has(t)) { seenK.add(t); keys.splice(ki + 1, 0, t); stripOf.set(t, k); }
   if (shots && r) { const box = await p.evaluate(() => { const c = document.querySelector('.gcard') || document.querySelector('.sugg'); const r0 = c.getBoundingClientRect(); window.scrollBy(0, r0.top - 140); const r = c.getBoundingClientRect(); return { x: Math.max(0, r.left - 70), y: Math.max(0, r.top - 12), width: Math.min(r.width + 90, innerWidth), height: Math.min(r.height + 24, 3000) }; }); try { await p.screenshot({ path: shots + '/' + k.replace(/[^A-Za-z0-9_-]+/g, '_') + '-' + w + '.png', clip: box }); } catch (e) { console.log('shot fail ' + e.message); } }
-  await p.evaluate((k) => { const el = document.querySelector('.clausehead .achip.wmark') || document.querySelector('[data-tab="' + CSS.escape(k) + '"]'); if (el) el.click(); }, k);
+  if (!(keys[ki + 1] && stripOf.get(keys[ki + 1]) && (stripOf.get(keys[ki + 1]) === k || stripOf.get(keys[ki + 1]) === stripOf.get(k)))) await p.evaluate((k) => { const el = document.querySelector('.clausehead .achip.wmark') || document.querySelector('[data-tab="' + CSS.escape(k) + '"]'); if (el) el.click(); }, k);
   await p.waitForTimeout(250);
 }
 console.log(errs.join('\n'));

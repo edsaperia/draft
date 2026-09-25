@@ -3812,6 +3812,22 @@
       // in a *Previous rule* box; a rejected one leads with the rule that
       // still stands, its provenance beneath, and keeps the proposal that
       // failed, with its mover's reason, in a *Rejected proposal* box.
+      // **The prototype's record** (Q1541, grammar.md §2.2, §2.7, B1, B4):
+      // the rule the motion made is the head, its reason under the head's
+      // speaker; how it ended and when is one fact line (*Passed · Friday…*,
+      // *Changed by the Founder · …*), never a pressed radio; what it
+      // replaced, or the proposal that failed, is a labelled block
+      if (window.GRAMMAR) {
+        const lead = carried ? now2 : was;
+        const other = carried ? was : now2;
+        const otherLab = carried ? R.previousRule
+          : heldByOf(rec) === 'crown' ? R.refusedProposal : R.rejectedProposal;
+        return '<p class="gfactsrc">' + outcome + (at ? ' · ' + esc(window.CARDS.longWhen(at)) : '') + '</p>' +
+          (lead ? '<div class="gheadtext"><p class="cpv">' + esc(lead) + '</p></div>' : '') +
+          (carried ? '<div class="gheadspk">' + speaker + '</div>' : '') + mootNote +
+          (other ? '<div class="recbox gprev"><div class="rtext"><p class="cpv">' + esc(other) + '</p></div>' +
+            (carried ? '' : speaker) + '<span class="glabel">' + otherLab + '</span></div>' : '');
+      }
       if (carried) {
         said = '<div class="pick on"><span class="opttext">' + esc(now2 || '') + '</span>' +
           speaker + chosenRadio(prov) + '</div>' + mootNote +
@@ -7384,6 +7400,9 @@
     // the paragraph's own reader — the Founded line for the three grants,
     // your own row for ✋ 🖼️ 📧 🌂 (B3), the decision line everywhere else
     gPlaceOf: (c, host, line) => {
+      // at the birth the 🪶 card's head is the big heading itself, already
+      // the place (fitTitleCard lays it there), and no other card exists
+      if (!cs) return null;
       const mine = c.kind === 'personal' && c.own === 'you';
       if (/^grant-/.test(c.k) || (mine && !viewerIsMember() && cs)) return foundedClause();
       if (mine) {
