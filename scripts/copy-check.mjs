@@ -268,6 +268,40 @@ if (dupes.length) {
   console.error('\nthe golden is keyed by the pair, so one of them would be frozen and the other lost');
   process.exit(2);
 }
+
+/**
+ * **`raw-value` — strict at once** (Q1541 stage 0, BUILD.md §2; checks.md's
+ * *raw-value*): no rendered string may carry a value the page failed to turn
+ * into words — `undefined`, `NaN`, `null`, `[object …]`, `Invalid Date`. It is
+ * held **before** the golden and under `--update` too, since a golden that
+ * froze *Set to undefined* would make the defect the approved copy. Read from
+ * every string field of every card the walks open, and from the card's whole
+ * visible text and its rail entry (card-audit's `grammar.raw`).
+ *
+ * The one known failure is not on these walks: plain bug 1, *Set to
+ * undefined* on 🌍 and ❌ for a member at the ladder's constitution rung
+ * (1541.29) — a live-path card no fixture walk reaches, recorded in
+ * design/redesign/checks.md and fixed by construction in stage 3.
+ */
+const RAW_VALUE = /\bundefined\b|\bNaN\b|\bnull\b|\[object|Invalid Date/;
+const rawHits = [];
+const stringsIn = (v, out = []) => {
+  if (typeof v === 'string') out.push(v);
+  else if (Array.isArray(v)) v.forEach((x) => stringsIn(x, out));
+  else if (v && typeof v === 'object') Object.values(v).forEach((x) => stringsIn(x, out));
+  return out;
+};
+for (const c of raw.cards || []) {
+  const hits = stringsIn(copyOf(c)).filter((s) => RAW_VALUE.test(s))
+    .concat((c.grammar && c.grammar.raw) || []);
+  for (const h of hits) rawHits.push(c.walk + '·' + c.key + ' — ' + h.slice(0, 140));
+}
+if (rawHits.length) {
+  console.log([...new Set(rawHits)].join('\n'));
+  console.log(`\nraw-value: ${new Set(rawHits).size} rendered string(s) carry a raw value — a page defect, never a copy ` +
+    'change to freeze (Q1541, BUILD.md §2)');
+  process.exit(1);
+}
 const sortKeys = (o) => Object.fromEntries(Object.keys(o).sort().map((k) => [k, o[k]]));
 const cards = sortKeys(Object.fromEntries(Object.entries(byWalk).map(([w, ks]) => [w, sortKeys(ks)])));
 const walks = Object.keys(cards);

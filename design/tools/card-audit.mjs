@@ -43,6 +43,23 @@
  * with the window is dropped as a layout fact. So a strict red is a card
  * nobody has excused, and the flag exists so that the gotchas naming this
  * instrument can be given a guard that goes red the day that is wanted.
+ *
+ * **The surface redesign's checks, P13–P33** (Q1541 stage 0, 2026-09-25) —
+ * `design/redesign/checks.md`'s *checks as ruled* is their specification and
+ * `design/redesign/answers.md` wins over it. They read the same openings as
+ * P1–P12 plus two of their own: P13 opens each card again **by its own tab**
+ * from a scroll that leaves its label room above it (the general case) and
+ * the walk's first card at scroll 0 (the page-top case), and reads the glass,
+ * not the page. They print as their own table, as ruled and v2-comparable,
+ * and they are **held only for the kinds in `GRAMMAR_KINDS`**:
+ *
+ *   node design/tools/card-audit.mjs --walk=all             # the nine walks, P13–P33 among the findings
+ *   node design/tools/card-audit.mjs --strict --kinds=GRAMMAR_KINDS --walk=fixture   # CI's fast pass
+ *   node design/tools/card-audit.mjs --width=390 --height=844 --baseline=<1600 payload>  # P31
+ *
+ * `--walk=fixture` is the four walks that open `?fixture=session` and need no
+ * founding drive; `--walk=all` adds `sessionband` and `closedband` to the
+ * default seven (which `copy-check --walk` freezes, so they stay its default).
  */
 import { createServer } from 'node:http';
 import { readFile, writeFile, stat } from 'node:fs/promises';
@@ -62,6 +79,8 @@ const AS_JSON = process.argv.includes('--json');
 const STRICT = process.argv.includes('--strict');
 const VIEWPORT = { width: +arg('width', 1600), height: +arg('height', 1000) };
 const OUT = arg('out', join(DESIGN, 'tools', 'card-audit.json'));
+/** every walk opens the one surface */
+const pageUrl = (base, query) => base + '/session-view.html' + (query || '');
 const BASELINE = arg('baseline', null);
 /** an extra query on every page the audit opens — `--query=a=1` audits the
  *  page as that switch draws it (kept from the paper mockup, Q1516 (6));
@@ -85,8 +104,38 @@ if (!ENGINES[BROWSER]) {
   console.error('no such browser: ' + BROWSER + ' — engines are ' + Object.keys(ENGINES).join(', '));
   process.exit(2);
 }
-const ALL_WALKS = ['founding', 'answers', 'delegated', 'settled', 'outsiders', 'charter', 'closed'];
-const WALKS = arg('walk', ALL_WALKS.join(',')).split(',').filter(Boolean);
+/**
+ * **The walks.** The first seven are the audit's own and its default, since
+ * `copy-check --walk` freezes what they open; `sessionband` and `closedband`
+ * (Q1541 stage 0, from phase one's inventory) open the band's cards on the
+ * session and closed fixtures, which no other walk reaches — 🥂 and every
+ * closed Rules card among them. `--walk=all` runs the nine, `--walk=fixture`
+ * the four that open `?fixture=session` and so need no founding drive: the
+ * fast strict pass CI runs (BUILD.md §2).
+ */
+const ALL_WALKS = ['founding', 'answers', 'delegated', 'settled', 'outsiders', 'charter', 'closed', 'sessionband', 'closedband'];
+const DEFAULT_WALKS = ALL_WALKS.slice(0, 7);
+const FIXTURE_WALKS = ['charter', 'closed', 'sessionband', 'closedband'];
+const WALK_ARG = arg('walk', DEFAULT_WALKS.join(','));
+const WALKS = (WALK_ARG === 'all' ? ALL_WALKS : WALK_ARG === 'fixture' ? FIXTURE_WALKS : WALK_ARG.split(',')).filter(Boolean);
+/**
+ * **`GRAMMAR_KINDS` — the card kinds the redesign's checks hold strictly**
+ * (BUILD.md §2). Empty in stage 0: every check P13–P33 reports and nothing
+ * is held. Each stage that converts a family adds its kinds here, so a
+ * converted card can never slide back while an unconverted one is not yet
+ * held to rules it cannot meet. A kind is `kindOf(key)`'s answer.
+ *
+ * `--strict --kinds=GRAMMAR_KINDS` reads this list; `--kinds=a,b` names one
+ * explicitly. With `--kinds` the verdict is the redesign checks' findings on
+ * those kinds (and a walk that threw or measured nothing), never P1–P12's —
+ * which is what lets CI hold the converted kinds while the older lenses stay
+ * the report they have always been. Without `--kinds`, `--strict` is exactly
+ * what it was.
+ */
+const GRAMMAR_KINDS = [];
+const KINDS_ARG = arg('kinds', null);
+const KINDS = KINDS_ARG == null ? null
+  : KINDS_ARG === 'GRAMMAR_KINDS' ? GRAMMAR_KINDS : KINDS_ARG.split(',').filter(Boolean);
 // a misspelt walk otherwise runs nothing, finds nothing and exits 0 — which is
 // the one outcome this instrument treats as worse than a red run
 const UNKNOWN = WALKS.filter((w) => !ALL_WALKS.includes(w));
@@ -315,7 +364,7 @@ const IN_PAGE = () => {
    * a margin is exactly the nothing this is about. The strip is not the
    * card's body: its tabs hang outside the card's left edge.
    */
-  const hairlines = (card) => {
+  const hairlines = (card, ghair) => {
     const vis = (el) => {
       for (let n = el; n && n !== card.parentElement; n = n.parentElement) {
         const s = getComputedStyle(n);
@@ -338,7 +387,7 @@ const IN_PAGE = () => {
       if (!vis(el)) continue;
       const s = getComputedStyle(el);
       if (el.matches(CONTENT)) { content.push([r.top, r.bottom]); continue; }
-      if (el.tagName === 'HR') { lines.push({ y: r.top, el: name(el) }); continue; }
+      if (el.tagName === 'HR' || (ghair && el.classList.contains('ghair'))) { lines.push({ y: r.top, el: name(el) }); continue; }
       if (el.closest('button, .btn, .lanepick, .lanebox, .recbox, .av')) continue;
       if (shown(s, 'Left') || shown(s, 'Right')) continue;
       if (shown(s, 'Top')) lines.push({ y: r.top, el: name(el) + ' (top)' });
@@ -515,7 +564,22 @@ const IN_PAGE = () => {
      * its own.
      */
     const gap = tab ? tab.closest('.insert-anchor') : null;
-    return { tab: rect(tab), glyph: glyphBox(tab), front, onRow,
+    // the redesign checks' closed reading (Q1541): the closed paragraph's words and first line, the zones,
+    // and whether another card already stood open (then this is a switch)
+    // a gap's anchor is its paragraph; an item with no tab of its own (behind
+    // a pile) is found by the clause its engine key names
+    let gpara = tab ? tab.closest('.cpara, .anch, .insert-anchor, p') : null;
+    if (!gpara && window.SESSION && window.SESSION.clauseKeysOf) {
+      try {
+        const ck = (window.SESSION.clauseKeysOf(key) || [])[0];
+        if (ck) gpara = document.querySelector('#charter [data-key="' + String(ck).replace(/["\\]/g, '\\$&') + '"]');
+      } catch (e) { /* not a charter item */ }
+    }
+    const textEl = gpara && (gpara.querySelector('.cpv, .cptext') || gpara);
+    const g = atZero(() => ({ glyph: glyphBox(tab), line: firstLine(textEl, '.headlab') }));
+    return { tab: rect(tab), glyph: g.glyph, front, onRow,
+             line: g.line, ptext: plainText(textEl, '.headlab, .lanebar, .speaker, button'),
+             para: gpara ? nameOf(gpara) : null, anyOpen: !!openCardEl(), zones: stillZones(),
              gapH: gap ? R2(gap.getBoundingClientRect().height) : null,
              gapTabTop: gap && tab ? R2(tab.getBoundingClientRect().top - gap.getBoundingClientRect().top) : null,
              tabW: tab ? R2(tab.getBoundingClientRect().width) : null,
@@ -630,6 +694,659 @@ const IN_PAGE = () => {
     return out;
   };
 
+  /* --- the redesign's readings (Q1541: phase one's grammar-audit, carried in at stage 0) */
+  /** every card root either page may draw: today's two, the prototype's one */
+  const CARD_ROOTS = '.setupcard, .sugg[data-card], .gcard';
+  const openCardEl = () => document.querySelector(CARD_ROOTS);
+  const isVis = (el, stop) => {
+    // the engine's own answer where it has one (Chromium, recent WebKit and
+    // Gecko): an ancestor walk of computed styles per text node is most of a
+    // card's reading time otherwise
+    if (el.checkVisibility) return el.checkVisibility({ opacityProperty: true, visibilityProperty: true });
+    for (let n = el; n && n !== stop; n = n.parentElement) {
+      const s = getComputedStyle(n);
+      if (s.display === 'none' || s.visibility === 'hidden' || s.opacity === '0') return false;
+    }
+    return true;
+  };
+  /** things in a card that are not the card's own content: the strip and the fold */
+  const NOT_CONTENT = '.chipcol, .sectoggle, script, style, template';
+  /**
+   * Every measurement of the still check is taken **at scroll 0**, then the
+   * scroll is put back in the same task: a rail click travels to its card, so a
+   * reading at whatever scroll the walk left would move every fixed or sticky
+   * box by the travel, and the promise is about layout, not about the scroll.
+   */
+  const atZero = (fn) => {
+    const sx = window.scrollX; const sy = window.scrollY;
+    if (sx || sy) window.scrollTo(0, 0);
+    try { return fn(); } finally { if (sx || sy) window.scrollTo(sx, sy); }
+  };
+  /** the first thing drawn in `el`, as its first line box: the first visible
+   *  text run (or a drawn glyph standing for a character), ignoring the strip,
+   *  the fold and anything in `skip` */
+  const firstLine = (el, skip) => {
+    if (!el) return null;
+    const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
+    for (let n = w.currentNode; n; n = w.nextNode()) {
+      const host = n.nodeType === 3 ? n.parentElement : n;
+      if (!host || host.closest(NOT_CONTENT) || (skip && host.closest(skip))) continue;
+      if (n.nodeType === 1) {
+        if (!(String(n.tagName).toLowerCase() === 'svg' && n.getAttribute('data-char'))) continue;
+        if (!isVis(n, el.parentElement)) continue;
+        const r = n.getBoundingClientRect();
+        if (r.width && r.height) return [R2(r.left + window.scrollX), R2(r.top + window.scrollY), R2(r.width), R2(r.height)];
+        continue;
+      }
+      if (!n.nodeValue.trim() || !isVis(host, el.parentElement)) continue;
+      const range = document.createRange();
+      range.selectNodeContents(n);
+      for (const r of range.getClientRects()) {
+        if (r.width && r.height) return [R2(r.left + window.scrollX), R2(r.top + window.scrollY), R2(r.width), R2(r.height)];
+      }
+    }
+    return null;
+  };
+  /** visible text, glyphs as their characters, minus the strip and `skip` */
+  const plainText = (el, skip) => {
+    if (!el) return null;
+    const walk = (e) => {
+      let s = '';
+      for (const n of e.childNodes) {
+        if (n.nodeType === 3) { s += n.nodeValue; continue; }
+        if (n.nodeType !== 1) continue;
+        if (n.matches(NOT_CONTENT) || (skip && n.matches(skip))) continue;
+        const st = getComputedStyle(n);
+        if (st.display === 'none' || st.visibility === 'hidden') continue;
+        const ch = n.getAttribute('data-char');
+        if (ch && String(n.tagName).toLowerCase() === 'svg') { s += ch; continue; }
+        // a block boundary is a space to the reader
+        s += (/^(block|flex|grid|list-item)$/.test(st.display) ? ' ' : '') + walk(n);
+      }
+      return s;
+    };
+    return walk(el).replace(/\s+/g, ' ').trim();
+  };
+  /** the paper, the column, the topbar and the contents rail — G1's still list */
+  const stillZones = () => atZero(() => {
+    const doc = document.getElementById('doc') || document.querySelector('.doc');
+    const sheets = [...document.querySelectorAll('.desksheets .sheet')].filter((s) => {
+      const r = s.getBoundingClientRect(); return r.width > 0 && r.height > 0 && isVis(s, null);
+    }).map((s) => { const r = rect(s); return { cls: String(s.className), l: r[0], r: R2(r[0] + r[2]), t: r[1] }; });
+    const pr = document.getElementById('prose');
+    return { sheets, doc: rect(doc), prose: pr && pr.getBoundingClientRect().width ? rect(pr) : null,
+      topbar: rect(document.querySelector('.navbar')), toc: rect(document.querySelector('nav.toc')) };
+  });
+  /** the card's head, by the grammar's reading: the prototype's head slot, or
+   *  today's clause head, rule head or title head */
+  const HEAD_SEL = ['[data-slot="head"]', '.clausehead .headclause .rtext', '.headrule', '.headtitle', '.clausehead .rtext'];
+  const headOf = (card) => {
+    for (const s of HEAD_SEL) {
+      const el = card.querySelector(s);
+      if (el && isVis(el, card.parentElement)) return { el, sel: s };
+    }
+    return null;
+  };
+  /** does `el` hold anything a reader can see, the strip aside */
+  const CONTENTISH = 'img, svg, input, textarea, select, button, canvas, video, [contenteditable="true"], ' +
+    '[contenteditable="plaintext-only"], .av, .emojiface, .lanebox, .recbox';
+  const hasContent = (el) => {
+    if (el.matches(NOT_CONTENT)) return true;          // the strip is its own thing
+    const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
+    for (let n = w.nextNode(); n; n = w.nextNode()) {
+      const host = n.nodeType === 3 ? n.parentElement : n;
+      if (!host || host.closest(NOT_CONTENT)) continue;
+      if (n.nodeType === 3) {
+        if (n.nodeValue.trim() && isVis(host, el.parentElement)) return true;
+        continue;
+      }
+      if (n.matches(CONTENTISH)) {
+        const r = n.getBoundingClientRect();
+        if (r.width && r.height && isVis(n, el.parentElement)) return true;
+      }
+    }
+    // a placeholder drawn by CSS is a lane saying what to type
+    return !!el.querySelector('[data-placeholder], [data-ph], [placeholder]');
+  };
+  const nameOf = (el) => el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') +
+    (el.classList.length ? '.' + [...el.classList].slice(0, 3).join('.') : '') +
+    (el.dataset && el.dataset.slot ? '[data-slot=' + el.dataset.slot + ']' : '');
+  /** a control's token as a reader reads it: its glyph, or its word */
+  const tokenOf = (b) => {
+    const t = (txt(b) || '').trim();
+    if (!t && b.querySelector('svg.mkg')) return '✓';           // the drawn tick carries no data-char
+    return t;
+  };
+  const okRgb = (() => { let v = null; return () => {
+    if (v) return v;
+    const p = document.createElement('span'); p.style.color = 'var(--ok)'; document.body.appendChild(p);
+    v = getComputedStyle(p).color; p.remove(); return v; }; })();
+  const RAW_RE = /\bundefined\b|\bNaN\b|\bnull\b|\[object|Invalid Date/;
+  /** **v2's readings** (grammar.md v2 §2.3a, §2.5, G5, G6, P4): the labels,
+   *  the note slot, the top edge, the blank under a card, and what a closed
+   *  card says. DOM-generic, so today's page and the prototype read alike. */
+  const LABEL_SEL = '.glab, .headlab, .fieldlab, .rechead, .rtag, .glabel, .pwhere, .eyebrow';
+  const BLOCK_SEL = '.propblock, .pick:not(.vinblock), .ranked, .recbox, .replaced';
+  const inkAboveOf = (card) => {
+    let el = card.closest('.cpara.open') || card;
+    for (let i = 0; i < 6 && el; i++) {
+      let prev = el.previousElementSibling;
+      while (prev && (!prev.getBoundingClientRect().height || getComputedStyle(prev).display === 'none' ||
+        prev.matches('.chipcol, script, style, [hidden]'))) prev = prev.previousElementSibling;
+      if (prev) {
+        const w = document.createTreeWalker(prev, NodeFilter.SHOW_TEXT);
+        let last = null;
+        for (let n = w.nextNode(); n; n = w.nextNode()) {
+          if (!n.nodeValue.trim()) continue;
+          const h = n.parentElement;
+          if (!h || h.closest('.chipcol, .sr, [hidden]')) continue;
+          last = n;
+        }
+        if (last) {
+          const r = document.createRange(); r.selectNodeContents(last);
+          const rs = [...r.getClientRects()].filter((q) => q.width > 0 && q.height > 0);
+          if (rs.length) return Math.max(...rs.map((q) => q.bottom));
+        }
+        return prev.getBoundingClientRect().bottom;
+      }
+      el = el.parentElement;
+      if (el && el.matches('.doc, #doc, #band, body')) break;
+    }
+    return null;
+  };
+  /** a label's drawing: size, weight, case, colour (P21 as ruled — one
+   *  drawing, `--t-cap`, 700, upper case, `--muted`) */
+  const drawOf = (el) => {
+    const st = getComputedStyle(el);
+    return { fs: R2(parseFloat(st.fontSize)), fw: String(st.fontWeight), tt: st.textTransform, color: st.color };
+  };
+  const v2Of = (card, key, head) => {
+    const vis = (e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && isVis(e, card.parentElement); };
+    const firstTop = (el) => { const l = firstLine(el, LABEL_SEL); return l ? l[1] - window.scrollY : null; };
+    const labels = [...card.querySelectorAll(LABEL_SEL)].filter((e) => !e.closest('.chipcol') && vis(e) && !(e.parentElement && e.parentElement.closest(LABEL_SEL)));
+    const headTop = head ? firstTop(head.el) : null;
+    // the blocks: outermost, visible, not inputs
+    const blocks = [...card.querySelectorAll(BLOCK_SEL)].filter((b) => vis(b) && !(b.parentElement && b.parentElement.closest(BLOCK_SEL)) &&
+      !(head && head.el.contains(b)) && !b.querySelector('[contenteditable="true"], textarea, input[type="text"], input:not([type])'));
+    const out = { blocks: [], headLabel: null, headNeedsLabel: false };
+    for (const b of blocks) {
+      const live = [...b.querySelectorAll('.lanepick, [role="radio"]')].some((r) => !r.disabled && vis(r));
+      const bt = firstTop(b);
+      const own = labels.filter((l) => b.contains(l));
+      let prev = b.previousElementSibling;
+      while (prev && !vis(prev)) prev = prev.previousElementSibling;
+      const above = prev && prev.matches(LABEL_SEL) ? prev : null;
+      const lab = own[0] || above;
+      const lt = lab ? lab.getBoundingClientRect().top : null;
+      out.blocks.push({ cls: String(b.className).split(' ')[0], live, labelled: !!lab, label: lab ? txt(lab) : null,
+        misplaced: !!(own[0] && bt != null && lt != null && lt > bt + 1), shared: !own.length && !!above && above.nextElementSibling !== b,
+        // Q1541 stage 0 (P21 as ruled): is the label the block's first line —
+        // its own, standing at or above the block's first words — and how it
+        // is drawn
+        first: !!(own[0] && (bt == null || (lt != null && lt <= bt + 1))),
+        pick: b.matches('.pick'), draw: lab ? drawOf(lab) : null });
+    }
+    // the head's label: a label drawn above the head's first line, outside any block
+    if (headTop != null) {
+      const hl = labels.find((l) => !blocks.some((b) => b.contains(l)) && l.getBoundingClientRect().bottom <= headTop + 1);
+      out.headLabel = hl ? { text: txt(hl), top: R2(hl.getBoundingClientRect().top) } : null;
+      out.headNeedsLabel = blocks.length > 0 && !!(head && txt(head.el));
+    }
+    // Q1541 stage 0 (P15, P21): how many labels stand above the head's first
+    // line, and how the first is drawn
+    const hl1 = headLabelOf(card, head);
+    out.headLabels = hl1 ? hl1.n : 0;
+    if (hl1 && hl1.n) { out.headLabelDraw = drawOf(hl1.el); out.headLabelText = txt(hl1.el); }
+    // P32: how many first lines the card shows — the head elements drawn,
+    // outermost only, none inside a block
+    out.heads = [...card.querySelectorAll(HEAD_SEL.join(', '))]
+      .filter((e, i, a) => vis(e) && !e.closest('.chipcol') && !a.some((o) => o !== e && o.contains(e)) &&
+        !blocks.some((b) => b.contains(e))).length;
+    // the note slot: each dark commit's reason, as text in the row
+    const rows = [...card.querySelectorAll('.commitrow, .race-mid, [data-slot="row"]')].filter((r) => vis(r) && !r.parentElement.closest('.commitrow, .race-mid, [data-slot="row"]'));
+    out.notes = rows.map((r) => {
+      const btns = [...r.querySelectorAll('button')].filter(vis);
+      const dark = btns.filter((b) => b.disabled && !/^(OK|Accept|Activate)/.test((b.textContent || '').trim()) && !/🗑/.test(txt(b) || ''));
+      let t = '';
+      const w = document.createTreeWalker(r, NodeFilter.SHOW_TEXT);
+      for (let n = w.nextNode(); n; n = w.nextNode()) { if (n.parentElement.closest('button') || !vis(n.parentElement)) continue; t += n.nodeValue; }
+      const untils = new Set(dark.map((b) => b.getAttribute('data-until') || b.title || ''));
+      return { dark: dark.length, reasons: untils.size, note: t.replace(/\s+/g, ' ').trim(), lines: r.querySelectorAll('.greason').length,
+        // Q1541 stage 0 (P23): each dark commit, so its reason can be read
+        darks: dark.map((b) => ({ tok: tokenOf(b).slice(0, 30), until: b.getAttribute('data-until'), title: b.title || null })) };
+    });
+    const boxes = [...card.querySelectorAll('textarea, input[type="email"], input.addr')].filter(vis);
+    out.litOverEmpty = boxes.length > 0 && boxes.every((i) => !(i.value || '').trim()) &&
+      rows.some((r) => [...r.querySelectorAll('button')].some((b) => vis(b) && !b.disabled && !/🗑/.test(txt(b) || '') && !/^(OK|Accept|Activate)/.test((b.textContent || '').trim())));
+    // the top edge (G5)
+    const cr = card.getBoundingClientRect();
+    const ink = inkAboveOf(card);
+    out.top = { card: R2(cr.top), ink: ink == null ? null : R2(ink), label: out.headLabel ? out.headLabel.top : null };
+    // the blank under the last drawn slot (G6)
+    let bottom = null;
+    for (const ch of card.children) {
+      if (ch.matches('.chipcol, .ghair') || !vis(ch)) continue;
+      const st = getComputedStyle(ch);
+      if (st.position === 'absolute' || st.position === 'fixed') continue;
+      const r = ch.getBoundingClientRect(); bottom = bottom == null ? r.bottom : Math.max(bottom, r.bottom);
+    }
+    const pb = parseFloat(getComputedStyle(card).paddingBottom) || 0;
+    out.blank = bottom == null ? null : R2(cr.bottom - pb - bottom);
+    // a closed card's words (P4 v2)
+    out.text = (txt(card) || '').slice(0, 2000);
+    // Q1541 stage 0 — P17: the card against its strip (the floor, 1541.16 (c))
+    const strip = card.querySelector('.chipcol');
+    out.floor = { card: R2(cr.height), strip: strip && vis(strip) ? R2(strip.getBoundingClientRect().height) : null };
+    // P20: the drawn slots' tops in reading order — the label, the head, each
+    // block, each input outside a block, each row (grammar §2.3's order; the
+    // fact and body slots carry no mark on today's page, so they are not read)
+    const order = [];
+    if (hl1 && hl1.n) order.push({ slot: 'label', y: hl1.top });
+    if (headTop != null) order.push({ slot: 'head', y: R2(headTop) });
+    for (const b of blocks) { const y = firstTop(b); if (y != null) order.push({ slot: 'block', y: R2(y) }); }
+    const INPUTS = 'textarea, input[type="text"], input[type="email"], input:not([type]), [contenteditable="true"], [contenteditable="plaintext-only"], select';
+    for (const i of [...card.querySelectorAll(INPUTS)]
+      .filter((i) => vis(i) && !blocks.some((b) => b.contains(i)) && !(head && head.el.contains(i)))) {
+      order.push({ slot: 'input', y: R2(i.getBoundingClientRect().top) });
+    }
+    for (const r of rows) order.push({ slot: 'row', y: R2(r.getBoundingClientRect().top) });
+    out.order = order;
+    // P21's words: what the card's own tab and rail entry call it — today's
+    // titles, which Part 4 keeps for ✋ 🖼️ 📧 🌂 🎩 and the power cards
+    const kq = CSS.escape(key);
+    const ownTab = card.querySelector('.chipcol [data-tab="' + kq + '"], .chipcol [data-anchor="' + kq + '"], .chipcol [data-chip="' + kq + '"]');
+    const railLi = document.querySelector('#rail [data-q="' + kq + '"], #rail [data-card="' + kq + '"]');
+    out.asks = [ownTab && ownTab.title, railLi && txt(railLi.closest('li') || railLi)].filter(Boolean);
+    // P33: the data-fact roles
+    const facts = {};
+    card.querySelectorAll('[data-fact]').forEach((e) => { if (!e.closest('.chipcol')) facts[e.dataset.fact] = (facts[e.dataset.fact] || 0) + 1; });
+    out.facts = facts;
+    // P29's card half: a ✒️ or 🛡️ tab in this card's strip
+    out.powerTabs = strip ? [...strip.querySelectorAll('.achip')].filter((t) => {
+      const k = t.dataset.tab || t.dataset.anchor || t.dataset.chip || '';
+      const g = [...t.querySelectorAll('svg[data-char]')].map((e) => e.getAttribute('data-char')).join('') + (t.textContent || '');
+      return /^pw:/.test(k) || /[✒🛡]/.test(g);
+    }).map((t) => t.dataset.tab || t.dataset.anchor || t.dataset.chip || '?') : [];
+    // P24: can anything be typed on this card (a lane, a box, a composer)
+    out.typeable = [...card.querySelectorAll(INPUTS)].some((i) => vis(i) && i.tagName !== 'SELECT');
+    out.isRecord = card.matches('.sealed-open') || !!card.querySelector('.rechead, .gtone-ok') ||
+      /^(rec:|held:)/.test(key);
+    return out;
+  };
+  /** the grammar's readings of one open card; `before` is the closed reading */
+  const grammarOf = (card, key, before) => {
+    const out = {};
+    const head = headOf(card);
+    const openTab = card.querySelector('.achip[data-tab="' + CSS.escape(key) + '"], ' +
+      '.achip[data-anchor="' + CSS.escape(key) + '"], [data-tab="' + CSS.escape(key) + '"]');
+    // still, open half (doc coordinates at scroll 0)
+    out.still = atZero(() => ({ glyph: glyphBox(openTab), line: head ? firstLine(head.el, '.headlab, .glab') : null }));
+    out.still.zones = stillZones();
+    // head-registration and head-form
+    out.head = head ? { sel: head.sel, text: plainText(head.el, '.headlab, .glab, .lanebar, .speaker, .lanepick, button'),
+      el: nameOf(head.el) } : null;
+    if (head) {
+      const above = [];
+      const w = document.createTreeWalker(card, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
+      for (let n = w.nextNode(); n; n = w.nextNode()) {
+        if (head.el.contains(n) || n.contains && n.contains(head.el)) continue;
+        if (!(n.compareDocumentPosition(head.el) & Node.DOCUMENT_POSITION_FOLLOWING)) break;
+        const host = n.nodeType === 3 ? n.parentElement : n;
+        if (!host || host.closest(NOT_CONTENT) || !isVis(host, card.parentElement)) continue;
+        if (n.nodeType === 3) { if (n.nodeValue.trim()) above.push(n.nodeValue.trim()); }
+        else if (n.matches('button, input, textarea, select, [role="radio"]')) above.push('[' + nameOf(n) + ']');
+        else if (String(n.tagName).toLowerCase() === 'svg' && n.getAttribute('data-char')) above.push(n.getAttribute('data-char'));
+      }
+      out.head.above = above.join(' ').replace(/\s+/g, ' ').slice(0, 160);
+      out.head.eyebrow = !!card.querySelector('.headlab') && isVis(card.querySelector('.headlab'), card.parentElement)
+        ? txt(card.querySelector('.headlab')) : null;
+    }
+    // hairline-gap: P12's reading with the prototype's .ghair counted as a rule
+    out.hair = hairlines(card, true);
+    // empty-slot: direct children of the root, and of the head's container
+    const empties = [];
+    const heads = [...card.children].filter((c) => c.matches('.clausehead, [data-slot="head"]'));
+    for (const par of [card, ...heads]) {
+      for (const c of par.children) {
+        if (c.matches(NOT_CONTENT)) continue;
+        // a drawn rule is not a slot: the prototype's hairlines are elements
+        // (`.ghair`), and hairline-gap is the check that judges them
+        if (c.matches('.ghair, hr')) continue;
+        const r = c.getBoundingClientRect();
+        if (r.height <= 0 || !isVis(c, card.parentElement)) continue;
+        if (!hasContent(c)) empties.push({ el: (par === card ? '' : nameOf(par) + ' > ') + nameOf(c), h: R2(r.height) });
+      }
+    }
+    out.empty = empties;
+    // the controls, strip aside
+    const controls = [...card.querySelectorAll('button, input, textarea, select, [role="radio"], [role="switch"], .lanepick')]
+      .filter((b, i, a) => !b.closest('.chipcol') && a.indexOf(b) === i && b.type !== 'hidden')
+      .filter((b) => { const r = b.getBoundingClientRect(); return r.width > 0 && r.height > 0 && isVis(b, card.parentElement); })
+      .map((b) => {
+        const s = getComputedStyle(b);
+        return { el: nameOf(b), tok: tokenOf(b).slice(0, 40), title: b.title || null,
+          disabled: !!b.disabled || b.getAttribute('aria-disabled') === 'true',
+          until: b.getAttribute('data-until'),
+          radio: b.matches('.lanepick, [role="radio"]'),
+          on: b.getAttribute('aria-checked') === 'true' || b.getAttribute('aria-pressed') === 'true' ||
+            (b.matches('.lanepick') && (b.classList.contains('on') || !!(b.closest('.pick') && b.closest('.pick').classList.contains('on')))),
+          sign: b.hasAttribute('data-sign'), close: b.hasAttribute('data-close'),
+          green: s.backgroundColor === okRgb(),
+          // Q1541 stage 0 (P26): the ink too, so an armed ✓ drawn green is seen
+          inkGreen: s.color === okRgb(),
+          inRow: !!b.closest('.commitrow, .race-mid, [data-slot="row"]') };
+      });
+    out.controls = controls;
+    // the row(s), left to right
+    const rows = [...card.querySelectorAll('.commitrow, .race-mid, [data-slot="row"]')]
+      .filter((r, i, a) => !a.some((o) => o !== r && o.contains(r)))
+      .filter((r) => { const b = r.getBoundingClientRect(); return b.height > 0 && isVis(r, card.parentElement); });
+    out.rows = rows.map((r) => ({ el: nameOf(r), shape: r.getAttribute('data-shape'),
+      tokens: [...r.querySelectorAll('button')].filter((b) => { const q = b.getBoundingClientRect(); return q.width > 0 && isVis(b, r.parentElement); })
+        .sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left)
+        .map((b) => ({ t: tokenOf(b), title: b.title || null, disabled: !!b.disabled })) }));
+    // an unsent value on the card
+    out.unsent = [...card.querySelectorAll('input, textarea')].some((i) =>
+      !/^(radio|checkbox|hidden|file|range|color|button|submit)$/.test(i.getAttribute('type') || i.type) && i.value && i.value.trim()) ||
+      [...card.querySelectorAll('[contenteditable="true"], [contenteditable="plaintext-only"]')].some((e) => (e.textContent || '').trim()) ||
+      !!card.querySelector('[data-draft]');
+    out.bins = controls.filter((c) => /🗑/.test(c.tok)).map((c) => ({ title: c.title, inRow: c.inRow,
+      // Q1541 stage 0 (P24): dark or lit, and whether it carries words
+      disabled: c.disabled, word: c.tok.replace(/🗑️?/gu, '').trim() }));
+    // raw values in the card and its rail entry
+    const raw = [];
+    const ct = txt(card) || '';
+    const m1 = ct.match(RAW_RE);
+    if (m1) raw.push('card: …' + ct.slice(Math.max(0, m1.index - 40), m1.index + 30) + '…');
+    const q = String(key).replace(/["\\]/g, '\\$&');
+    const li = document.querySelector('#rail [data-q="' + q + '"], #rail [data-card="' + q + '"]');
+    const rt = li ? txt(li.closest('li') || li) || '' : '';
+    const m2 = rt.match(RAW_RE);
+    if (m2) raw.push('rail: …' + rt.slice(Math.max(0, m2.index - 40), m2.index + 30) + '…');
+    out.raw = raw;
+    // tooltips on the card's strip and its rail entry (closed-page)
+    out.tips = [...card.querySelectorAll('.chipcol [title]')].map((e) => e.title)
+      .concat(li ? [...(li.closest('li') || li).querySelectorAll('[title]')].map((e) => e.title).concat((li.closest('li') || li).title || []) : [])
+      .filter(Boolean);
+    out.closedBefore = before || null;
+    try { out.v2 = v2Of(card, key, head); } catch (e) { out.v2 = { error: String(e && e.message || e) }; }
+    return out;
+  };
+  /** the zones, on the glass at scroll 0, for zone-overlap */
+  const zonesNow = () => atZero(() => {
+    const W = window.innerWidth; const H = window.innerHeight;
+    const clip = (el) => {
+      if (!el || !isVis(el, null)) return null;
+      const r = el.getBoundingClientRect();
+      const l = Math.max(0, r.left); const t = Math.max(0, r.top);
+      const rr = Math.min(W, r.right); const b = Math.min(H, r.bottom);
+      return rr - l > 0.5 && b - t > 0.5 ? [R2(l), R2(t), R2(rr), R2(b)] : null;
+    };
+    const union = (els) => {
+      const bs = els.map(clip).filter(Boolean);
+      if (!bs.length) return null;
+      return [Math.min(...bs.map((b) => b[0])), Math.min(...bs.map((b) => b[1])), Math.max(...bs.map((b) => b[2])), Math.max(...bs.map((b) => b[3]))];
+    };
+    const inDrawer = (el) => !!(el && el.closest('[class*="drawer"], [aria-modal="true"], dialog, .modal'));
+    const z = [];
+    const add = (name, group, box, el) => { if (box) z.push({ name, group, box, drawer: inDrawer(el) }); };
+    const nav = document.querySelector('.navbar');
+    add('topbar', 'topbar', clip(nav), nav);
+    const toc = document.querySelector('nav.toc');
+    add('contents-rail', 'toc', clip(toc), toc);
+    const queue = document.querySelector('aside.queue');
+    add('queue-rail', 'queue', clip(queue), queue);
+    const sheets = [...document.querySelectorAll('.desksheets .sheet')];
+    const doc = document.getElementById('doc') || document.querySelector('.doc');
+    add('sheet', 'sheet', sheets.length ? union(sheets) : clip(doc), doc);
+    const fl = new Set();
+    document.querySelectorAll('#editdoor > *, #proserow, #patchrow, .proposalrow, [data-proposalrow]').forEach((e) => fl.add(e));
+    // a card's own commit row can carry `.proposalrow` too; only what floats counts
+    for (const e of fl) if (!e.closest(CARD_ROOTS)) add('floating:' + nameOf(e), 'floating', clip(e), e);
+    // G4 v2: an overlay may cross a zone's edge but never a line of text
+    for (const x of z) {
+      if (x.group !== 'floating') continue;
+      let covers = 0;
+      for (const root of document.querySelectorAll('#doc, aside.queue, nav.toc')) {
+        const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        for (let n = w.nextNode(); n; n = w.nextNode()) {
+          if (!n.nodeValue.trim() || !n.parentElement || n.parentElement.closest('#editdoor, #proserow, #patchrow, .proposalrow')) continue;
+          const r = document.createRange(); r.selectNodeContents(n);
+          for (const q of r.getClientRects()) {
+            if (!q.width || !q.height) continue;
+            const ow = Math.min(q.right, x.box[2]) - Math.max(q.left, x.box[0]);
+            const oh = Math.min(q.bottom, x.box[3]) - Math.max(q.top, x.box[1]);
+            if (ow > 1 && oh > 1 && isVis(n.parentElement, null)) covers++;
+          }
+        }
+      }
+      x.covers = covers;
+    }
+    return z;
+  });
+  /** the page's tab and rail tooltips, for closed-page's page-wide half */
+  const pageTips = () => [...document.querySelectorAll('.achip[title], #rail [title], #rail li[title]')]
+    .map((e) => ({ key: e.dataset.anchor || e.dataset.tab || e.dataset.chip || e.dataset.q ||
+      (e.closest('li') && e.closest('li').dataset.q) || null, title: e.title }));
+  /** close whatever card stands open, by its own pressed tab */
+  const closeOpenCard = (key) => {
+    if (window.SESSION && window.SESSION.openId && document.querySelector('.sugg[data-card]')) {
+      try { window.SESSION.toggle(window.SESSION.openId, false); return 'toggle'; } catch (e) { /* fall through */ }
+    }
+    const card = openCardEl();
+    if (!card) return null;
+    const k = key == null ? null : String(key).replace(/["\\]/g, '\\$&');
+    const mark = (k && card.querySelector('.chipcol .achip[data-tab="' + k + '"], .chipcol .achip[data-anchor="' + k + '"]')) ||
+      card.querySelector('.chipcol .achip.wmark') || card.querySelector('.chipcol .achip');
+    if (!mark) return null;
+    mark.click();
+    return 'tab';
+  };
+
+  /* --- the redesign's on-screen reading (Q1541 stage 0: P13, P16, P31) ---
+   *
+   * `space-above` (answers 1541.44) is a promise about the **glass**, not the
+   * page: the content above an opened card slides up and the scroll moves in
+   * the same frame, so the first line and the pressed tab stay still *on
+   * screen* while both move in document coordinates. Every other reading in
+   * this file is taken at scroll 0 (`atZero`) for exactly the opposite
+   * reason, so these are their own: viewport coordinates, at whatever scroll
+   * the walk stands at, with the scroll recorded beside them.
+   * ------------------------------------------------------------------------ */
+  const vbox = (r) => [R2(r.left), R2(r.top), R2(r.width), R2(r.height)];
+  /** where the glass starts: the topbar's foot when it is fixed or sticky
+   *  (it is at both widths — two rows at 390), else the window's top */
+  const glassTop = () => {
+    const nav = document.querySelector('.navbar');
+    if (!nav) return 0;
+    const s = getComputedStyle(nav);
+    return (s.position === 'fixed' || s.position === 'sticky') ? Math.max(0, R2(nav.getBoundingClientRect().bottom)) : 0;
+  };
+  /** the zones P13 holds still, on the glass: the topbar and the contents
+   *  rail whole, each sheet by its left and right edges only (its top is
+   *  content above — checks.md P13) */
+  const glassZones = () => {
+    const r = (el) => (el && isVis(el, null) ? vbox(el.getBoundingClientRect()) : null);
+    const sheets = [...document.querySelectorAll('.desksheets .sheet')].filter((s) => {
+      const q = s.getBoundingClientRect(); return q.width > 0 && q.height > 0 && isVis(s, null);
+    }).map((s) => { const q = s.getBoundingClientRect(); return { cls: String(s.className), l: R2(q.left), r: R2(q.right) }; });
+    return { topbar: r(document.querySelector('.navbar')), toc: r(document.querySelector('nav.toc')), sheets };
+  };
+  /** the foot of the last ink above `el` — its previous visible sibling's last
+   *  text line, climbing out of wrappers — on the glass */
+  const inkAboveFrom = (start) => {
+    let el = start;
+    for (let i = 0; i < 6 && el; i++) {
+      let prev = el.previousElementSibling;
+      while (prev && (!prev.getBoundingClientRect().height || getComputedStyle(prev).display === 'none' ||
+        prev.matches('.chipcol, script, style, [hidden]'))) prev = prev.previousElementSibling;
+      if (prev) {
+        const w = document.createTreeWalker(prev, NodeFilter.SHOW_TEXT);
+        let last = null;
+        for (let n = w.nextNode(); n; n = w.nextNode()) {
+          if (!n.nodeValue.trim()) continue;
+          const h = n.parentElement;
+          if (!h || h.closest('.chipcol, .sr, [hidden]') || !isVis(h, null)) continue;
+          last = n;
+        }
+        if (last) {
+          const r = document.createRange(); r.selectNodeContents(last);
+          const rs = [...r.getClientRects()].filter((q) => q.width > 0 && q.height > 0);
+          if (rs.length) return R2(Math.max(...rs.map((q) => q.bottom)));
+        }
+        return R2(prev.getBoundingClientRect().bottom);
+      }
+      el = el.parentElement;
+      if (el && el.matches('.doc, #doc, #band, body')) break;
+    }
+    return null;
+  };
+  /** a key's tab in the gutter and the paragraph it stands on — closedGeo's
+   *  finding, shared so the glass reading and the page reading agree */
+  const anchorOf = (key) => {
+    const q = CSS.escape(key);
+    const tab = document.querySelector('#band [data-tab="' + q + '"], #titlepara [data-tab="' + q + '"], ' +
+      '#charter .achip[data-anchor="' + q + '"], .achip[data-anchor="' + q + '"]');
+    let para = tab ? tab.closest('.cpara, .anch, .insert-anchor, p') : null;
+    if (!para && window.SESSION && window.SESSION.clauseKeysOf) {
+      try {
+        const ck = (window.SESSION.clauseKeysOf(key) || [])[0];
+        if (ck) para = document.querySelector('#charter [data-key="' + String(ck).replace(/["\\]/g, '\\$&') + '"]');
+      } catch (e) { /* not a charter item */ }
+    }
+    const col = tab ? tab.closest('.chipcol') : null;
+    // a tab in an open card's strip is a tab like any other; in a closed
+    // pile only the front one is a way in
+    const front = !!tab && !tab.classList.contains('behind') &&
+      (!col || !!col.closest(CARD_ROOTS) || col.querySelector('.achip') === tab);
+    return { tab, para, front, textEl: para && (para.querySelector('.cpv, .cptext') || para) };
+  };
+  /** the glyph of a tab, on the glass */
+  const glyphOnGlass = (tab) => { const b = glyphBox(tab); return b && [R2(b[0] - window.scrollX), R2(b[1] - window.scrollY)]; };
+  const lineOnGlass = (el, skip) => { const l = firstLine(el, skip); return l && [R2(l[0] - window.scrollX), R2(l[1] - window.scrollY)]; };
+  /** the head label: a label drawn above the head's first line and in no block */
+  const headLabelOf = (card, head) => {
+    if (!head) return null;
+    const lt = firstLine(head.el, LABEL_SEL);
+    if (!lt) return null;
+    const top = lt[1] - window.scrollY;
+    const blocks = [...card.querySelectorAll(BLOCK_SEL)];
+    const labs = [...card.querySelectorAll(LABEL_SEL)].filter((l) => !l.closest('.chipcol') && isVis(l, card.parentElement) &&
+      l.getBoundingClientRect().height > 0 && !(l.parentElement && l.parentElement.closest(LABEL_SEL)) &&
+      !blocks.some((b) => b.contains(l)) && l.getBoundingClientRect().bottom <= top + 1);
+    return labs.length ? { n: labs.length, el: labs[0], top: R2(labs[0].getBoundingClientRect().top),
+      bottom: R2(labs[0].getBoundingClientRect().bottom) } : { n: 0 };
+  };
+  /**
+   * **The glass, closed**: the key's tab glyph, its paragraph's first line,
+   * the ink above it, the zones and the scroll. `ok` is false where there is
+   * nothing to hold still (no tab and no paragraph).
+   */
+  const glassClosed = (key) => {
+    const a = anchorOf(key);
+    return { ok: !!(a.tab || a.para), scrollY: R2(window.scrollY), glass: glassTop(), front: a.front,
+      glyph: a.front ? glyphOnGlass(a.tab) : null, line: a.textEl ? lineOnGlass(a.textEl, '.headlab') : null,
+      above: a.para ? inkAboveFrom(a.para) : null, zones: glassZones() };
+  };
+  /**
+   * **The glass, open**: the same readings off the open card — its pressed
+   * tab, its head's first line (the label skipped), the ink above the card —
+   * and the label room. **The label room is the height the head label takes
+   * above the first line**: from the label's top to the first line's top,
+   * the label's own line and the air under it (BUILD.md §2: *the room made
+   * equals the label slot's height*). No head label, no room.
+   */
+  const glassOpen = (key) => {
+    const card = openCardEl();
+    if (!card) return { ok: false };
+    const head = headOf(card);
+    const q = CSS.escape(key);
+    const tab = card.querySelector('.achip[data-tab="' + q + '"], .achip[data-anchor="' + q + '"], [data-tab="' + q + '"]');
+    const line = head ? lineOnGlass(head.el, LABEL_SEL) : null;
+    const lab = headLabelOf(card, head);
+    const room = lab && lab.n && line ? R2(Math.max(0, line[1] - lab.top)) : 0;
+    const cr = card.getBoundingClientRect();
+    return { ok: true, scrollY: R2(window.scrollY), glass: glassTop(), glyph: glyphOnGlass(tab), line,
+      above: inkAboveFrom(card.closest('.cpara.open') || card), room,
+      label: lab && lab.n ? { top: lab.top, bottom: lab.bottom, n: lab.n } : null,
+      cardTop: R2(cr.top), cardBottom: R2(cr.bottom), zones: glassZones() };
+  };
+  /**
+   * **The glass before a switch.** Within one strip the target's tab is in
+   * the open card's strip and the first line that must not move is the open
+   * card's head; across strips it is the target's own paragraph, as closed.
+   */
+  const glassSwitch = (key) => {
+    const card = openCardEl();
+    const q = CSS.escape(key);
+    const inStrip = card && card.querySelector('.chipcol [data-tab="' + q + '"], .chipcol [data-anchor="' + q + '"]');
+    if (!inStrip) return { ...glassClosed(key), within: false };
+    const head = headOf(card);
+    return { ok: true, within: true, scrollY: R2(window.scrollY), glass: glassTop(), glyph: glyphOnGlass(inStrip),
+      line: head ? lineOnGlass(head.el, LABEL_SEL) : null, above: inkAboveFrom(card.closest('.cpara.open') || card),
+      zones: glassZones() };
+  };
+  /** scroll so the key's first line stands `room` px under the glass — a
+   *  scroll that lets the card make its label's room above it (P13's general
+   *  case); where the page cannot scroll that far the reading says so */
+  const placeFor = (key, room) => {
+    const a = anchorOf(key);
+    const el = a.textEl || a.tab;
+    if (!el) return null;
+    const l = firstLine(el, '.headlab') || rect(el);
+    const want = l[1] - glassTop() - room;
+    window.scrollTo(window.scrollX, Math.max(0, want));
+    return R2(window.scrollY);
+  };
+  /** press a key's own tab in the gutter — only a front tab a pointer could
+   *  reach, since a tab behind a pile is a place in the pile, not a way in */
+  const pressTab = (key) => {
+    const a = anchorOf(key);
+    if (!a.tab || !a.front) return 'no front tab';
+    const r = a.tab.getBoundingClientRect();
+    if (!(r.width && r.height)) return 'tab not drawn';
+    const cx = r.left + r.width / 2; const cy = r.top + r.height / 2;
+    if (cy < glassTop() || cy > window.innerHeight || cx < 0 || cx > window.innerWidth) return 'tab off the glass';
+    const hit = document.elementFromPoint(cx, cy);
+    if (!hit || !(a.tab === hit || a.tab.contains(hit))) return 'tab covered';
+    a.tab.click();
+    return null;
+  };
+  /** P29's page half: on a closed document, every powers line left in a
+   *  paragraph and every ✒️ 🛡️ tab left in a strip */
+  const POWER_LINE = /\b(From the start, )?[Tt]he Founder (\(that’s you!\) )?(may|could)(?! not)\b[^.]{0,60}/;
+  const closedPowers = () => {
+    const out = [];
+    document.querySelectorAll('#band .cpara, #band p').forEach((p) => {
+      if (p.closest('.setupcard, .sugg') || !isVis(p, null)) return;
+      const t = plainText(p, 'button') || '';
+      const m = t.match(POWER_LINE);
+      if (m) out.push({ where: 'paragraph', key: (p.querySelector('[data-tab]') || { dataset: {} }).dataset.tab || null, text: m[0] });
+    });
+    document.querySelectorAll('.chipcol .achip').forEach((t) => {
+      if (!isVis(t, null) || !t.getBoundingClientRect().width) return;
+      const k = t.dataset.tab || t.dataset.anchor || t.dataset.chip || '';
+      const g = [...t.querySelectorAll('svg[data-char]')].map((e) => e.getAttribute('data-char')).join('') + (t.textContent || '');
+      if (/^pw:/.test(k) || /[✒🛡]/.test(g)) out.push({ where: 'strip', key: k, text: g.trim() });
+    });
+    return out;
+  };
+  /** P21's reference drawing: `--t-cap` in px and `--muted` as a colour,
+   *  resolved by the page's own stylesheet */
+  const labelRef = () => {
+    const p = document.createElement('span');
+    p.style.fontSize = 'var(--t-cap)'; p.style.color = 'var(--muted)';
+    document.body.appendChild(p);
+    const s = getComputedStyle(p);
+    const out = { cap: R2(parseFloat(s.fontSize)), muted: s.color };
+    p.remove();
+    return out;
+  };
+  /** P31's 390 half: how far each gutter tab at rest stands from the glass */
+  const tabsFromGlass = () => [...document.querySelectorAll('#band .chipcol .achip, #charter .chipcol .achip, #titlepara .chipcol .achip')]
+    .filter((t) => t.getBoundingClientRect().width > 0 && isVis(t, null))
+    .map((t) => ({ key: t.dataset.tab || t.dataset.anchor || null, l: R2(t.getBoundingClientRect().left + window.scrollX) }));
+
   window.__CA = {
     tokens, rect, txt,
     specimen,
@@ -650,6 +1367,8 @@ const IN_PAGE = () => {
     closedGeo,
     bandTabSeen,
     /** the open card, measured. `sel` picks the surface's card element. */
+    grammarOf, zonesNow, pageTips, closeOpenCard, stillZones, openCardEl: () => !!openCardEl(),
+    glassClosed, glassOpen, glassSwitch, placeFor, pressTab, closedPowers, tabsFromGlass, labelRef,
     measure: (sel, key, before) => {
       const card = document.querySelector(sel);
       if (!card) return null;
@@ -674,6 +1393,7 @@ const IN_PAGE = () => {
         // 270 of them would drown the numbers this instrument exists for
         ...(window.__CA_SPEC ? { spec: specimen(card, key) } : {}),
         strings: strings(card),
+        grammar: (() => { try { return grammarOf(card, key, before); } catch (e) { return { error: String(e && e.message || e) }; } })(),
         // a judgment card (Q1500): a charter card whose lanes are radios and
         // which is not the Text's 👑 question — the kinds that carry no 🗑️
         // a grant (Q1501, Q1502): the commit's word as the glyphs read, and the
@@ -1187,6 +1907,573 @@ const RETIRED = [
   'the shield refuses',
 ];
 const GLYPH_ONLY = /^[^\p{L}\p{N}]{1,4}$/u;
+
+/* ============================================================================
+   **The redesign's checks, P13–P33** (Q1541; design/redesign/checks.md, *The
+   checks as ruled*, which is the specification — answers.md over it). In
+   node, over the readings `grammarOf`, `glassOpen`/`glassClosed` and the
+   walks took in the page. Stage 0 runs every one in **report mode**: they
+   are held strictly only for the kinds in `GRAMMAR_KINDS`, which each stage
+   of BUILD.md §4 extends as it converts a family.
+
+   Each finding is `{ check, walk, key, ex, sub?, excepted?, ruled? }`:
+   - `check` is the card-audit number and the checks.md name (`P14 head-registration`);
+   - `sub` separates the kinds one check reports;
+   - `excepted` names **a stated exception** of the check as ruled — kept in
+     the payload and in the v2-comparable count, never in the as-ruled count
+     or the strict verdict (so the unchanged checks still reproduce
+     checks.md's *today* column while saying which of it the ruling excuses);
+   - `ruled: 'new'` marks a finding the ruling added to a check checks.md
+     calls unchanged — in the as-ruled count, out of the v2-comparable one.
+   ========================================================================== */
+const TOL = 0.5;
+/** on the glass a scroll lands on whole pixels while layout does not */
+const GLASS_TOL = 1;
+const CHECKS = [
+  ['P13', 'still'], ['P14', 'head-registration'], ['P15', 'head-form'], ['P16', 'space-above'],
+  ['P17', 'strip-floor'], ['P18', 'hairline-gap'], ['P19', 'empty-slot'], ['P20', 'slot-order'],
+  ['P21', 'label-slot'], ['P22', 'no-job'], ['P23', 'note-visible'], ['P24', 'bin-job'],
+  ['P25', 'row-vocabulary'], ['P26', 'role-drawing'], ['P27', 'closed-page'], ['P28', 'closed-keeps-content'],
+  ['P29', 'closed-powers'], ['P30', 'zone-overlap'], ['P31', 'width-invariance'], ['P32', 'place-head'],
+  ['P33', 'one-home'], ['—', 'raw-value'],
+];
+const CHECK = Object.fromEntries(CHECKS.map(([n, name]) => [name, n + ' ' + name]));
+/** checks.md's *unchanged* set (BUILD.md stage 0's acceptance): their
+ *  v2-comparable count is read against checks.md's *today* column */
+const UNCHANGED = new Set(['head-registration', 'head-form', 'hairline-gap', 'empty-slot', 'slot-order',
+  'row-vocabulary', 'closed-page', 'raw-value']);
+/** P22 as ruled: the reasons a dark control may wait on — `accept:<power>`
+ *  is not among them, since a commit for a power not yet accepted is not
+ *  drawn at all (answers Part 4 .19) */
+const UNTIL_OK = /^(choose|type|drip|voice-out|readiness|reconnect|flight|nothing-yours)$/;
+const WITHDRAWS = /withdraw|comes? back/i;
+const CLOSED_WALKS = new Set(['closed', 'closedband']);
+const CLOSED_TIPS = /waiting on you|yours to take|give your answer/i;
+const COMMIT_GLYPHS = new Set(['✓', '✒', '✏', '🏛', '🪶', '🍾', '📧', '📨']);
+const PAIRS = [['✒', '✏'], ['✒', '🏛'], ['❄', '✓'], ['🛡', '✒']];
+/** P21's words, answers Part 4: the label above a card (.1–.7, .15, .16,
+ *  .23–.26) — or today's title, which Part 4 keeps for ✋ 🖼️ 📧 🌂 🎩 and
+ *  the power cards (read off the card's own tab and rail entry) */
+const HEAD_WORDS = [
+  /^Current (text|rule)( · \d+ of \d+)?$/i,
+  /^(Passed|Rejected|Refused by the Founder|Changed by the Founder|Ran out of time)( · .+)?$/i,
+  /^Final text$/i, /^Rule at the close$/i,
+  /^Accept (Founder Actions|the Founder Veto|Constitutional Proposals|Proposals|Voting)$/i,
+  /^Add your closing comment$/i, /^Accept This Change\?$/i,
+];
+/** …and on a block's first line (Part 4 .8–.14) */
+const BLOCK_WORDS = /^(Proposed( by .+)?|Previous (text|rule))( · (\d+%|Ran out of time))?$/i;
+
+/** a row control as a token: its leading glyph (variation selector dropped), or its words */
+const tokNorm = (t) => {
+  const s = String(t || '').replace(/️/g, '').trim();
+  const m = s.match(/^([\u{1F300}-\u{1FAFF}\u{2300}-\u{23FF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}])/u);
+  return m ? m[1] : s;
+};
+const d2 = (a, b) => [r2(b[0] - a[0]), r2(b[1] - a[1])];
+const moved = (d) => Math.abs(d[0]) > TOL || Math.abs(d[1]) > TOL;
+const clip = (s, n = 60) => { const t = String(s == null ? '' : s); return t.length > n ? t.slice(0, n - 1) + '…' : t; };
+
+/**
+ * **A card's kind**, for `GRAMMAR_KINDS`: the key's family where the key
+ * names one (`pw:`, `mo:`, `rec:`, `held:`, `adm:`, the charter's `quick-` …
+ * prefixes, the grants and the two gates), else the key itself — a band
+ * setting, 🍾, 🥂 or an identity card is its own kind.
+ */
+function kindOf(key) {
+  const k = String(key || '');
+  if (/^pw:/.test(k)) return 'power';
+  if (/^mo:/.test(k)) return 'motion';
+  if (/^held:/.test(k)) return 'failed-motion-news';
+  if (/^rec:/.test(k)) return 'record';
+  if (/^adm:/.test(k)) return 'admission';
+  if (/^grant-/.test(k)) return 'grant';
+  if (/^(canpropose|canjudge)$/.test(k)) return 'gate';
+  const m = k.match(/^(quick|race|insert|patch|mine|park|diag|draft)-/);
+  return m ? m[1] : k;
+}
+
+/** the six shapes of grammar §2.6, as answers Part 4 .24 and 1541.9 (b) keep them */
+function classifyRow(tokens) {
+  const toks = tokens.map((t) => tokNorm(t.t));
+  if (!toks.length) return { bad: 'a row drawn with no control in it' };
+  const bins = toks.map((t, i) => (t === '🗑' ? i : -1)).filter((i) => i >= 0);
+  if (bins.length > 1 || (bins.length && bins[0] !== 0)) return { bad: '🗑️ not alone at the left: ' + toks.join(' ') };
+  const bin = bins.length === 1;
+  const rest = bin ? toks.slice(1) : toks;
+  if (!rest.length) {
+    return WITHDRAWS.test(tokens[0].title || '') ? { shape: 'withdraw' }
+      : { bad: '🗑️ alone, not withdrawing (title “' + clip(tokens[0].title || '', 50) + '”)' };
+  }
+  if (rest.length === 1) {
+    const r = rest[0];
+    if (r === 'OK') return bin ? { bad: '🗑️ + OK' } : { shape: 'acknowledge' };
+    if (/^(Accept|Activate)\b/.test(r)) return bin ? { bad: '🗑️ + ' + r } : { shape: 'accept' };
+    if (COMMIT_GLYPHS.has(r)) return { shape: 'commit' };
+    return { bad: 'a commit outside the set: ' + (bin ? '🗑️ ' : '') + r };
+  }
+  if (rest.length === 2 && PAIRS.some(([a, b]) => rest[0] === a && rest[1] === b)) return { shape: 'pair' };
+  return { bad: 'no shape: ' + toks.join(' ') };
+}
+
+/**
+ * **P13's zones on the glass**: the topbar and the contents rail whole, each
+ * sheet by its left and right edges (its top is content above — checks.md
+ * P13, 1541.44).
+ */
+function glassZoneMoves(a, b) {
+  const out = [];
+  if (!a || !b) return out;
+  const box = (name, x, y) => {
+    if (!x || !y) return;
+    ['x', 'y', 'width', 'height'].forEach((lab, i) => { if (Math.abs(y[i] - x[i]) > GLASS_TOL) out.push(name + ' ' + lab + ' ' + r2(y[i] - x[i]) + 'px'); });
+  };
+  box('topbar', a.topbar, b.topbar);
+  box('contents rail', a.toc, b.toc);
+  const sa = a.sheets || []; const sb = b.sheets || [];
+  if (sa.length !== sb.length) out.push('the sheets went from ' + sa.length + ' to ' + sb.length);
+  for (let i = 0; i < Math.min(sa.length, sb.length); i++) {
+    const nm = 'sheet ' + (sa[i].cls.replace(/^sheet\s*/, '') || i);
+    if (Math.abs(sb[i].l - sa[i].l) > GLASS_TOL) out.push(nm + ' left ' + r2(sb[i].l - sa[i].l) + 'px');
+    if (Math.abs(sb[i].r - sa[i].r) > GLASS_TOL) out.push(nm + ' right ' + r2(sb[i].r - sa[i].r) + 'px');
+  }
+  return out;
+}
+
+/**
+ * **P13 `still`, as ruled (1541.44)**, over one glass reading pair `a` → `b`.
+ *
+ * *The page top is wherever room runs out* (Ed, 2026-09-25; answers Part 6.4): the page scrolls
+ * as far as it can, and the first line moves down only by the shortfall —
+ * wherever the label, kept above a still first line, would otherwise land
+ * above the visible area or under the topbar. So one formula covers the
+ * general case and the page-top case: the **shortfall** is
+ * `max(0, glass + room − line)`, 0 wherever the room fits under the topbar,
+ * and the page-top case is simply a reading where it is not 0 (reported as
+ * its own `sub`, *measured separately*).
+ *
+ * **Close and switch follow the same no-movement geometry as open** (Ed,
+ * 2026-09-25; answers Part 6.5): on close the content above takes the room back and the
+ * clause stays still — it moves up only by what the scroll cannot give back
+ * (`max(0, room − scrollY)`); on a switch the target's first line and tab
+ * stay still, less the new card's shortfall.
+ */
+function p13Rules(c, at) {
+  for (const e of c.p13 || []) {
+    if (e.unread) continue;
+    const { a, b } = e;
+    if (!a || !b || !a.ok || !b.ok) continue;
+    let dy = 0; let room = 0;
+    if (e.sub === 'close') {
+      room = a.room || 0;
+      dy = -Math.max(0, room - (a.scrollY || 0));
+    } else {
+      room = b.room || 0;
+      dy = a.line ? Math.max(0, r2((a.glass || 0) + room - a.line[1])) : 0;
+    }
+    const sub = e.sub === 'page-top' || (e.sub !== 'close' && dy > GLASS_TOL) ? 'page-top' : e.sub;
+    const bits = [];
+    const want = (what, p, q) => {
+      if (!p || !q) return;
+      const d = d2(p, q);
+      if (Math.abs(d[0]) > GLASS_TOL || Math.abs(d[1] - dy) > GLASS_TOL) {
+        bits.push(what + ' moves ' + d[0] + ', ' + d[1] + 'px on screen' + (dy ? ' (the shortfall allows 0, ' + dy + ')' : ''));
+      }
+    };
+    want('the first line', a.line, b.line);
+    if (a.glyph && b.glyph) want('the pressed tab', a.glyph, b.glyph);
+    // the content above: up by the room on open (less the shortfall), down by
+    // it on close (less what the scroll could not give back); a switch's
+    // above is the old card's room given back and the new one's taken, which
+    // no reading here separates, so it is not held
+    if (e.sub !== 'switch' && a.above != null && b.above != null) {
+      const expect = e.sub === 'close' ? room + dy : dy - room;
+      const got = r2(b.above - a.above);
+      if (Math.abs(got - expect) > GLASS_TOL) bits.push('the ink above moves ' + got + 'px (the room says ' + r2(expect) + ')');
+    }
+    bits.push(...glassZoneMoves(a.zones, b.zones));
+    if (bits.length) at('still', e.sub + ': ' + bits.join(' · '), sub);
+  }
+}
+
+function grammarRules(c, ref) {
+  const out = [];
+  const g = c.grammar;
+  const at = (check, ex, sub, more) => out.push({ check, walk: c.walk, key: c.key, ex: clip(ex, 160), ...(sub ? { sub } : {}), ...(more || {}) });
+  if (!g || g.error) { if (g && g.error) at('still', 'the grammar reading threw: ' + g.error, 'error'); return out; }
+  const v = g.v2 && !g.v2.error ? g.v2 : null;
+  const before = g.closedBefore;
+  const closed = CLOSED_WALKS.has(c.walk);
+  const isRecord = !!(v && v.isRecord);
+
+  /* P13 still — on the glass, from both scroll positions (BUILD.md §2) */
+  p13Rules(c, at);
+
+  /* P14 head-registration — the closed paragraph's words and first line.
+   * Stated exceptions (checks.md P14): a record (the wording it recorded), a
+   * multi-place proposal (the place it shows), a gap (*(no text here)*), 🪶
+   * at the birth (the title box); a rule card's first line is the rule
+   * without its powers line (the trim, as v2 had it); a power card's first
+   * line is **the power's own clause, naming its subject** (1541.48) — so its
+   * text is not the paragraph's, and is held to starting *The Founder* instead */
+  if (before && !c.switchOpen && before.ptext != null && before.para) {
+    const why = isRecord ? 'a record heads with the wording it recorded'
+      : /^patch-/.test(c.key) ? 'a multi-place proposal heads with the place it shows'
+      : /insert-anchor/.test(before.para) ? 'a gap heads with (no text here)'
+      : c.key === 'title' && c.walk === 'founding' ? '🪶 at the birth heads with the title box'
+      : null;
+    if (!g.head) at('head-registration', 'no head element on the card (closed paragraph ' + before.para + ': “' + clip(before.ptext, 60) + '”)', 'missing');
+    else {
+      const norm = (s) => String(s || '').replace(/️/g, '').replace(/\s+/g, ' ').trim();
+      const trimPow = (s) => norm(s).replace(/\s*(From the start, )?The Founder( \(that’s you!\))? may[^.]*\.(\s*From the start, the Founder may not[^.]*\.)?\s*$/, '').trim();
+      if (norm(g.head.text) !== norm(before.ptext) && norm(g.head.text) !== trimPow(before.ptext)) {
+        const power = /^pw:/.test(c.key);
+        at('head-registration', 'text: paragraph “' + clip(norm(before.ptext), 70) + '” · head (' + g.head.sel + ') “' + clip(norm(g.head.text), 70) + '”', 'text',
+          why ? { excepted: why } : power ? { excepted: 'a power card heads with its own clause (1541.48)' } : null);
+      }
+      if (/^pw:/.test(c.key) && !/^(From the start, )?The Founder\b/.test(norm(g.head.text))) {
+        at('head-registration', 'power-clause: the power card heads “' + clip(norm(g.head.text), 70) + '”, not the power\'s own clause', 'power-clause', { ruled: 'new' });
+      }
+      if (before.line && g.still.line) {
+        const d = d2(before.line, g.still.line);
+        if (moved(d)) at('head-registration', 'offset: head first line Δx ' + d[0] + ' Δy ' + d[1] + 'px', 'offset', why ? { excepted: why } : null);
+      } else if (!g.still.line) at('head-registration', 'offset: the head draws no first line to measure', 'offset', why ? { excepted: why } : null);
+    }
+  }
+
+  /* P15 head-form — nothing between the label and the first line: the label
+   * is the one thing allowed above it, in the room `space-above` makes, so a
+   * card whose only thing above the head is one label is excepted (the v2
+   * count still carries it — v2 allowed nothing above the head) */
+  if (g.head && (g.head.eyebrow || g.head.above)) {
+    const onlyLabel = v && v.headLabels === 1 && v.headLabelText != null &&
+      String(g.head.above || '').replace(/\s+/g, ' ').trim() === String(v.headLabelText).replace(/\s+/g, ' ').trim();
+    at('head-form', 'above the head: “' + clip(g.head.above || g.head.eyebrow, 90) + '”' + (g.head.eyebrow ? ' (a .headlab eyebrow)' : ''), null,
+      onlyLabel ? { excepted: 'the label, the one thing above the first line (1541.44–.46)' } : null);
+  }
+
+  /* P16 space-above (replaces top-edge; 1541.15, .35, .44): the card never
+   * covers the ink above it; the label stands inside the card, clear of that
+   * ink; the room made between the ink above and the first line equals the
+   * label slot's height (read off the general open, on the glass) */
+  if (v && v.top && v.top.ink != null) {
+    if (v.top.card < v.top.ink - TOL) at('space-above', 'the card\'s top covers the ink above it by ' + r2(v.top.ink - v.top.card) + 'px', 'covers');
+    if (v.top.label != null && v.top.label < v.top.ink + 1) at('space-above', 'the label stands ' + r2(v.top.ink + 1 - v.top.label) + 'px into the ink above', 'label-in-ink');
+  }
+  if (v && v.top && v.top.label != null && v.top.label < v.top.card - TOL) at('space-above', 'the label stands ' + r2(v.top.card - v.top.label) + 'px above the card\'s box', 'label-outside');
+  for (const e of c.p13 || []) {
+    if (e.sub !== 'open' || e.unread || !e.a || !e.b || !e.a.ok || !e.b.ok) continue;
+    const { a, b } = e;
+    if (!a.line || !b.line || a.above == null || b.above == null) continue;
+    const made = r2((b.line[1] - b.above) - (a.line[1] - a.above));
+    if (Math.abs(made - (b.room || 0)) > GLASS_TOL) at('space-above', 'the room made above the first line is ' + made + 'px, the label slot ' + (b.room || 0) + 'px', 'room');
+  }
+
+  /* P17 strip-floor (replaces strip-blank; 1541.16 (c)) */
+  if (v && v.floor && v.floor.strip != null && v.floor.card < v.floor.strip - TOL) {
+    at('strip-floor', 'the card is ' + v.floor.card + 'px tall, its strip ' + v.floor.strip + 'px');
+  }
+
+  /* P18 hairline-gap (P12 kept beside it). The ruling's addition — a hairline
+   * between a rule card's standing first line and its other options (1541.47)
+   * — has no first line to read until stage 3 draws one */
+  for (const h of g.hair || []) {
+    at('hairline-gap', h.kind === 'pair' ? h.a + ' and ' + h.b + ' with nothing between (' + h.gap + 'px)'
+      : h.a + ' has nothing ' + (h.kind === 'top' ? 'above it but the card top' : 'below it but the card foot'), h.kind);
+  }
+
+  /* P19 empty-slot. Stated exceptions (principle 6 as ruled): the reason box
+   * on a card that can take a change, always drawn (1541.21 (b)); the floor's
+   * padding under the last slot (P17) is the card's own padding, never a
+   * child, so it is never read here. `presence` needs the shell's predicate
+   * (stage 1) and is not measured */
+  for (const e of g.empty || []) {
+    const reason = /rationale|reason|why|\.lane/i.test(e.el) && !closed;
+    at('empty-slot', e.el + ' is ' + e.h + 'px tall with nothing in it', null,
+      reason ? { excepted: 'the reason box, always shown on a card that can take a change (1541.21 (b))' } : null);
+  }
+
+  /* P20 slot-order — the drawn slots top to bottom in grammar §2.3's order,
+   * the label first; the fact and body slots carry no mark on today's page */
+  if (v && v.order && v.order.length > 1) {
+    const RANK = { label: 0, head: 1, block: 2, input: 3, row: 4 };
+    const seq = v.order.slice().sort((x, y) => x.y - y.y || RANK[x.slot] - RANK[y.slot]);
+    for (let i = 1; i < seq.length; i++) {
+      if (RANK[seq[i].slot] < RANK[seq[i - 1].slot]) {
+        at('slot-order', 'a ' + seq[i].slot + ' drawn below a ' + seq[i - 1].slot + ' (' + seq[i].y + ' under ' + seq[i - 1].y + ')', seq[i].slot);
+        break;
+      }
+    }
+  }
+
+  /* P21 label-slot, as ruled (1541.45, .46, .27; answers Part 4). **Every
+   * label, card and block alike, is drawn at `--t-cap`** (Ed, 2026-09-25;
+   * answers Part 6.2),
+   * 700, upper case, `--muted` — a record's outcome in its colour */
+  if (v) {
+    if (v.headLabels !== 1) at('label-slot', v.headLabels ? v.headLabels + ' labels above the first line' : 'no label above the first line', v.headLabels ? 'labels' : 'no-label');
+    const drawn = (d, record) => {
+      if (!d || !ref) return null;
+      const bad = [];
+      if (ref.cap != null && Math.abs(d.fs - ref.cap) > 0.1) bad.push(d.fs + 'px, not --t-cap ' + ref.cap + 'px');
+      if (d.fw !== '700') bad.push('weight ' + d.fw);
+      if (d.tt !== 'uppercase') bad.push(d.tt === 'none' ? 'not upper case' : d.tt);
+      if (!record && ref.muted && d.color !== ref.muted) bad.push('colour ' + d.color);
+      return bad.length ? bad.join(', ') : null;
+    };
+    if (v.headLabels === 1) {
+      const bad = drawn(v.headLabelDraw, isRecord);
+      if (bad) at('label-slot', 'the label above the first line is drawn ' + bad, 'drawing');
+      const t = String(v.headLabelText || '').replace(/\s+/g, ' ').trim();
+      const ask = (v.asks || []).some((s) => String(s).replace(/\s+/g, ' ').trim().toLowerCase().startsWith(t.toLowerCase()) && t.length > 3);
+      if (!HEAD_WORDS.some((re) => re.test(t)) && !ask) at('label-slot', 'the label “' + clip(t, 50) + '” is not in answers Part 4\'s words', 'words');
+    }
+    for (const b of v.blocks || []) {
+      // a settings rung with a live radio is labelled by its radio's words (CP1, CP2)
+      if (b.pick && b.live) continue;
+      if (!b.labelled) { at('label-slot', 'a ' + b.cls + ' with no label on its first line', 'block'); continue; }
+      if (!b.first) at('label-slot', 'the label “' + clip(b.label, 40) + '” is not its ' + b.cls + '\'s first line', 'block-place');
+      const bad = drawn(b.draw, isRecord);
+      if (bad) at('label-slot', 'the block label “' + clip(b.label, 30) + '” is drawn ' + bad, 'drawing');
+      if (!BLOCK_WORDS.test(String(b.label || '').replace(/\s+/g, ' ').trim())) at('label-slot', 'the block label “' + clip(b.label, 40) + '” is not in answers Part 4\'s words', 'words');
+    }
+  }
+
+  /* P22 no-job, static form as ruled */
+  for (const k of g.controls || []) {
+    if (k.close && /^OK$/i.test(k.tok)) at('no-job', 'an OK that only closes (data-close)', 'close-ok');
+    if (!k.disabled || closed) continue;
+    if (k.until && !UNTIL_OK.test(k.until)) at('no-job', 'a dark control with data-until="' + k.until + '"', 'until');
+    else if (!k.until) at('no-job', 'a dark ' + (k.radio ? 'radio' : 'control') + ' “' + clip(k.tok || k.el, 30) + '” with no data-until', 'until');
+    // a commit waiting on a power's acceptance is not drawn at all (Part 4 .19)
+    if (k.inRow && /\baccept/i.test((k.title || '') + ' ' + (k.until || ''))) at('no-job', 'a dark commit “' + clip(k.tok, 20) + '” waiting on a power not yet accepted (' + clip(k.title || k.until, 50) + ')', 'unaccepted');
+  }
+  if (v && v.litOverEmpty && !closed) at('no-job', 'a lit commit over an empty required input', 'lit-empty');
+
+  /* P23 note-visible, narrowed to Part 4 .17–.22: a dark commit waiting on
+   * `drip`, `voice-out` or `readiness` shows its note as text in the row; one
+   * waiting on `choose` or `type`, and the dark bin, shows none. Today's page
+   * carries no `data-until`, so the reason is read off the commit's tooltip */
+  const reasonOf = (d) => {
+    if (d.until) return d.until;
+    const t = (d.title || '') + ' ' + (d.tok || '');
+    if (/\b\d{1,2}:\d{2}\b|next ✏|✏️? in /i.test(t)) return 'drip';
+    if (/at a time|withdraw yours|🏛️? (is )?(out|in use)|one 🏛/i.test(t)) return 'voice-out';
+    if (/🍾/.test(d.tok || '') || /still answering|waiting for .* answer/i.test(t)) return 'readiness';
+    return 'choose-or-type';
+  };
+  if (v && !closed) {
+    for (const n of v.notes || []) {
+      if (!n.dark) continue;
+      const rs = (n.darks || []).map(reasonOf);
+      const due = rs.filter((r) => /^(drip|voice-out|readiness)$/.test(r));
+      if (due.length && !n.note) at('note-visible', 'a dark commit waiting on ' + [...new Set(due)].join(', ') + ' and no note in the row', 'missing');
+      if (!due.length && n.note) at('note-visible', 'a note “' + clip(n.note, 40) + '” beside commits waiting only on a choice or a keystroke', 'extra');
+    }
+  }
+
+  /* P24 bin-job, as ruled (1541.9 with Ed's note): 🗑️ is drawn exactly when
+   * the card can ever give it a job for this reader — something to type, a
+   * choice to put back, or something of theirs to withdraw — dark while there
+   * is nothing to remove, lit while there is; a withdraw is the bare glyph.
+   * A radio choice among blocks that include Indifferent is undone by another
+   * choice, so a judgment can never give it one (grammar J2, Q1500).
+   * Without `CardState` the *can ever* is read from the card: stage 1's
+   * `acts` replaces this reading */
+  if (!closed) {
+    const bins = g.bins || [];
+    const withdraw = bins.some((b) => WITHDRAWS.test(b.title || ''));
+    const indifferent = !!c.judgment || (g.controls || []).some((k) => /indifferent/i.test(k.tok || ''));
+    const radios = (g.controls || []).some((k) => k.radio && !k.disabled);
+    const commit = (g.rows || []).some((r) => r.tokens.some((t) => COMMIT_GLYPHS.has(tokNorm(t.t))));
+    const canEver = !isRecord && (!!(v && v.typeable) || withdraw || (radios && !indifferent && commit));
+    if (bins.length && !canEver) at('bin-job', '🗑️ on a card that can never give it a job (title “' + clip(bins[0].title || '', 50) + '”)', 'no-job-ever');
+    if (!bins.length && canEver) at('bin-job', 'no 🗑️ on a card that can give it a job', 'missing');
+    for (const b of bins) {
+      const wd = WITHDRAWS.test(b.title || '');
+      if (!b.disabled && !g.unsent && !wd) at('bin-job', '🗑️ lit with nothing of yours to remove (title “' + clip(b.title || '', 50) + '”)', 'lit-empty');
+      if (b.disabled && g.unsent) at('bin-job', '🗑️ dark over an unsent value', 'dark-with-draft');
+      if (wd && b.word) at('bin-job', 'a withdraw carries a word: “' + clip(b.word, 30) + '”', 'withdraw-word');
+    }
+  }
+
+  /* P25 row-vocabulary — the six shapes; *withdraw* is the bare 🗑️ */
+  c.shapes = [];
+  if (!(g.rows || []).length) c.shapes.push('absent');
+  for (const r of g.rows || []) {
+    const k = classifyRow(r.tokens);
+    if (k.bad) at('row-vocabulary', k.bad);
+    else c.shapes.push(k.shape);
+    if (r.shape && k.shape && r.shape !== k.shape) at('row-vocabulary', 'data-shape="' + r.shape + '" but the row reads as ' + k.shape);
+    if (k.shape === 'withdraw' && /\p{L}/u.test(String(r.tokens[0].t || '').replace(/🗑️?/gu, ''))) {
+      at('row-vocabulary', 'a withdraw with a word: “' + clip(r.tokens[0].t, 30) + '”', 'withdraw-word', { ruled: 'new' });
+    }
+  }
+
+  /* P26 role-drawing, as ruled (1541.13 (c), .50): today's drawings kept; ✓
+   * accent blue when armed, never green; no solid-green button; a block
+   * nobody may choose has no radio */
+  const anyCommit = (g.rows || []).some((r) => r.tokens.some((t) => tokNorm(t.t) !== '🗑'));
+  for (const k of g.controls || []) {
+    if (k.green) at('role-drawing', 'a button on solid --ok green: “' + clip(k.tok || k.el, 30) + '”', 'green');
+    if (!k.disabled && k.inkGreen && tokNorm(k.tok) === '✓') at('role-drawing', 'an armed ✓ drawn green', 'green-tick');
+    if (k.radio && (k.disabled || !anyCommit)) at('role-drawing', 'a radio “' + clip(k.tok, 30) + '” on a block nobody may choose' + (k.on ? ' (pressed)' : ''), 'unchoosable');
+  }
+
+  /* P27 closed-page (as measured): nothing enabled but the tabs, 🥂 and a
+   * multi-place proposal's ↑ ↓; no dark control, no radio, no *waiting on
+   * you* tooltip */
+  if (closed) {
+    for (const k of g.controls || []) {
+      if (k.sign) continue;
+      if (/pstep/.test(k.el)) continue;
+      const why = k.radio ? 'a radio' : !k.disabled ? 'an enabled control' : 'a dark control';
+      at('closed-page', why + ': “' + clip(k.tok || k.el, 30) + '”' + (k.title ? ' (' + clip(k.title, 40) + ')' : ''));
+    }
+    for (const t of g.tips || []) if (CLOSED_TIPS.test(t)) at('closed-page', 'a tooltip on a closed document: “' + clip(t, 70) + '”', 'tooltip');
+  }
+
+  /* raw-value (a copy-check --walk rule too, strict there) */
+  for (const r of g.raw || []) at('raw-value', r);
+
+  if (v && closed) {
+    /* P28 closed-keeps-content: every card that raced — a live race, patch,
+     * motion or proposal, or a record of one the close cut off — still draws
+     * its proposals, and says *Ran out of time* (Part 4 .4, .14) */
+    const cutOff = isRecord && /undecided|ran out of time/i.test(v.text || '');
+    const raced = (/^(quick|race|insert|patch|mine)-|^mo:/.test(c.key) && !isRecord) || cutOff;
+    if (raced) {
+      const more = cutOff ? { ruled: 'new' } : null;
+      if (!v.blocks.length) at('closed-keeps-content', 'what was in flight at the close is not on the card: the head alone', 'lost', more);
+      else if (!/ran out of time/i.test(v.text)) at('closed-keeps-content', 'the proposals stand, and nothing says *Ran out of time*', 'unsaid', more);
+    }
+    /* P29 closed-powers, the card half (replaces closed-tense; 1541.34, .52):
+     * no powers line in the card and no ✒️ 🛡️ tab in its strip; a rule card's
+     * label *Rule at the close*, a text card's *Final text*. 🍾's table of the
+     * powers kept at the start is a stated survivor */
+    if (c.key !== 'begin') {
+      const m = (v.text || '').match(/\b(From the start, )?[Tt]he Founder (\(that’s you!\) )?(may|could)(?! not) [^.]{0,40}/);
+      if (m) at('closed-powers', 'a powers line on a closed document: “' + clip(m[0], 70) + '”', 'card-line');
+      if ((v.powerTabs || []).length) at('closed-powers', 'a ✒️ 🛡️ tab in the strip: ' + v.powerTabs.join(', '), 'strip-tab');
+    }
+    const t = String(v.headLabelText || '').trim();
+    if (c.walk === 'closed' && !isRecord && !/^Final text$/i.test(t)) at('closed-powers', 'a text card labelled “' + clip(t, 40) + '”, not *Final text*', 'label');
+    const ruleCard = c.walk === 'closedband' && !/^(pw:|grant-|adm:|rec:|held:)/.test(c.key) &&
+      !['closing', 'begin', 'myname', 'mypic', 'myemail', 'canpropose', 'canjudge', 'resign'].includes(c.key);
+    if (ruleCard && !isRecord && !/^Rule at the close$/i.test(t)) at('closed-powers', 'a rule card labelled “' + clip(t, 40) + '”, not *Rule at the close*', 'label');
+  }
+
+  /* P32 place-head — one first line per card */
+  if (v && v.heads > 1) at('place-head', v.heads + ' heads on one card');
+
+  /* P33 one-home — at most one element per data-fact role; a card with no
+   * roles cannot be read, and is counted in `unread` rather than here */
+  if (v && v.facts) for (const [role, n] of Object.entries(v.facts)) if (n > 1) at('one-home', n + ' elements claim data-fact="' + role + '"', role);
+
+  return out;
+}
+
+/**
+ * The walk-level readings: P30 zone-overlap, P27's page-wide tooltips, P13's
+ * switch pass (card-audit P7's), P29's page half, P31's flush tabs.
+ */
+function walkGrammar(zones, tips, switches, restReads) {
+  const out = [];
+  for (const z of zones) {
+    const zs = z.zones.filter((x) => !x.drawer);
+    for (let i = 0; i < zs.length; i++) {
+      for (let j = i + 1; j < zs.length; j++) {
+        const a = zs[i]; const b = zs[j];
+        if (a.group === b.group) continue;
+        if (a.group === 'floating' || b.group === 'floating') continue;
+        const pair = [a.group, b.group].sort().join('×');
+        if (VIEWPORT.width <= 900 && ['floating×sheet', 'queue×sheet', 'sheet×toc'].includes(pair)) continue;
+        const w = Math.min(a.box[2], b.box[2]) - Math.max(a.box[0], b.box[0]);
+        const h = Math.min(a.box[3], b.box[3]) - Math.max(a.box[1], b.box[1]);
+        if (w > TOL && h > TOL) {
+          out.push({ check: 'zone-overlap', walk: z.walk, key: z.when + (z.key ? ':' + z.key : ''),
+            ex: a.name + ' and ' + b.name + ' overlap ' + r2(w) + '×' + r2(h) + 'px (' + z.when + ')' });
+        }
+      }
+    }
+    for (const x of z.zones) {
+      if (x.group !== 'floating' || !x.covers) continue;
+      // **the floating 📝 door is a named exception** (1541.17, Ed: *the fact
+      // that it sometimes overlaps things is what makes it stand out*)
+      const door = /editdoor/.test(x.name);
+      out.push({ check: 'zone-overlap', walk: z.walk, key: z.when + (z.key ? ':' + z.key : ''), sub: 'covers-text',
+        ex: x.name + ' covers ' + x.covers + ' line(s) of text (' + z.when + ')',
+        ...(door ? { excepted: 'the floating 📝 door may overlap (1541.17)' } : {}) });
+    }
+  }
+  for (const t of tips) {
+    const seen = new Set();
+    for (const x of t.tips) {
+      if (!CLOSED_TIPS.test(x.title) || seen.has(x.key + x.title)) continue;
+      seen.add(x.key + x.title);
+      out.push({ check: 'closed-page', walk: t.walk, key: x.key || '(page)', sub: 'tooltip',
+        ex: 'a tab or rail tooltip on the closed page: “' + clip(x.title, 70) + '”' });
+    }
+  }
+  for (const s of switches) {
+    if (!s.travel) continue;
+    if (Math.abs(s.travel[0]) <= SWITCH_TOL && Math.abs(s.travel[1]) <= SWITCH_TOL) continue;
+    out.push({ check: 'still', walk: s.walk, key: s.click, sub: 'switch-across',
+      ex: 'switch (P7): with ' + s.open + ' open, clicking ' + s.click + ' moves its glyph ' + s.travel.join(', ') + 'px' });
+  }
+  for (const r of restReads) {
+    /* P29's page half: every powers line in a Rules paragraph and every ✒️ 🛡️
+     * tab left in a strip, on a closed document — **both go** (Ed, 2026-09-25;
+     * answers Part 6.6: the powers sentence leaves the Rules paragraphs as
+     * well as the cards and tabs) — read on `closedband`,
+     * which unfolds Rules (the charter's closed walk leaves it folded, and
+     * would count the same tabs twice) */
+    if (r.walk === 'closedband') {
+      for (const p of r.powers || []) {
+        out.push({ check: 'closed-powers', walk: r.walk, key: p.key || '(page)', sub: p.where === 'strip' ? 'page-tab' : 'paragraph',
+          ex: (p.where === 'strip' ? 'a ✒️ 🛡️ tab on the closed page: ' : 'a powers line in a closed Rules paragraph: “') + clip(p.text, 60) + (p.where === 'strip' ? '' : '”') });
+      }
+    }
+    /* P31's 390 half: at the phone the tabs stand flush with the glass's left
+     * edge (1541.20) */
+    if (VIEWPORT.width <= 900) {
+      const off = (r.tabs || []).filter((t) => t.l > TOL);
+      if (off.length) out.push({ check: 'width-invariance', walk: r.walk, key: '(rest)', sub: 'not-flush',
+        ex: off.length + ' of ' + r.tabs.length + ' tabs stand off the glass\'s left edge (nearest ' + Math.min(...off.map((t) => t.l)) + 'px)' });
+    }
+  }
+  return out;
+}
+
+/**
+ * **P31 width-invariance** against `--baseline` (the 1600 run): each P13
+ * reading's travel — the first line and the pressed tab, on the glass — must
+ * agree across the widths. **Stated exception: the active tab** grows 8 px at
+ * 1600 and highlights in place at 390, split at the 900 px line (1541.53), so
+ * the tab's sideways travel is not compared.
+ */
+function widthRules(cards, baseline) {
+  const out = [];
+  if (!baseline || !Array.isArray(baseline.cards)) return out;
+  const travel = (e) => {
+    if (!e || e.unread || !e.a || !e.b || !e.a.ok || !e.b.ok) return null;
+    return { line: e.a.line && e.b.line ? d2(e.a.line, e.b.line) : null, tab: e.a.glyph && e.b.glyph ? d2(e.a.glyph, e.b.glyph) : null };
+  };
+  const base = new Map();
+  for (const c of baseline.cards) for (const e of c.p13 || []) base.set(c.walk + '·' + c.key + '·' + e.sub, travel(e));
+  for (const c of cards) {
+    for (const e of c.p13 || []) {
+      if (e.sub === 'page-top') continue; // the shortfall is a fact about the window's height, not a travel
+      const x = base.get(c.walk + '·' + c.key + '·' + e.sub); const y = travel(e);
+      if (!x || !y) continue;
+      const bits = [];
+      if (x.line && y.line && (Math.abs(x.line[0] - y.line[0]) > GLASS_TOL || Math.abs(x.line[1] - y.line[1]) > GLASS_TOL)) bits.push('first line ' + x.line.join(', ') + ' → ' + y.line.join(', '));
+      if (x.tab && y.tab && Math.abs(x.tab[1] - y.tab[1]) > GLASS_TOL) bits.push('tab ' + x.tab[1] + ' → ' + y.tab[1] + 'px down');
+      if (bits.length) out.push({ check: 'width-invariance', walk: c.walk, key: c.key, sub: e.sub, ex: e.sub + ': ' + bits.join(' · ') + ' (1600 → ' + VIEWPORT.width + ')' });
+    }
+  }
+  return out;
+}
 const excerpt = (s, needle) => {
   const i = s.toLowerCase().indexOf(String(needle).toLowerCase());
   return i < 0 ? null : s.slice(Math.max(0, i - 50), i + 60);
@@ -1538,9 +2825,65 @@ function crossCard(cards) {
    ========================================================================== */
 const wait = (page, ms) => page.waitForTimeout(ms);
 
+/** zone-overlap's readings, one at rest and one with a card open, per walk;
+ *  and the closed walks' page-wide tooltips (closed-page) */
+const zoneReads = [];
+const tipReads = [];
+/** per walk, at rest: P29's page half (every powers line and ✒️ 🛡️ tab left
+ *  on a closed page) and P31's flush tabs */
+const restReads = [];
+async function zonesFor(page, walk, when, key) {
+  if (zoneReads.some((z) => z.walk === walk && z.when === when)) return;
+  try {
+    const zones = await page.evaluate(() => window.__CA.zonesNow());
+    zoneReads.push({ walk, when, key: key || null, zones });
+    if (when === 'rest' && /^closed/.test(walk)) tipReads.push({ walk, tips: await page.evaluate(() => window.__CA.pageTips()) });
+    if (when === 'rest') {
+      restReads.push({ walk, ...(await page.evaluate(() => ({
+        powers: window.__CA.closedPowers(), tabs: window.__CA.tabsFromGlass() }))) });
+    }
+  } catch (e) { /* recorded as missing in the summary */ }
+}
+
+/**
+ * **P13's two openings** (BUILD.md §2, *opening from a scroll that allows
+ * compensation*). The general case opens a card with its first line
+ * `P13_ROOM` px under the glass — more than any label's room — so the page
+ * can make the room above it and keep the line still; the page-top case
+ * opens the walk's first card at scroll 0, the band's first card or the
+ * first clause. Both press the card's own tab, never the rail.
+ */
+const P13_ROOM = 200;
+async function glassPress(page, key, sub) {
+  return page.evaluate(([k, room, s]) => {
+    const C = window.__CA;
+    C.placeFor(k, room);
+    const a = s === 'switch' ? C.glassSwitch(k) : C.glassClosed(k);
+    const why = C.pressTab(k);
+    return { a, pressed: !why, why };
+  }, [key, P13_ROOM, sub]);
+}
+const pageTopDone = new Set();
+async function pageTopPass(page, key, walk, p13, errors) {
+  if (pageTopDone.has(walk)) return;
+  pageTopDone.add(walk);
+  const r = await page.evaluate((k) => {
+    window.scrollTo(0, 0);
+    const a = window.__CA.glassClosed(k);
+    return { a, why: window.__CA.pressTab(k) };
+  }, key);
+  if (r.why) { p13.push({ sub: 'page-top', unread: r.why }); return; }
+  await wait(page, 300);
+  p13.push({ sub: 'page-top', a: r.a, b: await page.evaluate((k) => window.__CA.glassOpen(k), key) });
+  await page.evaluate((k) => window.__CA.closeOpenCard(k), key);
+  await wait(page, 220);
+  if (await page.evaluate(() => window.__CA.openCardEl())) errors.push(walk + ': ' + key + ' did not close after the page-top pass');
+}
+
 async function openAndMeasure(page, key, cardSel, walk, cards, errors) {
   const before = await page.evaluate((k) => window.__CA.closedGeo(k), key);
-  const opened = await page.evaluate((k) => {
+  if (!before.anyOpen) await zonesFor(page, walk, 'rest');
+  const clickIn = () => page.evaluate((k) => {
     const sel = '[data-card="' + CSS.escape(k) + '"], [data-tab="' + CSS.escape(k) + '"]';
     const el = document.querySelector('#rail ' + sel) || document.querySelector('#band ' + sel) ||
       document.querySelector('#charter ' + sel) || document.querySelector(sel);
@@ -1548,14 +2891,69 @@ async function openAndMeasure(page, key, cardSel, walk, cards, errors) {
     el.click();
     return true;
   }, key);
+  const p13 = [];
+  // P13's page-top case: the walk's first card from rest, opened by its tab
+  // at scroll 0 and closed again before the walk's own way in
+  if (!before.anyOpen) await pageTopPass(page, key, walk, p13, errors);
+  // P13's switch: with another card open, the target is scrolled to where its
+  // label could have room and **its own tab is pressed** — the rail travels,
+  // and a travel would read as the tab moving
+  let switchGlass = null;
+  let opened;
+  if (before.anyOpen) {
+    const sw = await glassPress(page, key, 'switch');
+    switchGlass = sw;
+    opened = sw.pressed || await clickIn();
+  } else opened = await clickIn();
   if (!opened) { errors.push(walk + ': no way in to ' + key); return null; }
   await wait(page, 300);
   const m = await page.evaluate((a) => window.__CA.measure(a[0], a[1], a[2]), [cardSel, key, before]);
   if (!m) { errors.push(walk + ': ' + key + ' opened nothing'); return null; }
   m.walk = walk;
+  m.switchOpen = !!before.anyOpen;
+  m.p13 = p13;
+  if (switchGlass) {
+    if (switchGlass.pressed) p13.push({ sub: 'switch', a: switchGlass.a, b: await page.evaluate((k) => window.__CA.glassOpen(k), key) });
+    else p13.push({ sub: 'switch', unread: switchGlass.why });
+  }
+  await zonesFor(page, walk, 'open', key);
+  /**
+   * **still, the close half.** A card opened from rest is closed again by its
+   * own pressed tab and the closed reading taken a second time — on the page
+   * (`reclosed`) and on the glass (P13's close) — then **reopened by its own
+   * tab from a scroll that leaves room above it**, which is P13's general
+   * case, so the walk goes on with the card open exactly as before. Where
+   * there is no front tab a pointer could press, the reopening is the walk's
+   * own way in and P13's open half is recorded as unread. A card opened while
+   * another stood open is a switch, and has no rest to return to.
+   */
+  if (!before.anyOpen) {
+    try {
+      const a = await page.evaluate((k) => window.__CA.glassOpen(k), key);
+      const how = await page.evaluate((k) => window.__CA.closeOpenCard(k), key);
+      await wait(page, 220);
+      const still = await page.evaluate(() => window.__CA.openCardEl());
+      const again = await page.evaluate((k) => window.__CA.closedGeo(k), key);
+      m.grammar.reclosed = still ? { error: 'the card did not close (' + how + ')' } : again;
+      if (!still) {
+        p13.push({ sub: 'close', a, b: await page.evaluate((k) => window.__CA.glassClosed(k), key) });
+        const op = await glassPress(page, key, 'open');
+        if (op.pressed) {
+          await wait(page, 300);
+          p13.push({ sub: 'open', a: op.a, b: await page.evaluate((k) => window.__CA.glassOpen(k), key) });
+        } else {
+          p13.push({ sub: 'open', unread: op.why });
+          await clickIn();
+          await wait(page, 300);
+        }
+        if (!await page.evaluate(() => window.__CA.openCardEl())) errors.push(walk + ': ' + key + ' did not reopen after the close pass');
+      } else p13.push({ sub: 'close', unread: 'the card did not close' });
+    } catch (e) { errors.push(walk + ': close pass on ' + key + ' threw — ' + (e && e.message)); }
+  }
   cards.push(m);
   return m;
 }
+
 
 /**
  * **The switch pass** — a card open in one paragraph, a tab clicked in
@@ -1574,8 +2972,8 @@ const r2 = (v) => Math.round(v * 100) / 100;
 
 async function switchPass(page, walk, switches, errors) {
   const closeOpen = () => page.evaluate(() => {
-    const mark = document.querySelector('.setupcard .chipcol .achip.wmark') ||
-      document.querySelector('.setupcard .chipcol .achip');
+    const mark = document.querySelector('.setupcard .chipcol .achip.wmark, .gcard .chipcol .achip.wmark') ||
+      document.querySelector('.setupcard .chipcol .achip, .gcard .chipcol .achip');
     if (mark) mark.click();
   });
   const clickTab = (key) => page.evaluate((k) => {
@@ -1644,7 +3042,7 @@ async function birth(page) {
  * question, its helper text and its dark commit can be read.
  */
 async function walkFounding(page, base, cards, errors, opts = {}) {
-  await page.goto(withQuery(base + '/session-view.html'));
+  await page.goto(withQuery(pageUrl(base)));
   await page.waitForSelector('#rail .qitem', { timeout: 20_000 });
   await page.evaluate(() => window.scrollTo(0, 0));
   await wait(page, 300);
@@ -1670,6 +3068,9 @@ async function walkFounding(page, base, cards, errors, opts = {}) {
         (el.querySelector('[data-card]') || { dataset: {} }).dataset.card).filter(Boolean);
       return li.find((k) => !done.includes(k)) || null;
     }, [...seen]);
+    // a founding that stops at the save is a walk that could not go on, not a
+    // short founding — said, so a three-card run is not read as coverage
+    if (!next && i === 0) errors.push(walk + ': the rail offered nothing after the save — the founding stopped at 📧');
     if (!next) break;
     seen.add(next);
     const m = await openAndMeasure(page, next, '.setupcard', walk, cards, errors);
@@ -1688,7 +3089,13 @@ async function walkFounding(page, base, cards, errors, opts = {}) {
     if (handedOver) {
       await wait(page, 320);
       const d = await page.evaluate((a) => window.__CA.measure(a[0], a[1], a[2]), ['.setupcard', next, null]);
-      if (d) { d.walk = walk; cards[cards.length - 1] = d; }
+      if (d) {
+        d.walk = walk;
+        // the grammar's closed readings are the card's, not the delegation's
+        if (d.grammar && m.grammar) { d.grammar.closedBefore = m.grammar.closedBefore; d.grammar.reclosed = m.grammar.reclosed; d.grammar.remeasured = true; }
+        d.switchOpen = m.switchOpen;
+        cards[cards.length - 1] = d;
+      }
     } else if (next === opts.delegate) {
       await clickIn('.setupcard .delegrung [data-val="roster"]');
     } else {
@@ -1748,7 +3155,7 @@ const walkDelegated = (page, base, cards, errors) =>
  * power tabs live. ⏩ is the stagehand that gets there in one press.
  */
 async function walkSettled(page, base, cards, errors, seat, switches, piles) {
-  await page.goto(withQuery(base + '/session-view.html'));
+  await page.goto(withQuery(pageUrl(base)));
   await page.waitForSelector('#rail .qitem', { timeout: 20_000 });
   await page.evaluate(() => window.scrollTo(0, 0));
   await wait(page, 300);
@@ -1810,8 +3217,8 @@ async function walkSettled(page, base, cards, errors, seat, switches, piles) {
   // closed again, because every card in the loop below is measured against its
   // own closed baseline
   await page.evaluate(() => {
-    const mark = document.querySelector('.setupcard .chipcol .achip.wmark') ||
-      document.querySelector('.setupcard .chipcol .achip');
+    const mark = document.querySelector('.setupcard .chipcol .achip.wmark, .gcard .chipcol .achip.wmark') ||
+      document.querySelector('.setupcard .chipcol .achip, .gcard .chipcol .achip');
     if (mark) mark.click();
   });
   await wait(page, 250);
@@ -1939,7 +3346,7 @@ async function walkSettled(page, base, cards, errors, seat, switches, piles) {
   const keys = await page.evaluate(() => window.__CA.offered());
   const seen = new Set(keys);
   const strip = () => page.evaluate(() =>
-    [...document.querySelectorAll('.setupcard .chipcol .achip[data-tab]')].map((el) => el.dataset.tab));
+    [...document.querySelectorAll('.setupcard .chipcol .achip[data-tab], .gcard .chipcol .achip[data-tab]')].map((el) => el.dataset.tab));
   for (const k of keys) {
     await openAndMeasure(page, k, '.setupcard', walk, cards, errors);
     await filePiles(k);
@@ -1962,8 +3369,8 @@ async function walkSettled(page, base, cards, errors, seat, switches, piles) {
     // other chip in the strip morphs to that card rather than closing this one,
     // and the next card's "closed" baseline would then be an open tab
     await page.evaluate(() => {
-      const mark = document.querySelector('.setupcard .chipcol .achip.wmark') ||
-        document.querySelector('.setupcard .chipcol .achip');
+      const mark = document.querySelector('.setupcard .chipcol .achip.wmark, .gcard .chipcol .achip.wmark') ||
+        document.querySelector('.setupcard .chipcol .achip, .gcard .chipcol .achip');
       if (mark) mark.click();
     });
     await wait(page, 200);
@@ -2434,7 +3841,7 @@ async function stripPass(page, walk, strips, errors) {
 }
 
 async function walkCharter(page, base, cards, errors, { closed, doors, rails, strips } = {}) {
-  await page.goto(withQuery(base + '/session-view.html?fixture=session' + (closed ? '&closed=1&band=1' : '')));
+  await page.goto(withQuery(pageUrl(base, '?fixture=session' + (closed ? '&closed=1&band=1' : ''))));
   await page.waitForFunction(() => !!(window.SESSION && window.SESSION.SUGGS.length && document.querySelector('.qitem')),
     null, { timeout: 20_000 });
   await page.evaluate(() => { window.scrollTo(0, 0); window.SESSION.smoothScrollBy = (dy, done) => { window.scrollBy(0, dy); if (done) done(); }; });
@@ -2474,12 +3881,16 @@ async function walkCharter(page, base, cards, errors, { closed, doors, rails, st
       return !!document.querySelector(['data-card', 'data-tab', 'data-anchor', 'data-q']
         .map((a) => '[' + a + '="' + q + '"]').join(', '));
     }, id);
+    if (!before.anyOpen) await zonesFor(page, walk, 'rest');
+    // P13's page-top case: the walk's first card, by its own tab at scroll 0
+    const p13 = [];
+    if (!before.anyOpen) await pageTopPass(page, id, walk, p13, errors);
     const threw = await page.evaluate((k) => { try { window.SESSION.toggle(k, false); return null; } catch (e) { return String(e); } }, id);
     if (threw) { errors.push(walk + ': ' + id + ' threw on toggle — ' + threw); continue; }
     await wait(page, 200);
     const m = await page.evaluate((a) => window.__CA.measure(a[0], a[1], a[2]),
       ['.sugg[data-card="' + id + '"]', id, before]);
-    if (m) { m.walk = walk; cards.push(m); }
+    if (m) { m.walk = walk; m.switchOpen = !!before.anyOpen; await zonesFor(page, walk, 'open', id); cards.push(m); }
     else if (wayIn) errors.push(walk + ': ' + id + ' opened nothing');
     // **T1 — a text is read in blocks** (Q1406, Ed 2026-09-16: *"The clause
     // as it stands" doesn't seem to render linebreaks (and perhaps other
@@ -2500,8 +3911,30 @@ async function walkCharter(page, base, cards, errors, { closed, doors, rails, st
       const ok = !!t1 && t1.head === 2 && t1.lanes.length === 2 && t1.lanes.every((n) => n >= 2) && t1.bullets === 1 && !t1.rawMarker;
       if (!ok) errors.push(walk + ': T1 — race-quorum should read in blocks (head 2, lanes ≥2 each, one bullet, no raw marker): ' + JSON.stringify(t1));
     }
+    // P13's close reading starts on the open card, on the glass
+    const openGlass = m && !before.anyOpen ? await page.evaluate((k) => window.__CA.glassOpen(k), id) : null;
     await page.evaluate((k) => { try { window.SESSION.toggle(k, false); } catch (e) { /* already closed */ } }, id);
     await wait(page, 120);
+    // still, the close half: the same closed reading, taken again
+    if (m && m.grammar && !before.anyOpen) {
+      const open = await page.evaluate(() => window.__CA.openCardEl());
+      m.grammar.reclosed = open ? { error: 'the card did not close' } : await page.evaluate((k) => window.__CA.closedGeo(k), id);
+      // **P13 on the charter** (BUILD.md §2): the close on the glass, then an
+      // open by the card's own tab from a scroll that leaves its label room
+      // above it — the general case — and closed again for the next card
+      if (!open && openGlass) {
+        p13.push({ sub: 'close', a: openGlass, b: await page.evaluate((k) => window.__CA.glassClosed(k), id) });
+        const op = await glassPress(page, id, 'open');
+        if (op.pressed) {
+          await wait(page, 300);
+          p13.push({ sub: 'open', a: op.a, b: await page.evaluate((k) => window.__CA.glassOpen(k), id) });
+          await page.evaluate((k) => window.__CA.closeOpenCard(k), id);
+          await wait(page, 120);
+          if (await page.evaluate(() => window.__CA.openCardEl())) errors.push(walk + ': ' + id + ' did not close after P13\'s open');
+        } else p13.push({ sub: 'open', unread: op.why });
+      }
+    }
+    if (m) m.p13 = p13;
   }
   // the floating 📝 (D1): the live session only — a closed document draws no door
   if (!closed && doors) await walkDoor(page, doors, errors, walk);
@@ -2594,11 +4027,70 @@ async function main() {
   });
   await run('charter', () => walkCharter(page, base, cards, errors, { doors, rails, strips }));
   await run('closed', () => walkCharter(page, base, cards, errors, { closed: true }));
-
+  // phase one's inventory walks (Q1541 stage 0): the band's cards on the session and closed
+  // fixtures, which the audit's charter walks never open (🥂 among them)
+  await run('sessionband', () => walkBand(page, base, cards, errors, '?fixture=session&band=1', 'sessionband'));
+  await run('closedband', () => walkBand(page, base, cards, errors, '?fixture=session&closed=1&band=1', 'closedband'));
   const tok = await page.evaluate(() => window.__CA.tokens());
+  const ref = await page.evaluate(() => window.__CA.labelRef());
   await browser.close();
   server.close();
+  return finish(cards, errors, tok, ref, version, switches, piles, doors, rails, strips, t0);
+}
 
+async function walkBand(page, base, cards, errors, query, walk) {
+  await page.goto(withQuery(pageUrl(base, query)));
+  await page.waitForFunction(() => !!(window.SESSION && document.querySelector('#rail .qitem')),
+    null, { timeout: 20_000 });
+  await page.evaluate(() => { window.scrollTo(0, 0); if (window.SESSION) window.SESSION.smoothScrollBy = (dy, done) => { window.scrollBy(0, dy); if (done) done(); }; });
+  await wait(page, 400);
+  // unfold whatever the band holds folded (the closed page folds Rules)
+  for (let i = 0; i < 6; i++) {
+    const n = await page.evaluate(() => {
+      const t = [...document.querySelectorAll('#band .sectoggle')].find((b) =>
+        b.getAttribute('aria-expanded') === 'false');
+      if (!t) return 0;
+      t.click(); return 1;
+    });
+    if (!n) break;
+    await wait(page, 300);
+  }
+  // the band's tabs where it draws any, and every rail entry that is not a
+  // charter item (🥂 on the closed page is one)
+  const keys = await page.evaluate(() => {
+    const charter = new Set(window.SESSION.SUGGS.map((s) => s.id));
+    return [...new Set([...document.querySelectorAll('#band [data-tab], #band [data-card], #rail [data-card], #rail li[data-q]')]
+      .map((el) => el.dataset.card || el.dataset.tab || el.dataset.q).filter((k) => k && !charter.has(k) && !/^rec:fx/.test(k)))];
+  });
+  // a rail entry keyed data-q is opened through its button, which openAndMeasure's
+  // selector does not name; mark it so the click lands
+  await page.evaluate(() => document.querySelectorAll('#rail li[data-q] > button[data-q]').forEach((b) => {
+    if (!b.dataset.card) b.dataset.card = b.dataset.q;
+  }));
+  const seen = new Set(keys);
+  const strip = () => page.evaluate(() =>
+    [...document.querySelectorAll('.setupcard .chipcol .achip[data-tab], .gcard .chipcol .achip[data-tab]')].map((el) => el.dataset.tab));
+  const closeOpen = () => page.evaluate(() => {
+    const mark = document.querySelector('.setupcard .chipcol .achip.wmark, .gcard .chipcol .achip.wmark') ||
+      document.querySelector('.setupcard .chipcol .achip, .gcard .chipcol .achip');
+    if (mark) mark.click();
+  });
+  for (const k of keys) {
+    await page.evaluate(() => document.querySelectorAll('#rail li[data-q] > button[data-q]').forEach((b) => {
+      if (!b.dataset.card) b.dataset.card = b.dataset.q;
+    }));
+    await openAndMeasure(page, k, '.setupcard', walk, cards, errors);
+    for (const t of await strip()) {
+      if (seen.has(t)) continue;
+      seen.add(t);
+      await openAndMeasure(page, t, '.setupcard', walk, cards, errors);
+    }
+    await closeOpen();
+    await wait(page, 200);
+  }
+}
+
+async function finish(cards, errors, tok, ref, version, switches, piles, doors, rails, strips, t0) {
   for (const c of cards) c.findings = rulesFor(c, tok);
   const cross = [...crossCard(cards), ...switchRules(switches), ...pileRules(piles), ...doorRules(doors), ...railRules(rails), ...stripRules(strips)];
   /**
@@ -2661,10 +4153,74 @@ async function main() {
     }));
   }
 
+  /* **The redesign's checks** (P13–P33 and raw-value), per card and per walk,
+   * and the table over them. `findings` is the count **as ruled** (stated
+   * exceptions out); `v2` is the count comparable with checks.md's *today*
+   * column (the exceptions in, the ruling's new findings out), read for the
+   * checks checks.md calls unchanged */
+  const grammar = [];
+  for (const c of cards) {
+    const fs = grammarRules(c, ref);
+    for (const f of fs) f.kind = kindOf(c.key);
+    grammar.push(...fs);
+  }
+  grammar.push(...walkGrammar(zoneReads, tipReads, switches, restReads));
+  grammar.push(...widthRules(cards, baseline));
+  for (const f of grammar) {
+    if (!f.kind) f.kind = kindOf(String(f.key).replace(/^(open|rest):/, ''));
+    f.check = CHECK[f.check] || f.check;
+  }
+  const shapes = {};
+  for (const c of cards) for (const s of c.shapes || []) shapes[s] = (shapes[s] || 0) + 1;
+  const table = CHECKS.map(([n, name]) => {
+    const all = grammar.filter((f) => f.check === CHECK[name]);
+    const fs = all.filter((f) => !f.excepted);
+    const subs = {};
+    for (const f of fs) if (f.sub) subs[f.sub] = (subs[f.sub] || 0) + 1;
+    const v2 = all.filter((f) => f.ruled !== 'new');
+    return { n, check: name, unchanged: UNCHANGED.has(name), findings: fs.length,
+      cards: new Set(fs.map((f) => f.walk + '·' + f.key)).size,
+      v2: v2.length, v2cards: new Set(v2.map((f) => f.walk + '·' + f.key)).size,
+      excepted: all.length - fs.length, subs,
+      examples: fs.filter((f, i) => fs.findIndex((x) => x.ex === f.ex) === i).slice(0, 2).map((f) => f.walk + '·' + f.key + ' — ' + f.ex) };
+  });
+  // what the tool could not read, said rather than silently counted as clean
+  const unread = {
+    noClosedParagraph: cards.filter((c) => c.grammar && c.grammar.closedBefore && !c.grammar.closedBefore.para && !c.switchOpen).map((c) => c.walk + '·' + c.key),
+    noReclose: cards.filter((c) => c.grammar && !c.switchOpen && !c.grammar.reclosed).map((c) => c.walk + '·' + c.key),
+    grammarErrors: cards.filter((c) => c.grammar && c.grammar.error).map((c) => c.walk + '·' + c.key + ': ' + c.grammar.error),
+    zoneReads: zoneReads.map((z) => z.walk + ':' + z.when),
+    // P13: the readings a pointer could not take (a tab behind a pile)
+    p13: cards.flatMap((c) => (c.p13 || []).filter((e) => e.unread).map((e) => c.walk + '·' + c.key + ' ' + e.sub + ': ' + e.unread)),
+    // P33: the cards with no data-fact role at all (every card, until stage 1)
+    noFactRoles: cards.filter((c) => c.grammar && c.grammar.v2 && c.grammar.v2.facts && !Object.keys(c.grammar.v2.facts).length).length,
+    // P19's presence half, P30's drawer width and P18's standing-line hairline
+    // are not measured in stage 0
+    notMeasured: ['P19 presence (needs the shell\'s predicate, stage 1)', 'P30 the contents drawer\'s width at 390 (no walk opens it)',
+      'P18 the hairline under a rule card\'s standing first line (no standing first line until stage 3)'],
+  };
+
   const payload = {
     meta: { viewport: VIEWPORT, walks: WALKS, cards: cards.length, seconds: Math.round((Date.now() - t0) / 100) / 10,
+      grammarKinds: GRAMMAR_KINDS, kinds: KINDS, labelRef: ref,
       ...(BROWSER === 'chromium' ? {} : { browser: BROWSER, browserVersion: version }) },
+    table, shapes, grammar, unread, zones: zoneReads, closedTips: tipReads, rest: restReads,
     tokens: tok, cards, switches, doors, rails, strips, rollup, cross, errors,
+  };
+  const printTable = () => {
+    console.log('\nthe redesign checks (Q1541, design/redesign/checks.md) @ ' + VIEWPORT.width + '×' + VIEWPORT.height +
+      ' (' + cards.length + ' cards; GRAMMAR_KINDS: ' + (GRAMMAR_KINDS.length ? GRAMMAR_KINDS.join(', ') : 'none') + ')');
+    console.log('  ' + 'check'.padEnd(26) + 'as ruled'.padStart(9) + 'cards'.padStart(7) + 'v2'.padStart(7) + 'exc.'.padStart(6) + '   kinds');
+    for (const r of table) {
+      console.log('  ' + (r.n + ' ' + r.check + (r.unchanged ? ' *' : '')).padEnd(26) + String(r.findings).padStart(9) + String(r.cards).padStart(7) +
+        String(r.v2).padStart(7) + String(r.excepted).padStart(6) + '   ' + Object.entries(r.subs).map(([k, v]) => k + ' ' + v).join(' · '));
+      for (const e of r.examples) console.log('      e.g. ' + e);
+    }
+    console.log('  (* unchanged by the answers: its v2 count reads against checks.md\'s today column)');
+    console.log('  row shapes: ' + Object.entries(shapes).sort((a, b) => b[1] - a[1]).map(([k, v]) => k + ' ' + v).join(' · '));
+    console.log('  unread: ' + unread.noClosedParagraph.length + ' cards with no closed paragraph, ' + unread.noReclose.length +
+      ' not re-closed, ' + unread.grammarErrors.length + ' reading errors, ' + unread.p13.length + ' P13 readings no pointer could take, ' +
+      unread.noFactRoles + ' cards with no data-fact role; zones read on ' + unread.zoneReads.length);
   };
 
   /**
@@ -2674,9 +4230,28 @@ async function main() {
    * rather than an exit: the payload is still written and the summary still
    * printed, because a red verdict with nothing to read it against is the one
    * shape of failure this instrument must not have.
+   *
+   * **With `--kinds`** (BUILD.md §2, the fast strict pass CI runs) the verdict
+   * is the redesign checks' as-ruled findings on those kinds, and any walk
+   * that threw, measured nothing or met a page error — never P1–P12's, which
+   * stay the report they have always been. With `GRAMMAR_KINDS` empty, as in
+   * stage 0, only a broken walk can redden it.
    */
   const verdict = () => {
     if (!STRICT) return;
+    if (KINDS) {
+      const want = new Set(KINDS);
+      const held = grammar.filter((f) => !f.excepted && want.has(f.kind));
+      const broken = errors.filter((e) => /walk threw|measured no cards|page error|offered no cards/.test(e));
+      if (!AS_JSON) {
+        console.log('\n--strict --kinds=' + (KINDS_ARG === 'GRAMMAR_KINDS' ? 'GRAMMAR_KINDS (' + (KINDS.join(', ') || 'none') + ')' : KINDS.join(',')) + ': ' +
+          held.length + ' finding' + (held.length === 1 ? '' : 's') + (held.length ? ' — ' + [...new Set(held.map((f) => f.check))].join(', ') : '') +
+          (broken.length ? '; ' + broken.length + ' broken walk' + (broken.length === 1 ? '' : 's') + ' — ' + broken.slice(0, 3).join(' | ') : ''));
+        for (const f of held.slice(0, 20)) console.log('  ' + f.check + ' · ' + f.walk + '·' + f.key + ' — ' + f.ex);
+      }
+      process.exitCode = held.length || broken.length ? 1 : 0;
+      return;
+    }
     const left = [...rollup, ...cross].filter((f) => f.stable !== false);
     if (!AS_JSON) {
       console.log('\n--strict: ' + (left.length
@@ -2709,6 +4284,7 @@ async function main() {
     if (f.cards) console.log('    on:   ' + f.cards.slice(0, 8).join(', ') + (f.cards.length > 8 ? ' …' : ''));
   }
   if (errors.length) { console.log('\nerrors:'); for (const e of errors.slice(0, 20)) console.log('  ' + e); }
+  printTable();
   console.log('\npayload → ' + OUT);
   if (SPECIMENS) console.log('specimens → ' + SPECIMENS + ' (' + specs.length + ')');
   verdict();

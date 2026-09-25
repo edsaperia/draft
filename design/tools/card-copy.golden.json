@@ -1,6 +1,6 @@
 {
  "meta": {
-  "cards": 269,
+  "cards": 267,
   "walks": [
    "answers",
    "charter",
@@ -2083,230 +2083,6 @@
    }
   },
   "closed": {
-   "insert-quiet": {
-    "eyebrow": "The gap as it stands",
-    "head": "(no text here)",
-    "lock": "",
-    "body": "ProposedQuiet HoursThe house keeps quiet hours from eleven at night to eight in the morning: voices low in the Common Areas, the Workshop’s louder tools asleep, and any gathering still going moves to the Garden or winds down.We’ve never written down the one rule everyone already tiptoes around. Guests stay over, members work early — saying it out loud beats resenting each other politely.Prefer this",
-    "options": [],
-    "inputs": [],
-    "foot": [],
-    "hints": [
-     "Close this one",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them"
-    ],
-    "helpers": []
-   },
-   "mine-guests-wording": {
-    "eyebrow": "The clause as it stands",
-    "head": "",
-    "lock": "",
-    "body": "What you proposedFriends of the house are welcome whenever a member is in, which is what makes them guests and not visitors.A member answers for their guest: for what the guest breaks, and for what the guest is told about the other members.“Whenever a member is in” is doing the work already — it is the being-in that makes it hospitality rather than a key.",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Withdraw — the edit comes back in full"
-     }
-    ],
-    "hints": [
-     "Guests — notice — open it",
-     "Guests — open it",
-     "Close this one",
-     "Guests — numbers — open it",
-     "8 decided and filed at this clause — open them",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "Withdraw — the edit comes back in full"
-    ],
-    "helpers": []
-   },
-   "mine-lostkey-stranded": {
-    "eyebrow": "The clause as it stands",
-    "head": "A member who loses a key tells the Steward the same day, and the house decides at the next meeting whether the locks are worth changing.",
-    "lock": "",
-    "body": "What you proposedA member who loses a key tells the Steward the same day, whether or not they expect to find it again.The same day is the whole of it. A key that turns up in a coat pocket on Weekday was still a key in the street on Weekday, and the house should hear about it on Weekday.",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Withdraw — the edit comes back in full"
-     },
-     {
-      "label": "✏️",
-      "title": "Re-make it here — write it against the clause as it now stands, and propose it again"
-     }
-    ],
-    "hints": [
-     "Front-door Keys — loss — open it",
-     "Close this one",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "Withdraw — the edit comes back in full",
-     "Re-make it here — write it against the clause as it now stands, and propose it again"
-    ],
-    "helpers": [
-     "The document changed here, and your proposal could not be carried across to the new wording."
-    ]
-   },
-   "mine-spending": {
-    "eyebrow": "The clause as it stands",
-    "head": "Ordinary spending on the running of the house needs nobody’s permission. Anything above a quarter’s subscriptions needs the meeting’s.",
-    "lock": "",
-    "body": "What you proposedOrdinary spending on the running of the house needs nobody’s permission. Anything above a quarter’s subscriptions needs the meeting’s, and the Purse-holder writes anything above a month’s in the Members’ Book within the week.Nobody wants to ask permission to buy a mop. But \"anything above a quarter’s subscriptions\" is most of a year of somebody’s hardship, and the house only finds out at the spring meeting. A note in the book is not a sign-off.",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Withdraw — the edit comes back in full"
-     }
-    ],
-    "hints": [
-     "Close this one",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "Withdraw — the edit comes back in full"
-    ],
-    "helpers": []
-   },
-   "park-accounts": {
-    "eyebrow": "The clause as it stands",
-    "head": "The Purse-holder keeps the accounts in whatever way suits them, and shows them to any member who asks.",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "OK",
-      "title": "It leaves your margin and stays in the record"
-     }
-    ],
-    "hints": [
-     "Whole charter · place n of m — open it",
-     "Accounts and Inspection — open it",
-     "Close this one",
-     "It leaves your margin and stays in the record"
-    ],
-    "helpers": [
-     "Awaiting assent from the Founder 🛡️"
-    ]
-   },
-   "patch-rename": {
-    "eyebrow": "The clause as it stands",
-    "head": "The Purse-holder pays the bills and reimburses what seems fair, and keeps the receipts in the tin.",
-    "lock": "",
-    "body": "ProposedThe Treasurer pays the bills and reimburses what seems fair, keeps the receipts in the tin, and hands the tin and books to their successor.\"Purse-holder\" is twee and confuses newcomers. One rename, all three places it appears, plus a handover line so the tin doesn’t wander between office-holders.Prefer this✏️ propose edit",
-    "options": [],
-    "inputs": [],
-    "foot": [],
-    "hints": [
-     "The next place",
-     "Close this one",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
-     "Write your own version of this proposal. Free to open — proposing costs one edit.",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them"
-    ],
-    "helpers": []
-   },
-   "quick-accounts-blocked": {
-    "eyebrow": "The clause as it stands",
-    "head": "The Purse-holder keeps the accounts in whatever way suits them, and shows them to any member who asks.",
-    "lock": "",
-    "body": "ProposedThe Purse-holder keeps the accounts in whatever way suits them, and shows them to any member who asks, within a week of being asked.Asking is not the same as being shown. A week is long enough to find the book and short enough to matter.Preferred✏️ propose edit",
-    "options": [],
-    "inputs": [],
-    "foot": [],
-    "hints": [
-     "Whole charter · place n of m — open it",
-     "Close this one",
-     "Accounts and Inspection — open it",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
-     "Write your own version of this proposal. Free to open — proposing costs one edit.",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them"
-    ],
-    "helpers": [
-     "Waiting on the Founder’s answer about another change to this clause 🛡️"
-    ]
-   },
-   "quick-armchair": {
-    "eyebrow": "The clause as it stands",
-    "head": "Furniture in the Common Room may be moved but must be put back. The armchair by the window is not anybody’s, whatever Hollis says.",
-    "lock": "",
-    "body": "ProposedFurniture in the Common Room may be moved but must be put back before the room is left empty.The joke about Hollis is lovely and it is not a rule. Charters that wink at people age badly, and whoever inherits this will not know who Hollis was.Prefer this✏️ propose edit",
-    "options": [],
-    "inputs": [],
-    "foot": [],
-    "hints": [
-     "Close this one",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
-     "Write your own version of this proposal. Free to open — proposing costs one edit.",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them"
-    ],
-    "helpers": []
-   },
-   "quick-arrears": {
-    "eyebrow": "The clause as it stands",
-    "head": "A member more than two quarters in arrears, who has not asked for hardship, is reminded once by the Purse-holder and once by the Steward, in that order and not more.",
-    "lock": "",
-    "body": "ProposedA member more than two quarters in arrears, who has not asked for hardship, is reminded once by the Purse-holder and once by the Steward, in that order. No further reminder is given by anyone.\"In that order and not more\" reads as though the Steward is limited to one reminder. The point is that the house stops after two, from anybody. Same rule, said properly.Prefer this✏️ propose edit",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "❄️",
-      "title": "Not this one, not now — it stays open and stops being the most urgent"
-     }
-    ],
-    "hints": [
-     "Close this one",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
-     "Write your own version of this proposal. Free to open — proposing costs one edit.",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them",
-     "Not this one, not now — it stays open and stops being the most urgent"
-    ],
-    "helpers": []
-   },
-   "quick-attendance": {
-    "eyebrow": "The clause as it stands",
-    "head": "Every member is expected at three of the four quarterly meetings; a member who attends none in a year is asked, kindly, whether they still want to be a member.",
-    "lock": "",
-    "body": "ProposedEvery member is expected at three of the four quarterly meetings; a member who attends none in a year is asked, kindly, whether they still want to be a member, and the asking is done by the Steward in private.As written, \"asked kindly\" could happen at a meeting, in front of everyone. That is the opposite of kind. Name who asks and where.Prefer this✏️ propose edit",
-    "options": [],
-    "inputs": [],
-    "foot": [],
-    "hints": [
-     "Close this one",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
-     "Write your own version of this proposal. Free to open — proposing costs one edit.",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them"
-    ],
-    "helpers": []
-   },
-   "quick-books": {
-    "eyebrow": "The clause as it stands",
-    "head": "Books belonging to a member and left in the Corner become the house’s after a year, unless the member says otherwise in the book on the shelf.",
-    "lock": "",
-    "body": "ProposedBooks belonging to a member and left in the Corner become the house’s after two years, unless the member says otherwise in the book on the shelf.A year is one long absence. The lending library’s own rule (opens outside docs.vote) is two, and https://www.example.org/abandoned-books (opens outside docs.vote) says why. Two years still clears the shelves without swallowing the library of somebody who spent a winter abroad.Prefer this✏️ propose edit",
-    "options": [],
-    "inputs": [],
-    "foot": [],
-    "hints": [
-     "Close this one",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
-     "Write your own version of this proposal. Free to open — proposing costs one edit.",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them"
-    ],
-    "helpers": []
-   },
    "quick-calling": {
     "eyebrow": "",
     "head": "House matters are decided at a meeting called with at least seven days’ notice to all members, by majority of those present, with the proposal and result minuted in the Members’ Book.",
@@ -2329,76 +2105,6 @@
      "n of m weighed in · quorum was 5 · you never voted on this"
     ]
    },
-   "quick-cellar": {
-    "eyebrow": "The clause as it stands",
-    "head": "Once a year, before the spring meeting, the Steward opens the cellar and the house decides together what may go.",
-    "lock": "",
-    "body": "ProposedOnce a year, before the spring meeting, the Steward opens the cellar and the house decides together what may go, and anything nobody speaks for is offered to members before it is thrown.Things get thrown that somebody would have taken. One sentence, one afternoon saved, and nobody has to argue about a bicycle.Prefer this✏️ propose edit",
-    "options": [],
-    "inputs": [],
-    "foot": [],
-    "hints": [
-     "Close this one",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
-     "Write your own version of this proposal. Free to open — proposing costs one edit.",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them"
-    ],
-    "helpers": []
-   },
-   "quick-confidence": {
-    "eyebrow": "The clause as it stands",
-    "head": "Any member may bring any worry to any other in confidence, and confidence is kept; nothing undisclosed to a respondent may ever count against them.",
-    "lock": "",
-    "body": "ProposedAny member may bring any worry to any other in confidence, and that confidence is kept; nothing kept from a respondent may ever count against them.\"Nothing undisclosed to a respondent\" dangles. \"Kept from\" says the same thing in plain words. No change of substance.Preferred✏️ propose edit",
-    "options": [],
-    "inputs": [],
-    "foot": [],
-    "hints": [
-     "Close this one",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
-     "Write your own version of this proposal. Free to open — proposing costs one edit.",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them"
-    ],
-    "helpers": []
-   },
-   "quick-garden": {
-    "eyebrow": "The clause as it stands",
-    "head": "The Garden is kept up by a rota posted in the shed, with a Garden Steward to keep it organised and call heroic weekends when it gets ahead of us.",
-    "lock": "",
-    "body": "ProposedThe Garden is kept up by a rota posted in the shed, with a Garden Steward to keep it organised and set two working weekends a year, in spring and in autumn.Heroic weekends are called by whoever minds most, which means the same four people. Two dates in the calendar are something everyone can plan around.Prefer this✏️ propose edit",
-    "options": [],
-    "inputs": [],
-    "foot": [],
-    "hints": [
-     "Close this one",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
-     "Write your own version of this proposal. Free to open — proposing costs one edit.",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them"
-    ],
-    "helpers": [
-     "the clause changed after you voted"
-    ]
-   },
-   "quick-guestkey": {
-    "eyebrow": "The clause as it stands",
-    "head": "No guest holds a key, and no guest is left alone in the house.",
-    "lock": "",
-    "body": "ProposedNo guest holds a key, and no guest is left alone in the houseunless the member who brought them says so and is reachable.Half of us have left a guest making toast while we went for milk. The rule as written makes ordinary hospitality a breach.Prefer this✏️ propose edit",
-    "options": [],
-    "inputs": [],
-    "foot": [],
-    "hints": [
-     "Close this one",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
-     "Write your own version of this proposal. Free to open — proposing costs one edit.",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them"
-    ],
-    "helpers": []
-   },
    "quick-guests-book": {
     "eyebrow": "",
     "head": "Friends of the house are welcome whenever a member is in.",
@@ -2408,9 +2114,6 @@
     "inputs": [],
     "foot": [],
     "hints": [
-     "Guests — notice — open it",
-     "Guests — open it",
-     "Guests — numbers — open it",
      "Guests — bringing something — the record",
      "Guests — at the Weekday Dinner — the record",
      "Guests — arriving late — the record",
@@ -2434,9 +2137,6 @@
     "inputs": [],
     "foot": [],
     "hints": [
-     "Guests — notice — open it",
-     "Guests — open it",
-     "Guests — numbers — open it",
      "Guests — bringing something — the record",
      "Guests — at the Weekday Dinner — the record",
      "Guests — arriving late — the record",
@@ -2451,27 +2151,6 @@
      "n of m weighed in · quorum was 5 · you kept the current text"
     ]
    },
-   "quick-guests-count": {
-    "eyebrow": "The clause as it stands",
-    "head": "Friends of the house are welcome whenever a member is in.",
-    "lock": "",
-    "body": "ProposedFriends of the house are welcome whenever a member is in, up to three at a time without telling anybody.Nobody minds two friends. Nine is a party, and a party is a thing you mention.Prefer this✏️ propose edit",
-    "options": [],
-    "inputs": [],
-    "foot": [],
-    "hints": [
-     "Guests — notice — open it",
-     "Guests — open it",
-     "Close this one",
-     "Guests — numbers — open it",
-     "8 decided and filed at this clause — open them",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
-     "Write your own version of this proposal. Free to open — proposing costs one edit.",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them"
-    ],
-    "helpers": []
-   },
    "quick-guests-dinner": {
     "eyebrow": "",
     "head": "Friends of the house are welcome whenever a member is in.",
@@ -2481,9 +2160,6 @@
     "inputs": [],
     "foot": [],
     "hints": [
-     "Guests — notice — open it",
-     "Guests — open it",
-     "Guests — numbers — open it",
      "Guests — bringing something — the record",
      "Close this one",
      "Guests — arriving late — the record",
@@ -2498,27 +2174,6 @@
      "n of m weighed in · quorum was 5 · you preferred the new wording"
     ]
    },
-   "quick-guests-hours": {
-    "eyebrow": "The clause as it stands",
-    "head": "Friends of the house are welcome whenever a member is in.",
-    "lock": "",
-    "body": "ProposedFriends of the house are welcome whenever a member is in, and until the quiet hours begin.Welcome and “welcome at three in the morning” are different offers, and only one of them is fair on whoever is asleep upstairs.Prefer this✏️ propose edit",
-    "options": [],
-    "inputs": [],
-    "foot": [],
-    "hints": [
-     "Guests — notice — open it",
-     "Close this one",
-     "Guests — open it",
-     "Guests — numbers — open it",
-     "8 decided and filed at this clause — open them",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
-     "Write your own version of this proposal. Free to open — proposing costs one edit.",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them"
-    ],
-    "helpers": []
-   },
    "quick-guests-inhouse": {
     "eyebrow": "",
     "head": "Friends of the house are welcome whenever a member is in.",
@@ -2528,9 +2183,6 @@
     "inputs": [],
     "foot": [],
     "hints": [
-     "Guests — notice — open it",
-     "Guests — open it",
-     "Guests — numbers — open it",
      "Guests — bringing something — the record",
      "Guests — at the Weekday Dinner — the record",
      "Guests — arriving late — the record",
@@ -2554,9 +2206,6 @@
     "inputs": [],
     "foot": [],
     "hints": [
-     "Guests — notice — open it",
-     "Guests — open it",
-     "Guests — numbers — open it",
      "Guests — bringing something — the record",
      "Guests — at the Weekday Dinner — the record",
      "Close this one",
@@ -2580,9 +2229,6 @@
     "inputs": [],
     "foot": [],
     "hints": [
-     "Guests — notice — open it",
-     "Guests — open it",
-     "Guests — numbers — open it",
      "Guests — bringing something — the record",
      "Guests — at the Weekday Dinner — the record",
      "Guests — arriving late — the record",
@@ -2606,9 +2252,6 @@
     "inputs": [],
     "foot": [],
     "hints": [
-     "Guests — notice — open it",
-     "Guests — open it",
-     "Guests — numbers — open it",
      "Guests — bringing something — the record",
      "Guests — at the Weekday Dinner — the record",
      "Guests — arriving late — the record",
@@ -2632,9 +2275,6 @@
     "inputs": [],
     "foot": [],
     "hints": [
-     "Guests — notice — open it",
-     "Guests — open it",
-     "Guests — numbers — open it",
      "Close this one",
      "Guests — at the Weekday Dinner — the record",
      "Guests — arriving late — the record",
@@ -2648,23 +2288,6 @@
     "helpers": [
      "n of m weighed in · quorum was 5 · you kept the current text"
     ]
-   },
-   "quick-keys": {
-    "eyebrow": "The clause as it stands",
-    "head": "Every member holds a front-door key, and members may lend or cut spares for regulars they trust.",
-    "lock": "",
-    "body": "ProposedEvery member holds a front-door key, and may lend or cut a spare for a regular they trust, provided the Steward keeps a simple note of who holds one.Keys are a security matter, not a vibe. A one-line log with the Steward costs nothing and means we can account for who can get in.Prefer this✏️ propose edit",
-    "options": [],
-    "inputs": [],
-    "foot": [],
-    "hints": [
-     "Close this one",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
-     "Write your own version of this proposal. Free to open — proposing costs one edit.",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them"
-    ],
-    "helpers": []
    },
    "quick-kitchen": {
     "eyebrow": "",
@@ -2779,41 +2402,6 @@
      "n of m weighed in · quorum was 5 · you preferred this wording"
     ]
    },
-   "quick-lostkey": {
-    "eyebrow": "The clause as it stands",
-    "head": "A member who loses a key tells the Steward the same day, and the house decides at the next meeting whether the locks are worth changing.",
-    "lock": "",
-    "body": "ProposedA member who loses a key tells the Steward as soon as they know, and the house decides at the next meeting whether the locks are worth changing.You often do not know the day you lost it. \"As soon as they know\" is the honest version and does not make a rule nobody can keep.Prefer this✏️ propose edit",
-    "options": [],
-    "inputs": [],
-    "foot": [],
-    "hints": [
-     "Close this one",
-     "Lost Keys — open it",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
-     "Write your own version of this proposal. Free to open — proposing costs one edit.",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them"
-    ],
-    "helpers": []
-   },
-   "quick-nohead": {
-    "eyebrow": "The clause as it stands",
-    "head": "The Steward is not the Club’s head. The Club has no head, and has managed for nine years without noticing the lack.",
-    "lock": "",
-    "body": "ProposedThe Steward is not the Club’s head. The Club has no head.The second half is a boast about our own history, and it will read strangely in ten years. The first sentence is the rule and it is enough.Prefer this✏️ propose edit",
-    "options": [],
-    "inputs": [],
-    "foot": [],
-    "hints": [
-     "Close this one",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
-     "Write your own version of this proposal. Free to open — proposing costs one edit.",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them"
-    ],
-    "helpers": []
-   },
    "quick-notice": {
     "eyebrow": "",
     "head": "Notice of a meeting is given by writing it in the Members’ Book and telling every member by whatever means reaches them.",
@@ -2829,91 +2417,6 @@
     "helpers": [
      "n of m weighed in · quorum was 5 · you approved the plainer wording"
     ]
-   },
-   "quick-powertools": {
-    "eyebrow": "The clause as it stands",
-    "head": "Power tools are not used when the member is alone in the house, and not after the beginning of quiet hours.",
-    "lock": "",
-    "body": "ProposedPower tools are not used when the member is alone in the house, unless another member knows they are there and when they expect to finish, and not after the beginning of quiet hours.The flat ban means the only person who can use the lathe on a weekday is somebody who does not work. Telling one person where you are gets the same safety at a fraction of the cost.Prefer this✏️ propose edit",
-    "options": [],
-    "inputs": [],
-    "foot": [],
-    "hints": [
-     "Close this one",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
-     "Write your own version of this proposal. Free to open — proposing costs one edit.",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them"
-    ],
-    "helpers": []
-   },
-   "quick-probation": {
-    "eyebrow": "The clause as it stands",
-    "head": "A new member is on probation for six months, during which they hold every right of membership except the right to vote on admissions.",
-    "lock": "",
-    "body": "ProposedA new member is on probation for a full year, during which they hold every right of membership except the right to vote on admissions, removals, or changes to these rules.Six months is two meetings. You cannot know how someone handles a hard evening in the house until you have seen one, and there is usually one a year.Prefer this✏️ propose edit",
-    "options": [],
-    "inputs": [],
-    "foot": [],
-    "hints": [
-     "Close this one",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
-     "Write your own version of this proposal. Free to open — proposing costs one edit.",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them"
-    ],
-    "helpers": []
-   },
-   "quick-shedhead": {
-    "eyebrow": "The clause as it stands",
-    "head": "The Shed, the Cellar and the Space Under the Stairs",
-    "lock": "",
-    "body": "ProposedThe Outdoor StoresThe contents rail is a column of headings, and this one wraps to three lines in it. Naming the section for what it is leaves the joke where it belongs, in the clause underneath.Prefer this✏️ propose edit",
-    "options": [],
-    "inputs": [],
-    "foot": [],
-    "hints": [
-     "Close this one",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
-     "Write your own version of this proposal. Free to open — proposing costs one edit.",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them"
-    ],
-    "helpers": []
-   },
-   "quick-subs": {
-    "eyebrow": "The clause as it stands",
-    "head": "The subscription is set once a year at the spring meeting, and may not be raised by more than a quarter in any year without a reserved decision.",
-    "lock": "",
-    "body": "ProposedThe subscription is set once a year at the spring meeting, and may not be raised by more than a tenth in any year without a reserved decision.A quarter is a lot to be voted onto somebody by a simple majority. A tenth still covers ordinary inflation and makes a real rise something the house has to agree properly.Prefer this✏️ propose edit",
-    "options": [],
-    "inputs": [],
-    "foot": [],
-    "hints": [
-     "Close this one",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
-     "Write your own version of this proposal. Free to open — proposing costs one edit.",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them"
-    ],
-    "helpers": []
-   },
-   "quick-twiceyear": {
-    "eyebrow": "The clause as it stands",
-    "head": "No candidate may be nominated twice in one year.",
-    "lock": "",
-    "body": "ProposedNo candidate may be nominated twice in one year, counted from the date of the first nomination.Nobody has ever disagreed about this and one clerk has already asked. Say which year it means and the question stops being asked.Prefer this✏️ propose edit",
-    "options": [],
-    "inputs": [],
-    "foot": [],
-    "hints": [
-     "Close this one",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
-     "Write your own version of this proposal. Free to open — proposing costs one edit.",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them"
-    ],
-    "helpers": []
    },
    "race-claims": {
     "eyebrow": "",
@@ -2937,81 +2440,6 @@
      "n of m weighed in · quorum was 5 · you voted on three pairs — twice for the wording that stood"
     ]
    },
-   "race-expiry": {
-    "eyebrow": "The clause as it stands",
-    "head": "The lease under Section 2. ends on D Month YYYY. The Club asks the Trust to renew it *before* the spring meeting, not after it!",
-    "lock": "",
-    "body": "Proposed · 2 rival proposalsThe lease under Section 2. ends on D Month YYYY. The Steward writes to the Trust about renewing it in September.Asking before the spring meeting is too early to know the rent. September leaves two months, which has always been enough.Prefer this✏️ propose editThe lease under Section 2. ends on D Month YYYY. The Club asks the Trust to renew it *before* the spring meeting (and says so in the Members’ Book).Write the asking down, so the next Steward can see that it was done.Prefer this✏️ propose edit",
-    "options": [],
-    "inputs": [],
-    "foot": [],
-    "hints": [
-     "Close this one",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
-     "Write your own version of this proposal. Free to open — proposing costs one edit.",
-     "I can’t split them"
-    ],
-    "helpers": []
-   },
-   "race-guests-notice": {
-    "eyebrow": "The clause as it stands",
-    "head": "Friends of the house are welcome whenever a member is in.",
-    "lock": "",
-    "body": "ProposedFriends of the house are welcome whenever a member is in, and a member expecting more than one says so in the Members’ Book. The house splits cleanly on this and has not moved in a week: half want it written down, half think a rule about friends is the beginning of the end. Somebody needs to find the version both halves can live with.Prefer this✏️ propose edit",
-    "options": [],
-    "inputs": [],
-    "foot": [],
-    "hints": [
-     "Close this one",
-     "Guests — open it",
-     "Guests — numbers — open it",
-     "8 decided and filed at this clause — open them",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
-     "Write your own version of this proposal. Free to open — proposing costs one edit.",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "I can’t split them"
-    ],
-    "helpers": []
-   },
-   "race-guests-rivals": {
-    "eyebrow": "The clause as it stands",
-    "head": "Friends of the house are welcome whenever a member is in.",
-    "lock": "",
-    "body": "Proposed · 2 rival proposalsFriends of the house are welcome whenever a member is in, up to three at a time without telling anybody.Nobody minds two friends. Nine is a party, and a party is a thing you mention.Preferred✏️ propose editFriends of the house are welcome whenever a member is in, and until the quiet hours begin.Welcome and “welcome at three in the morning” are different offers, and only one of them is fair on whoever is asleep upstairs.Prefer this✏️ propose edit",
-    "options": [],
-    "inputs": [],
-    "foot": [],
-    "hints": [
-     "Guests — notice — open it",
-     "Guests — open it",
-     "Guests — numbers — open it",
-     "Close this one",
-     "8 decided and filed at this clause — open them",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
-     "Write your own version of this proposal. Free to open — proposing costs one edit.",
-     "I can’t split them"
-    ],
-    "helpers": []
-   },
-   "race-hardship": {
-    "eyebrow": "The clause as it stands",
-    "head": "A member in difficulty may ask the Purse-holder to reduce or suspend their subscription, and the Purse-holder may do so for up to two quarters without telling anyone why.",
-    "lock": "",
-    "body": "Proposed · 2 rival proposalsA member in difficulty may ask the Purse-holder to reduce or suspend their subscription for up to two quarters, and the Purse-holder tells no one, including the Steward and the meeting.The current wording says the Purse-holder need not say why. It should say they may not say at all — the discretion belongs to the member in difficulty, not the office-holder.Prefer this✏️ propose editA member in difficulty may reduce or suspend their own subscription for up to two quarters by telling the Purse-holder, who may not refuse and may not ask why.Asking permission to be poor is the humiliating part. Make it a notification, not a request, and the office-holder never has to weigh a friend’s circumstances.Preferred✏️ propose edit",
-    "options": [],
-    "inputs": [],
-    "foot": [],
-    "hints": [
-     "Close this one",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
-     "Write your own version of this proposal. Free to open — proposing costs one edit.",
-     "I can’t split them"
-    ],
-    "helpers": []
-   },
    "race-nomination": {
     "eyebrow": "",
     "head": "A candidate for membership is nominated by one member and seconded by another.",
@@ -3034,53 +2462,6 @@
      "n of m weighed in · quorum was 5 · you preferred “A candidate for membership is nominated…”"
     ]
    },
-   "race-quiet-rivals": {
-    "eyebrow": "The gap as it stands",
-    "head": "(no text here)",
-    "lock": "",
-    "body": "Proposed · 2 rival proposalsThe house keeps quiet hours from eleven at night to eight in the morning.One sentence, one clock. Everything else is manners, and manners do not need a clause.Prefer this✏️ propose editAfter eleven at night the Common Areas are for reading, and the Workshop is closed until eight.Say what the rooms are for after dark rather than what people may not do — a house rule reads better as an invitation.Prefer this✏️ propose edit",
-    "options": [],
-    "inputs": [],
-    "foot": [],
-    "hints": [
-     "Close this one",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "Say you prefer this proposal — nothing leaves the card until you submit",
-     "Write your own version of this proposal. Free to open — proposing costs one edit.",
-     "I can’t split them"
-    ],
-    "helpers": []
-   },
-   "race-sanctions": {
-    "eyebrow": "The clause as it stands — and it is still standing",
-    "head": "The house may ask for an apology, may suspend a right for a season, or in the last resort may remove a member under Part III.",
-    "lock": "",
-    "body": "Everything in flight · 8 proposals, oldest firstThe house may ask for an apology or suspend a right for a season; removal under Part III is available only where a sanction has already been imposed and has not been kept to.Removal should never be the first thing reached for. Making it conditional on a broken sanction gives everyone a step back from the cliff.✏️ propose editThe house may ask for an apology, may suspend a right for a season, or in the last resort may remove a member under Part III; every sanction is proposed by a member who is not party to the dispute.The problem isn’t the ladder of sanctions, it’s who proposes them. An uninvolved proposer stops a hearing turning into the aggrieved party naming their own remedy.✏️ propose editThe house may ask for an apology or suspend a right for a season. Removal is not a sanction and is dealt with only under Part III, at a meeting called for that purpose alone.Putting removal in the same sentence as an apology makes them the same kind of thing. They are not, and a charter that lists them together will eventually be read as a menu.✏️ propose editThe house may ask for an apology, suspend a right for a season, or remove a member under Part III. No sanction may be proposed by a member party to the dispute, and none may be decided at the meeting it was proposed at.Both halves of the argument are right and they do not conflict. A neutral proposer and a night’s sleep between proposing and deciding cost nothing and prevent most of what we are worried about.✏️ propose editThe house may ask for an apology or suspend a right for a season. Where a sanction has been imposed twice in a year and not kept to, the house may remove a member under Part III.The one-broken-sanction version is still a two-step to the door. Twice in a year is a pattern, and a pattern is the only honest ground for removing somebody.✏️ propose editThe house may ask for an apology, may suspend a right for a season, or in the last resort may remove a member under Part III. Every sanction expires when its reason does, and the Steward says so at the next meeting.We keep arguing about the ladder and nobody has said what happens afterwards. A sanction with no end is a removal in instalments.✏️ propose editThe house may ask for an apology or suspend a right for a season. Removal under Part III requires the agreement of two thirds of those present, and may not be proposed by a member party to the dispute.If removal is going to stay on the list, it should be harder to reach than a suspension. A bare majority is the same bar as choosing the wine.✏️ propose editThe house may ask for an apology or suspend a right for a season, and may ask the Trust’s visitor to sit with the matter. Removal under Part III is available only where the visitor has been asked and the matter has not settled.We have a visitor and never use them. An outside pair of eyes before the door is opened is cheaper than any of the rules being argued over here.✏️ propose edit",
-    "options": [],
-    "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Close — there is nothing here to put back"
-     },
-     {
-      "label": "✏️",
-      "title": "Hold to propose this — one edit leaves your wallet to pay for it"
-     }
-    ],
-    "hints": [
-     "We should change this because…",
-     "Close this one",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "Write your own version of this proposal. Free to open — proposing costs one edit.",
-     "This is how your reason will reach everybody else: with your name off it, permanently.",
-     "Close — there is nothing here to put back",
-     "Hold to propose this — one edit leaves your wallet to pay for it"
-    ],
-    "helpers": [
-     "We should change this because…"
-    ]
-   },
    "rec:fx-u0": {
     "eyebrow": "",
     "head": "The Purse-holder pays only bills approved under the budget or by a house decision, reimburses claims against receipts, keeps accounts and receipts open to any member on request, and reports income and spending at every meeting.",
@@ -3094,15 +2475,505 @@
      "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
-     "n of m weighed in · quorum was 5 · you voted on this",
+     "n of m weighed in · quorum was 5 · you never voted on this",
      "the text that stands"
     ]
    },
    "rec:fx-u1": {
     "eyebrow": "",
+    "head": "The Treasurer pays the bills and reimburses what seems fair, keeps the receipts in the tin, and hands the tin and books to their successor.",
+    "lock": "",
+    "body": "the text that standsThe Purse-holder pays the bills and reimburses what seems fair, and keeps the receipts in the tin.The club has a Steward and a Purse-holder, chosen by acclaim, who do what needs doing until they stop.The Purse-holder keeps the accounts in whatever way suits them, and shows them to any member who asks.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you never voted on this",
+     "the text that stands"
+    ]
+   },
+   "rec:fx-u10": {
+    "eyebrow": "",
+    "head": "No candidate may be nominated twice in one year, counted from the date of the first nomination.",
+    "lock": "",
+    "body": "the text that standsNo candidate may be nominated twice in one year.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you never voted on this",
+     "the text that stands"
+    ]
+   },
+   "rec:fx-u11": {
+    "eyebrow": "",
+    "head": "Every member is expected at three of the four quarterly meetings; a member who attends none in a year is asked, kindly, whether they still want to be a member, and the asking is done by the Steward in private.",
+    "lock": "",
+    "body": "the text that standsEvery member is expected at three of the four quarterly meetings; a member who attends none in a year is asked, kindly, whether they still want to be a member.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you never voted on this",
+     "the text that stands"
+    ]
+   },
+   "rec:fx-u12": {
+    "eyebrow": "",
+    "head": "The subscription is set once a year at the spring meeting, and may not be raised by more than a tenth in any year without a reserved decision.",
+    "lock": "",
+    "body": "the text that standsThe subscription is set once a year at the spring meeting, and may not be raised by more than a quarter in any year without a reserved decision.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you never voted on this",
+     "the text that stands"
+    ]
+   },
+   "rec:fx-u13": {
+    "eyebrow": "",
+    "head": "Friends of the house are welcome whenever a member is in, and until the quiet hours begin.",
+    "lock": "",
+    "body": "the text that standsFriends of the house are welcome whenever a member is in.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you never voted on this",
+     "the text that stands"
+    ]
+   },
+   "rec:fx-u14": {
+    "eyebrow": "",
+    "head": "Friends of the house are welcome whenever a member is in, up to three at a time without telling anybody.",
+    "lock": "",
+    "body": "the text that standsFriends of the house are welcome whenever a member is in.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you voted on this",
+     "the text that stands"
+    ]
+   },
+   "rec:fx-u15": {
+    "eyebrow": "",
+    "head": "Friends of the house are welcome whenever a member is in, up to three at a time without telling anybody.",
+    "lock": "",
+    "body": "the text that standsFriends of the house are welcome whenever a member is in.47%Friends of the house are welcome whenever a member is in, and until the quiet hours begin.Welcome and “welcome at three in the morning” are different offers, and only one of them is fair on whoever is asleep upstairs.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you voted on this",
+     "the text that stands"
+    ]
+   },
+   "rec:fx-u16": {
+    "eyebrow": "",
+    "head": "Friends of the house are welcome whenever a member is in, and a member expecting more than one says so in the Members’ Book.",
+    "lock": "",
+    "body": "the text that standsFriends of the house are welcome whenever a member is in.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you never voted on this",
+     "the text that stands"
+    ]
+   },
+   "rec:fx-u17": {
+    "eyebrow": "",
+    "head": "Friends of the house are welcome whenever a member is in, which is what makes them guests and not visitors.",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you never voted on this"
+    ]
+   },
+   "rec:fx-u18": {
+    "eyebrow": "",
+    "head": "No guest holds a key, and no guest is left alone in the house unless the member who brought them says so and is reachable.",
+    "lock": "",
+    "body": "the text that standsNo guest holds a key, and no guest is left alone in the house.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you never voted on this",
+     "the text that stands"
+    ]
+   },
+   "rec:fx-u19": {
+    "eyebrow": "",
+    "head": "The Steward is not the Club’s head. The Club has no head.",
+    "lock": "",
+    "body": "the text that standsThe Steward is not the Club’s head. The Club has no head, and has managed for nine years without noticing the lack.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you never voted on this",
+     "the text that stands"
+    ]
+   },
+   "rec:fx-u2": {
+    "eyebrow": "",
+    "head": "Every member holds a front-door key, and may lend or cut a spare for a regular they trust, provided the Steward keeps a simple note of who holds one.",
+    "lock": "",
+    "body": "the text that standsEvery member holds a front-door key, and members may lend or cut spares for regulars they trust.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you never voted on this",
+     "the text that stands"
+    ]
+   },
+   "rec:fx-u20": {
+    "eyebrow": "",
+    "head": "Once a year, before the spring meeting, the Steward opens the cellar and the house decides together what may go, and anything nobody speaks for is offered to members before it is thrown.",
+    "lock": "",
+    "body": "the text that standsOnce a year, before the spring meeting, the Steward opens the cellar and the house decides together what may go.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you never voted on this",
+     "the text that stands"
+    ]
+   },
+   "rec:fx-u21": {
+    "eyebrow": "",
+    "head": "A member who loses a key tells the Steward as soon as they know, and the house decides at the next meeting whether the locks are worth changing.",
+    "lock": "",
+    "body": "the text that standsA member who loses a key tells the Steward the same day, and the house decides at the next meeting whether the locks are worth changing.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you never voted on this",
+     "the text that stands"
+    ]
+   },
+   "rec:fx-u22": {
+    "eyebrow": "",
+    "head": "A member more than two quarters in arrears, who has not asked for hardship, is reminded once by the Purse-holder and once by the Steward, in that order . No further reminder is given by anyone.",
+    "lock": "",
+    "body": "the text that standsA member more than two quarters in arrears, who has not asked for hardship, is reminded once by the Purse-holder and once by the Steward, in that order and not more.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you never voted on this",
+     "the text that stands"
+    ]
+   },
+   "rec:fx-u23": {
+    "eyebrow": "",
+    "head": "Ordinary spending on the running of the house needs nobody’s permission. Anything above a quarter’s subscriptions needs the meeting’s, and the Purse-holder writes anything above a month’s in the Members’ Book within the week.",
+    "lock": "",
+    "body": "the text that standsOrdinary spending on the running of the house needs nobody’s permission. Anything above a quarter’s subscriptions needs the meeting’s.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you never voted on this",
+     "the text that stands"
+    ]
+   },
+   "rec:fx-u24": {
+    "eyebrow": "",
+    "head": "The house may ask for an apology or suspend a right for a season; removal under Part III is available only where a sanction has already been imposed and has not been kept to.",
+    "lock": "",
+    "body": "the text that standsThe house may ask for an apology, may suspend a right for a season, or in the last resort may remove a member under Part III.47%The house may ask for an apology, may suspend a right for a season, or in the last resort may remove a member under Part III; every sanction is proposed by a member who is not party to the dispute.The problem isn’t the ladder of sanctions, it’s who proposes them. An uninvolved proposer stops a hearing turning into the aggrieved party naming their own remedy.36%The house may ask for an apology or suspend a right for a season. Removal is not a sanction and is dealt with only under Part III, at a meeting called for that purpose alone.Putting removal in the same sentence as an apology makes them the same kind of thing. They are not, and a charter that lists them together will eventually be read as a menu.25%The house may ask for an apology, suspend a right for a season, or remove a member under Part III. No sanction may be proposed by a member party to the dispute, and none may be decided at the meeting it was proposed at.Both halves of the argument are right and they do not conflict. A neutral proposer and a night’s sleep between proposing and deciding cost nothing and prevent most of what we are worried about.14%The house may ask for an apology or suspend a right for a season. Where a sanction has been imposed twice in a year and not kept to, the house may remove a member under Part III.The one-broken-sanction version is still a two-step to the door. Twice in a year is a pattern, and a pattern is the only honest ground for removing somebody.5%The house may ask for an apology, may suspend a right for a season, or in the last resort may remove a member under Part III. Every sanction expires when its reason does, and the Steward says so at the next meeting.We keep arguing about the ladder and nobody has said what happens afterwards. A sanction with no end is a removal in instalments.5%The house may ask for an apology or suspend a right for a season. Removal under Part III requires the agreement of two thirds of those present, and may not be proposed by a member party to the dispute.If removal is going to stay on the list, it should be harder to reach than a suspension. A bare majority is the same bar as choosing the wine.5%The house may ask for an apology or suspend a right for a season, and may ask the Trust’s visitor to sit with the matter. Removal under Part III is available only where the visitor has been asked and the matter has not settled.We have a visitor and never use them. An outside pair of eyes before the door is opened is cheaper than any of the rules being argued over here.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you voted on this",
+     "the text that stands"
+    ]
+   },
+   "rec:fx-u25": {
+    "eyebrow": "",
+    "head": "Any member may bring any worry to any other in confidence, and that confidence is kept; nothing kept from a respondent may ever count against them.",
+    "lock": "",
+    "body": "the text that standsAny member may bring any worry to any other in confidence, and confidence is kept; nothing undisclosed to a respondent may ever count against them.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you voted on this",
+     "the text that stands"
+    ]
+   },
+   "rec:fx-u26": {
+    "eyebrow": "",
+    "head": "A member in difficulty may ask the Purse-holder to reduce or suspend their subscription for up to two quarters, and the Purse-holder tells no one, including the Steward and the meeting.",
+    "lock": "",
+    "body": "the text that standsA member in difficulty may ask the Purse-holder to reduce or suspend their subscription, and the Purse-holder may do so for up to two quarters without telling anyone why.47%A member in difficulty may reduce or suspend their own subscription for up to two quarters by telling the Purse-holder, who may not refuse and may not ask why.Asking permission to be poor is the humiliating part. Make it a notification, not a request, and the office-holder never has to weigh a friend’s circumstances.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you voted on this",
+     "the text that stands"
+    ]
+   },
+   "rec:fx-u27": {
+    "eyebrow": "",
+    "head": "A new member is on probation for a full year, during which they hold every right of membership except the right to vote on admissions, removals, or changes to these rules.",
+    "lock": "",
+    "body": "the text that standsA new member is on probation for six months, during which they hold every right of membership except the right to vote on admissions.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you voted on this",
+     "the text that stands"
+    ]
+   },
+   "rec:fx-u28": {
+    "eyebrow": "",
+    "head": "The Purse-holder keeps the accounts in whatever way suits them, and shows them to any member who asks, within a week of being asked.",
+    "lock": "",
+    "body": "the text that standsThe Purse-holder keeps the accounts in whatever way suits them, and shows them to any member who asks.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you voted on this",
+     "the text that stands"
+    ]
+   },
+   "rec:fx-u29": {
+    "eyebrow": "",
+    "head": "The Garden is kept up by a rota posted in the shed, with a Garden Steward to keep it organised and set two working weekends a year, in spring and in autumn.",
+    "lock": "",
+    "body": "the text that standsThe Garden is kept up by a rota posted in the shed, with a Garden Steward to keep it organised and call heroic weekends when it gets ahead of us.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you voted on this",
+     "the text that stands"
+    ]
+   },
+   "rec:fx-u3": {
+    "eyebrow": "",
     "head": "A meeting needs eight members present to decide anything, and ten to decide anything reserved, counted at the moment the question is put.",
     "lock": "",
-    "body": "the text that standsA meeting needs half the membership present to decide anything, and two-thirds to decide anything reserved.47%A meeting needs half the membership present to decide anything, and two-thirds to decide anything reserved; a member who has given their view in writing to the Steward counts as present for quorum but not for the vote.A meeting that falls short of quorum may still be held, and may still talk, and may minute what it thinks, but decides nothing.People travel and people work nights. Letting a written view hold your place stops the house from being unable to act because three of us are away.",
+    "body": "the text that standsA meeting needs half the membership present to decide anything, and two-thirds to decide anything reserved.A meeting that falls short of quorum may still be held, and may still talk, and may minute what it thinks, but decides nothing.47%A meeting needs half the membership present to decide anything, and two-thirds to decide anything reserved; a member who has given their view in writing to the Steward counts as present for quorum but not for the vote.A meeting that falls short of quorum may still be held, and may still talk, and may minute what it thinks, but decides nothing.People travel and people work nights. Letting a written view hold your place stops the house from being unable to act because three of us are away.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you never voted on this",
+     "the text that stands"
+    ]
+   },
+   "rec:fx-u30": {
+    "eyebrow": "",
+    "head": "The lease under Section 2. ends on D Month YYYY. The Steward writes to the Trust about renewing it in September.",
+    "lock": "",
+    "body": "the text that standsThe lease under Section 2. ends on D Month YYYY. The Club asks the Trust to renew it *before* the spring meeting, not after it!47%The lease under Section 2. ends on D Month YYYY. The Club asks the Trust to renew it *before* the spring meeting (and says so in the Members’ Book).Write the asking down, so the next Steward can see that it was done.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you never voted on this",
+     "the text that stands"
+    ]
+   },
+   "rec:fx-u4": {
+    "eyebrow": "",
+    "head": "The house keeps quiet hours from eleven at night to eight in the morning: voices low in the Common Areas, the Workshop’s louder tools asleep, and any gathering still going moves to the Garden or winds down.",
+    "lock": "",
+    "body": "",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you never voted on this"
+    ]
+   },
+   "rec:fx-u5": {
+    "eyebrow": "",
+    "head": "The house keeps quiet hours from eleven at night to eight in the morning.",
+    "lock": "",
+    "body": "47%After eleven at night the Common Areas are for reading, and the Workshop is closed until eight.Say what the rooms are for after dark rather than what people may not do — a house rule reads better as an invitation.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you never voted on this"
+    ]
+   },
+   "rec:fx-u6": {
+    "eyebrow": "",
+    "head": "Furniture in the Common Room may be moved but must be put back before the room is left empty.",
+    "lock": "",
+    "body": "the text that standsFurniture in the Common Room may be moved but must be put back. The armchair by the window is not anybody’s, whatever Hollis says.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you never voted on this",
+     "the text that stands"
+    ]
+   },
+   "rec:fx-u7": {
+    "eyebrow": "",
+    "head": "Books belonging to a member and left in the Corner become the house’s after two years, unless the member says otherwise in the book on the shelf.",
+    "lock": "",
+    "body": "the text that standsBooks belonging to a member and left in the Corner become the house’s after a year, unless the member says otherwise in the book on the shelf.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you never voted on this",
+     "the text that stands"
+    ]
+   },
+   "rec:fx-u8": {
+    "eyebrow": "",
+    "head": "Power tools are not used when the member is alone in the house, unless another member knows they are there and when they expect to finish, and not after the beginning of quiet hours.",
+    "lock": "",
+    "body": "the text that standsPower tools are not used when the member is alone in the house, and not after the beginning of quiet hours.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you never voted on this",
+     "the text that stands"
+    ]
+   },
+   "rec:fx-u9": {
+    "eyebrow": "",
+    "head": "The Outdoor Stores",
+    "lock": "",
+    "body": "the text that standsThe Shed, the Cellar and the Space Under the Stairs",
     "options": [],
     "inputs": [],
     "foot": [],

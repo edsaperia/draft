@@ -22,6 +22,8 @@
     "playwright:install": "playwright install chromium",
     "card-audit": "node design/tools/card-audit.mjs",
     "card-audit:narrow": "node design/tools/card-audit.mjs --width=390 --height=844 --out=design/tools/card-audit-narrow.json",
+    "card-audit:fast": "node design/tools/card-audit.mjs --strict --kinds=GRAMMAR_KINDS --walk=fixture --out=design/tools/card-audit-fast.json",
+    "card-audit:fast-narrow": "node design/tools/card-audit.mjs --strict --kinds=GRAMMAR_KINDS --walk=fixture --width=390 --height=844 --out=design/tools/card-audit-fast-narrow.json",
     "a11y-audit": "node design/tools/a11y-audit.mjs",
     "a11y-audit:narrow": "node design/tools/a11y-audit.mjs --width=390 --height=844 --out=design/tools/a11y-audit-narrow.json",
     "clock-check": "node design/tools/clock-check.mjs",
