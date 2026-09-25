@@ -91,7 +91,8 @@ const readSeat = async (who, cookie) => {
     const opened = await page.evaluate((kk) => {
       const t = document.querySelector('#rail [data-card="' + kk + '"]');
       if (!t) return false;
-      t.click();
+      // not if the review walk has opened it already (Q1536): a press would shut it
+      if (!document.querySelector('.setupcard[data-setupcard="' + kk + '"]')) t.click();
       return true;
     }, k);
     if (!opened) continue;
@@ -102,6 +103,14 @@ const readSeat = async (who, cookie) => {
     });
     await page.waitForTimeout(1800);
   }
+  // …and the review walk (Q1536, Ed 2026-09-25) opens whatever is owed next after the last of
+  // those OKs, a Rules card or a text record; this reads the page with nothing open
+  await page.evaluate(() => {
+    if (window.SESSION.openId != null) { window.SESSION.toggle(window.SESSION.openId, false); return; }
+    const c = document.querySelector('.setupcard[data-setupcard]');
+    const t = c && c.querySelector('.achip[data-tab="' + c.dataset.setupcard.replace(/["\\]/g, '\\$&') + '"]');
+    if (t) t.click();
+  });
   await page.waitForTimeout(1200);
 
   // shut: the tab stands in the 🪶 paragraph's own pile, and nothing of it on the big heading
