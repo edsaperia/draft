@@ -215,7 +215,8 @@
         const kids = [...el.children].map(textOf).filter(Boolean);
         const word = (kids[0] || '').split(' · ')[0];
         out.recLabel = { text: [word].concat(kids.slice(1)).filter(Boolean).join(' · '),
-          tone: root.classList.contains('recpass') ? 'ok' : '' };
+          // green is *decided* (C7): a record that ran out of time is not
+          tone: root.classList.contains('recpass') && /^(decided|passed|changed)/i.test(word) ? 'ok' : '' };
         return;
       }
       if (cl.contains('rsub') && !inField) { out.fact.push(el); return; }
@@ -634,6 +635,7 @@
     if (/\d\d:\d\d|next ✏️|✏️ in/i.test(t)) return 'drip';
     if (/accept/i.test(t)) return 'accept:pen';
     if (/reconnect/i.test(t)) return 'reconnect';
+    if (/one 🏛️? each|withdraw yours first/i.test(t)) return 'voice-out';
     if (root.querySelector('input:not([type=hidden]), textarea, [contenteditable="true"], [contenteditable="plaintext-only"]') &&
       !root.querySelector('.lanepick:not([disabled])')) return 'type';
     return 'choose';
@@ -664,13 +666,20 @@
   function reasonsHtml(R, root) {
     const dark = R.filter((b) => (b.disabled || b.hasAttribute('disabled')) && !isAck(b));
     if (!dark.length) return '';
+    // grouped by what wakes them: two commits waiting on the same thing say
+    // it once, in the words of whichever tooltip already said *… first*
     const by = new Map();
-    dark.forEach((b) => { const r = reasonOf(b, root); if (!by.has(r)) by.set(r, []); by.get(r).push(GLYPH(b) || (b.querySelector('svg.mkg') ? '✓' : textOf(b))); });
+    dark.forEach((b) => {
+      const u = b.getAttribute('data-until') || untilOf(b, root);
+      if (!by.has(u)) by.set(u, { rs: [], gs: [] });
+      by.get(u).rs.push(reasonOf(b, root));
+      by.get(u).gs.push(GLYPH(b) || (b.querySelector('svg.mkg') ? '✓' : textOf(b)));
+    });
+    for (const g of by.values()) g.r = g.rs.find((r) => /\bfirst$/i.test(r) && !Object.values(REASON).includes(r)) || g.rs[0];
     const many = by.size > 1;
-    return [...by.entries()].map(([r, gs]) => '<span class="greason" data-greason="1">' +
-      (many ? esc(gs.join(' ')) + ' ' : '') + esc(r) + '</span>').join('');
+    return [...by.values()].map((g) => '<span class="greason" data-greason="1">' +
+      (many ? esc(g.gs.join(' ')) + ' ' : '') + esc(g.r) + '</span>').join('');
   }
-
   /* ---- the one shell -------------------------------------------------------- */
   function assemble(root, o, st) {
     const parts = [];   // [slotName, html]

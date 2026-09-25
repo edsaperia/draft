@@ -53,6 +53,7 @@ async function pairHtml(p, cap, title) {
     (p.h && p.h.cur && p.h.pro ? ' · card height at 1600: ' + p.h.cur + ' → ' + p.h.pro + ' px' : '') + '</p>' +
     (cap ? '<p class="cap">' + (cap.by ? '<span class="by">' + md(cap.by) + '</span> ' : '') + md(cap.text) + '</p>' : '') +
     (cap && cap.worse ? '<p class="worse"><b>Worse than today:</b> ' + md(cap.worse) + '</p>' : '') +
+    (cap && cap.resolved ? '<p class="fixed"><b>Worse in v1, resolved in v2:</b> ' + md(cap.resolved) + '</p>' : '') +
     widths.join('') + '</article>';
 }
 
@@ -96,7 +97,8 @@ index.push(['zones', 'Zones: the page, the band, the desk, the phone']);
 body += '<section id="zones"><h2>Zones: the page, the band, the desk, the phone</h2><p>' + md(C.zonesIntro) + '</p>';
 for (const zg of C.zones) {
   body += '<div class="kind"><h3>' + esc(zg.title) + '</h3><p class="cap">' + (zg.by ? '<span class="by">' + md(zg.by) + '</span> ' : '') + md(zg.text) + '</p>' +
-    (zg.worse ? '<p class="worse"><b>Worse than today:</b> ' + md(zg.worse) + '</p>' : '');
+    (zg.worse ? '<p class="worse"><b>Worse than today:</b> ' + md(zg.worse) + '</p>' : '') +
+    (zg.resolved ? '<p class="fixed"><b>Worse in v1, resolved in v2:</b> ' + md(zg.resolved) + '</p>' : '');
   if (zg.notConverted) {
     body += '<p class="nc"><b>Not converted in the prototype.</b> ' + md(zg.notConverted) + '</p><div class="solo">';
     for (const s of zg.shots) body += '<figure' + (s.endsWith('-390.png') ? ' class="narrow"' : '') + '><figcaption>Today · ' + esc(s.replace(/\.png$/, '')) + '</figcaption>' + await img('current', s, zg.title) + '</figure>';
@@ -156,6 +158,7 @@ const html = `<!doctype html>
   .cap { font-size: var(--t-small); margin: 0 0 var(--s2); }
   .by { display: inline-block; font-size: var(--t-cap); color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 0 var(--s2); margin-right: var(--s1); }
   .worse { font-size: var(--t-small); background: var(--warn-bg); border-left: 3px solid #E8A33D; padding: var(--s2) var(--s3); margin: 0 0 var(--s3); max-width: none; }
+  .fixed { font-size: var(--t-small); background: #EDF7F0; border-left: 3px solid var(--ok); padding: var(--s2) var(--s3); margin: 0 0 var(--s3); max-width: none; }
   .nc { font-size: var(--t-small); color: var(--muted); }
   .w { margin: var(--s3) 0 0; }
   .wlab { font-size: var(--t-micro); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: var(--s1); }
@@ -181,9 +184,10 @@ const html = `<!doctype html>
 </head>
 <body>
 <main>
-<h1>Surface redesign: mockups</h1>
+<h1>Surface redesign: mockups (grammar v2)</h1>
 <p class="lede">${md(C.intro)}</p>
 <p>${md(C.howToRead)}</p>
+${C.v2 ? '<p>' + md(C.v2) + '</p>' : ''}
 <nav class="idx"><b>Families</b><ol>${index.map(([id, l]) => '<li><a href="#' + id + '">' + esc(l) + '</a></li>').join('')}</ol></nav>
 <p class="meta">${pairs} card pairs and ${zonePairs} zone pairs, each at 1600 and 390 where the width has the crop · generated ${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC by <code>tools/write-mockups.mjs</code>.</p>
 ${body}

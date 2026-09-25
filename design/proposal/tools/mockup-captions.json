@@ -1,88 +1,108 @@
 {
-  "intro": "Every card kind and zone from the stage-1 inventory, **today beside the prototype**, at 1600 and at 390. The proposed crops are screenshots of `proto/session-view.html` (stage 5) taken by the same instrument, with the same crop rule and the same names as today's, so the two columns cannot disagree about what was built.",
+  "intro": "Every card kind and zone from the stage-1 inventory, **today beside the prototype**, at 1600 and at 390. The proposed crops are screenshots of `proto/session-view.html` — **revised to grammar v2** after the critique — taken by the same instrument, with the same crop rule and the same names as today's, so the two columns cannot disagree about what was built.",
   "howToRead": "Each pair says the kind, the state, the principles (P1–P10) and breaks (B1–B13, grammar.md §1 and §7) that changed it, and one sentence on what changed. **Where the proposal reads worse than today, an amber note says so** — those are the most useful lines on the page. A kind the prototype did not convert, or that only a live document shows, says so instead of showing a fake. Click any image for the full-size crop. Timestamps differ between the columns because the fixture stamps *now*. At 390 both columns show the dev switch and, on the charter, the phone's task sheet over the card's foot: both are fixed to the window and the crop takes what the window shows.",
   "lead": {
     "6.1": {
       "title": "🪶 Title, settled, read by the Founder",
-      "by": "P1 P3 P5 P7 · B1 B2 B5 B11 B13",
-      "text": "The head is the title itself, with the paragraph's power line under it, where today it is a sentence *about* the title; who chose it becomes one grey line of text instead of a pressed blue pill; the empty *Why are you changing this?* box and the 🗑️ with nothing to put back are gone until something is typed.",
-      "worse": "grammar §6.1 draws the head at the title's own size (`--h-title`); the prototype draws it at body size, so the head is the title's words but not the title as the page shows it. And the *The document is titled [A new title].* block restates the sentence form the head just dropped, so the card now names the title two ways. At 390 the head (title plus power line) and the fact line run to seven lines before the first choice."
+      "by": "P1 P3 P5 P7 P9 · B1 B2 B5 B11 B13",
+      "text": "The head is the Rules paragraph the 🪶 tab hangs on, word for word, under a *Current rule* label; who chose it becomes one grey line of text instead of a pressed blue pill; the empty *Why are you changing this?* box and the 🗑️ with nothing to put back are gone until something is typed; the dark ✒️ ✏️ say *Give it a name first* in words.",
+      "resolved": "v1: grammar §6.1 draws the head at the title's own size (`--h-title`); the prototype draws it at body size, so the head is the title's words but not the title as the page shows it. And the *The document is titled [A new title].* block restates the sentence form the head just dropped, so the card now names the title two ways. At 390 the head (title plus power line) and the fact line run to seven lines before the first choice. — **v2:** the settled 🪶 heads with the Rules paragraph word for word, *The document is titled “The Hollow Oak Club — House Charter”.*, at the paragraph's own size (the `--h-title` head is the birth's, and is built there); the power line leaves the head for the ✒️ 🛡️ cards (P3 v2), so the head and the new-title block now share one form rather than naming the title two ways; at 390 the head is one sentence and the fact line one more."
     },
     "6.2": {
       "title": "A quick judgment (💡), a member, live",
-      "by": "P1 P2 P9 · B4 · O1 (a)",
-      "text": "*The clause as it stands* no longer stands above the clause, so the clause opens exactly where the paragraph was and the tab stays level with it (today both drop 33 px); the words move into the lane as *Current text* and *Proposed*, beside the radios.",
-      "worse": "the reader now learns that the second block is the proposal only after reading all of it and its rationale — *Proposed* sits by the radio at the block's foot, small and grey, where today it heads the block."
+      "by": "P1 P2 P5 P9 · B4 v2",
+      "text": "*The clause as it stands* no longer stands in the flow above the clause, so the clause opens exactly where the paragraph was and the tab stays level with it (today both drop 33 px); its words become the head label *Current text*, in the card's top inset, and *Proposed* is its block's first line. The dark ✓ says *Choose one of the three first*.",
+      "resolved": "v1: the reader now learns that the second block is the proposal only after reading all of it and its rationale — *Proposed* sits by the radio at the block's foot, small and grey, where today it heads the block. — **v2:** *Proposed* is the block's first line, above its words, and *Current text* stands over the clause in the card's top inset — both read first, and the clause still opens level with its tab."
     },
     "6.3": {
       "title": "A sealed record (✔), a text change not yet read — fixture stand-in",
-      "by": "P1 P2 P3 · B4 B6",
-      "text": "§6.3 names a live record; the fixture's `race-claims` stands in. The *DECIDED · 7/14* dateline moves from above the clause to one fact line under the winner's rationale, so the clause lands level with its ✔ tab (today 62–84 px lower); the rivals lose their boxes and are divided by hairlines.",
-      "worse": "*Previous text* and each rival's share still stand as small labels **above** their blocks, at the right — the one label position O1 (a) was meant to retire — and without today's dashed box the previous text is told from the rivals by that label alone. At 390 the one fact line wraps to four lines."
+      "by": "P1 P2 P3 P9 · B4 v2 (rejected for records) B6",
+      "text": "§6.3 names a live record; the fixture's `race-claims` stands in. *Decided · Tuesday, 29 September, 20:15* is the record's head label, first and in green, in the card's top inset — Q1522's *what it did first*, kept — so the clause still lands level with its ✔ tab (today 62–84 px lower); the participation line follows the winner's rationale; the rivals lose their boxes and are divided by hairlines, each labelled on its first line.",
+      "resolved": "v1: *Previous text* and each rival's share still stand as small labels **above** their blocks, at the right — the one label position O1 (a) was meant to retire — and without today's dashed box the previous text is told from the rivals by that label alone. At 390 the one fact line wraps to four lines. — **v2:** every label is its block's first line, left, one drawing — *Rival · 58%*, *Previous text* — and the outcome is the head label, first (Q1522); the participation line alone is the fact, so at 390 it wraps to two lines, not four."
     },
     "6.4": {
       "title": "A constitutional motion (👤), a member who is not the mover",
-      "by": "P3 P5 P7 · B1 B5 · O1 (a)",
+      "by": "P3 P5 P7 P9 · B1 B2 B5",
       "text": "The standing rule keeps its *Prefer this* lane (Q1362's peer) and gains a *Current rule* label and a provenance line; the 🗑️ with nothing to put back is gone, so the row is the 🏛️ commit alone.",
-      "worse": "the card is 23 px taller than today for one extra line of provenance, and that line sits between the current rule's radio and the proposal, where it reads as a caption for the proposal below it as easily as for the rule above."
+      "resolved": "v1: the card is 23 px taller than today for one extra line of provenance, and that line sits between the current rule's radio and the proposal, where it reads as a caption for the proposal below it as easily as for the rule above. — **v2:** the fact line now stands between the rule and its *Prefer this* lane (§2.3 v2), so it reads as the rule's; the rule wears *Current rule* and the proposal *Proposed*. The card stays about as tall as v1 — the provenance line is the cost of saying who chose the rule."
     },
     "6.5": {
       "title": "✉️ Invite, a member, at the all-members price",
       "by": "P5 · B5 B13",
       "text": "The empty rationale box under the empty address box and the 🗑️ with nothing to discard are gone; the price sentence and the address box are all the card holds until an address is typed.",
-      "worse": "the head's empty wording changed from the sentence *Nobody has been invited yet.* to the bracketed *(no outstanding invitations)* — CP6's people-head form, but it reads as a placeholder rather than as the document speaking."
+      "resolved": "v1: the head's empty wording changed from the sentence *Nobody has been invited yet.* to the bracketed *(no outstanding invitations)* — CP6's people-head form, but it reads as a placeholder rather than as the document speaking. — **v2:** the empty head is the STYLE-passed sentence again, *Nobody has been invited yet.*, and the band's empty subsection now says the same sentence (O9 (a)), so the head is still the line; the card carries its ask, *Invite a Member*, as the head label; the dark 🏛️ says why in the row (*One 🏛️ each — withdraw yours first* where it is out, *Type an address first* otherwise), and on the Founder's card ✒️ is dark over the empty box too."
     }
   },
   "kinds": {
     "quick": {
       "by": "P1 P2 P4 · B4 B7",
-      "intro": "The eyebrow over the clause goes (the head opens level with its tab), and on the closed page a judgment card offers nothing to press.",
+      "intro": "The eyebrow over the clause becomes the head label *Current text* in the card's top inset (the head opens level with its tab), *Proposed* is the block's first line, and on the closed page a judgment card offers nothing to press but keeps what it held.",
       "pairs": {
-        "quick-keys|closed": { "text": "Today the closed page offers two *Prefer this* radios, *propose edit* and an Indifferent row on a document where nothing can change; the proposal shows only the clause.", "worse": "it shows **only** the clause: the proposal the close cut off vanishes, and nothing says it was undecided at the close, so the 💡 tab opens a card that tells the reader nothing the paragraph did not." }
+        "quick-keys|closed": {
+          "text": "Today the closed page offers two *Prefer this* radios, *propose edit* and an Indifferent row on a document where nothing can change; the proposal shows only the clause.",
+          "resolved": "v1: it shows **only** the clause: the proposal the close cut off vanishes, and nothing says it was undecided at the close, so the 💡 tab opens a card that tells the reader nothing the paragraph did not. — **v2:** the proposal the close cut off stays on the card, labelled *Proposed*, with no control, and the fact line says *Undecided when the document closed* (P4 v2, B7 narrowed)."
+        }
       }
     },
     "insert": {
       "by": "P1 P2 P4 · B4 B7",
-      "intro": "The gap race: *The gap as it stands* moves from an eyebrow over *(no text here)* into the lane, as that lane's label.",
+      "intro": "The gap race: *The gap as it stands* becomes the head label *Current text* over *(no text here)*.",
       "pairs": {
-        "insert-quiet|closed": { "text": "Closed: today's live radios go.", "worse": "as with `quick`, the card collapses to *(no text here)* alone — the proposed insertion that was open at the close is not shown at all." }
+        "insert-quiet|closed": {
+          "text": "Closed: today's live radios go.",
+          "resolved": "v1: as with `quick`, the card collapses to *(no text here)* alone — the proposed insertion that was open at the close is not shown at all. — **v2:** the insertion open at the close stays, labelled, with *Undecided when the document closed*."
+        }
       }
     },
     "race": {
       "by": "P1 P2 P4 · B4 B7",
-      "intro": "A race of several rivals: same change as `quick` — the eyebrow goes, labels move into the lanes.",
+      "intro": "A race of several rivals: as `quick` — the head label *Current text*, and every rival labelled *Proposed* on its own first line.",
       "pairs": {
-        "race-sanctions|closed": { "text": "The deadlocked Sanctions race on the closed page: 1789 px today, 90 px proposed.", "worse": "all eight proposals that were in flight at the close disappear from the card; today's card (live radios and all) at least showed what was contested. B7's *no alternatives on a read-only card* is right for a rule card and wrong here — the closed record of a contested clause is exactly what a reader opens it for." }
+        "race-sanctions|closed": {
+          "text": "The deadlocked Sanctions race on the closed page: 1789 px today, 90 px proposed.",
+          "resolved": "v1: all eight proposals that were in flight at the close disappear from the card; today's card (live radios and all) at least showed what was contested. B7's *no alternatives on a read-only card* is right for a rule card and wrong here — the closed record of a contested clause is exactly what a reader opens it for. — **v2:** all eight proposals stay on the closed card, each labelled *Proposed*, none with a control, under *Undecided when the document closed* and *8 proposals, oldest first.* — the record of what was contested (B7 v2 covers settings rungs only)."
+        }
       }
     },
     "judged-pair": {
       "by": "P1 P2 · B4",
-      "intro": "A pair you already judged (⏳): your pressed *Preferred* stays; the eyebrow and *Proposed* label move into the lanes. ✓ keeps its green here because it is already sent — the one place the prototype still draws it so."
+      "intro": "A pair you already judged (⏳): your choice stays chosen — a filled dot on the accent ring, no longer a filled pill (P7 v2) — and the recorded ✓ is flat, not green."
     },
     "patch": {
       "by": "P1 P2 · B4",
-      "intro": "A multi-place patch: the place navigator (*§ The Purse-holder · place 1 of 3*, ↑ ↓) moves from the card's top into the body under the current text.",
+      "intro": "A multi-place patch: the place navigator joins the head label in the card's top inset; the note about the one vote goes to the foot.",
       "pairs": {
-        "patch-rename|charter": { "text": "The clause opens level with its tab; the navigator follows it.", "worse": "the navigator and the note *One vote for all 3 places* now sit between the current text and the proposal with a hairline on each side, so the reader meets *place 1 of 3* after reading the clause, and a small note stands fenced between two rules." }
+        "patch-rename|charter": {
+          "text": "The clause opens level with its tab; the navigator follows it.",
+          "resolved": "v1: the navigator and the note *One vote for all 3 places* now sit between the current text and the proposal with a hairline on each side, so the reader meets *place 1 of 3* after reading the clause, and a small note stands fenced between two rules. — **v2:** the navigator is the head label — *Current text · § The Purse-holder · place 1 of 3* with its ↑ ↓ — and *One vote for all 3 places* is the act's note at the foot, where the patch's floating row acts; no note is fenced between hairlines."
+        }
       }
     },
     "deadlock": {
       "by": "P1 P2 · B4",
-      "intro": "The deadlock card (⚔️): the eyebrow over the clause goes, *Everything in flight · 8 proposals* becomes a fact line.",
+      "intro": "The deadlock card (⚔️): the eyebrow becomes the head label, *Everything in flight · 8 proposals* becomes each rival's *Proposed* label and one note, *8 proposals, oldest first.*",
       "pairs": {
-        "race-sanctions|charter": { "text": "Nearly unchanged in length (1789 → 1780 px): eight rivals, then the desk.", "worse": "*— and it is still standing* is lost from the head's label; the desk's *propose something everyone can agree on* moves from a heading above its box to a caption below it; and the desk still shows an empty *We should change this because…* before anything is typed (B13 not applied here)." }
+        "race-sanctions|charter": {
+          "text": "Nearly unchanged in length (1789 → 1780 px): eight rivals, then the desk.",
+          "resolved": "v1: *— and it is still standing* is lost from the head's label; the desk's *propose something everyone can agree on* moves from a heading above its box to a caption below it; and the desk still shows an empty *We should change this because…* before anything is typed (B13 not applied here). — **v2:** *Current text — and it is still standing* is the head label; the desk is an input labelled *✏️ Propose something everyone can agree on* on its first line, and its *We should change this because…* lane waits for the first keystroke (B13)."
+        }
       }
     },
-    "diagonal": { "missing": "The 🌶️ salience diagonal is served, never offered, and no fixture or ladder seat was served one (inventory.md, *Not reached*)." },
+    "diagonal": {
+      "missing": "The 🌶️ salience diagonal is served, never offered, and no fixture or ladder seat was served one (inventory.md, *Not reached*)."
+    },
     "editing": {
       "notConverted": true,
       "missing": "Edit mode is not converted in the prototype (LOG.md, stage 5): the editing card still comes from today's composer, so a proposed crop would be today's card. Today's shot, from `tools/edit-shots.mjs`, is below."
     },
     "mine": {
       "by": "P1 P5 · B4 B5",
-      "intro": "Your proposal once proposed: the row is 🗑️ alone, which is J2's *withdraw* shape — a bin that takes your proposal back.",
+      "intro": "Your proposal once proposed: the row is *🗑️ Withdraw* — the bin carries its word, since it is irreversible and the only control (J2 v2) — and *What you proposed* is the block's first line.",
       "pairs": {
-        "mine-guests-wording|charter": { "text": "*What you proposed* moves from an eyebrow to a label under the rationale.", "worse": "this fixture item's head is empty on both pages (a fixture fault: its two-clause origin rows carry `x:` where the reader looks for `text` — checks.md), so the proposed card opens with a hairline under nothing, the one `hairline-gap` failure the prototype still has." }
+        "mine-guests-wording|charter": {
+          "text": "*What you proposed* moves from an eyebrow to a label under the rationale.",
+          "resolved": "v1: this fixture item's head is empty on both pages (a fixture fault: its two-clause origin rows carry `x:` where the reader looks for `text` — checks.md), so the proposed card opens with a hairline under nothing, the one `hairline-gap` failure the prototype still has. — **v2:** the prototype reads the fixture's origin rows by either key (a fixture fault today's page shares), so the two-clause head is drawn, and *What you proposed* is the block's first line; the withdraw says *Withdraw*."
+        }
       }
     },
     "stranded": {
@@ -91,30 +111,46 @@
     },
     "sealed-record": {
       "by": "P1 P2 P3 · B4 B6",
-      "intro": "The record of a decided clause: the dateline and outcome move from above the head to one fact line below it (see §6.3 above)."
+      "intro": "The record of a decided clause: the dateline and outcome are the head label, first, in the card's top inset — Q1522 kept, the clause level with its tab — and each rival is labelled on its first line."
     },
     "backlog": {
       "by": "P1 P3 · B4",
-      "intro": "An undecided question filed on the closed page: *Proposal ran out of time · 6/14* moves from above the head into the fact line.",
+      "intro": "An undecided question filed on the closed page: the outcome (*Proposal ran out of time · date*) is the head label, the participation one fact line, the text that stood and the rivals labelled on their first lines.",
       "pairs": {
-        "rec:fx-u0|closed": { "text": "The head is the leading proposal, then its fact line, then the text that stands and the rival.", "worse": "the fact line wraps to two lines at 1600, and *the text that stands* is still a lower-case label above its block — a third label style beside *Current text* (in the lane) and *Previous text* (above, right)." }
+        "rec:fx-u0|closed": {
+          "text": "The head is the leading proposal, then its fact line, then the text that stands and the rival.",
+          "resolved": "v1: the fact line wraps to two lines at 1600, and *the text that stands* is still a lower-case label above its block — a third label style beside *Current text* (in the lane) and *Previous text* (above, right). — **v2:** *Previous text* and *Rival · 47%* are each their block's first line, in the one label drawing; the outcome, *Proposal ran out of time · Wednesday, 30 September, 12:00*, is the head label (grey — green is only for *decided*); the participation is one fact line under the rationale."
+        }
       }
     },
     "setting": {
       "by": "P1 P3 P5 P7 · B1 B2 B5 B11 B13",
-      "intro": "Every settings card in the band. Unanswered, the head is the paragraph's own sentence (*The Founder is deciding …*) rather than nothing; settled, the head is the rule with its power line, provenance is a grey line, *Set to … / Set by …* is gone, and the rationale box waits for a change.",
+      "intro": "Every settings card in the band. Unanswered, the head is the paragraph's own sentence (*The Founder is deciding …*); settled, the head is the rule's line alone — the power line under it in the paragraph is the ✒️ 🛡️ cards' (P3 v2, Ed 2026-09-03) — under a *Current rule* label, then one grey provenance line.",
       "pairs": {
-        "rate|founding": { "text": "The 🗑️ with nothing to put back goes; the card gains a head line, *The Founder is deciding how often members may propose*, 38 px taller." },
-        "chamber|settled": { "text": "Settled 🌍 for the Founder: the pressed *Chosen by the Founder* pill, the empty rationale box and the 🗑️ go; 417 → 276 px." },
-        "rate|closedband": { "text": "The closed document: today's lone 🗑️ and its contradiction (*Decided by the members.* under *Chosen by the Founder*) go.", "worse": "two things. The head still carries the power line *The Founder may amend this at will, and refuse proposals…* on a document that has closed, where no power is held any more. And the card keeps the height of its seven-tab strip, so ~110 px of blank white hangs under one line of content — the proposal empties cards faster than the strip shrinks." }
+        "rate|founding": {
+          "text": "The 🗑️ with nothing to put back goes; the card gains a head line, *The Founder is deciding how often members may propose*, 38 px taller."
+        },
+        "chamber|settled": {
+          "text": "Settled 🌍 for the Founder: the pressed *Chosen by the Founder* pill, the empty rationale box and the 🗑️ go; 417 → 276 px."
+        },
+        "rate|closedband": {
+          "text": "The closed document: today's lone 🗑️ and its contradiction (*Decided by the members.* under *Chosen by the Founder*) go.",
+          "resolved": "v1: two things. The head still carries the power line *The Founder may amend this at will, and refuse proposals…* on a document that has closed, where no power is held any more. And the card keeps the height of its seven-tab strip, so ~110 px of blank white hangs under one line of content — the proposal empties cards faster than the strip shrinks. — **v2:** the head no longer carries the power line (P3 v2), so nothing claims a power on the closed document; and the card ends at its content, the strip hanging on down the gutter (G6)."
+        }
       }
     },
     "birth": {
       "by": "P1 P3 P5 · B2 B5 B11",
       "intro": "🪶 and 📍 at the birth and after it (see §6.1 above for the settled title).",
       "pairs": {
-        "slug|sessionband": { "text": "The *Set to* line, the pressed pill, the empty rationale box and the 🗑️ go; 462 → 321 px.", "worse": "*Previous links still work.* moves from under the address field (which it explains) to under the provenance line, before the field is reached." },
-        "title|closedband": { "text": "The closed page's lone 🗑️ goes; the title and who chose it remain.", "worse": "the head's power line claims *The Founder may amend this at will* on a closed document — the paragraph's present tense, carried into a card that is now a record." }
+        "slug|sessionband": {
+          "text": "The *Set to* line, the pressed pill, the empty rationale box and the 🗑️ go; 462 → 321 px.",
+          "resolved": "v1: *Previous links still work.* moves from under the address field (which it explains) to under the provenance line, before the field is reached. — **v2:** *Previous links still work.* stays with the address field it explains."
+        },
+        "title|closedband": {
+          "text": "The closed page's lone 🗑️ goes; the title and who chose it remain.",
+          "resolved": "v1: the head's power line claims *The Founder may amend this at will* on a closed document — the paragraph's present tense, carried into a card that is now a record. — **v2:** the power line is not in a settings card's head (P3 v2), so the closed 🪶 card claims nothing."
+        }
       }
     },
     "admissions": {
@@ -127,11 +163,19 @@
     },
     "hat": {
       "by": "P1 P5 P7 · B2 B6 B7",
-      "intro": "🎩 *Is the Founder a Member?*",
+      "intro": "🎩 *Is the Founder a Member?* — while asked, its ask is the head label over the Members row; settled, the rule and who chose it, and nothing unchosen.",
       "pairs": {
-        "hat|founding": { "text": "Unanswered: the 🗑️ goes.", "worse": "the prototype heads this card with the ask *Is the Founder a Member?* in the UI face, bold — a title head, which B2 retires everywhere else (every other unanswered band card heads with *The Founder is deciding …*). One card breaking the head rule the rest keep." },
-        "hat|settled": { "text": "Settled, read by the Founder: the greyed *Chosen* pill, the greyed radio, the 🗑️ and the close-only OK all go.", "worse": "the prototype still draws the unchosen block *The Founder is not part of the membership.* under the chosen one, with no radio and no label, so the card states two contradictory sentences separated only by a hairline. B7 says a read-only card draws no alternatives; the prototype missed this one." },
-        "hat|closedband": { "text": "Closed: one line, *The Founder is part of the membership*, and *Chosen by the Founder ✒️ · decided at the start*." }
+        "hat|founding": {
+          "text": "Unanswered: the 🗑️ goes.",
+          "resolved": "v1: the prototype heads this card with the ask *Is the Founder a Member?* in the UI face, bold — a title head, which B2 retires everywhere else (every other unanswered band card heads with *The Founder is deciding …*). One card breaking the head rule the rest keep. — **v2:** the ask is the head label, *Is the Founder a Member?*, in the label drawing, and the head is the Members row the tab hangs on."
+        },
+        "hat|settled": {
+          "text": "Settled, read by the Founder: the greyed *Chosen* pill, the greyed radio, the 🗑️ and the close-only OK all go.",
+          "resolved": "v1: the prototype still draws the unchosen block *The Founder is not part of the membership.* under the chosen one, with no radio and no label, so the card states two contradictory sentences separated only by a hairline. B7 says a read-only card draws no alternatives; the prototype missed this one. — **v2:** the unchosen rung is not drawn (B7 v2: a rung nobody may choose is a control with no job), so the card states one fact: the rule, and who chose it."
+        },
+        "hat|closedband": {
+          "text": "Closed: one line, *The Founder is part of the membership*, and *Chosen by the Founder ✒️ · decided at the start*."
+        }
       }
     },
     "blind-answer": {
@@ -140,63 +184,102 @@
     },
     "power": {
       "by": "P1 P3 P7 · B1 B2 B6 B8",
-      "intro": "✒️ and 🛡️ power cards: the head is the setting's paragraph (the rule plus its power line), the one alternative is the other half.",
+      "intro": "✒️ and 🛡️ power cards: the head is **the power's own clause** (*The Founder may amend the title at will.*), the head label the card's question, the fact line **who holds the power** (*Kept by the Founder ✒️ at the start · …*), and the one block the other state (B8 v2).",
       "pairs": {
-        "pw:u:title|settled": { "text": "Today the ✒️ card on 🪶 heads *The Founder may amend the title at will.*; proposed, it heads with the title and the whole power line.", "worse": "🪶, ✒️ and 🛡️ now open with the **same** head and the same provenance line, so three tabs lead to three cards that look alike until the one block below; and the fact line is the title's provenance, not the power's." },
-        "pw:u:title|closedband": { "text": "Closed: today's 🗑️ and close-only OK go.", "worse": "the closed ✒️ card is now identical to the closed 🪶 card, and like it claims the Founder *may amend this at will* on a closed document." }
+        "pw:u:title|settled": {
+          "text": "Today the ✒️ card on 🪶 heads *The Founder may amend the title at will.*; proposed, it heads with the title and the whole power line.",
+          "resolved": "v1: 🪶, ✒️ and 🛡️ now open with the **same** head and the same provenance line, so three tabs lead to three cards that look alike until the one block below; and the fact line is the title's provenance, not the power's. — **v2:** 🪶, ✒️ and 🛡️ open three different heads — the rule, and each power's own clause — and the ✒️ card's fact line is the power's holder, not the title's provenance."
+        },
+        "pw:u:title|closedband": {
+          "text": "Closed: today's 🗑️ and close-only OK go.",
+          "resolved": "v1: the closed ✒️ card is now identical to the closed 🪶 card, and like it claims the Founder *may amend this at will* on a closed document. — **v2:** the closed ✒️ card heads *Until the document closed, the Founder could amend the title at will.* — the phase's tense (P4 v2)."
+        }
       }
     },
     "motion-constitutional": {
       "by": "P3 P5 P7 · B1 B2 B5",
       "intro": "The consent card on a setting (🏛️). See §6.4 above for a member who is not the mover.",
       "pairs": {
-        "mo:mo-3|seat:stranger": { "text": "A stranger opening a motion's tab: today a title *Visibility*, a 🗑️ and an OK with no job; proposed, the paragraph as it stands and nothing to press.", "worse": "the card is padded to its strip's height, leaving ~100 px of blank white under two lines." },
-        "mo:mo-4|settled": { "text": "The mover's own motion: the unlabelled empty radio (diagnosis bug 7) and the pressed *Proposed* pill go; 🗑️ alone is the withdraw row.", "worse": "nothing on the card now says the second block is the proposal, or that it is yours; only the lone 🗑️ implies it." }
+        "mo:mo-3|seat:stranger": {
+          "text": "A stranger opening a motion's tab: today a title *Visibility*, a 🗑️ and an OK with no job; proposed, the paragraph as it stands and nothing to press.",
+          "resolved": "v1: the card is padded to its strip's height, leaving ~100 px of blank white under two lines. — **v2:** the card ends at its content and the strip hangs on down the gutter (G6)."
+        },
+        "mo:mo-4|settled": {
+          "text": "The mover's own motion: the unlabelled empty radio (diagnosis bug 7) and the pressed *Proposed* pill go; 🗑️ alone is the withdraw row.",
+          "resolved": "v1: nothing on the card now says the second block is the proposal, or that it is yours; only the lone 🗑️ implies it. — **v2:** the second block is labelled *What you proposed*, and the withdraw says *Withdraw*; the rule above is *Current rule*."
+        }
       }
     },
     "motion-ordinary": {
       "by": "P3 P5 P7 · B1 B5 · O1 (a)",
       "intro": "An ordinary motion (a race on a setting).",
       "pairs": {
-        "mo:mo-5|settled": { "text": "The current rule gains *Current rule* and its provenance line; the 🗑️ goes (a radio beside Indifferent is undone by choosing again).", "worse": "47 px taller for the provenance, which again sits between the rule's radio and the proposal." },
-        "mo:mo-3|closedband": { "text": "Closed: today's live radios, Indifferent row and ✓ on a closed document go.", "worse": "the motion the close cut off disappears — the card behind the motion's own tab shows only the rule, with ~110 px of blank white under it. The reader who clicked the motion learns nothing about it." }
+        "mo:mo-5|settled": {
+          "text": "The current rule gains *Current rule* and its provenance line; the 🗑️ goes (a radio beside Indifferent is undone by choosing again).",
+          "resolved": "v1: 47 px taller for the provenance, which again sits between the rule's radio and the proposal. — **v2:** the provenance line sits between the rule and its lane, so it reads as the rule's; the height is the provenance line's cost and is kept."
+        },
+        "mo:mo-3|closedband": {
+          "text": "Closed: today's live radios, Indifferent row and ✓ on a closed document go.",
+          "resolved": "v1: the motion the close cut off disappears — the card behind the motion's own tab shows only the rule, with ~110 px of blank white under it. The reader who clicked the motion learns nothing about it. — **v2:** the motion the close cut off stays, labelled *Proposed*, under *Undecided when the document closed*; the card ends at its content."
+        }
       }
     },
     "crown": {
       "by": "P3 P5 · B1 B5",
       "intro": "The 👑 question for the Founder: the membership passed a change, and the Founder's 🛡️ refuses or ✒️ accepts it.",
       "pairs": {
-        "mo:mo-3|settled": { "text": "The 🗑️ that closed the card goes; the row is 🛡️ ✒️.", "worse": "the prototype draws the current rule as the head **and again** as the first block, word for word, and hangs the motion's rationale (*Who reads the document should be the membership's call.*) under the head — the current rule — instead of under the proposal it argues for. Today's card, for all its faults, keeps the reason with the proposal." }
+        "mo:mo-3|settled": {
+          "text": "The 🗑️ that closed the card goes; the row is 🛡️ ✒️.",
+          "resolved": "v1: the prototype draws the current rule as the head **and again** as the first block, word for word, and hangs the motion's rationale (*Who reads the document should be the membership's call.*) under the head — the current rule — instead of under the proposal it argues for. Today's card, for all its faults, keeps the reason with the proposal. — **v2:** the rule that stands is the head once (a block restating it is not drawn), the passed wording is the one block, labelled *Chosen by the membership*, with its mover's reason under it, and the row's note says what the pair decides."
+        }
       }
     },
     "crown-other": {
       "by": "P3 P5 · B1 B6",
       "intro": "The same 👑 question read by a member who is not the Founder: nothing to press.",
       "pairs": {
-        "mo:mo-3|seat:1": { "text": "The lone 🗑️ goes; the row is absent.", "worse": "as on the Founder's card, the motion's rationale sits under the current rule rather than under *The document can only be seen by members.*" }
+        "mo:mo-3|seat:1": {
+          "text": "The lone 🗑️ goes; the row is absent.",
+          "resolved": "v1: as on the Founder's card, the motion's rationale sits under the current rule rather than under *The document can only be seen by members.* — **v2:** the reason sits under the proposal it argues for."
+        }
       }
     },
-    "crown-text": { "notConverted": true, "missing": "The 👑 question on the Text is only raised on a live document (the ladder's session rung), which the prototype was never run against; today's crop is below." },
+    "crown-text": {
+      "notConverted": true,
+      "missing": "The 👑 question on the Text is only raised on a live document (the ladder's session rung), which the prototype was never run against; today's crop is below."
+    },
     "motion-record": {
       "by": "P1 P3 · B1 B4 B6",
-      "intro": "A settled motion's record: the dateline and outcome move from above the head into one fact line under the rationale; the pressed provenance pill goes.",
+      "intro": "A settled motion's record: the outcome and its date are the head label, first and in green (Q1522 kept); the previous rule a labelled block; *· since replaced* where the rule has moved on.",
       "pairs": {
-        "rec:chamber:0|settled": { "text": "*Changed by the Founder · date* under the rule; the previous rule below, labelled.", "worse": "*Previous rule* loses its grey box and becomes a small label **under** the old wording, indented a few pixels from the text it names." }
+        "rec:chamber:0|settled": {
+          "text": "*Changed by the Founder · date* under the rule; the previous rule below, labelled.",
+          "resolved": "v1: *Previous rule* loses its grey box and becomes a small label **under** the old wording, indented a few pixels from the text it names. — **v2:** *Previous rule* is its block's first line, in the one label drawing; the outcome and date are the head label."
+        }
       }
     },
     "failed-news": {
       "by": "P1 P3 · B1 B4",
       "intro": "The mover's own rejected motion (E41), pinned until OK.",
       "pairs": {
-        "held:mo-2|seat:1": { "text": "The dateline goes into a fact line; the pressed provenance pill goes; the rejected proposal loses its grey box.", "worse": "the fact line *Rejected · date* now sits directly under the **standing** rule (*every 3 hours*), where it reads as though the standing rule was rejected; the wording that was rejected is below, labelled only by a small *Rejected proposal* under its rationale." }
+        "held:mo-2|seat:1": {
+          "text": "The dateline goes into a fact line; the pressed provenance pill goes; the rejected proposal loses its grey box.",
+          "resolved": "v1: the fact line *Rejected · date* now sits directly under the **standing** rule (*every 3 hours*), where it reads as though the standing rule was rejected; the wording that was rejected is below, labelled only by a small *Rejected proposal* under its rationale. — **v2:** the rule that stands is labelled *Current rule*, and the outcome is the label of the wording that failed — *Rejected proposal · Friday, 25 September, …* — so nothing reads as the standing rule rejected."
+        }
       }
     },
     "grant": {
       "by": "P1 P5 P8 · B2 B6 · O3",
-      "intro": "The grants (✒️ 🛡️ 🏛️): the head is the Founded line their tab hangs on; an accepted grant has no row (the close-only OK and the 🗑️ go).",
+      "intro": "The grants (✒️ 🛡️ 🏛️): the head is the Founded line their tab hangs on, the grant's name its head label; an accepted grant has no row (B6); *Accept 🏛️* like the others (O3 (a)).",
       "pairs": {
-        "grant-voice|founding": { "text": "Not yet accepted: the 🗑️ goes, the acknowledgement stays.", "worse": "the prototype keeps *Activate 🏛️* although O3 (a), the recommended branch, is *Accept 🏛️*; the page is not yet what the grammar recommends." },
-        "grant-voice|seat:1": { "text": "Accepted, a member: the Founded line is the head, the row goes.", "worse": "*The Founder invited you into the membership…* sits hard against the body text with no space below it." }
+        "grant-voice|founding": {
+          "text": "Not yet accepted: the 🗑️ goes, the acknowledgement stays.",
+          "resolved": "v1: the prototype keeps *Activate 🏛️* although O3 (a), the recommended branch, is *Accept 🏛️*; the page is not yet what the grammar recommends. — **v2:** the button is *Accept 🏛️*, O3 (a) built."
+        },
+        "grant-voice|seat:1": {
+          "text": "Accepted, a member: the Founded line is the head, the row goes.",
+          "resolved": "v1: *The Founder invited you into the membership…* sits hard against the body text with no space below it. — **v2:** the note has a gap above and below, like every body line."
+        }
       }
     },
     "gate": {
@@ -207,121 +290,197 @@
       "by": "P1 P3 P7 · B1 B2 B11",
       "intro": "News of a changed rule, and the read-only card a stranger or member opens on a rule.",
       "pairs": {
-        "chamber|seat:1": { "text": "News for a member: *Set to / Decided by the members.* and the pressed pill go; the rationale moves under the rule; the OK stays because the news is owed.", "worse": "the sentence that **was** the news — *The Founder has changed who may read the document from members only to anyone with the link.* — is gone; what replaces it is the raw value *members only* over a small *Previous rule* label, not a sentence and not the clause's own wording." },
-        "chamber|seat:stranger": { "text": "A stranger reading 🌍: the 🗑️ and the OK owed nothing go.", "worse": "blank white under the fact line where the card keeps its strip's height." }
+        "chamber|seat:1": {
+          "text": "News for a member: *Set to / Decided by the members.* and the pressed pill go; the rationale moves under the rule; the OK stays because the news is owed.",
+          "resolved": "v1: the sentence that **was** the news — *The Founder has changed who may read the document from members only to anyone with the link.* — is gone; what replaces it is the raw value *members only* over a small *Previous rule* label, not a sentence and not the clause's own wording. — **v2:** the news sentence is kept — *The Founder has changed who may read the document from members only to anyone with the link · Friday …* — as the fact line (it is how the rule came to stand), and no raw value is drawn as a block."
+        },
+        "chamber|seat:stranger": {
+          "text": "A stranger reading 🌍: the 🗑️ and the OK owed nothing go.",
+          "resolved": "v1: blank white under the fact line where the card keeps its strip's height. — **v2:** the card ends at its content (G6)."
+        }
       }
     },
     "begin": {
       "by": "P1 P5 · B2 B6",
       "intro": "🍾: the head is the Proposals paragraph, the hairline between the head and the blue *What beginning does* box goes, and the 🗑️ goes.",
       "pairs": {
-        "begin|founding": { "text": "The long unstarted 🍾 with its power table: unchanged but for the bin and one hairline.", "worse": "*THE QUESTIONS* is still an eyebrow with nothing under it, on both pages — the empty-slot rule the grammar states is not applied inside 🍾's body." }
+        "begin|founding": {
+          "text": "The long unstarted 🍾 with its power table: unchanged but for the bin and one hairline.",
+          "resolved": "v1: *THE QUESTIONS* is still an eyebrow with nothing under it, on both pages — the empty-slot rule the grammar states is not applied inside 🍾's body. — **v2:** an eyebrow with nothing under it is not drawn, however deep in the body it stands."
+        }
       }
     },
     "closing": {
       "by": "P1 P3 · B12",
       "intro": "🥂 The close: the second statement of the closing moment (the blue *The document is final as of …* box) goes.",
       "pairs": {
-        "closing|closedband": { "text": "One statement of when the document closed; the batch, the note, the signatures, the comment box, OK.", "worse": "the *YOUR CLOSING COMMENT* and *SIGNED* labels are gone, so Ivy Fen's signature and your own empty comment box (*Dissent is as welcome as praise…*) run together; the placeholder now reads like one more signature." }
+        "closing|closedband": {
+          "text": "One statement of when the document closed; the batch, the note, the signatures, the comment box, OK.",
+          "resolved": "v1: the *YOUR CLOSING COMMENT* and *SIGNED* labels are gone, so Ivy Fen's signature and your own empty comment box (*Dissent is as welcome as praise…*) run together; the placeholder now reads like one more signature. — **v2:** *Your closing comment* labels the comment box and *Signed* the signatures, each on its first line."
+        }
       }
     },
     "door-invite": {
       "by": "P5 · B5 B13",
       "intro": "✉️ (see §6.5 above): the empty rationale box and the 🗑️ go until something is typed.",
       "pairs": {
-        "invite|closedband": { "text": "Closed: the address box, rationale box and commit on a closed document go.", "worse": "*(no outstanding invitations)* in brackets, as everywhere the prototype draws an empty people list." }
+        "invite|closedband": {
+          "text": "Closed: the address box, rationale box and commit on a closed document go.",
+          "resolved": "v1: *(no outstanding invitations)* in brackets, as everywhere the prototype draws an empty people list. — **v2:** the empty list says *Nobody has been invited yet.*, in the band and on the card alike (O9 (a))."
+        }
       }
     },
     "door-remove": {
       "by": "P5 · B5 B13",
       "intro": "❌: the same changes as ✉️.",
       "pairs": {
-        "remove|seat:1": { "text": "A member's ❌: the empty rationale box and 🗑️ go; the note *Whoever it is will see the proposal* moves above the chooser.", "worse": "*Nobody is proposed for removal.* becomes *(nobody proposed for removal)*." }
+        "remove|seat:1": {
+          "text": "A member's ❌: the empty rationale box and 🗑️ go; the note *Whoever it is will see the proposal* moves above the chooser.",
+          "resolved": "v1: *Nobody is proposed for removal.* becomes *(nobody proposed for removal)*. — **v2:** *Nobody is proposed for removal.*, in both places."
+        }
       }
     },
     "door-leave": {
       "by": "P1 P7 · B3 B5 B10",
-      "intro": "🌂 Leave: the head is your row instead of the title, the 🗑️ goes, and the ↗ loses its solid green.",
+      "intro": "🌂 Leave: your row is the head, the act its label (*Leave the Membership*), the 🗑️ goes, and the ↗ loses its solid green.",
       "pairs": {
-        "leave|settled": { "text": "Your row, the warning, the ↗.", "worse": "with the title *Leave the Membership* gone, nothing on the card names the act: a face, a warning and an arrow. This is O6's cost, most visible here — the one card whose act is irreversible." }
+        "leave|settled": {
+          "text": "Your row, the warning, the ↗.",
+          "resolved": "v1: with the title *Leave the Membership* gone, nothing on the card names the act: a face, a warning and an arrow. This is O6's cost, most visible here — the one card whose act is irreversible. — **v2:** the card carries its act as the head label, *Leave the Membership* (B3 withdrawn for O6 (b))."
+        }
       }
     },
-    "admit": { "notConverted": true, "missing": "An admission vote (`adm:`) exists only on a live document with an applicant; the prototype runs on the fixture. Today's crop is below." },
+    "admit": {
+      "notConverted": true,
+      "missing": "An admission vote (`adm:`) exists only on a live document with an applicant; the prototype runs on the fixture. Today's crop is below."
+    },
     "stranger": {
       "by": "B6",
       "intro": "The stranger's door (door.js) is not converted in the prototype; the card is drawn by the prototype's shell, which is why it changes at all.",
       "pairs": {
-        "strlogin|seat:stranger": { "text": "The 🗑️ goes; the card gains a *Log In* title head (a placeless card heads with its title, §2.3)." }
+        "strlogin|seat:stranger": {
+          "text": "The 🗑️ goes; the card gains a *Log In* title head (a placeless card heads with its title, §2.3)."
+        }
       }
     },
-    "applicant": { "missing": "The applicant's five cards need an applicant's seat, which neither the fixture nor the ladder can give (inventory.md, *Not reached*)." },
-    "watching": { "missing": "Inventoried as the settings cards' *delegated* state rather than as its own kind (inventory.md, *Not reached* 3)." },
+    "applicant": {
+      "missing": "The applicant's five cards need an applicant's seat, which neither the fixture nor the ladder can give (inventory.md, *Not reached*)."
+    },
+    "watching": {
+      "missing": "Inventoried as the settings cards' *delegated* state rather than as its own kind (inventory.md, *Not reached* 3)."
+    },
     "identity": {
       "by": "P1 P5 · B3 B5 B10 · O6",
-      "intro": "✋ 🖼️ 📧: the head is your row (face, name, *you*) instead of the title or nothing; the 🗑️ goes; ✓ is flat until armed.",
+      "intro": "✋ 🖼️ 📧: the ask is the head label (*Choose Your Picture*), over your row (O6 (b)); the 🗑️ goes; ✓ is flat.",
       "pairs": {
-        "mypic|founding": { "text": "🖼️ unanswered: your row heads the card.", "worse": "your initials now appear twice — in the head row and again as the *Anonymous* option's avatar just below it." },
-        "myname|closedband": { "text": "Closed: today's greyed radios, green ✓ and 🗑️ on a closed document go.", "worse": "the card opens to your row and nothing else — the line it replaced, again — with ~80 px of blank white under it." }
+        "mypic|founding": {
+          "text": "🖼️ unanswered: your row heads the card.",
+          "worse": "your initials now appear twice — in the head row and again as the *Anonymous* option's avatar just below it. — **kept in v2:** the head is your row as it stands, and the *Anonymous* option shows what choosing it would draw, which is those initials; dropping the option's picture would make it the one option not drawn as what it gives."
+        },
+        "myname|closedband": {
+          "text": "Closed: today's greyed radios, green ✓ and 🗑️ on a closed document go.",
+          "resolved": "v1: the card opens to your row and nothing else — the line it replaced, again — with ~80 px of blank white under it. — **v2:** the card carries its name as the head label and ends at its content (G6)."
+        }
       }
     }
   },
   "zonesIntro": "The prototype changed the cards, not the frame: the topbar, wallets, both rails, the drawers, edit mode and the stranger's door are loaded from today's files (LOG.md, stage 5). So the zone pairs below are few, and most say *unchanged*. The prototype's own *what is not converted* note (bottom-left) is hidden in every proposed crop, since today's page has no such furniture.",
   "zones": [
     {
-      "title": "The page, session fixture — the 📝 door moves",
+      "title": "The page, session fixture — the 📝 door, where Ed put it",
       "by": "G4",
-      "text": "The only visible zone change: the floating 📝 edit door moves from straddling the sheet's right edge (where it covered the queue rail's lowest entries, diagnosis bug 6) to inside the sheet, `--s3` in from its edge. At 390 there is no door on either page.",
-      "worse": "inside the sheet the door now stands in the text's right margin, a few pixels from the ends of the lines at 1600, and it breaks Ed's 2026-09-24 ruling that it straddles the page edge (checks.md doubt 2, a break not yet numbered).",
-      "shots": ["page-session-1600.png", "page-session-390.png"]
+      "text": "v1 moved the floating 📝 door inside the sheet to satisfy its own zone rule; v2 restores Ed's 2026-09-24 ruling — its centre on the sheet's right edge — and amends the rule instead: the floating layer is a sanctioned overlay that may cross a zone's edge but never covers a line of text (G4 v2). At 390 there is no door on either page.",
+      "shots": [
+        "page-session-1600.png",
+        "page-session-390.png"
+      ],
+      "resolved": "v1: inside the sheet the door now stands in the text's right margin, a few pixels from the ends of the lines at 1600, and it breaks Ed's 2026-09-24 ruling that it straddles the page edge (checks.md doubt 2, a break not yet numbered). — **v2:** the door straddles the page's edge again, and `zone-overlap` now measures the text it covers — none — rather than the zones it crosses. It still overlaps the left edge of the lowest queue entries' boxes by a few pixels, where no text stands: that is the ruling's known cost (diagnosis bug 6), now named rather than moved."
     },
     {
-      "title": "The band (Rules), closed paragraphs — unchanged",
-      "text": "The closed band is the document's own text and the prototype does not change it; the pairs show that the paragraphs a card opens in place of are the same on both pages, which is what lets a card's head register with them.",
-      "shots": ["band-settled-1600.png", "band-settled-390.png", "band-session-1600.png", "band-session-390.png"]
+      "title": "The band (Rules), closed paragraphs — one change",
+      "text": "The closed band is the document's own text and the prototype leaves it as it is, with **one v2 change**: a Membership subsection's heading (*Invitees*, *Proposed for removal*) gains 4 px beneath it, so an open card's head label fits between the heading and the first row without touching either (G5's stated cost). The empty lists also say the STYLE-passed sentences (*Nobody has been invited yet.*) where they said *(no outstanding invitations)* (O9 (a)). Otherwise the paragraphs a card opens in place of are the same on both pages, which is what lets a card's head register with them.",
+      "shots": [
+        "band-settled-1600.png",
+        "band-settled-390.png",
+        "band-session-1600.png",
+        "band-session-390.png"
+      ]
     },
     {
       "title": "The desk and the two sheets — unchanged",
       "text": "The seam between the Rules and the Text sheets.",
-      "shots": ["page-sheetbreak-1600.png", "page-sheetbreak-390.png"]
+      "shots": [
+        "page-sheetbreak-1600.png",
+        "page-sheetbreak-390.png"
+      ]
     },
     {
       "title": "The closed page — unchanged when no card is open",
-      "text": "What changes on the closed page is inside the cards (above: every card but 🥂 offers nothing to press); the page itself is the same.",
-      "shots": ["page-closed-1600.png", "page-closed-390.png", "page-closed-foot-1600.png", "page-closed-foot-390.png"]
+      "text": "What changes on the closed page is inside the cards (above: no card offers an act but 🥂, and every card keeps what it recorded — P4 v2); the page itself is the same, and the topbar's ✏️ drip still counts on it, which v2 names but the prototype does not change.",
+      "shots": [
+        "page-closed-1600.png",
+        "page-closed-390.png",
+        "page-closed-foot-1600.png",
+        "page-closed-foot-390.png"
+      ]
     },
     {
       "title": "The phone: the task sheet raised and the contents drawer — unchanged",
       "text": "MOBILE.md's first cut is kept; the prototype did not take O4 (a wider card at 390) — checks.md doubt 4.",
-      "shots": ["page-sheet-raised-390.png", "page-drawer-left-390.png", "sheetbar-peek-390.png"]
+      "shots": [
+        "page-sheet-raised-390.png",
+        "page-drawer-left-390.png",
+        "sheetbar-peek-390.png"
+      ]
     },
     {
       "title": "The founding, at arrival and after the save",
       "text": "The birth's page before and after the save: the band's cards are closed here, so the pages match; the cards themselves are above under `birth`.",
-      "shots": ["page-birth-1600.png", "page-birth-390.png", "page-saved-1600.png", "page-saved-390.png"]
+      "shots": [
+        "page-birth-1600.png",
+        "page-birth-390.png",
+        "page-saved-1600.png",
+        "page-saved-390.png"
+      ]
     },
     {
       "title": "Topbar and wallets",
       "notConverted": "The topbar and the wallet sockets load from today's `session.js`/`wallets.js` family unchanged.",
       "text": "Grammar §3.1 keeps the topbar as it is (nothing in it may move); the wallets are outside the card grammar.",
-      "shots": ["topbar-session-1600.png", "topbar-session-390.png", "wallets-session-1600.png"]
+      "shots": [
+        "topbar-session-1600.png",
+        "topbar-session-390.png",
+        "wallets-session-1600.png"
+      ]
     },
     {
       "title": "The two rails (contents and queue)",
       "notConverted": "Both rails are today's. The diagnosis's rail finding (the contents rail's marks running past the drawer's glass at 390, bug 10) is not fixed in the prototype.",
       "text": "",
-      "shots": ["toc-session-1600.png", "rail-session-1600.png"]
+      "shots": [
+        "toc-session-1600.png",
+        "rail-session-1600.png"
+      ]
     },
     {
       "title": "Edit mode",
       "notConverted": "Edit mode (the lifted column, the lane controls, the proposal row) is today's; B9 (one ✏️ in edit mode) is not built.",
       "text": "",
-      "shots": ["page-editmode-1600.png", "proposalrow-editmode-1600.png", "page-editmode-390.png"]
+      "shots": [
+        "page-editmode-1600.png",
+        "proposalrow-editmode-1600.png",
+        "page-editmode-390.png"
+      ]
     },
     {
       "title": "The stranger's door",
       "notConverted": "`door.js` is loaded from today's page; only the stranger's cards pass through the prototype's shell (above, `stranger`).",
       "text": "",
-      "shots": ["page-door-1600.png", "page-door-390.png"]
+      "shots": [
+        "page-door-1600.png",
+        "page-door-390.png"
+      ]
     }
-  ]
+  ],
+  "v2": "**v2 (the revision pass).** The 39 amber notes stage 4 raised are each either **resolved** (a green box saying how, the v1 complaint quoted) or **kept** (still amber, with the reason). The v2 moves that answer most of them: **one label slot** (every block's label its first line, the head's in the card's top inset, drawn as today's eyebrow — grammar §2.3a); **a closed document keeps what it recorded** (P4 v2, B7 narrowed to settings rungs); **act and question cards carry their ask** as the head label (B3 withdrawn for O6 (b)); **a settings card heads with the rule's line alone**, the power line being the power cards' (P3 v2, Ed 2026-09-03); **a dark commit says why in words** (P5 v2); **the card ends at its content** and a long strip hangs on down the gutter (G6); and **Ed's 📝 door is back** where he ruled it (G4 v2)."
 }

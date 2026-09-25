@@ -8,7 +8,7 @@ Reproduce:
 - `node design/proposal/tools/grammar-audit.mjs --page=proposal/proto/session-view.html --label=pshot --shots --hide=#gnote` (and at 390) — the prototype, with the crops `mockups.html` shows;
 - `node design/proposal/tools/checks-table.mjs --proto=pshot` prints the table and examples from `data/grammar-{today,pshot}-{1600,390}.json` (gitignored).
 
-**One splice, said.** The first final run found the 👑 card throwing — its note read a copy key from the wrong table (`PAGE_COPY` for `COPY.session`) — so the settled and outsiders walks were re-run after the fix and spliced into the payloads by `tools/merge-walks.mjs`, which takes every card, finding and reading of the re-run walks from the re-run and recounts the table. The other seven walks are the first run's. Nothing else was spliced.
+**One false start, said.** The first final run found the 👑 card throwing — its note read a copy key from the wrong table (`PAGE_COPY` for `COPY.session`) — so the two walks it lives in were re-run after the fix and spliced in by `tools/merge-walks.mjs`. A last fix to the note slot (two dark commits waiting on one thing now say it once) then called for a whole new run anyway, so **the prototype's numbers and crops here are one full, unspliced run at each width**, and the table came out the same as the spliced one. `merge-walks.mjs` stays in `tools/` for the next time one card is fixed.
 
 The prototype is at `/proposal/proto/session-view.html` under `npm run design` (`?fixture=session`, `&band=1`, `&closed=1`, none for the founding).
 
