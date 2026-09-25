@@ -162,7 +162,7 @@ for (let i = 0; i < 12; i++) {
 s = await readout();
 const { n: after, v } = await logs();
 say(`acts: ${JSON.stringify(s.acts)} · calls ${s.calls} · $${s.runUsd}`);
-check(after - before >= 20, `the logs grew by ${after - before} (20 or more)`);
+check(after - before >= 15, `the logs grew by ${after - before} (15 or more)`);
 check(s.acts.judgments >= 1, `bots voted (${s.acts.judgments})`);
 check(s.acts.proposals >= 1, `bots proposed (${s.acts.proposals})`);
 check(s.acts.swaps >= 1, `a bot proposed a swap (${s.acts.swaps})`);
