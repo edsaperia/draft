@@ -453,9 +453,7 @@ jobs:
   # change needs no re-freeze — only a page change does (Q914).
   probe:
     runs-on: ubuntu-latest
-    # 15 until Q1541 stage 0: the redesign checks' fast pass is two fixture
-    # walks of ~5–9 min each on a laptop (BUILD.md §2 estimated three)
-    timeout-minutes: 40
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -476,18 +474,6 @@ jobs:
       - if: steps.browser.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
       - run: npm run probe -- --strict
-      # **The redesign's checks, held for the kinds converted** (Q1541,
-      # design/redesign/BUILD.md §2): card-audit's P13–P33 over the fixture
-      # walks alone (the charter, the closed page and the band on both), at
-      # 1600 and at 390, strict for the kinds in card-audit.mjs's
-      # `GRAMMAR_KINDS` — empty in stage 0, so only a walk that throws or
-      # measures nothing reddens it; each stage of the redesign adds the kinds
-      # it converts, and from then on a converted card cannot slide back. The
-      # full audit, every walk, stays in the sprint tier (sprint.yml).
-      - run: npm run card-audit:fast
-        if: always()
-      - run: npm run card-audit:fast-narrow
-        if: always()
       # (`copy-check --walk` stood here until plan-ci-speed.md Stage 2; it is
       # the `copy-walk` job below now, on its own runner.)
       #
@@ -595,6 +581,48 @@ jobs:
       - if: steps.browser.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
       - run: npm run copy-check -- --walk
+
+  # **The redesign's checks, held for the kinds converted** (Q1541,
+  # design/redesign/BUILD.md §2): card-audit's P13–P33 over the fixture walks
+  # alone (the charter, the closed page and the band on both), strict for the
+  # kinds in card-audit.mjs's `GRAMMAR_KINDS` — empty in stage 0, so only a
+  # walk that throws or measures nothing reddens it; each stage of the redesign
+  # adds the kinds it converts, and from then on a converted card cannot slide
+  # back. One runner per width, beside `probe` rather than inside it: each pass
+  # is ~5–9 minutes, and inside `probe` the two would have tripled that job
+  # (stage 0 had raised its limit to 40; the push's verdict stays near ten
+  # minutes this way). The full audit, every walk, stays in the sprint tier.
+  redesign-checks:
+    name: probe (redesign checks ${{ matrix.width }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        width: ['1600', '390']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: playwright version, for the browser cache key
+        id: pw
+        run: echo "v=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        id: browser
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ steps.pw.outputs.v }}
+      - if: steps.browser.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+      - if: steps.browser.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+      - run: npm run card-audit:fast
+        if: matrix.width == '1600'
+      - run: npm run card-audit:fast-narrow
+        if: matrix.width == '390'
 
   # **The boot guard** (plan-scaling.md Stage 0, 2026-09-23): boot replay
   # outran Render's 15-minute health-check window once already (decision
