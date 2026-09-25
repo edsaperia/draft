@@ -412,13 +412,16 @@ function checkMarks() {
     if (!/isUnread\(g\)/.test(live[1])) find('marks', 'the live literal no longer pins an unread decision (isUnread) — the ✔/✖ green rows say it does');
   }
   // **The news caps** (Q113, Ed 2026-09-14; Q1532 as amended, Ed
-  // 2026-09-24): two queues — the charter's owed text records pin the oldest
-  // one (`NEWS_PIN_CAP`), the Rules' news and grants the oldest three
+  // 2026-09-24): two queues — the charter's owed text records pin one
+  // (`NEWS_PIN_CAP`), the next in document order from where the review walk
+  // stood (Q1536, `walkOrder`), the Rules' news and grants the oldest three
   // (`BAND_PIN_CAP`). The table states it in words in three cells; session.js
   // holds it as two named constants and one demotion per family.
   const cap = sess.match(/const NEWS_PIN_CAP = (\d+);/);
-  if (!cap) find('marks', 'NEWS_PIN_CAP not found in session.js — the ✔/✖ green rows say only the oldest owed text record pins (Q1532)');
-  else if (cap[1] !== '1') find('marks', `NEWS_PIN_CAP is ${cap[1]}, the table says the oldest text record owed (Q1532)`);
+  if (!cap) find('marks', 'NEWS_PIN_CAP not found in session.js — the ✔/✖ green rows say only the next owed text record pins (Q1532, Q1536)');
+  else if (cap[1] !== '1') find('marks', `NEWS_PIN_CAP is ${cap[1]}, the table says the next text record owed (Q1532)`);
+  if (!/const owed = pinned\.filter\(\(r\) => r\.news\)\.sort\(\(x, y\) => x\.fam - y\.fam \|\| walkOrder\(x, y\)/.test(sess))
+    find('marks', 'layoutQueue: the charter\'s owed queue is no longer in the review walk\'s order (`walkOrder`) — the ✔/✖ rows say the next text record owed in document order pins (Q1536)');
   const bandCap = sess.match(/const BAND_PIN_CAP = (\d+);/);
   if (!bandCap) find('marks', 'BAND_PIN_CAP not found in session.js — the setup alphabet\'s news row says the Rules\' news pins up to three (Q113, Q1532 amended)');
   else if (bandCap[1] !== '3') find('marks', `BAND_PIN_CAP is ${bandCap[1]}, the table says the oldest three of the Rules' news (Q113)`);
@@ -426,7 +429,7 @@ function checkMarks() {
     find('marks', 'layoutQueue: the owed queues are no longer sorted and cut per family at BAND_PIN_CAP and NEWS_PIN_CAP (Q113, Q1532)');
   for (const r of rows) {
     if (r.kind !== 'adopted' && r.kind !== 'retired') continue;
-    if (!/oldest text record owed/.test(r['pins?'])) find('marks', `${r.kind}: the pins cell does not name the cap — session.js pins only the oldest owed text record (NEWS_PIN_CAP, Q1532)`);
+    if (!/next text record owed in document order/.test(r['pins?'])) find('marks', `${r.kind}: the pins cell does not name the cap — session.js pins only the next owed text record in document order (NEWS_PIN_CAP, Q1532, Q1536)`);
   }
   if (!/classList\.contains\('mosturgent'\) && !holdsFocus\(r\.el\) && !r\.mine\) continue;/.test(sess)) find('marks', 'the fit-cap exemption literal (🔥 · open · mine) not found');
   // the literal's third clause is `!r.mine`, so **every mark a proposal of
