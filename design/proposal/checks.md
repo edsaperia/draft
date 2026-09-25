@@ -1,4 +1,41 @@
-# Checks — today's page against the prototype (Q1541; v2, the revision pass)
+# Checks — the checks as ruled, and today's page against the prototype (Q1541)
+
+**Precedence.** `answers.md` (Ed's answers to Q1541.1–.56, 2026-09-25) **wins over this file**, and this file over `grammar.md` §5 and `tools/grammar-audit.mjs`. The first section below, *The checks as ruled*, is the specification phase two's card-audit is built to (BUILD.md §2, stage 0). Everything after it is the **measurement of record from before the answers** — the v2 checks on today's page and on the prototype — kept because it is what the answers were given against; where a row measures a rule the answers changed, it says so.
+
+## The checks as ruled (answers.md)
+
+Principle numbers are answers Part 5's. *Baseline* says whether today's count below still stands (**as measured**) or must be taken afresh by stage 0 under the rule as ruled (**re-measure**), in which case stage 0 writes it into a *today (as ruled)* column here, with the cards it names.
+
+| card-audit | check | asserts, as ruled | changed from v2, and why | principle | baseline |
+|---|---|---|---|---|---|
+| P13 | `still` | On open, a switch within a strip, a switch across strips and close: the pressed tab and the card's first line move **0 px on screen** on both axes; the content above the card moves **up on screen by exactly the label room** (the scroll adjusted in the same frame); the content below is pushed down; nothing moves on x; the topbar, the contents rail and the sheet's left and right edges move 0 px. **The page-top case**, measured separately: where the scroll cannot take the room, the first line moves down by the shortfall and nothing else changes. Run from a scroll that allows compensation and again at the document's top | v2 held the first line still by rising into its own top inset (G5); 1541.44 makes room by moving the content above. v2's *the sheet's edges move 0* becomes *left and right*: the sheet's top is content above | 2 | re-measure |
+| P14 | `head-registration` | The first line's text equals the closed paragraph's and its first line box lands on the paragraph's. Stated exceptions: a record (the wording it recorded), a multi-place proposal (the place it shows), a gap (*(no text here)*), 🪶 at the birth (the title box); a rule card's first line is the rule **without** its powers line (1541.10); a power card's first line is **the power's own clause, naming its subject** (1541.48) | the power card's clause now names its subject, so it is not the paragraph's words | 1 | as measured (the power cards re-counted) |
+| P15 | `head-form` | Nothing between the card's label and its first line; the label is the one thing above the first line, and the first line is the paragraph renderer's element | the label is above the first line in made room, not in an inset | 1, 9 | as measured |
+| P16 | `space-above` | **Replaces `top-edge`.** The card's box never overlaps the ink of the content above it; the label stands wholly inside the card, directly above the first line; the room made equals the label slot's height | G5's inset and its 4 px under band subsection headings are not built (1541.15, .35, .44) | 2 | re-measure |
+| P17 | `strip-floor` | **Replaces `strip-blank`.** An open card is never shorter than its tab strip | 1541.16 (c): the floor is kept; G6 is not built | 6 | re-measure (today holds it) |
+| P18 | `hairline-gap` | Every hairline between two drawn slots or blocks, per H1's table; none at top or foot; P12 kept. On a rule card the standing first line and the other options are separated by a hairline (1541.47) | — | 6 | as measured |
+| P19 | `empty-slot` + `presence` | No drawn slot empty or whitespace-only; drawn slots equal the shell's predicate. **Stated exceptions: the reason box on a card that can take a change is always drawn, empty or not** (1541.21 (b)); **the floor's padding** under the last slot (P17) | two exceptions from principle 6 as ruled | 6 | re-measure |
+| P20 | `slot-order` | Drawn slots in grammar §2.3's order, the label first | — | 1, 9 | as measured |
+| P21 | `label-slot` | **Every card** carries exactly one label above its first line: what the first line is on a place card, the card's ask on an act or question card (1541.46 (a)); every block's label is its first line (1541.45) — *What you proposed* no longer at the foot, a rival's share as *Proposed · 23%*; one drawing, `--t-cap`, 700, upper case, `--muted`, a record's outcome in its colour (1541.27, Part 4 .27); every label's words are answers Part 4's (.1–.16, .23–.26) or today's titles where Part 4 keeps them | v2 required a head label only on cards with blocks, records and act cards, at `--t-micro`, from grammar §2.3a's vocabulary | 9 | re-measure |
+| P22 | `no-job` | Static form: every dark control carries a `data-until` from `choose`, `type`, `drip`, `voice-out`, `readiness`, `reconnect`, `flight` or the bin's `nothing-yours`, reachable in the phase; **no commit is drawn for a power not yet accepted** (Part 4 .19 — so `accept:<power>` is not a reason); no lit commit over an empty required input (✉️'s ✒️). Driven form in stage 10 | `accept:<power>` removed; the dark bin added | 4, 5 | re-measure |
+| P23 | `note-visible` | A dark commit waiting on `drip` (*✏️ 12:04*), `voice-out` (*You can only make one constitutional proposal 🏛️ at a time.*) or `readiness` (*Waiting for x members to answer questions.*) shows that note as visible text in the row; one waiting on `choose` or `type`, and the dark bin, shows **no** note (Part 4 .17–.22, 1541.49) | v2 required a note for every dark commit | 5, 8 | re-measure |
+| P24 | `bin-job` | 🗑️ is drawn **exactly when the card can ever give it a job for this reader** — dark while there is nothing of theirs to remove, lit while there is (read from `CardState.draft`, `acts`); a withdraw is **the bare glyph** (1541.9 (b) with Ed's note) | v2 drew the bin only while it had a job, and gave withdraw its word | 5, 8 | re-measure |
+| P25 | `row-vocabulary` | Every row one of six shapes — absent, withdraw (bare 🗑️), commit, pair, acknowledge (OK while owed), accept (*Accept ‹glyph›* on the grants and on 💡 ⚖️ — Part 4 .24); at most two commits at the right | *withdraw* loses its word; *accept* gains the gates | 8 | as measured (withdraw re-counted) |
+| P26 | `role-drawing` | Today's drawings kept (1541.13 (c)): a chosen option stays the filled pill, the standing pill marks what stands; **✓ accent blue when armed, never green** (1541.50); no solid-green button (👑's ✒️ is a bug, 1541.38); green only on marks, the *Passed* and *Changed by the Founder* labels, the passed highlight and a recorded ✓; a block nobody may choose has no radio (the standing pill on a read-only card is a mark, not a radio) | v2's filled-dot radio, *solid accent only on OK/Accept* and *no green ✓ recorded* are dropped | 7 | re-measure |
+| P27 | `closed-page` | On a closed document: nothing enabled but the tabs, 🥂 and a multi-place proposal's ↑ ↓ (reading, not an act); no dark control; no radio; no strip tooltip saying *waiting on you*, *yours to take* or *Give your answer* | — (🥂 now discharges every owed OK, 1541.7, so no OK survives beside it) | 4 | as measured |
+| P28 | `closed-keeps-content` | Every card that raced still draws its proposals, each under its live label, no control; what the close cut off reads *‹label› · Ran out of time* and a record that ran out *Ran out of time · ‹longWhen›* (Part 4 .4, .14) | *Undecided when the document closed* → *Ran out of time* | 4 | as measured (the words re-read) |
+| P29 | `closed-powers` | **Replaces `closed-tense`.** On a closed document no powers line in any paragraph or card and no ✒️ 🛡️ tab in any strip; the stated survivors are 👑 on the Founder's face and 🍾's table of the powers kept at the start; a rule card's label is *Rule at the close*, a text card's *Final text* (1541.34, .52; Part 4 .15, .16) | v2 kept the powers in the past tense; the answers remove them | 4 | re-measure |
+| P30 | `zone-overlap` | Zones' content boxes pairwise disjoint; every overlay's box disjoint from every text line and enabled control outside it; **the floating 📝 door is a named exception** and may overlap (1541.17); at 390 the contents drawer is full width and its marks inside it (1541.40, .54) | the door exception; plain bug 6 is not a bug | — | re-measure |
+| P31 | `width-invariance` | Every travel above equal at 1600 and 390 (against the 1600 run as `--baseline`). **Stated exception: the active tab** grows 8 px at 1600 and highlights in place at 390, split at the 900 px line (1541.53); at 390 the tabs stand flush with the glass's left edge (1541.20) | the exception and the flush tabs are new | 9 | re-measure |
+| P32 | `place-head` | Every card on one anchor shows one first line | — | 1 | as measured |
+| P33 | `one-home` | At most one element per `data-fact` role per card: `place` (the first line), `pill` (who chose it), `outcome` (a record's label), `author` (a signed proposal's label), `previous`, `price` (on the commit) | the roles are principle 3's homes as ruled; provenance is the pill, not a fact line | 3 | needs the roles |
+| — | `raw-value` | No rendered string contains `undefined`, `NaN`, `null`, `[object`, `Invalid Date` — a `copy-check --walk` rule | — | 4 | as measured |
+| — | `state-only`, `style-lint` | slot builders read `CardState` only; type tokens and the 4 px grid (finding 1541.41) | — | — | spec-check, stage 1 |
+| — | `render-hold` | in-flight state (a caret, the always-shown reason box's text included) survives a poll and a room event on the same node, and the page's scroll is unmoved | the reason box and the scroll added | 10 | a walk, stage 9 |
+
+**Not built, by the answers:** G5's top inset and its 4 px (1541.15), G6 and `strip-blank` (1541.16 (c)), the rationale lane appearing with the change (1541.21 (b)), the filled-dot radio and *You preferred this before it changed* (1541.13 (c)), the power cards' past tense (1541.34), the dark ✒️ before a grant is accepted (Part 4 .19), a note on a dark commit waiting on a choice or a keystroke (.17, .18).
+
+## The measurement of 2026-09-25 (v2, before the answers)
 
 Measured 2026-09-25 by `tools/grammar-audit.mjs` (a copy of `inventory-audit.mjs`, itself a copy of `design/tools/card-audit.mjs`, with grammar.md §5's checks added — **v2 adds six**). Every check is **DOM-generic**: it reads today's page and the prototype by the same rules, so the columns are comparable. Nine walks each (founding, answers, delegated, settled, outsiders, charter, closed, sessionband, closedband), 352 card openings per run, at 1600×1000 and 390×844. **This file supersedes the stage-5 version**: the prototype measured here is v2 (grammar.md v2), and today's page was re-measured with the v2 checks, so both columns come from the same instrument on the same day.
 
@@ -12,9 +49,9 @@ Reproduce:
 
 The prototype is at `/proposal/proto/session-view.html` under `npm run design` (`?fixture=session`, `&band=1`, `&closed=1`, none for the founding).
 
-## The table
+### The table
 
-Findings (cards affected).
+Findings (cards affected). **Read against the answers:** the prototype was built to grammar v2, so its zeros on `top-edge`, `strip-blank`, `note-visible`, `bin-job`, `role-drawing`, `label-slot` and `closed-tense` are zeros against rules the answers replaced (it has no space above, drops the pill, hides the reason box, has no dark bin, draws the filled-dot radio, and writes past-tense powers). The rows for `head-form`, `hairline-gap`, `empty-slot`, `row-vocabulary`, `closed-page` and `raw-value` still measure standing rules.
 
 | check | holds | today 1600 | **proto v2 1600** | today 390 | **proto v2 390** | proto v1 (stage 5, 1600) |
 |---|---|---|---|---|---|---|
@@ -41,7 +78,7 @@ The v1 column is stage 5's (the previous version of this file), kept so the tabl
 
 Row shapes (1600): today — commit 155, absent 44, pair 14, acknowledge 14, withdraw 6, plus 119 rows in none of the six; prototype v2 — commit 148, absent 171, pair 14, acknowledge 9, accept 6, withdraw 4, and no row outside the six.
 
-## The six v2 checks: what they assert, what today fails
+### The six v2 checks: what they assert, what today fails
 
 - **label-slot** (§2.3a): every head on a card that draws a block has a label above its first line; every block with no live control has a label as its first line (or a label drawn directly above it); no label stands below its block's first line. Today, 102: **63 heads with no label beside blocks** — the settled band cards, whose standing block carried a provenance radio instead (e.g. *settled·title*, *settled·admission*) — and **39 blocks with neither control nor label**: the locked 🎩's greyed rungs, the second of two rivals sharing one *Proposed* label, the 👑 card's first pick. The prototype: 0.
 - **note-visible** (P5 v2, P8 v2): every dark commit on a live card has its reason as visible text in the row, and no commit is lit over an empty address box. Today, 107: **100 rows whose dark commits explain themselves only in a tooltip** (a phone has none — *founding·title*, *settled·title*'s ✒️ ✏️), and **7 lit ✒️ over ✉️'s empty box**. The prototype: 0 — every such row prints *Choose one first*, *Give it a name first*, *✒️ Type an address first · 🏛️ One 🏛️ each — withdraw yours first*.
@@ -50,7 +87,7 @@ Row shapes (1600): today — commit 155, absent 44, pair 14, acknowledge 14, wit
 - **top-edge** (G5): the open card's top edge never covers the ink of the line above its anchor, and its head label clears that ink. Today, 120 at 1600 and 141 at 390: today's cards rise over the paragraph above (*founding·invite* by 10 px — the 📍-over-🪶 class the critique found in v1, finding 6, is today's too). The prototype: 0 at both widths — `GRAMMAR.fitCard` shrinks the inset where the space is short, and the head label stands 2 px above the head's first line. Its one closed-layout cost: a band subsection's heading gains 4 px beneath it (grammar G5).
 - **strip-blank** (G6): no open card has more than 30 px of empty box under its last drawn slot. Today, 30 at 1600 and 24 at 390: the cards the strip-height floor pads (*seat:1·pw:u:chamber*, 63 px). The prototype: 0 — the card ends at its content and a long strip hangs on down the gutter.
 
-## Per check: what the prototype still fails, and why
+### Per check: what the prototype still fails, and why
 
 **still — 52.** Unchanged in count from v1, and none of it moves on open in a way the grammar forbids:
 - 14 — the identity cards ✋ 🖼️ 📧 and 🎩: the check measures the Members *list* as the paragraph, while the card opens in place of *your row* (a measurement choice; the tab moves 0 — doubt 5).
@@ -68,7 +105,7 @@ Row shapes (1600): today — commit 155, absent 44, pair 14, acknowledge 14, wit
 
 **closed-page — 0.** One exception is made in the tool and said here: the patch's ↑ ↓ in its head label stay live on the closed page, because moving between a patch's places is reading its record, not an act (P4 v2 withholds acts, not reading).
 
-## What the checks cannot see
+### What the checks cannot see
 
 - **render-hold** (P10, U1): **not built in the prototype, and not measured.** grammar.md §10 says so; it is the principle the proposal has demonstrated least.
 - **State**: every check reads the DOM. The prototype passes them because its **sorter** recognised today's markup; a build on `CardState` must pass them again, from nothing (grammar §10).
@@ -78,11 +115,11 @@ Row shapes (1600): today — commit 155, absent 44, pair 14, acknowledge 14, wit
 - **Copy**: the label vocabulary, the dark commits' reasons, *Undecided when the document closed*, the power cards' past tense and the 👑 note for a rule have not passed STYLE; `copy-check` does not run on the prototype.
 - 9 cards have no closed paragraph to register against (`mo:*`, `held:*`, `ans-chamber`, `strlogin`).
 
-## Doubts, stage 5's and v2's
+### Doubts, stage 5's and v2's
 
-1. **G1's sheet rule** — *resolved in grammar v2* (G1: the sheet the card stands on); the tool still to be scoped (9 findings above).
-2. **G4 contradicted itself and moved Ed's door** — *resolved in grammar v2* (G4 v2: the floating layer is an overlay; the door straddles the page edge again); the tool now judges overlays by the text they cover.
-3. **J2 cannot be decided from what is drawn** — *stands*; it is §10's argument.
-4. **O4 at 390** — *stands*; the prototype leaves 390's card width as it is.
+1. **G1's sheet rule** — *resolved in grammar v2* (G1: the sheet the card stands on); the tool still to be scoped (9 findings above). **As ruled:** P13 now measures on screen, and the sheet's top is content above (1541.44).
+2. **G4 contradicted itself and moved Ed's door** — *resolved in grammar v2* (G4 v2: the floating layer is an overlay; the door straddles the page edge again); the tool now judges overlays by the text they cover. **As ruled:** the door keeps today's placement and may overlap; it is `zone-overlap`'s named exception (1541.17).
+3. **J2 cannot be decided from what is drawn** — *stands*; it is §10's argument. **As ruled**, P24 also needs *can this card ever give the bin a job* (1541.9), which is `acts`, not markup.
+4. **O4 at 390** — **resolved by 1541.20 (a)**: the margin narrows further, the tabs flush with the glass, the active tab highlighting in place (1541.53) — stage 6.
 5. **The identity cards' anchor** — *stands*; v2 heads them with your row under the ask label (O6 (b)), and the checks measure the list.
-6. **(v2) A head label is one line.** At 390 a long ask (*Can the Founder Make Amendments at Will?*) ends in an ellipsis, its words in the label's tooltip. Two lines were tried and met the ink above (G5). On a power card the head says the same in full; elsewhere the asks are short.
+6. **(v2) A head label is one line.** At 390 a long ask (*Can the Founder Make Amendments at Will?*) ends in an ellipsis, its words in the label's tooltip. Two lines were tried and met the ink above (G5). **As ruled** the label is larger (`--t-cap`, Part 4 .27) and its room is made rather than borrowed, so two lines no longer meet the ink above; whether a long ask wraps or ends in an ellipsis at 390 is for stage 3b to measure and show Ed. On a power card the head says the same in full; elsewhere the asks are short.

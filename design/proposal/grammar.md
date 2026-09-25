@@ -1,5 +1,7 @@
 # Grammar — principles, the card grammar, the layout grammar (Q1541, stage 3; v2 after the critique)
 
+> **Overridden where they disagree by `answers.md`** (Ed's answers to Q1541.1–.56, 2026-09-25) — its ten principles replace §1, its space-above ruling replaces G5 and G6, and `BUILD.md` / `checks.md` are revised to it; read this file as the reference only where the answers leave it standing.
+
 **Version 2**, 2026-09-25, revised after `critique.md` and the 39 amber *worse than today* notes in `mockups.html`. Ids are stable: every principle, rule, break and open choice keeps its number, and whatever changed is marked **v2**. What changed and why is §0, *Changes from v1*; read it first if you read v1.
 
 Version 1 was written 2026-09-25 from `diagnosis.md` (its classes D1–D13 and four causes), `inventory.md`, SURFACE §1/§6/§8/§9, STYLE, CLAUDE.md and the DECISIONS entries behind every rule broken here. It proposes; nothing in the product changes. Where this file and SURFACE disagree, SURFACE is the rule until Ed rules on the break, and every such place is a numbered break (§7) that stage 6 turns into a question.
