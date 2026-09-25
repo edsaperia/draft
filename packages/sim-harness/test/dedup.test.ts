@@ -237,7 +237,15 @@ describe('sim regression: dedup off is byte-identical to before the gate existed
   // this branch left, both variants produced this one, a second no-gate run
   // agreed and `Session.replay` reproduces it — which is the invariant this
   // test defends.
-  const PINNED = '9436912095904373d0a21cacb85a0848effa3789453f4d03414341ce069a5a93';
+  // Re-pinned 2026-09-25 (Q1538, Q1539, SPEC v0.142, R-142, R-143): a leader
+  // waits until it is measured against every live rival, the router asks those
+  // pairs next, and the ranking is read inside the Smith set. The run still
+  // makes 65 adoptions and closes 47 wordings, but which pairs are served,
+  // when, and what an adoption with rivals records (`rivals`) all move the
+  // chain. Both variants below produced this hash, and `Session.replay`
+  // reproduces it — which is the invariant this test defends
+  // (was 9436912095904373d0a21cacb85a0848effa3789453f4d03414341ce069a5a93).
+  const PINNED = 'b95c790ad4a2e9092204a55c3270b553ab4420cb9fcb20be373d0d722ba18c89';
 
   const run = (withGate: boolean) =>
     runSession({

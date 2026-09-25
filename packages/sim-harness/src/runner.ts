@@ -54,6 +54,14 @@ export interface RunConfig {
    * to a run before the gate existed.
    */
   dedupGate?: DedupGate;
+  /**
+   * **An observer, for the Smith study** (Q1538, Q1539): called just before
+   * each persona acts and just after, and around the close, with the session
+   * and the clock — a pure read, so a study can see what a race was just
+   * before it decided. When absent the run is byte-identical to a run before
+   * this hook existed.
+   */
+  observe?: (phase: 'before' | 'after', session: Session, t: number) => void;
 }
 
 export interface RunResult {
@@ -188,6 +196,7 @@ export async function runSession(config: RunConfig): Promise<RunResult> {
       next.draftedThisBout = false;
     }
 
+    config.observe?.('before', session, t);
     actions++;
     next.turns++;
     lastActionT = t;
@@ -325,6 +334,7 @@ export async function runSession(config: RunConfig): Promise<RunResult> {
     }
 
     announce();
+    config.observe?.('after', session, t);
     next.remainingInBout--;
     if (!acted || next.remainingInBout <= 0) {
       // Nothing to do, or bout over: leave until the next bout.
@@ -340,7 +350,9 @@ export async function runSession(config: RunConfig): Promise<RunResult> {
   // this is the only moment at which *what the window ran out on* can be
   // asked. A pure read — no event, no state change, the same log either way.
   const stranded = strandedAtClose(session, windowMs);
+  config.observe?.('before', session, windowMs);
   session.close(windowMs);
+  config.observe?.('after', session, windowMs);
   const participation = new Map(
     states.map((s) => [
       s.persona.profile.id,

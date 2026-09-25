@@ -10,6 +10,7 @@
     "sweep": "tsx src/sweep.ts",
     "preset": "tsx src/alpha-preset.ts",
     "churn": "tsx src/churn.ts",
+    "smith": "tsx src/smith-study.ts",
     "soak": "tsx src/soak.ts",
     "evidence": "tsx src/deferred-evidence.ts",
     "ab:serve": "tsx src/serve-all-ab.ts",
