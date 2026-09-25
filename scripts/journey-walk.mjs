@@ -6038,6 +6038,29 @@ const rivalsStay = async () => {
     say('rivals     · FAIL: the founder could not judge · ' + JSON.stringify([j1, j2]));
     stuck.push('the judgments that carry di’s'); await done(); return;
   }
+  // **the rival bar** (Q1538 → why: R-142): di's has met its floor and waits
+  // until the pair with cy's is measured — two answers, the floor — so the
+  // race is live and its bar short of full, whichever way the votes went
+  await T(5200);
+  const vw = await viewOf(page);
+  const rw = ((vw || {}).clauses || []).find((c) => (c.candidates || []).some((x) => x.id === W));
+  const barPct = await page.evaluate((rid) => {
+    const g = (window.SESSION.SUGGS || []).find((x) => x.race === rid || x.raceId === rid || x.id === rid);
+    return g && typeof g.pct === 'number' ? g.pct : null;
+  }, rw && rw.id);
+  const ok0 = !!rw && rw.closeness < 1 && (barPct === null || barPct < 100);
+  say('rivals 0   · ' + (ok0
+    ? 'di’s at its floor waits on its pair with cy’s: still live, the bar at ' + Math.round(rw.closeness * 100) + '%' +
+      (barPct === null ? '' : ' (the rail entry ' + barPct + '%)') + ', never full'
+    : 'FAIL: ' + JSON.stringify({ live: !!rw, closeness: rw && rw.closeness, barPct })));
+  if (!ok0) stuck.push('the rival bar short of full while the leader waits (Q1538)');
+  // cy answers the pair, preferring their own: measured and level, and di's —
+  // the stronger on the founder's two answers — carries
+  const j3 = await wire(cy.pg, 'judge-race', { a: X, b: W, outcome: 'a' });
+  if (j3 && j3.error) {
+    say('rivals     · FAIL: cy could not answer the rival pair · ' + JSON.stringify(j3));
+    stuck.push('the rival pair di’s waits on'); await done(); return;
+  }
   await T(6000);                                 // the adoption batch, then a poll in each seat
   const vf = await viewOf(page);
   const carried = String((vf || {}).text || '').split('\n')[at] === 'Guests sign the visitors’ book on arrival.';
