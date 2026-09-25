@@ -69,3 +69,57 @@ All (a), fix in the build, with these notes:
 | 1541.54 | The contents drawer at 390 | Full width (from 1541.40's note); no question needed. |
 | 1541.55 | The STYLE walk | Open: one word at a time, multiple choice, after 1541.51 — over the words these answers keep (label vocabulary, dark-commit reasons, *Undecided when the document closed*). |
 | 1541.56 | 🥂 discharging owed OKs | Noted: a module change, so a full deploy, not surface-only. |
+
+## Part 4 — the STYLE walk (1541.55, 2026-09-25)
+
+Ed's words, one at a time. They go into `design/copy.js` and STYLE (T3, §3's last sentence, T18's grant exception) at the fold, together with 1541.51. Examples of the drawing: https://claude.ai/artifact/LwRbgMYj1eQLt8s2qp45wP
+
+**Labels above a card**
+
+| # | where | the words |
+|---|---|---|
+| .1 | a live clause | **Current text** |
+| .2 | a gap | **Current text** (first line *(no text here)*) |
+| .3 | a rule (setting, motion, 👑) | **Current rule** |
+| .4 | a record | **Passed** · **Rejected** · **Refused by the Founder** · **Changed by the Founder** · **Ran out of time** (.15), each `· ‹longWhen›`; *Passed* and *Changed by the Founder* in `--ok` |
+| .5 | a record whose wording has since been changed | the outcome label + **· since replaced** |
+| .6 | the deadlock | **Current text** (the *still standing* clause goes) |
+| .7 | a multi-place proposal | **Current text · 2 of 3** with ↑ ↓ |
+| .15 | a text card on a closed document | **Final text** |
+| .16 | a rule card on a closed document | **Rule at the close** (Ed: *the rules do not stand after the end of the document since it is now over*) |
+
+**Labels on blocks**
+
+| # | block | the words |
+|---|---|---|
+| .8 | somebody else's proposal, rival or motion | **Proposed** — and where signed, **Proposed by ‹name›** (.10, Ed's own suggestion: *Perhaps other proposals could be "Proposed by [name]", if it's not anonymous*); the face stays on the rationale's disc; after a reveal the label follows |
+| .9 | your own | **Proposed by you** |
+| .11 | what a change replaced | **Previous text** · **Previous rule** |
+| .12 | a losing wording on a record | the live label + share: **Proposed · 23%**, **Proposed by Ada Kline · 23%**, **Proposed by you · 23%** |
+| .13 | a failed motion's wording | the live label (**Proposed** / **Proposed by ‹name›**); the outcome is said once, above the card |
+| .14 | a proposal the close cut off | **Proposed by ‹name› · Ran out of time** (Ed's words) |
+
+**Why a commit is dark** — the visible note (1541.33) is narrower than the grammar had it:
+
+| # | reason | ruling |
+|---|---|---|
+| .17 | nothing chosen yet | **No note** (Ed: *it's the most obvious action on the card*) |
+| .18 | nothing typed yet | **No note** |
+| .19 | the grant not yet accepted | **The commit is not drawn at all** (Ed: *before an action is accepted we shouldn't show the button at all*) — overrides Y19's dark ✒️ and the grammar's `accept:<power>` |
+| .20 | no ✏️ left | **✏️ 12:04**, today's countdown, kept |
+| .21 | your 🏛️ is out on another motion | **You can only make one constitutional proposal 🏛️ at a time.** |
+| .22 | 🍾 waiting on answers | **Waiting for x members to answer questions.** — and Ed wants 🍾 reworked so the Founder can begin before everyone has answered: filed as **Q1542** |
+| — | the dark 🗑️ | no note (1541.49) |
+
+**Labels that ask**
+
+| # | card | the words |
+|---|---|---|
+| .23 | the grants | the act: **Accept Founder Actions** · **Accept the Founder Veto** · **Accept Constitutional Proposals** |
+| .24 | 💡 ⚖️ | **like grants**: **Accept Proposals** · **Accept Voting**, the button **Accept ✏️** / **Accept ⚖️** in place of OK — they already gate the power (`mayPropose`/`mayJudge` require the acknowledgement, session-view.html:5373–5374) |
+| .25 | 🥂 | **Add your closing comment** (so the input's own *Your closing comment* label is not drawn) |
+| .26 | 👑 | **Accept This Change?** |
+| — | ✋ 🖼️ 📧 🌂 🎩 power cards | today's titles, unchanged (*Choose Your Name*, *Leave the Membership*, *Is the Founder a Member?*, *Can the Founder Make Amendments at Will?*) |
+| — | 🍾 | held with Q1542 |
+
+**How labels are drawn** (.27): **all capitals, one drawing, a step larger than the eyebrow** — `--t-cap` (0.79rem) rather than `--t-micro`, 700, upper case, `--muted`; a record's outcome in its colour. The label slot's height grows with it.
