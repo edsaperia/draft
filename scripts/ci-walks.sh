@@ -312,6 +312,8 @@ case "$GROUP" in
     walk "reconnecting" node scripts/repro/reconnecting.mjs "$BASE"
     # a stranger reads a closed document's ✔s where 🌍 lets them (Q1508)
     walk "stranger-records" node scripts/repro/stranger-records.mjs "$BASE"
+    # one OK per clause, and OK walking to the next owed record (Q1536)
+    walk "review-walk" node scripts/repro/review-walk.mjs "$BASE"
     ;;
 esac
 
