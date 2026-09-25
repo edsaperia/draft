@@ -55,11 +55,44 @@
   color: var(--muted);
 }
 
-/* ---- O1 (a): a block's label lives in its lane, beside its radio -------- */
-.gcard .lanebar .glabel, .gcard .glabel {
-  font-family: var(--font-ui); font-size: var(--t-cap); color: var(--muted);
-  margin-left: var(--s2); margin-right: auto;
+/* ---- v2, §2.3a: the label slot — one drawing, one place ----------------
+   A block's label is its first line; the head's is in the card's top inset
+   (`--card-top`, G5), out of the flow, so the head still lands on its
+   paragraph at 0 px. One drawing: the UI face, --t-cap, 600, --muted,
+   sentence case; a record's outcome is the one coloured label. */
+/* the drawing is the design system's own eyebrow treatment (system.css's
+   `.eyebrow` rule: --t-micro, 700, upper case, --muted) — today's *Proposed*
+   and *The clause as it stands* already wear it — so v2 adds a place, not a
+   style. The head's label is positioned by `GRAMMAR.fitCard`: its foot 3 px
+   above the head's first line of text, whatever the head's box. */
+.gcard .glab {
+  display: block; font-family: var(--font-ui); font-size: var(--t-micro); font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.05em; line-height: 1; color: var(--muted);
+  margin: 0 0 var(--s1);
 }
+.gcard > .clausehead { position: relative; }
+.gcard > .clausehead > .glab.ghlab {
+  position: absolute; left: 0; right: 0; top: -15px; margin: 0;
+  /* one line, always: the inset holds one. A long ask at 390 (*Can the
+     Founder Make Amendments at Will?*) ends in an ellipsis, its whole words
+     in the label's tooltip — tried wrapping, and two lines met the ink above
+     (G5). On a power card the head says the same thing in full. */
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* G5's one closed-layout cost: a band subsection's heading stood 11 px above
+   its first row, and a head label needs 12 (its line and its 2 px foot) —
+   so the heading gains 4 px beneath it, on the closed page too */
+#band h2.docline.lvl3 { padding-bottom: 4px; }
+/* the charter's head is the washed `.anch` box, its text 6 px inside */
+.gcard.sugg:not(.setupcard) > .clausehead > .glab.ghlab { left: 6px; }
+.gcard .glab.gtone-ok { color: var(--ok); }
+/* the patch's ↑ ↓ ride its label (amber 9) */
+.gcard .glab .psteps { display: inline-flex; gap: 0; margin-left: var(--s1); vertical-align: baseline; }
+.gcard .glab .psteps .pstep { font: inherit; line-height: 1; padding: 0 3px; min-height: 0; height: auto;
+  border: 0; background: none; color: var(--primary); cursor: pointer; }
+.gcard .glab .psteps .pstep.off { color: var(--border); cursor: default; }
+/* a block's label, first; the ranked record's share went into it */
+.gcard .gblocks .glab, .gcard .ginput .glab, .gcard .gbody .glab { margin-bottom: var(--s1); }
 .gcard .lanebar { justify-content: flex-start; }
 .gcard .lanebar > .lanepropose { margin-left: auto; }
 /* a note about the whole field is body prose, not an eyebrow (§4) */
@@ -67,10 +100,28 @@
   text-transform: none; letter-spacing: 0; font-weight: 400;
   font-family: var(--font-ui); font-size: var(--t-small); color: var(--muted); margin: 0;
 }
-/* a block with no lane (a record's, the 👑 card's) wears its label as the last line */
-.gcard .propblock > .glabel, .gcard .pick > .glabel, .gcard .ranked > .glabel {
-  display: block; margin: var(--s2) 0 0;
+/* the head's lane stands after the fact line when there is one (§2.3 v2) */
+.gcard > .lanebar[data-slot="lane"] { margin-top: var(--s2); }
+/* what the close cut off (P4 v2) reads as a fact, not an alarm */
+.gcard .gfact .gcutoff { margin: 0; }
+
+/* ---- v2, P7: a chosen radio is a filled dot on the accent ring — never a
+   filled pill, which is the acknowledgement's drawing ------------------- */
+.gcard .lanepick[aria-pressed="true"], .gcard .lanepick[aria-checked="true"],
+.gcard .lanepick[disabled][aria-pressed="true"]:hover, .gcard .lanepick[disabled][aria-checked="true"]:hover {
+  color: var(--primary); background: var(--bg); border-color: var(--primary);
 }
+.gcard .lanepick[aria-pressed="true"] .dot, .gcard .lanepick[aria-checked="true"] .dot {
+  border-color: var(--primary); background: var(--primary); box-shadow: inset 0 0 0 3px var(--bg);
+}
+
+/* ---- v2, J2: a withdraw carries its word ------------------------------- */
+.gcard .grow .gleft .btn[data-gbin="withdraw"] { width: auto; padding: 0 var(--s3) 0 var(--s2); gap: var(--s1); display: inline-flex; align-items: center; }
+.gcard .grow .gleft .btn[data-gbin="withdraw"] .gword { font-family: var(--font-ui); font-size: var(--t-ui); font-weight: 600; }
+
+/* ---- v2, P5/P8: the note slot is text, visible at every width ---------- */
+.gcard .grow .gnote .greason { display: block; }
+.gcard .grow .gnote .greason + .greason { margin-top: 2px; }
 
 /* ---- §2.6: the row's three places ---------------------------------------- */
 .gcard .grow { display: flex; align-items: center; gap: var(--s2); }
@@ -80,10 +131,11 @@
 
 /* ---- B10 / R1: ✓ is a glyph commit like every other, never solid green —
    green is *decided* and lives on marks and the record's highlight ------- */
-.gcard .btn.btn-approve.glyphbtn:not([disabled]):not([aria-pressed="true"]) {
+/* v2: the recorded ✓ (pressed) takes the same flat drawing (critique 9) */
+.gcard .btn.btn-approve.glyphbtn:not([disabled]) {
   background: var(--bg); border-color: var(--border); color: var(--fg); font-weight: 400;
 }
-.gcard .btn.btn-approve.glyphbtn:not([disabled]):not([aria-pressed="true"]):hover {
+.gcard .btn.btn-approve.glyphbtn:not([disabled]):hover {
   background: var(--light); border-color: var(--primary-hover); color: var(--fg);
 }
 
@@ -97,3 +149,13 @@
 #gnote summary { cursor: pointer; font-weight: 700; }
 #gnote ul { margin: 4px 0 0; padding-left: 14px; }
 @media (max-width: 900px) { #gnote { bottom: 8px; max-width: 220px; } }
+
+/* ---- v2, P1's fourth exception: the birth's 🪶 is the title being written
+   where it will stand — the lane at --h-title in the text face, no box, its
+   line on the heading's line (critique 6) ------------------------------- */
+.gcard[data-setupcard="title"] > .clausehead .lanebox { border: 0; box-shadow: none; background: none; padding: 0; margin: 0; }
+.gcard[data-setupcard="title"] > .clausehead .titlelane {
+  font-family: var(--font-text); font-size: var(--h-title); font-weight: 400; line-height: var(--lh-head);
+  padding: 0; min-height: calc(var(--h-title) * 1.25);
+}
+.gcard[data-setupcard="title"] > .clausehead .headrule:has(.headdoct:empty) { display: none; }

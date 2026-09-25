@@ -1282,7 +1282,10 @@ window.BAND = (function () {
             '<div class="pick"><span class="opttext">' + esc(decisionLine(c)) + '</span></div>' +
             '<div class="pick on"><span class="opttext">' + esc(toClause) + '</span>' +
             chosenRadio('Chosen by the membership') + '</div>' +
-            (m.why ? window.CARDS.speakerHtml(m.why) : ''),
+            (m.why ? window.CARDS.speakerHtml(m.why) : '') +
+            // the prototype (Q1541 v2, amber 24): what the pair decides, said
+            // once, in the row's note — the Text's 👑 card's own words, for a rule
+            (window.GRAMMAR ? '<p class="setnote grownote">' + esc(PAGE_COPY.crown.foot.replace('the clause above', 'the rule above')) + '</p>' : ''),
             crownPairRow(), g.cards);
         }
         // a live motion takes the route its own value asks for (329a)
@@ -1522,11 +1525,18 @@ window.BAND = (function () {
           // fact line, so the change line would say both again in other words
           // (F1). What is left is what it replaced — a *Previous rule* block —
           // and the reason, under the speaker of the head it argues for.
+          // **v2** (amber 30): the news keeps its sentence — it is how the rule
+          // came to stand, so it is the fact line, and it replaces the
+          // provenance line rather than repeating it; a raw value is never
+          // drawn as a *Previous rule* block. Past a short value the sentence
+          // names the change and the old value stands as the block.
           if (window.GRAMMAR) {
-            return '<div class="gheadspk">' + (am.route === 'pen' ? founderSpeaker(am.why)
+            const sent = longish ? who + what : who + what + ' from ' + esc(was) + (now2 ? ' to ' + esc(now2) : '');
+            return '<p class="gfactsrc">' + sent + (am.at ? ' · ' + esc(window.CARDS.longWhen(am.at)) : '') + '</p>' +
+              '<div class="gheadspk">' + (am.route === 'pen' ? founderSpeaker(am.why)
               : window.CARDS.speakerHtml(am.why)) + '</div>' +
-              '<div class="recbox gprev"><div class="rtext"><p class="cpv">' + esc(was) + '</p></div>' +
-              '<span class="glabel">Previous rule</span></div>' + returned;
+              (longish ? '<div class="recbox gprev" data-glabel="Previous rule"><div class="rtext"><p class="cpv">' + esc(was) + '</p></div></div>' : '') +
+              returned;
           }
           return '<div class="body changed">' + dated +
             (longish

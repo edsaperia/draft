@@ -621,11 +621,13 @@
 <div class="devswitch" title="Dev only — not part of the product"><label for="devwho">dev · viewing as</label> <select id="devwho"></select> <button id="devff" title="Dev only — complete the founding: invite two members, answer everything, open the gates">⏩ settle the founding</button></div>
 <div class="alphaflag"><b>Warning:</b> docs.vote is in alpha!</div>
 <!-- the prototype's own note (Q1541 stage 5): off the design system, like the demo panel -->
-<details id="gnote"><summary>Prototype (Q1541) — what is not converted</summary><ul>
-<li>Every decision card goes through one shell (grammar.js); the bodies are still today's builders, sorted into slots by the shell rather than built from one CardState (S1 not met).</li>
-<li>Untested here: the 👑 question, the diagonal, the applicant's five, and the live-only news cards (release, amendment, mail give-up, departure) — they pass through the shell but no fixture opens them.</li>
-<li>Unchanged: the topbar, wallets, both rails, the band's paragraphs, 📝 edit mode and the floating proposal row, the stranger's door.</li>
-<li>Not built: keyed re-render (U1/U2), the phone's wider card (O4), a head for a two-clause draft on the fixture (its source text is missing, as on today's page).</li>
+<details id="gnote"><summary>Prototype (Q1541, grammar v2) — what is not built</summary><ul>
+<li>Every decision card goes through one shell (grammar.js), which <b>sorts</b> today's builders' markup into slots; no card is built from one CardState (S1 not met — grammar.md §10: converting the 40 bodies is the programme's main cost).</li>
+<li><b>P10 is not built</b>: no keyed re-render (U1/U2); the page still rebuilds under you as today's does.</li>
+<li>Untested here: the diagonal, the applicant's five and the live-only news cards (release, amendment, mail give-up, departure) — they pass through the shell but no fixture opens them.</li>
+<li>Unchanged: the topbar (its ✏️ drip still counts on a closed page), wallets, both rails (an entry owed an OK at the close still stands), 📝 edit mode, the stranger's door. The 📝 door straddles the page's edge as Ed ruled on 2026-09-24.</li>
+<li>Not built: the phone's wider card (O4); 🥂's signature discharging the OKs owed at the close needs the module (O10) — here those cards simply draw no OK.</li>
+<li>Copy that has not passed STYLE: the head and block labels' vocabulary (§2.3a), the dark commits' reasons, <i>Undecided when the document closed</i>, the power cards' past tense, the 👑 note for a rule.</li>
 </ul></details>
 <div class="wrap">
   <div class="layout">
@@ -3824,16 +3826,26 @@
       // speaker; how it ended and when is one fact line (*Passed · Friday…*,
       // *Changed by the Founder · …*), never a pressed radio; what it
       // replaced, or the proposal that failed, is a labelled block
+      // **v2** (§2.3a; Q1522 kept, critique 3, amber 26, 27): a passed record
+      // leads with how and when it ended — the head label, in the outcome's
+      // colour, *· since replaced* where the rule has moved on — then the
+      // rule it made; a rejected one heads with the rule that stands, and its
+      // outcome is the label of the wording that failed, never of the rule
       if (window.GRAMMAR) {
         const lead = carried ? now2 : was;
         const other = carried ? was : now2;
+        const whenW = at ? esc(window.CARDS.longWhen(at)) : '';
         const otherLab = carried ? R.previousRule
-          : heldByOf(rec) === 'crown' ? R.refusedProposal : R.rejectedProposal;
-        return '<p class="gfactsrc">' + outcome + (at ? ' · ' + esc(window.CARDS.longWhen(at)) : '') + '</p>' +
+          : (heldByOf(rec) === 'crown' ? R.refusedProposal : R.rejectedProposal) + (whenW ? ' · ' + whenW : '');
+        const norm0 = (s) => String(s).replace(/\s+/g, ' ').trim();
+        const standingNow = sentenceFor(k, (csState(k) || {}).value);
+        const since = carried && standingNow && now2 && norm0(standingNow) !== norm0(now2);
+        return (carried ? '<p class="glabsrc" data-tone="ok">' + outcome + (whenW ? ' · ' + whenW : '') +
+            (since ? ' · since replaced' : '') + '</p>' : '') +
           (lead ? '<div class="gheadtext"><p class="cpv">' + esc(lead) + '</p></div>' : '') +
           (carried ? '<div class="gheadspk">' + speaker + '</div>' : '') + mootNote +
-          (other ? '<div class="recbox gprev"><div class="rtext"><p class="cpv">' + esc(other) + '</p></div>' +
-            (carried ? '' : speaker) + '<span class="glabel">' + otherLab + '</span></div>' : '');
+          (other ? '<div class="recbox gprev" data-glabel="' + esc(otherLab) + '"><div class="rtext"><p class="cpv">' + esc(other) + '</p></div>' +
+            (carried ? '' : speaker) + '</div>' : '');
       }
       if (carried) {
         said = '<div class="pick on"><span class="opttext">' + esc(now2 || '') + '</span>' +
@@ -4906,7 +4918,9 @@
             : memSub('Members', nobody + here.map(memRow).join('') + meBlock + departureLines(),
                 ['hat'].concat(departureKeys()), false, !!openId) +
               memSub('Invitees', invited.length ? invited.map(memRow).join('')
-                : '<div class="memrow nobody">(no outstanding invitations)</div>',
+                // v2 (O9 (a)): the document speaks in a sentence here, the
+                // STYLE-passed one the card's head carries too
+                : '<div class="memrow nobody">' + esc(window.GRAMMAR ? PAGE_COPY.doorEmpty.invite : '(no outstanding invitations)') + '</div>',
                 // 📭 stands on the *Invitees* heading (E34): the give-up is
                 // about somebody listed here, and this is where a reader looks
                 // …and a running invitation motion is its own tab in this pile
@@ -4920,7 +4934,7 @@
               (lapsesOn() && lapsedOut.length
                 ? memSub('Lapsed', lapsedOut.map(memRow).join(''), []) : '') +
               memSub('Proposed for removal', proposedOut.length ? proposedOut.map(memRow).join('')
-                : '<div class="memrow nobody">(nobody proposed for removal)</div>',
+                : '<div class="memrow nobody">' + esc(window.GRAMMAR ? PAGE_COPY.doorEmpty.remove : '(nobody proposed for removal)') + '</div>',
                 ['remove', 'pw:u:remove', 'pw:a:remove'].concat(motionCardsFor(card('remove')).map((c) => c.k))));
       } },
     // **Proposals reads second** (Q871, Q872, Ed 2026-08-26: *Proposals above
@@ -5498,12 +5512,10 @@
     const rows = hostKeyOf(c) === 'invite'
       ? S.roster.filter((p) => !p.in).concat(invitePendingRows())
       : (cs ? S.roster.filter((p) => removalPendingIds().has(p.mid || 'founder')) : []);
-    // the prototype (Q1541, S2): the door's head is its subsection's own
-    // rendering, so an empty list reads as the subsection reads it — the
-    // same words, not a second sentence for the same fact
-    const empty = window.GRAMMAR
-      ? (hostKeyOf(c) === 'invite' ? '(no outstanding invitations)' : '(nobody proposed for removal)')
-      : hostKeyOf(c) === 'invite' ? PAGE_COPY.doorEmpty.invite : PAGE_COPY.doorEmpty.remove;
+    // the prototype (Q1541 v2, O9 (a)): the door's head is its subsection's
+    // own rendering, and the subsection now says the STYLE-passed sentence,
+    // so the card keeps it (critique 14, amber 5, 34, 35)
+    const empty = hostKeyOf(c) === 'invite' ? PAGE_COPY.doorEmpty.invite : PAGE_COPY.doorEmpty.remove;
     return '<div class="headpeople">' + (rows.length
       ? rows.map((p) => '<span class="hp">' + avHtml(p) + ' ' +
           esc(p.n || p.e || 'Anonymous') + pendingChip(p) + '</span>').join('')
@@ -7425,13 +7437,46 @@
       // vote and the news cards keep the heads they have
       if (c.record || heldIsRecord(c) || c.admit || c.release || c.mailgiveup || c.departure || c.held ||
         hostKeyOf(c) === 'invite' || hostKeyOf(c) === 'remove') return null;
-      return line ? '<p class="cpv">' + line + '</p>' : null;
+      // v2 (B8 v2): a power card heads with its power's own clause — the
+      // builder's head line (`powerHeadLine`), never the rule it sits on
+      if (c.power) return null;
+      // v2 (amber 16): 🎩's tab hangs on the Members list, so while it is
+      // asked its head is the list's own row of faces, its ask the label
+      if (c.k === 'hat' && !constituted()) {
+        const inRoom = S.roster.filter((p) => p.in);
+        return inRoom.length ? '<div class="headpeople">' + inRoom.map((p) => '<span class="hp">' + avHtml(p) + ' ' +
+          esc(p.n || p.e || 'Anonymous') + '</span>').join('') + '</div>' : null;
+      }
+      if (!line) return null;
+      // v2: the settled 🪶 opens in place of the Rules' title paragraph, word
+      // for word (critique 6, amber 1)
+      if (host.k === 'title' && cs) return '<p class="cpv">' + PAGE_COPY.titledLead + '“' + esc(S.title) + '”.</p>';
+      // v2 (P3 v2, Ed 2026-09-03 *the card drops them*): the rule's line,
+      // without the power line the paragraph carries beneath it
+      return '<p class="cpv">' + breakLines(linkify(esc(decisionLine(host)))) + '</p>';
+    },
+    // v2 (§2.3a): the cards that are acts or questions — they carry their ask
+    // (the tab's own name) as the head label
+    gIsAsk: (c) => {
+      const mine = c.kind === 'personal' && c.own === 'you';
+      const mo = motionOn(c);
+      return mine || /^grant-/.test(c.k) || !!c.isGate || !!c.power || !!c.isBegin || !!c.isClosing || !!c.admit ||
+        (c.k === 'hat' && !constituted()) ||
+        ((hostKeyOf(c) === 'invite' || hostKeyOf(c) === 'remove') && !mo && !c.record && !c.held);
     },
     // **who chose what stands** (§2.7): T48's two labels, from `provOf` alone
     // — never on a first decision still collecting, a record, a question
     gProvOf: (c, host) => {
       // 🎩 is the Founder's, locked at the start (the map's 🎩 row)
       if (c.k === 'hat') return constituted() ? PAGE_COPY.motionRec.provPen : null;
+      // v2 (§2.7, B8 v2): a power card's fact is who holds the power
+      if (c.power) {
+        const p = pwPair(c.base);
+        const held = c.power === 'u' ? p.u : p.a;
+        const g = c.power === 'u' ? '✒️' : '🛡️';
+        if (!held) return null;
+        return constituted() ? 'Kept by the Founder ' + g + ' at the start' : 'Held by the Founder ' + g;
+      }
       if (c.record || c.isGate || c.ansFor || c.kind === 'personal' || c.admit || c.release || c.held ||
         c.departure || c.mailgiveup || c.isBegin || c.isClosing || /^grant-/.test(c.k)) return null;
       const st = csState(host.k);
@@ -7440,7 +7485,8 @@
       return provOf(host.k);
     },
     // **and when** (M23's long form), from the same state
-    gWhenOf: (c, host) => { if (c.k === 'hat') return constituted() ? 'decided at the start' : undefined;
+    // v2: one time form — 🎩 and a kept power carry 🍾's moment (critique 5)
+    gWhenOf: (c, host) => { if (c.k === 'hat' || c.power) return constituted() ? window.CARDS.longWhen(cs.constitutedAtT) || undefined : undefined;
       const st = csState(host.k);
       return st && st.settledBy && st.settledAtT ? window.CARDS.longWhen(st.settledAtT) || undefined : undefined; },
     // the title card's head is the document title itself — the clause,
@@ -10457,6 +10503,12 @@
     sc.src = '../../fixture-session.js';
     sc.onload = () => {
       FIX = window.FIXTURE_SESSION;
+      // the prototype (Q1541 v2): the fixture's two-clause draft writes its
+      // origin rows' words as `x`, where every reader looks for `text`, so its
+      // head is empty on today's page too (checks.md) — read either here
+      (FIX.SUGGS || []).forEach((it) => (it.sites || []).forEach((st) => (st.origin || []).forEach((o) => {
+        if (o.text == null && o.x != null) o.text = o.x;
+      })));
       SESSION.init(sessionEnv(FIX));
       setProse(fixtureText(FIX.DOC));
       // the fixture's clock: the Hollow Oak session has 2h 11m left (its old

@@ -123,14 +123,7 @@ window.EDIT_MODE = (function () {
       if (row && page && door.offsetWidth) {
         const s5 = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--s5')) || 32;
         const edge = page.getBoundingClientRect().right;
-        // **the prototype (Q1541, grammar.md G4)**: the floating layer never
-        // covers another zone, so the door stands inside the sheet, its right
-        // edge `--s3` in from the sheet's, rather than straddling the edge
-        // into the queue rail — a break with the 2026-09-24 placement above
-        const s3 = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--s3')) || 12;
-        row.style.right = window.GRAMMAR
-          ? Math.max(s5, document.documentElement.clientWidth - edge + s3) + 'px'
-          : Math.max(s5, document.documentElement.clientWidth - edge - door.offsetWidth / 2) + 'px';
+        row.style.right = Math.max(s5, document.documentElement.clientWidth - edge - door.offsetWidth / 2) + 'px';
       }
       const below = !!chip && chip.getBoundingClientRect().bottom > door.getBoundingClientRect().top;
       ed.classList.toggle('belowtab', below);

@@ -2614,6 +2614,9 @@
   // No reflow loop, because the strip's own height does not depend on the card's.
   function fitCards() {
     doc.querySelectorAll('.sugg[data-card]').forEach((card) => {
+      // the prototype (Q1541 v2, G5 and G6): the card ends at its content and
+      // its top edge never covers the ink above
+      if (window.GRAMMAR && window.GRAMMAR.fitCard(card)) return;
       card.style.minHeight = '';
       const col = card.querySelector('.chipcol');
       if (!col) return;

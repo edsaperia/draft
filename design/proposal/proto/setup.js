@@ -623,6 +623,9 @@ window.SETUP = (function () {
       if (Math.abs(have - want) > 0.5) {
         col.style.top = (parseFloat(getComputedStyle(col).top || 0) + (want - have)).toFixed(1) + 'px';
       }
+      // the prototype (Q1541 v2, G5 and G6): no floor — the strip hangs on
+      // down the gutter — and the top edge never over the ink above
+      if (window.GRAMMAR && window.GRAMMAR.fitCard(card)) return;
       const r = card.getBoundingClientRect();
       const need = col.getBoundingClientRect().bottom - r.top + 14;
       if (need > r.height) card.style.minHeight = Math.ceil(need) + 'px';
@@ -791,7 +794,10 @@ window.SETUP = (function () {
     const placeLine = window.GRAMMAR && ctx.decisionLine ? (() => {
       try { return ctx.decisionLine(hostC); } catch (e) { return null; } })() : null;
     const gPlace = ctx.gPlaceOf ? ctx.gPlaceOf(c, hostC, placeLine) : (placeLine ? '<p class="cpv">' + placeLine + '</p>' : null);
-    const gWrap = (h) => (window.GRAMMAR ? window.GRAMMAR.card(h, { surface: 'band', place: gPlace,
+    // v2 (§2.3a): a card that is an act or a question heads with its ask,
+    // the tab's own name (`labelOf`), in the label slot
+    const gAsk = ctx.gIsAsk && ctx.gIsAsk(c) ? labelOf(c, ctx) : undefined;
+    const gWrap = (h) => (window.GRAMMAR ? window.GRAMMAR.card(h, { surface: 'band', place: gPlace, ask: gAsk, isPower: !!c.power,
       provenance: ctx.gProvOf ? ctx.gProvOf(c, hostC) : undefined, when: ctx.gWhenOf ? ctx.gWhenOf(c, hostC) : undefined }) : h);
     return gWrap(glyphify('<div class="' + shellCls + '" role="tabpanel" data-setupcard="' + c.k + '">' +
       CB.clauseHeadHtml(oo.s || c, {
