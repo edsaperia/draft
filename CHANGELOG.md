@@ -6,6 +6,12 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-09-25, evening: clearer for screen readers
+
+### Fixed
+- **A screen reader hears the document's title once, as the page's main heading.** While a document was being set up, the title was announced as a main heading twice.
+- **The two side columns are named for a screen reader** as *Contents* and *What needs you*, the same words the phone's buttons for them use.
+
 ## 2026-09-25: a task list for phones
 
 ### New
