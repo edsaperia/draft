@@ -123,3 +123,20 @@ Ed's words, one at a time. They go into `design/copy.js` and STYLE (T3, §3's la
 | — | 🍾 | held with Q1542 |
 
 **How labels are drawn** (.27): **all capitals, one drawing, a step larger than the eyebrow** — `--t-cap` (0.79rem) rather than `--t-micro`, 700, upper case, `--muted`; a record's outcome in its colour. The label slot's height grows with it.
+
+## Part 5 — the ten principles, as ruled (1541.51, Ed 2026-09-25: *take all ten as drafted*)
+
+These replace grammar.md §1. They enter SURFACE's opening as each build stage makes them true (a rule the tree does not hold is not written as held), each naming its check.
+
+1. **A card opens in place of the line it is about**; that line is its first line, word for word, still where it was — except a record (the wording it recorded), a multi-place proposal (the place it is showing), a gap (*(no text here)*) and 🪶 at the birth (the title box). On a rule card the first line is the standing rule and wears the pill; on a power card it is that power's own clause, naming its subject.
+2. **Opening a card moves nothing you are looking at.** The card makes room for its label by sliding the content above it upward; the first line and the pressed tab stay put on screen at both widths; what lies below is pushed down; only at the page's top does the first line move down.
+3. **Every fact has one home**: what stands is the first line; who chose it, the pill on it; how a record ended, the label above; who wrote a signed proposal, its label; the price, on the commit.
+4. **A card offers only what this reader can do now.** Closed: nothing but 🥂, whose signature also answers every OK owed; what the close cut off stays readable (*Ran out of time*); the powers lines and ✒️ 🛡️ tabs go (👑 and 🍾's table stay); ✋ 🖼️ frozen. A commit for a power not yet accepted is not drawn.
+5. **A control that can come alive on this card is there from the start, dark, and lights when it has a job**; one that can never have a job here is not drawn. A dark commit explains itself in words only where the reason is not on the card (the ✏️ countdown, 🏛️ in use, 🍾 waiting); no note for *choose*, *type* or the bin.
+6. **No empty frames**: an empty part is not drawn and takes its hairline with it; never two hairlines facing. Stated exceptions: the reason box always shows on a card that can take a change; a card is never shorter than its tab strip.
+7. **Each drawing means one thing**: the pill marks what stands; a radio is a choice you can make now; a button is an act; ✓ lights accent blue when armed; green means *decided* (marks, the *Passed* and *Changed by the Founder* labels, the passed highlight, a recorded ✓). A block nobody may choose has no radio.
+8. **One commit row**: 🗑️ at the left, dark until there is something of yours to remove (a withdraw is the bare glyph); a note in the middle when there is one; at most two commits at the right. A card that asks nothing has no row — tab, outside click or Escape closes it; OK only while owed; *Accept* for a power (grants, 💡, ⚖️).
+9. **The same thing is drawn the same way everywhere** — band and charter, live and record, both widths. Every card has one label above its first line, all capitals at `--t-cap`: what the line is, or what the card asks; every block's label is its first line. Stated exception: the active tab grows 8 px at 1600 and highlights at 390.
+10. **Nothing you are in the middle of is taken by the page updating** — caret, press, drag, half-typed value. *Not built* until the re-render stage.
+
+The floating 📝 door is not a principle: it is a named exception in `zone-overlap` (1541.17, *the fact that it sometimes overlaps things is what makes it stand out*).
