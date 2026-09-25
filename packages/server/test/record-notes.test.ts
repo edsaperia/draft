@@ -82,11 +82,16 @@ describe('the measured-note (Q1538 ruling 7)', () => {
     bridge.judge(21, dee, M, M2, 'a');
     bridge.judge(22, eve, M, M2, 'a');
     expect(bridge.engine.getCandidate(M).state).toBe('adopted');
-    // then the notice line: X at its floor, its pair with Y never asked
+    // then the notice line: X at its floor, its pair with Y never asked — but
+    // the current text measured ahead of Y, so X reaches Y through measured
+    // results and the close may carry it (an unmeasured pair is a gap at the
+    // close too, Ed 2026-09-25)
     const X = bridge.proposeText(30, cy, line(bridge, 'Notice of a meeting is emailed.'), 'x').id;
-    bridge.proposeText(31, dee, line(bridge, 'Notice of a meeting is pinned up.'), 'y');
+    const Y = bridge.proposeText(31, dee, line(bridge, 'Notice of a meeting is pinned up.'), 'y').id;
     const inc = bridge.engine.races().find((r) => r.members.includes(X))!.incumbentId;
     bridge.judge(40, ada, X, inc, 'a');
+    bridge.judge(41, ada, Y, inc, 'b');
+    bridge.judge(42, bo, Y, inc, 'b');
     expect(bridge.engine.getCandidate(X).state).toBe('live');
     bridge.close(ENDS);
     expect(bridge.engine.getCandidate(X).state).toBe('adopted');

@@ -364,16 +364,12 @@ export class Races {
 
     // **The Smith set** (§4.2 → why: R-143): every node that reaches every
     // other through measured results it did not lose at its own link — an
-    // unmeasured pair a gap, never a draw (Q1539 ruling 2). And at the close
-    // the reading on the evidence it has: an unmeasured pair level, an edge
-    // each way (§4.6), so something always reaches everything.
+    // unmeasured pair a gap, never a draw (Q1539 ruling 2) — at the close as
+    // much as before it (Ed, 2026-09-25): a wording that reaches the top only
+    // through an unmeasured pair does not pass, and the race files undecided
     const smith = ARMS.smith ? smithSet(nodes, (x, y) => {
       const p = pairAt(x, y);
       return p.measured && p.forX >= p.forY;
-    }) : [];
-    const smithAtClose = ARMS.smith ? smithSet(nodes, (x, y) => {
-      const p = pairAt(x, y);
-      return !p.measured || p.forX >= p.forY;
     }) : [];
 
     // **smith-rank**: the Smith set above the rest, the fit's order within each
@@ -438,8 +434,6 @@ export class Races {
       };
     };
     const now = reading(leaderId);
-    const close = topOf(smithAtClose);
-    const atClose = close.leaderId === leaderId ? now : reading(close.leaderId);
 
     // **The pairs the leader waits on, in the order the router asks them**
     // (§8.2 → why: R-142): the leader against each live rival short of
@@ -497,7 +491,6 @@ export class Races {
     });
 
     const { short: _short, ...leaderNumbers } = now;
-    const { short: _closeShort, ...closeNumbers } = atClose;
     const view: RaceView = {
       ...core,
       ...leaderNumbers,
@@ -516,7 +509,6 @@ export class Races {
           ? [{ id: m, p: fit.probBeats(m, cur), n: p.forY, m: p.answeredBy }] : [];
       }),
       measureShort,
-      atClose: { ...closeNumbers, leaderId: close.leaderId, leaderOnTop: close.leaderOnTop },
       // set below for a text race, which alone can wait behind a park
       blockedByPark: false,
     };
@@ -965,30 +957,29 @@ export class Races {
    * was read inside a Smith set that is not empty — never off the fit's
    * fallback, which exists for routing and the meter and never to carry —
    * and **the leader has been measured against every live rival** (a rival
-   * the batch is about to close excepted). **At the close** (`final`) the
-   * wait is waived and the reading is `atClose`'s, the Smith set read on the
-   * evidence it has, an unmeasured pair level (§4.6): `clearsAtClose`.
+   * the batch is about to close excepted). **At the close** only that wait is
+   * waived (§4.6): `clearsAtClose`.
    */
   clearsFloor(r: RaceView): boolean {
     return r.approvals >= r.floor &&
-      r.leaderId !== null &&
-      r.leaderOnTop &&
-      (r.leaderMeasured > 0 || this.host.soleMemberIsLeadersAuthor(r.leaderId)) &&
-      !(ARMS.smith && r.smith.length === 0) &&
+      this.clearsAtClose(r) &&
       !(ARMS.rivalMeasure && r.rivals.measured < r.rivals.of);
   }
 
   /**
-   * **Ready to carry at the close** (SPEC §4.6 → why: R-142): the batch's own
-   * test on the race as the close reads it — the leader on top and at its
-   * floor on the evidence it has, the wait for rivals waived.
+   * **Ready to carry at the close** (SPEC §4.6 → why: R-142, R-143): the
+   * batch's own test with the wait for rivals waived and nothing else — the
+   * Smith set is the same one, **an unmeasured pair a gap at the close as
+   * before it** (Ed, 2026-09-25, overruling the plan's *level at the close*),
+   * so a wording that reaches the top only through an unmeasured pair does
+   * not pass, and the race files undecided with the current text standing.
    */
   clearsAtClose(r: RaceView): boolean {
-    const c = r.atClose;
-    return c.approvals >= c.floor &&
-      c.leaderId !== null &&
-      c.leaderOnTop &&
-      (c.leaderMeasured > 0 || this.host.soleMemberIsLeadersAuthor(c.leaderId));
+    return r.approvals >= r.floor &&
+      r.leaderId !== null &&
+      r.leaderOnTop &&
+      (r.leaderMeasured > 0 || this.host.soleMemberIsLeadersAuthor(r.leaderId)) &&
+      !(ARMS.smith && r.smith.length === 0);
   }
 
   /**

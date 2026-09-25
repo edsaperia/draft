@@ -159,13 +159,29 @@ describe('rival-measure: the leader waits on its rivals (Q1538, R-142)', () => {
   });
 
   it('A5 — at the close the wait is waived, and the record says how many rivals were measured', () => {
-    const { s, X, inc } = twoRivals();
+    // X beats the current text and the current text beats Y, both measured:
+    // X reaches Y through measured results, so the unasked {X, Y} is waived
+    const { s, X, Y, inc } = twoRivals();
     s.judge(2000, 'p3', X, inc, 'a');
+    s.judge(2010, 'p3', Y, inc, 'b');
+    s.judge(2020, 'p4', Y, inc, 'b');
     expect(s.getCandidate(X).state).toBe('live');
+    expect(raceOf(s, X).smith).toEqual([X]);
     s.close(3000);
     const adopted = adoptedIn(s.log.map((e) => e.event));
     expect(adopted.map((e) => e.candidateId)).toEqual([X]);
     expect(adopted[0]!.rivals).toEqual({ measured: 0, of: 1 });
+  });
+
+  it('A5b — at the close an unmeasured pair is a gap, not a draw: a leader that reaches its rival through none files undecided', () => {
+    // Ed, 2026-09-25, overruling the plan's close rule: X beats the current
+    // text, but nothing measured leads from X to Y, so the Smith set is empty
+    const { s, X, inc } = twoRivals();
+    s.judge(2000, 'p3', X, inc, 'a');
+    expect(raceOf(s, X).smith).toEqual([]);
+    s.close(3000);
+    expect(adoptedIn(s.log.map((e) => e.event))).toEqual([]);
+    expect(s.document()).toContain('Membership is open to anyone.');
   });
 
   it('A6 — a race of one candidate records no rivals, and waits on nothing', () => {
@@ -439,6 +455,40 @@ describe('smith-set: the ranking is read inside the Smith set (Q1539, R-143)', (
     expect(r.smith).not.toContain(X);
     expect(r.leaderOnTop).toBe(false);
     expect(adoptedIn(s.tick(200 + HOUR + 1))).toEqual([]);
+  });
+
+  it('B4c — the gap rule at the close: the clone field with {cur, Y} unasked does not pass X when the document closes', () => {
+    // Ed, 2026-09-25: an unmeasured pair is a gap at the close too. The plan's
+    // close rule read it level — cur ↔ Y an edge each way — which put X and Y
+    // back in the Smith set beside the current text and let the fit carry X
+    const prefs = [...Array(7).fill('XYc'), ...Array(7).fill('cXY'), 'cYX'];
+    const s = open(15, { cooldownMs: HOUR, quorum: null });
+    const Z = s.submitCandidate(100, { author: 'p1', rationale: 'z',
+      patch: onLine(s, 3, 'Meetings happen monthly.') }).id;
+    s.judge(200, 'p2', Z, raceOf(s, Z).incumbentId, 'a');
+    const X = s.submitCandidate(1000, { author: 'p1', rationale: 'X',
+      patch: onLine(s, 1, 'Membership: X.') }).id;
+    const Y = s.submitCandidate(1010, { author: 'p2', rationale: 'Y',
+      patch: onLine(s, 1, 'Membership: Y.') }).id;
+    const c = raceOf(s, X).incumbentId;
+    let t = 1100;
+    prefs.forEach((p, m) => {
+      const r = p.split('');
+      s.judge((t += 1), `p${m + 1}`, X, c, r.indexOf('X') < r.indexOf('c') ? 'a' : 'b');
+      s.judge((t += 1), `p${m + 1}`, X, Y, r.indexOf('X') < r.indexOf('Y') ? 'a' : 'b');
+    });
+    const r = raceOf(s, X);
+    const fit = s.raceFit(r.id);
+    // what the old close rule carried on: X at its floor, the fit's strongest,
+    // above the current text — and {cur, Y} short of measured
+    expect(r.approvals).toBeGreaterThanOrEqual(r.floor);
+    expect(fit.strengths.get(X)!).toBeGreaterThan(fit.strengths.get(c)!);
+    expect(fit.strengths.get(X)!).toBeGreaterThan(fit.strengths.get(Y)!);
+    expect(r.smith).toEqual([c]);
+    s.close(t + 1);
+    expect(adoptedIn(s.log.map((e) => e.event)).map((e) => e.candidateId)).toEqual([Z]);
+    expect(s.getCandidate(X).state).not.toBe('adopted');
+    expect(s.document()).toContain('Membership is open to anyone.');
   });
 
   it('B5 — a wording outside the Smith set is not protected by its fitted strength', () => {

@@ -435,19 +435,6 @@ export interface RaceView {
    */
   rivals: { measured: number; of: number };
   /**
-   * **The race as the close reads it** (SPEC §4.6 → why: R-142): the wait for
-   * rivals waived and the Smith set read on the evidence it has, an unmeasured
-   * pair level — the leader, whether it is on top, and the numbers the final
-   * batch records. Usually the view's own; different only where an unmeasured
-   * pair was holding the Smith set empty or narrow.
-   */
-  atClose: {
-    leaderId: string | null; leaderOnTop: boolean;
-    approvals: number; group: number; abstained: number; floor: number;
-    leaderJudges: number; leaderMeasured: number; leaderP: number | null;
-    rivals: { measured: number; of: number };
-  };
-  /**
    * **Waiting behind a park** (SPEC §4.2, R-100; Q1179): the leader is ready
    * to carry — the sweep's own readiness test, one function for both — and
    * its footprint overlaps a candidate parked `awaiting-assent`, so the

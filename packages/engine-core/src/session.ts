@@ -1930,13 +1930,9 @@ export class Session {
       // `converged` is false in exactly one circumstance — the iteration cap
       // running out with the gradient still above tolerance — which is why
       // the record's word is *cap* and not *gradient*.
-      .map((view): { leaderId: string; p: number; approvals: number; floor: number;
+      .map((r): { leaderId: string; p: number; approvals: number; floor: number;
         abstained: number; rivals?: { measured: number; of: number };
         cappedFit?: { iterations: number; gradMax: number } } => {
-        // **the close reads the race on the evidence it has** (§4.6 → why:
-        // R-142): the wait for rivals waived, an unmeasured pair level, so
-        // its leader — and the numbers the batch records — are `atClose`'s
-        const r = final ? { ...view, ...view.atClose } : view;
         const fit = this.raceRules.fitRaceMembers(r.members, r.incumbentId);
         return {
           leaderId: r.leaderId as string,
@@ -2437,10 +2433,10 @@ export class Session {
       // close renders nothing the sweep would not
       if (!this.raceRules.clearsAtClose(r)) continue;
       if (r.settingId !== undefined) {
-        appliedSettings.push({ settingId: r.settingId, candidateId: r.atClose.leaderId! });
+        appliedSettings.push({ settingId: r.settingId, candidateId: r.leaderId! });
         continue;
       }
-      winners.push(this.candidate(r.atClose.leaderId!));
+      winners.push(this.candidate(r.leaderId!));
     }
     winners.sort((a, b) =>
       sha256Hex(a.id + this.constitutionValue.rngSeed).localeCompare(
