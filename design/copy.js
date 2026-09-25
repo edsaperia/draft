@@ -670,6 +670,14 @@ window.COPY = (function () {
     // (`walletBroke`), so nobody should meet it; it is kept in the member's
     // words for the day a road reaches it that nothing here foresaw.
     noPencil: 'you have no ✏️ left to spend on this',
+    // **the two rails' names** (Q1394 (c), Ed 2026-09-18): what a reader
+    // navigating by landmark hears for the contents rail and the task rail,
+    // and the tooltip on the narrow drawer door that opens each — one string
+    // per rail, so the name heard and the door tapped cannot drift apart
+    rails: {
+      contents: 'Contents',
+      tasks: 'What needs you',
+    },
     // the host's two flags (Q1345, Q1346; Ed, 2026-09-12): the announced
     // pause, drawn as a modal over the whole page while a deploy runs, and
     // the red flag on a document whose saves the store rejects
