@@ -851,6 +851,99 @@ const IN_PAGE = () => {
     const p = document.createElement('span'); p.style.color = 'var(--ok)'; document.body.appendChild(p);
     v = getComputedStyle(p).color; p.remove(); return v; }; })();
   const RAW_RE = /\bundefined\b|\bNaN\b|\bnull\b|\[object|Invalid Date/;
+  /** **v2's readings** (grammar.md v2 §2.3a, §2.5, G5, G6, P4): the labels,
+   *  the note slot, the top edge, the blank under a card, and what a closed
+   *  card says. DOM-generic, so today's page and the prototype read alike. */
+  const LABEL_SEL = '.glab, .headlab, .fieldlab, .rechead, .rtag, .glabel, .pwhere, .eyebrow';
+  const BLOCK_SEL = '.propblock, .pick:not(.vinblock), .ranked, .recbox, .replaced';
+  const inkAboveOf = (card) => {
+    let el = card.closest('.cpara.open') || card;
+    for (let i = 0; i < 6 && el; i++) {
+      let prev = el.previousElementSibling;
+      while (prev && (!prev.getBoundingClientRect().height || getComputedStyle(prev).display === 'none' ||
+        prev.matches('.chipcol, script, style, [hidden]'))) prev = prev.previousElementSibling;
+      if (prev) {
+        const w = document.createTreeWalker(prev, NodeFilter.SHOW_TEXT);
+        let last = null;
+        for (let n = w.nextNode(); n; n = w.nextNode()) {
+          if (!n.nodeValue.trim()) continue;
+          const h = n.parentElement;
+          if (!h || h.closest('.chipcol, .sr, [hidden]')) continue;
+          last = n;
+        }
+        if (last) {
+          const r = document.createRange(); r.selectNodeContents(last);
+          const rs = [...r.getClientRects()].filter((q) => q.width > 0 && q.height > 0);
+          if (rs.length) return Math.max(...rs.map((q) => q.bottom));
+        }
+        return prev.getBoundingClientRect().bottom;
+      }
+      el = el.parentElement;
+      if (el && el.matches('.doc, #doc, #band, body')) break;
+    }
+    return null;
+  };
+  const v2Of = (card, key, head) => {
+    const vis = (e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && isVis(e, card.parentElement); };
+    const firstTop = (el) => { const l = firstLine(el, LABEL_SEL); return l ? l[1] - window.scrollY : null; };
+    const labels = [...card.querySelectorAll(LABEL_SEL)].filter((e) => !e.closest('.chipcol') && vis(e) && !(e.parentElement && e.parentElement.closest(LABEL_SEL)));
+    const headTop = head ? firstTop(head.el) : null;
+    // the blocks: outermost, visible, not inputs
+    const blocks = [...card.querySelectorAll(BLOCK_SEL)].filter((b) => vis(b) && !(b.parentElement && b.parentElement.closest(BLOCK_SEL)) &&
+      !(head && head.el.contains(b)) && !b.querySelector('[contenteditable="true"], textarea, input[type="text"], input:not([type])'));
+    const out = { blocks: [], headLabel: null, headNeedsLabel: false };
+    for (const b of blocks) {
+      const live = [...b.querySelectorAll('.lanepick, [role="radio"]')].some((r) => !r.disabled && vis(r));
+      const bt = firstTop(b);
+      const own = labels.filter((l) => b.contains(l));
+      let prev = b.previousElementSibling;
+      while (prev && !vis(prev)) prev = prev.previousElementSibling;
+      const above = prev && prev.matches(LABEL_SEL) ? prev : null;
+      const lab = own[0] || above;
+      const lt = lab ? lab.getBoundingClientRect().top : null;
+      out.blocks.push({ cls: String(b.className).split(' ')[0], live, labelled: !!lab, label: lab ? txt(lab) : null,
+        misplaced: !!(own[0] && bt != null && lt != null && lt > bt + 1), shared: !own.length && !!above && above.nextElementSibling !== b });
+    }
+    // the head's label: a label drawn above the head's first line, outside any block
+    if (headTop != null) {
+      const hl = labels.find((l) => !blocks.some((b) => b.contains(l)) && l.getBoundingClientRect().bottom <= headTop + 1);
+      out.headLabel = hl ? { text: txt(hl), top: R2(hl.getBoundingClientRect().top) } : null;
+      out.headNeedsLabel = blocks.length > 0 && !!(head && txt(head.el));
+    }
+    // the note slot: each dark commit's reason, as text in the row
+    const rows = [...card.querySelectorAll('.commitrow, .race-mid, [data-slot="row"]')].filter((r) => vis(r) && !r.parentElement.closest('.commitrow, .race-mid, [data-slot="row"]'));
+    out.notes = rows.map((r) => {
+      const btns = [...r.querySelectorAll('button')].filter(vis);
+      const dark = btns.filter((b) => b.disabled && !/^(OK|Accept|Activate)/.test((b.textContent || '').trim()) && !/🗑/.test(txt(b) || ''));
+      let t = '';
+      const w = document.createTreeWalker(r, NodeFilter.SHOW_TEXT);
+      for (let n = w.nextNode(); n; n = w.nextNode()) { if (n.parentElement.closest('button') || !vis(n.parentElement)) continue; t += n.nodeValue; }
+      const untils = new Set(dark.map((b) => b.getAttribute('data-until') || b.title || ''));
+      return { dark: dark.length, reasons: untils.size, note: t.replace(/\s+/g, ' ').trim(), lines: r.querySelectorAll('.greason').length };
+    });
+    const boxes = [...card.querySelectorAll('textarea, input[type="email"], input.addr')].filter(vis);
+    out.litOverEmpty = boxes.length > 0 && boxes.every((i) => !(i.value || '').trim()) &&
+      rows.some((r) => [...r.querySelectorAll('button')].some((b) => vis(b) && !b.disabled && !/🗑/.test(txt(b) || '') && !/^(OK|Accept|Activate)/.test((b.textContent || '').trim())));
+    // the top edge (G5)
+    const cr = card.getBoundingClientRect();
+    const ink = inkAboveOf(card);
+    out.top = { card: R2(cr.top), ink: ink == null ? null : R2(ink), label: out.headLabel ? out.headLabel.top : null };
+    // the blank under the last drawn slot (G6)
+    let bottom = null;
+    for (const ch of card.children) {
+      if (ch.matches('.chipcol, .ghair') || !vis(ch)) continue;
+      const st = getComputedStyle(ch);
+      if (st.position === 'absolute' || st.position === 'fixed') continue;
+      const r = ch.getBoundingClientRect(); bottom = bottom == null ? r.bottom : Math.max(bottom, r.bottom);
+    }
+    const pb = parseFloat(getComputedStyle(card).paddingBottom) || 0;
+    out.blank = bottom == null ? null : R2(cr.bottom - pb - bottom);
+    // a closed card's words (P4 v2)
+    out.text = (txt(card) || '').slice(0, 2000);
+    out.isRecord = card.matches('.sealed-open') || !!card.querySelector('.rechead, .gtone-ok') ||
+      /^(rec:|held:)/.test(key);
+    return out;
+  };
   /** the grammar's readings of one open card; `before` is the closed reading */
   const grammarOf = (card, key, before) => {
     const out = {};
@@ -858,10 +951,10 @@ const IN_PAGE = () => {
     const openTab = card.querySelector('.achip[data-tab="' + CSS.escape(key) + '"], ' +
       '.achip[data-anchor="' + CSS.escape(key) + '"], [data-tab="' + CSS.escape(key) + '"]');
     // still, open half (doc coordinates at scroll 0)
-    out.still = atZero(() => ({ glyph: glyphBox(openTab), line: head ? firstLine(head.el, '.headlab') : null }));
+    out.still = atZero(() => ({ glyph: glyphBox(openTab), line: head ? firstLine(head.el, '.headlab, .glab') : null }));
     out.still.zones = stillZones();
     // head-registration and head-form
-    out.head = head ? { sel: head.sel, text: plainText(head.el, '.headlab, .lanebar, .speaker, .lanepick, button'),
+    out.head = head ? { sel: head.sel, text: plainText(head.el, '.headlab, .glab, .lanebar, .speaker, .lanepick, button'),
       el: nameOf(head.el) } : null;
     if (head) {
       const above = [];
@@ -943,6 +1036,7 @@ const IN_PAGE = () => {
       .concat(li ? [...(li.closest('li') || li).querySelectorAll('[title]')].map((e) => e.title).concat((li.closest('li') || li).title || []) : [])
       .filter(Boolean);
     out.closedBefore = before || null;
+    try { out.v2 = v2Of(card, key, head); } catch (e) { out.v2 = { error: String(e && e.message || e) }; }
     return out;
   };
   /** the zones, on the glass at scroll 0, for zone-overlap */
@@ -976,6 +1070,25 @@ const IN_PAGE = () => {
     document.querySelectorAll('#editdoor > *, #proserow, #patchrow, .proposalrow, [data-proposalrow]').forEach((e) => fl.add(e));
     // a card's own commit row can carry `.proposalrow` too; only what floats counts
     for (const e of fl) if (!e.closest(CARD_ROOTS)) add('floating:' + nameOf(e), 'floating', clip(e), e);
+    // G4 v2: an overlay may cross a zone's edge but never a line of text
+    for (const x of z) {
+      if (x.group !== 'floating') continue;
+      let covers = 0;
+      for (const root of document.querySelectorAll('#doc, aside.queue, nav.toc')) {
+        const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        for (let n = w.nextNode(); n; n = w.nextNode()) {
+          if (!n.nodeValue.trim() || !n.parentElement || n.parentElement.closest('#editdoor, #proserow, #patchrow, .proposalrow')) continue;
+          const r = document.createRange(); r.selectNodeContents(n);
+          for (const q of r.getClientRects()) {
+            if (!q.width || !q.height) continue;
+            const ow = Math.min(q.right, x.box[2]) - Math.max(q.left, x.box[0]);
+            const oh = Math.min(q.bottom, x.box[3]) - Math.max(q.top, x.box[1]);
+            if (ow > 1 && oh > 1 && isVis(n.parentElement, null)) covers++;
+          }
+        }
+      }
+      x.covers = covers;
+    }
     return z;
   });
   /** the page's tab and rail tooltips, for closed-page's page-wide half */
@@ -1570,7 +1683,9 @@ const GLYPH_ONLY = /^[^\p{L}\p{N}]{1,4}$/u;
    ========================================================================== */
 const TOL = 0.5;
 const GRAMMAR_CHECKS = ['still', 'head-registration', 'head-form', 'hairline-gap', 'empty-slot', 'no-job', 'bin-job',
-  'row-vocabulary', 'closed-page', 'raw-value', 'zone-overlap', 'role-drawing'];
+  'row-vocabulary', 'closed-page', 'raw-value', 'zone-overlap', 'role-drawing',
+  // v2 (grammar.md v2 §5)
+  'label-slot', 'note-visible', 'closed-keeps-content', 'closed-tense', 'top-edge', 'strip-blank'];
 const UNTIL_OK = /^(choose|type|drip|voice-out|readiness|reconnect|flight|accept:\S+)$/;
 const WITHDRAWS = /withdraw|comes? back/i;
 const CLOSED_WALKS = new Set(['closed', 'closedband']);
@@ -1668,7 +1783,11 @@ function grammarRules(c) {
     if (!g.head) at('head-registration', 'no head element on the card (closed paragraph ' + before.para + ': “' + clip(before.ptext, 60) + '”)', 'missing');
     else {
       const norm = (s) => String(s || '').replace(/️/g, '').replace(/\s+/g, ' ').trim();
-      if (norm(g.head.text) !== norm(before.ptext)) {
+      // v2 (P3 v2): a rule's paragraph carries its power line beneath it,
+      // and the card heads with the rule's line alone — so the paragraph is
+      // read without its power sentences (a stated trim, not an exception)
+      const trimPow = (s) => norm(s).replace(/s*(From the start, )?The Founder( (that’s you!))? may[^.]*.(s*From the start, the Founder may not[^.]*.)?s*$/, '').trim();
+      if (norm(g.head.text) !== norm(before.ptext) && norm(g.head.text) !== trimPow(before.ptext)) {
         at('head-registration', 'text: paragraph “' + clip(norm(before.ptext), 70) + '” · head (' + g.head.sel + ') “' + clip(norm(g.head.text), 70) + '”', 'text');
       }
       if (before.line && g.still.line) {
@@ -1723,6 +1842,8 @@ function grammarRules(c) {
   if (closed) {
     for (const k of g.controls || []) {
       if (k.sign) continue;
+      // v2: moving between a patch's places is reading, not an act (P4 v2)
+      if (/pstep/.test(k.el)) continue;
       const why = [];
       if (k.radio) why.push('a radio');
       else if (!k.disabled) why.push('an enabled control');
@@ -1739,6 +1860,44 @@ function grammarRules(c) {
     if (k.radio && k.on && !act) at('role-drawing', 'a pressed radio “' + clip(k.tok, 30) + '” on a card with no enabled commit', 'pressed-fact');
     if (k.green) at('role-drawing', 'a button on solid --ok green: “' + clip(k.tok || k.el, 30) + '”', 'green');
   }
+  /* ---- v2 checks (grammar.md v2 §5) ---- */
+  const v = g.v2;
+  if (v && !v.error) {
+    /* label-slot — §2.3a */
+    if (v.headNeedsLabel && !v.headLabel) at('label-slot', 'the head has no label, and the card draws ' + v.blocks.length + ' block(s) beside it (Q207)', 'head');
+    for (const b of v.blocks) {
+      if (!b.live && !b.labelled) at('label-slot', 'a ' + b.cls + ' with no control and no label', 'block');
+      else if (b.shared && !b.live) at('label-slot', 'a ' + b.cls + ' sharing a label drawn above an earlier block (“' + clip(b.label, 40) + '”)', 'shared');
+      if (b.misplaced) at('label-slot', 'the label “' + clip(b.label, 40) + '” stands below its ' + b.cls + '\'s first line', 'misplaced');
+    }
+    /* note-visible — P5/P8 v2 */
+    if (!closed) {
+      for (const n of v.notes || []) {
+        if (n.dark && !n.note) at('note-visible', n.dark + ' dark commit(s) and no visible reason in the row (tooltip only)', 'no-note');
+        else if (n.dark && n.reasons > 1 && IS_PROTO && n.lines < n.reasons) at('note-visible', n.reasons + ' reasons for dark commits, ' + n.lines + ' line(s) of note', 'one-for-two');
+      }
+      if (v.litOverEmpty) at('note-visible', 'a lit commit over an empty address box', 'lit-empty');
+    }
+    /* closed-keeps-content and closed-tense — P4 v2 */
+    if (closed) {
+      const raced = /^(quick|race|insert|patch|mine)-|^mo:/.test(c.key) && !v.isRecord;
+      if (raced) {
+        if (!v.blocks.length) at('closed-keeps-content', 'what was in flight at the close is not on the card: the head alone', 'lost');
+        else if (!/undecided|cut off|when the document closed|clock ran out/i.test(v.text)) at('closed-keeps-content', 'the proposals stand, and nothing says the close cut them off', 'unsaid');
+      }
+      // (the Founder's powers only: a rule's own *any member may* is the
+      // document's words, true of its record)
+      const m = (v.text || '').match(/\bThe Founder (\(that’s you!\) )?may(?! not) [^.]{0,40}/);
+      if (m) at('closed-tense', 'a power claimed in the present on a closed document: “' + clip(m[0], 70) + '”');
+    }
+    /* top-edge — G5 */
+    if (v.top && v.top.ink != null) {
+      if (v.top.card < v.top.ink - TOL) at('top-edge', 'the card\'s top edge covers the ink above it by ' + r2(v.top.ink - v.top.card) + 'px', 'covers');
+      if (v.top.label != null && v.top.label < v.top.ink + 1) at('top-edge', 'the head label stands ' + r2(v.top.ink + 1 - v.top.label) + 'px into the ink above', 'label');
+    }
+    /* strip-blank — G6 */
+    if (v.blank != null && v.blank > 30) at('strip-blank', r2(v.blank) + 'px of empty card under its last drawn slot');
+  }
   return out;
 }
 
@@ -1751,6 +1910,8 @@ function walkGrammar(zones, tips, switches) {
       for (let j = i + 1; j < zs.length; j++) {
         const a = zs[i]; const b = zs[j];
         if (a.group === b.group) continue;
+        // G4 v2: the floating layer is an overlay, judged by the text it covers (below)
+        if (a.group === 'floating' || b.group === 'floating') continue;
         const pair = [a.group, b.group].sort().join('×');
         // at the phone the floating layer may lie over the sheet (§3.2), and
         // the two rails are drawers — the task sheet at the foot among them
@@ -1762,6 +1923,14 @@ function walkGrammar(zones, tips, switches) {
           out.push({ check: 'zone-overlap', walk: z.walk, key: z.when + (z.key ? ':' + z.key : ''),
             ex: a.name + ' and ' + b.name + ' overlap ' + r2(w) + '×' + r2(h) + 'px (' + z.when + ')' });
         }
+      }
+    }
+  }
+  for (const z of zones) {
+    for (const x of z.zones) {
+      if (x.group === 'floating' && x.covers) {
+        out.push({ check: 'zone-overlap', walk: z.walk, key: z.when + (z.key ? ':' + z.key : ''), sub: 'covers-text',
+          ex: x.name + ' covers ' + x.covers + ' line(s) of text (' + z.when + ')' });
       }
     }
   }

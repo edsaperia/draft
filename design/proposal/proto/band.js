@@ -1285,7 +1285,7 @@ window.BAND = (function () {
             (m.why ? window.CARDS.speakerHtml(m.why) : '') +
             // the prototype (Q1541 v2, amber 24): what the pair decides, said
             // once, in the row's note — the Text's 👑 card's own words, for a rule
-            (window.GRAMMAR ? '<p class="setnote grownote">' + esc(PAGE_COPY.crown.foot.replace('the clause above', 'the rule above')) + '</p>' : ''),
+            (window.GRAMMAR && amFounder() ? '<p class="setnote grownote">' + esc(window.COPY.session.crown.foot.replace('the clause above', 'the rule above')) + '</p>' : ''),
             crownPairRow(), g.cards);
         }
         // a live motion takes the route its own value asks for (329a)

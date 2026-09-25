@@ -8,7 +8,10 @@ import { fileURLToPath } from 'node:url';
 const DATA = join(resolve(fileURLToPath(new URL('..', import.meta.url))), 'data');
 const N = +((process.argv.find((a) => a.startsWith('--examples=')) || '=3').split('=')[1]);
 const load = (l, w) => JSON.parse(readFileSync(join(DATA, 'grammar-' + l + '-' + w + '.json'), 'utf8'));
-const P = { t16: load('today', 1600), t39: load('today', 390), p16: load('proto', 1600), p39: load('proto', 390) };
+const lab = (n, d) => ((process.argv.find((a) => a.startsWith('--' + n + '=')) || '').split('=')[1] || d);
+// v2: --proto=<label> reads another run (the revision pass shoots its crops and reads its checks in one run, label `pshot`)
+const TL = lab('today', 'today'); const PL = lab('proto', 'proto');
+const P = { t16: load(TL, 1600), t39: load(TL, 390), p16: load(PL, 1600), p39: load(PL, 390) };
 const row = (j, c) => (j.table.find((r) => r.check === c) || { findings: 0, cards: 0 });
 const checks = P.t16.table.map((r) => r.check);
 console.log('| check | today 1600 | proto 1600 | today 390 | proto 390 |');
