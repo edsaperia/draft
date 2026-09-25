@@ -5322,7 +5322,8 @@ document.addEventListener('paste', (ev) => {
     const mount = document.getElementById('patchrow');
     if (!mount) return;
     const s = SUGGS.find((x) => x.id === openId && x.kind === 'patch');
-    const on = !!s && !EDITING() && !closedMode;
+    // (the prototype, P4: the document's own *closed*, not only the wallets')
+    const on = !!s && !EDITING() && !closedMode && !(window.GRAMMAR && window.GRAMMAR.closed());
     const host = document.getElementById('doc');
     if (host) host.classList.toggle('patchrow', on);
     mount.innerHTML = on ? commitBarHtml(s, '', 'proposalrow') : '';

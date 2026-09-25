@@ -7413,8 +7413,8 @@
     // your own row for ✋ 🖼️ 📧 🌂 (B3), the decision line everywhere else
     gPlaceOf: (c, host, line) => {
       // at the birth the 🪶 card's head is the big heading itself, already
-      // the place (fitTitleCard lays it there), and no other card exists
-      if (!cs) return null;
+      // the place (fitTitleCard lays it there); 📍 and 📧 read their lines
+      if (!cs && c.k === 'title') return null;
       const mine = c.kind === 'personal' && c.own === 'you';
       if (/^grant-/.test(c.k) || (mine && !viewerIsMember() && cs)) return foundedClause();
       if (mine) {
