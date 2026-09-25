@@ -431,9 +431,10 @@ describe('smith-set: the ranking is read inside the Smith set (Q1539, R-143)', (
       s.judge((t += 1), `p${m + 1}`, X, Y, r.indexOf('X') < r.indexOf('Y') ? 'a' : 'b');
     });
     const r = raceOf(s, X);
-    // the two authors' own preferences put two answers on {cur, Y}: measured,
-    // level. Read as the gap would be read the same way: nothing reaches cur
-    // from X, so only the current text reaches everything
+    // {cur, Y} holds only Y's author's standing preference, one answer short
+    // of the floor of two: a gap. cur → X → Y are measured and nothing
+    // measured reaches cur, so only the current text reaches everything —
+    // where reading the gap as a draw would let Y, and then X, into the set
     expect(r.smith).toContain(c);
     expect(r.smith).not.toContain(X);
     expect(r.leaderOnTop).toBe(false);
