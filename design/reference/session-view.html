@@ -246,10 +246,10 @@
          of docs.vote is the act of making a document. -->
     <!-- the two drawer doors, narrow only (Ed, 2026-09-12): the contents rail
          slides in from the left, the task rail from the right -->
-    <button class="drawerbtn" id="drawerleft" type="button" aria-expanded="false" aria-controls="toc" title="Contents">☰</button>
+    <button class="drawerbtn" id="drawerleft" type="button" aria-expanded="false" aria-controls="toc">☰</button>
     <!-- **The document's name is the page's first-level heading** (Q1394 (b),
-         Ed 2026-09-18). `h1#doctitle` sits at the top of the document and is
-         the h1 wherever it shows — but the fixture's session and closed
+         Ed 2026-09-18). `h1#doctitle` sits at the top of the document, and
+         was the h1 wherever it showed — but the fixture's session and closed
          epochs hide the whole title row (`.doc.fixsession .titlerow`), so on
          those a reader found no level-one heading at all and the first
          heading was a section's `h2`. This span is the one place the title
@@ -257,7 +257,9 @@
          reading order. It takes the heading semantics as attributes rather
          than as a tag: an `<h1>` inside this `<p>` would close the paragraph
          at the parser, and the name has to be the title alone — the 🪶 beside
-         it is a link to a new document, not part of what this heading says. -->
+         it is a link to a new document, not part of what this heading says.
+         Since 2026-09-25 it is the **only** level-one heading: `h1#doctitle`
+         is `aria-hidden`, so birth and band no longer read two. -->
     <p class="brand ph" id="title"><a class="quill" id="quill" href="/" title="docs.vote — make a new document"></a><span id="titletext" role="heading" aria-level="1">Untitled</span></p>
     <div class="stats">
       <!-- room-pulse: one content-free beat per action by anybody (session-view's) -->
@@ -280,7 +282,7 @@
       <span class="wallet powerwallet" id="shieldwallet"></span>
       <span class="wallet powerwallet" id="voicewallet"></span>
       <button class="me" id="mebtn" title="You, and the founder of this document."></button>
-      <button class="drawerbtn" id="drawerright" type="button" aria-expanded="false" aria-controls="rail" title="What needs you"><span class="n" id="drawercount">0</span></button>
+      <button class="drawerbtn" id="drawerright" type="button" aria-expanded="false" aria-controls="rail"><span class="n" id="drawercount">0</span></button>
     </div>
   </div>
 </header>
@@ -522,7 +524,7 @@
       let d = null, swallow = 0;
       bar.addEventListener('pointerdown', (ev) => {
         if (!sheet() || (ev.pointerType === 'mouse' && ev.button !== 0)) return;
-        const max = Math.max(0, queueEl().offsetHeight - bar.offsetHeight);
+        const max = Math.max(0, queueEl().offsetHeight - queueEl().clientTop - bar.offsetHeight);   // the peek: edge + bar
         d = { id: ev.pointerId, y0: ev.clientY, from: sheet() === 'open' ? 0 : max, max, off: null, s: [[ev.timeStamp, ev.clientY]] };
         try { bar.setPointerCapture(ev.pointerId); } catch (e) { /* a synthetic pointer */ }
       });
@@ -633,15 +635,24 @@
          landmark met *navigation* and *complementary* with no way to tell
          which rail either was. They take the words their own drawer doors
          already wear at narrow — the doors that open these very elements —
-         so the name a reader hears and the name a phone reader taps match. -->
-    <nav class="toc" aria-label="Contents"><ul id="toc"></ul></nav>
+         so the name a reader hears and the name a phone reader taps match.
+         Both are set at boot from `COPY.page.rails` beside `PAGE_COPY`'s
+         definition (2026-09-25), one string per rail for the landmark and
+         its door alike, so `copy-check` holds them. -->
+    <nav class="toc"><ul id="toc"></ul></nav>
     <main>
       <div class="doc" id="doc">
         <!-- the tab beside the title is the way in (Ed, 2026-08-18: the
              UI teaches itself, so the door must be the same everywhere) -->
+        <!-- **One level-one heading, and it is the topbar's** (Q1394's loose
+             end, 2026-09-25): on the birth and the band this h1 showed beside
+             `#titletext`, so a reader heard two. It stays an `h1` for the eye
+             and for every selector that styles it, and leaves the tree by
+             `aria-hidden` — never focusable, never a control, and saying only
+             the name the topbar's heading already says. -->
         <div class="setrow constsec titlerow"><div class="csec"><div class="cpara notab" id="titlepara">
           <span id="titlechip" style="display:contents"></span>
-          <h1 class="doctitle ph" id="doctitle">Untitled</h1>
+          <h1 class="doctitle ph" id="doctitle" aria-hidden="true">Untitled</h1>
         </div></div></div>
         <div class="setupband" id="band"></div>
         <!-- the charter: session.js renders the confirmed text here as clauses,
@@ -673,7 +684,7 @@
         <div id="patchrow"></div>
       </div>
     </main>
-    <aside class="queue stack" aria-label="What needs you"><ul id="rail"></ul></aside>
+    <aside class="queue stack"><ul id="rail"></ul></aside>
   </div>
 </div>
 <svg id="wires" aria-hidden="true"></svg>
@@ -765,6 +776,16 @@
   // every member-readable string this script renders lives in copy.js (Ed's
   // brief, 2026-09-05, Part 3: copy edits touch that file only)
   const PAGE_COPY = window.COPY.page;
+  // the two rails' names (Q1394 (c)): each landmark and the narrow drawer
+  // door that opens it wear one copy.js string, set once here since the
+  // markup is parsed before copy.js loads
+  for (const [sel, door, name] of [['.layout > .toc', 'drawerleft', PAGE_COPY.rails.contents],
+    ['.layout > .queue', 'drawerright', PAGE_COPY.rails.tasks]]) {
+    const el = document.querySelector(sel);
+    if (el) el.setAttribute('aria-label', name);
+    const d = document.getElementById(door);
+    if (d) d.title = name;
+  }
   // the drawn glyphs (Q1401): every glyph this page emits as markup is one
   // picture from the Fluent Flat set, and every sentence that carries one goes
   // through `glyphify` — after escaping, exactly where `linkify` runs
