@@ -445,6 +445,7 @@ The post-mortems: what broke, why it broke, and the shape of the mistake so it i
 - **A record keyed by race id swallows the race that goes on** (Q1534): a race is named for its oldest member, so a rival that stayed in it after an adoption kept the winner's record name, and its later outcome rewrote that record's head. Records split at each adoption now (`recordKey`, views.ts). Guard: `rivals-stay.test.ts`.
 - **A record owed its OK was in neither half of the strip** (Ed, 2026-09-24, the green tab): the live half is unsealed and the filed half is read, so an unread ✔ stood only as the open card's own tab, and clicking the grey tab beside it dropped it. Guard: `card-audit` P11.
 - **A tap on a phone's darkened ground fell through to the document** (building the `task-sheet`, 2026-09-24): Chromium hit-tests a touch's click after the pointerup that took the ground away, so the click reached the clause beneath. The page eats it now. Guard: `npm run drawer-walk`.
+- **An OK opens the next thing owed, so pressing that card's entry shuts it** (Q1536's walk, 2026-09-25): eight walks that pressed an entry and then its OK, card by card, stalled on the second, its grant never accepted. The shared `open` and `openCard` leave an open card open; a walk with its own press must too. Guards: `npm run journey`, `review-walk`.
 
 ## The spec pass
 
