@@ -403,6 +403,18 @@ window.COPY = (function () {
       // majority for the text is what kept it. `m` is everyone who answered
       // the pair, Indifferent included. Under the losing wording.
       rankedBelow: (n, m) => n + ' of ' + m + ' members preferred the current text to this',
+      // **One OK per clause** (Q1536, Ed 2026-09-24): a clause with several
+      // records owed is one card — its eyebrow, the rail entry's caption and
+      // tooltip, the line under a head marked with the net change, the label
+      // over the list of its records, each row's tooltip, the way back to
+      // that list from a record opened inside the card, and the OK's tooltip.
+      foldHead: (n) => n + ' decisions',
+      foldCap: (n) => n + ' decisions here since you last looked',
+      foldSince: 'Marked against the text before the first of them',
+      foldList: 'Each decision, oldest first',
+      foldOpen: 'Open this decision',
+      foldBack: 'All decisions here',
+      foldOkTitle: (n) => 'All ' + n + ' leave your margin and stay in the record',
       // **what a sealed record's own entry says it is** (Q1493's list, the
       // nh2026 convention 2026-09-20): the rail entry's tooltip, and the
       // caption under the mark. They were four literals in `live.js`, on the

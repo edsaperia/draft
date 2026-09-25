@@ -624,6 +624,95 @@
   const isUnread = (g) => stateOf(g) === 'sealed' && g.unread &&
     (carried(g) || youJudged(g) || minePending(g)) && !readSeals.has(g.id);
 
+  // ---- one OK per clause (Q1536, Ed 2026-09-24, option 4) ----------------
+  // *If the doc is busy, someone can come back to a page with dozens of green
+  // ticks to acknowledge, which is a lot of clicks.* A clause with two or more
+  // records owed stands as **one** entry, one tab and one card — the `fold` —
+  // whose head is the net change, the text before the first of them marked
+  // against the text now, with each record listed inside and openable; one
+  // OK acknowledges them all. **A record of one of your own proposals is
+  // never folded in** (`mineIn`, and an early ✖ which is only ever yours):
+  // it keeps its entry and its OK. A ✖ owed only because you judged it folds
+  // in. Nor are the Founder's amendments (E35: one card and one OK per
+  // amendment, never a batch), nor a record held on a gap, whose clause is
+  // gone and has no text now to mark against.
+  //
+  // Page-side, as the records' OK always was (`readSeals`): the members are
+  // lifted out of SUGGS while folded and put back by `refold`, which every
+  // bind and every OK runs, so the readers of SUGGS meet the fold as one
+  // ordinary sealed record and never see its members. Once acknowledged the
+  // members come back filed, each in the clause's pile as it always was.
+  const FOLD_PREFIX = 'fold:';
+  const FOLDED = new Map();        // fold id → its records, in arrival order
+  const foldView = new Map();      // fold id → the record opened inside it
+  const foldable = (g) => stateOf(g) === 'sealed' && isUnread(g) && !g.fold && !g.amendment &&
+    !g.early && !g.undecided && !(g.mineIn || []).length && !g.isInsert && !g.gapKey &&
+    (g.keys || []).length > 0 && !(g.keys || []).some(isGapKey);
+  // the members back in place of their fold, wherever a fold stands in `arr`
+  const unfold = (arr) => arr.flatMap((g) => (!g.fold ? [g] : FOLDED.get(g.id) || g.fold));
+  function foldItem(ms) {
+    const keys = [...new Set(ms.flatMap((m) => m.keys))]
+      .sort((a, b) => docIndexOfKey(a) - docIndexOfKey(b));
+    // the text before the first unseen change: what the earliest record that
+    // carried was proposed against (`recordBaseOf`, Q1531's one reader)
+    const first = ms.find(carried);
+    const last = ms[ms.length - 1];
+    const verdict = ms.map((m) => verdicts.get(pairKeyOf(m)) || m.verdict).find(Boolean);
+    const d = last.decided || {};
+    return {
+      id: FOLD_PREFIX + ms[0].id, kind: 'quick', state: 'sealed', unread: true, fold: ms,
+      keys, qLabel: ms[0].qLabel, urgency: 0, pct: 100, cap: T.record.foldCap(ms.length),
+      decided: { outcome: T.record.foldCap(ms.length), at: d.at, when: d.when },
+      // carried where any of them did: the ✔, the green, and the net change
+      // — the lane `fieldOf` reads is the clause as it stands now
+      optionB: keys.map(sourceTextFor).join('\n'),
+      ...(first ? { won: 'b', replaced: recordBaseOf(first, true) } : {}),
+      ...(verdict ? { verdict } : {}),
+    };
+  }
+  function refold() {
+    SUGGS = unfold(SUGGS);
+    FOLDED.clear();
+    const byKey = new Map();
+    for (const g of SUGGS) {
+      if (!foldable(g)) continue;
+      if (!byKey.has(g.keys[0])) byKey.set(g.keys[0], []);
+      byKey.get(g.keys[0]).push(g);
+    }
+    for (const ms of byKey.values()) {
+      if (ms.length < 2) continue;
+      const f = foldItem(ms);
+      SUGGS.splice(SUGGS.indexOf(ms[0]), 1, f);
+      for (const m of ms.slice(1)) SUGGS.splice(SUGGS.indexOf(m), 1);
+      FOLDED.set(f.id, ms);
+    }
+    for (const id of [...foldView.keys()]) {
+      if (!FOLDED.has(id) || !FOLDED.get(id).some((m) => m.id === foldView.get(id))) foldView.delete(id);
+    }
+    // a record open when it was folded opens as its clause's card, showing it
+    if (openId != null && !SUGGS.some((x) => x.id === openId)) {
+      for (const [id, ms] of FOLDED) if (ms.some((m) => m.id === openId)) { foldView.set(id, openId); openId = id; }
+    }
+  }
+
+  // ---- the review walk (Q1536, Ed 2026-09-24, option 3) ------------------
+  // OK on an owed record closes it and opens the next one owed **in document
+  // order**, travelling to it, and wraps to the top when nothing is owed
+  // below; Enter presses OK. `walkAt` is where the walk last stood, which is
+  // also where the pinned record (Q1532's one) is counted from: the pin is
+  // the next clause card the walk would open, never the oldest.
+  let walkAt = -Infinity;
+  // two of the rail's owed charter rows (`fam` 1), in the walk's order: what
+  // stands at or below `walkAt` first, then from the top
+  const walkOrder = (x, y) => (x.fam !== 1 || y.fam !== 1 ? 0
+    : ((x.at < walkAt) - (y.at < walkAt)) || x.at - y.at);
+  const owedRecords = () => SUGGS.filter((g) => stateOf(g) === 'sealed' && isUnread(g))
+    .map((g) => ({ g, at: docIndexOf(g) })).sort((x, y) => x.at - y.at);
+  const nextOwed = (from) => {
+    const all = owedRecords();
+    return ((all.find((x) => x.at >= from) || all[0]) || {}).g || null;
+  };
+
   // Urgency — how much this wants *you* (leverage), not how close it is to
   // resolution (that stays the meter's job). It is carried by the strength of
   // the card's colour (Ed, 105) and, since 2026-08-16, by whether the card is
@@ -848,6 +937,10 @@
       // what was tried, against what it replaced — the text it displaced
       // where the record kept it, else the clause, which is what stood
       if (stateOf(g) === 'sealed') {
+        // a clause's fold (Q1536) reads its net change, the text before the
+        // first of its records against the text now — and where none of them
+        // carried there is no change to read, so the clause's name
+        if (g.fold && !carried(g)) return name;
         const field = fieldOf(g).filter((c) => c.text != null);
         const pick = field.find((c) => c.won) || field.slice().sort((x, y) => (y.p ?? -1) - (x.p ?? -1))[0];
         if (!pick) return name;
@@ -1518,6 +1611,8 @@
       // already knew how to choose, it just did not know how to choose *here*.
       row.rank = stackRank(kind);
       row.news = isUnread(g); row.fam = 1; row.i = idx;
+      // where in the document it stands, for the walk's order (Q1536)
+      row.at = docIndexOf(g, el.dataset.site || undefined);
       const live = kind === 'urgent' || kind === 'propose' || kind === 'stranded' ||
         kind === 'weigh' || isUnread(g) || holdsFocus(el);
       (live ? pinned : flow).push(row);
@@ -1530,7 +1625,11 @@
     // being open whatever its state (C6), so an owed decision you have opened
     // from further down its queue keeps its place while it is open — the cap
     // counts it, it simply does not evict it.
-    const owed = pinned.filter((r) => r.news).sort((x, y) => x.fam - y.fam || x.i - y.i);
+    // **The charter's queue is the review walk's** (Q1536, Ed 2026-09-24):
+    // not the oldest owed record but the next clause card in document order
+    // from where the walk last stood (`walkAt`), wrapping to the top — the
+    // record OK would open next. The Rules' keep their arrival order.
+    const owed = pinned.filter((r) => r.news).sort((x, y) => x.fam - y.fam || walkOrder(x, y) || x.i - y.i);
     const capOf = (fam) => (fam === 0 ? BAND_PIN_CAP : NEWS_PIN_CAP);
     for (const fam of [0, 1]) {
       for (const r of owed.filter((o) => o.fam === fam).slice(capOf(fam))) {
@@ -2180,8 +2279,52 @@
     );
   }
 
-  function sealedCardHtml(s) {
+  // **The clause's card, for a clause with several records owed** (Q1536,
+  // option 4). The head is the clause as it stands, marked against the text
+  // before the first of them — the net change, green where it passed (the
+  // record's `.recpass`) — and beneath it each record, oldest first, as the
+  // rail would title it: a row that opens that record's own card inside this
+  // one (`foldView`), the clause's OK at its foot either way. Where none of
+  // them carried there is nothing to mark and the head is the clause.
+  function foldCardHtml(s) {
+    const inner = foldView.get(s.id);
+    const one = inner ? s.fold.find((m) => m.id === inner) : null;
+    if (one) return sealedCardHtml(one, s);
+    const skey = s.keys[0];
+    const moved = carried(s);
+    const o = headOpts(s, skey);
+    const last = s.fold[s.fold.length - 1];
+    return (
+      '<div class="sugg sealed-open foldcard' + (moved ? ' recpass' : '') + '" data-card="' + s.id + '"' +
+      ' data-site="' + skey + '">' +
+      '<div class="rechead"><span>' + esc(T.record.foldHead(s.fold.length)) + '</span>' +
+      '<span class="sub">' + esc(longText(last.decided)) + '</span></div>' +
+      clauseHeadHtml(s, Object.assign(o, { key: skey, chips: chipsFor(skey, s.id), label: null },
+        moved && o.text != null && String(o.text).trim() ? { html: wordingHtml(s.replaced ?? '', o.text) } : {})) +
+      (moved ? '<span class="rsub">' + esc(T.record.foldSince) + '</span>' : '') +
+      '<div class="field foldlist"><div class="fieldlab">' + esc(T.record.foldList) + '</div>' +
+      s.fold.map((m) =>
+        '<button type="button" class="foldrec" data-foldopen="' + esc(m.id) + '" title="' + esc(T.record.foldOpen) + '">' +
+        markHtml(markKindOf(m)) +
+        '<span class="qt">' + railTitleHtml(railTitleOf(m, {})) + '</span>' +
+        '<span class="when">' + esc(whenText(m.decided)) + '</span></button>').join('') +
+      '</div>' +
+      foldOkRowHtml(s, '') +
+      '</div>'
+    );
+  }
+  // the clause's one OK, and — on a record opened inside the clause's card —
+  // the way back to the list at the row's left, where a bin would stand
+  const foldOkRowHtml = (fold, left) =>
+    '<div class="race-mid commitrow">' + (left || '<span></span>') +
+    '<button class="btn btn-approve okbtn" data-seen="' + esc(fold.id) + '"' +
+    ' title="' + esc(T.record.foldOkTitle(fold.fold.length)) + '">' + T.record.ok + '</button></div>';
+
+  // `fold`, where this record is drawn inside its clause's card (Q1536): the
+  // card is the fold's — its id, its strip, its OK — and the body this one's
+  function sealedCardHtml(s, fold) {
     if (s.amendment) return amendmentCardHtml(s);
+    const cardId = fold ? fold.id : s.id;
     const d = s.decided || {};
     // The Bradley–Terry model that ran the race carries a strength for every
     // candidate, so a sealed race can be ranked outright (Ed, 121) — and the
@@ -2353,7 +2496,7 @@
     const spk = (c) => (c.why || c.by || c.underNote || c.refusal
       ? speakerHtml(c.why, undefined, c.by) + under(c) + refused(c) : '');
     return (
-      '<div class="sugg sealed-open' + (headPassed ? ' recpass' : '') + '" data-card="' + s.id + '"' +
+      '<div class="sugg sealed-open' + (headPassed ? ' recpass' : '') + '" data-card="' + cardId + '"' +
       (skey ? ' data-site="' + skey + '"' : '') + '>' +
       // **A wording closed early carries no eyebrow at all** (Q1451, Ed
       // 2026-09-18). Its author is told at once, while the clause is still
@@ -2427,7 +2570,7 @@
       // (M19, `headOpts`): the two neighbours named, no text
       (top
         ? clauseHeadHtml(s, Object.assign(headOf(), {
-            key: skey, chips: chipsFor(skey, s.id), label: null,
+            key: skey, chips: chipsFor(skey, cardId), label: null,
           })) +
           // **This clause has changed again since** (Q1333): one line under
           // the head where the clause no longer reads as this record left it,
@@ -2478,9 +2621,13 @@
         // pressing it does, the entry in the rail says it has not been pressed, and
         // a label whose whole job is to be there until you act is a caption for the
         // absence of an act.
-        ? '<div class="race-mid commitrow"><span></span>' +
+        // Inside its clause's card (Q1536) the OK is the clause's, and the
+        // row's left holds the way back to the list of its records.
+        ? (fold ? foldOkRowHtml(fold, '<button type="button" class="btn btn-withdraw foldback" data-foldback="' +
+            esc(fold.id) + '">' + esc(T.record.foldBack) + '</button>') :
+          '<div class="race-mid commitrow"><span></span>' +
           '<button class="btn btn-approve okbtn" data-seen="' + s.id + '"' +
-          ' title="' + T.record.okTitle + '">' + T.record.ok + '</button></div>'
+          ' title="' + T.record.okTitle + '">' + T.record.ok + '</button></div>')
         : '') +
       '</div>'
     );
@@ -2866,7 +3013,7 @@
   const parkNote = (s) => (s.blockedByPark
     ? '<p class="setnote">' + glyphify(esc(s.blockedByPark)) + '</p>' : '');
   function suggCardHtml(s, siteKey) {
-    if (stateOf(s) === 'sealed') return sealedCardHtml(s);
+    if (stateOf(s) === 'sealed') return s.fold ? foldCardHtml(s) : sealedCardHtml(s);
     if (stuck(s)) return deadlockCardHtml(s);
     if (s.kind === 'draft') {
       const site = (siteKey && siteFor(s, siteKey)) || s.sites[0];
@@ -4161,14 +4308,78 @@ document.addEventListener('paste', (ev) => {
     doc.querySelectorAll('[data-seen]').forEach((el) =>
       el.addEventListener('click', (ev) => {
         ev.stopPropagation();
-        const id = el.dataset.seen;
-        readSeals.add(id);
-        if (hooks.seen) hooks.seen(id);
-        const shut = () => { if (openId === id) openId = null; renderAll(); drawWires(); };
-        if (openId === id) collapseCards(id, shut); else shut();
+        seeRecord(el.dataset.seen);
+      })
+    );
+    // a record listed on its clause's card opens inside that card, and the
+    // row's left takes it back to the list (Q1536); the card stays the same
+    // card, its head where it stood
+    const foldSwap = (id, inner, focusSel) => {
+      if (inner) foldView.set(id, inner); else foldView.delete(id);
+      keepStill(() => renderAll(), '.sugg[data-card="' + id.replace(/["\\]/g, '\\$&') + '"] .clausehead');
+      const card = [...doc.querySelectorAll('.sugg[data-card]')].find((c) => c.dataset.card === id);
+      const el = card && card.querySelector(focusSel);
+      if (el) { try { el.focus({ preventScroll: true }); } catch (e) { /* gone */ } }
+    };
+    doc.querySelectorAll('[data-foldopen]').forEach((el) =>
+      el.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const card = el.closest('.sugg[data-card]');
+        // the keyboard goes where C5 puts it on any record — its card's own
+        // tab — so Enter still presses the clause's OK
+        if (card) foldSwap(card.dataset.card, el.dataset.foldopen,
+          '.achip[role="button"][data-anchor="' + card.dataset.card.replace(/["\\]/g, '\\$&') + '"]');
+      })
+    );
+    doc.querySelectorAll('[data-foldback]').forEach((el) =>
+      el.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const id = el.dataset.foldback;
+        const was = foldView.get(id) || '';
+        foldSwap(id, null, '[data-foldopen="' + was.replace(/["\\]/g, '\\$&') + '"]');
       })
     );
   }
+
+  // **The OK, and the walk it starts** (Q1536). Acknowledging marks the
+  // record read — every record of a clause's fold at once — and then, where
+  // anything else is owed, opens the next in document order from here
+  // (`nextOwed`, wrapping to the top), travelling there as a rail click
+  // does; where nothing is, the card closes behind it as it always did.
+  function seeRecord(id) {
+    const g = SUGGS.find((x) => x.id === id);
+    const ids = g && g.fold ? g.fold.map((m) => m.id) : [id];
+    for (const x of ids) { readSeals.add(x); if (hooks.seen) hooks.seen(x); }
+    if (g) walkAt = docIndexOf(g);
+    refold();
+    const next = openId === id ? nextOwed(walkAt) : null;
+    if (next) { toggle(next.id, true); return; }
+    const shut = () => { if (openId === id) openId = null; renderAll(); drawWires(); };
+    if (openId === id) collapseCards(id, shut); else shut();
+  }
+  // **Enter presses OK** (Q1536): on an open card whose OK is owed, wherever
+  // the keyboard stands — except in a field, and on any control but the
+  // card's own tab, where a key already means that control's own press.
+  // Listened for from `init`, once, in the capture phase.
+  let enterBound = false;
+  const enterPressesOk = (ev) => {
+    if (ev.key !== 'Enter' || ev.shiftKey || ev.ctrlKey || ev.metaKey || ev.altKey || ev.isComposing) return;
+    if (openId == null || pendingId != null || !doc) return;
+    const card = [...doc.querySelectorAll('.sugg[data-card]')].find((c) => c.dataset.card === openId);
+    const ok = card && card.querySelector('.okbtn[data-seen]');
+    if (!ok || ok.disabled) return;
+    const a = document.activeElement;
+    // the OK itself presses on its own Enter, natively
+    if (a === ok) return;
+    if (a && a !== document.body) {
+      if (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;
+      const ownTab = a.matches('.achip[data-anchor]') && a.dataset.anchor === openId;
+      if (!ownTab && a.matches('button, a[href], [role="button"], [tabindex]')) return;
+    }
+    ev.preventDefault();
+    ev.stopPropagation();
+    ok.click();
+  };
 
   // Own the animation rather than asking for behavior:'smooth' — native smooth
   // scrolling is silently a no-op in some browser configurations, and this also
@@ -5267,8 +5478,11 @@ document.addEventListener('paste', (ev) => {
     // the tab pressed rides into the card's strip, so the keyboard may already
     // be inside — it still goes on to the decision, unless it is on one
     if (!card || (card.contains(document.activeElement) && document.activeElement.matches('[data-v]'))) return;
+    // …its **own** tab, where the strip holds others ahead of it (Q1536: the
+    // tab is where Enter presses a record's OK)
     const el = card.querySelector('[data-v][aria-checked="true"]:not([disabled])') ||
       card.querySelector('[data-v]:not([disabled])') ||
+      [...card.querySelectorAll('.achip[role="button"]')].find((t) => t.dataset.anchor === id) ||
       card.querySelector('.achip[role="button"]');
     if (el) { try { el.focus({ preventScroll: true }); } catch (e) { /* gone */ } }
   };
@@ -5461,6 +5675,8 @@ document.addEventListener('paste', (ev) => {
     wiresEl = m.wires || document.getElementById('wires');
     walletEl = m.wallet || document.getElementById('wallet');
     pulseEl = m.pulse || document.getElementById('pulse');
+    // Enter presses an owed record's OK (Q1536)
+    if (!enterBound) { enterBound = true; document.addEventListener('keydown', enterPressesOk, true); }
     ROSTER = env.ROSTER ?? 14; FLOOR = env.FLOOR ?? 5;
     EDIT_RULES = env.EDIT_RULES || { grant: 4, cap: 8, stake: 1 };
     if (env.mayPropose) MAY_PROPOSE = env.mayPropose;
@@ -5765,10 +5981,11 @@ document.addEventListener('paste', (ev) => {
   // The data, keyed and seeded exactly as the page did it at load. `prev` is
   // the document being replaced, where there is one (Q1463).
   function bindData(d, s, prev) {
+    // a fold handed back in (a `setData` with no fresh items) is its members
+    // again before anything is filtered; `refold`, at the end, decides afresh
+    s = unfold(s);
     DOC = d; SUGGS = s.filter((g) => !withheld(g));
     HELD = s.filter((g) => withheld(g));
-    // a card that has just been withheld cannot stay open behind it
-    if (openId != null && !SUGGS.some((g) => g.id === openId)) openId = null;
     // Always-on typing means *every* clause can be edited, so every clause needs
     // an identity to hang a draft on — until now only the ones the fixture had
     // something to say about carried a key. Index-derived, and stable for as long
@@ -5807,6 +6024,12 @@ document.addEventListener('paste', (ev) => {
       });
       syncDraftKeys(d);
     });
+    // one OK per clause (Q1536): once the keys are the document's, since the
+    // fold reads the clause as it stands and sorts its span by position
+    refold();
+    // a card that has just been withheld cannot stay open behind it — asked
+    // after the fold, so a fold open across a poll keeps its card
+    if (openId != null && !SUGGS.some((g) => g.id === openId)) openId = null;
   }
 
   // A host that derives the document and its items from a server view hands
