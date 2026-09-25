@@ -35,6 +35,51 @@ Principle numbers are answers Part 5's. *Baseline* says whether today's count be
 
 **Not built, by the answers:** G5's top inset and its 4 px (1541.15), G6 and `strip-blank` (1541.16 (c)), the rationale lane appearing with the change (1541.21 (b)), the filled-dot radio and *You preferred this before it changed* (1541.13 (c)), the power cards' past tense (1541.34), the dark ✒️ before a grant is accepted (Part 4 .19), a note on a dark commit waiting on a choice or a keystroke (.17, .18).
 
+### Today (as ruled) — stage 0's baseline, 2026-09-25
+
+Measured by `design/tools/card-audit.mjs` (stage 0: P13–P33 in report mode, `GRAMMAR_KINDS` empty), **all nine walks** (`--walk=all`: the audit's seven, `sessionband`, `closedband`), 350 card openings per run, at 1600×1000 and at 390×844 (`--baseline=` the 1600 payload, for P31), on the tree **after** the fixture's closed page was fixed (1541.42, `closeFixture` in session-view.html). Answers Part 6 is in force: every label, card and block, at `--t-cap` (6.2); the page top is wherever room runs out (6.4); close and switch keep the clause still the same way (6.5); P29 reads the Rules paragraphs as well as the cards and tabs (6.6).
+
+Reproduce: `node design/tools/card-audit.mjs --walk=all --out=a.json`, then `node design/tools/card-audit.mjs --walk=all --width=390 --height=844 --baseline=a.json --out=b.json`; the table prints last (*as ruled* · cards · *v2* · excepted).
+
+**The unchanged checks reproduce the *today* column.** Run on the tree **before** the fixture fix (HEAD 2cc02604's page), card-audit's v2-comparable count equals the table below exactly, at both widths — head-registration 242 (172), head-form 102 (102), hairline-gap 24 (24), empty-slot 232 (129), row-vocabulary 119 (119), closed-page 268 (76) at 1600 and 210 (76) at 390, raw-value 0 — and so do the row shapes (commit 155, absent 44, pair 14, acknowledge 14, withdraw 6). slot-order had no *today* count; it reads 6 (6). The fixture fix then moves them, **on the two closed walks only** (every other walk's count is identical), line by line:
+
+| check | before → after the fixture fix | why |
+|---|---|---|
+| head-registration | 242 (172) → 239 (170): `closed` 52 → 49 | 31 live cards leave the closed page (the open races, the park, the diagonal, the stranded proposal) and it files 31 undecided backlog records (`rec:fx-u0`…`u30`, the first two replacing the old pair), each heading with the wording they recorded |
+| head-form | 102 → 100: `closed` 51 → 49 | the same swap: two fewer charter cards on the closed walk |
+| hairline-gap | 24 → **0**: `closed` 24 → 0 | the 24 orphan hairlines were the judgment row's placeholder under the unjudged pairs the closed fixture served — no pair is served now (diagnosis: *the one survivor lives in a fixture-only state*) |
+| empty-slot | 232 (129) → 207 (104): `closed` 25 → 0 | the same pairs' empty heads |
+| row-vocabulary | 119 → 94: `closed` 25 → 0 | the pairs' rows (🗑️ + a commit on a closed page) |
+| closed-page | 268 (76) → 114 (45) at 1600, 210 (76) → 114 (45) at 390: `closed` 149 → 5 (91 → 5 at 390), `closedband` 119 → 109 | no radios, commits or *waiting on you* tooltips on unjudged pairs, the park or the running ⏱️ and 👥 motions (held at the close now) |
+| slot-order, raw-value | unchanged | — |
+
+The v2-comparable count keeps each check's **stated exceptions** in (the column above); *as ruled* takes them out: head-registration 167 (99) — 72 excepted (records, the patch, gaps, 🪶 at the birth, the power cards' own clause); head-form 69 (69) — 31 cards whose only thing above the first line is one label.
+
+**The revised and replaced checks' baseline** (as ruled; findings (cards), and the cards each kind names first):
+
+| check | 1600 | 390 | kinds (findings, or cards where said), and the cards they name |
+|---|---|---|---|
+| P13 still | 207 (118) | 212 (121) | close 115 · open 89 · switch 3 at 1600 (+1 page-top at 390). The band holds still, bar the identity cards (✋ 🖼️ 📧: the ink above is the Members list, 25 px) and the seat's motion switches (`seat:stranger·mo:mo-3`…`mo-5`); **every charter card fails**: the charter drops its tab by the eyebrow on close (`charter·race-purse`: the line and tab move 33 px; the room says 26) and the room made on open is the eyebrow's 33 px, not the label's (`race-purse`, `patch-rename` 82 px). 40 readings no pointer could take (a tab behind a pile) are listed in the payload's `unread.p13` |
+| P16 space-above | 201 (191) | 222 (212) | covers 120 (141 at 390): `founding·invite` 10 px, `founding·begin`, the settled band cards; room 81: `invite`, the charter's cards |
+| P17 strip-floor | 0 | 0 | today holds the floor |
+| P19 empty-slot | 207 (104) | 207 (104) | `founding·title`, `slug`, `myemail` — the empty `.clausehead` boxes (the reason-box exception excused none: today's rationale lanes carry a placeholder, which counts as content) |
+| P21 label-slot | 803 (350) | 803 (350) | no-label 251 (`founding·title`, `slug`, `myemail` — the band draws no label above the first line); block 43 (`settled·pw:u:title` — a block with no label); block-place 48, drawing 116, words 115 (`settled·rec:chamber:0` — a record's labels below the first line, at `--t-micro`, in v2's words); labels 1 (`charter·patch-rename`) |
+| P22 no-job | 259 (194) | 259 (194) | until 180 on 134 cards (no dark control carries `data-until` today: `founding·title`'s 🪶, `myname`'s ✓); lit-empty 7 (✉️'s ✒️ over the empty box: `founding·invite`, `settled·myemail`); close-ok 72 (the grants' OK that only closes: `settled·grant-pen`) |
+| P23 note-visible | 20 (20) | 20 (20) | missing 20: `answers·begin` (🍾 waiting on readiness, no note), `settled·chamber`, `settled·admission` (🏛️ in use, tooltip only) |
+| P24 bin-job | 255 (181) | 255 (181) | lit-empty 181 (*Put it back as it stands* lit with nothing to put back: `founding·title`, `myemail`, `myname`); no-job-ever 74 (a bin on a card that can never give it one: the grants, `founding·grant-pen`) |
+| P26 role-drawing | 140 (107) | 140 (107) | unchoosable 119 on 91 cards (the settled cards' pressed provenance radio: `settled·title`, `slug`, `chamber`); green 14 (✋ 🖼️ 📧's solid-green ✓); green-tick 7 (a recorded pick's ✓: `charter·quick-guests-count`, `race-guests-rivals`, `quick-confidence`) |
+| P28 closed-keeps-content | 2 (2) | 2 (2) | lost 2: `closed·rec:fx-u4` (the gap's cut-off insertion) and `rec:fx-u17` draw their head alone. The other 29 cut-off records already read *Proposal ran out of time* |
+| P29 closed-powers | 90 (41) | 89 (40) | strip-tab 34 (`closedband·title`'s pw:u / pw:a tabs); page-tab 23 (22 at 390); label 15 (every closed rule card: no *Rule at the close*); card-line 10 (`closedband·pw:u:title` — *The Founder may amend the title at will*); paragraph 8 (the Rules paragraphs' powers sentences, 6.6) |
+| P30 zone-overlap | 1 (1) | 0 | `charter·open:race-purse`: the patch row floating over a line of text. The 📝 door is the named exception and was excused nowhere this run |
+| P31 width-invariance | — (the baseline) | 91 (89) | not-flush 10 (every walk: the tabs stand 28 px off the glass at 390, 1541.20); close 79 and open 2 (`charter·patch-rename` close travels 0 at 1600 and −82 px at 390; `insert-quiet`'s tab) |
+| P32 place-head | 0 | 0 | — |
+| P33 one-home | 0 | 0 | no card carries a `data-fact` role yet (350 of 350 in `unread.noFactRoles`) — measurable from stage 1 |
+| P25 row-vocabulary's *withdraw-word* | 0 | 0 | the new kind (a withdraw with its word): today's withdraws are bare |
+
+**Not measured in stage 0**, and said in the payload's `unread.notMeasured`: P19's `presence` half (needs the shell's predicate, stage 1); P30's contents drawer at 390 (no walk opens it); P18's hairline under a rule card's standing first line (none until stage 3).
+
+**`raw-value`: the one known failure.** Strict in `copy-check --walk` from stage 0, and green there — nothing the fixture and founding walks open prints a raw value. Plain bug 1 (1541.29) is on the live path only and is **reproduced** (2026-09-25, a dev server, ladder `--to=constitution`, seed 42, seat `m-1`): 🌍 reads *… Does the Founder Have a Veto? Set to undefined Set by the …* and ❌ *… Nobody is proposed for removal. Set to undefined Set by the …* — both caught by the rule's pattern. It is fixed by construction in stage 3 and asserted on the ladder's constitution rung there.
+
 ## The measurement of 2026-09-25 (v2, before the answers)
 
 Measured 2026-09-25 by `tools/grammar-audit.mjs` (a copy of `inventory-audit.mjs`, itself a copy of `design/tools/card-audit.mjs`, with grammar.md §5's checks added — **v2 adds six**). Every check is **DOM-generic**: it reads today's page and the prototype by the same rules, so the columns are comparable. Nine walks each (founding, answers, delegated, settled, outsiders, charter, closed, sessionband, closedband), 352 card openings per run, at 1600×1000 and 390×844. **This file supersedes the stage-5 version**: the prototype measured here is v2 (grammar.md v2), and today's page was re-measured with the v2 checks, so both columns come from the same instrument on the same day.
