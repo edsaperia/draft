@@ -42,6 +42,8 @@
  * Since Q1365 (2026-09-15) scene 2 OKs 🏛️ at arrival before answering — the
  * grant arrives with membership and no blind question is served until its OK —
  * so the long-lived page's post-🍾 OKs bring 💡 ⚖️ alone.
+ * Since Q1540 (2026-09-24) a member is shown 💡 ⚖️ only after 🏛️'s OK, so
+ * scene 1's OKs bring 🏛️ alone, and its OK brings 💡 ⚖️.
  */
 import { chromium } from 'playwright';
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
@@ -170,6 +172,13 @@ const okEverything = async (page, max = 14) => {
   }
   return pressed;
 };
+// accept 🏛️ from its rail entry: 'ok', or what stood in the way
+const okVoice = (page) => page.evaluate(() => new Promise((res) => {
+  const entry = document.querySelector('#rail [data-card="grant-voice"]'); if (!entry) return res('no 🏛️ entry');
+  entry.click();
+  setTimeout(() => { const b = document.querySelector('.setupcard[data-setupcard="grant-voice"] [data-ok]');
+    if (!b || b.disabled) return res('no live OK on 🏛️'); b.click(); res('ok'); }, 700);
+}));
 // the ✉️ tab, opened: what its commit is
 const inviteRoute = (page) => page.evaluate(async () => {
   const t = document.querySelector('[data-tab="invite"]'); if (!t) return { err: 'no ✉️ tab' };
@@ -214,8 +223,17 @@ if (SCENE !== '2') {
   await T(POLL);
   const s2 = await state(page);
   say('           · OKs pressed ' + JSON.stringify(pressed));
-  verdict('the OKs bring 💡 ⚖️ and 🏛️', ['canpropose', 'canjudge', 'grant-voice'].every((k) => s2.rail.includes(k)),
+  // **🏛️ first** (Q1540, Ed 2026-09-24): the news OKs bring 🏛️, and 💡 ⚖️
+  // are not shown to a member until it is accepted
+  verdict('the OKs bring 🏛️, and not yet 💡 ⚖️ (Q1540)',
+    s2.rail.includes('grant-voice') && !s2.rail.some((k) => k === 'canpropose' || k === 'canjudge'),
     'rail ' + JSON.stringify(s2.rail));
+  const voice = await okVoice(page);
+  await T(POLL);
+  const s2b = await state(page);
+  verdict('accepting 🏛️ brings 💡 ⚖️', voice === 'ok' &&
+    ['canpropose', 'canjudge'].every((k) => s2b.rail.includes(k)) && !s2b.rail.includes('grant-voice'),
+    voice + ' · rail ' + JSON.stringify(s2b.rail));
   await land(page, page.url());
   const s3 = await state(page);
   verdict('no answer card on a fresh load of a begun document',
@@ -262,12 +280,7 @@ if (SCENE !== '1') {
   // **🏛️ first** (Q1365, Ed 2026-09-15): the grant arrives at arrival on the
   // Founded line and no blind question is served until it is OK'd — so the
   // member's page holds the voice and nothing else askable until this press
-  const voiceOk = await page.evaluate(() => new Promise((res) => {
-    const entry = document.querySelector('#rail [data-card="grant-voice"]'); if (!entry) return res('no 🏛️ entry');
-    entry.click();
-    setTimeout(() => { const b = document.querySelector('.setupcard[data-setupcard="grant-voice"] [data-ok]');
-      if (!b || b.disabled) return res('no live OK on 🏛️'); b.click(); res('ok'); }, 700);
-  }));
+  const voiceOk = await okVoice(page);
   await T(1500);
   verdict('🏛️ is served at arrival and OK\'d before any question (Q1365)', voiceOk === 'ok', voiceOk);
   const answered = [];

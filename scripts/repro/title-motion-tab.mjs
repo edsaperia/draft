@@ -18,7 +18,7 @@
  * and the founder. A freshly seated ladder member still owes the OKs on 💡 ⚖️ and 🏛️, and a
  * motion that waits on a grant they have not taken up is nowhere on their page at all (C9,
  * Q1344) — which is *the rule*, not this defect — so the walk gives those OKs first and then
- * reads. Needs a dev server (the ladder and the seat switch).
+ * reads — 🏛️ first, since 💡 ⚖️ are not shown before its OK (Q1540). Needs a dev server (the ladder and the seat switch).
  *
  * Exit 0 only if every check passes; 1 on a failure, 2 on a broken set-up.
  */
@@ -85,8 +85,9 @@ const readSeat = async (who, cookie) => {
   // in a freshly seated member's rail as tasks, and until they are pressed no motion at all
   // reaches their page — so a walk that read the rail before them would be testing the grants
   // and not this. The founder set the gates themselves and owes none, so each is pressed only
-  // where it is offered.
-  for (const k of ['canpropose', 'canjudge', 'grant-voice']) {
+  // where it is offered. **🏛️ first** (Q1540, Ed 2026-09-24): a member is shown neither 💡 nor
+  // ⚖️ until 🏛️ is accepted, so pressing them first found nothing and left both owed.
+  for (const k of ['grant-voice', 'canpropose', 'canjudge']) {
     const opened = await page.evaluate((kk) => {
       const t = document.querySelector('#rail [data-card="' + kk + '"]');
       if (!t) return false;
