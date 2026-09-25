@@ -132,7 +132,10 @@ const seat = async (email) => {
       const li = [...document.querySelectorAll('#rail .qitem')]
         .find((q) => q.querySelector('button.st-news') && !/^adm:/.test(q.dataset.q));
       if (!li) return null;
-      li.querySelector('button').click();
+      // not if the review walk has opened it already (Q1536): a press would shut it
+      if (![...document.querySelectorAll('.setupcard[data-setupcard]')].some((c) => c.dataset.setupcard === li.dataset.q)) {
+        li.querySelector('button').click();
+      }
       await new Promise((s) => setTimeout(s, 500));
       const ok = document.querySelector('.setupcard [data-ok], .setupcard .okbtn');
       if (!ok) return null;

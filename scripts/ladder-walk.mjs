@@ -136,14 +136,18 @@ say('\n✓ the ladder walks');
 
 /** Open a card from the rail and press its OK, the way a founder does. */
 async function okThe(key) {
+  // the review walk may have another card open (Q1536: an OK opens the next
+  // owed), so the switch closes that one first — and never presses a card
+  // that is this one, which would shut it
   await page.evaluate((k) => {
+    if (document.querySelector(`.setupcard[data-setupcard="${k}"]`)) return;
     document.querySelector(`#rail [data-card="${k}"], #band [data-tab="${k}"]`)?.click();
   }, key);
-  await T(500);
-  await page.evaluate(() => {
-    const ok = document.querySelector('[data-ok]');
+  await T(900);
+  await page.evaluate((k) => {
+    const ok = document.querySelector(`.setupcard[data-setupcard="${k}"] [data-ok]`) || document.querySelector('[data-ok]');
     if (ok !== null) { ok.scrollIntoView({ block: 'center' }); ok.click(); }
-  });
+  }, key);
   await T(600);
 }
 

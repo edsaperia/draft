@@ -159,7 +159,8 @@ const okEverything = async (page, max = 14) => {
     if (!k) break;
     const r = await page.evaluate((k) => {
       const el = document.querySelector('#rail [data-card="' + k + '"]'); if (!el) return 'no entry';
-      el.click();
+      // not if the review walk has opened it already (Q1536): a press would shut it
+      if (!document.querySelector('.setupcard[data-setupcard="' + k + '"]')) el.click();
       return new Promise((res) => setTimeout(() => {
         const b = document.querySelector('.setupcard [data-ok]');
         if (!b) return res('no OK on ' + k); if (b.disabled) return res('OK disabled on ' + k);
@@ -175,7 +176,7 @@ const okEverything = async (page, max = 14) => {
 // accept 🏛️ from its rail entry: 'ok', or what stood in the way
 const okVoice = (page) => page.evaluate(() => new Promise((res) => {
   const entry = document.querySelector('#rail [data-card="grant-voice"]'); if (!entry) return res('no 🏛️ entry');
-  entry.click();
+  if (!document.querySelector('.setupcard[data-setupcard="grant-voice"]')) entry.click();
   setTimeout(() => { const b = document.querySelector('.setupcard[data-setupcard="grant-voice"] [data-ok]');
     if (!b || b.disabled) return res('no live OK on 🏛️'); b.click(); res('ok'); }, 700);
 }));
@@ -264,7 +265,7 @@ if (SCENE !== '1') {
   // the three questions, answered on the page: first block, then the ✓
   const answerOnPage = (k) => page.evaluate(async (k) => {
     const entry = document.querySelector('#rail [data-card="' + k + '"]'); if (!entry) return 'no entry ' + k;
-    entry.click(); await new Promise((s) => setTimeout(s, 700));
+    if (!document.querySelector('.setupcard[data-setupcard="' + k + '"]')) entry.click(); await new Promise((s) => setTimeout(s, 700));
     const card = document.querySelector('.setupcard'); if (!card) return 'no card for ' + k;
     const rung = card.querySelector('.lanepick'); if (rung) { rung.click(); await new Promise((s) => setTimeout(s, 400)); }
     // the rung click re-renders the card: re-read it before the fields and the row
