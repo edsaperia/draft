@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 653
+  "entries": 662
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -586,6 +586,13 @@
   "session.record.counts": "ƒ (judges, roster, floor, yoursLine, approvals, abstained) =>\n        judges + ' of ' + roster + ' weighed in · ' +\n        (approvals === null || approvals === undefined ? '' : approvals + ' preferred it · ') +\n        (abstained ? abstained + ' did not answer in time · ' : '') +\n        'quorum was ' + floor + ' · ' + yoursLine",
   "session.record.decided": "Decided",
   "session.record.dominated": "Rejected — it could no longer pass",
+  "session.record.foldBack": "All decisions here",
+  "session.record.foldCap": "ƒ (n) => n + ' decisions here since you last looked'",
+  "session.record.foldHead": "ƒ (n) => n + ' decisions'",
+  "session.record.foldList": "Each decision, oldest first",
+  "session.record.foldOkTitle": "ƒ (n) => 'All ' + n + ' leave your margin and stay in the record'",
+  "session.record.foldOpen": "Open this decision",
+  "session.record.foldSince": "Marked against the text before the first of them",
   "session.record.founder": "The Founder",
   "session.record.gone": "This clause has since been removed.",
   "session.record.measuredAtClose": "ƒ (k, m) => 'Passed when the document closed, voted against ' + k +\n        ' of its ' + m + (m === 1 ? ' rival' : ' rivals')",
