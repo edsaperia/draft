@@ -453,7 +453,9 @@ jobs:
   # change needs no re-freeze — only a page change does (Q914).
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # 15 until Q1541 stage 0: the redesign checks' fast pass is two fixture
+    # walks of ~5–9 min each on a laptop (BUILD.md §2 estimated three)
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
