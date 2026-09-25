@@ -190,8 +190,8 @@
         if (hasCtl(el)) { out.input.push({ el }); return; }
         out.body.push(el); return;
       }
-      if (el.tagName === 'SPAN' && !textOf(el) && !el.querySelector('button,svg,img')) return;   // spacers
       if (hasCtl(el)) { out.input.push({ el }); return; }
+      if (el.tagName === 'SPAN' && !textOf(el) && !el.querySelector('button,svg,img')) { out.dropped.push('spacer'); return; }
       if (!textOf(el) && !el.querySelector('button, svg, img, .av')) { out.dropped.push('empty ' + el.className); return; }
       out.body.push(el);
     };
@@ -275,13 +275,24 @@
         break;
       }
     }
+    // …and a card with no line to stand in for is placeless (§2.3 row 1):
+    // it heads with its own name, the tab's (`labelOf`), never with nothing
+    if (headRt && !textOf(headRt) && !headRt.querySelector('.titlelane, input, [contenteditable]')) {
+      const nm = o.head.querySelector('.achip.wmark .sr') || o.head.querySelector('.achip .sr');
+      if (nm && textOf(nm)) {
+        headRt.innerHTML = '<p class="gtitle">' + esc(textOf(nm)) + '</p>';
+        o.dropped.push('placeless: name → head');
+      }
+    }
     const headText = norm(textOf(o.head && o.head.querySelector('.rtext, .headrule')));
     const anyAct = o.rowR.length > 0 || o.rowL.length > 0;
     const keptBlocks = [];
     // J1: a radio has a job only where a commit can send the choice — the
     // mover's own motion card (withdraw alone), a news card (OK alone) and
     // a read-only card draw no radios and no Indifferent (§6.4's mover)
-    const choiceAct = o.rowR.some((b) => !/^(OK|Accept|Activate)/i.test(textOf(b)));
+    // (a patch's one judgment is sent from the floating row, Q1382, so its
+    // site cards keep their lanes though they carry no row of their own)
+    const choiceAct = o.rowR.some((b) => !/^(OK|Accept|Activate)/i.test(textOf(b))) || root.matches('.patch-open');
     const visitBlock = (blk) => {
       if (!choiceAct && !closed) {
         const isIndiff = blk.matches('.vinblock') || [...blk.querySelectorAll('.lanepick')].some((r) => /^Indifferent$/i.test(textOf(r)));
@@ -407,7 +418,7 @@
 
   function untilOf(b, root) {
     const t = (b.getAttribute('title') || '') + ' ' + textOf(b);
-    if (b.hasAttribute('data-begin')) return 'readiness';
+    if (b.hasAttribute('data-begin') || b.closest('.begintable, .readiness')) return 'readiness';
     if (b.classList.contains('grantok')) return 'readiness';
     if (/\d\d:\d\d|next ✏️|✏️ in/i.test(t)) return 'drip';
     if (/accept/i.test(t)) return 'accept:pen';
@@ -548,6 +559,9 @@
     const o = sort(root, st);
     judge(o, root, st);
     assemble(root, o, st);
+    // J1: every dark control anywhere on the card says what will wake it
+    root.querySelectorAll('button[disabled]:not([data-until]), .lanepick[disabled]:not([data-until])')
+      .forEach((b) => b.setAttribute('data-until', untilOf(b, root)));
     // what the card held when it opened is its baseline; what differs from
     // it is unsent, and shows the bin and the reason lane (J2, B13)
     baseline(root);
@@ -578,5 +592,5 @@
   document.addEventListener('input', onEdit, true);
   document.addEventListener('click', onEdit, true);
 
-  window.GRAMMAR = { card, provide, dirty, resync, UNTIL };
+  window.GRAMMAR = { card, provide, dirty, resync, UNTIL, closed: () => P.closed() };
 })();

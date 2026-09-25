@@ -620,6 +620,13 @@
 </script>
 <div class="devswitch" title="Dev only — not part of the product"><label for="devwho">dev · viewing as</label> <select id="devwho"></select> <button id="devff" title="Dev only — complete the founding: invite two members, answer everything, open the gates">⏩ settle the founding</button></div>
 <div class="alphaflag"><b>Warning:</b> docs.vote is in alpha!</div>
+<!-- the prototype's own note (Q1541 stage 5): off the design system, like the demo panel -->
+<details id="gnote"><summary>Prototype (Q1541) — what is not converted</summary><ul>
+<li>Every decision card goes through one shell (grammar.js); the bodies are still today's builders, sorted into slots by the shell rather than built from one CardState (S1 not met).</li>
+<li>Untested here: the 👑 question, the diagonal, the applicant's five, and the live-only news cards (release, amendment, mail give-up, departure) — they pass through the shell but no fixture opens them.</li>
+<li>Unchanged: the topbar, wallets, both rails, the band's paragraphs, 📝 edit mode and the floating proposal row, the stranger's door.</li>
+<li>Not built: keyed re-render (U1/U2), the phone's wider card (O4), a head for a two-clause draft on the fixture (its source text is missing, as on today's page).</li>
+</ul></details>
 <div class="wrap">
   <div class="layout">
     <!-- **The three columns and the topbar are landmarks, and now they have
@@ -735,7 +742,7 @@
 <!-- 🍾 and 🥂 -->
 <script src="../../begin.js"></script>
 <!-- edit mode and the strip before the start -->
-<script src="../../edit-mode.js"></script>
+<script src="edit-mode.js"></script>
 <!-- the wallet family, the socket's speech bubble and the hold ladder -->
 <script src="../../wallets.js"></script>
 <!-- the live layer: the wire, the remote session and the view in -->
@@ -5491,7 +5498,12 @@
     const rows = hostKeyOf(c) === 'invite'
       ? S.roster.filter((p) => !p.in).concat(invitePendingRows())
       : (cs ? S.roster.filter((p) => removalPendingIds().has(p.mid || 'founder')) : []);
-    const empty = hostKeyOf(c) === 'invite' ? PAGE_COPY.doorEmpty.invite : PAGE_COPY.doorEmpty.remove;
+    // the prototype (Q1541, S2): the door's head is its subsection's own
+    // rendering, so an empty list reads as the subsection reads it — the
+    // same words, not a second sentence for the same fact
+    const empty = window.GRAMMAR
+      ? (hostKeyOf(c) === 'invite' ? '(no outstanding invitations)' : '(nobody proposed for removal)')
+      : hostKeyOf(c) === 'invite' ? PAGE_COPY.doorEmpty.invite : PAGE_COPY.doorEmpty.remove;
     return '<div class="headpeople">' + (rows.length
       ? rows.map((p) => '<span class="hp">' + avHtml(p) + ' ' +
           esc(p.n || p.e || 'Anonymous') + pendingChip(p) + '</span>').join('')

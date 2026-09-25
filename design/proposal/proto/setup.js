@@ -349,6 +349,9 @@ window.SETUP = (function () {
     ' style="--chiphue: var(--lc-' + hueFor(c, st) + ')' +
     (window.CARDS.PLAIN_HUE.has(hueFor(c, st)) ? '; ' + window.CARDS.PLAIN_CHIP : '') + (o.z ? '; z-index:' + o.z : '') + '"' +
     (o.inert ? '' : ' title="' + esc(labelOf(c, ctx) + (o.active ? ' — close it'
+      // P4 (the prototype, Q1541): a closed document asks nobody anything,
+      // so no tab on it says *waiting on you* — only 🥂 still waits
+      : (st === 'ask' || st === 'wait') && window.GRAMMAR && window.GRAMMAR.closed() ? ' — settled'
       : st === 'ask' ? ' — waiting on you' : st === 'wait' ? ' — waiting on others'
       : st === 'news' ? (c.grants ? ' — yours to take' : ' — decided; it waits for your OK')
       : st === 'yours' ? ' — yours, being voted on' : ' — settled')) + '"') +

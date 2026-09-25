@@ -44,6 +44,11 @@
 .gcard .clausehead .rtext.gplace { padding-top: 0; }
 #charter .gcard.sugg, .doc .gcard.sugg:not(.setupcard) { margin-top: -14px; }
 
+/* a placeless card's head is its name, in the chrome's face (§2.3 row 1) */
+.gcard .clausehead .rtext > .gtitle {
+  margin: 0; font-family: var(--font-ui); font-size: var(--t-lead); font-weight: 600; line-height: 1.5;
+}
+
 /* ---- the fact line (§2.7): text, never a control ----------------------- */
 .gcard .gfact {
   font-family: var(--font-ui); font-size: var(--t-small); line-height: 1.45;
@@ -56,6 +61,12 @@
   margin-left: var(--s2); margin-right: auto;
 }
 .gcard .lanebar { justify-content: flex-start; }
+.gcard .lanebar > .lanepropose { margin-left: auto; }
+/* a note about the whole field is body prose, not an eyebrow (§4) */
+.gcard .gfieldnote {
+  text-transform: none; letter-spacing: 0; font-weight: 400;
+  font-family: var(--font-ui); font-size: var(--t-small); color: var(--muted); margin: 0;
+}
 /* a block with no lane (a record's, the 👑 card's) wears its label as the last line */
 .gcard .propblock > .glabel, .gcard .pick > .glabel, .gcard .ranked > .glabel {
   display: block; margin: var(--s2) 0 0;

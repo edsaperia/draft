@@ -1,0 +1,26 @@
+// birth-probe.mjs — drive the birth (🪶 📍 📧 → magic link) and report each step (Q1541 stage 5 working tool)
+import { chromium } from 'playwright';
+const url = process.argv[2];
+const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1600, height: 1000 } });
+await p.addInitScript(() => { const mm = window.matchMedia.bind(window); window.matchMedia = (q) => (/prefers-reduced-motion/.test(q) ? { matches: true, media: q, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {}, onchange: null, dispatchEvent() { return false; } } : mm(q)); });
+p.on('pageerror', (e) => console.log('pageerror ' + e.message));
+p.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') console.log('console ' + m.text().slice(0, 200)); });
+await p.goto(url); await p.waitForTimeout(1200);
+const clickIn = (s) => p.evaluate((s) => { const e = document.querySelector(s); if (!e || e.disabled) return (e ? 'disabled ' : 'none ') + s; e.click(); return 'clicked ' + s; }, s);
+const typeIn = (s, v) => p.evaluate(([s, v]) => { const el = document.querySelector(s); if (!el) return 'none ' + s; if (el.isContentEditable) { el.textContent = v; el.dispatchEvent(new InputEvent('input', { bubbles: true })); } else { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); } return 'typed ' + s; }, [s, v]);
+const rail = () => p.evaluate(() => [...document.querySelectorAll('#rail li')].map((el) => el.dataset.q || (el.querySelector('[data-card]') || { dataset: {} }).dataset.card).join(','));
+const open = (k) => p.evaluate((k) => { const el = document.querySelector('#rail [data-card="' + k + '"]') || document.querySelector('[data-tab="' + k + '"]'); if (!el) return 'no ' + k; el.click(); return 'open ' + k; }, k);
+const w = (ms) => p.waitForTimeout(ms);
+console.log(await rail());
+console.log(await open('title')); await w(300);
+console.log(await typeIn('.setupcard [data-titlelane]', 'Hollow Oak Club Charter'));
+console.log(await clickIn('.setupcard [data-confirm]')); await w(320); console.log('rail', await rail());
+console.log(await open('slug')); await w(300);
+console.log(await clickIn('.setupcard [data-confirm]')); await w(320); console.log('rail', await rail());
+console.log(await open('myemail')); await w(300);
+console.log(await typeIn('.setupcard input[type="email"]', 'ada@example.org'));
+console.log(await p.evaluate(() => { const c = document.querySelector('.setupcard'); return c && (c.getAttribute('data-gdropped') + ' || ' + c.innerHTML.replace(/<svg[^]*?<\/svg>/g, '').slice(0, 1500)); }));
+console.log(await clickIn('.setupcard [data-confirm]')); await w(400);
+console.log(await clickIn('[data-act="clickmail"]')); await w(900);
+console.log('rail', await rail());
+await b.close();
