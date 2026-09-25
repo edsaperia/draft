@@ -412,6 +412,15 @@ export interface RaceView {
    */
   smith: string[];
   /**
+   * **Wordings the fit rates above the current text that a direct majority
+   * preferred the current text to** (Q1539 ruling 6 → why: R-143), oldest
+   * first: `p` the fit's P(it beats the current text), `n` of `m` members who
+   * answered that pair preferring the text (*Indifferent* counted in `m`).
+   * What a retirement or an undecided close stamps, for the record's
+   * ranked-note; nothing gates on it.
+   */
+  headToHead: Array<{ id: string; p: number; n: number; m: number }>;
+  /**
    * **The pairs the leader still waits on** (SPEC §4.2, §8.2 → why: R-142;
    * Q1538), as `pairKey`s in the order the router asks them: the leader
    * against each live rival short of measured, oldest first, then the pairs
@@ -551,6 +560,19 @@ export type Event =
        * written before the rule folds unedited.
        */
       reason?: string;
+      /**
+       * **The ranked-note's numbers** (Q1539 → why: R-143; Ed 2026-09-25, ruling
+       * 6): the wording ended with the fit rating it above the text that stood,
+       * while a direct majority of those who answered it against that text
+       * preferred the text — so the record shows its percentage, higher than the
+       * text's, and says why it did not pass. `p` is the fit's P(it beats the
+       * current text); `n` of `m` preferred the current text, `m` counting every
+       * member who answered the pair, *Indifferent* included, and its author by
+       * their standing preference (§3.3). Stamped when the wording ends, so the
+       * record never re-derives it (R-141's lesson); absent otherwise, and on
+       * every older log.
+       */
+      ranked?: { p: number; n: number; m: number };
     }
   | {
       /**
@@ -608,6 +630,8 @@ export type Event =
       id: string;
       raceId: string;
       refund: number;
+      /** As on `candidate-retired` (Q1539): the fit above, a direct majority for the text. */
+      ranked?: { p: number; n: number; m: number };
     }
   | {
       /** Author folds their support into an existing candidate (SPEC §5.1). */

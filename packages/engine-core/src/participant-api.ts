@@ -152,6 +152,20 @@ export interface OutcomeEntry {
    * nothing where it is zero.
    */
   abstained?: number;
+  /**
+   * **How many of its live rivals the winner was measured against** (Q1538,
+   * SPEC §4.6 → why: R-142): on an `adopted` entry whose winner had rivals,
+   * off the event. Below `of` only for a wording passed at the close — the
+   * record's measured-note.
+   */
+  rivals?: { measured: number; of: number };
+  /**
+   * **The ranked-note's numbers** (Q1539 ruling 6 → why: R-143): on a
+   * `retired` or `undecided` entry the fit rated above the text that stood
+   * while a direct majority preferred the text. `p` rides out as the entry's
+   * own `p` too, so the record shows the percentage the note explains.
+   */
+  ranked?: { n: number; m: number };
 }
 
 /** The largest routing value in a hand — what every `urgency` is a fraction of. */
@@ -384,16 +398,19 @@ export class ParticipantApi {
           // the decision's own numbers (Q1439, Q1452), absent on an older log
           ...(typeof ev.approvals === 'number' ? { approvals: ev.approvals } : {}),
           ...(typeof ev.floor === 'number' ? { floor: ev.floor } : {}),
-          ...(typeof ev.abstained === 'number' ? { abstained: ev.abstained } : {}) });
+          ...(typeof ev.abstained === 'number' ? { abstained: ev.abstained } : {}),
+          ...(ev.rivals ? { rivals: ev.rivals } : {}) });
       } else if (ev.type === 'candidate-retired') {
         const c = this.session.getCandidate(ev.id);
         out.push({ t: ev.t, candidateId: ev.id, outcome: 'retired',
           raceId: ev.raceId ?? `r:${ev.id}`, version: c.patch?.baseVersion ?? this.session.currentVersion(),
-          ...(ev.reason ? { reason: ev.reason } : {}) });
+          ...(ev.reason ? { reason: ev.reason } : {}),
+          ...(ev.ranked ? { p: ev.ranked.p, ranked: { n: ev.ranked.n, m: ev.ranked.m } } : {}) });
       } else if (ev.type === 'candidate-undecided') {
         const c = this.session.getCandidate(ev.id);
         out.push({ t: ev.t, candidateId: ev.id, outcome: 'undecided',
-          raceId: ev.raceId, version: c.patch?.baseVersion ?? this.session.currentVersion() });
+          raceId: ev.raceId, version: c.patch?.baseVersion ?? this.session.currentVersion(),
+          ...(ev.ranked ? { p: ev.ranked.p, ranked: { n: ev.ranked.n, m: ev.ranked.m } } : {}) });
       }
     }
     return out;

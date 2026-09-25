@@ -508,6 +508,13 @@ export class Races {
       closeness: need === 0 ? 0 : got / need,
       dominated,
       smith,
+      // the ranked-note's numbers (Q1539 ruling 6): the fit above the current
+      // text, a direct majority of those answering for the text
+      headToHead: members.flatMap((m) => {
+        const p = pairAt(m, cur);
+        return strength(m) > strength(cur) + TIE_EPS && p.forY > p.forX
+          ? [{ id: m, p: fit.probBeats(m, cur), n: p.forY, m: p.answeredBy }] : [];
+      }),
       measureShort,
       atClose: { ...closeNumbers, leaderId: close.leaderId, leaderOnTop: close.leaderOnTop },
       // set below for a text race, which alone can wait behind a park
@@ -960,18 +967,28 @@ export class Races {
    * and **the leader has been measured against every live rival** (a rival
    * the batch is about to close excepted). **At the close** (`final`) the
    * wait is waived and the reading is `atClose`'s, the Smith set read on the
-   * evidence it has, an unmeasured pair level (§4.6).
+   * evidence it has, an unmeasured pair level (§4.6): `clearsAtClose`.
    */
-  clearsFloor(r: RaceView, opts: { final?: boolean } = {}): boolean {
-    const x = opts.final ? r.atClose : r;
-    const base = x.approvals >= x.floor &&
-      x.leaderId !== null &&
-      x.leaderOnTop &&
-      (x.leaderMeasured > 0 || this.host.soleMemberIsLeadersAuthor(x.leaderId));
-    if (!base || opts.final) return base;
-    if (ARMS.smith && r.smith.length === 0) return false;
-    if (ARMS.rivalMeasure && r.rivals.measured < r.rivals.of) return false;
-    return true;
+  clearsFloor(r: RaceView): boolean {
+    return r.approvals >= r.floor &&
+      r.leaderId !== null &&
+      r.leaderOnTop &&
+      (r.leaderMeasured > 0 || this.host.soleMemberIsLeadersAuthor(r.leaderId)) &&
+      !(ARMS.smith && r.smith.length === 0) &&
+      !(ARMS.rivalMeasure && r.rivals.measured < r.rivals.of);
+  }
+
+  /**
+   * **Ready to carry at the close** (SPEC §4.6 → why: R-142): the batch's own
+   * test on the race as the close reads it — the leader on top and at its
+   * floor on the evidence it has, the wait for rivals waived.
+   */
+  clearsAtClose(r: RaceView): boolean {
+    const c = r.atClose;
+    return c.approvals >= c.floor &&
+      c.leaderId !== null &&
+      c.leaderOnTop &&
+      (c.leaderMeasured > 0 || this.host.soleMemberIsLeadersAuthor(c.leaderId));
   }
 
   /**

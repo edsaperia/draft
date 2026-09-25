@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 651
+  "entries": 653
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -586,11 +586,13 @@
   "session.record.dominated": "Rejected — it could no longer pass",
   "session.record.founder": "The Founder",
   "session.record.gone": "This clause has since been removed.",
+  "session.record.measuredAtClose": "ƒ (k, m) => 'Passed when the document closed, voted against ' + k +\n        ' of its ' + m + (m === 1 ? ' rival' : ' rivals')",
   "session.record.ok": "OK",
   "session.record.okTitle": "It leaves your margin and stays in the record",
   "session.record.outAdopted": "adopted",
   "session.record.outStood": "retired — the current text stood",
   "session.record.outUndecided": "undecided",
+  "session.record.rankedBelow": "ƒ (n, m) => n + ' of ' + m + ' members preferred the current text to this'",
   "session.record.replaced": "the text it replaced",
   "session.record.undecided": "Proposal ran out of time",
   "session.record.youNever": "you never voted on this",

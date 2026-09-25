@@ -1021,7 +1021,11 @@ export class Session {
     for (const r of this.races()) {
       for (const id of r.members) {
         if (this.candidate(id).state !== 'live') continue;
-        this.emit({ type: 'candidate-undecided', t, id, raceId: r.id, refund: 0 });
+        // the ranked-note's numbers (Q1539 ruling 6), where the fit rated it
+        // above the text a direct majority kept
+        const h = r.headToHead.find((x) => x.id === id);
+        this.emit({ type: 'candidate-undecided', t, id, raceId: r.id, refund: 0,
+          ...(h ? { ranked: { p: h.p, n: h.n, m: h.m } } : {}) });
       }
     }
     // A candidate parked awaiting the convenor's assent (§9.7 rule 8) is
@@ -1883,7 +1887,7 @@ export class Session {
     const ready = this.races(t)
       // `clearsFloor` is the test, shared with `races()`'s `blockedByPark`
       // (R-100). What it asks, and why:
-      .filter((r) => this.raceRules.clearsFloor(r, { final }))
+      .filter((r) => (final ? this.raceRules.clearsAtClose(r) : this.raceRules.clearsFloor(r)))
           // The top of the field and the floor, and then the helper's last
           // clause, whose reason is long enough to keep here beside the batch
           // it governs.
@@ -2039,7 +2043,13 @@ export class Session {
   private retireDominated(t: number): void {
     if (this.closedFlag) return;
     const doomed: string[] = [];
-    for (const r of this.races(t)) for (const d of r.dominated) doomed.push(d.id);
+    // the ranked-note's numbers, where the wording closing was one the fit
+    // rated above the text a direct majority kept (Q1539 ruling 6)
+    const ranked = new Map<string, { p: number; n: number; m: number }>();
+    for (const r of this.races(t)) {
+      for (const d of r.dominated) doomed.push(d.id);
+      for (const { id, ...h } of r.headToHead) ranked.set(id, h);
+    }
     if (doomed.length === 0) return;
     doomed.sort((a, b) => candidateNum(a) - candidateNum(b));
     for (const id of doomed) {
@@ -2054,6 +2064,7 @@ export class Session {
         // to come could carry did not pass, and only passing is refunded.
         refund: exitRefund(c.stakePaid, 'failed'),
         reason: 'dominated',
+        ...(ranked.has(id) ? { ranked: ranked.get(id)! } : {}),
       });
     }
   }
@@ -2424,7 +2435,7 @@ export class Session {
       // the batch's own test (Q1337, R-114; Q1439, R-125): the top of the
       // field, F approvals of the leader, and the room having judged it — the
       // close renders nothing the sweep would not
-      if (!this.raceRules.clearsFloor(r, { final: true })) continue;
+      if (!this.raceRules.clearsAtClose(r)) continue;
       if (r.settingId !== undefined) {
         appliedSettings.push({ settingId: r.settingId, candidateId: r.atClose.leaderId! });
         continue;
