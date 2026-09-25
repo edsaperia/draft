@@ -184,3 +184,28 @@ describe('a park written before the field folds and accepts unchanged', () => {
     expect(old.verifyChain()).toBe(true);
   });
 });
+
+/**
+ * **…and so does how many rivals the winner was measured against** (Q1538 →
+ * why: R-142): the park is the moment the vote carried, so `decided.rivals`
+ * is snapshotted there and the adoption after Accept copies it unchanged.
+ */
+describe('the rival count carries through the park (Q1538)', () => {
+  it('the park records { measured, of } and the accept adopts on it', () => {
+    const s = open({ textAssent: true });
+    const X = s.submitCandidate(1000, { author: 'p1', rationale: 'x', patch: {
+      baseVersion: 0, hunks: [{ start: 1, end: 2, lines: ['Membership is by invitation.'] }] } }).id;
+    const Y = s.submitCandidate(1100, { author: 'p2', rationale: 'y', patch: {
+      baseVersion: 0, hunks: [{ start: 1, end: 2, lines: ['Membership is open to members.'] }] } }).id;
+    const inc = s.races().find((r) => r.members.includes(X))!.incumbentId;
+    s.judge(2000, 'p3', X, inc, 'a');
+    s.judge(2100, 'p3', X, Y, 'a');
+    s.judge(2200, 'p4', X, Y, 'a');
+    expect(s.getCandidate(X).state).toBe('awaiting-assent');
+    const park = parkOf(s);
+    expect(park).toMatchObject({ decided: { rivals: { measured: 1, of: 1 } } });
+    s.assent(9 * HOUR, X, 'accept');
+    expect(adoptionOf(s)).toMatchObject({ rivals: { measured: 1, of: 1 } });
+    expect(Session.replay(s.log).rollingHash()).toBe(s.rollingHash());
+  });
+});

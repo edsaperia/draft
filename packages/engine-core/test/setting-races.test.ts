@@ -225,3 +225,54 @@ describe('replay (SPEC §11)', () => {
     expect(r.races().length).toBe(s.races().length);
   });
 });
+
+/**
+ * **One rule everywhere** (Q1538, Q1539 ruling 4 → why: R-142, R-143): rival
+ * values on one setting are a race like any other, so the leader waits on its
+ * rival value, and a near-copy of a losing value does not lift it.
+ */
+describe('rival values wait on each other, and the Smith set reads them (v0.142)', () => {
+  it('a value at its floor waits until it is measured against the rival value', () => {
+    const s = openWithSettings();
+    const five = s.submitCandidate(1000, { author: 'p1', rationale: 'five',
+      setting: { settingId: 'rate', value: { grant: 5, cap: 8, dripMinutes: 240 } } }).id;
+    const six = s.submitCandidate(1100, { author: 'p2', rationale: 'six',
+      setting: { settingId: 'rate', value: { grant: 6, cap: 8, dripMinutes: 240 } } }).id;
+    const race = s.races().find((r) => r.members.includes(five))!;
+    s.judge(2000, 'p3', five, race.incumbentId, 'a');
+    expect(s.getCandidate(five).state).toBe('live');
+    expect(s.races().find((r) => r.members.includes(five))!.measureShort).toHaveLength(1);
+    s.judge(2100, 'p3', five, six, 'a');
+    s.judge(2200, 'p4', five, six, 'a');
+    expect(s.getCandidate(five).state).toBe('adopted');
+  });
+
+  it('a near-copy of a value the room refused does not lift it over what stands', () => {
+    // the clone field on a setting: 2 prefer X>Y>standing, 3 standing>X>Y
+    const s = openWithSettings({ cooldownMs: HOUR });
+    const z = s.submitCandidate(100, { author: 'p1', rationale: 'z',
+      setting: { settingId: 'ending', value: { endsAtMs: 9 * HOUR } } }).id;
+    s.judge(200, 'p2', z, s.races().find((r) => r.members.includes(z))!.incumbentId, 'a');
+    expect(s.getCandidate(z).state).toBe('adopted');
+    const X = s.submitCandidate(1000, { author: 'p1', rationale: 'x',
+      setting: { settingId: 'rate', value: { grant: 6, cap: 8, dripMinutes: 240 } } }).id;
+    const Y = s.submitCandidate(1010, { author: 'p2', rationale: 'y',
+      setting: { settingId: 'rate', value: { grant: 6, cap: 9, dripMinutes: 240 } } }).id;
+    const c = s.races().find((r) => r.members.includes(X))!.incumbentId;
+    const prefs = ['XYc', 'XYc', 'cXY', 'cXY', 'cXY'];
+    let t = 1100;
+    prefs.forEach((p, m) => {
+      const rank = p.split('');
+      const id = { X, Y, c } as Record<string, string>;
+      for (const [a, b] of [['X', 'Y'], ['X', 'c'], ['Y', 'c']] as const) {
+        s.judge((t += 1), `p${m + 1}`, id[a]!, id[b]!, rank.indexOf(a) < rank.indexOf(b) ? 'a' : 'b');
+      }
+    });
+    const r = s.races(t).find((x) => x.members.includes(X))!;
+    expect(r.smith).toEqual([c]);
+    expect(r.leaderOnTop).toBe(false);
+    s.tick(200 + HOUR + 1);
+    expect(s.getCandidate(X).state).toBe('retired');
+    expect(s.getCandidate(Y).state).toBe('retired');
+  });
+});
