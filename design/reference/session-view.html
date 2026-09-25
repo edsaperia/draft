@@ -522,7 +522,7 @@
       let d = null, swallow = 0;
       bar.addEventListener('pointerdown', (ev) => {
         if (!sheet() || (ev.pointerType === 'mouse' && ev.button !== 0)) return;
-        const max = Math.max(0, queueEl().offsetHeight - bar.offsetHeight);
+        const max = Math.max(0, queueEl().offsetHeight - queueEl().clientTop - bar.offsetHeight);   // the peek: edge + bar
         d = { id: ev.pointerId, y0: ev.clientY, from: sheet() === 'open' ? 0 : max, max, off: null, s: [[ev.timeStamp, ev.clientY]] };
         try { bar.setPointerCapture(ev.pointerId); } catch (e) { /* a synthetic pointer */ }
       });
@@ -10082,17 +10082,34 @@
       } catch (e) { console.warn('[fixture motion]', e && e.message); }
     }
   }
-  // the closed fixture: two of the Hollow Oak's open races become undecided
-  // records at their backlog paragraphs, the module closes, two members sign
+  // **the closed fixture closes the way a live document does** (Q1541.42, Ed
+  // 2026-09-25): at a live close every race still running is recorded
+  // undecided and filed in the Backlog (SPEC §4.6), a park's candidate with
+  // them and its 👑 question failed closed, and every ordinary motion the
+  // batch did not carry is held (`EngineBridge.finishClose`) — so the page
+  // serves no pair, no park and no running motion. It used to file two of the
+  // races and leave the rest live, which drew 14 unjudged pairs, a park
+  // awaiting assent and an open ⏱️ motion on a closed page no member can meet.
+  // A proposal the text moved under is out of every race and is not filed;
+  // the diagonal is never served on a closed document.
   function closeFixture() {
     if (!cs || cs.closed) return;
-    const pick = FIX.SUGGS.filter((g) => g.kind === 'race' && g.state === 'needs' && !g.deadlocked).slice(0, 2);
+    const RACED = new Set(['race', 'quick', 'patch', 'draft']);
+    const pick = FIX.SUGGS.filter((g) => RACED.has(g.kind) && g.state !== 'sealed' && !g.stranded);
+    // a proposal's words: its own text, or its marked diff read as the result
+    const plain = (html) => String(html || '').replace(/<del>[\s\S]*?<\/del>/g, '').replace(/<[^>]+>/g, '')
+      .replace(/[ \t]+/g, ' ').trim();
+    const clauseText = (k) => String((FIX.DOC.find((l) => l.key === k) || {}).x || '');
+    const candidatesOf = (g) => (g.slate && g.slate.length ? g.slate
+      : g.race ? [g.race.a, g.race.b]
+      : g.sites ? [{ lines: g.sites.map((s) => (s.text != null ? s.text : plain(s.marked))), rationale: g.rationale }]
+      : [{ text: plain(g.marked), rationale: g.rationale }]);
     const und = pick.map((g, i) => ({
       raceId: 'fx-u' + i, outcome: 'undecided', when: FIX.NOW,
-      field: [g.race.a, g.race.b].map((c, j) => ({ hunks: [{ lines: [c.text] }], rationale: c.rationale,
-        p: c.p ?? (j === 0 ? 0.58 : 0.47), outcome: 'undecided', author: null })),
-      displaced: [String((FIX.DOC.find((l) => l.key === g.keys[0]) || {}).x || '')],
-      judges: 6, judgedByMe: i === 0,
+      field: candidatesOf(g).map((c, j) => ({ hunks: [{ lines: c.lines || [c.text] }], rationale: c.rationale,
+        p: c.p ?? Math.max(0.05, 0.58 - 0.11 * j), outcome: 'undecided', author: null })),
+      displaced: g.keys ? [g.keys.map(clauseText).join('\n')] : [''],
+      judges: g.judges ?? 6, judgedByMe: g.state === 'deciding',
     }));
     FIX.CLOSED = { undecided: und, items: und.map((o, i) => {
       const best = o.field.slice().sort((x, y) => y.p - x.p)[0];
@@ -10103,9 +10120,17 @@
         rationale: best.rationale, verdict: o.judgedByMe ? 'voted on this' : undefined, unread: false,
         slate: o.field.map((f) => ({ text: f.hunks[0].lines[0], rationale: f.rationale, p: f.p, won: f === best })) };
     }) };
-    // the two picked races leave the live set: they are filed now
+    // the races leave the live set, filed now; so do the park, the stranded
+    // proposal and the diagonal — nothing is running on a closed document
+    const LIVE_ONLY = new Set(['park', 'diagonal']);
     const gone = new Set(pick.map((g) => g.id));
-    FIX.SUGGS = FIX.SUGGS.filter((g) => !gone.has(g.id));
+    FIX.SUGGS = FIX.SUGGS.filter((g) => !gone.has(g.id) && !LIVE_ONLY.has(g.kind) && !(g.stranded && g.state !== 'sealed'));
+    // every ordinary motion still running is held at the close, as the
+    // bridge's `finishClose` holds it; `cs.close` keeps the constitutional ones
+    for (const rec of cs.motionRecords().values()) {
+      if (rec.status !== 'running' || rec.route !== 'ordinary') continue;
+      try { cs.adjudicateOrdinaryMotion(now(), rec.id, 'held-at-close'); } catch (e) { console.warn('[fixture close motion]', e && e.message); }
+    }
     const who = S.roster.filter((r) => !r.founder && r.mid);
     // the second signer never gave a name: their signature is the disc
     try { if (who[1]) cs.setIdentity(now(), who[1].mid, { name: null }); } catch (e) {}
