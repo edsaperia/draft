@@ -1,0 +1,1918 @@
+{
+ "generated": "2026-09-25T00:11:29.558Z",
+ "from": "design/proposal/inventory.json (1336 records)",
+ "ranked": [
+  {
+   "id": "D5",
+   "name": "Two different things drawn alike",
+   "records": 502,
+   "pairs": 251,
+   "severity": 2,
+   "score": 1004
+  },
+  {
+   "id": "D3",
+   "name": "A control with no job in its state",
+   "records": 468,
+   "pairs": 234,
+   "severity": 2,
+   "score": 936
+  },
+  {
+   "id": "D1",
+   "name": "The frame is drawn whatever it holds: orphan hairlines, empty slots that keep their box",
+   "records": 370,
+   "pairs": 185,
+   "severity": 2,
+   "score": 740
+  },
+  {
+   "id": "D7",
+   "name": "Spacing and type off the scales",
+   "records": 704,
+   "pairs": 352,
+   "severity": 1,
+   "score": 704
+  },
+  {
+   "id": "D9",
+   "name": "State contradictions — a card saying or offering what its state forbids",
+   "records": 140,
+   "pairs": 70,
+   "severity": 3,
+   "score": 420
+  },
+  {
+   "id": "D2",
+   "name": "One fact stated twice on one card",
+   "records": 160,
+   "pairs": 80,
+   "severity": 2,
+   "score": 320
+  },
+  {
+   "id": "D4",
+   "name": "The same idea drawn two ways",
+   "records": 280,
+   "pairs": 140,
+   "severity": 1,
+   "score": 280
+  },
+  {
+   "id": "D6",
+   "name": "Geometry that moves on open, or across widths",
+   "records": 134,
+   "pairs": 67,
+   "severity": 2,
+   "score": 268
+  },
+  {
+   "id": "D8",
+   "name": "Copy saying the same thing in different words",
+   "records": 158,
+   "pairs": 79,
+   "severity": 1,
+   "score": 158
+  },
+  {
+   "id": "D10",
+   "name": "One place, several headings by entry point",
+   "records": 14,
+   "pairs": 7,
+   "severity": 1,
+   "score": 14
+  }
+ ],
+ "coverage": {
+  "records": 1336,
+  "withAnyFault": 1226,
+  "clean": 110,
+  "cleanByKind": {
+   "sealed-record": 30,
+   "begin": 18,
+   "admit": 12,
+   "quick": 12,
+   "race": 12,
+   "door-invite": 8,
+   "door-remove": 8,
+   "park": 8,
+   "stranger": 2
+  },
+  "faultsPerRecord": {
+   "1": 244,
+   "2": 524,
+   "3": 228,
+   "4": 200,
+   "5": 26,
+   "6": 4
+  }
+ },
+ "classes": [
+  {
+   "id": "D1",
+   "name": "The frame is drawn whatever it holds: orphan hairlines, empty slots that keep their box",
+   "severity": 2,
+   "count": 370,
+   "parts": {
+    "orphanHairline": {
+     "records": 48,
+     "pairs": 24,
+     "kinds": {
+      "quick": 38,
+      "race": 6,
+      "insert": 4
+     },
+     "examples": [
+      {
+       "record": "quick-keys|closed|1600",
+       "shot": "quick-keys-closed-1600.png"
+      },
+      {
+       "record": "insert-quiet|closed|1600",
+       "shot": "insert-quiet-closed-1600.png"
+      },
+      {
+       "record": "race-guests-rivals|closed|1600",
+       "shot": "race-guests-rivals-closed-1600.png"
+      },
+      {
+       "record": "race-quiet-rivals|closed|1600",
+       "shot": "insert-quiet-closed-1600.png"
+      }
+     ],
+     "where": {
+      "bottom div.race-mid.commitrow (top)": 48
+     }
+    },
+    "commitRowDrawnEmpty": {
+     "records": 48,
+     "pairs": 24,
+     "kinds": {
+      "quick": 38,
+      "race": 6,
+      "insert": 4
+     },
+     "walks": {
+      "closed": 48
+     },
+     "examples": [
+      {
+       "record": "quick-keys|closed|1600",
+       "shot": "quick-keys-closed-1600.png"
+      },
+      {
+       "record": "insert-quiet|closed|1600",
+       "shot": "insert-quiet-closed-1600.png"
+      },
+      {
+       "record": "race-guests-rivals|closed|1600",
+       "shot": "race-guests-rivals-closed-1600.png"
+      },
+      {
+       "record": "race-quiet-rivals|closed|1600",
+       "shot": "insert-quiet-closed-1600.png"
+      }
+     ]
+    },
+    "headBlankButBoxed": {
+     "records": 322,
+     "pairs": 161,
+     "kinds": {
+      "grant": 72,
+      "identity": 66,
+      "setting": 50,
+      "hat": 34,
+      "motion-record": 28,
+      "birth": 12,
+      "motion-constitutional": 12,
+      "motion-ordinary": 10,
+      "crown-other": 10,
+      "admissions": 6,
+      "applications": 6,
+      "crown": 6,
+      "stranger": 6,
+      "blind-answer": 2,
+      "failed-news": 2
+     },
+     "examples": [
+      {
+       "record": "title|founding|1600",
+       "shot": "title-founding-1600.png"
+      },
+      {
+       "record": "myemail|founding|1600",
+       "shot": "myemail-founding-1600.png"
+      },
+      {
+       "record": "grant-pen|founding|1600",
+       "shot": "grant-pen-founding-1600.png"
+      },
+      {
+       "record": "chamber|founding|1600",
+       "shot": "chamber-founding-1600.png"
+      },
+      {
+       "record": "admission|founding|1600",
+       "shot": "admission-founding-1600.png"
+      },
+      {
+       "record": "applications|founding|1600",
+       "shot": "applications-founding-1600.png"
+      }
+     ],
+     "headHeights": {
+      "12": 322
+     }
+    },
+    "fieldBlankNoControls": {
+     "records": 6,
+     "kinds": {
+      "birth": 6
+     },
+     "examples": [
+      {
+       "record": "title|founding|1600",
+       "shot": "title-founding-1600.png"
+      },
+      {
+       "record": "title|answers|1600",
+       "shot": "title-answers-1600.png"
+      },
+      {
+       "record": "title|delegated|1600",
+       "shot": "title-delegated-1600.png"
+      },
+      {
+       "record": "title|founding|390",
+       "shot": "title-founding-390.png"
+      }
+     ]
+    }
+   },
+   "records": 370,
+   "pairs": 185,
+   "score": 740
+  },
+  {
+   "id": "D2",
+   "name": "One fact stated twice on one card",
+   "severity": 2,
+   "count": 160,
+   "parts": {
+    "setToBlock": {
+     "what": "readBody's *Set to … / Set by …* under a standing block that already says the rule and who chose it",
+     "records": 142,
+     "pairs": 71,
+     "kinds": {
+      "setting": 82,
+      "birth": 14,
+      "door-invite": 10,
+      "door-remove": 10,
+      "admissions": 10,
+      "applications": 10,
+      "news": 6
+     },
+     "walks": {
+      "live_closed": 70,
+      "live_ready": 52,
+      "live_constitution": 8,
+      "closedband": 6,
+      "live_closing": 4,
+      "seat": 2
+     },
+     "examples": [
+      {
+       "record": "chamber|seat:1|1600",
+       "shot": "chamber-seat_1-1600.png"
+      },
+      {
+       "record": "slug|closedband|1600",
+       "shot": "slug-closedband-1600.png"
+      },
+      {
+       "record": "chamber|closedband|1600",
+       "shot": "chamber-closedband-1600.png"
+      },
+      {
+       "record": "invite|live_constitution_m-1|1600",
+       "shot": "invite-live_constitution_m-1-1600.png"
+      },
+      {
+       "record": "remove|live_constitution_m-1|1600",
+       "shot": "remove-live_constitution_m-1-1600.png"
+      },
+      {
+       "record": "admission|live_ready_m-1|1600",
+       "shot": "admission-live_ready_m-1-1600.png"
+      }
+     ]
+    },
+    "repeatedWords": {
+     "what": "a whole sentence of the card's own words (tab labels removed) appearing twice",
+     "records": 10,
+     "pairs": 5,
+     "kinds": {
+      "race": 8,
+      "deadlock": 2
+     },
+     "samples": {
+      "race :: ends on 29 November 2026.": 4,
+      "race :: A meeting that falls short of quorum may still be held, and may still talk, and may minute what it thinks, but decides nothing.": 2,
+      "deadlock :: ✏️ propose editThe house may ask for an apology or suspend a right for a season.": 1,
+      "race :: ✏️ propose editThe house may ask for an apology or suspend a right for a season.": 1,
+      "deadlock :: The house may ask for an apology or suspend a right for a season.": 1,
+      "race :: The house may ask for an apology or suspend a right for a season.": 1
+     },
+     "examples": [
+      {
+       "record": "race-quorum|charter|1600",
+       "shot": "race-purse-charter-1600.png"
+      },
+      {
+       "record": "race-sanctions|charter|1600",
+       "shot": "race-sanctions-charter-1600.png"
+      },
+      {
+       "record": "race-expiry|charter|1600",
+       "shot": "race-purse-charter-1600.png"
+      },
+      {
+       "record": "race-sanctions|closed|1600",
+       "shot": "race-sanctions-closed-1600.png"
+      },
+      {
+       "record": "race-expiry|closed|1600",
+       "shot": "race-expiry-closed-1600.png"
+      },
+      {
+       "record": "race-quorum|charter|390",
+       "shot": "race-purse-charter-390.png"
+      }
+     ]
+    },
+    "sameMomentTwice": {
+     "records": 8,
+     "kinds": {
+      "closing": 8
+     },
+     "examples": [
+      {
+       "record": "closing|closedband|1600",
+       "shot": "closing-closedband-1600.png"
+      },
+      {
+       "record": "closing|live_closed_founder|1600",
+       "shot": "closing-live_closed_founder-1600.png"
+      },
+      {
+       "record": "closing|live_closed_m-1|1600",
+       "shot": "closing-live_closed_m-1-1600.png"
+      },
+      {
+       "record": "closing|live_closed_m-2|1600",
+       "shot": "closing-live_closed_m-2-1600.png"
+      }
+     ]
+    },
+    "provenanceSaidMoreThanOnce": {
+     "records": 130,
+     "pairs": 65,
+     "kinds": {
+      "setting": 80,
+      "birth": 14,
+      "motion-record": 10,
+      "admissions": 10,
+      "applications": 10,
+      "news": 6
+     },
+     "shapes": {
+      "Chosen by the Founder + Set by the founder …": 90,
+      "Chosen by the membership + Decided by the members": 16,
+      "Chosen by the Founder + Decided by the members": 14,
+      "Changed by the Founder + Chosen by the Founder": 10
+     },
+     "examples": [
+      {
+       "record": "rec:chamber:0|settled|1600",
+       "shot": "rec_chamber_0-settled-1600.png"
+      },
+      {
+       "record": "chamber|seat:1|1600",
+       "shot": "chamber-seat_1-1600.png"
+      },
+      {
+       "record": "slug|closedband|1600",
+       "shot": "slug-closedband-1600.png"
+      },
+      {
+       "record": "chamber|closedband|1600",
+       "shot": "chamber-closedband-1600.png"
+      }
+     ]
+    }
+   },
+   "records": 160,
+   "pairs": 80,
+   "score": 320
+  },
+  {
+   "id": "D3",
+   "name": "A control with no job in its state",
+   "severity": 2,
+   "count": 468,
+   "parts": {
+    "binAloneRow": {
+     "what": "a commit row of 🗑️ alone (CP9: never)",
+     "records": 234,
+     "pairs": 117,
+     "kinds": {
+      "setting": 94,
+      "mine": 28,
+      "birth": 28,
+      "hat": 18,
+      "admissions": 12,
+      "applications": 12,
+      "crown-other": 10,
+      "door-invite": 10,
+      "door-remove": 10,
+      "motion-constitutional": 8,
+      "identity": 2,
+      "editing": 2
+     },
+     "byRule_withdraw": 38,
+     "cp9Cases": 196,
+     "walks": {
+      "live_closed": 80,
+      "live_ready": 60,
+      "closedband": 26,
+      "live_session": 20,
+      "live_closing": 20,
+      "live_constitution": 10,
+      "seat": 6,
+      "charter": 4,
+      "closed": 4,
+      "settled": 2,
+      "edit": 2
+     },
+     "examples": [
+      {
+       "record": "mo:mo-4|settled|1600",
+       "shot": "mo_mo-4-settled-1600.png"
+      },
+      {
+       "record": "hat|seat:1|1600",
+       "shot": "hat-seat_1-1600.png"
+      },
+      {
+       "record": "mo:mo-3|seat:1|1600",
+       "shot": "mo_mo-3-seat_1-1600.png"
+      },
+      {
+       "record": "mine-guests-wording|charter|1600",
+       "shot": "mine-guests-wording-charter-1600.png"
+      },
+      {
+       "record": "title|closedband|1600",
+       "shot": "title-closedband-1600.png"
+      },
+      {
+       "record": "chamber|closedband|1600",
+       "shot": "chamber-closedband-1600.png"
+      }
+     ]
+    },
+    "binPutsBackNothing": {
+     "what": "🗑️ titled *Put it back as it stands* on a card with nothing to put back",
+     "records": 388,
+     "pairs": 194,
+     "kinds": {
+      "setting": 98,
+      "grant": 72,
+      "power": 64,
+      "news": 50,
+      "birth": 36,
+      "gate": 16,
+      "admissions": 12,
+      "applications": 12,
+      "crown-other": 10,
+      "door-leave": 6,
+      "crown": 6,
+      "motion-constitutional": 6
+     },
+     "examples": [
+      {
+       "record": "grant-pen|founding|1600",
+       "shot": "grant-pen-founding-1600.png"
+      },
+      {
+       "record": "leave|settled|1600",
+       "shot": "leave-settled-1600.png"
+      },
+      {
+       "record": "canpropose|settled|1600",
+       "shot": "canpropose-settled-1600.png"
+      },
+      {
+       "record": "mo:mo-3|settled|1600",
+       "shot": "mo_mo-3-settled-1600.png"
+      },
+      {
+       "record": "pw:u:title|seat:1|1600",
+       "shot": "pw_u_title-seat_1-1600.png"
+      },
+      {
+       "record": "chamber|seat:1|1600",
+       "shot": "chamber-seat_1-1600.png"
+      }
+     ]
+    },
+    "darkCommitOnClosed": {
+     "what": "a disabled commit on a closed document — a thaw that never comes (CP9)",
+     "records": 16,
+     "kinds": {
+      "admit": 6,
+      "door-remove": 4,
+      "race": 2,
+      "motion-ordinary": 2,
+      "stranger": 2
+     },
+     "buttons": {
+      "admit 🏛️": 6,
+      "door-remove ✒️": 4,
+      "race ✏️": 2,
+      "motion-ordinary null": 2,
+      "stranger 📧": 2
+     },
+     "examples": [
+      {
+       "record": "race-sanctions|closed|1600",
+       "shot": "race-sanctions-closed-1600.png"
+      },
+      {
+       "record": "remove|closedband|1600",
+       "shot": "remove-closedband-1600.png"
+      },
+      {
+       "record": "mo:mo-3|closedband|1600",
+       "shot": "mo_mo-3-closedband-1600.png"
+      },
+      {
+       "record": "adm:ap-1|live_closed_founder|1600",
+       "shot": "adm_ap-1-live_closing_founder-1600.png"
+      }
+     ]
+    },
+    "sameActTwiceOnScreen": {
+     "what": "the editing card's ✏️ and the proposal-row's ✏️, both live, one act",
+     "records": 4,
+     "examples": [
+      {
+       "record": "draft-yours|edit:one-site|1600",
+       "shot": "editing-one-site-1600.png"
+      },
+      {
+       "record": "draft-yours|edit:gap-site|1600",
+       "shot": "editing-gap-site-1600.png"
+      },
+      {
+       "record": "draft-yours|edit:one-site|390",
+       "shot": "editing-one-site-390.png"
+      },
+      {
+       "record": "draft-yours|edit:gap-site|390",
+       "shot": "editing-gap-site-390.png"
+      }
+     ]
+    },
+    "pressedOnOpen": {
+     "records": 2,
+     "examples": [
+      {
+       "record": "rate|sessionband|1600",
+       "shot": "rate-sessionband-1600.png"
+      },
+      {
+       "record": "rate|sessionband|390",
+       "shot": "rate-sessionband-390.png"
+      }
+     ]
+    },
+    "optionRepeatsStanding": {
+     "what": "card-audit F6: an option block offers back the rule that stands",
+     "records": 10,
+     "kinds": {
+      "setting": 10
+     },
+     "examples": [
+      {
+       "record": "authorship|settled|1600",
+       "shot": "chamber-settled-1600.png"
+      },
+      {
+       "record": "authorship|seat:1|1600",
+       "shot": "lapse-settled-1600.png"
+      },
+      {
+       "record": "authorship|sessionband|1600",
+       "shot": "authorship-sessionband-1600.png"
+      },
+      {
+       "record": "ending|closedband|1600",
+       "shot": "ending-closedband-1600.png"
+      }
+     ]
+    }
+   },
+   "records": 468,
+   "pairs": 234,
+   "score": 936
+  },
+  {
+   "id": "D4",
+   "name": "The same idea drawn two ways",
+   "severity": 1,
+   "count": 18,
+   "parts": {
+    "headForms": {
+     "what": "how a card heads itself",
+     "forms": {
+      "rule as block + provenance radio": 444,
+      "title or sentence": 380,
+      "no head (strip only)": 322,
+      "eyebrow + clause": 190
+     },
+     "kindsWithMoreThanOne": {
+      "birth": [
+       "no head (strip only)",
+       "rule as block + provenance radio"
+      ],
+      "setting": [
+       "no head (strip only)",
+       "rule as block + provenance radio"
+      ],
+      "admissions": [
+       "no head (strip only)",
+       "rule as block + provenance radio"
+      ],
+      "applications": [
+       "no head (strip only)",
+       "rule as block + provenance radio"
+      ],
+      "motion-constitutional": [
+       "no head (strip only)",
+       "title or sentence"
+      ],
+      "stranger": [
+       "no head (strip only)",
+       "title or sentence"
+      ]
+     }
+    },
+    "binMeanings": {
+     "what": "the tooltips one 🗑️ glyph carries",
+     "distinct": 8,
+     "meanings": {
+      "Put it back as it stands": 820,
+      "Discard this motion": 174,
+      "Withdraw — the edit comes back in full": 32,
+      "Withdraw it — the ✏️ comes back in full": 6,
+      "Discard this change — nothing has been spent on it": 6,
+      "Close — there is nothing here to put back": 4,
+      "Close — the question stays pending": 4,
+      "Withdraw it — your 🏛️ comes back whole": 2
+     }
+    },
+    "acknowledgeFaces": {
+     "what": "the commit rows of cards whose act is to acknowledge or accept",
+     "distinct": 6,
+     "faces": {
+      "🗑️ OK": 226,
+      "OK": 68,
+      "🗑️ Activate 🏛️": 30,
+      "🗑️ Accept ✒️": 14,
+      "🗑️ 🛡️ ✒️": 10,
+      "🗑️ Accept 🛡️": 8
+     }
+    },
+    "commitRowShapes": {
+     "distinct": 23,
+     "shapes": {
+      "🗑️": 234,
+      "🗑️ OK": 226,
+      "🗑️ 🏛️": 158,
+      "🗑️ ✒️": 140,
+      "(no row / empty)": 140,
+      "OK": 68,
+      "🗑️ Save": 58,
+      "🗑️ ✏️": 52,
+      "Choose one of the three first": 46,
+      "🗑️ ✒️ 🏛️": 44,
+      "🗑️ Activate 🏛️": 30,
+      "🗑️ ✒️ ✏️": 28,
+      "Recorded — choose again to change it": 26,
+      "🗑️ 🪶": 18,
+      "🗑️ Accept ✒️": 14,
+      "🗑️ ?": 10,
+      "🗑️ 🛡️ ✒️": 10,
+      "🗑️ Accept 🛡️": 8,
+      "🗑️ 📧": 8,
+      "🗑️ Leave the Membership": 6,
+      "❄️ Choose one of the three first": 6,
+      "🗑️ 🍾": 4,
+      "❄️": 2
+     }
+    },
+    "tabDropOnOpenByKind": {
+     "birth": [
+      0
+     ],
+     "identity": [
+      0
+     ],
+     "grant": [
+      0
+     ],
+     "setting": [
+      0
+     ],
+     "admissions": [
+      0
+     ],
+     "applications": [
+      0
+     ],
+     "hat": [
+      0
+     ],
+     "door-invite": [
+      0
+     ],
+     "begin": [
+      0
+     ],
+     "door-remove": [
+      0
+     ],
+     "news": [
+      0
+     ],
+     "race": [
+      33,
+      48
+     ],
+     "quick": [
+      32,
+      33
+     ],
+     "insert": [
+      35
+     ],
+     "mine": [
+      33
+     ],
+     "deadlock": [
+      33,
+      48
+     ],
+     "judged-pair": [
+      33
+     ],
+     "sealed-record": [
+      62,
+      67,
+      79,
+      84
+     ],
+     "patch": [
+      82
+     ],
+     "backlog": [
+      67,
+      99
+     ],
+     "closing": [
+      0
+     ]
+    },
+    "clauseDropOnOpenByKind": {
+     "birth": [
+      0,
+      17,
+      20
+     ],
+     "identity": [
+      17,
+      20,
+      55
+     ],
+     "grant": [
+      17,
+      20
+     ],
+     "setting": [
+      0,
+      17
+     ],
+     "admissions": [
+      0,
+      17
+     ],
+     "applications": [
+      0,
+      17
+     ],
+     "hat": [
+      20
+     ],
+     "door-invite": [
+      3
+     ],
+     "begin": [
+      0
+     ],
+     "power": [
+      3
+     ],
+     "motion-record": [
+      20
+     ],
+     "door-leave": [
+      20
+     ],
+     "door-remove": [
+      3
+     ],
+     "gate": [
+      3
+     ],
+     "news": [
+      0
+     ],
+     "motion-constitutional": [
+      20
+     ],
+     "race": [
+      39,
+      54
+     ],
+     "patch": [
+      88
+     ],
+     "quick": [
+      39
+     ],
+     "judged-pair": [
+      39
+     ],
+     "mine": [
+      39
+     ],
+     "stranded": [
+      39
+     ],
+     "deadlock": [
+      39,
+      54
+     ],
+     "park": [
+      39
+     ],
+     "sealed-record": [
+      68,
+      85
+     ],
+     "backlog": [
+      68,
+      100
+     ],
+     "motion-ordinary": [
+      20
+     ],
+     "closing": [
+      0
+     ]
+    }
+   },
+   "records": 280,
+   "pairs": 140,
+   "score": 280
+  },
+  {
+   "id": "D5",
+   "name": "Two different things drawn alike",
+   "severity": 2,
+   "count": 502,
+   "parts": {
+    "provenanceAsRadio": {
+     "what": "who chose a rule drawn as a pressed radio (*Chosen by …*), the same pill as a choice the reader made",
+     "records": 490,
+     "pressed": 490,
+     "pairs": 245,
+     "kinds": {
+      "setting": 250,
+      "birth": 80,
+      "news": 50,
+      "admissions": 32,
+      "applications": 32,
+      "motion-record": 28,
+      "crown-other": 10,
+      "crown": 6,
+      "failed-news": 2
+     },
+     "examples": [
+      {
+       "record": "title|settled|1600",
+       "shot": "title-settled-1600.png"
+      },
+      {
+       "record": "chamber|settled|1600",
+       "shot": "chamber-settled-1600.png"
+      },
+      {
+       "record": "rec:chamber:0|settled|1600",
+       "shot": "rec_chamber_0-settled-1600.png"
+      },
+      {
+       "record": "admission|settled|1600",
+       "shot": "admission-settled-1600.png"
+      },
+      {
+       "record": "applications|settled|1600",
+       "shot": "applications-settled-1600.png"
+      }
+     ]
+    },
+    "oneBinManyActs": {
+     "what": "🗑️ for putting back an unsent value, for withdrawing a spent proposal (refund), for discarding a draft, and for closing",
+     "uses": {
+      "putBack": 820,
+      "withdraw": 40,
+      "discard": 180,
+      "close": 8
+     }
+    },
+    "unnamedRadio": {
+     "what": "a radio with no label",
+     "records": 8,
+     "kinds": {
+      "motion-constitutional": 8
+     },
+     "examples": [
+      {
+       "record": "mo:mo-4|settled|1600",
+       "shot": "mo_mo-4-settled-1600.png"
+      },
+      {
+       "record": "mo:mo-5|seat:1|1600",
+       "shot": "mo_mo-5-seat_1-1600.png"
+      },
+      {
+       "record": "mo:mo-2|live_session_m-2|1600",
+       "shot": "mo_mo-2-live_session_m-2-1600.png"
+      },
+      {
+       "record": "mo:mo-2|live_closing_m-2|1600",
+       "shot": "mo_mo-2-live_session_m-2-1600.png"
+      }
+     ]
+    },
+    "acceptDrawnAsDecided": {
+     "what": "the 👑 Text question's ✒️ accept drawn solid green, which §9.1 keeps for ✓ (*decided*) — inventory finding 9",
+     "records": 4,
+     "examples": [
+      {
+       "record": "crown:cq-4|live_session_founder|1600",
+       "shot": "crown_cq-4-live_session_founder-1600.png"
+      },
+      {
+       "record": "crown:cq-4|live_closing_founder|1600",
+       "shot": "crown_cq-4-live_session_founder-1600.png"
+      },
+      {
+       "record": "crown:cq-4|live_session_founder|390",
+       "shot": "crown_cq-4-live_session_founder-390.png"
+      },
+      {
+       "record": "crown:cq-4|live_closing_founder|390",
+       "shot": "crown_cq-4-live_closing_founder-390.png"
+      }
+     ]
+    }
+   },
+   "records": 502,
+   "pairs": 251,
+   "score": 1004
+  },
+  {
+   "id": "D6",
+   "name": "Geometry that moves on open, or across widths",
+   "severity": 2,
+   "count": 134,
+   "parts": {
+    "tabDropsOnOpen": {
+     "what": "the front tab moves down when its card opens (card-audit P2 measures only sideways, by design)",
+     "records": 134,
+     "pairs": 67,
+     "kinds": {
+      "quick": 62,
+      "sealed-record": 32,
+      "race": 12,
+      "insert": 8,
+      "judged-pair": 8,
+      "mine": 4,
+      "backlog": 4,
+      "deadlock": 2,
+      "patch": 2
+     },
+     "drops": {
+      "quick 33px": 58,
+      "race 33px": 11,
+      "sealed-record 62px": 10,
+      "sealed-record 79px": 10,
+      "insert 35px": 8,
+      "judged-pair 33px": 8,
+      "sealed-record 67px": 6,
+      "sealed-record 84px": 6,
+      "quick 32px": 4,
+      "mine 33px": 4,
+      "patch 82px": 2,
+      "backlog 67px": 2,
+      "backlog 99px": 2,
+      "deadlock 33px": 1,
+      "deadlock 48px": 1,
+      "race 48px": 1
+     },
+     "examples": [
+      {
+       "record": "race-purse|charter|1600",
+       "shot": "race-purse-charter-1600.png"
+      },
+      {
+       "record": "quick-keys|charter|1600",
+       "shot": "quick-keys-charter-1600.png"
+      },
+      {
+       "record": "insert-quiet|charter|1600",
+       "shot": "insert-quiet-charter-1600.png"
+      },
+      {
+       "record": "mine-spending|charter|1600",
+       "shot": "mine-guests-wording-charter-1600.png"
+      },
+      {
+       "record": "race-sanctions|charter|1600",
+       "shot": "race-sanctions-charter-1600.png"
+      }
+     ]
+    },
+    "tabMovesSideways": {
+     "records": 0
+    },
+    "clauseMovesSideways": {
+     "what": "none: the recorded 12px is the closed box's padding (see the note above)",
+     "records": 0
+    },
+    "clauseMovesDown": {
+     "records": 472,
+     "kinds": {
+      "power": 110,
+      "quick": 66,
+      "identity": 38,
+      "grant": 32,
+      "sealed-record": 32,
+      "setting": 30,
+      "motion-record": 28,
+      "gate": 16,
+      "race": 14,
+      "judged-pair": 14,
+      "birth": 12,
+      "hat": 12,
+      "door-invite": 12,
+      "door-remove": 8,
+      "mine": 8,
+      "door-leave": 6,
+      "motion-constitutional": 6,
+      "admissions": 4,
+      "applications": 4,
+      "patch": 4,
+      "stranded": 4,
+      "park": 4,
+      "backlog": 4,
+      "deadlock": 2,
+      "motion-ordinary": 2
+     },
+     "drops": {
+      "power 3px": 110,
+      "quick 39px": 66,
+      "setting 17px": 30,
+      "motion-record 20px": 28,
+      "grant 17px": 20,
+      "identity 55px": 16,
+      "identity 20px": 16,
+      "gate 3px": 16,
+      "sealed-record 68px": 16,
+      "sealed-record 85px": 16,
+      "judged-pair 39px": 14,
+      "race 39px": 13,
+      "hat 20px": 12,
+      "door-invite 3px": 12,
+      "grant 20px": 12,
+      "door-remove 3px": 8,
+      "mine 39px": 8,
+      "birth 20px": 6,
+      "birth 17px": 6,
+      "identity 17px": 6,
+      "door-leave 20px": 6,
+      "motion-constitutional 20px": 6,
+      "admissions 17px": 4,
+      "applications 17px": 4,
+      "patch 88px": 4,
+      "stranded 39px": 4,
+      "park 39px": 4,
+      "backlog 68px": 2,
+      "motion-ordinary 20px": 2,
+      "backlog 100px": 2,
+      "deadlock 39px": 1,
+      "deadlock 54px": 1,
+      "race 54px": 1
+     }
+    },
+    "walkArtifactsSetAside": 6,
+    "widthDependentDrop": {
+     "what": "one card, a different tab drop at 1600 and at 390",
+     "cards": 20,
+     "sample": [
+      [
+       "race-sanctions|charter",
+       {
+        "390": 48,
+        "1600": 33
+       }
+      ],
+      [
+       "race-claims|charter",
+       {
+        "390": 79,
+        "1600": 62
+       }
+      ],
+      [
+       "quick-kitchen|charter",
+       {
+        "390": 84,
+        "1600": 67
+       }
+      ],
+      [
+       "quick-larderfood|charter",
+       {
+        "390": 84,
+        "1600": 67
+       }
+      ],
+      [
+       "quick-knives|charter",
+       {
+        "390": 79,
+        "1600": 62
+       }
+      ],
+      [
+       "quick-calling|charter",
+       {
+        "390": 79,
+        "1600": 62
+       }
+      ]
+     ]
+    },
+    "narrowGutters": {
+     "left 64 · right 20": 668
+    },
+    "horizontalScroll": 0
+   },
+   "records": 134,
+   "pairs": 67,
+   "score": 268
+  },
+  {
+   "id": "D7",
+   "name": "Spacing and type off the scales",
+   "severity": 1,
+   "count": 1408,
+   "parts": {
+    "cardAuditS1": {
+     "what": "card-audit S1 sightings (a card box off the --s1…--s5 grid)",
+     "sightings": 1408,
+     "bySelector": {
+      ".headclause": 704,
+      ".setupcard": 500,
+      ".sugg": 204
+     },
+     "values": {
+      ".headclause — padding-t 6px · padding-b 6px": 704,
+      ".setupcard — margin-t -17px · padding-t 14px · padding-b 14px": 282,
+      ".setupcard — padding-t 14px · padding-b 14px": 218,
+      ".sugg — margin-r 15.13px · margin-l 15.13px · padding-t 14px · padding-b 14px": 102,
+      ".sugg — padding-t 14px · padding-b 14px": 102
+     }
+    },
+    "helperText": {
+     "H2: .setnote is full --fg": 16,
+     "H4: 311 characters": 2
+    },
+    "cssFontSizeOffScale": {
+     "declarations": 23,
+     "values": {
+      "1.125rem": 3,
+      "1.15em": 2,
+      "8px": 2,
+      "18px": 2,
+      "1.35rem": 2,
+      "16px": 1,
+      "9px": 1,
+      "17px": 1,
+      "20px": 1,
+      "0.95em": 1,
+      "2.7rem": 1,
+      "22px": 1,
+      "0.8em": 1,
+      "1.05rem": 1,
+      "0.9em": 1,
+      "max(16px, 1em)": 1,
+      "1.5rem": 1
+     },
+     "lines": [
+      316,
+      414,
+      422,
+      446,
+      749,
+      815,
+      816,
+      1150,
+      1151,
+      1153,
+      1154,
+      1513,
+      1821,
+      2455,
+      2504,
+      2663,
+      2667,
+      2816,
+      2870,
+      3092,
+      3117,
+      3142,
+      3228
+     ]
+    },
+    "cssSpacingOffGrid": {
+     "declarations": 67,
+     "values": {
+      "6px": 14,
+      "14px": 11,
+      "3px": 11,
+      "10px": 9,
+      "5px": 5,
+      "9px": 3,
+      "7px": 3,
+      "18px": 2,
+      "-7px": 1,
+      "-18px": 1,
+      "26px": 1,
+      "15px": 1,
+      "34px": 1,
+      "30px": 1,
+      "13px": 1,
+      "-11.5px": 1,
+      "11px": 1
+     },
+     "sample": [
+      {
+       "line": 361,
+       "prop": "padding",
+       "v": "10px"
+      },
+      {
+       "line": 364,
+       "prop": "gap",
+       "v": "18px"
+      },
+      {
+       "line": 384,
+       "prop": "gap",
+       "v": "14px"
+      },
+      {
+       "line": 405,
+       "prop": "margin-left",
+       "v": "-7px"
+      },
+      {
+       "line": 425,
+       "prop": "margin-left",
+       "v": "5px"
+      },
+      {
+       "line": 461,
+       "prop": "gap",
+       "v": "6px"
+      },
+      {
+       "line": 471,
+       "prop": "margin",
+       "v": "3px"
+      },
+      {
+       "line": 474,
+       "prop": "padding",
+       "v": "5px"
+      },
+      {
+       "line": 488,
+       "prop": "margin-top",
+       "v": "18px"
+      },
+      {
+       "line": 566,
+       "prop": "padding",
+       "v": "14px"
+      },
+      {
+       "line": 572,
+       "prop": "margin-left",
+       "v": "-18px"
+      },
+      {
+       "line": 676,
+       "prop": "padding-left",
+       "v": "26px"
+      },
+      {
+       "line": 694,
+       "prop": "padding",
+       "v": "3px"
+      },
+      {
+       "line": 694,
+       "prop": "padding",
+       "v": "10px"
+      },
+      {
+       "line": 714,
+       "prop": "padding",
+       "v": "3px"
+      },
+      {
+       "line": 854,
+       "prop": "padding",
+       "v": "10px"
+      },
+      {
+       "line": 904,
+       "prop": "padding-bottom",
+       "v": "3px"
+      },
+      {
+       "line": 908,
+       "prop": "padding-bottom",
+       "v": "6px"
+      },
+      {
+       "line": 913,
+       "prop": "padding-bottom",
+       "v": "9px"
+      },
+      {
+       "line": 926,
+       "prop": "padding-bottom",
+       "v": "15px"
+      }
+     ]
+    }
+   },
+   "records": 704,
+   "pairs": 352,
+   "score": 704
+  },
+  {
+   "id": "D8",
+   "name": "Copy saying the same thing in different words",
+   "severity": 1,
+   "count": 19,
+   "parts": {
+    "provenancePhrasings": {
+     "Chosen by the Founder": 326,
+     "Chosen by the membership": 164,
+     "Set by the founder when the document was made.": 112,
+     "Decided by the members.": 30,
+     "Changed by the Founder": 10
+    },
+    "withdrawPhrasings": {
+     "Withdraw — the edit comes back in full": 32,
+     "Withdraw it — the ✏️ comes back in full": 6,
+     "Withdraw it — your 🏛️ comes back whole": 2
+    },
+    "okTooltips": {
+     "(no title)": 228,
+     "It leaves your margin and stays in the record": 62,
+     "OK signs the document; your comment goes on the record": 4
+    },
+    "placeEyebrows": {
+     "The clause as it stands": 176,
+     "The gap as it stands": 8,
+     "The clause as it stands — and it is still standing": 4,
+     "A new clause after: …": 2
+    },
+    "closingMoment": {
+     "No more changes to the document may be made after": 48,
+     "closed at 00:44": 6,
+     "final as of 00:44": 6,
+     "closed at 00:51": 1,
+     "final as of 00:51": 1,
+     "closed at 00:52": 1,
+     "final as of 00:52": 1
+    },
+    "radioWords": {
+     "Choose this": 502,
+     "Chosen by the Founder ✒️": 326,
+     "Prefer this": 292,
+     "Propose this": 234,
+     "Chosen by the membership": 164,
+     "Indifferent": 164,
+     "Chosen": 106,
+     "Preferred": 40,
+     "": 8,
+     "Proposed": 8,
+     "Choose ✒️ or Propose 🏛️ this": 4,
+     "Choose ✒️ or Propose ✏️ this": 2,
+     "Chosen ✒️ or Proposed ✏️": 2
+    }
+   },
+   "records": 158,
+   "pairs": 79,
+   "score": 158
+  },
+  {
+   "id": "D9",
+   "name": "State contradictions — a card saying or offering what its state forbids",
+   "severity": 3,
+   "count": 140,
+   "parts": {
+    "actionRadiosOnClosedDocument": {
+     "records": 100,
+     "pairs": 50,
+     "kinds": {
+      "quick": 40,
+      "setting": 16,
+      "identity": 12,
+      "hat": 8,
+      "race": 6,
+      "admit": 6,
+      "insert": 4,
+      "patch": 2,
+      "admissions": 2,
+      "applications": 2,
+      "motion-ordinary": 2
+     },
+     "walks": {
+      "closed": 52,
+      "closedband": 26,
+      "live_closed": 22
+     },
+     "examples": [
+      {
+       "record": "patch-rename|closed|1600",
+       "shot": "patch-rename-closed-1600.png"
+      },
+      {
+       "record": "quick-keys|closed|1600",
+       "shot": "quick-keys-closed-1600.png"
+      },
+      {
+       "record": "insert-quiet|closed|1600",
+       "shot": "insert-quiet-closed-1600.png"
+      },
+      {
+       "record": "race-guests-rivals|closed|1600",
+       "shot": "race-guests-rivals-closed-1600.png"
+      },
+      {
+       "record": "admission|closedband|1600",
+       "shot": "admission-closedband-1600.png"
+      },
+      {
+       "record": "applications|closedband|1600",
+       "shot": "applications-closedband-1600.png"
+      }
+     ]
+    },
+    "liveCommitOnClosedDocument": {
+     "records": 24,
+     "kinds": {
+      "identity": 10,
+      "grant": 6,
+      "door-invite": 4,
+      "quick": 2,
+      "stranded": 2
+     },
+     "commits": {
+      "live_closed · identity · ✓ — Save": 6,
+      "closedband · identity · ✓ — Save": 4,
+      "live_closed · grant · Activate 🏛️ — ": 4,
+      "closed · quick · ❄️ — Not this one, not now — it stays open and stops being the most urgent": 2,
+      "closed · stranded · ✏️ — Re-make it here — write it against the clause as it now stands, and propose it again": 2,
+      "closedband · door-invite · ✒️ — Send the invitations — your word sends": 2,
+      "live_closed · grant · Accept ✒️ — ": 2,
+      "live_closed · door-invite · ✒️ — Send the invitations — your word sends": 2
+     },
+     "examples": [
+      {
+       "record": "quick-arrears|closed|1600",
+       "shot": "quick-keys-closed-1600.png"
+      },
+      {
+       "record": "mine-lostkey-stranded|closed|1600",
+       "shot": "mine-lostkey-stranded-closed-1600.png"
+      },
+      {
+       "record": "myname|closedband|1600",
+       "shot": "myname-closedband-1600.png"
+      },
+      {
+       "record": "invite|closedband|1600",
+       "shot": "invite-closedband-1600.png"
+      },
+      {
+       "record": "grant-pen|live_closed_founder|1600",
+       "shot": "grant-pen-live_closed_founder-1600.png"
+      },
+      {
+       "record": "mypic|closedband|1600",
+       "shot": "mypic-closedband-1600.png"
+      }
+     ]
+    },
+    "tabAsksOnClosedDocument": {
+     "records": 20,
+     "hints": {
+      "closedband · Set the Proposal Rate — waiting on you": 12,
+      "live_closed · Give your answer": 6,
+      "live_closed · Founder Veto — yours to take": 2,
+      "live_closed · Activate Your Membership — yours to take": 2
+     },
+     "examples": [
+      {
+       "record": "rate|closedband|1600",
+       "shot": "rate-closedband-1600.png"
+      },
+      {
+       "record": "pw:u:rate|closedband|1600",
+       "shot": "pw_u_rate-closedband-1600.png"
+      },
+      {
+       "record": "rec:rate:0|closedband|1600",
+       "shot": "rec_rate_0-sessionband-1600.png"
+      },
+      {
+       "record": "grant-pen|live_closed_founder|1600",
+       "shot": "grant-pen-live_closed_founder-1600.png"
+      }
+     ]
+    },
+    "takeBackOnClosed": {
+     "records": 16,
+     "examples": [
+      {
+       "record": "admission|closedband|1600",
+       "shot": "admission-closedband-1600.png"
+      },
+      {
+       "record": "applications|closedband|1600",
+       "shot": "applications-closedband-1600.png"
+      },
+      {
+       "record": "lapse|closedband|1600",
+       "shot": "lapse-closedband-1600.png"
+      },
+      {
+       "record": "removal|closedband|1600",
+       "shot": "removal-closedband-1600.png"
+      }
+     ]
+    },
+    "undefinedPrinted": {
+     "records": 4,
+     "examples": [
+      {
+       "record": "chamber|live_constitution_m-1|1600",
+       "shot": "chamber-live_constitution_m-1-1600.png"
+      },
+      {
+       "record": "remove|live_constitution_m-1|1600",
+       "shot": "remove-live_constitution_m-1-1600.png"
+      },
+      {
+       "record": "chamber|live_constitution_m-1|390",
+       "shot": "chamber-live_constitution_m-1-390.png"
+      },
+      {
+       "record": "remove|live_constitution_m-1|390",
+       "shot": "remove-live_constitution_m-1-390.png"
+      }
+     ]
+    },
+    "provenanceTwoParties": {
+     "what": "one card saying both the Founder and the membership chose the same value",
+     "records": 14,
+     "kinds": {
+      "setting": 8,
+      "news": 6
+     },
+     "examples": [
+      {
+       "record": "chamber|seat:1|1600",
+       "shot": "chamber-seat_1-1600.png"
+      },
+      {
+       "record": "rate|closedband|1600",
+       "shot": "rate-closedband-1600.png"
+      },
+      {
+       "record": "ending|live_closing_m-1|1600",
+       "shot": "ending-live_closing_m-1-1600.png"
+      },
+      {
+       "record": "ending|live_closing_m-2|1600",
+       "shot": "ending-live_closing_m-1-1600.png"
+      }
+     ]
+    }
+   },
+   "records": 140,
+   "pairs": 70,
+   "score": 420
+  },
+  {
+   "id": "D10",
+   "name": "One place, several headings by entry point",
+   "severity": 1,
+   "count": 168,
+   "parts": {
+    "railVsTab": {
+     "what": "the rail entry and the front tab name the card differently",
+     "records": 168,
+     "pairs": 84,
+     "kinds": {
+      "sealed-record": 52,
+      "quick": 28,
+      "race": 16,
+      "motion-constitutional": 12,
+      "crown-other": 10,
+      "motion-ordinary": 8,
+      "mine": 8,
+      "crown": 6,
+      "news": 6,
+      "judged-pair": 6,
+      "stranded": 4,
+      "park": 4,
+      "crown-text": 4,
+      "failed-news": 2,
+      "patch": 2
+     },
+     "samples": {
+      "crown-other :: rail “→ all agree, them includedNobody should be able to vote them” · tab “How Is a Member Removed?”": 8,
+      "motion-constitutional :: rail “→ named at the closeNames put pressure on people; the writin” · tab “Are Proposals Anonymous?”": 4,
+      "quick :: rail “with or without ‘and until the quiet hours begin’Welcome and” · tab “Guests”": 4,
+      "quick :: rail “with or without ‘and a member expecting more than…’The house” · tab “Guests”": 4,
+      "mine :: rail “‘which is what makes them guests…’ …” · tab “Guests”": 4,
+      "sealed-record :: rail “‘and so are their dogs…’21 Sep” · tab “Guests”": 4,
+      "sealed-record :: rail “‘whenever a member is in’22 Sep” · tab “Guests”": 4,
+      "sealed-record :: rail “‘to a maximum of three at…’23 Sep” · tab “Guests”": 4,
+      "sealed-record :: rail “‘and are written in the…’Thu 19:44” · tab “Guests”": 4,
+      "sealed-record :: rail “‘children under twelve…’Thu 20:12” · tab “Guests”": 4,
+      "sealed-record :: rail “‘and are not brought in…’Fri 08:31” · tab “Guests”": 4,
+      "sealed-record :: rail “‘though not at the…’Fri 12:07” · tab “Guests”": 4,
+      "sealed-record :: rail “‘a member bringing the…’Fri 16:55” · tab “Guests”": 4,
+      "quick :: rail “‘the same day’ or ‘as soon as…’You often do not know the day” · tab “Lost Keys”": 4,
+      "stranded :: rail “↻without ‘and the house decides at the…’ …” · tab “Front-door Keys”": 4,
+      "park :: rail “Accounts and Inspection” · tab “Whole charter · place 2 of 3”": 4,
+      "sealed-record :: rail “‘and leaves the key with…’last Monday, 21:30” · tab “Locking Up”": 4,
+      "sealed-record :: rail “‘and puts out the lamp in…’last Thursday, 22:10” · tab “Locking Up”": 4,
+      "crown :: rail “→ all agree, them includedNobody should be able to vote them” · tab “How Is a Member Removed?”": 4,
+      "motion-ordinary :: rail “→ 11 minutesTwo more ✏️ to start with — the first hour is th” · tab “Set the Proposal Rate”": 4,
+      "quick :: rail “‘Front-door…’ or ‘Keys are held…’” · tab “Keys”": 4,
+      "quick :: rail “‘Front-door…’ or ‘Spare keys…’” · tab “Keys”": 4,
+      "race :: rail “‘Keys are held…’ or ‘Spare keys…’Fourteen keys, fourteen peo” · tab “Keys”": 4,
+      "sealed-record :: rail “‘Front-door keys are…’Thu 22:51” · tab “Keys”": 4,
+      "quick :: rail “‘at most three…’ or ‘stays beyond…’” · tab “The Guest Bedroom”": 4,
+      "race :: rail “‘booked in the…’ or ‘kept free for…’Long stays and paying gu” · tab “The Guest Bedroom”": 4,
+      "sealed-record :: rail “‘The Guest Bedroom is…’Thu 23:00” · tab “The Guest Bedroom”": 4,
+      "race :: rail “‘A Garden…’ or ‘The Garden is…’Gardens need one person with ” · tab “The Garden”": 4,
+      "sealed-record :: rail “‘The Garden is tended by…’Thu 23:09” · tab “The Garden”": 4,
+      "crown-text :: rail “‘pays the…’ or ‘spends within…’A budget the house agreed and” · tab “Money”": 4,
+      "mine :: rail “‘The door is open; a clubhouse…’” · tab “Guests”": 4,
+      "motion-constitutional :: rail “→ 11 minutesTwo more ✏️ to start with — the first hour is th” · tab “Set the Proposal Rate”": 4,
+      "news :: rail “03:39 → 00:47” · tab “Ending”": 4,
+      "motion-ordinary :: rail “→ 6 hoursFewer, better proposals — let the wait be longer.” · tab “Set the Proposal Rate”": 2,
+      "crown :: rail “→ members onlyWho reads the document should be the membershi” · tab “Who Can See the Document?”": 2,
+      "news :: rail “members only → anyone with the link” · tab “Visibility”": 2,
+      "motion-constitutional :: rail “→ 6 hoursFewer, better proposals — let the wait be longer.” · tab “Set the Proposal Rate”": 2,
+      "failed-news :: rail “3 hours → 90 minutes” · tab “Your proposal did not pass: a new proposal every 90 minutes”": 2,
+      "crown-other :: rail “→ members onlyWho reads the document should be the membershi” · tab “Who Can See the Document?”": 2,
+      "race :: rail “‘only bills…’ or ‘the house’s…’Whoever holds the purse must ” · tab “Whole charter · place 1 of 3”": 2,
+      "patch :: rail “‘Purse-holder’ or ‘Treasurer’ …1 of 3 places\"Purse-holder\" i” · tab “The Purse-holder”": 2,
+      "judged-pair :: rail “with or without ‘up to three at a time without…’” · tab “Guests”": 2,
+      "judged-pair :: rail “‘up to three…’ or ‘and until the…’” · tab “Guests”": 2,
+      "judged-pair :: rail “with or without ‘within a week of being asked’” · tab “Whole charter · place 2 of 3”": 2,
+      "quick :: rail “with or without ‘up to three at a time without…’” · tab “Guests”": 2,
+      "race :: rail “‘up to three…’ or ‘and until the…’” · tab “Guests”": 2,
+      "quick :: rail “with or without ‘within a week of being asked’” · tab “Whole charter · place 2 of 3”": 2,
+      "motion-ordinary :: rail “→ 30 minutesHalf an hour, for the last day, when everybody i” · tab “Set the Proposal Rate”": 2,
+      "motion-constitutional :: rail “→ 2A third of three is one person. Two is the least that is ” · tab “Choose the Quorum”": 2
+     },
+     "examples": [
+      {
+       "record": "mo:mo-5|settled|1600",
+       "shot": "mo_mo-5-settled-1600.png"
+      },
+      {
+       "record": "mo:mo-4|settled|1600",
+       "shot": "mo_mo-4-settled-1600.png"
+      },
+      {
+       "record": "mo:mo-3|settled|1600",
+       "shot": "mo_mo-3-settled-1600.png"
+      },
+      {
+       "record": "chamber|seat:1|1600",
+       "shot": "chamber-seat_1-1600.png"
+      }
+     ]
+    },
+    "keysWithSeveralEyebrows": {
+     "draft-yours": [
+      "The clause as it stands",
+      "A new clause after: …"
+     ]
+    },
+    "gapTwoHeads": {
+     "what": "a gap is *The gap as it stands* on a race and *A new clause after: …* on your own draft",
+     "records": 10,
+     "heads": {
+      "insert :: The gap as it stands": 8,
+      "editing :: A new clause after: …": 2
+     },
+     "examples": [
+      {
+       "record": "insert-quiet|charter|1600",
+       "shot": "insert-quiet-charter-1600.png"
+      },
+      {
+       "record": "draft-yours|edit:gap-site|1600",
+       "shot": "editing-gap-site-1600.png"
+      },
+      {
+       "record": "race-quiet-rivals|charter|1600",
+       "shot": "insert-quiet-charter-1600.png"
+      },
+      {
+       "record": "insert-quiet|closed|1600",
+       "shot": "insert-quiet-closed-1600.png"
+      }
+     ]
+    },
+    "parkTabIsAPlace": {
+     "what": "the park card's front tab tooltip names a patch place (*Whole charter · place 2 of 3*), not the clause",
+     "records": 4,
+     "examples": [
+      {
+       "record": "park-accounts|charter|1600",
+       "shot": "park-accounts-charter-1600.png"
+      },
+      {
+       "record": "park-accounts|closed|1600",
+       "shot": "park-accounts-closed-1600.png"
+      },
+      {
+       "record": "park-accounts|charter|390",
+       "shot": "park-accounts-charter-390.png"
+      },
+      {
+       "record": "park-accounts|closed|390",
+       "shot": "park-accounts-closed-390.png"
+      }
+     ]
+    }
+   },
+   "records": 14,
+   "pairs": 7,
+   "score": 14
+  }
+ ],
+ "structure": {
+  "cards.js": {
+   "lines": 2348,
+   "commitRowEmitters": 1,
+   "binBtnCalls": 0,
+   "rightpairBuilders": 1,
+   "perKeyBranches": 0,
+   "locklineSites": 0
+  },
+  "setup.js": {
+   "lines": 1874,
+   "commitRowEmitters": 1,
+   "binBtnCalls": 0,
+   "rightpairBuilders": 0,
+   "perKeyBranches": 0,
+   "locklineSites": 10
+  },
+  "band.js": {
+   "lines": 2048,
+   "commitRowEmitters": 0,
+   "binBtnCalls": 38,
+   "rightpairBuilders": 5,
+   "perKeyBranches": 34,
+   "locklineSites": 3
+  },
+  "session.js": {
+   "lines": 6090,
+   "commitRowEmitters": 7,
+   "binBtnCalls": 0,
+   "rightpairBuilders": 1,
+   "perKeyBranches": 6,
+   "locklineSites": 0
+  },
+  "session-view.html": {
+   "lines": 10412,
+   "commitRowEmitters": 2,
+   "binBtnCalls": 0,
+   "rightpairBuilders": 0,
+   "perKeyBranches": 75,
+   "locklineSites": 6
+  },
+  "live.js": {
+   "lines": 2320,
+   "commitRowEmitters": 0,
+   "binBtnCalls": 0,
+   "rightpairBuilders": 0,
+   "perKeyBranches": 10,
+   "locklineSites": 0
+  },
+  "composer.js": {
+   "lines": 1204,
+   "commitRowEmitters": 4,
+   "binBtnCalls": 0,
+   "rightpairBuilders": 0,
+   "perKeyBranches": 0,
+   "locklineSites": 0
+  },
+  "begin.js": {
+   "lines": 537,
+   "commitRowEmitters": 0,
+   "binBtnCalls": 0,
+   "rightpairBuilders": 0,
+   "perKeyBranches": 1,
+   "locklineSites": 0
+  },
+  "door.js": {
+   "lines": 436,
+   "commitRowEmitters": 0,
+   "binBtnCalls": 3,
+   "rightpairBuilders": 0,
+   "perKeyBranches": 8,
+   "locklineSites": 3
+  },
+  "wallets.js": {
+   "lines": 654,
+   "commitRowEmitters": 1,
+   "binBtnCalls": 0,
+   "rightpairBuilders": 0,
+   "perKeyBranches": 12,
+   "locklineSites": 0
+  },
+  "total": {
+   "commitRowEmitters": 16,
+   "binBtnCalls": 41,
+   "rightpairBuilders": 7,
+   "perKeyBranches": 146,
+   "locklineSites": 22
+  }
+ },
+ "gotchas": {
+  "total": 109,
+  "byClass": {
+   "other": 37,
+   "render": 22,
+   "readers": 22,
+   "frame": 8,
+   "alike": 8,
+   "presence": 8,
+   "twice": 2,
+   "nojob": 2
+  },
+  "surfaceShare": 72
+ }
+}
