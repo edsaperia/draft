@@ -145,6 +145,10 @@ What it needs a ruling on is the evidence. A revision is a **new candidate**: an
 
 | # | Title | Raised | State | Pointers |
 |---|---|---|---|---|
+| 1549 | The rationale first: above the wording in each proposal block | 2026-09-25 | **raised by Ed, open** — condition to act: before redesign stage 6 starts (the stage that rebuilds these cards) | `proposal-block`, `sealed-speaker`; `design/redesign/BUILD.md` stage 6; answers.md principle 1 |
+| 1550 | Comments with votes: deliberation that later voters see | 2026-09-25 | **raised by Ed, open** — readings (a) about the proposal, never the vote · (b) shown only after you vote · (c) to the author only; condition to act: Ed picks a reading, before redesign stage 6 starts | SPEC §3.5 (blindness); `participant-api`; Q94 |
+| 1551 | Amendments per hour: the throughput number, measured after every live room | 2026-09-25 | **raised in discussion, open** — condition to act: Ed rules | `event-log`; the nh2026 and demo logs; `alpha-preset`'s `alive` |
+| 1552 | A live *amendments decided this session* counter on the demo screen and the feed | 2026-09-25 | **raised in discussion, open** — condition to act: Ed rules | `spectator-feed`; `demo-panel`; `design/DEMO.md` |
 | 1545 | Stop gating pushes on the walk groups locally | 2026-09-25 | **backlog by Ed 2026-09-25** — condition to act: the next session (after 2026-09-25) opens; offered first, in the coordinator's own hands | CLAUDE.md *Conventions* (CI bullet: *Before a push, locally*) |
 | 1546 | The guard audit: which walks and repros last caught a real bug | 2026-09-25 | **backlog by Ed 2026-09-25** — condition to act: the next session (after 2026-09-25) opens; report first, nothing moves without Ed | `scripts/ci-walks.sh`; `scripts/repro/`; CI history |
 | 1547 | An expiry rule for new guards | 2026-09-25 | **backlog by Ed 2026-09-25** — condition to act: the next session (after 2026-09-25) opens; decide after 1546 | CLAUDE.md *What goes in this file* (Q736) |
@@ -228,7 +232,15 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1549** — claim by writing the block here, then commit it alone.
+**The next free number is 1553** — claim by writing the block here, then commit it alone.
+
+**1552 is an amendments counter on the demo screen** (claimed 2026-09-25, from the positioning discussion). One plain number, *amendments decided this session*, on the spectator feed or the demo panel's screen: the room watching it climb while they vote is the pitch against the huddle, felt rather than explained. The same number as 1551. Condition to act: Ed rules.
+
+**1551 is amendments per hour, measured** (claimed 2026-09-25, from the positioning discussion — Ed: *in an hour a group might be able to do several dozen amendments*, against a handful in the huddle). Read from every live room's log: amendments proposed and decided per hour, time from proposal to decision, judgments per member per hour, the share decided before the session ended; the nh2026 and demo logs already hold it. The product metric the velocity batch (1545–1548) lacks: it says what matters, where guards say only that nothing broke. Condition to act: Ed rules.
+
+**1550 is comments with votes** (claimed 2026-09-25; Ed: *we can allow people to make comments when they vote, which are seen by people who vote after them, so it becomes more of a deliberation platform*). The tension is SPEC §3.5's blindness: a comment that says or implies its author's choice shows later voters the direction, and sequential visible choices are the classic information cascade — the earliest voters steer the room. Readings: **(a)** comments about the proposal, shown to later voters, never paired with the commenter's choice; **(b)** comments shown only after you have voted — the vote stays blind and the comments feed the next proposals, which fits the parallel pipeline (the coordinator's leaning); **(c)** comments to the proposal's author alone, to revise from. Costs either way: reading time on every later judgment (a length cap or a few shown), and a moderation story in the public demo, where Reset is the only remedy. Card shape is the redesign's, so decide before stage 6.
+
+**1549 is the rationale first** (claimed 2026-09-25; Ed: *when you read a proposal, make the rationale more prominent (above the texts instead of at the bottom?)*). The redesign's principle 1 keeps the clause as the card's first line, so the place is the top of each proposal block: label, the rationale, then the wording — the reason read first frames the diff and should make a judgment faster. Cautions: most proposals carry no rationale, so the slot must vanish cleanly (a hole reads as broken); a reason read first primes the judgment, which is the point of deliberation and a shift from judging the words alone. Redesign stage 6 rebuilds these cards, so decide before it starts.
 
 **1548 is CLAUDE.md's per-session load** (claimed 2026-09-25, the velocity batch; see 1545). The glossary is most of CLAUDE.md's 145 KB; moved to `design/GLOSSARY.md` and read when a name needs looking up, CLAUDE.md would keep the rules, gotchas and conventions, and every session and builder would start lighter. A change to a document structure Ed designed, so his call; `spec-check`'s glossary-shape rules move with it. Decide after 1546.
 
