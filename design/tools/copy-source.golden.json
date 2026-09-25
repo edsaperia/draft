@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 651
+  "entries": 653
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -449,6 +449,8 @@
   "page.railVal.slug": "ƒ (slug) => slug",
   "page.railVal.title": "ƒ (text) => grammar.railTitle.quote(text)",
   "page.railVal.to": "ƒ (now) => '→ ' + now",
+  "page.rails.contents": "Contents",
+  "page.rails.tasks": "What needs you",
   "page.refuseSet": "ƒ (reason) => 'That could not be set: ' + reason + '.'",
   "page.refused": "ƒ (reason) => 'That was refused: ' + reason + '.'",
   "page.ride.pressToWrite": "press to write",
