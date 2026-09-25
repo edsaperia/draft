@@ -1,16 +1,18 @@
 /**
- * **The Smith study** (Q1538, Q1539; plan Stage 5, `design/spec-pass/plan-q1538-rivals-and-smith.md`).
+ * **The Smith study** (Q1538, Q1539; R-142, R-143; `design/DECISIONS.md`,
+ * 2026-09-25).
  *
  *   npm run smith -w @draft/sim-harness -- [--seeds N] [--rooms 5,7,10,15,20]
  *     [--windows meeting,conference] [--quorums none,50] [--churn-seeds N]
  *
- * Three engine arms over the same seeded rooms — `main` (Q1534's engine: the
- * fit alone decides, rival pairs rarely asked), **A** (a leader waits until it
- * is measured against every live rival; the router asks those pairs) and
- * **A+B** (A, and the ranking read inside the Smith set) — switched by
- * engine-core's `ARMS`, a process-wide dev switch removed at the merge.
- * Deterministic and network-free: scripted personas, seeded rng, the same
- * seeds in every arm.
+ * **The engine as it stands** — the leader measured against its rivals and
+ * ranked inside the Smith set — over seeded rooms that file clones. Before the
+ * merge the study ran three arms (`main`, A, A+B) through a process-wide
+ * engine switch; the switch left at the merge, so the comparison with `main`
+ * lives in R-142, R-143 and DECISIONS, and this file now measures one arm, the
+ * engine's own, labelled `A+B`. The named next step (R-143: Schulze inside the
+ * Smith set) is what it is kept for. Deterministic and network-free: scripted
+ * personas, seeded rng.
  *
  * **The room.** The clubhouse scenario's personas, the first N for rooms up to
  * fourteen and the flattest members seated again as twins above it (churn.ts's
@@ -40,12 +42,11 @@
  *     adoption**, the welfare ratio, and flips and reversions.
  *
  * And **the churn baseline**, churn.ts's own room (the clubhouse fifteen, no
- * clones, no filers, the alpha preset) at no quorum and at half, for the three
- * arms: the merge bar's *no more reversions* is read there.
+ * clones, no filers, the alpha preset) at no quorum and at half: flips and
+ * reversions, where the merge bar's *no more reversions* was read.
  */
 import { attest, splitLines } from '../../engine-core/src/index.js';
 import type { Constitution, Rng, ParticipantApi, Session } from '../../engine-core/src/index.js';
-import { ARMS } from '../../engine-core/src/races.js';
 import { ALPHA_PRESET_OVERRIDES } from './alpha-preset-values.js';
 import { clubhouseScenario } from './clubhouse.js';
 import { ScriptedPersona, TIE_THRESHOLD, type DraftProposal } from './persona.js';
@@ -54,7 +55,7 @@ import {
   conditionalUtility, currentPositions,
   type Alternative, type Issue, type PersonaProfile, type Scenario,
 } from './scenario.js';
-import { check, finish, say } from './evidence-log.js';
+import { finish, say } from './evidence-log.js';
 
 const MIN = 60_000;
 const HOUR = 3600_000;
@@ -64,12 +65,9 @@ const MAX_ACTIONS = 500_000;
 const DELTA = 0.12;
 const CLONE = ' (as amended)';
 
-type ArmName = 'main' | 'A' | 'A+B';
-const ARM_SET: Array<{ name: ArmName; rivalMeasure: boolean; smith: boolean }> = [
-  { name: 'main', rivalMeasure: false, smith: false },
-  { name: 'A', rivalMeasure: true, smith: false },
-  { name: 'A+B', rivalMeasure: true, smith: true },
-];
+type ArmName = 'A+B';
+/** One arm since the merge: the engine as it stands. */
+const ARM_SET: Array<{ name: ArmName }> = [{ name: 'A+B' }];
 
 const WINDOWS: Record<string, number> = { meeting: 4, conference: 72, ongoing: 720 };
 
@@ -270,12 +268,10 @@ interface RunOut {
   hash: string;
 }
 
-async function runOne(arm: (typeof ARM_SET)[number], scenario: Scenario, windowMs: number,
+async function runOne(scenario: Scenario, windowMs: number,
   seed: string, overrides: Partial<Constitution>, filers: boolean): Promise<RunOut> {
-  ARMS.rivalMeasure = arm.rivalMeasure;
-  ARMS.smith = arm.smith;
   const decisions: Decision[] = [];
-  try {
+  {
     const r = await runSession({
       scenario, windowMs, seed, maxActions: MAX_ACTIONS,
       constitutionOverrides: overrides,
@@ -302,9 +298,6 @@ async function runOne(arm: (typeof ARM_SET)[number], scenario: Scenario, windowM
     return { decisions, adoptions: r.metrics.adoptions, flips: r.metrics.flips,
       reversions: r.metrics.reversions, welfare: r.metrics.welfareRatio, edge, rival,
       passMinutes, hash: r.session.rollingHash() };
-  } finally {
-    ARMS.rivalMeasure = true;
-    ARMS.smith = true;
   }
 }
 
@@ -390,7 +383,7 @@ async function main(): Promise<void> {
   const quorums = arg('quorums', 'none,50').split(',');
   const qOf = (q: string): Constitution['quorum'] => (q === 'none' ? null : { form: 'share', n: Number(q) });
 
-  say('# The Smith study (Q1538, Q1539) — main · A · A+B');
+  say('# The Smith study (Q1538, Q1539) — the engine as it stands (A+B)');
   say(`  seeds ${seeds} (smith-<room>-<i>) · churn seeds ${churnSeeds} (churn-<i>) · rooms ${rooms.join(', ')}`
     + ` · windows ${windows.join(', ')} · quorums ${quorums.join(', ')}`);
   say(`  clones: every alternative's copy at quality −${DELTA}; p1 files them naively, p2 strategically`);
@@ -407,7 +400,7 @@ async function main(): Promise<void> {
         for (const arm of ARM_SET) {
           const runs: RunOut[] = [];
           for (let i = 0; i < seeds; i++) {
-            runs.push(await runOne(arm, scenario, WINDOWS[w]! * HOUR, `smith-${n}-${i}`,
+            runs.push(await runOne(scenario, WINDOWS[w]! * HOUR, `smith-${n}-${i}`,
               { ...ALPHA_PRESET_OVERRIDES, quorum: qOf(q) }, true));
           }
           const c = summarise(arm.name, runs);
@@ -428,7 +421,7 @@ async function main(): Promise<void> {
       for (const arm of ARM_SET) {
         const runs: RunOut[] = [];
         for (let i = 0; i < churnSeeds; i++) {
-          runs.push(await runOne(arm, fifteen, WINDOWS[w]! * HOUR, `churn-${i}`,
+          runs.push(await runOne(fifteen, WINDOWS[w]! * HOUR, `churn-${i}`,
             { ...ALPHA_PRESET_OVERRIDES, quorum: qOf(q) }, false));
         }
         const c = summarise(arm.name, runs);
@@ -439,55 +432,9 @@ async function main(): Promise<void> {
     }
   }
 
-  // ------------------------------------------------------------------------
-  say('\n== the merge bar (Ed, Q1538 ruling 8), read off the tables above ======');
-  const get = (cells: CellSum[], a: ArmName) => cells.find((c) => c.arm === a)!;
-  const ce = (c: CellSum) => (c.withCw === 0 ? 1 : c.cwChosen / c.withCw);
-  let bar1 = true;
-  for (const row of table) {
-    const m = get(row.cells, 'main');
-    const ab = get(row.cells, 'A+B');
-    const ok = ce(ab) >= ce(m);
-    if (!ok) bar1 = false;
-    say(`  1. CE A+B ≥ main · room ${row.room} · ${row.window} · q ${row.quorum}: `
-      + `${pct(ab.cwChosen, ab.withCw)} vs ${pct(m.cwChosen, m.withCw)} ${ok ? 'MET' : 'MISSED'}`);
-  }
-  // **read on the fields of two or more wordings**, the case A and B are
-  // about: a race of one decides exactly as before (B3), so an adoption the
-  // room's majority refused in a one-wording race is the floor's, not the
-  // ranking's — printed beside it, and not what this line is judged on
-  const sum = (a: ArmName, k: 'refused' | 'refusedMulti' | 'refusedClone') =>
-    table.reduce((acc, r) => acc + get(r.cells, a)[k], 0);
-  const bar2 = sum('A+B', 'refusedMulti') < sum('main', 'refusedMulti')
-    || (sum('main', 'refusedMulti') === 0 && sum('A+B', 'refusedMulti') === 0);
-  say(`  2. clone wins fall: majority-refused adoptions from a field of two or more `
-    + `${sum('main', 'refusedMulti')} → ${sum('A+B', 'refusedMulti')}`
-    + ` (with a clone in it ${sum('main', 'refusedClone')} → ${sum('A+B', 'refusedClone')};`
-    + ` every field ${sum('main', 'refused')} → ${sum('A+B', 'refused')}) ${bar2 ? 'MET' : 'MISSED'}`);
-  let bar3 = true;
-  for (const row of churn) {
-    const m = get(row.cells, 'main');
-    const ab = get(row.cells, 'A+B');
-    const ok = ab.reversions <= m.reversions;
-    if (!ok) bar3 = false;
-    say(`  3. reversions A+B ≤ main · ${row.window} · q ${row.quorum}: `
-      + `${ab.reversions.toFixed(2)} vs ${m.reversions.toFixed(2)} ${ok ? 'MET' : 'MISSED'}`);
-  }
-  let bar4 = true;
-  for (const row of table.filter((r) => r.room <= 10)) {
-    const m = get(row.cells, 'main');
-    const ab = get(row.cells, 'A+B');
-    const ok = m.medianPassMin === null || ab.medianPassMin === null
-      || ab.medianPassMin <= 1.5 * m.medianPassMin;
-    if (!ok) bar4 = false;
-    say(`  4. median time to pass A+B ≤ 1.5 × main · room ${row.room} · ${row.window} · q ${row.quorum}: `
-      + `${ab.medianPassMin?.toFixed(1) ?? '—'} vs ${m.medianPassMin?.toFixed(1) ?? '—'} min ${ok ? 'MET' : 'MISSED'}`);
-  }
-  say(`\n  the bar: 1 ${bar1 ? 'MET' : 'MISSED'} · 2 ${bar2 ? 'MET' : 'MISSED'}`
-    + ` · 3 ${bar3 ? 'MET' : 'MISSED'} · 4 ${bar4 ? 'MET' : 'MISSED'}`);
-
+  // the merge bar (Q1538 ruling 8) compared this arm with `main`, which left
+  // with the engine switch at the merge: its reading is in DECISIONS, 2026-09-25
   say('\n== housekeeping ========================================================');
-  check(ARMS.rivalMeasure && ARMS.smith, 'the arms are back on: both switches on once the study has had them');
   say('  cell digests (a re-run of this file must print these unchanged):');
   for (const row of table) {
     for (const c of row.cells) say(`    room ${row.room} · ${row.window} · q ${row.quorum} · ${c.arm.padEnd(4)} ${c.digest}`);

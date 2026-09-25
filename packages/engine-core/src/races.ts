@@ -100,14 +100,6 @@ export function floorFor(c: Constitution, e: number, group: number): number {
 }
 
 /**
- * **The engine arms of the Q1538/Q1539 sim study** (plan Stage 5): process-wide
- * dev switches, like `Session.memo`, so `smith-study.ts` can run `main`, A and
- * A+B over one room. **Both on in every shipped path; removed at the merge.**
- * The memo does not key on them — flip them only between sessions.
- */
-export const ARMS = { rivalMeasure: true, smith: true };
-
-/**
  * **The time-free half of a race** (Q1439): everything the state alone
  * decides, which is what the session's per-state-version memo may hold.
  * Since v0.142 (Q1538, Q1539) that is less than it was: which pairs are
@@ -367,10 +359,10 @@ export class Races {
     // unmeasured pair a gap, never a draw (Q1539 ruling 2) — at the close as
     // much as before it (Ed, 2026-09-25): a wording that reaches the top only
     // through an unmeasured pair does not pass, and the race files undecided
-    const smith = ARMS.smith ? smithSet(nodes, (x, y) => {
+    const smith = smithSet(nodes, (x, y) => {
       const p = pairAt(x, y);
       return p.measured && p.forX >= p.forY;
-    }) : [];
+    });
 
     // **smith-rank**: the Smith set above the rest, the fit's order within each
     // part — and while the set is empty, the fit's order alone
@@ -442,19 +434,17 @@ export class Races {
     // text's first — since that is where a chain back to the leader (or the
     // Smith set's own top) has to be measured.
     const measureShort: string[] = [];
-    if (ARMS.rivalMeasure && leaderId !== null) {
+    if (leaderId !== null) {
       for (const r of now.short) measureShort.push(pairKey(leaderId, r));
-      if (ARMS.smith) {
-        const beaters = nodes.filter((n) => {
-          if (n === leaderId || closing.has(n)) return false;
-          const p = pairAt(n, leaderId);
-          return p.measured && p.forX > p.forY;
-        }).sort((x, y) => Number(y === cur) - Number(x === cur));
-        for (let i = 0; i < beaters.length; i++) {
-          for (let j = i + 1; j < beaters.length; j++) {
-            if (!pairAt(beaters[i]!, beaters[j]!).measured) {
-              measureShort.push(pairKey(beaters[i]!, beaters[j]!));
-            }
+      const beaters = nodes.filter((n) => {
+        if (n === leaderId || closing.has(n)) return false;
+        const p = pairAt(n, leaderId);
+        return p.measured && p.forX > p.forY;
+      }).sort((x, y) => Number(y === cur) - Number(x === cur));
+      for (let i = 0; i < beaters.length; i++) {
+        for (let j = i + 1; j < beaters.length; j++) {
+          if (!pairAt(beaters[i]!, beaters[j]!).measured) {
+            measureShort.push(pairKey(beaters[i]!, beaters[j]!));
           }
         }
       }
@@ -474,12 +464,10 @@ export class Races {
       const nd = n < p.floor ? p.floor : n + 1;
       got += Math.min(n, nd);
       need += nd;
-      if (ARMS.rivalMeasure) {
-        for (const r of now.short) {
-          const q = pairAt(leaderId, r);
-          got += Math.min(q.answeredBy, q.floor);
-          need += q.floor;
-        }
+      for (const r of now.short) {
+        const q = pairAt(leaderId, r);
+        got += Math.min(q.answeredBy, q.floor);
+        need += q.floor;
       }
     }
 
@@ -963,7 +951,7 @@ export class Races {
   clearsFloor(r: RaceView): boolean {
     return r.approvals >= r.floor &&
       this.clearsAtClose(r) &&
-      !(ARMS.rivalMeasure && r.rivals.measured < r.rivals.of);
+      r.rivals.measured >= r.rivals.of;
   }
 
   /**
@@ -979,7 +967,7 @@ export class Races {
       r.leaderId !== null &&
       r.leaderOnTop &&
       (r.leaderMeasured > 0 || this.host.soleMemberIsLeadersAuthor(r.leaderId)) &&
-      !(ARMS.smith && r.smith.length === 0);
+      r.smith.length > 0;
   }
 
   /**
