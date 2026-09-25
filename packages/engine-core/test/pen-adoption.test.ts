@@ -442,14 +442,17 @@ describe('🛡️ on the Text parks per footprint (R-100)', () => {
     // p5 prefers the one that will park to the rival; p3 then carries `first`
     s.judge(58, 'p5', rival.id, first.id, 'b');
     judgeFor(s, 60, 'p3', first.id, first.raceId);
+    // it parks once it is measured against the rival too (R-142): p3 answers it
+    expect(s.getCandidate(first.id).state).toBe('live');
+    s.judge(61, 'p3', rival.id, first.id, 'b');
     expect(s.getCandidate(first.id).state).toBe('awaiting-assent');
     s.assent(90, first.id, 'accept');
     const re = s.log.map((e) => e.event).find((e) => e.type === 'candidate-reaimed');
     expect(re).toMatchObject({ id: rival.id, by: first.id });
-    expect(re!.type === 'candidate-reaimed' && re!.carried).toHaveLength(1);
+    expect(re!.type === 'candidate-reaimed' && re!.carried).toHaveLength(2);
     const race = s.races().find((r) => r.members.includes(rival.id))!;
     expect(race.approvals).toBe(1);   // p4's own
-    expect(race.comparisons).toBe(1); // p5's, carried as a vote for the current text
+    expect(race.comparisons).toBe(2); // p5's and p3's, carried as votes for the current text
     expect(Session.replay(s.log).rollingHash()).toBe(s.rollingHash());
   });
 

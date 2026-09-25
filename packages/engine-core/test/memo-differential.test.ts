@@ -97,7 +97,7 @@ type Act = (s: Session) => void;
  * A refusal is part of the answer, so the act does not swallow it; the runner
  * catches and compares the message.
  */
-function actAt(s: Session, n: number, t: number, rng: Rng): Act {
+function actAt(s: Session, n: number, t: number, rng: Rng, lines = LINES): Act {
   const who = people[rng.int(SEATS)]!.id;
   const roll = rng.int(100);
   const races = s.races();
@@ -115,7 +115,7 @@ function actAt(s: Session, n: number, t: number, rng: Rng): Act {
   }
   if (roll < 70) {
     // a text proposal on one line, so races form, split and collide
-    const line = rng.int(LINES);
+    const line = rng.int(lines);
     const words = `Clause ${line + 1}: revision ${n} by ${who}.`;
     const base = s.currentVersion();
     return (x) => {
@@ -242,6 +242,7 @@ function differential(
   seed: string,
   steps: number,
   overrides: Record<string, unknown> = {},
+  lines = LINES,
 ): RunOut {
   const a = cold(() => open(seed, overrides)); // memo off throughout
   const b = open(seed, overrides); // memo live
@@ -251,7 +252,7 @@ function differential(
   let refusals = 0;
   for (let n = 0; n < steps; n++) {
     t += 1 + rng.int(9 * 60_000);
-    const act = cold(() => actAt(a, n, t, rng));
+    const act = cold(() => actAt(a, n, t, rng, lines));
     const refusedCold = cold(() => attempt(a, act));
     const refusedWarm = audited(() => attempt(b, act));
     expect(refusedWarm, `step ${n} (${seed})`).toEqual(refusedCold);
@@ -259,6 +260,9 @@ function differential(
     else refusals++;
     expect(audited(() => picture(b, t)), `step ${n} (${seed})`)
       .toEqual(cold(() => picture(a, t)));
+    // **M1: the bar is never full on a live race** (Q1538 ruling 1, R-142)
+    for (const r of b.races(t)) expect(r.closeness, `step ${n} (${seed}) ${r.id}`).toBeLessThan(1);
+    multiRival = Math.max(multiRival, ...b.races(t).map((r) => r.members.length));
   }
   // and the log each produced replays to the same place, memo or no memo
   const replayCold = cold(() => Session.replay([...a.log]));
@@ -309,6 +313,8 @@ const SCRIPT_MS = 120_000;
  * room ever refuses a wording hard enough is the seed's business.
  */
 const closings: number[] = [];
+/** The most wordings any race held in any script (Q1538): the rival wait must be exercised. */
+let multiRival = 0;
 /** And how many re-aims they made (Q1534), read at the end the same way. */
 const reaimings: RunOut['reaims'][] = [];
 
@@ -343,7 +349,22 @@ describe('the fold-live memo derives what no memo derives (Q1326)', () => {
     reaimings.push(out.reaims);
   }, SCRIPT_MS);
 
-  it('the races read at two clocks on one state differ only in the floor they were read at', () => {
+  /**
+   * **A crowded room whose silences abstain** (Q1538, Q1539 → why: R-142,
+   * R-143): four lines, so rivals pile onto one clause, and a period short
+   * enough that most steps cross one. Since v0.142 each rival pair has its
+   * own floor, which moves with the clock, and the Smith set, the leader and
+   * the dominations move with it — all `viewAt`'s, over per-pair tallies the
+   * memo holds. This is the script that puts that split under test.
+   */
+  it('a crowded multi-rival session whose silences abstain agrees at every step', () => {
+    const out = differential('crowd', 120, { abstainAfterMs: 4 * 60_000,
+      quorum: { form: 'share', n: 60 } }, 4);
+    expect(out.acts).toBeGreaterThan(60);
+    expect(multiRival).toBeGreaterThanOrEqual(3);
+  }, SCRIPT_MS);
+
+  it('the races read at two clocks on one state differ only in what rides the clock', () => {
     const s = open('two-clocks', { abstainAfterMs: 5 * 60_000 });
     s.submitCandidate(1000, { author: 'p1', rationale: 'r',
       patch: { baseVersion: 0, hunks: [{ start: 0, end: 1, lines: ['Clause 1: changed.'] }] } });
@@ -352,12 +373,21 @@ describe('the fold-live memo derives what no memo derives (Q1326)', () => {
     // nothing in the log moved between the two reads
     expect(late.leaderJudges).toBe(early.leaderJudges);
     expect(late.approvals).toBe(early.approvals);
-    // and everything that rides the clock did
+    // and everything that rides the clock did — since v0.142 (R-142, R-143)
+    // that is each pair's floor, the pairs the leader waits on, how many
+    // rivals it is measured against, the Smith set and the meter over them,
+    // as well as the group
     expect(early.group).toBe(SEATS);
     expect(late.group).toBe(1);
     // the memo holds the time-free half, so a cold read agrees with both
     expect(cold(() => s.races(2000)[0]!)).toEqual(early);
     expect(audited(() => s.races(1000 + 5 * 60_000 + 1)[0]!)).toEqual(late);
+    // **B7: the memo hits between abstentions** (Q1538): one number keys the
+    // picture, so two clocks between the same two abstentions read the very
+    // same view object, and a clock past one reads another
+    expect(s.races(2000)[0]).toBe(s.races(3000)[0]);
+    expect(s.races(1000 + 5 * 60_000 + 1)[0]).toBe(s.races(1000 + 5 * 60_000 + 99)[0]);
+    expect(s.races(2000)[0]).not.toBe(s.races(1000 + 5 * 60_000 + 1)[0]);
   });
 
   it('the close, and everything after it, agrees too', () => {

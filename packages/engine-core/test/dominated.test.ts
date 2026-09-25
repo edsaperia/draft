@@ -285,6 +285,60 @@ describe('domination by a rival (Q1440)', () => {
     expect(s.getCandidate(third).state).toBe('retired');
     expect(s.getCandidate(y).state).toBe('live');
   });
+
+  /**
+   * **…re-proved against smith-rank** (Q1539 → why: R-132, R-143). The guards
+   * read the Smith set above the rest since v0.142, so the argument that a
+   * race cannot close its own top is made again over random three-candidate
+   * fields: every member of a room of five answers a random subset of the six
+   * pairs at random, the batch held off by a cooldown, and wherever the top
+   * of the ranking is a wording it is never among the dominated.
+   */
+  it('never closes the top of smith-rank either, over random three-candidate fields', () => {
+    let seed = 1539;
+    const rnd = (n: number): number => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed % n; };
+    let tops = 0;
+    for (let trial = 0; trial < 150; trial++) {
+      const s = open({ quorum: [null, { form: 'count', n: 3 }, { form: 'share', n: 50 }][rnd(3)],
+        cooldownMs: 10 * HOUR }, 5);
+      const other = s.submitCandidate(100, { author: 'p5', rationale: 'elsewhere',
+        patch: rewrite(s.currentVersion(), 3, 'Meetings happen monthly.') }).id;
+      for (const p of ['p1', 'p2', 'p3', 'p4']) {
+        if (s.getCandidate(other).state === 'adopted') break;
+        s.judge(200, p, other, s.races(200).find((r) => r.members.includes(other))!.incumbentId, 'a');
+      }
+      const ids = ['p1', 'p2', 'p3'].map((author, i) => s.submitCandidate(1000 + i, {
+        author, rationale: 'r', patch: rewrite(s.currentVersion(), 1, `Membership: ${i}.`) }).id);
+      const inc = s.races(2000).find((r) => r.members.includes(ids[0]!))!.incumbentId;
+      const nodes = [...ids, inc];
+      let t = 2000;
+      for (let m = 1; m <= 5; m++) {
+        for (let i = 0; i < nodes.length; i++) {
+          for (let j = i + 1; j < nodes.length; j++) {
+            if (rnd(3) === 0) continue;
+            s.judge((t += 1), `p${m}`, nodes[i]!, nodes[j]!, (['a', 'b', 'tie'] as const)[rnd(3)]!);
+          }
+        }
+      }
+      const r = s.races(t).find((x) => x.members.includes(ids[0]!))!;
+      if (r.leaderOnTop) {
+        tops++;
+        const mine = r.dominated.find((d) => d.id === r.leaderId);
+        if (mine === undefined) continue;
+        // …except by the floor clause, which is exact rather than a ranking
+        // (R-132): no answer still to come can bring it to its floor. The
+        // ranking guards — the majority clause and the rival clause — never
+        // close it; the floor may, as it always could
+        expect(mine.by).toBe('incumbent');
+        const onPair = s.judgments().filter((j) => !j.locked && !j.superseded &&
+          [j.aId, j.bId].includes(r.leaderId!) && [j.aId, j.bId].includes(inc));
+        const answered = new Set([...onPair.map((j) => j.participantId),
+          s.getCandidate(r.leaderId!).author]);
+        expect(r.approvals + (5 - answered.size)).toBeLessThan(r.floor);
+      }
+    }
+    expect(tops).toBeGreaterThan(20);
+  });
 });
 
 describe('what closing does (Q1440)', () => {

@@ -1817,8 +1817,8 @@ export class Session {
    * alone, saying nothing about anybody else, so it crosses §3.5 untouched.
    * Clock-free: the caller compares it with its own now.
    */
-  abstainDeadline(raceId: string, participantId: string): number | null {
-    return this.raceRules.abstainDeadline(raceId, participantId);
+  abstainDeadline(raceId: string, participantId: string, t: number = this.lastT): number | null {
+    return this.raceRules.abstainDeadline(raceId, participantId, t);
   }
 
   /** The live race holding a candidate; throws if it is not in one. */
@@ -1853,15 +1853,15 @@ export class Session {
    * the only one where the missing measurement can never arrive because there
    * is nobody but the author to make it.
    */
-  private soleMemberIsLeadersAuthor(r: RaceView): boolean {
-    if (r.leaderId === null) return false;
+  private soleMemberIsLeadersAuthor(leaderId: string | null): boolean {
+    if (leaderId === null) return false;
     let sole: string | null = null;
     for (const [id, entry] of this.roster) {
       if (entry.removed || entry.suspended) continue;
       if (sole !== null) return false; // more than one voice: not this rule
       sole = id;
     }
-    return sole !== null && this.candidates.get(r.leaderId)?.author === sole;
+    return sole !== null && this.candidates.get(leaderId)?.author === sole;
   }
 
   private sweepAdoptions(t: number, final = false): void {
@@ -1883,7 +1883,7 @@ export class Session {
     const ready = this.races(t)
       // `clearsFloor` is the test, shared with `races()`'s `blockedByPark`
       // (R-100). What it asks, and why:
-      .filter((r) => this.raceRules.clearsFloor(r))
+      .filter((r) => this.raceRules.clearsFloor(r, { final }))
           // The top of the field and the floor, and then the helper's last
           // clause, whose reason is long enough to keep here beside the batch
           // it governs.
@@ -1926,9 +1926,13 @@ export class Session {
       // `converged` is false in exactly one circumstance — the iteration cap
       // running out with the gradient still above tolerance — which is why
       // the record's word is *cap* and not *gradient*.
-      .map((r): { leaderId: string; p: number; approvals: number; floor: number;
-        abstained: number;
+      .map((view): { leaderId: string; p: number; approvals: number; floor: number;
+        abstained: number; rivals?: { measured: number; of: number };
         cappedFit?: { iterations: number; gradMax: number } } => {
+        // **the close reads the race on the evidence it has** (§4.6 → why:
+        // R-142): the wait for rivals waived, an unmeasured pair level, so
+        // its leader — and the numbers the batch records — are `atClose`'s
+        const r = final ? { ...view, ...view.atClose } : view;
         const fit = this.raceRules.fitRaceMembers(r.members, r.incumbentId);
         return {
           leaderId: r.leaderId as string,
@@ -1941,6 +1945,10 @@ export class Session {
           approvals: r.approvals,
           floor: r.floor,
           abstained: r.abstained,
+          // and how many of its live rivals it was measured against (Q1538,
+          // §4.6): only where it had any, so a race of one candidate records
+          // exactly what it always did
+          ...(r.rivals.of > 0 ? { rivals: r.rivals } : {}),
           // absent means converged, all the way out to the log (R-051)
           ...(fit.converged
             ? {}
@@ -1970,10 +1978,10 @@ export class Session {
     // it `blockedByPark`, and it is looked at again next batch. Everything
     // else parks beside the standing parks, each its own 👑 question, oldest
     // race first as always.
-    for (const { leaderId, p, approvals, floor, abstained, cappedFit } of ready) {
+    for (const { leaderId, p, approvals, floor, abstained, rivals, cappedFit } of ready) {
       const c = this.candidate(leaderId);
       if (c.state !== 'live') continue;
-      const decided = { approvals, floor, abstained };
+      const decided = { approvals, floor, abstained, ...(rivals ? { rivals } : {}) };
       // a setting race is untouched by any of this (Q390): it carries no
       // patch, changes no text, and adopts in the same batch as before —
       // but it was decided by the same fit and takes the same mark (R-051)
@@ -2003,7 +2011,9 @@ export class Session {
 
   /**
    * **A proposal that can never win is closed** (Q1440, Ed 2026-09-18; SPEC
-   * §4.4 → why: R-132). The test is `races.ts`'s and is time-free; this is
+   * §4.4 → why: R-132). The test is `races.ts`'s — its counts time-free,
+   * the ranking its guards read the clock's since v0.142 (R-143), so a
+   * silence running its period can close a wording as a judgment can; this is
    * the moment it is acted on — **the adoption batch**, so that what carried
    * and what closed are decided together and a reader sees one movement of
    * the document rather than two.
@@ -2073,7 +2083,8 @@ export class Session {
    */
   private adopt(t: number, candidateId: string, p: number, threshold: number,
     raceIdIn?: string, cappedFit?: { iterations: number; gradMax: number },
-    decided?: { approvals: number; floor: number; abstained: number }): void {
+    decided?: { approvals: number; floor: number; abstained: number;
+      rivals?: { measured: number; of: number } }): void {
     const winner = this.candidate(candidateId);
     const raceId = raceIdIn ?? this.raceIdOf(candidateId);
     // the cap mark and the three numbers the batch decided on (R-051; Q1439;
@@ -2413,12 +2424,12 @@ export class Session {
       // the batch's own test (Q1337, R-114; Q1439, R-125): the top of the
       // field, F approvals of the leader, and the room having judged it — the
       // close renders nothing the sweep would not
-      if (!this.raceRules.clearsFloor(r)) continue;
+      if (!this.raceRules.clearsFloor(r, { final: true })) continue;
       if (r.settingId !== undefined) {
-        appliedSettings.push({ settingId: r.settingId, candidateId: r.leaderId! });
+        appliedSettings.push({ settingId: r.settingId, candidateId: r.atClose.leaderId! });
         continue;
       }
-      winners.push(this.candidate(r.leaderId!));
+      winners.push(this.candidate(r.atClose.leaderId!));
     }
     winners.sort((a, b) =>
       sha256Hex(a.id + this.constitutionValue.rngSeed).localeCompare(

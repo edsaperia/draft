@@ -183,7 +183,7 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
   // page is told *when* and works out *whether* against its own clock, which
   // is the one number a browser can be trusted with.
   const abstainAt = (raceId: string): { abstainAt?: number } => {
-    const at = engine.abstainDeadline(raceId, memberId);
+    const at = engine.abstainDeadline(raceId, memberId, nowMs);
     return at !== null ? { abstainAt: at } : {};
   };
   // **At this poll's own clock** (Q1439): who has abstained, and so what each

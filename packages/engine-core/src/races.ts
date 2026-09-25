@@ -36,6 +36,7 @@ import type { Span } from './text/types.js';
 import type { Comparison, Fit } from './ranking/types.js';
 import { footprintsConflict } from './text/patch.js';
 import { fitDavidson } from './ranking/davidson.js';
+import { smithSet } from './ranking/smith.js';
 import { sha256Hex, stableStringify } from './hash.js';
 import { pairKey } from './routing.js';
 import type { StoredComparison } from './session.js';
@@ -99,27 +100,43 @@ export function floorFor(c: Constitution, e: number, group: number): number {
 }
 
 /**
- * **The time-free half of a race** (Q1439): everything the state alone
- * decides, which is what the session's per-state-version memo may hold.
- * `approvals`, `group`, `abstained`, `floor`, `closeness` and `blockedByPark`
- * are not here — they move with the clock, because a silence becomes an
- * abstention with no event to mark it, and the memo would hand back an answer
- * from before the period ran.
+ * **The engine arms of the Q1538/Q1539 sim study** (plan Stage 5): process-wide
+ * dev switches, like `Session.memo`, so `smith-study.ts` can run `main`, A and
+ * A+B over one room. **Both on in every shipped path; removed at the merge.**
+ * The memo does not key on them — flip them only between sessions.
  */
-type RaceCore = Omit<RaceView,
-  'approvals' | 'group' | 'abstained' | 'floor' | 'closeness' | 'blockedByPark'>;
+export const ARMS = { rivalMeasure: true, smith: true };
 
 /**
- * The approval count and the group, held in the one shape that does not
- * depend on the clock: who has approved, how many have answered either way,
- * and — for each member of E who has not answered — the moment their own
- * period on this pair began (§8.2). Whether that period has run is the only
- * question left for `t`.
+ * **The time-free half of a race** (Q1439): everything the state alone
+ * decides, which is what the session's per-state-version memo may hold.
+ * Since v0.142 (Q1538, Q1539) that is less than it was: which pairs are
+ * **measured** depends on each pair's own floor, which moves when a silence
+ * runs its 💤 period, so the Smith set, and with it the leader and everything
+ * read off the leader, is the clock's — `viewAt` computes it from the per-pair
+ * tallies below, which the state alone decides.
  */
-interface ApprovalCore {
-  approvals: number;
-  /** Approvers and opposers together: answered, and in the group wherever they now are. */
-  answered: number;
+type RaceCore = Pick<RaceView, 'id' | 'members' | 'contested' | 'incumbentId' | 'comparisons'
+  | 'distinctMovers' | 'rivalGateOpen' | 'settingId'>;
+
+/**
+ * **One pair's tally, held in the shape that does not depend on the clock**
+ * (Q1439, generalised to every pair by Q1538): who preferred each side, how
+ * many answered at all, and — for each member of E who has not answered — the
+ * moment their own period on this pair began (§8.2). Whether that period has
+ * run is the only question left for `t`. For a candidate against the current
+ * text this is the approval pair exactly: `for` the candidate is its
+ * approvals, its author's derived preference among them (§3.3).
+ */
+interface PairCore {
+  /** The two ends, `a` before `b` in the race's node order (members, then the current text). */
+  a: string;
+  b: string;
+  /** Decisive answers for each end: answered, and in the pair's group wherever they now are. */
+  forA: number;
+  forB: number;
+  /** Distinct members who answered, *Indifferent* included — the meter's count (Q1362 (d)). */
+  answeredBy: number;
   /**
    * One awaited member of E per entry, with the moment their own period on
    * this pair began, in engine ms. **The id rides with the moment** (Q1460):
@@ -128,6 +145,32 @@ interface ApprovalCore {
    * read off the same row rather than recomputed by a second rule.
    */
   awaited: Array<{ id: string; from: number }>;
+}
+
+/** A pair read at `t`, from one end's side. */
+interface PairAt {
+  forX: number;
+  forY: number;
+  answeredBy: number;
+  /** Members of E who have not answered, abstained or not — settled's count (R-132). */
+  unanswered: number;
+  awaitedAt: number;
+  group: number;
+  floor: number;
+  /** Answered by its own floor, or settled: its lead beyond every member still to answer (R-142). */
+  measured: boolean;
+}
+
+/** Everything the memo holds for one race. */
+interface RaceBuild {
+  core: RaceCore;
+  fit: Fit;
+  /** By `pairKey`, every pair of the race's nodes. */
+  pairs: Map<string, PairCore>;
+  /** Per candidate: distinct voices on it, and the room's own (non-derived) judgments of it. */
+  judges: Map<string, { judges: number; measured: number }>;
+  /** The time-free half of deadlock: enough evidence, and no pair left worth asking. */
+  baseDeadlocked: boolean;
 }
 
 /** What the races may read of the session: live closures, no copies. */
@@ -182,7 +225,7 @@ export interface RacesHost {
     rivalGateOpen: boolean,
   ): number;
   /** The E = 1 half of the adoption gate (R-063): the author is the room. */
-  soleMemberIsLeadersAuthor(r: RaceView): boolean;
+  soleMemberIsLeadersAuthor(leaderId: string | null): boolean;
 }
 
 export class Races {
@@ -199,34 +242,54 @@ export class Races {
    * however many seats poll between it and the next.
    */
   races(t: number): RaceView[] {
-    const cores = this.host.derived('races', () => this.buildRaces());
+    const builds = this.host.derived('races', () => this.buildRaces());
     // **One picture per state version *and per set of abstentions*** (Q1439,
-    // extending Q1324). The clock enters a race in exactly one place — how
-    // many of the awaited have run out their 💤 period — so the views are
-    // identical at every `t` that reads the same counts, which is every `t`
-    // between two abstentions. Keying on the counts rather than on `t` keeps
-    // the memo exact *and* keeps it hitting: a key of `t` itself would miss on
-    // every poll and rebuild every race view per seat per poll, which is the
-    // read path the second moon room measured at 91% of a saturated host.
+    // extending Q1324). The clock enters a race in exactly one place — which
+    // of the awaited have run out their 💤 period, on which pair — so the
+    // views are identical at every `t` that reads the same abstentions, which
+    // is every `t` between two of them. Keying on the abstentions rather than
+    // on `t` keeps the memo exact *and* keeps it hitting: a key of `t` itself
+    // would miss on every poll and rebuild every race view per seat per poll,
+    // which is the read path the second moon room measured at 91% of a
+    // saturated host.
+    //
+    // **One number is the whole key since Q1538**, though every pair now has
+    // its own awaited set: on one state the abstentions only accumulate as
+    // `t` grows, every expiry moment fixed, so the set of them passed by `t`
+    // is nested in the set passed by any later `t` — and two nested sets of
+    // the same size are the same set. The count of expiry moments at or
+    // before `t`, over every pair of every race, names the picture exactly.
     // The array is a fresh copy each call and the views in it are shared and
     // read-only, exactly as before.
-    const awaited = cores.map((c) => this.awaitedAt(c.approval, t));
-    return this.host.derived(`races@${awaited.join(',')}`, () => {
+    const expiries = this.host.derived('raceExpiries', () => this.expiryMoments(builds));
+    const passed = upperBound(expiries, t);
+    return this.host.derived(`races@${passed}`, () => {
       const parks = this.parkedFootprints();
       const e = this.host.eMembers().length;
-      return cores.map((c, i) => this.viewAt(c.core, c.approval, awaited[i]!, e, parks));
+      return builds.map((b) => this.viewAt(b, t, e, parks));
     }).slice();
   }
 
+  /** Every moment a silence on some pair runs its period, sorted; none where 💤 is *never*. */
+  private expiryMoments(builds: RaceBuild[]): number[] {
+    const after = this.host.constitution().abstainAfterMs ?? null;
+    if (after === null) return [];
+    const out: number[] = [];
+    for (const b of builds) {
+      for (const p of b.pairs.values()) for (const w of p.awaited) out.push(w.from + after);
+    }
+    return out.sort((x, y) => x - y);
+  }
+
   /**
-   * How many of the members awaited on this race are still awaited at `t`:
+   * How many of the members awaited on this pair are still awaited at `t`:
    * everyone whose period has not run out, all of them where 💤 is *never*
    * (R-127, and R-089's letter — nothing is imputed from silence then).
    */
-  private awaitedAt(approval: ApprovalCore, t: number): number {
+  private awaitedAt(p: PairCore, t: number): number {
     const after = this.host.constitution().abstainAfterMs ?? null;
-    if (after === null) return approval.awaited.length;
-    return approval.awaited.reduce((n, w) => n + (t < w.from + after ? 1 : 0), 0);
+    if (after === null) return p.awaited.length;
+    return p.awaited.reduce((n, w) => n + (t < w.from + after ? 1 : 0), 0);
   }
 
   /**
@@ -244,49 +307,209 @@ export class Races {
    * never null merely because the moment has passed: the reader decides what
    * a run-out period says, and only the reader knows what `t` is.
    */
-  abstainDeadline(raceId: string, participantId: string): number | null {
+  abstainDeadline(raceId: string, participantId: string, t: number): number | null {
     const after = this.host.constitution().abstainAfterMs ?? null;
     if (after === null) return null;
-    const cores = this.host.derived('races', () => this.buildRaces());
-    const found = cores.find((c) => c.core.id === raceId);
+    const builds = this.host.derived('races', () => this.buildRaces());
+    const found = builds.find((b) => b.core.id === raceId);
     if (found === undefined) return null;
-    const mine = found.approval.awaited.find((w) => w.id === participantId);
+    // the leader is the clock's since v0.142 (the Smith set moves when a pair
+    // becomes measured), so it is read off the view at `t`
+    const leaderId = this.races(t).find((r) => r.id === raceId)?.leaderId ?? null;
+    if (leaderId === null) return null;
+    const pair = found.pairs.get(pairKey(leaderId, found.core.incumbentId));
+    const mine = pair?.awaited.find((w) => w.id === participantId);
     return mine === undefined ? null : mine.from + after;
   }
 
   /**
-   * **The clock's own numbers, put on a race** (Q1439): the group as it stands
-   * at `t`, the floor read against it, the meter over that floor, and the park
-   * flag — which asks `clearsFloor` and so cannot be decided before the floor
-   * is. Everything else is the memo's, untouched.
+   * **The clock's own numbers, put on a race** (Q1439; Q1538, Q1539): each
+   * pair's group and floor as they stand at `t`, which pairs that makes
+   * **measured** (R-142), the **Smith set** those measured results give
+   * (R-143), the leader and whether it is on top read inside it, what can no
+   * longer win, the pairs the leader still waits on, the meter over every
+   * vote those pairs need, and the park flag — which asks `clearsFloor` and so
+   * comes last. The per-pair tallies are the memo's, untouched.
    */
-  private viewAt(
-    core: RaceCore,
-    approval: ApprovalCore,
-    awaited: number,
-    e: number,
-    parks: Span[][],
-  ): RaceView {
-    const group = approval.answered + awaited;
-    const floor = floorFor(this.host.constitution(), e, group);
+  private viewAt(b: RaceBuild, t: number, e: number, parks: Span[][]): RaceView {
+    const { core, fit } = b;
+    const c = this.host.constitution();
+    const cur = core.incumbentId;
+    const members = core.members;
+    const nodes = [...members, cur];
+    const seen = new Map<string, PairAt>();
+    const pairAt = (x: string, y: string): PairAt => {
+      const key = `${x}\u0000${y}`;
+      const hit = seen.get(key);
+      if (hit) return hit;
+      const p = b.pairs.get(pairKey(x, y))!;
+      const awaitedAt = this.awaitedAt(p, t);
+      const answered = p.forA + p.forB;
+      const group = answered + awaitedAt;
+      const floor = floorFor(c, e, group);
+      const unanswered = p.awaited.length;
+      const forX = x === p.a ? p.forA : p.forB;
+      const forY = x === p.a ? p.forB : p.forA;
+      const at: PairAt = { forX, forY, answeredBy: p.answeredBy, unanswered, awaitedAt,
+        group, floor,
+        // **measured** (§4.2 → why: R-142): answered by the pair's own floor,
+        // or **settled** — its lead larger than every member of E still to
+        // answer it, the abstained among them, which is R-132's rival count
+        // read the other way round and keeps settled time-free
+        measured: answered >= floor || Math.abs(p.forA - p.forB) > unanswered };
+      seen.set(key, at);
+      return at;
+    };
+    const strength = (id: string): number => fit.strengths.get(id) ?? 0;
+
+    // **The Smith set** (§4.2 → why: R-143): every node that reaches every
+    // other through measured results it did not lose at its own link — an
+    // unmeasured pair a gap, never a draw (Q1539 ruling 2). And at the close
+    // the reading on the evidence it has: an unmeasured pair level, an edge
+    // each way (§4.6), so something always reaches everything.
+    const smith = ARMS.smith ? smithSet(nodes, (x, y) => {
+      const p = pairAt(x, y);
+      return p.measured && p.forX >= p.forY;
+    }) : [];
+    const smithAtClose = ARMS.smith ? smithSet(nodes, (x, y) => {
+      const p = pairAt(x, y);
+      return !p.measured || p.forX >= p.forY;
+    }) : [];
+
+    // **smith-rank**: the Smith set above the rest, the fit's order within each
+    // part — and while the set is empty, the fit's order alone
+    const rankAbove = (inS: ReadonlySet<string>) => (x: string, y: string): boolean =>
+      (inS.has(x) && !inS.has(y)) ||
+      (inS.has(x) === inS.has(y) && strength(x) > strength(y) + TIE_EPS);
+    const topOf = (set: string[]): { leaderId: string | null; leaderOnTop: boolean } => {
+      const inS = new Set(set);
+      const within = members.some((m) => inS.has(m));
+      // the strongest candidate in the set, or in the field where the set
+      // holds none — so routing, the meter and `leaderP` always have a
+      // challenger to talk about (argmax by strength, the oldest on a tie)
+      let leaderId: string | null = null;
+      let best = -Infinity;
+      for (const m of members) {
+        if (within && !inS.has(m)) continue;
+        if (strength(m) > best) { best = strength(m); leaderId = m; }
+      }
+      // **on top** (§4.2; R-114, read inside the Smith set by R-143): above the
+      // current text where the current text is in the set — equal within the
+      // fit's noise a tie, and a tie leaves the current text standing — and
+      // simply in the set where the current text is not. With the set empty
+      // this is exactly the fit's rule of v0.141.
+      const leaderOnTop = leaderId !== null && (set.length === 0
+        ? best > strength(cur) + TIE_EPS
+        : inS.has(leaderId) && (!inS.has(cur) || best > strength(cur) + TIE_EPS));
+      return { leaderId, leaderOnTop };
+    };
+    const { leaderId, leaderOnTop } = topOf(smith);
+
+    const dominated = this.dominations(b, e, pairAt, rankAbove(new Set(smith)));
+    const closing = new Set(dominated.map((d) => d.id));
+
+    // **the leader's own reading**: its approval pair, its judges, its rivals
+    const reading = (id: string | null) => {
+      if (id === null) {
+        return { approvals: 0, group: 0, abstained: 0, floor: floorFor(c, e, 0), leaderJudges: 0,
+          leaderMeasured: 0, leaderP: null, rivals: { measured: 0, of: 0 }, short: [] as string[] };
+      }
+      const p = pairAt(id, cur);
+      // a rival the batch is about to close is not waited on — it is leaving
+      // (§4.2); a race of one candidate waits on nothing
+      const rivals = members.filter((m) => m !== id && !closing.has(m));
+      const short = rivals.filter((r) => !pairAt(id, r).measured);
+      return {
+        approvals: p.forX,
+        group: p.group,
+        // **The silences the group has already lost** (Q1452): everyone awaited
+        // on the pair, less those still awaited at `t`. Read here and nowhere
+        // else, so the number the batch stamps on its record and the number the
+        // page prints are the same arithmetic on the same moment.
+        abstained: p.unanswered - p.awaitedAt,
+        floor: p.floor,
+        leaderJudges: b.judges.get(id)?.judges ?? 0,
+        leaderMeasured: b.judges.get(id)?.measured ?? 0,
+        // P(leader beats the current text): the record's number and the
+        // routing weight. It gates nothing since v0.128 (R-117 pins the bar).
+        leaderP: fit.probBeats(id, cur),
+        rivals: { measured: rivals.length - short.length, of: rivals.length },
+        short,
+      };
+    };
+    const now = reading(leaderId);
+    const close = topOf(smithAtClose);
+    const atClose = close.leaderId === leaderId ? now : reading(close.leaderId);
+
+    // **The pairs the leader waits on, in the order the router asks them**
+    // (§8.2 → why: R-142): the leader against each live rival short of
+    // measured, oldest rival first; then, where some node beats the leader
+    // head to head, the pairs among those nodes still short — the current
+    // text's first — since that is where a chain back to the leader (or the
+    // Smith set's own top) has to be measured.
+    const measureShort: string[] = [];
+    if (ARMS.rivalMeasure && leaderId !== null) {
+      for (const r of now.short) measureShort.push(pairKey(leaderId, r));
+      if (ARMS.smith) {
+        const beaters = nodes.filter((n) => {
+          if (n === leaderId || closing.has(n)) return false;
+          const p = pairAt(n, leaderId);
+          return p.measured && p.forX > p.forY;
+        }).sort((x, y) => Number(y === cur) - Number(x === cur));
+        for (let i = 0; i < beaters.length; i++) {
+          for (let j = i + 1; j < beaters.length; j++) {
+            if (!pairAt(beaters[i]!, beaters[j]!).measured) {
+              measureShort.push(pairKey(beaters[i]!, beaters[j]!));
+            }
+          }
+        }
+      }
+    }
+
+    // **meter-need** (§8.3 → why: R-118, R-142; Q1538 ruling 1): the votes cast
+    // on every pair the leader waits on, over the votes those pairs still
+    // need — the leader against the current text counted to its floor, and
+    // once there always wanting one vote more than it has; each rival pair
+    // short of measured counted to its own floor. Answers, never approvals,
+    // so a vote either way moves it alike, and never full on a live race.
+    let got = 0;
+    let need = 0;
+    if (leaderId !== null) {
+      const p = pairAt(leaderId, cur);
+      const n = p.answeredBy;
+      const nd = n < p.floor ? p.floor : n + 1;
+      got += Math.min(n, nd);
+      need += nd;
+      if (ARMS.rivalMeasure) {
+        for (const r of now.short) {
+          const q = pairAt(leaderId, r);
+          got += Math.min(q.answeredBy, q.floor);
+          need += q.floor;
+        }
+      }
+    }
+
+    // **never deadlocked while a pair it waits on is short** and somebody of
+    // that pair's group could still answer it (§8.3 → why: R-142)
+    const deadlocked = b.baseDeadlocked && !measureShort.some((k) => {
+      const [x, y] = k.split('|') as [string, string];
+      return pairAt(x, y).awaitedAt > 0;
+    });
+
+    const { short: _short, ...leaderNumbers } = now;
+    const { short: _closeShort, ...closeNumbers } = atClose;
     const view: RaceView = {
       ...core,
-      approvals: approval.approvals,
-      group,
-      // **The silences the group has already lost** (Q1452): everyone awaited
-      // on the pair, less those still awaited at `t`. Read here and nowhere
-      // else, so the number the batch stamps on its record and the number the
-      // page prints are the same arithmetic on the same moment.
-      abstained: approval.awaited.length - awaited,
-      floor,
-      // **Progress toward the quorum** (Q1362 (c), R-118): the leader's
-      // *judges* over the floor, and judges is deliberately still the word —
-      // Ed's ruling (b), Q1439: *the evidence meter counts towards judgements
-      // not approvals (it's just a progress bar)*. So it may read full on a
-      // race that does not carry, which was already true and is still
-      // direction-free: the number says how far the room has got, never which
-      // way it is going.
-      closeness: Math.min(1, core.leaderJudges / Math.max(1, floor)),
+      ...leaderNumbers,
+      leaderId,
+      leaderOnTop,
+      certification: leaderId === null ? null : 1 - (now.leaderP ?? 0.5),
+      deadlocked,
+      closeness: need === 0 ? 0 : got / need,
+      dominated,
+      smith,
+      measureShort,
+      atClose: { ...closeNumbers, leaderId: close.leaderId, leaderOnTop: close.leaderOnTop },
       // set below for a text race, which alone can wait behind a park
       blockedByPark: false,
     };
@@ -296,7 +519,7 @@ export class Races {
     return view;
   }
 
-  private buildRaces(): Array<{ core: RaceCore; approval: ApprovalCore }> {
+  private buildRaces(): RaceBuild[] {
     return this.raceGroups().map((members) => this.buildRaceCore(members));
   }
 
@@ -369,8 +592,14 @@ export class Races {
    * times back.
    */
   groundIds(): string[] {
-    return this.host.derived('groundIds',
-      () => this.raceGroups().flatMap((members) => members.map((m) => this.pairGround(m))));
+    // **and every rival pair's since Q1538**: a leader now waits on its pair
+    // with each rival, a silence on that pair leaves its group a period after
+    // the pair became answerable, and a ground nobody dated would read as
+    // standing since the last event and restart that period at every one
+    return this.host.derived('groundIds', () => this.raceGroups().flatMap((members) => [
+      ...members.map((m) => this.pairGround(m)),
+      ...members.flatMap((m, i) => members.slice(i + 1).map((r) => this.pairGround(m, r))),
+    ]));
   }
 
   /** A race's incumbent id: the text on its contested spans, or a standing. */
@@ -430,7 +659,7 @@ export class Races {
     return this.incumbentIdFor(mergeSpans(spans), lines);
   }
 
-  private buildRaceCore(members: string[]): { core: RaceCore; approval: ApprovalCore } {
+  private buildRaceCore(members: string[]): RaceBuild {
     const setting = this.host.candidate(members[0]!).setting;
     const contested = setting
       ? []
@@ -445,55 +674,27 @@ export class Races {
     // **The top of the field, the current text among it** (Q1362, R-114): a
     // race's field is its live candidates *and* the current text, a candidate
     // authored by nobody and staked with nothing, and the document's text on
-    // a footprint is whichever of them the ranking puts on top. So the leader
-    // is the argmax of the *fitted strength* — the model's own ordering of the
-    // field — and not the argmax of P(beats the incumbent), which is the right
-    // statistic for a single challenger and the wrong one for a cyclic field:
-    // where rivals sit in a cycle the two orderings disagree, and only the
-    // strength ordering is the ranking's.
-    let leaderId: string | null = null;
-    let leaderStrength = -Infinity;
-    for (const m of members) {
-      const s = fit.strengths.get(m) ?? 0;
-      if (s > leaderStrength) {
-        leaderStrength = s;
-        leaderId = m;
-      }
-    }
-    // P(leader beats the current text): the record's number and the routing
-    // weight. It gates nothing since v0.128 (R-117 pins the bar).
-    const leaderP = leaderId === null ? null : fit.probBeats(leaderId, incumbentId);
-    // The other half of the adoption test (R-114): the leader's strength
-    // strictly greater than the current text's, which is to say the top of the
-    // whole field is not the current text. Equal strengths are a tie, and a
-    // tie leaves the current text standing — the one asymmetry that survives.
+    // a footprint is whichever of them the ranking puts on top. The leader is
+    // read off the *fitted strength* — the model's own ordering of the field —
+    // and since v0.142 **inside the Smith set** (R-143): which pairs count as
+    // results moves with the clock, so the leader, whether it is on top
+    // (equal within `TIE_EPS` a tie, and a tie leaves the current text
+    // standing), its approvals and its judges are all `viewAt`'s. What stays
+    // here is what they are read off: the tally of every pair.
     //
-    // **Equal means equal within the fit's noise** (the stage-1 build's first
-    // finding, 2026-09-15): at a dead-even split the two strengths differ by
-    // a residual of ~1e-16 whose *sign is set by the order the judgments
-    // arrived in*, so a strict `>` let arrival order decide a tie. `TIE_EPS`
-    // is far above any residual the optimiser leaves and far below the
-    // smallest difference one judgment makes (~1e-1 at any room size), so it
-    // changes nothing but the tie.
-    const leaderOnTop =
-      leaderId !== null && leaderStrength > (fit.strengths.get(incumbentId) ?? 0) + TIE_EPS;
-    const certification = leaderId === null ? null : 1 - (leaderP ?? 0.5);
     // **The floor counts judges of the winner** (Q1337, Ed 2026-09-11,
-    // R-102). The moon room carried changes on 3 to 16 judgments in a room of
-    // 168 under a quorum of 60%, and a room of fifteen adopted at p 0.88 with
-    // one comparison touching the winner: `movers` above is every voice on
-    // the race, and a race holding many rivals reaches F while its leader has
-    // been judged by almost nobody. So the floor is read on the leader alone:
-    // a usable comparison with the leader on either side — against the
-    // incumbent or a rival, both are a judgment of it — one voice each. The
-    // author's derived preference (§3.3) is a voice for its own candidate
-    // and never touches another, so the leader's author counts once and a
-    // rival's author not at all. `leaderMeasured` is R-063's line drawn at
-    // the winner: how many of those judgments the room actually made.
-    const onLeader = leaderId === null ? []
-      : usable.filter((c) => c.aId === leaderId || c.bId === leaderId);
-    const leaderJudges = new Set(onLeader.map((c) => c.participantId)).size;
-    const leaderMeasured = onLeader.filter((c) => !c.derived).length;
+    // R-102): a usable comparison with the candidate on either side — against
+    // the incumbent or a rival, both are a judgment of it — one voice each.
+    // The author's derived preference (§3.3) is a voice for its own candidate
+    // and never touches another. `measured` is R-063's line drawn at the
+    // winner: how many of those judgments the room actually made.
+    const judges = new Map<string, { judges: number; measured: number }>();
+    for (const m of members) {
+      const on = usable.filter((c) => c.aId === m || c.bId === m);
+      judges.set(m, { judges: new Set(on.map((c) => c.participantId)).size,
+        measured: on.filter((c) => !c.derived).length });
+    }
+    const pairs = this.pairCores(members, incumbentId, usable);
     const rivalGateOpen = this.rivalGateOpen(fit, members, incumbentId, usable);
     // Deadlock considers only servable pairs: while the rival gate is
     // closed, unmeasured rival pairs must not hold a race open — there
@@ -503,7 +704,7 @@ export class Races {
     // a measurement, so it cannot help a race look sufficiently sampled.
     const measured = usable.filter((c) => !c.derived);
     const bestValue = this.host.maxPairValue(fit, members, incumbentId, null, rivalGateOpen);
-    const deadlocked =
+    const baseDeadlocked =
       measured.length >= this.host.constitution().deadlockMinComparisons &&
       bestValue < this.host.constitution().deadlockEpsilon;
     return {
@@ -518,80 +719,73 @@ export class Races {
         // measurements, so they show up in `distinctMovers` and not here.
         comparisons: measured.length,
         distinctMovers: movers.size,
-        leaderJudges,
-        leaderMeasured,
-        leaderP,
-        leaderId,
-        leaderOnTop,
-        certification,
-        deadlocked,
         rivalGateOpen,
-        // **What can no longer win** (Q1440): time-free, so it rides the
-        // state's own memo with the counts it is read off, and the sweep and
-        // the record can ask the same question of the same numbers.
-        dominated: this.dominations(members, incumbentId, usable, fit),
         ...(setting ? { settingId: setting.settingId } : {}),
       },
-      approval: this.approvalCore(leaderId, incumbentId, usable),
+      fit,
+      pairs,
+      judges,
+      baseDeadlocked,
     };
   }
 
   /**
-   * **Who has approved the leader, who has answered, and who is still awaited**
-   * (SPEC §4.2, §8.2; Q1439 → why: R-125, R-127). Strict approval, ruling (k):
-   * only *this over the current text* counts, so a judgment of the leader
-   * against a **rival** approves neither of them — it says which challenger is
-   * better, not that either beats what stands, and counting it as backing
-   * would count a member for a change they may well oppose and reward dodging
-   * the pair. *Indifferent* is an answer and approves nothing: the member is
-   * out of the group at once (ruling i), which is what stops an indifferent
-   * room raising the share everyone else has to clear.
+   * **Every pair's tally: who preferred each side, who answered, and who is
+   * still awaited** (SPEC §4.2, §8.2; Q1439 → why: R-125, R-127; every pair
+   * since Q1538 → why: R-142). On a candidate against the current text this is
+   * the approval pair: strict approval, ruling (k) — only *this over the
+   * current text* counts, so a judgment of a candidate against a **rival**
+   * approves neither of them; it is that rival pair's own result, which the
+   * Smith set reads (R-143). *Indifferent* is an answer and prefers nothing:
+   * the member is out of the pair's group at once (ruling i).
    *
-   * The author's own preference arrives here as a `derived` comparison on
-   * exactly today's terms (§3.3): one approval of their own candidate and of
-   * nothing else, absent while they are suspended, and overridden by any
-   * explicit judgment of theirs. `usable` has already reduced each participant
-   * to their latest judgment per pair on this ground (§4.4), so nobody is
-   * counted twice.
+   * The author's own preference arrives as a `derived` comparison on exactly
+   * the old terms (§3.3): one approval of their own candidate against the
+   * current text and of nothing else, absent while they are suspended, and
+   * overridden by any explicit judgment of theirs. `usable` has already
+   * reduced each participant to their latest judgment per pair on its own
+   * ground (§4.4), so nobody is counted twice.
    *
    * **A judgment cast keeps counting after its author leaves E** (§9.5a), so
-   * approvers and opposers are counted wherever they now are; only the
-   * *awaited* set is restricted to E, because only somebody still in the room
-   * can be waited on.
-   *
-   * **It is asked of any live candidate, not only of the leader** (Q1440): the
-   * view publishes the leader's, and `dominations` asks it of every member of
-   * the race in turn, because *can this one still win* is the same three
-   * counts read about a different candidate.
+   * answers are counted wherever their authors now are; only the *awaited* set
+   * is restricted to E, because only somebody still in the room can be waited
+   * on — and its moments are the pair's own (`answerableSince`).
    */
-  private approvalCore(
-    leaderId: string | null,
+  private pairCores(
+    members: string[],
     incumbentId: string,
     usable: readonly StoredComparison[],
-  ): ApprovalCore {
-    if (leaderId === null) return { approvals: 0, answered: 0, awaited: [] };
-    const answeredBy = new Set<string>();
-    let approvals = 0;
-    let answered = 0;
+  ): Map<string, PairCore> {
+    const nodes = [...members, incumbentId];
+    const pairs = new Map<string, PairCore & { by: Set<string> }>();
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        pairs.set(pairKey(nodes[i]!, nodes[j]!), { a: nodes[i]!, b: nodes[j]!, forA: 0, forB: 0,
+          answeredBy: 0, awaited: [], by: new Set() });
+      }
+    }
     for (const c of usable) {
-      const onPair =
-        (c.aId === leaderId && c.bId === incumbentId) ||
-        (c.bId === leaderId && c.aId === incumbentId);
-      if (!onPair) continue;
-      answeredBy.add(c.participantId);
+      const p = pairs.get(pairKey(c.aId, c.bId));
+      if (p === undefined) continue;
+      p.by.add(c.participantId);
       if (c.outcome === 'tie') continue; // answered, and out of the group
-      answered++;
-      if (c.outcome === 'a' ? c.aId === leaderId : c.bId === leaderId) approvals++;
+      const chose = c.outcome === 'a' ? c.aId : c.bId;
+      if (chose === p.a) p.forA++; else p.forB++;
     }
-    const from = this.answerableSince(leaderId, incumbentId);
-    const awaited: Array<{ id: string; from: number }> = [];
-    for (const m of this.host.eMembers()) {
-      if (answeredBy.has(m)) continue;
-      // **The later of the pair's own moment and the member's** (§8.2):
-      // nobody's period runs before they were there to be asked.
-      awaited.push({ id: m, from: Math.max(from, this.host.arrivalT(m)) });
+    const e = this.host.eMembers();
+    const out = new Map<string, PairCore>();
+    for (const [key, { by, ...p }] of pairs) {
+      const from = this.answerableSince(p.a, p.b);
+      for (const m of e) {
+        if (by.has(m)) continue;
+        // **The later of the pair's own moment and the member's** (§8.2):
+        // nobody's period runs before they were there to be asked.
+        p.awaited.push({ id: m, from: Math.max(from, this.host.arrivalT(m)) });
+      }
+      p.answeredBy = by.size;
+      out.set(key, p);
     }
-    return { approvals, answered, awaited };
+    return out;
   }
 
   /**
@@ -651,30 +845,35 @@ export class Races {
    * way out of the race is no reason to close anything behind it.
    */
   private dominations(
-    members: string[],
-    incumbentId: string,
-    usable: readonly StoredComparison[],
-    fit: Fit,
+    b: RaceBuild,
+    e: number,
+    pairAt: (x: string, y: string) => PairAt,
+    rankAbove: (x: string, y: string) => boolean,
   ): Domination[] {
+    const members = b.core.members;
+    const incumbentId = b.core.incumbentId;
     if (members.length === 0) return [];
     const c = this.host.constitution();
-    const e = this.host.eMembers();
     // **nothing is dominated while E is empty** (SPEC §4.4 → why: R-140;
     // issue #65 F2): every count is nought, `0 ≤ 0` holds, and a room that
     // lapsed at one tick lost every live proposal for good — though §9.5a
     // returns each of them on their next read, so an empty E is a room not
     // yet back rather than an answer
-    if (e.length === 0) return [];
-    const incStrength = fit.strengths.get(incumbentId) ?? 0;
-    const above = (id: string): boolean =>
-      (fit.strengths.get(id) ?? 0) > incStrength + TIE_EPS;
+    if (e === 0) return [];
+    // **The guards read smith-rank since v0.142** (§4.4 → why: R-132, R-143):
+    // the Smith set above the rest, the fit's order within each part. So a
+    // wording outside the Smith set is no longer protected by a fitted
+    // strength above the current text's — the clone case seals at once — and
+    // since the set moves when a pair becomes measured, which a silence can
+    // do by running its period, a domination can arrive with no judgment.
+    const above = (id: string): boolean => rankAbove(id, incumbentId);
     const byIncumbent = new Set<string>();
     for (const m of members) {
-      const core = this.approvalCore(m, incumbentId, usable);
-      const a = core.approvals;
-      const o = core.answered - core.approvals;
-      const w = core.awaited.length;
-      const floored = a + w < floorFor(c, e.length, a + o + w);
+      const p = pairAt(m, incumbentId);
+      const a = p.forX;
+      const o = p.forY;
+      const w = p.unanswered;
+      const floored = a + w < floorFor(c, e, a + o + w);
       if (floored || (a + w <= o && !above(m))) byIncumbent.add(m);
     }
     // the rival clause, over the candidates the incumbent clause left
@@ -686,11 +885,12 @@ export class Races {
     const byRival = new Map<string, string>();
     for (const m of members) {
       if (byIncumbent.has(m)) continue;
-      const ms = fit.strengths.get(m) ?? 0;
       for (const y of members) {
         if (y === m || byIncumbent.has(y)) continue;
-        if (ms > (fit.strengths.get(y) ?? 0) + TIE_EPS) continue;
-        if (this.rivalDominates(m, y, usable, e)) { byRival.set(m, y); break; }
+        if (rankAbove(m, y)) continue;
+        // Y beats X by more than every member of E who could still answer
+        const p = pairAt(m, y);
+        if (p.forY > p.forX + p.unanswered) { byRival.set(m, y); break; }
       }
     }
     // one pass of conservatism, which can only shrink the set: a candidate
@@ -704,48 +904,27 @@ export class Races {
     return out;
   }
 
-  /** Y beats X by more than every member of E who could still answer the pair. */
-  private rivalDominates(
-    x: string,
-    y: string,
-    usable: readonly StoredComparison[],
-    eMembers: readonly string[],
-  ): boolean {
-    const answered = new Set<string>();
-    let forX = 0;
-    let forY = 0;
-    for (const cmp of usable) {
-      const onPair = (cmp.aId === x && cmp.bId === y) || (cmp.aId === y && cmp.bId === x);
-      if (!onPair) continue;
-      answered.add(cmp.participantId);
-      if (cmp.outcome === 'tie') continue;
-      const chose = cmp.outcome === 'a' ? cmp.aId : cmp.bId;
-      if (chose === x) forX++; else forY++;
-    }
-    let unanswered = 0;
-    for (const m of eMembers) if (!answered.has(m)) unanswered++;
-    return forY > forX + unanswered;
-  }
-
   /**
    * **When the pair *as it now stands* became answerable** (Q1439; SPEC §8.2):
-   * the latest of the three moments that can void every earlier answer to it —
-   * the candidate's own submission, an evidence reset on revision (§2.4), and
-   * the ground its own pair now stands on (§4.4, as Q1441 narrowed it). A
+   * the latest of the moments that can void every earlier answer to it — each
+   * candidate end's own submission, an evidence reset on its revision (§2.4),
+   * and the ground the pair now stands on (§4.4, as Q1441 narrowed it). A
    * change to the text under those lines locks the judgments cast against the
    * old wording, so it has to restart the period too: otherwise it would
    * abstain, instantly, everyone who had already answered — which is the
    * defect this whole rule exists to close, arriving from the other side.
+   * The current text as an end contributes nothing: it *is* the ground.
    */
-  private answerableSince(leaderId: string, _incumbentId: string): number {
-    const reset = this.host.evidenceSinceT(leaderId);
-    return Math.max(
-      // **the pair's own ground, not the race's** (Q1441): a rival joining
-      // voids nothing, so it restarts nobody's period either
-      this.host.groundSince(this.pairGround(leaderId)),
-      this.host.candidate(leaderId).submittedT,
-      reset ?? -Infinity,
-    );
+  private answerableSince(x: string, y: string): number {
+    // **the pair's own ground, not the race's** (Q1441): a rival joining
+    // voids nothing, so it restarts nobody's period either
+    let since = this.host.groundSince(this.pairGround(x, y));
+    for (const id of [x, y]) {
+      if (id.startsWith(INC_PREFIX)) continue;
+      since = Math.max(since, this.host.candidate(id).submittedT,
+        this.host.evidenceSinceT(id) ?? -Infinity);
+    }
+    return since;
   }
 
   /** The footprints of every candidate parked `awaiting-assent` (R-100). */
@@ -774,12 +953,25 @@ export class Races {
    * `finalRender` and `races()`'s own `blockedByPark` all ask this one
    * function about one view, so none of them can be reading a floor from a
    * different moment than the approvals it is comparing.
+   *
+   * **And since v0.142 two clauses more** (§4.2 → why: R-142, R-143): the top
+   * was read inside a Smith set that is not empty — never off the fit's
+   * fallback, which exists for routing and the meter and never to carry —
+   * and **the leader has been measured against every live rival** (a rival
+   * the batch is about to close excepted). **At the close** (`final`) the
+   * wait is waived and the reading is `atClose`'s, the Smith set read on the
+   * evidence it has, an unmeasured pair level (§4.6).
    */
-  clearsFloor(r: RaceView): boolean {
-    return r.approvals >= r.floor &&
-      r.leaderId !== null &&
-      r.leaderOnTop &&
-      (r.leaderMeasured > 0 || this.host.soleMemberIsLeadersAuthor(r));
+  clearsFloor(r: RaceView, opts: { final?: boolean } = {}): boolean {
+    const x = opts.final ? r.atClose : r;
+    const base = x.approvals >= x.floor &&
+      x.leaderId !== null &&
+      x.leaderOnTop &&
+      (x.leaderMeasured > 0 || this.host.soleMemberIsLeadersAuthor(x.leaderId));
+    if (!base || opts.final) return base;
+    if (ARMS.smith && r.smith.length === 0) return false;
+    if (ARMS.rivalMeasure && r.rivals.measured < r.rivals.of) return false;
+    return true;
   }
 
   /**
@@ -1080,4 +1272,15 @@ function mergeSpans(spans: Span[]): Span[] {
     }
   }
   return out;
+}
+
+/** How many of the sorted numbers are at or below `t`. */
+function upperBound(sorted: readonly number[], t: number): number {
+  let lo = 0;
+  let hi = sorted.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (sorted[mid]! <= t) lo = mid + 1; else hi = mid;
+  }
+  return lo;
 }

@@ -507,8 +507,12 @@ describe('a text proposal races in the engine (stage 8, Q418)', () => {
     expect(a.raceId).toBe(b.raceId);
     const race = bridge.engine.races().find((r) => r.id === a.raceId)!;
     expect(race.members.sort()).toEqual([a.id, b.id].sort());
-    // ada prefers bo's over the incumbent; with bo's own that clears F=2
+    // ada prefers bo's over the incumbent; with bo's own that clears F=2 —
+    // and bo's then waits until two members have put it against cy's (R-142)
     bridge.judge(20, 'ada', a.id, race.incumbentId, 'a');
+    expect(bridge.engine.getCandidate(a.id).state).toBe('live');
+    bridge.judge(21, 'ada', a.id, b.id, 'a');
+    bridge.judge(22, cy, a.id, b.id, 'b'); // level: measured, and bo's is the stronger
     expect(bridge.engine.document()).toBe('Open always.');
     // cy's covers bo's line, so it is re-aimed at bo's words (SPEC §2.4)
     const rival = bridge.engine.getCandidate(b.id);
@@ -545,6 +549,9 @@ describe('a text proposal races in the engine (stage 8, Q418)', () => {
     const b = bridge.proposeText(11, cy, patch(v0, ['Open on Sundays.']), 'Sundays');
     const race = bridge.engine.races().find((r) => r.id === a.raceId)!;
     bridge.judge(20, 'ada', a.id, race.incumbentId, 'a');
+    // bo's is measured against cy's before it carries (R-142)
+    bridge.judge(20, 'ada', a.id, b.id, 'a');
+    bridge.judge(20, bo, a.id, b.id, 'a');
     expect(bridge.engine.getCandidate(b.id).state).toBe('rebase-pending');
     const staked = bridge.engine.balance(cy, 20);
 
@@ -572,6 +579,9 @@ describe('a text proposal races in the engine (stage 8, Q418)', () => {
     const a = bridge.proposeText(10, bo, withPreamble(v0, 'Open always.'), '');
     const b = bridge.proposeText(11, cy, patch(v0, ['Open on Sundays.']), 'Sundays');
     bridge.judge(20, 'ada', a.id, bridge.engine.races().find((r) => r.id === a.raceId)!.incumbentId, 'a');
+    // bo's is measured against cy's before it carries (R-142)
+    bridge.judge(20, 'ada', a.id, b.id, 'a');
+    bridge.judge(20, bo, a.id, b.id, 'a');
     expect(bridge.engine.getCandidate(b.id).state).toBe('rebase-pending');
     expect(bridge.engine.balance(cy, 20)).toBe(before - 1);   // the edit is still spent
     expect(() => bridge.withdrawText(21, bo, b.id)).toThrow('only the proposer');
@@ -741,13 +751,17 @@ describe('a rival ⏱️ motion keeps its votes against the value that carried (
     const five = bridge.openSetMotion(11, cy, 'rate', { grant: 5, cap: 8, dripMinutes: 240 }, 'five');
     const race = bridge.engine.races().find((r) => r.settingId === 'rate')!;
     expect(race.members.sort()).toEqual([six.candidate, five.candidate].sort());
-    // ada prefers six to five, and five to what stands; then six to what stands
+    // ada prefers six to five and cy five to six — the pair measured, level
+    // (R-142: six waits on it) — then ada six to what stands, and six carries
     bridge.judge(20, 'ada', six.candidate!, five.candidate!, 'a');
-    bridge.judge(21, 'ada', five.candidate!, race.incumbentId, 'a');
+    bridge.judge(20, cy, six.candidate!, five.candidate!, 'b');
     expect(s.motionRecords().get(five.motion)!.status).toBe('running');
-    bridge.judge(22, 'ada', six.candidate!, race.incumbentId, 'a');
+    bridge.judge(21, 'ada', six.candidate!, race.incumbentId, 'a');
     // six carries, and waits on the crown: nothing has moved under five yet
     expect(s.motionRecords().get(six.motion)!.status).toBe('awaiting-crown');
+    expect(s.motionRecords().get(five.motion)!.status).toBe('running');
+    // and ada prefers five to what stands, a judgment the crown's answer locks
+    bridge.judge(22, 'ada', five.candidate!, race.incumbentId, 'a');
     const q = s.logEntries().map((e) => e.event)
       .find((e) => e.type === 'crown-question-opened' && e.motion === six.motion) as
       { question: string };
@@ -762,12 +776,12 @@ describe('a rival ⏱️ motion keeps its votes against the value that carried (
     expect(reaimed).toHaveLength(1);
     expect(reaimed[0]).toMatchObject({ id: five.candidate, by: six.candidate });
     expect(reaimed[0]!.patch).toBeUndefined();
-    expect(reaimed[0]!.carried).toHaveLength(1);
+    expect(reaimed[0]!.carried).toHaveLength(2);   // ada's and cy's
     expect(s.motionRecords().get(five.motion)!.status).toBe('running');
     const now = bridge.engine.races().find((r) => r.settingId === 'rate')!;
     expect(now.members).toEqual([five.candidate]);
-    expect(now.comparisons).toBe(1);   // the carried one; five-vs-what-stood locked
-    expect(now.approvals).toBe(1);     // cy's own
+    expect(now.comparisons).toBe(2);   // the carried two; five-vs-what-stood locked
+    expect(now.approvals).toBe(1);     // cy's, carried
     const ada = bridge.engine.judgments().filter((j) => j.participantId === 'ada');
     const carried = ada.find((j) => j.carried)!;
     expect([carried.aId, carried.bId]).toEqual([six.candidate, five.candidate]);

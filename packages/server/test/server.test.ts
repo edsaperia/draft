@@ -526,15 +526,19 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     expect(served.length).toBeGreaterThan(0);
     expect(Math.max(...adaV.raceCards.map((c) => c.urgency))).toBe(1);
     expect(JSON.stringify(adaV.raceCards)).not.toMatch(/"value"|leaderP/);
-    // ada judges until the race resolves: prefer r1 over whatever it is paired with
-    for (let i = 0; i < 8; i++) {
-      const now = await rich(ada);
-      if (now.clauses.length === 0) break;
-      const card = now.raceCards.find((c) => c.raceId === r1.raceId);
-      if (!card) break;
-      const outcome = card.a.id === r1.id ? 'a' : card.b.id === r1.id ? 'b'
-        : card.a.incumbent ? 'b' : 'a';
-      await cmd(ada, 'judge-race', { a: card.a.id, b: card.b.id, outcome });
+    // ada, then bo, judge until the race resolves: prefer r1 over whatever it
+    // is paired with — bo too, since r1 waits until two members have put it
+    // against r2 (Q1538 → why: R-142), and in a room of three that is its author
+    for (const who of [ada, bo]) {
+      for (let i = 0; i < 8; i++) {
+        const now = await rich(who);
+        if (now.clauses.length === 0) break;
+        const card = now.raceCards.find((c) => c.raceId === r1.raceId);
+        if (!card) break;
+        const outcome = card.a.id === r1.id ? 'a' : card.b.id === r1.id ? 'b'
+          : card.a.incumbent ? 'b' : 'a';
+        await cmd(who, 'judge-race', { a: card.a.id, b: card.b.id, outcome });
+      }
     }
     const done = await rich(ada);
     expect(done.clauses).toHaveLength(0);

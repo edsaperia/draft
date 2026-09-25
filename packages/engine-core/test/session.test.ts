@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Session, makeConstitution } from '../src/session.js';
 import { ParticipantApi, authorVisible } from '../src/participant-api.js';
 import type { Event } from '../src/types.js';
-import { roster } from './helpers.js';
+import { measureAgainstRivals, roster } from './helpers.js';
 
 const HOUR = 3600_000;
 
@@ -139,21 +139,23 @@ describe('session lifecycle', () => {
 
     // The document changed; c3 sailed on. The loser covered the winner's
     // line, so it stays in the race against the new text with its c1-vs-c2
-    // vote carried as a vote for the current text (SPEC §2.4, §4.4 → why:
-    // R-141) — one against, its author's own for, three still to answer.
+    // votes carried as votes for the current text (SPEC §2.4, §4.4 → why:
+    // R-141) — two against, since c1 waited until two members had put it
+    // against c2 (R-142), its author's own for, two still to answer.
     expect(s.document()).toContain('two existing members to vouch');
     expect(s.getCandidate(c1).state).toBe('adopted');
     const log = s.log.map((e) => e.event);
     const reaimed = log.find((e) => e.type === 'candidate-reaimed');
-    expect(reaimed).toMatchObject({ id: c2, by: c1, carried: [expect.any(Number)] });
+    expect(reaimed).toMatchObject({ id: c2, by: c1,
+      carried: [expect.any(Number), expect.any(Number)] });
     expect(s.getCandidate(c2).state).toBe('live');
     expect(s.getCandidate(c2).patch!.baseVersion).toBe(1);
     const c2race = s.raceOf(c2);
-    expect(c2race.comparisons).toBe(1); // the carried vote, not reset
+    expect(c2race.comparisons).toBe(2); // the carried votes, not reset
     expect(c2race.approvals).toBe(1);   // the author's own
     expect(s.getCandidate(c3).state).toBe('live');
 
-    // Two more members prefer what now stands: a + w = 1 + 1 ≤ o = 3, so it
+    // p4 says so again and p5 agrees: a + w = 1 + 1 ≤ o = 3, so it
     // can never win, and the batch closes it with its stake spent (R-132;
     // §7, Q1534 (2)).
     s.judge((t += 1000), 'p4', c2, c2race.incumbentId, 'b');
@@ -336,13 +338,14 @@ describe('session lifecycle', () => {
       for (const [i, p] of ['p6', 'p7', 'p8', 'p9', 'p10', 'p11'].entries()) {
         const events = s.judge((t += 1000), p, c1, inc, 'a');
         const approvals = 3 + i;
-        if (approvals < 8) {
-          expect(events.some((e) => e.type === 'adopted'), `approval ${approvals} of 8`).toBe(false);
-          expect(s.raceOf(c1).approvals).toBe(approvals);
-        } else {
-          expect(events.some((e) => e.type === 'adopted'), `approval ${approvals} of 8`).toBe(true);
-        }
+        expect(events.some((e) => e.type === 'adopted'), `approval ${approvals} of 8`).toBe(false);
+        expect(s.raceOf(c1).approvals).toBe(approvals);
       }
+      // **the eighth approval meets the floor, and c1 then waits on its rivals**
+      // (Q1538 → why: R-142): measured against c2 and c3 by their own floors,
+      // the router asking those pairs next, it carries on the last of them
+      expect(s.raceOf(c1).measureShort).toHaveLength(2);
+      measureAgainstRivals(s, c1, ['p6', 'p7', 'p8', 'p9', 'p10', 'p11', 'p12', 'p13', 'p14', 'p15'], t);
       expect(s.getCandidate(c1).state).toBe('adopted');
     });
 
@@ -652,8 +655,11 @@ describe('session lifecycle', () => {
           (c.aId === first.bId && c.bId === first.aId),
       ),
     ).toBe(false);
-    // p4 and p1's own voice are c1's two judges, the floor at E = 5: it
-    // carries, and the untouched race on line 3 stays live
+    // p4 and p1's own voice are c1's two judges, the floor at E = 5 — and it
+    // waits on its pair with c2 (R-142) until that pair has two answers too;
+    // then it carries, and the untouched race on line 3 stays live
+    expect(s.getCandidate(c1).state).toBe('live');
+    measureAgainstRivals(s, c1, ['p4', 'p5'], 4000);
     expect(s.getCandidate(c1).state).toBe('adopted');
     expect(s.getCandidate(c3).state).toBe('live');
   });
@@ -933,6 +939,11 @@ describe('ground shifts lock judgments and re-serve pairs (SPEC §4.4, Q50)', ()
         break;
       }
     }
+    // …and w waits on its three rivals (R-142) until four members have put
+    // it against each
+    expect(adopted).toBe(false);
+    t = measureAgainstRivals(s, w, ['p5', 'p6', 'p7', 'p8'], t);
+    adopted = s.getCandidate(w).state === 'adopted';
     expect(adopted).toBe(true);
     expect(s.getCandidate(cA).state).toBe('rebase-pending');
 
@@ -1322,6 +1333,7 @@ describe('stage 8 follow-up: closeness, urgency, the record and the wallet clock
       if (s.getCandidate(c1).state === 'adopted') break;
       s.judge((t += 1000), judge, c1, inc, 'a');
     }
+    measureAgainstRivals(s, c1, ['p3', 'p4'], t); // R-142: c1 against c2 first
     expect(s.getCandidate(c1).state).toBe('adopted');
     const { ParticipantApi } = await import('../src/participant-api.js');
     const out = new ParticipantApi(s, 'p5').outcomes();

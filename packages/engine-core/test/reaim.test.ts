@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Session, makeConstitution } from '../src/session.js';
 import type { Event } from '../src/types.js';
 import { roster } from './helpers.js';
+import { pairKey } from '../src/routing.js';
 
 /**
  * **Rivals stay in the race** (SPEC v0.141 §2.4, §4.4, §9.6; Ed 2026-09-24,
@@ -69,6 +70,12 @@ function xAgainstW(judge: (s: Session, x: string, w: string, inc: string) => voi
   for (const who of ['p4', 'p5', 'p6', 'p7']) {
     if (s.getCandidate(w).state === 'adopted') break;
     s.judge((t += 10), who, w, inc, 'a');
+    // **W waits until it is measured against X** (Q1538 → why: R-142): where
+    // the rival pair is still short, the same member answers it, for W
+    const short = s.races(t).find((r) => r.members.includes(w))?.measureShort ?? [];
+    if (s.getCandidate(w).state !== 'adopted' && short.includes(pairKey(x, w))) {
+      s.judge((t += 10), who, x, w, 'b');
+    }
   }
   expect(s.getCandidate(w).state).toBe('adopted');
   return { s, x, w, oldInc: inc };
@@ -122,17 +129,19 @@ describe('a re-aimed rival (R-141)', () => {
     expect(race.approvals).toBe(1);
     expect(race.group).toBe(6); // p3 has answered, and Indifferent leaves the group
     expect(s.askOn('p3', race.id)).toBeNull(); // nothing left to ask p3 there
-    expect(s.askOn('p5', race.id)).not.toBeNull();
+    // p4 and p5 answered X against W so W could carry (R-142): p6 has not
+    expect(s.askOn('p6', race.id)).not.toBeNull();
   });
 
   it('a judgment against the displaced text locks', () => {
-    const { s, x, oldInc } = xAgainstW((s, x, _w, inc) => { s.judge(2000, 'p5', x, inc, 'b'); });
-    const old = s.judgments().find((j) => j.participantId === 'p5' && j.bId === oldInc)!;
+    // p6, since p4 and p5 answer X against W on the way to W carrying (R-142)
+    const { s, x, oldInc } = xAgainstW((s, x, _w, inc) => { s.judge(2000, 'p6', x, inc, 'b'); });
+    const old = s.judgments().find((j) => j.participantId === 'p6' && j.bId === oldInc)!;
     expect(old.locked).toBe(true);
     expect(old.carried).toBeUndefined();
     expect(raceOf(s, x).approvals).toBe(1);
-    // and p5 is asked again, on the pair as it now stands
-    expect(s.askOn('p5', raceOf(s, x).id)).not.toBeNull();
+    // and p6 is asked again, on the pair as it now stands
+    expect(s.askOn('p6', raceOf(s, x).id)).not.toBeNull();
   });
 
   it('the author’s explicit judgment of the winner carries and overrides the derived one', () => {
@@ -160,6 +169,13 @@ describe('a re-aimed rival (R-141)', () => {
     for (const who of ['p3', 'p4', 'p5', 'p6', 'p7']) {
       if (s.getCandidate(w).state === 'adopted') break;
       s.judge((t += 10), who, w, inc, 'a');
+      // W waits on its pairs with Y and Z (R-142): the same member answers
+      // each still short, for W
+      for (const k of s.races(t).find((r) => r.members.includes(w))?.measureShort ?? []) {
+        if (s.getCandidate(w).state === 'adopted') break;
+        const other = k.split('|').find((id) => id !== w)!;
+        if (k.split('|').includes(w)) s.judge((t += 10), who, other, w, 'b');
+      }
     }
     expect(s.getCandidate(w).state).toBe('adopted');
     expect(s.getCandidate(x).state).toBe('live');
@@ -174,7 +190,10 @@ describe('a re-aimed rival (R-141)', () => {
     const xw = s.judgments().filter((j) => j.aId === x && j.bId === w).map((j) => j.seq);
     expect(xw).toHaveLength(2);
     expect(reaimedOf(s, x)[0]!.carried).toEqual(xw);
-    expect(reaimedOf(s, y)[0]!.carried).toEqual([xy.seq]);
+    // and Y's with W, which the wait for rivals had the room answer (R-142)
+    const yw = s.judgments().filter((j) => j.aId === y && j.bId === w).map((j) => j.seq);
+    expect(yw.length).toBeGreaterThan(0);
+    expect(reaimedOf(s, y)[0]!.carried).toEqual([...yw, xy.seq].sort((a, b) => a - b));
   });
 
   it('a winner with a hunk the rival does not cover strands it', () => {
@@ -186,6 +205,8 @@ describe('a re-aimed rival (R-141)', () => {
         { start: 3, end: 4, lines: ['Meetings happen monthly.'] }] } }).id;
     s.judge(2000, 'p3', x, w, 'b');
     s.judge(2100, 'p4', w, raceOf(s, w).incumbentId, 'a');
+    // W is measured against X before it carries (R-142)
+    s.judge(2110, 'p4', x, w, 'b');
     expect(s.getCandidate(w).state).toBe('adopted');
     expect(s.getCandidate(x).state).toBe('rebase-pending');
     expect(s.judgments().find((j) => j.participantId === 'p3')!.locked).toBe(true);
@@ -247,6 +268,12 @@ describe('a setting race whose standing moves (Q1534 ruling 7, R-141)', () => {
     const inc = raceOf(s, w).incumbentId;
     s.judge(2000, 'p4', x, w, 'b');   // W over X: carried as an opposition to X
     s.judge(2010, 'p5', y, w, 'a');   // Y over W: carried as an approval of Y
+    // W measured against both rivals before it carries (R-142), winning each
+    // 2–1 — and short of closing either, so both are there to be carried
+    s.judge(2013, 'p3', x, w, 'a');   // X over W: carried as an approval of X
+    s.judge(2014, 'p5', x, w, 'b');   // W over X: an opposition
+    s.judge(2015, 'p1', y, w, 'b');   // W over Y: an opposition
+    s.judge(2016, 'p4', y, w, 'b');   // W over Y: an opposition
     s.judge(2020, 'p5', x, y, 'a');   // X over Y: stands
     s.judge(2030, 'p4', x, inc, 'a'); // X over the old value: locks
     s.judge(2100, 'p4', w, inc, 'a');
@@ -274,8 +301,9 @@ describe('a setting race whose standing moves (Q1534 ruling 7, R-141)', () => {
     expect([xw.locked, yw.locked, xy.locked, xOld.locked]).toEqual([false, false, false, true]);
     expect(xw.carried).toEqual({ aId: x, bId: race.incumbentId });
     expect(xy.carried).toEqual({ aId: x, bId: y });
-    // three usable judgments: X-vs-current (against), Y-vs-current (for), X-vs-Y
-    expect(race.comparisons).toBe(3);
+    // seven usable judgments: X-vs-current three (one for), Y-vs-current three
+    // (one for), X-vs-Y — the six carried from the pairs with W
+    expect(race.comparisons).toBe(7);
   });
 
   it('a standing moved by no candidate carries the rival pairs alone', () => {

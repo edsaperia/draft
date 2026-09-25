@@ -181,8 +181,12 @@ describe('a re-aimed rival and its stake (Q1534)', () => {
     for (const who of forW) s.judge((t += 10), who, x, w, 'b');
     for (const who of ties) s.judge((t += 10), who, x, w, 'tie');
     s.judge(2100, 'p4', w, inc, 'a');
+    // W waits until it is measured against X (R-142): where one answer is all
+    // the pair has, p4 gives it a second, for W
+    let adoptedAt = 2100;
+    if (s.getCandidate(w).state !== 'adopted') s.judge((adoptedAt = 2110), 'p4', x, w, 'b');
     expect(s.getCandidate(w).state).toBe('adopted');
-    return { s, x, before, adoptedAt: 2100 };
+    return { s, x, before, adoptedAt };
   }
 
   it('re-aimed and withdrawn: the stake comes back whole', () => {

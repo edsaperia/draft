@@ -72,7 +72,7 @@ describe('a rival covering the winner stays in the race, as the view reads it (Q
   /**
    * A (bo), B (cy), C (dee) all rewrite the Notice line. B carries. C — which
    * eve and ada preferred B to, bo indifferent — can no longer win the moment
-   * B stands, and closes in the same batch; A — which eve preferred B to —
+   * B stands, and closes in the same batch; A — which eve and dee preferred B to —
    * stays, trailing, with eve's answer carried.
    */
   function walk() {
@@ -88,6 +88,8 @@ describe('a rival covering the winner stays in the race, as the view reads it (Q
     bridge.judge(21, ada, B, C, 'a');
     bridge.judge(22, bo, B, C, 'tie');
     bridge.judge(23, eve, A, B, 'b');
+    // B is measured against A before it carries (Q1538 → why: R-142): dee too
+    bridge.judge(24, dee, A, B, 'b');
     expect([A, B, C].map((id) => bridge.engine.getCandidate(id).state))
       .toEqual(['live', 'live', 'live']);
     bridge.judge(30, ada, B, inc, 'a'); // B carries: cy's own and ada's
