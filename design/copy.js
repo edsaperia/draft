@@ -1451,6 +1451,11 @@ window.COPY = (function () {
       clerk: 'The Founder is not part of the membership.',
       deciding: 'The Founder is deciding whether to be part of the membership.',
     },
+    // a member's settled card before the powers its composer sends with are
+    // accepted (Part 4 .19: the commit is not drawn, so the card says why),
+    // naming them by the four verbs' own names
+    composeOnceAccepted: (which) => 'You can propose a change to this rule once you accept ' +
+      which.map((w) => (w === 'proposals' ? 'Proposals' : 'Constitutional Proposals')).join(' and ') + '.',
   };
 
   // ---- the spectator feed (feed.html, Q1466) --------------------------------

@@ -1069,13 +1069,13 @@ window.BAND = (function () {
     /** is a member's composer holding something typed and not sent — the
      *  news never takes a composer out from under a draft (the P1 sweep) */
     const composing = (c) => S.open === c.k && !!S.draft && S.draft.k === c.k && !!(S.draft.to || S.draft.why);
-    /** may this reader send the composer's route at all: a commit for a power
-     *  not yet accepted is not drawn (answers Part 4 .19) — ✏️ wants
-     *  Proposals accepted, 🏛️ Constitutional Proposals */
-    const composerCan = (c) => {
-      const route = routeFor(c, (S.draft && S.draft.k === c.k) ? S.draft.to : '');
-      return route === 'constitutional' ? acked('grant-voice') : acked('canpropose');
-    };
+    /** has this member accepted the powers a composer sends with — ✏️
+     *  Proposals and 🏛️ Constitutional Proposals, the route being the value's
+     *  (329a). A commit for a power not yet accepted is not drawn (answers
+     *  Part 4 .19), so until both are accepted the settled card reads as the
+     *  rule and says which to accept (`composerWaits`) */
+    const composerWaits = () => [['canpropose', 'proposals'], ['grant-voice', 'constitutional']]
+      .filter(([k]) => !acked(k)).map(([, w]) => w);
     function settingKind(c) {
       if (!c || atTheDoor() || isStranger() || S.viewer === 'applicant') return null;
       if (c.ansFor) return MANAGED_KEYS.includes(c.ansFor) ? 'answer' : null;
@@ -1097,11 +1097,9 @@ window.BAND = (function () {
       // a member's settled card is the composer (K1) — unless its news is owed,
       // which the composer defers to (as `cardFor` does), and never under a
       // draft being typed there
-      // …and a member who has accepted neither route's power reads the rule:
-      // nothing on the composer could be sent (Part 4 .19, principle 4)
-      if (composerOn(c) && (!news || composing(c))) {
-        return acked('canpropose') || acked('grant-voice') ? 'composer' : 'watching';
-      }
+      // …and until the member has accepted the powers it sends with, reads the
+      // rule (Part 4 .19, principle 4)
+      if (composerOn(c) && (!news || composing(c))) return composerWaits().length ? 'watching' : 'composer';
       if (news) return 'watching';
       if (founderBody(c) && founderCanCommit()) return 'setting';
       return 'watching';
@@ -1150,9 +1148,8 @@ window.BAND = (function () {
         const acts = [{ kind: 'bin', title: PAGE_COPY.discardMotion,
           attrs: dirty ? ' data-dropmotion="1"' : ' data-act="bin"', until: dirty ? null : 'nothing-yours' }];
         // the route's commit, drawn by the page since it swaps in place as a
-        // value is typed (329a) — not drawn for a route whose power this
-        // reader has not accepted (Part 4 .19)
-        if (composerCan(c)) acts.push({ kind: 'commit', html: commitFor(c) });
+        // value is typed (329a)
+        acts.push({ kind: 'commit', html: commitFor(c) });
         return acts;
       }
       // a power card read by anybody but the Founder whose hand it is — and a
@@ -1284,6 +1281,10 @@ window.BAND = (function () {
       } else if (kind === 'watching' && stateOf(c, ctx) === 'news') {
         const n = newsParts(c);
         body = n.body; blocks = n.blocks;
+      } else if (kind === 'watching' && composerOn(c) && composerWaits().length) {
+        // the composer waits on a power not yet accepted: the rule, and the
+        // one sentence saying which (the grants are in the rail)
+        body = '<p class="setnote">' + esc(W3().composeOnceAccepted(composerWaits())) + '</p>';
       }
       body += doorErrHtml(k);
       return {
