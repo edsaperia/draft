@@ -6,10 +6,11 @@
  *
  * At 390×844 on the session fixture, touch on:
  *
- *   1. at rest the sheet peeks: its bar stands at the window's foot, says the
- *      first entry's own title line, and *+n more* for the rest of the door's
- *      count; nothing of the list shows above the glass;
- *   2. a tap on the bar raises it, three quarters of the window at most, over
+ *   1. at rest the sheet peeks: its bar stands at the window's foot, holds the
+ *      first entry's own card — its title row, its wash and its progress fill
+ *      as the list draws them (Ed, 2026-09-26) — and *+n more* for the rest
+ *      of the door's count; nothing of the list shows above the glass;
+ *   2. a tap on the bar beside the card raises it, three quarters of the window at most, over
  *      the darkened ground; the ≣ door says it is expanded;
  *   3. raised, every two neighbouring entries are exactly `--s2` (8px) apart
  *      in the list's *visual* order (Q1387 — the column sorts with flex
@@ -24,7 +25,7 @@
  *      flick rises by its speed; a drag down lowers it; a real touch drag too;
  *   6. a tap on an entry opens its card and the sheet goes back to the peek,
  *      the peek now naming the open entry; closing the card, the peek names
- *      the most urgent entry again;
+ *      the most urgent entry again; a tap on the peeked card opens its card;
  *   7. reading down slides the peek out of view, any scroll up brings it
  *      back, and at the document's foot it stays;
  *   8. the ≣ door raises it too;
@@ -89,8 +90,12 @@ const sheet = (page) => page.evaluate(() => {
   const q = document.querySelector('.layout > .queue');
   const bar = document.querySelector('.sheetbar');
   const r = q.getBoundingClientRect(); const b = bar ? bar.getBoundingClientRect() : null;
-  const line = bar ? bar.querySelector('.sheetline') : null;
+  const lineEl = bar ? bar.querySelector('.sheetline') : null;
+  const line = lineEl ? (lineEl.querySelector('.ql') || lineEl) : null;
+  const moreEl = bar ? bar.querySelector('.sheetmore') : null;
+  const m = moreEl && moreEl.textContent ? moreEl.getBoundingClientRect() : null;
   return {
+    rest: m ? { left: m.left, right: m.right, top: m.top, bottom: m.bottom } : null,
     state: root.getAttribute('data-sheet'), hide: root.hasAttribute('data-sheethide'), drag: root.hasAttribute('data-sheetdrag'),
     top: r.top, bottom: r.bottom, height: r.height, vis: getComputedStyle(q).visibility,
     bar: b && { top: b.top, bottom: b.bottom, left: b.left, right: b.right, height: b.height },
@@ -110,6 +115,35 @@ const atRest = (page) => page.evaluate(() => {
 });
 const settle = async (page, ms = 450) => { await page.waitForTimeout(ms); await atRest(page); };
 const barMid = (s) => ({ x: (s.bar.left + s.bar.right) / 2, y: (s.bar.top + s.bar.bottom) / 2 });
+/** the bar's own part, off the peeked card: *+n more*, else the grab strip — a tap
+ *  there raises; a tap on the card opens the entry's card (Ed, 2026-09-26) */
+const barRest = (s) => s.rest ? { x: (s.rest.left + s.rest.right) / 2, y: (s.rest.top + s.rest.bottom) / 2 }
+  : { x: (s.bar.left + s.bar.right) / 2, y: s.bar.top + 5 };
+/** the peeked card beside the entry it copies: which entry, its box, its wash and fill on both */
+const peekCard = (page) => page.evaluate(() => {
+  const card = document.querySelector('.sheetbar .sheetcard');
+  const bar = document.querySelector('.sheetbar');
+  const ul = document.querySelector('.layout > .queue ul');
+  const shown = [...ul.querySelectorAll('.qitem')].filter((el) => getComputedStyle(el).display !== 'none');
+  shown.sort((a, b) => (+a.style.order || 0) - (+b.style.order || 0));
+  const top = shown[0];
+  const src = top && (top.querySelector('button:not(.sealdot)') || top.querySelector('button'));
+  const paint = (el) => el && {
+    ground: getComputedStyle(el, '::after').backgroundColor,
+    fillW: parseFloat(getComputedStyle(el, '::before').width) || 0,
+    fillBg: getComputedStyle(el, '::before').backgroundColor,
+    fill: el.dataset.fill ?? null, key: el.dataset.washkey ?? null, w: el.getBoundingClientRect().width,
+  };
+  const r = card && card.getBoundingClientRect(); const b = bar && bar.getBoundingClientRect();
+  return card && {
+    id: top ? top.dataset.q : null, key: card.dataset.washkey ?? null, hasQ: card.hasAttribute('data-q'),
+    box: { left: r.left, right: r.right, top: r.top, bottom: r.bottom, height: r.height },
+    bar: b && { top: b.top, bottom: b.bottom },
+    title: (card.querySelector('.ql') || card).textContent.replace(/\s+/g, ' ').trim(),
+    card: paint(card), src: paint(src),
+  };
+});
+const alphaOf = (c) => { const m = String(c || '').match(/rgba?\(([^)]+)\)/); if (!m) return 0; const p = m[1].split(',').map((x) => +x.trim()); return p.length > 3 ? p[3] : 1; };
 
 /** a mouse drag on the bar, in steps; `hold` waits before letting go, so the release carries no speed */
 async function mouseDrag(page, from, dy, { steps = 8, stepMs = 16, hold = 160, mid } = {}) {
@@ -140,21 +174,37 @@ if (SHOTS) await mkdir(SHOTS, { recursive: true });
 let s = await sheet(page);
 let e = await entries(page);
 say(s.state === 'peek', 'at rest the sheet peeks (data-sheet=' + s.state + ')');
-say(!!s.bar && s.bar.bottom <= s.vh + 0.5 && s.bar.top >= s.vh - 56 - 0.5 && s.bar.top < s.vh,
+const peekH = await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sheet-peek')) || 0);
+say(!!s.bar && peekH > 0 && s.bar.bottom <= s.vh + 0.5 && s.bar.top >= s.vh - peekH - 0.5 && s.bar.top < s.vh,
   'its bar stands at the window\'s foot: ' + (s.bar ? px(s.bar.top) + '–' + px(s.bar.bottom) : 'no bar') + ' of ' + s.vh + (s.hide ? ' — scrolled away (data-sheethide)' : ''));
 say(e.rows.length >= 3 && e.rows[0].top >= s.vh - 0.5, 'nothing of the list shows above the glass (first entry at ' + px(e.rows[0] ? e.rows[0].top : -1) + ')');
 say(s.line === e.rows[0].title, 'the bar says the first entry\'s own title line: «' + s.line + '»' + (s.line === e.rows[0].title ? '' : ' — the entry says «' + e.rows[0].title + '»'));
+// **the peek is the entry's own card** (Ed, 2026-09-26): the most urgent
+// entry, washed and filled as it is in the list, and not a bare title line
+let pk = await peekCard(page);
+say(!!pk && pk.id === e.rows[0].id && pk.key && pk.key === (pk.src && pk.src.key) && !pk.hasQ,
+  'the peek holds the most urgent entry\'s own card: ' + (pk ? pk.id + ' (wash key ' + pk.key + ')' : 'no card in the bar'));
+say(!!pk && alphaOf(pk.card.ground) > 0 && pk.card.ground === pk.src.ground,
+  'its wash is not transparent, and is the entry\'s: ' + (pk ? pk.card.ground + ' (the entry ' + (pk.src && pk.src.ground) + ')' : '—'));
+const wantFill = !!pk && !!pk.src && parseFloat(pk.src.fill) > 0;
+say(!!pk && (!wantFill || (pk.card.fillW > 0 && alphaOf(pk.card.fillBg) > 0 &&
+    Math.abs(pk.card.fillW / pk.card.w - pk.src.fillW / pk.src.w) < 0.02)),
+  'its progress fill is drawn as the entry\'s: ' + (pk ? (wantFill ? px(pk.card.fillW) + ' of ' + px(pk.card.w) + ' in ' + pk.card.fillBg +
+    ' (the entry ' + px(pk.src.fillW) + ' of ' + px(pk.src.w) + ', --fill ' + pk.src.fill + ')' : 'the entry has no fill') : '—'));
+say(!!pk && wantFill, 'the fixture\'s most urgent entry has progress to show (--fill ' + (pk && pk.src ? pk.src.fill : '—') + ')');
+say(!!pk && pk.box.top >= pk.bar.top - 0.5 && pk.box.bottom <= s.vh - 4 && pk.box.left >= 0 && pk.box.right <= s.vw,
+  'the card stands inside the peek, clear of the glass: ' + (pk ? px(pk.box.top) + '–' + px(pk.box.bottom) + ', ' + px(pk.box.height) + ' tall, ' + px(s.vh - pk.box.bottom) + ' above the foot' : '—'));
 say(s.count === e.rows.length, 'the door counts the list: ' + s.count + ' of ' + e.rows.length);
 say(s.more === '+' + (s.count - 1) + ' more', 'and the bar counts the rest: «' + s.more + '»');
 say(s.sw <= s.vw, 'no horizontal overflow at rest (' + s.sw + ' of ' + s.vw + ')');
 if (SHOTS) await page.screenshot({ path: join(SHOTS, 'sheet-peek.png') });
 const firstTitle = e.rows[0].title;
 
-// 2. a tap raises it
-await page.touchscreen.tap(barMid(s).x, barMid(s).y);
+// 2. a tap raises it — on the bar's own part, off the card
+await page.touchscreen.tap(barRest(s).x, barRest(s).y);
 await settle(page);
 s = await sheet(page);
-say(s.state === 'open', 'a tap on the bar raises the sheet');
+say(s.state === 'open', 'a tap on the bar beside the card (its «+n more») raises the sheet');
 say(Math.abs(s.bottom - s.vh) < 1 && s.height <= s.vh * 0.75 + 1, 'raised, it stands on the foot, ' + px(s.height) + ' tall (at most ' + px(s.vh * 0.75) + ')');
 say(s.ground !== 'none' && s.ground !== 'normal', 'over the darkened ground');
 say(s.door === 'true', 'and the ≣ door says it is expanded');
@@ -215,7 +265,7 @@ s = await sheet(page);
 await page.touchscreen.tap(SIZE.width / 2, Math.max(s.top - 40, 200));
 await settle(page);
 say((await sheet(page)).state === 'peek', 'a tap on the darkened ground lowers it to the peek');
-const openAgain = async () => { const t = await sheet(page); if (t.state !== 'open') { await page.touchscreen.tap(barMid(t).x, barMid(t).y); await settle(page); } };
+const openAgain = async () => { const t = await sheet(page); if (t.state !== 'open') { await page.touchscreen.tap(barRest(t).x, barRest(t).y); await settle(page); } };
 await openAgain();
 // the list's empty space: its side padding, low down, where no entry reaches
 const spot = await page.evaluate(() => {
@@ -317,6 +367,17 @@ await page.evaluate(() => window.SESSION.closeCard());
 await page.waitForTimeout(900);
 s = await sheet(page);
 say(s.line === firstTitle, 'closing the card, the peek names the most urgent entry again: «' + s.line + '»');
+// a tap on the peeked card opens that entry's card, and the sheet stays at the peek
+pk = await peekCard(page);
+await page.touchscreen.tap((pk.box.left + pk.box.right) / 2, (pk.box.top + pk.box.bottom) / 2);
+await page.waitForFunction((id) => window.SESSION.openId === id, pk.id, { timeout: 4000 }).catch(() => {});
+await page.waitForTimeout(500);
+s = await sheet(page);
+const peekOpened = await page.evaluate(() => window.SESSION.openId);
+say(peekOpened === pk.id, 'a tap on the peeked card opens that entry\'s card (' + peekOpened + ', wanted ' + pk.id + ')');
+say(s.state === 'peek', 'and the sheet stays at the peek (data-sheet=' + s.state + ')');
+await page.evaluate(() => window.SESSION.closeCard());
+await page.waitForTimeout(900);
 
 // 7. reading down hides it, up shows it, the foot keeps it
 await page.evaluate(() => scrollTo(0, 0));
