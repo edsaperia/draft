@@ -1,0 +1,22 @@
+# The Claude builder: `@claude` in an issue or PR comment (write access only) starts one on a GitHub runner. Shared workflow and conventions: https://github.com/edsaperia/dev-ops
+name: claude
+on:
+  issue_comment: { types: [created] }
+  pull_request_review_comment: { types: [created] }
+  pull_request_review: { types: [submitted] }
+  issues: { types: [opened] }
+jobs:
+  claude:
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: read
+    uses: edsaperia/dev-ops/.github/workflows/claude-builder.yml@main
+    with:
+      # per project: what the builder needs installed before it starts
+      node-version: '24'
+      setup: 'npm ci && npx playwright install --with-deps chromium'
+    secrets:
+      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
