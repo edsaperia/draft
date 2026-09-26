@@ -92,6 +92,10 @@ const FROZEN = [
   'setup.js',
   'setup.css',
   'cards.js',
+  // the redesign's one state and one shell (Q1541 stage 1): the page loads
+  // both ahead of setup.js, and the pilots' cards are built from them
+  'card-state.js',
+  'card-shell.js',
   'copy.js',
   'system.css',
   'constitution.js',
