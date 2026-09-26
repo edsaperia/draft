@@ -1668,14 +1668,18 @@ window.CARDS = (function () {
     // ended — the Founder's 🛡️ on the Text (R-056). All three arrive as
     // finished words, the vocabulary having been resolved by the page or the
     // host that owns it.
-    if (s.slate) return s.slate.map((c) => ({ label: '', text: c.text, why: c.rationale, p: c.p, won: !!c.won, by: c.by || null, underNote: c.underNote || null, refusal: c.refusal || null }));
+    // `mine` — the reader's own wording, which a record labels *Proposed by
+    // you* (answers.md Part 4 .9): the page's own join of its candidate ids
+    // against the field's, never a disclosure (Q1451's `mineIn`)
+    if (s.slate) return s.slate.map((c) => ({ label: '', text: c.text, why: c.rationale, p: c.p, won: !!c.won, by: c.by || null, underNote: c.underNote || null, refusal: c.refusal || null, mine: !!c.mine }));
     if (s.kind === 'race') return [
-      { label: '', text: s.race.a.text, why: s.race.a.rationale, p: s.race.a.p, won: s.won === 'a', by: s.race.a.by || null },
-      { label: '', text: s.race.b.text, why: s.race.b.rationale, p: s.race.b.p, won: s.won === 'b', by: s.race.b.by || null },
+      { label: '', text: s.race.a.text, why: s.race.a.rationale, p: s.race.a.p, won: s.won === 'a', by: s.race.a.by || null, mine: !!s.race.a.mine },
+      { label: '', text: s.race.b.text, why: s.race.b.rationale, p: s.race.b.p, won: s.won === 'b', by: s.race.b.by || null, mine: !!s.race.b.mine },
     ];
     // no label: the band above already says "what was proposed", and printing
     // it again on the only thing in the band said it twice
-    return [{ label: '', text: s.optionB, why: s.rationale, p: (s.decided || {}).p, won: s.won === 'b', by: s.by || null, underNote: s.underNote || null, refusal: s.refusal || null }];
+    return [{ label: '', text: s.optionB, why: s.rationale, p: (s.decided || {}).p, won: s.won === 'b', by: s.by || null, underNote: s.underNote || null, refusal: s.refusal || null,
+      mine: !!(s.mineIn && s.mineIn.length) }];
   }
 
   const groundNote = (s) => (!s.shifted || !s.wasGround ? ''
@@ -1854,6 +1858,7 @@ window.CARDS = (function () {
     // rectangle and the `.chipcol` inside it lands in the same gutter column.
     // The mark you clicked therefore does not move at all, which is what makes
     // the card feel like the clause opening rather than something replacing it.
+    const factAttr = (o) => (o.fact ? ' data-fact="' + esc(o.fact) + '"' : '');
     function clauseHeadHtml(s, o) {
       const opt = !!o.v;
       const headId = laneHeadId(s, o.key);
@@ -1902,13 +1907,15 @@ window.CARDS = (function () {
         // the card's `radiogroup` borrows the same id. One id, so a reader who
         // enters the group hears the clause once and then each option by its
         // own wording.
+        // `o.fact` names the head's role for card-audit's P33 (Q1541 stage 1:
+        // `place` on a card built on the one shell); absent, nothing changes
         (o.html !== undefined
-          ? '<div class="rtext" id="' + headId + '">' + o.html + '</div>'
+          ? '<div class="rtext" id="' + headId + '"' + factAttr(o) + '>' + o.html + '</div>'
           : o.text === null
-          ? '<div class="rtext none" id="' + headId + '">' + esc(o.nothing != null ? o.nothing : G.head.noText) + '</div>'
+          ? '<div class="rtext none" id="' + headId + '"' + factAttr(o) + '>' + esc(o.nothing != null ? o.nothing : G.head.noText) + '</div>'
           // the clause in blocks (Q1406): a run of paragraphs keeps its
           // breaks, a heading in it its rank — `o.text` is the source
-          : '<div class="rtext" id="' + headId + '">' + (String(o.text).trim() ? mdBlocksHtml(null, o.text) : esc(o.text)) + '</div>') +
+          : '<div class="rtext" id="' + headId + '"' + factAttr(o) + '>' + (String(o.text).trim() ? mdBlocksHtml(null, o.text) : esc(o.text)) + '</div>') +
         '</div>' +
         // **The head's lane is a lane like any other** (Q1362 (a), 2026-09-15):
         // the current text is a candidate in the field, authored by nobody and

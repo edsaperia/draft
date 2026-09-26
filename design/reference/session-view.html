@@ -724,6 +724,10 @@
 <script src="constitution.js"></script>
 <script src="copy.js"></script>
 <script src="cards.js"></script>
+<!-- the redesign's one state and one shell (Q1541 stage 1): read by setup.js,
+     session.js and the inline script, so they load ahead of all three -->
+<script src="card-state.js"></script>
+<script src="card-shell.js"></script>
 <!-- generated from Unicode's emoji-test.txt by scripts/emoji-data.mjs; the
      picker reads it, so it loads before setup.js -->
 <script src="emoji-data.js"></script>
@@ -1060,10 +1064,48 @@
         document.querySelector('#rail [data-card="' + heldKey + '"]');
       if (t) { try { t.focus({ preventScroll: true }); } catch (e) { /* gone */ } }
     };
+    // **space-above** (Q1541 stage 1; answers Part 6.5): a card on the one
+    // shell gives its label's room back before it collapses — the label
+    // goes, its first line is held on the glass, the content above slides
+    // back down — and where nothing else is being held its paragraph is
+    // held onto that line after the render, so the clause never moves
+    const shellHead = window.CARD_SHELL.isShell(el) ? el.querySelector('.clausehead .rtext') : null;
+    const shellKey = shellHead ? el.dataset.setupcard : null;
+    if (shellHead) window.CARD_SHELL.takeRoomBack(el);
+    const shellTop = shellHead && !anchored ? window.CARD_SHELL.lineTop(shellHead) : null;
+    const settle = () => {
+      if (shellTop != null) {
+        const p = document.querySelector('#band .cpara:not(.open)[data-para="' + shellKey.replace(/["\\]/g, '\\$&') + '"] .cpv');
+        const t = p ? window.CARD_SHELL.lineTop(p) : null;
+        if (t != null && Math.abs(t - shellTop) > 0.5) scrollTo(scrollX, scrollY + (t - shellTop));
+      }
+      // …and a card on the shell opened by the same act keeps its label
+      // clear of the topbar (answers Part 6.4)
+      window.CARD_SHELL.clearTop(document.querySelector('.setupcard.gshell'));
+    };
     let holding = anchored;
     const frame = () => { if (!holding) return; hold(); requestAnimationFrame(frame); };
     if (holding) requestAnimationFrame(frame);
-    CC.collapseCard(el, () => { holding = false; fn(); render(); hold(); handBack(); });
+    CC.collapseCard(el, () => { holding = false; fn(); render(); hold(); settle(); handBack(); });
+  };
+  // **space-above on the band** (Q1541 stage 1, 1541.44): a card on the one
+  // shell stands its first line the label's room lower than its paragraph's
+  // words (setup.js `fitBand`), so the tab pressed is held still on the glass
+  // across the render — the content above slides up by exactly that room —
+  // and the label is kept clear of the topbar (answers Part 6.4). Asked only
+  // where a card on the shell is opening or leaving, so every other card
+  // opens exactly as it always has.
+  const holdTabFor = (k, from) => {
+    const t0 = from && from.getBoundingClientRect ? from.getBoundingClientRect().top : null;
+    const wasShell = !!document.querySelector('.setupcard.gshell');
+    return () => {
+      const card = document.querySelector('.setupcard');
+      if (t0 == null || !(wasShell || window.CARD_SHELL.isShell(card))) return;
+      const t = card && card.querySelector('.chipcol [data-tab="' + String(k).replace(/["\\]/g, '\\$&') + '"]');
+      const d = t ? t.getBoundingClientRect().top - t0 : 0;
+      if (Math.abs(d) > 0.5) scrollTo(scrollX, scrollY + d);
+      window.CARD_SHELL.clearTop(card);
+    };
   };
   // **Clicking a rail entry travels to its card** (Ed, 2026-08-21). The
   // charter's rail has done this for as long as it has existed — session.js's
@@ -1113,11 +1155,15 @@
   // card's to the new card's while the contents crossfade — the strip in the
   // gutter belongs to both, so it never moves and never blinks
   const MORPH_MS = 190;
-  const morphTo = (k) => {
+  const morphTo = (k, cur, from) => {
     const was = document.querySelector('.setupcard');
     const h0 = was ? was.offsetHeight : 0;
+    // a card on the one shell makes or takes back its label's room across
+    // the switch, the tab pressed held still (Q1541 stage 1; answers 6.5)
+    const holdTab = holdTabFor(k, from);
     S.open = k; lastOpen = k;            // the morph is the entrance — no expandCard
     render();
+    holdTab();
     const el = document.querySelector('.setupcard');
     // a morph is an opening too — it sets lastOpen itself, so it never
     // reaches render's open branch and has to put the caret in place here
@@ -1620,10 +1666,11 @@
     } catch (e) { return null; }
     return best ? best.route : null;
   };
-  const provOf = (k) => { const st = csState(k);
-    const by = st && st.settledBy;
-    const pen = !by || by === 'convenor' || (by === 'crown' && lastCarriedRoute(k) === 'pen');
-    return pen ? PAGE_COPY.motionRec.provPen : PAGE_COPY.motionRec.provMembers; };
+  // **the one reader** is card-state.js's `provenanceOf` (Q1541 stage 1,
+  // 1541.5 (b)); this page's source below hands it `settledBy` and the last
+  // carried route, and every card that prints who chose a rule asks it
+  const provOf = (k) => { const p = window.CARD_STATE.provenanceOf(k);
+    return p ? p.label : PAGE_COPY.motionRec.provPen; };
   const chosenRadio = (label) => '<button class="lanepick" aria-pressed="true" disabled>' +
     '<span class="dot"></span><span>' + esc(label) + '</span></button>';
   const clauseOf = (k, v) => window.CARDS.clauseOf(k, v, clauseCtx());
@@ -7414,7 +7461,10 @@
     // the title card's head is the document title itself — the clause,
     // opened — never the word “Title” (Ed, 2026-08-18)
     inDocOpenSlot: false,
-    headFor: (c) => {
+    // `bare` asks for the rule's words alone, without the provenance radio a
+    // standing block wears — the first line of a card on the one shell,
+    // whose standing pill is the shell's to draw (Q1541 stage 1)
+    headFor: (c, bare) => {
       // the card head, which has replaced the paragraph that gave *this* its
       // referent — so the sentence names its setting (Q1429)
       // …and at the birth there is no head at all, the two blocks being the
@@ -7452,7 +7502,7 @@
       if (c.k === 'title') return (cs ? 'The document is titled ' + LD : '') +
         '<span class="headdoct' + (S.title ? '' : ' ph') + '">' +
         esc(S.title) + '</span>' + (cs ? RD + '.' : '') +
-        (titleStands() ? chosenRadio(provOf('title')) : '');
+        (titleStands() && !bare ? chosenRadio(provOf('title')) : '');
       const m = motionOn(c);
       // a motion card on either route is the settled card's own shape — no
       // head, what stands as block one (Q1182 for the consent card, Q1331
@@ -7499,7 +7549,7 @@
         const sent = stV !== null && stV !== undefined ? sentenceFor(c.k, stV) : null;
         const line = sent ? clauseText(sent, c.k, false) : decisionLine(c);
         return breakLines(linkify(esc(line))) +
-          (asBlock ? chosenRadio(provOf(c.k)) : '');
+          (asBlock && !bare ? chosenRadio(provOf(c.k)) : '');
       }
       if (composerOn(c)) return esc(standsOf(c.k));
       return null;
@@ -8813,7 +8863,7 @@
       // ⏰) — neither is where you are looking, where a tab in the band is.
       const fromRail = !!t.closest('#rail, .navbar');
       const cur = document.querySelector('.setupcard');
-      if (cur && t.closest('.setupcard') === cur) return morphTo(k, cur);
+      if (cur && t.closest('.setupcard') === cur) return morphTo(k, cur, t);
       // **Anchor the tab you pressed across the switch**, and only from the
       // band: on the rail path `scrollToCard` is a deliberate travel and its
       // comment above says why a tab press is different. Scoped to `#band` so
@@ -8824,7 +8874,8 @@
       const still = !fromRail && t.dataset.tab && t.closest('#band')
         ? '#band [data-tab="' + k.replace(/["\\]/g, '\\$&') + '"]' : null;
       if (cur) return closeThen(() => { S.open = k; if (fromRail) scrollToCard(k); }, still);
-      S.open = k; render(); if (fromRail) scrollToCard(k); return; }
+      const holdTab = fromRail ? null : holdTabFor(k, t);
+      S.open = k; render(); if (holdTab) holdTab(); if (fromRail) scrollToCard(k); return; }
     // ✒️ on 📧, before it is verified, IS the send (Ed, 2026-08-19) — and it
     // leaves the card standing, because the inbox opens over it and what you
     // come back to is the card you were on
@@ -9463,7 +9514,12 @@
 
   document.addEventListener('keydown', (ev) => {
     if (ev.key === 'Escape' && SESSION.openId != null) SESSION.closeCard();
-    if (ev.key === 'Escape' && S.open) { S.open = null; return render(); }
+    if (ev.key === 'Escape' && S.open) {
+      // a card on the one shell leaves by the same rule as by its tab: the
+      // room back, the clause held still (Q1541 stage 1; answers Part 6.5)
+      const el = document.querySelector('.setupcard');
+      if (window.CARD_SHELL.isShell(el)) return closeThen(() => { S.open = null; });
+      S.open = null; return render(); }
     if (ev.key === 'Enter' && ev.target.closest('[data-titlelane]')) ev.preventDefault();
     // **Enter sends the invitation** (Q814). A lone field with a button
     // beside it and no form around it swallowed the return key, so the one
@@ -9799,6 +9855,51 @@
     setDoorErr: (...a) => setDoorErr(...a),
     doorErrHtml: (...a) => doorErrHtml(...a),
     showErrLine: (...a) => showErrLine(...a),
+  });
+
+  // ---- the band's half of the one state (Q1541 stage 1) -------------------
+  // `card-state.js` decides what a card's facts mean; this source hands it the
+  // band's raw facts — who is in the chair, the document's era, a setting's
+  // `settledBy` and last carried route, the rule's words as the Rules
+  // paragraph's renderer writes them — and, for the one band kind built on
+  // the shell in stage 1, **the stranger's settled rule card** (an applicant
+  // being a stranger who has knocked, Q1281), the fragments only the band can
+  // draw: the strip, and the first line around the words and the pill.
+  const bandKindOf = (c) => (!c ? null : c.power ? 'power' : c.record || heldIsRecord(c) ? 'record'
+    : c.isGate ? 'gate' : c.door ? 'door' : c.ansFor ? 'answer' : c.kind === 'personal' ? 'personal'
+    : c.k === 'text' ? 'text' : /^grant-/.test(c.k) ? 'grant' : 'rule');
+  // a rule card the shell builds: at the door, settled, drawn as its standing
+  // block (every settings card whose blocks state the rule, 🪶 and 📍)
+  const shellRule = (c) => !!c && atTheDoor() && bandKindOf(c) === 'rule' && !!ctx.blockHead(c) && settled(c);
+  window.CARD_STATE.register('band', {
+    owns: (k) => !!card(k) || MANAGED_KEYS.includes(k) || DOOR_KEYS.includes(k),
+    reader: () => (isStranger() ? 'stranger' : S.viewer === 'applicant' ? 'applicant'
+      : amFounder() ? (viewerIsMember() ? 'founder-member' : 'founder-clerk') : 'member'),
+    phase: () => (!cs ? 'birth' : cs.closed ? 'closed' : cs.constitutedAtT === null ? 'founding' : 'live'),
+    card: (k) => ({ kind: bandKindOf(card(k)), id: k, anchor: k }),
+    standing: (k) => { const st = csState(k);
+      return { settledBy: st ? st.settledBy : null, lastRoute: lastCarriedRoute(k), settled: !!(st && st.settledBy !== null) }; },
+    // the rule's own words, as the Rules paragraph states it and without the
+    // radio a standing block wears; the powers line is never in these words
+    // (1541.10), so no phase can print one
+    place: (k) => { const c = card(k);
+      const html = c && bandKindOf(c) === 'rule' && ctx.headFor ? ctx.headFor(c, true) : null;
+      return html == null ? null : { kind: 'rule', key: k, html }; },
+    present: (k, st) => {
+      const c = card(k);
+      if (!shellRule(c) || !st.place) return {};
+      // the paragraph's pile is the strip (setup.js `bandHtml`): the rule in
+      // front, its power tabs and filed records behind, its host carried
+      const chips = strCtx.chipsFor ? strCtx.chipsFor(c) : [c];
+      chips.host = c.k;
+      return {
+        kind: 'stranger-rule',
+        frame: { cls: 'sugg setupcard', attrs: ' role="tabpanel" data-setupcard="' + esc(k) + '"' },
+        label: { text: window.COPY.shell.currentRule },
+        head: { html: window.SETUP.headHtml(c, strCtx, chips,
+          '<div class="headrule asblock" data-fact="place">' + st.place.html + window.CARD_SHELL.pillHtml(st.standing) + '</div>') },
+      };
+    },
   });
 
   // ---- the live layer (Q391b) -------------------------------------------

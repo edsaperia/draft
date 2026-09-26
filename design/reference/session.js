@@ -2366,11 +2366,115 @@
     '<button class="btn btn-approve okbtn" data-seen="' + esc(fold.id) + '"' +
     ' title="' + esc(T.record.foldOkTitle(fold.fold.length)) + '">' + T.record.ok + '</button></div>';
 
+  // ---- the charter's half of the one state (Q1541 stage 1) ----------------
+  // `card-state.js` decides what a card's facts mean; this source hands it the
+  // charter's raw facts and, for the kinds built on the one shell, the
+  // fragments only this column can draw — the clause as its renderer draws
+  // it, the strip, a wording marked against what it was proposed against, a
+  // speaker. Stage 1 builds one kind on the shell: **a sealed record on a
+  // clause of a live document** (`shellRecord`); the closed page's records
+  // and the backlog are stage 7's, the Founder's amendments stage 4's.
+  const shellRecord = (s) => !!s && stateOf(s) === 'sealed' && !s.amendment && !s.undecided && !s.fold && !docClosed;
+  const recordFacts = (s) => {
+    const d = s.decided || {};
+    const field = fieldOf(s);
+    const carried = field.some((c) => c.won);
+    const yours = verdicts.get(pairKeyOf(s)) || s.verdict;
+    const skey = (s.keys ?? [])[0];
+    return {
+      field, undecided: !!s.undecided, early: !!s.early,
+      changedSince: !!s.changedSince, gone: !!s.gone,
+      currentText: skey ? currentTextFor(skey) : null,
+      replaced: s.replaced, optionA: s.optionA,
+      base: recordBaseOf(s, carried),
+      when: longText(d),
+      counts: T.record.counts(d.judges ?? 0, ROSTER, d.floor ?? FLOOR,
+        yours ? T.record.youSaid(yours) : T.record.youNever,
+        typeof d.approvals === 'number' ? d.approvals : null,
+        typeof d.abstained === 'number' ? d.abstained : null),
+      capped: d.capped ? T.record.capped : null,
+    };
+  };
+  // a record's speaker, and the notes that stand under it (entry 31, R-056,
+  // Q1538): one drawing wherever a wording is argued for
+  const recSpeaker = (p) => (p && (p.why || p.by || p.underNote || p.refusal)
+    ? speakerHtml(p.why, undefined, p.by) +
+      (p.underNote ? '<span class="rsub">' + esc(p.underNote) + '</span>' : '') +
+      (p.refusal ? '<span class="rsub">' + esc(p.refusal) + '</span>' : '')
+    : '');
+  window.CARD_STATE.register('charter', {
+    owns: (id) => !!SUGGS && SUGGS.some((g) => g.id === id),
+    card: (id) => {
+      const s = SUGGS.find((g) => g.id === id);
+      return { kind: stateOf(s) === 'sealed' ? 'record' : s.kind, id, anchor: (s.keys ?? [])[0] || null };
+    },
+    place: (id) => {
+      const s = SUGGS.find((g) => g.id === id);
+      const k = (s.keys ?? [])[0];
+      return k ? { kind: isGapKey(k) ? 'gap' : 'clause', key: k, text: isGapKey(k) ? null : currentTextFor(k) } : null;
+    },
+    owed: (id) => {
+      const s = SUGGS.find((g) => g.id === id);
+      return isUnread(s) ? { kind: 'ok' } : null;
+    },
+    record: (id) => {
+      const s = SUGGS.find((g) => g.id === id);
+      return s && stateOf(s) === 'sealed' && !s.amendment && !s.fold ? recordFacts(s) : null;
+    },
+    // the fragments a shell record needs, drawn by this column's own renderers
+    present: (id, st) => {
+      const s = SUGGS.find((g) => g.id === id);
+      if (!shellRecord(s) || !st.record) return {};
+      const rec = st.record;
+      const skey = (s.keys ?? [])[0];
+      const base = recordBaseOf(s, rec.outcome === 'passed');
+      // the first line: the wording the record recorded (answers Part 5 (1)),
+      // as the column draws a clause, marked as the record left it; where the
+      // clause has changed since, the recorded wording, unmarked
+      const o = headOpts(s, skey);
+      const h = rec.head;
+      if (h && h.text != null && String(h.text).trim()) {
+        const words = rec.since || o.text == null ? h.text : o.text;
+        if (rec.since) o.html = mdBlocksHtml(null, words);
+        else if (h.mark && h.mark.against != null) o.html = wordingHtml(h.mark.against, words);
+        else if (h.mark) o.html = wordingHtml(base, words);
+      }
+      const marked = (c) => (c.mark && c.mark.against != null ? wordingHtml(c.mark.against, c.text) || mdBlocksHtml(null, c.text)
+        : c.mark ? wordingHtml(base, c.text) : mdBlocksHtml(null, c.text));
+      const fold = foldOf(s);
+      return {
+        kind: isUnread(s) ? 'record-owed' : 'record-filed',
+        frame: { cls: 'sugg sealed-open' + (h && h.passed ? ' recpass' : ''),
+          attrs: ' data-card="' + esc(id) + '"' + (skey ? ' data-site="' + esc(skey) + '"' : '') },
+        label: { text: rec.label, tone: rec.green ? 'ok' : null, fact: 'outcome' },
+        head: { html: clauseHeadHtml(s, Object.assign(o, { key: skey, chips: chipsFor(skey, id), label: null, fact: 'place' })) +
+          (h && !rec.since ? recSpeaker(h.speaker) : '') },
+        fact: rec.fact,
+        boxed: true,
+        blocks: rec.field.map((c) => ({
+          cls: 'ranked' + (c.role === 'previous' ? ' wasthere' : '') + (c.passed ? ' passed' : ''),
+          label: c.label, fact: c.role === 'previous' ? 'previous' : c.author ? 'author' : null,
+          html: marked(c), speaker: recSpeaker(c.speaker) })),
+        // OK only while owed (Q1522 (6)); one of a clause's several wears the
+        // clause's OK, with the way back to its list at the row's left (Q1536)
+        owed: !isUnread(s) ? null : fold
+          ? { kind: 'ok', attrs: ' data-seen="' + esc(fold.id) + '"', title: T.record.foldOkTitle(fold.fold.length), word: T.record.ok,
+            left: '<button type="button" class="btn btn-withdraw foldback" data-foldback="' + esc(fold.id) + '">' + esc(T.record.foldBack) + '</button>' }
+          : { kind: 'ok', attrs: ' data-seen="' + esc(id) + '"', title: T.record.okTitle, word: T.record.ok },
+      };
+    },
+  });
+
   // `fold`, where this record is one of a clause's several owed (Q1536): the
   // card is still this record's own — its id, its tab in front in the strip,
   // so the tab clicked is the tab lit — and its OK is the clause's
   function sealedCardHtml(s, fold) {
     if (s.amendment) return amendmentCardHtml(s);
+    // **A sealed record on a live document is built on the one shell** (Q1541
+    // stage 1's pilot): its label above the first line, the recorded wording
+    // as that line, its participation as the one fact line, the field's
+    // labels on their own first lines
+    if (shellRecord(s)) return window.CARD_SHELL.cardHtml(window.CARD_STATE.stateOf(s.id));
     const cardId = s.id;
     const d = s.decided || {};
     // The Bradley–Terry model that ran the race carries a strength for every
@@ -2808,6 +2912,15 @@
   // No reflow loop, because the strip's own height does not depend on the card's.
   function fitCards() {
     doc.querySelectorAll('.sugg[data-card]').forEach((card) => {
+      // **a card on the one shell stands on its paragraph** (Q1541 stage 1,
+      // `space-above`): its box where the paragraph's box was, its label where
+      // the paragraph's first line was — the head's own box is the paragraph's
+      // by construction, so its first-line offset is the paragraph's
+      if (window.CARD_SHELL.isShell(card)) {
+        const hc = card.querySelector('.clausehead .headclause');
+        const t = hc && window.CARD_SHELL.lineTop(hc.querySelector('.rtext'));
+        if (hc && t != null) window.CARD_SHELL.fit(card, t - hc.getBoundingClientRect().top);
+      }
       card.style.minHeight = '';
       const col = card.querySelector('.chipcol');
       if (!col) return;
@@ -4818,6 +4931,11 @@ document.addEventListener('paste', (ev) => {
           const drift = born ? born.getBoundingClientRect().top - heldTop : 0;
           if (Math.abs(drift) > 0.5) scrollTo(0, scrollY + drift);
         }
+        // **space-above** (Q1541 stage 1, 1541.44): the hold above kept the
+        // first line where it was and slid the content above up by the
+        // label's room; where that leaves the label under the topbar, the
+        // first line comes down by the shortfall (answers Part 6.4)
+        window.CARD_SHELL.clearTop(doc.querySelector('.sugg.gshell[data-card="' + next + '"]'));
         // the card made the document taller, so every entry below it has moved
         layoutQueue();
         if (after) after();
@@ -4838,10 +4956,27 @@ document.addEventListener('paste', (ev) => {
     // charter closes over it. Everywhere else the old card leaves during the
     // move, where its going costs no motion of its own (Ed, 2026-08-16).
     if (closing && !next) {
+      // **a card on the one shell gives its room back first** (Q1541 stage 1,
+      // answers Part 6.5): the label goes and the content above slides back
+      // down in the same frame, the first line still, and then the card
+      // collapses onto its paragraph as every card does — held by that
+      // paragraph's key, so the clause stays where it was on the glass
+      const shellEl = doc.querySelector('.sugg.gshell[data-card="' + closing + '"]');
+      const shellHc = shellEl ? shellEl.querySelector('.clausehead .headclause[data-key]') : null;
+      if (shellEl) window.CARD_SHELL.takeRoomBack(shellEl);
+      // measured once the room is back and before the collapse, which keeps
+      // the clause where it is while the card leaves (cards.js)
+      const shellTop = shellHc ? shellHc.getBoundingClientRect().top : null;
+      const shellSel = shellHc ? '[data-key="' + shellHc.dataset.key.replace(/["\\]/g, '\\$&') + '"]' : null;
       collapseCards(closing, () => {
         if (!alive()) return;
         openId = null;
-        keepStill(() => renderAll());
+        if (shellSel) {
+          renderAll();
+          const p = doc.querySelector(shellSel);
+          const drift = p ? p.getBoundingClientRect().top - shellTop : 0;
+          if (Math.abs(drift) > 0.5) scrollTo(0, scrollY + drift);
+        } else keepStill(() => renderAll());
         thenMove();
       });
     } else {

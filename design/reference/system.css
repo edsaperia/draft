@@ -234,7 +234,17 @@
     --s4: 16px;
     --s5: 24px;
 
-    --r-sm: 0.25rem;        /* an anchor, a chip                       */
+    /* --- the card shell (Q1541 stage 1, grammar.md §4): aliases onto the
+           scale, not new values. The inset is the air above a card's label,
+           drawn inside the label's own box so it is part of the room the
+           card makes above its first line (1541.44); there is no top inset
+           borrowed from the text above (G5 is not built). */
+    --card-inset: var(--s3);
+    --slot-gap: var(--s3);
+    --block-pad: var(--s4);
+    --hair: 1px solid var(--border);
+
+    --r-sm: 0.25rem;       /* an anchor, a chip                       */
     --r-md: 0.375rem;       /* a card in a rail, a button              */
     --r-lg: 0.5rem;         /* the document, an open decision card     */
 
@@ -3409,3 +3419,58 @@
     /* in the drawer there is no sheet edge for a run to ride, so no tag */
     html.desk .tocmarks .run { background: transparent; box-shadow: none; }
   }
+
+  /* ---- the card shell (Q1541 stage 1; design/card-shell.js) -----------------
+     One shell for both sides of the page, proved on two pilots — the
+     stranger's settled rule card and a sealed record on a clause. Every rule
+     in this region is held by `npm run spec-check`'s `style-lint`: type on
+     the scale, spacing on the 4px grid, nothing else.
+
+     **The label** (answers.md Part 4 .27): one drawing, all capitals, a step
+     above the eyebrow at `--t-cap`, 700, `--muted`; a record's outcome in its
+     colour. Above the first line it stands in the room the card makes by
+     sliding the content above up (1541.44) — its air, `--card-inset`, is
+     inside its own box, so the room made is exactly the label's. On a block
+     it is the block's own first line (1541.45). */
+  .glab {
+    display: block; font-size: var(--t-cap); font-weight: 700; line-height: 1;
+    text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted);
+  }
+  .glab.gtone-ok { color: var(--ok); }
+  .gshell > .glabslot { margin: 0 0 var(--s2); }
+  .gshell > .glabslot > .glab { padding-top: var(--card-inset); }
+  .gblocks .glab { margin-bottom: var(--s2); }
+  /* **The box begins where the paragraph's box began** (card-shell.js
+     `fit`): no top margin of its own, so it collapses with the text above
+     exactly as the paragraph did, and its top padding is set per card to
+     the paragraph's own first-line offset */
+  .sugg.gshell { margin-top: 0; }
+  /* the one fact line under the first line — a record's participation */
+  .gshell > .gfact { margin: var(--s1) 0 var(--s3); }
+  .gshell > .gbody { margin: 0 0 var(--s3); }
+  /* a record's field keeps its boxes (Ed, 2026-08-17: no rule above a row of
+     boxes), so a boxed field takes no hairline above it; an unboxed one
+     takes the one hairline between the content and the choices (H1) */
+  .gshell > .gblocks:not(.boxed) { border-top: var(--hair); padding-top: var(--s3); }
+  .gshell > .gblocks .ranked:last-child { margin-bottom: 0; }
+  /* **the standing pill** (1541.5 (b), .47): who chose what stands, on the
+     first line, in today's drawing of a chosen option (1541.13 (c)) — a
+     fact, not a control, so it takes no pointer and no hover */
+  .standpill {
+    display: flex; align-items: center; gap: var(--s2); width: max-content;
+    margin-top: var(--s2); padding: var(--s1) var(--s3) var(--s1) var(--s2); border-radius: 999px;
+    font-family: var(--font-ui); font-size: var(--t-ui); font-weight: 600; line-height: var(--lh-text);
+    color: #fff; background: var(--primary); border: 1.5px solid var(--primary);
+  }
+  .standpill .dot {
+    flex: none; width: var(--s4); height: var(--s4); border-radius: 50%;
+    border: 2px solid #fff; background: #fff; box-shadow: inset 0 0 0 3px var(--primary);
+  }
+  /* **the tab you pressed does not move** (1541.44): on a filed record the
+     strip opens with the filed pile itself, whose air above belongs between
+     it and live tabs — with none above it, the pressed tab keeps the place
+     its closed paragraph gave it */
+  .gshell .clausehead .chipcol > .filedpile:first-child { margin-top: 0; }
+  /* the settled rule as the first line takes no block edge on a card with
+     nothing beneath it: a hairline at a card's foot is never drawn (H1) */
+  .setupcard.gshell .clausehead .headrule.asblock { border-bottom: 0; padding-bottom: 0; }

@@ -184,6 +184,12 @@ window.DOOR = (function () {
     const strangerReadCard = (g) => {
       const c = card(S.open);
       if (!c || !g.cards.some((x) => x.k === c.k)) return '';
+      // **a settled rule is built on the one shell** (Q1541 stage 1's band
+      // pilot): *Current rule* above its first line, the rule wearing its
+      // standing pill as a fact, and no row — nothing here asks anything, so
+      // its tab, a click outside and Escape close it (1541.8 (a))
+      const st = window.CARD_STATE.stateOf(c.k);
+      if (st.kind === 'stranger-rule') return glyphify(window.CARD_SHELL.cardHtml(st));
       // `strCtx` inherits `chipsFor`, so a door that lets the constitution be
       // read carries the record chips too — the rules are public wherever the
       // rules are, and a rule's history is part of what it is (Q942)
