@@ -24,8 +24,10 @@ vm.createContext(ctx);
 vm.runInContext(readFileSync(join(here, '..', 'copy.js'), 'utf8'), ctx, { filename: 'copy.js' });
 vm.runInContext(readFileSync(join(here, '..', 'cards.js'), 'utf8'), ctx, { filename: 'cards.js' });
 // and since Q1352 (h) and (i) session.js makes its flights and its composer
-// as it is evaluated, so the page loads both before it — the same order here
-for (const f of ['flights.js', 'composer.js']) {
+// as it is evaluated, so the page loads both before it — the same order here;
+// since Q1541 stage 1 it registers its half of the one state with
+// card-state.js as it is evaluated too, and card-shell.js loads beside it
+for (const f of ['card-state.js', 'card-shell.js', 'flights.js', 'composer.js']) {
   vm.runInContext(readFileSync(join(here, '..', f), 'utf8'), ctx, { filename: f });
 }
 vm.runInContext(src, ctx, { filename: 'session.js' });

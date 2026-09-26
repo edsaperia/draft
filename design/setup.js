@@ -577,7 +577,28 @@ window.SETUP = (function () {
     // card is shifted until its head-rule sits at exactly that offset. Runs
     // before the strip alignment below, which re-measures against the moved
     // card.
-    band.querySelectorAll('.cpara.open > .setupcard').forEach((card) => {
+    // **A card on the one shell stands on its paragraph instead** (Q1541
+    // stage 1, `space-above`): its box where the paragraph's box is, its
+    // label where the paragraph's first line was — so the head sits the
+    // label's room lower, and the open path holds the pressed tab still on
+    // the glass by scrolling that room away (`holdTab`, session-view.html)
+    const lineIn = (card) => {
+      const ref = card.closest('.constsec, body').querySelector('.cpara:not(.open):not(.textanchor) .cpv');
+      const lt = ref && window.CARD_SHELL.lineTop(ref);
+      return lt == null ? null : lt - ref.closest('.cpara').getBoundingClientRect().top;
+    };
+    band.querySelectorAll('.cpara.open > .setupcard.gshell').forEach((card) => {
+      const holder = card.parentElement;
+      const line = lineIn(card);
+      if (line == null) return;
+      card.style.marginTop = '';
+      const have = card.getBoundingClientRect().top - holder.getBoundingClientRect().top;
+      if (Math.abs(have) > 0.5) {
+        card.style.marginTop = ((parseFloat(getComputedStyle(card).marginTop) || 0) - have).toFixed(1) + 'px';
+      }
+      window.CARD_SHELL.fit(card, line);
+    });
+    band.querySelectorAll('.cpara.open > .setupcard:not(.gshell)').forEach((card) => {
       const rule = card.querySelector('.clausehead .headrule');
       if (!rule) return;
       const holder = card.parentElement;
@@ -609,10 +630,15 @@ window.SETUP = (function () {
       const holderP = card.closest('.cpara');
       const refCol = holderP && card.closest('.constsec, body')
         .querySelector('.cpara:not(.open):not(.textanchor) > .chipcol');
-      const want = holderP && refCol
+      // …and on the one shell the tab hangs off the first line, which stands
+      // the label's room lower than the closed paragraph's words did
+      const line = holderP && window.CARD_SHELL.isShell(card) ? lineIn(card) : null;
+      const shift = line == null ? 0
+        : (window.CARD_SHELL.lineTop(card.querySelector('.clausehead .rtext')) || 0) - (holderP.getBoundingClientRect().top + line);
+      const want = (holderP && refCol
         ? holderP.getBoundingClientRect().top +
           (refCol.getBoundingClientRect().top - refCol.closest('.cpara').getBoundingClientRect().top)
-        : card.getBoundingClientRect().top + 2.4;
+        : card.getBoundingClientRect().top + 2.4) + shift;
       const have = col.getBoundingClientRect().top;
       if (Math.abs(have - want) > 0.5) {
         col.style.top = (parseFloat(getComputedStyle(col).top || 0) + (want - have)).toFixed(1) + 'px';
@@ -790,6 +816,14 @@ window.SETUP = (function () {
       // a `null` foot is a card that commits nothing and closes by its tab —
       // a filed motion record (Q1522 (6)) — so it has no row and no hairline
       (foot === null ? '' : '<div class="race-mid commitrow">' + foot + '</div>') + '</div>');
+  }
+
+  /* **The band's first line for a card on the one shell** (Q1541 stage 1):
+     the same head `cardHtml` draws — the strip wrapped as the band wraps it,
+     no eyebrow, no wash — around the words the card state hands over, so the
+     shell (card-shell.js) never draws a head of its own (grammar S2). */
+  function headHtml(c, ctx, siblings, html) {
+    return CB.clauseHeadHtml(c, { label: null, wash: false, marks: stripHtml(siblings || [c], ctx), html, edit: false });
   }
 
   /* ---- the bodies that are the same on both surfaces ----------------------- */
@@ -1862,7 +1896,7 @@ window.SETUP = (function () {
     esc(p.n) + (p.n === meName ? ' (you)' : '') + '</span>').join('') + '</div>';
 
   return { esc, TICK, ARROW_OUT, initials, avHtml, hueOf, washOf, stateOf, labelOf, nounOf, markOf, railEntry,
-    bandHtml, fitBand, pileHtml, stripHtml, cardHtml, readBody,
+    bandHtml, fitBand, pileHtml, stripHtml, cardHtml, headHtml, readBody,
     nameBody, pictureBody, opt, setPickWords, num, numIn, ctlWord, faces, someIn, FACE_EMOJI,
     SHARE, shareCount, shareTail, shareWords, shareSlot, quorumAsk, quorumNote, quorumSlot,
     LAPSE_UNITS, LAPSE_BOUNDS, lapseParts, unitSel,

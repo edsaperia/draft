@@ -2124,6 +2124,95 @@ function checkTuning() {
   }
 }
 
+/**
+ * **`state-only`** (Q1541 stage 1; design/redesign/BUILD.md §2, grammar S1):
+ * the one shell's slot builders read `CardState` and the copy table and
+ * nothing else — no page, no module, no DOM — so a card cannot print a fact
+ * it did not get from the one reader of that fact (plain bug 1, *Set to
+ * undefined*, was a body reading the founder's page state for a member).
+ * Scoped to the new file's marked region, as BUILD.md scopes it: the slots
+ * between `---- slots: state-only` and `---- end slots` in card-shell.js.
+ */
+function checkStateOnly() {
+  note('state-only — card-shell.js\'s slots read the card state and the copy table alone');
+  const src = js('design/card-shell.js');
+  const a = src.indexOf('/* ---- slots: state-only');
+  const b = src.indexOf('/* ---- end slots');
+  if (a < 0 || b < a) { find('state-only', 'design/card-shell.js has no `---- slots: state-only` … `---- end slots` region'); return; }
+  // comments and string literals are not reads; what is left is the code
+  const code = src.slice(a, b)
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/\/\/[^\n]*/g, ' ')
+    .replace(/'(?:\\.|[^'\\\n])*'|"(?:\\.|[^"\\\n])*"|`(?:\\.|[^`\\])*`/g, "''");
+  const FORBIDDEN = /\b(window|document|globalThis|self|SESSION|CARDS|SETUP|CARD_STATE|localStorage|sessionStorage|location|fetch|getComputedStyle|querySelector(?:All)?|scrollTo|scrollY|scrollX|matchMedia|cs|env|api)\b|\bS\s*\./g;
+  const lines = src.slice(0, a).split(/\r?\n/).length;
+  const hits = new Set();
+  for (const m of code.matchAll(FORBIDDEN)) hits.add(m[0].replace(/\s+/g, ''));
+  for (const h of hits) find('state-only', `design/card-shell.js's slots (from line ${lines}) reach \`${h}\` — a slot reads the card state and the copy table only`);
+  note(`  the slots region (${code.split(/\r?\n/).length} lines) reads no page, module or DOM`);
+}
+
+/**
+ * **`style-lint`** (Q1541 stage 1; grammar.md §4, finding 1541.41): type on
+ * the scale, spacing on the 4px grid. **Strict over the one shell's own
+ * rules** — the region of system.css between `---- the card shell (Q1541`
+ * and the file's end — where every `font-size` is a type token and every
+ * margin, padding and gap is a spacing step (`--s1`–`--s5` and the shell's
+ * aliases), `0`, `auto`, or a whole multiple of 4px. **Everywhere else, a
+ * ratchet**: the pre-redesign stylesheets carry off-scale literals that each
+ * stage retires as it converts its family's rules (BUILD.md §4), so their
+ * count is pinned below and may only fall; stage 10 takes it to nought. A
+ * count that falls is said, so the pin can be lowered with it.
+ */
+const STYLE_TYPE_OK = /^(var\(--(t-[a-z]+|h-title|h[1-3])\)|inherit|1em|100%)$/;
+const STYLE_SPACE_OK = (p) => /^(0|0px|auto|inherit)$/.test(p) ||
+  /^-?var\(--(s[1-5]|card-inset|slot-gap|block-pad)\)$/.test(p) ||
+  (/^-?\d+(\.\d+)?px$/.test(p) && parseFloat(p) % 4 === 0);
+/** the pins: today's pre-redesign literals, per stylesheet (2026-09-26) —
+ *  lowered as each stage converts rules, never raised */
+const STYLE_PINS = {
+  'design/system.css': { type: 23, space: 112 },
+  'design/setup.css': { type: 16, space: 38 },
+};
+function styleReadings(css) {
+  const flat = css.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '));
+  const out = [];
+  for (const r of flat.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const sel = r[1].trim().replace(/\s+/g, ' ');
+    const at = flat.slice(0, r.index + r[0].indexOf('{')).split('\n').length;
+    for (const d of r[2].matchAll(/(?:^|;)\s*(font-size|margin(?:-[a-z]+)?|padding(?:-[a-z]+)?|gap|row-gap|column-gap)\s*:\s*([^;]+)/g)) {
+      const prop = d[1];
+      const val = d[2].trim().replace(/\s*!important$/, '');
+      const ok = prop === 'font-size' ? STYLE_TYPE_OK.test(val)
+        : (val.match(/calc\([^)]*\)|\S+/g) || []).every((p) => STYLE_SPACE_OK(p) ||
+          (/^calc\(/.test(p) && /var\(--(s[1-5]|card-inset|slot-gap|block-pad)\)/.test(p)));
+      if (!ok) out.push({ sel, prop, val, at, type: prop === 'font-size' });
+    }
+  }
+  return out;
+}
+function checkStyleLint() {
+  note('style-lint — the one shell\'s rules on the type scale and the 4px grid; the rest pinned');
+  const css = js('design/system.css');
+  const a = css.indexOf('/* ---- the card shell (Q1541');
+  if (a < 0) { find('style-lint', 'design/system.css has no `---- the card shell (Q1541` region'); return; }
+  const head = css.slice(0, a).split(/\r?\n/).length - 1;
+  for (const v of styleReadings(css.slice(a))) {
+    find('style-lint', `design/system.css:${head + v.at} \`${v.sel}\` ${v.prop}: ${v.val} — off the ${v.type ? 'type scale' : '4px grid'} in the card shell's rules`);
+  }
+  for (const [file, pin] of Object.entries(STYLE_PINS)) {
+    const text = js(file);
+    const cut = file === 'design/system.css' ? a : text.length;
+    const rs = styleReadings(text.slice(0, cut));
+    const type = rs.filter((r) => r.type).length;
+    const space = rs.length - type;
+    if (type > pin.type) find('style-lint', `${file} holds ${type} off-scale font sizes, pinned at ${pin.type} — a new rule is on the type scale`);
+    if (space > pin.space) find('style-lint', `${file} holds ${space} off-grid spacings, pinned at ${pin.space} — a new rule is on the 4px grid`);
+    if (type < pin.type || space < pin.space) note(`  ${file}: ${type}/${space} under its pin ${pin.type}/${pin.space} — lower the pin`);
+  }
+  note('  the card shell\'s rules on the scale; the pre-redesign literals within their pins');
+}
+
 function checkMergeable() {
   const WINDOW = 8000; // git's FIRST_FEW_BYTES, in xdiff/xutils.c
   const files = execSync('git ls-files -- packages scripts design docs package.json',
@@ -2166,6 +2255,8 @@ checkLedger();
 checkApprovalFloor();
 checkCandidateStates();
 checkTuning();
+checkStateOnly();
+checkStyleLint();
 checkMergeable();
 
 console.log(findings.length ? `\n${findings.length} disagreement(s)` : '\nspec and code agree');

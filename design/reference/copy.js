@@ -1347,6 +1347,36 @@ window.COPY = (function () {
     },
   };
 
+  // ---- the card shell's words (Q1541 stage 1, design/redesign/) ------------
+  // **Ed's words, one at a time** (answers.md Part 4, 2026-09-25): the one
+  // label above a card's first line, and each block's label on its own first
+  // line. Only the words the stage's pilots draw are here — the stranger's
+  // settled rule card and a sealed record on a clause; each later stage adds
+  // the words its kinds draw. `card-shell.js` reads this table and nothing
+  // else of the page's copy.
+  const shell = {
+    // .3 — the label above a rule card's first line
+    currentRule: 'Current rule',
+    // .4 — a record's label: its outcome, then when (`longWhen`, M23)
+    outcome: {
+      passed: 'Passed',
+      rejected: 'Rejected',
+      refused: 'Refused by the Founder',
+      ranOut: 'Ran out of time',
+    },
+    // .5 — a record whose wording has since been changed
+    sinceReplaced: 'since replaced',
+    // .11 — what a change replaced
+    previousText: 'Previous text',
+    // .8, .9, .12 — a wording on a record: the live label, then its share
+    proposed: 'Proposed',
+    proposedBy: (name) => 'Proposed by ' + name,
+    proposedByYou: 'Proposed by you',
+    // the joint in every label: *Passed · Tuesday, 29 September, 16:05*,
+    // *Proposed · 23%*
+    sep: ' · ',
+  };
+
   // ---- the spectator feed (feed.html, Q1466) --------------------------------
   // **A second page, for somebody watching** (Ed, 2026-09-19: *a feed of new
   // proposals and proposals that pass, with enough context that you can
@@ -1438,5 +1468,5 @@ window.COPY = (function () {
     missing: 'There is no document at this address.',
   };
 
-  return { RULES, grammar, session, page, feed };
+  return { RULES, grammar, session, page, shell, feed };
 })();

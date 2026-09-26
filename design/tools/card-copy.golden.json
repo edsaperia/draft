@@ -1146,10 +1146,10 @@
     "helpers": []
    },
    "quick-calling": {
-    "eyebrow": "",
+    "eyebrow": "Passed · Weekday, D Month, HH:MM",
     "head": "House matters are decided at a meeting called with at least seven days’ notice to all members, by majority of those present, with the proposal and result minuted in the Members’ Book.",
     "lock": "",
-    "body": "Previous textHouse matters are settled by whoever is in the room when they come up.",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisPrevious textHouse matters are settled by whoever is in the room when they come up.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -1262,10 +1262,10 @@
     "helpers": []
    },
    "quick-guests-book": {
-    "eyebrow": "",
+    "eyebrow": "Rejected · Weekday, D Month, HH:MM",
     "head": "Friends of the house are welcome whenever a member is in.",
     "lock": "",
-    "body": "44%Friends of the house are welcome whenever a member is in, and are written in the book on the landing.If the house burns down we should know who was in it. It costs a line of a pen.",
+    "body": "n of m weighed in · quorum was 5 · you kept the current textProposed · 44%Friends of the house are welcome whenever a member is in, and are written in the book on the landing.If the house burns down we should know who was in it. It costs a line of a pen.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -1288,10 +1288,10 @@
     ]
    },
    "quick-guests-children": {
-    "eyebrow": "",
+    "eyebrow": "Rejected · Weekday, D Month, HH:MM",
     "head": "Friends of the house are welcome whenever a member is in.",
     "lock": "",
-    "body": "22%Friends of the house are welcome whenever a member is in; children under twelve are welcome in the Garden only.The Library Corner is not a place for a four-year-old and none of us wants to be the one who says so.",
+    "body": "n of m weighed in · quorum was 5 · you kept the current textProposed · 22%Friends of the house are welcome whenever a member is in; children under twelve are welcome in the Garden only.The Library Corner is not a place for a four-year-old and none of us wants to be the one who says so.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -1341,10 +1341,10 @@
     "helpers": []
    },
    "quick-guests-dinner": {
-    "eyebrow": "",
+    "eyebrow": "Rejected · Weekday, D Month, HH:MM",
     "head": "Friends of the house are welcome whenever a member is in.",
     "lock": "",
-    "body": "66%Friends of the house are welcome whenever a member is in, though not at the Weekday Dinner unless the cook is told the day before.The cook buys for the number they are given. A guest nobody mentioned is somebody else going without.",
+    "body": "n of m weighed in · quorum was 5 · you preferred the new wordingProposed · 66%Friends of the house are welcome whenever a member is in, though not at the Weekday Dinner unless the cook is told the day before.The cook buys for the number they are given. A guest nobody mentioned is somebody else going without.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -1394,10 +1394,10 @@
     "helpers": []
    },
    "quick-guests-inhouse": {
-    "eyebrow": "",
+    "eyebrow": "Passed · Weekday, D Month, HH:MM",
     "head": "Friends of the house are welcome whenever a member is in.",
     "lock": "",
-    "body": "Previous textFriends of the house are welcome.",
+    "body": "n of m weighed in · 6 preferred it · 4 did not answer in time · quorum was 5 · you preferred the new wordingPrevious textFriends of the house are welcome.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -1420,10 +1420,10 @@
     ]
    },
    "quick-guests-late": {
-    "eyebrow": "",
+    "eyebrow": "Rejected · Weekday, D Month, HH:MM",
     "head": "Friends of the house are welcome whenever a member is in.",
     "lock": "",
-    "body": "49%Friends of the house are welcome whenever a member is in, and are not brought in after ten in the evening.The Upper Floors hear everything. Ten is not early and the rule would be kind to whoever is asleep.",
+    "body": "n of m weighed in · quorum was 5 · you kept the current textProposed · 49%Friends of the house are welcome whenever a member is in, and are not brought in after ten in the evening.The Upper Floors hear everything. Ten is not early and the rule would be kind to whoever is asleep.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -1446,10 +1446,10 @@
     ]
    },
    "quick-guests-pets": {
-    "eyebrow": "",
+    "eyebrow": "Rejected · Weekday, D Month, HH:MM",
     "head": "Friends of the house are welcome whenever a member is in.",
     "lock": "",
-    "body": "38%Friends of the house are welcome, and so are their dogs, on the ground floor.Hollis’s lurcher has been coming for two years and nobody has ever objected. Write down what we already do.",
+    "body": "n of m weighed in · quorum was 5 · you kept the current textProposed · 38%Friends of the house are welcome, and so are their dogs, on the ground floor.Hollis’s lurcher has been coming for two years and nobody has ever objected. Write down what we already do.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -1472,10 +1472,10 @@
     ]
    },
    "quick-guests-three": {
-    "eyebrow": "",
+    "eyebrow": "Rejected · Weekday, D Month, HH:MM",
     "head": "Friends of the house are welcome whenever a member is in.",
     "lock": "",
-    "body": "31%Friends of the house are welcome whenever a member is in, to a maximum of three at a time.The Common Room holds nine at a push. Four of us bringing three friends each is not an evening, it is an incident.",
+    "body": "n of m weighed in · quorum was 5 · you kept the current textProposed · 31%Friends of the house are welcome whenever a member is in, to a maximum of three at a time.The Common Room holds nine at a push. Four of us bringing three friends each is not an evening, it is an incident.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -1498,10 +1498,10 @@
     ]
    },
    "quick-guests-wine": {
-    "eyebrow": "",
+    "eyebrow": "Rejected · Weekday, D Month, HH:MM",
     "head": "Friends of the house are welcome whenever a member is in.",
     "lock": "",
-    "body": "18%Friends of the house are welcome whenever a member is in; a member bringing the same guest twice in a week brings the wine.Half a joke, but the house does keep buying drink for people who are not in it.",
+    "body": "n of m weighed in · quorum was 5 · you kept the current textProposed · 18%Friends of the house are welcome whenever a member is in; a member bringing the same guest twice in a week brings the wine.Half a joke, but the house does keep buying drink for people who are not in it.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -1547,10 +1547,10 @@
     "helpers": []
    },
    "quick-kitchen": {
-    "eyebrow": "",
+    "eyebrow": "Passed · Weekday, D Month, HH:MM",
     "head": "The Kitchen is common to all members and is governed by one rule: you leave it as you would wish to find it at seven in the morning.",
     "lock": "",
-    "body": "Previous textThe Kitchen is common to all members and is to be kept clean and tidy at all times.",
+    "body": "n of m weighed in · quorum was 5 · you approved the seven-in-the-morning testPrevious textThe Kitchen is common to all members and is to be kept clean and tidy at all times.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -1563,10 +1563,10 @@
     ]
    },
    "quick-knives": {
-    "eyebrow": "",
+    "eyebrow": "Passed · Weekday, D Month, HH:MM",
     "head": "The good knives are sharpened by the Steward and are not to be used on bone, frozen food, or the garden.",
     "lock": "",
-    "body": "Previous textThe good knives are sharpened by the Steward and are not to be used on bone or frozen food.",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisPrevious textThe good knives are sharpened by the Steward and are not to be used on bone or frozen food.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -1585,10 +1585,10 @@
     ]
    },
    "quick-larderfood": {
-    "eyebrow": "",
+    "eyebrow": "Rejected · Weekday, D Month, HH:MM",
     "head": "Food in the larder marked with a name belongs to that member. Food not marked belongs to the house and may be eaten by anyone.",
     "lock": "",
-    "body": "41%Food in the larder belongs to the house after a fortnight, marked or not, and may be eaten by anyone.Half the marked food in there is somebody’s week of lunches. A fortnight rule turns the larder into a race.",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisProposed · 41%Food in the larder belongs to the house after a fortnight, marked or not, and may be eaten by anyone.Half the marked food in there is somebody’s week of lunches. A fortnight rule turns the larder into a race.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -1601,10 +1601,10 @@
     ]
    },
    "quick-lockup": {
-    "eyebrow": "",
+    "eyebrow": "Passed · Weekday, D Month, HH:MM",
     "head": "The last member out locks the front door, closes the Workshop, and puts out the lamp in the Common Room.",
     "lock": "",
-    "body": "Previous textThe last member out locks the front door and puts out the lamp in the Common Room.",
+    "body": "n of m weighed in · quorum was 5 · you preferred this wordingPrevious textThe last member out locks the front door and puts out the lamp in the Common Room.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -1624,10 +1624,10 @@
     ]
    },
    "quick-lockup-first": {
-    "eyebrow": "",
+    "eyebrow": "Rejected · last Weekday, HH:MM",
     "head": "The last member out locks the front door, closes the Workshop, and puts out the lamp in the Common Room.",
     "lock": "",
-    "body": "34%The last member out locks the front door and leaves the key with the Steward.Eleven keys and nobody knows who has one. The Steward should hold the spare, not a flowerpot.",
+    "body": "n of m weighed in · quorum was 5 · you kept the current textProposed · 34%The last member out locks the front door and leaves the key with the Steward.Eleven keys and nobody knows who has one. The Steward should hold the spare, not a flowerpot.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -1642,10 +1642,10 @@
     ]
    },
    "quick-lockup-lamp": {
-    "eyebrow": "",
+    "eyebrow": "Passed · last Weekday, HH:MM",
     "head": "The last member out locks the front door, closes the Workshop, and puts out the lamp in the Common Room.",
     "lock": "",
-    "body": "Previous textThe last member out locks the front door.",
+    "body": "n of m weighed in · quorum was 5 · you preferred this wordingPrevious textThe last member out locks the front door.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -1707,10 +1707,10 @@
     "helpers": []
    },
    "quick-notice": {
-    "eyebrow": "",
+    "eyebrow": "Passed · Weekday, D Month, HH:MM",
     "head": "Notice of a meeting is given by writing it in the Members’ Book and telling every member by whatever means reaches them.",
     "lock": "",
-    "body": "Previous textNotice of a meeting shall be effected by entry in the Members’ Book and by such further communication to each member as the Steward shall deem sufficient in the circumstances.",
+    "body": "n of m weighed in · quorum was 5 · you approved the plainer wordingPrevious textNotice of a meeting shall be effected by entry in the Members’ Book and by such further communication to each member as the Steward shall deem sufficient in the circumstances.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -1838,10 +1838,10 @@
     "helpers": []
    },
    "race-claims": {
-    "eyebrow": "",
+    "eyebrow": "Passed · Weekday, D Month, HH:MM",
     "head": "A claim is made by writing in the book on the landing. A claim more than a month ahead may be displaced by a member with a nearer need, who tells the displaced member within a day and offers them the next free week.",
     "lock": "",
-    "body": "58%A claim is made by writing in the book on the landing. Claims are taken in the order they are written and are not displaced for any reason.A rule with an exception in it is a rule people argue about at ten at night. First come, first served is the only version nobody can lawyer.Previous textA claim is made by writing in the book on the landing. A claim more than a month ahead may be displaced by a member with a nearer need, on notice and with apologies.49%A claim is made by writing in the book on the landing. A claim may be displaced by a member with a nearer need, at the Steward’s discretion.Somebody has to weigh a wedding against a fortnight of decorating. That is what we have a Steward for, and they can see the whole book.35%A claim is made by writing in the book on the landing. No member may hold more than two claims at once, and none more than a season ahead.The problem is not displacement, it is the two of us who book out the whole summer in February. Cap the hoarding and the clashes mostly go away.21%The Guest Bedroom is booked by asking the Steward, who keeps the calendar and settles clashes.The book on the landing is lost twice a year. One person with one calendar is how every other house in the world does this.",
+    "body": "n of m weighed in · quorum was 5 · you voted on three pairs — twice for the wording that stoodProposed · 58%A claim is made by writing in the book on the landing. Claims are taken in the order they are written and are not displaced for any reason.A rule with an exception in it is a rule people argue about at ten at night. First come, first served is the only version nobody can lawyer.Previous textA claim is made by writing in the book on the landing. A claim more than a month ahead may be displaced by a member with a nearer need, on notice and with apologies.Proposed · 49%A claim is made by writing in the book on the landing. A claim may be displaced by a member with a nearer need, at the Steward’s discretion.Somebody has to weigh a wedding against a fortnight of decorating. That is what we have a Steward for, and they can see the whole book.Proposed · 35%A claim is made by writing in the book on the landing. No member may hold more than two claims at once, and none more than a season ahead.The problem is not displacement, it is the two of us who book out the whole summer in February. Cap the hoarding and the clashes mostly go away.Proposed · 21%The Guest Bedroom is booked by asking the Steward, who keeps the calendar and settles clashes.The book on the landing is lost twice a year. One person with one calendar is how every other house in the world does this.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -1959,10 +1959,10 @@
     "helpers": []
    },
    "race-nomination": {
-    "eyebrow": "",
+    "eyebrow": "Rejected · Weekday, D Month, HH:MM",
     "head": "A candidate for membership is nominated by one member and seconded by another.",
     "lock": "",
-    "body": "52%A candidate for membership is nominated by one member and seconded by another, neither of whom may be the candidate’s household.A household nominating and seconding its own candidate is two names out of one kitchen. The bar costs nothing and keeps the door honest.29%A candidate for membership is nominated by any two members.The household bar reads as suspicion of our own members. Two names are two names — and if the house has doubts, the meeting is where they belong.",
+    "body": "n of m weighed in · quorum was 5 · you preferred “A candidate for membership is nominated…”Proposed · 52%A candidate for membership is nominated by one member and seconded by another, neither of whom may be the candidate’s household.A household nominating and seconding its own candidate is two names out of one kitchen. The bar costs nothing and keeps the door honest.Proposed · 29%A candidate for membership is nominated by any two members.The household bar reads as suspicion of our own members. Two names are two names — and if the house has doubts, the meeting is where they belong.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -5619,168 +5619,98 @@
   },
   "seat:stranger": {
    "admission": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.Chosen by the membership",
     "lock": "",
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
-     "Admissions — close it",
-     "Put it back as it stands"
+     "Admissions — close it"
     ],
     "helpers": []
    },
    "applications": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "New members may only join by invitation.Chosen by the membership",
     "lock": "",
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
-     "Applications — close it",
-     "Put it back as it stands"
+     "Applications — close it"
     ],
     "helpers": []
    },
    "authorship": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "All proposals are made anonymously.Chosen by the membership",
     "lock": "",
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Anonymous Proposals — close it",
-     "Anonymous Proposals — settled",
-     "Put it back as it stands"
+     "Anonymous Proposals — settled"
     ],
     "helpers": []
    },
    "chamber": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "The document can be seen by anyone with the link.Chosen by the Founder ✒️",
     "lock": "",
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Visibility — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Visibility — settled",
-     "Changed by the Founder: Anyone with the link — settled",
-     "Put it back as it stands"
+     "Changed by the Founder: Anyone with the link — settled"
     ],
     "helpers": []
    },
    "ending": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "No more changes to the document may be made after Weekday, D Month, HH:MM.Chosen by the membership",
     "lock": "",
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
-     "Ending — close it",
-     "Put it back as it stands"
+     "Ending — close it"
     ],
     "helpers": []
    },
    "judgments": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "Votes are never revealed.Chosen by the membership",
     "lock": "",
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
-     "Vote Reveal — close it",
-     "Put it back as it stands"
+     "Vote Reveal — close it"
     ],
     "helpers": []
    },
    "lapse": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "Inactive members never lapse and are still counted towards votes.Chosen by the membership",
     "lock": "",
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
-     "Lapsing — close it",
-     "Put it back as it stands"
+     "Lapsing — close it"
     ],
     "helpers": []
    },
@@ -6067,53 +5997,33 @@
     "helpers": []
    },
    "quorum": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "A proposal ✏️ cannot pass until it is preferred by at least 38% of the membership (n of m).Chosen by the membership",
     "lock": "",
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Quorum — close it",
-     "Passed: 38% (n of m) of the membership — settled",
-     "Put it back as it stands"
+     "Passed: 38% (n of m) of the membership — settled"
     ],
     "helpers": []
    },
    "rate": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "Members may make a new proposal ✏️ every 3 hours.Chosen by the Founder ✒️",
     "lock": "",
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Proposal Rate — close it",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Proposal Rate — settled",
-     "Rejected: a new proposal every 90 minutes — settled",
-     "Put it back as it stands"
+     "Rejected: a new proposal every 90 minutes — settled"
     ],
     "helpers": []
    },
@@ -6167,50 +6077,30 @@
     "helpers": []
    },
    "removal": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "To remove a member, all members must agree 🏛️.Chosen by the membership",
     "lock": "",
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
-     "Removals — close it",
-     "Put it back as it stands"
+     "Removals — close it"
     ],
     "helpers": []
    },
    "slug": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "The document lives at docs.vote/d/the-hollow-oak-club-house-charter-3b3f.Chosen by the Founder ✒️",
     "lock": "",
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Link — close it",
      "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands"
+     "Does the Founder Have a Veto? — settled"
     ],
     "helpers": []
    },
@@ -6245,27 +6135,17 @@
     "helpers": []
    },
    "title": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "The document is titled “The Hollow Oak Club — House Charter”.Chosen by the Founder ✒️",
     "lock": "",
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Title — close it",
      "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands"
+     "Does the Founder Have a Veto? — settled"
     ],
     "helpers": []
    }

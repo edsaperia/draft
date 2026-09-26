@@ -1841,6 +1841,9 @@ window.LIVE = (function () {
         const slate = field.length > 1
           ? { slate: field.map((f) => ({ text: textOfF(f), src: f.hunks.flatMap((h) => h.lines).join('\n'),
               rationale: f.rationale, by: byName(f),
+              // the reader's own wording, *Proposed by you* on the record
+              // (answers.md Part 4 .9) — the view's own ids, as `mineIn`
+              mine: mineIds.has(f.candidateId),
               underNote: underNoteOf(f, o), refusal: reasonOf(f),
               p: f.p == null ? undefined : f.p, won: f === winner && (adopted || undecided) })) } : {};
         // **The card says which text it changed** where the clause under it has

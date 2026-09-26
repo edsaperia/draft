@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 663
+  "entries": 674
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -665,6 +665,17 @@
   "session.verdict.theSecond": "the second",
   "session.yours.inRace": "yours · in the race",
   "session.yours.justIn": "yours · just in, evidence starting",
-  "session.yours.signedTail": " · signed"
+  "session.yours.signedTail": " · signed",
+  "shell.currentRule": "Current rule",
+  "shell.outcome.passed": "Passed",
+  "shell.outcome.ranOut": "Ran out of time",
+  "shell.outcome.refused": "Refused by the Founder",
+  "shell.outcome.rejected": "Rejected",
+  "shell.previousText": "Previous text",
+  "shell.proposed": "Proposed",
+  "shell.proposedBy": "ƒ (name) => 'Proposed by ' + name",
+  "shell.proposedByYou": "Proposed by you",
+  "shell.sep": " · ",
+  "shell.sinceReplaced": "since replaced"
  }
 }

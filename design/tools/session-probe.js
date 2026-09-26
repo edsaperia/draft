@@ -166,11 +166,11 @@
         if (bg(ins) !== want) out.push(id + ': a ' + (passedIns.has(ins) ? 'passed' : 'losing') + ' mark reads ' + bg(ins));
       }
       const wants = RECORD_MARKED[id] || [];
-      if (wants.includes('field') && !card.querySelector('.field .ranked.passed:not(.wasthere) ins')) out.push(id + ': the winner in the field is not marked green');
+      if (wants.includes('field') && !card.querySelector('.field .ranked.passed:not(.wasthere) ins, [data-slot="blocks"] .ranked.passed:not(.wasthere) ins')) out.push(id + ': the winner in the field is not marked green');
       if (wants.includes('head') && !(card.classList.contains('recpass') && card.querySelector('.clausehead .headclause ins'))) out.push(id + ': the winner at the head is not marked green');
       if (wants.includes('kept') && !(card.classList.contains('recpass') && card.querySelector('.clausehead .headclause ins')) &&
         !card.querySelector('.ranked.wasthere.passed ins')) out.push(id + ': the kept text is not marked green against its top loser');
-      if (wants.includes('losers') && !card.querySelector('.field .ranked:not(.passed):not(.wasthere) ins')) out.push(id + ': no losing rival is marked');
+      if (wants.includes('losers') && !card.querySelector('.field .ranked:not(.passed):not(.wasthere) ins, [data-slot="blocks"] .ranked:not(.passed):not(.wasthere) ins')) out.push(id + ': no losing rival is marked');
     }
     return out;
   }
