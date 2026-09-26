@@ -1895,6 +1895,12 @@
     el.querySelectorAll('[data-txt]').forEach((b) => ks.add(b.dataset.txt));
     el.querySelectorAll('[data-num]').forEach((b) => ks.add(b.dataset.num));
     el.querySelectorAll('[data-ans]').forEach((b) => ks.add('ans:' + b.dataset.ans));
+    // …and an answer typed rather than chosen — a number, a date, a unit —
+    // so the bin can see it and put it back (Q1541 stage 3a: the bin lights
+    // once there is something of yours on the card, 1541.9)
+    el.querySelectorAll('[data-ansnum]').forEach((b) => ks.add('ans:' + b.dataset.ansnum));
+    el.querySelectorAll('[data-ansdate]').forEach((b) => ks.add('ans:' + b.dataset.ansdate));
+    el.querySelectorAll('[data-ansunit]').forEach((b) => ks.add('ans:' + b.dataset.ansunit + 'Unit'));
     // …and a date rung's pending kind (issue #75 F1), which it writes beside
     // the answer rather than into it
     el.querySelectorAll('[data-ans][data-ansval="date"]').forEach((b) => ks.add('ans:' + b.dataset.ans + 'Kind'));
@@ -4159,7 +4165,10 @@
     chips.host = 'title';
     const openHere = (cs || settled(card('title'))) && chips.find((c) => S.open === c.k);
     if (openHere) return h.paraWith(openHere, chips);
-    return '<div class="cpara">' + h.pile(chips) +
+    // the paragraph names what it is about (`data-para`), as every other
+    // clause's does: between the save and the pen's OK it wears no tab
+    // (Q1560 (5)), and the tab was the only thing that said it was 🪶's
+    return '<div class="cpara" data-para="title">' + h.pile(chips) +
       // the governance sentence on its own line (entry 198), written as a
       // `<br>` because this string is already HTML — the plain-text clauses
       // carry a newline and `breakLines` makes the markup for them instead
@@ -5405,7 +5414,10 @@
     : c.power ? esc(powerHeadLine(c, true))
     // a record has no VALUE of its own either — its title *is* what it says
     : c.record ? esc(c.t)
-    : esc(VALUE[c.k] ? VALUE[c.k]() : ''));
+    // **a value not yet there is empty, never the word** (plain bug 1,
+    // 1541.29): ❌'s door before 🥾 is decided reads `REMOVAL_RULE[undefined]`,
+    // and `esc` printed it *undefined*, so `readBody`'s guard never fired
+    : esc((VALUE[c.k] && VALUE[c.k]()) || ''));
   // **A task you have to do needs no subtitle** (Ed, 2026-08-19: *subtitles
   // are there to help me make choices — if I have to do them, they don't need
   // extra information*; and on 📧, *the queue-card does not need "Not given
@@ -5534,6 +5546,15 @@
   const GATE_KEYS = ['canpropose', 'canjudge'];
   const gateSelfSet = (k) => GATE_KEYS.includes(k) && amFounder();
   const acked = (k) => S.okd.has(k) || gateSelfSet(k);
+  // **🪶 and 📍 are not drawn between the save and the pen's OK** (Ed, Q1560
+  // (5)): every rule from 🌍 on waits for the pen's OK already (`blocksOrder`),
+  // since a rule card the Founder cannot yet act on is a task they may not
+  // action; the first two had their tabs from the birth and kept them. Their
+  // clauses stand — they are what the document says — and only the tabs go,
+  // returning at the OK as an arrival (band.js marks the pile `data-born`,
+  // setup.js's `birthPass` fades it in). Members and strangers are untouched
+  const penTabsWithheld = (k) => (k === 'title' || k === 'slug') &&
+    !!cs && amFounder() && !constituted() && !acked('grant-pen');
   // a member who has not yet accepted 🏛️ is shown neither 💡 ✏️ nor ⚖️ (Q1540)
   const voiceUnaccepted = () => viewerIsMember() && !acked('grant-voice');
   const mayPropose = () => canPropose() && viewerIsMember() && acked('canpropose');
@@ -6253,16 +6274,20 @@
   // editing-card's own arrangement — you write the sentence in the place and
   // at the weight everybody else will read it in — with the founder's face
   // where a member's would be sealed.
+  // **Drawn exactly as a text proposal's rationale** (Ed, Q1560 (2)): the
+  // editing card's speaker slot — the face, then the sentence, no name line
+  // and no heading — with the face the signed form (`draftFaceHtml`'s
+  // `.spkface`), since a Founder's change is attributed by construction (T25).
+  // Only the words are its own: *I am changing this because…*
   const founderSpeakerLane = (v) => {
     const f = founderInfo();
     // raised like every other rationale composer (Ed's QA, 2026-09-02 pm):
     // the lanebox is what whyLane wraps a member's reason in
-    return '<div class="lanebox whylane"><div class="speaker founderspoke">' + avHtml(f) +
-      '<div class="spksaid"><span class="who">' + esc((f.n || '').trim() || PAGE_COPY.theFounder) +
-      ' <span title="' + PAGE_COPY.crownHand + '">' + glyphHtml('👑') + '</span></span>' +
+    return '<div class="lanebox whylane"><div class="speaker">' +
+      '<span class="spkface" title="' + esc(window.COPY.grammar.draftFace.signed) + '">' + avHtml(f) + '</span>' +
       '<div class="said edit-why' + (v ? '' : ' blank') + '" contenteditable="plaintext-only"' +
       ' spellcheck="false" data-setwhy="1"' +
-      ' data-placeholder="' + PAGE_COPY.whyChangingPlaceholder + '">' + esc(v) + '</div></div></div></div>';
+      ' data-placeholder="' + PAGE_COPY.whyChangingPlaceholder + '">' + esc(v) + '</div></div></div>';
   };
   const mvalTyped = (k, disp) => {
     if (card(k) && card(k).door) return null; // membership sentences parse at commit
@@ -7765,6 +7790,8 @@
       // pile in the record's place, and opens alone as a record does
       if (c.power || c.ansFor || c.record || c.mailgiveup || c.departure ||
         c.held) return [c];
+      // 🪶 and 📍 wear no tabs between the save and the pen's OK (Q1560 (5))
+      if (penTabsWithheld(c.k)) return [];
       // the Proposals opening is one clause carrying four tabs (Q748): the
       // group is the same whichever of the four you come in by, and `para`
       // opens the card at 🍾's paragraph for any of them
@@ -8256,7 +8283,8 @@
   const BND = window.BAND.make({
     S, M, SESSION, PAGE_COPY, CC, ctx, band, rail, BIRTH, PW_KEYS, DKEY, DELEGABLE, CHOSEN,
     TYPED, ANSTYPED, PROPOSE, snaps, ADM_RULE, AUTH_RULE, CHAMBER_RULE, JUDG_RULE,
-    REMOVAL_RULE, ENDING_NEVER, WHAT, OPTHEADLESS, EMAIL_OK, SLUG_OK, penWaitTitle,
+    REMOVAL_RULE, ENDING_NEVER, WHAT, OPTHEADLESS, EMAIL_OK, SLUG_OK, penWaitTitle, MANAGED_KEYS,
+    openCardDirty: (...a) => openCardDirty(...a),
     get cs() { return cs; },
     get strCtx() { return strCtx; },
     get WAL() { return WAL; },
@@ -9089,6 +9117,14 @@
     if (ev.target.closest('[data-revert]')) {
       const own = cardKeys();
       return closeThen(() => { revertSnap(own); S.open = null; });
+    }
+    // **the standing pill, chosen again, cancels the change** (1541.47): it is
+    // the chosen option of the card's own group, so pressing it puts the card
+    // back to what stands — the bin's act, with the card left open (Q1541
+    // stage 3a)
+    if (ev.target.closest('[data-standpick]')) {
+      revertSnap(cardKeys());
+      return render();
     }
     // 📨 names its own act like every other control on a commit row (Q522)
     if (ev.target.closest('[data-resend]')) return sendAndClose();
@@ -10014,6 +10050,9 @@
         return { kind: 'para', key: k, html: c.isGrant ? foundedClause() : ctx.headFor(c) };
       }
       if (shellRelease(c)) return { kind: 'para', key: k, html: ctx.headFor(card('begin')) };
+      // stage 3a's settings cards: the paragraph's own sentence, settled or
+      // not, without its powers line — an answer card's is its setting's
+      if (BND.settingKind(c)) { const l = BND.lineOf(c); return l == null ? null : { kind: 'rule', key: k, html: l }; }
       const html = c && bandKindOf(c) === 'rule' && ctx.headFor ? ctx.headFor(c, true) : null;
       return html == null ? null : { kind: 'rule', key: k, html }; },
     // what this reader owes a card: *Accept* on a grant or gate still to be
@@ -10021,6 +10060,7 @@
     // (1541.8 (a)); and nothing on one not yet open, whose commit is not
     // drawn at all (.19)
     owed: (k) => { const c = card(k);
+      if (BND.settingKind(c)) return BND.settingOwed(c);
       if (shellRelease(c)) return releaseBatch(c.release) ? { kind: 'ok', attrs: ' data-ok="' + esc(k) + '"', word: 'OK' } : null;
       if (!ackOwed(c)) return null;
       return { kind: 'accept', cls: 'grantok', attrs: ' data-ok="' + esc(k) + '"',
@@ -10028,6 +10068,7 @@
     // what this reader may send: 🍾's commit, the Founder's alone and only
     // before the start, dark while the membership is still answering
     acts: (k) => { const c = card(k);
+      if (BND.settingKind(c)) return BND.settingActs(c);
       if (!shellAck(c) || !c.isBegin || constituted() || !amFounder()) return [];
       const rd = readinessOf();
       const can = !rd || rd.ready;
@@ -10040,6 +10081,7 @@
         until: can ? null : 'readiness', note: can ? null : beginWaiting(rd) }]; },
     present: (k, st, hints) => {
       const c = card(k);
+      if (BND.settingKind(c)) return BND.settingPresent(c, hints);
       if (shellRelease(c) && st.place) {
         const b = releaseBatch(c.release);
         return {
@@ -10416,6 +10458,14 @@
           if (q.motion === id && q.status === 'pending') cs.answerCrownQuestion(now(), q.id, 'accept');
         }
       } catch (e) { console.warn('[fixture motion]', e && e.message); }
+    }
+    // **the page's own fields follow what now stands** (Q1541 stage 3a), as a
+    // founder's own ✒️ and a live hydration both leave them: a field still
+    // holding the value ⏩ seeded read as a change nobody had made, pre-filled
+    // under the standing rule it no longer equalled (F6)
+    for (const mid of new Set(FIX.MOTIONS.map((m) => m.payload.setting))) {
+      const st = csState(pkeyOf(mid));
+      if (st && st.value != null) { try { fieldsOf(mid, st.value, S); } catch (e) { /* a value the page has no field for */ } }
     }
   }
   // **the closed fixture closes the way a live document does** (Q1541.42, Ed

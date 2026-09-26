@@ -121,10 +121,16 @@ if (!ENGINES[BROWSER]) {
  * fixture (the session fixture seats no stranger at a band), so the fast
  * pass takes it beside the four fixture walks — it needs the in-page ⏩ and
  * no server. `--walk=all` leaves it out, `outsiders` already walking it.
+ *
+ * **`founding` and `answers`** join the fast pass for the same reason (Q1541
+ * stage 3a): 📧 at the birth (`birth-email`) lives on the founding drive
+ * alone and a blind answer (`answer`) on the answers drive alone, and a held
+ * kind no card was measured as is a broken walk. Both are in-page drives
+ * over the file fixture, no server.
  */
 const ALL_WALKS = ['founding', 'answers', 'delegated', 'settled', 'outsiders', 'charter', 'closed', 'sessionband', 'closedband', 'stranger'];
 const DEFAULT_WALKS = ALL_WALKS.slice(0, 7);
-const FIXTURE_WALKS = ['charter', 'closed', 'sessionband', 'closedband', 'stranger'];
+const FIXTURE_WALKS = ['founding', 'answers', 'charter', 'closed', 'sessionband', 'closedband', 'stranger'];
 const WALK_ARG = arg('walk', DEFAULT_WALKS.join(','));
 const WALKS = (WALK_ARG === 'all' ? ALL_WALKS.filter((w) => w !== 'stranger') : WALK_ARG === 'fixture' ? FIXTURE_WALKS : WALK_ARG.split(',')).filter(Boolean);
 /**
@@ -158,6 +164,17 @@ const GRAMMAR_KINDS = [
   'gate',
   'begin',
   'park',
+  // stage 3a (Q1541): the band's settings — the Founder's own card at the
+  // birth, in the founding and live with the pen (`setting`); the rule read
+  // by somebody who cannot choose it, and any settings card while its news
+  // is owed (`watching`); a blind question put to a member (`answer`); and
+  // 📧 before the save (`birth-email`). The fast pass meets `setting` and
+  // `watching` on `sessionband` and `closedband`; the birth, the founding and
+  // the answers are the founding walks'
+  'setting',
+  'watching',
+  'answer',
+  'birth-email',
 ];
 /**
  * **The stage the build has reached, and the stage each check turns strict
@@ -166,7 +183,7 @@ const GRAMMAR_KINDS = [
  * has not come is reported, never held (Q1541 stage 2: the grants and 🍾 are
  * opened on the closed band too, where P29 is stage 7's).
  */
-const STAGE = 2;
+const STAGE = 3;
 const STRICT_FROM = { 'closed-page': 7, 'closed-keeps-content': 7, 'closed-powers': 7, 'zone-overlap': 8, 'place-head': 6 };
 const KINDS_ARG = arg('kinds', null);
 const KINDS = KINDS_ARG == null ? null
@@ -771,6 +788,14 @@ const IN_PAGE = () => {
     for (let n = w.currentNode; n; n = w.nextNode()) {
       const host = n.nodeType === 3 ? n.parentElement : n;
       if (!host || host.closest(NOT_CONTENT) || (skip && host.closest(skip))) continue;
+      // **a box is a first line too** (Q1541 stage 3a): a head that is a field
+      // with nothing typed in it yet — 🪶's title box at the birth, 📧's address
+      // before the mail — draws no text run, and its line is the box itself
+      if (n.nodeType === 1 && n.matches('input:not([type="hidden"]), textarea, [contenteditable="true"], [contenteditable="plaintext-only"]') &&
+          !(n.value || n.textContent || '').trim() && isVis(n, el.parentElement)) {
+        const r = n.getBoundingClientRect();
+        if (r.width && r.height) return [R2(r.left + window.scrollX), R2(r.top + window.scrollY), R2(r.width), R2(r.height)];
+      }
       if (n.nodeType === 1) {
         if (!(String(n.tagName).toLowerCase() === 'svg' && n.getAttribute('data-char'))) continue;
         if (!isVis(n, el.parentElement)) continue;
@@ -1109,9 +1134,12 @@ const IN_PAGE = () => {
         .map((b) => ({ t: tokenOf(b), title: b.title || null, disabled: !!b.disabled })) }));
     // an unsent value on the card
     out.unsent = [...card.querySelectorAll('input, textarea')].some((i) =>
-      !/^(radio|checkbox|hidden|file|range|color|button|submit)$/.test(i.getAttribute('type') || i.type) && i.value && i.value.trim()) ||
+      !/^(radio|checkbox|hidden|file|range|color|button|submit)$/.test(i.getAttribute('type') || i.type) && i.value && i.value.trim() &&
+      // a value the machine put in a field that nobody has touched — 📍's
+      // suggested address at the birth (Q534 (c)) — is nobody's draft
+      !(i.dataset.machine != null && i.value === i.dataset.machine)) ||
       [...card.querySelectorAll('[contenteditable="true"], [contenteditable="plaintext-only"]')].some((e) => (e.textContent || '').trim()) ||
-      !!card.querySelector('[data-draft]');
+      !!card.querySelector('[data-draft]') || card.matches('[data-draft]');
     out.bins = controls.filter((c) => /🗑/.test(c.tok)).map((c) => ({ title: c.title, inRow: c.inRow,
       // Q1541 stage 0 (P24): dark or lit, and whether it carries words
       disabled: c.disabled, word: c.tok.replace(/🗑️?/gu, '').trim() }));
@@ -2146,7 +2174,11 @@ function p13Rules(c, at) {
       dy = -Math.max(0, room - (a.scrollY || 0));
     } else {
       room = b.room || 0;
-      dy = a.line ? Math.max(0, r2((a.glass || 0) + room - a.line[1])) : 0;
+      // a blank paragraph — 📧's before the mail (Q1541 stage 3a) — draws no
+      // line to read; its line stands where its tab says, the open card's
+      // own first line keeping the same distance from the pressed tab
+      const aLine = a.line || (a.glyph && b.glyph && b.line ? [b.line[0], r2(a.glyph[1] + b.line[1] - b.glyph[1])] : null);
+      dy = aLine ? Math.max(0, r2((a.glass || 0) + room - aLine[1])) : 0;
     }
     const sub = e.sub === 'page-top' || (e.sub !== 'close' && dy > GLASS_TOL) ? 'page-top' : e.sub;
     const bits = [];
@@ -2197,7 +2229,8 @@ function grammarRules(c, ref) {
     const why = isRecord ? 'a record heads with the wording it recorded'
       : /^patch-/.test(c.key) ? 'a multi-place proposal heads with the place it shows'
       : /insert-anchor/.test(before.para) ? 'a gap heads with (no text here)'
-      : c.key === 'title' && c.walk === 'founding' ? '🪶 at the birth heads with the title box'
+      // (on any walk that meets the birth — the founding and answers walks both do)
+      : c.key === 'title' && /titlepara/.test(String(before.para)) ? '🪶 at the birth heads with the title box'
       : null;
     if (!g.head) at('head-registration', 'no head element on the card (closed paragraph ' + before.para + ': “' + clip(before.ptext, 60) + '”)', 'missing');
     else {
