@@ -2923,6 +2923,30 @@
     background: var(--ok-subtle); border-color: var(--ok); color: var(--ok);
     box-shadow: inset 0 2px var(--s1) rgba(25, 135, 84, 0.28);
   }
+  /* **A card on a heading stands as the heading stood** (Q1541 stage 6,
+     `onHead` in cards.js): a heading carries no clause padding above its
+     words and centres its tab on its first line (`.docline` above), so the
+     head that replaces it does the same — the words and the tab keep their
+     places on the glass when it opens (P13, P14) */
+  .gshell .clausehead .headclause.onhead { padding-top: 0; --line: calc(var(--h3) * var(--lh-text)); }
+  .gshell .clausehead .headclause.onhead.lvl1 { --line: calc(var(--h1) * var(--lh-head)); }
+  .gshell .clausehead .headclause.onhead.lvl2 { --line: calc(var(--h2) * var(--lh-text)); }
+  .gshell .clausehead .headclause.onhead .chipcol { top: calc((var(--line) - 30px) / 2); }
+  /* **…and a gap's card stands as the gap stood**: the held-open gap carries
+     its tab flush with its top (Q1334), so the head that replaces it does */
+  .gshell .clausehead .headclause:not([data-key]) .chipcol { top: 0; }
+  /* **The judgment's ✓ is accent blue when armed** (1541.50, Q1541 stage 6):
+     green means *decided* (principle 7), and an armed ✓ has decided
+     nothing yet — so it takes the accent every other armed act wears, and
+     only the recorded ✓ above keeps the green, the judgment being on the
+     record. SURFACE §9.1's *the one solid green on a card* is corrected with
+     it. The band's glyph commits are their own stages' */
+  .btn.btn-approve.glyphbtn[data-act="submit"]:not([disabled]):not([aria-pressed="true"]) {
+    background: var(--primary); border-color: var(--primary); color: #fff;
+  }
+  .btn.btn-approve.glyphbtn[data-act="submit"]:not([disabled]):not([aria-pressed="true"]):hover {
+    background: var(--primary-hover); border-color: var(--primary-hover); color: #fff;
+  }
 
   /* What you already said, and that you may still change it. Under the commit
      row (Ed, 215), so it reads as a footnote to the button. */

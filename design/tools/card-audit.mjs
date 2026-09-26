@@ -2402,7 +2402,9 @@ function grammarRules(c, ref) {
   const anyCommit = (g.rows || []).some((r) => r.tokens.some((t) => tokNorm(t.t) !== '🗑'));
   for (const k of g.controls || []) {
     if (k.green) at('role-drawing', 'a button on solid --ok green: “' + clip(k.tok || k.el, 30) + '”', 'green');
-    if (!k.disabled && k.inkGreen && tokNorm(k.tok) === '✓') at('role-drawing', 'an armed ✓ drawn green', 'green-tick');
+    // …a recorded ✓ keeps its green (answers Part 5 (7): *green means decided
+    // … a recorded ✓*; 1541.13 (c)), so the pressed ✓ is not an armed one
+    if (!k.disabled && !k.on && (k.inkGreen || k.green) && tokNorm(k.tok) === '✓') at('role-drawing', 'an armed ✓ drawn green', 'green-tick');
     if (k.radio && (k.disabled || !anyCommit)) at('role-drawing', 'a radio “' + clip(k.tok, 30) + '” on a block nobody may choose' + (k.on ? ' (pressed)' : ''), 'unchoosable');
   }
 

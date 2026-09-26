@@ -178,7 +178,7 @@
   let AUTHOR_RUNG = () => null;
   let SIGNER_PERSON = () => null;
   const {
-    laneBarHtml, clauseHeadHtml, proposalHtml, commitRowHtml, vinBlockHtml, commitBarHtml, reviseNote,
+    laneBarHtml, clauseHeadHtml, proposalHtml, commitRowHtml, vinBlockHtml, commitBarHtml, judgeActs, reviseNote,
     laneBoxHtml, draftFaceHtml, collapseCard, expandCard, openCardEls, runOnCards,
     collapseCards, expandCards, stillRef, restoreStill, keepStill,
   } = window.CARDS.make({
@@ -2402,6 +2402,80 @@
       (p.underNote ? '<span class="rsub">' + esc(p.underNote) + '</span>' : '') +
       (p.refusal ? '<span class="rsub">' + esc(p.refusal) + '</span>' : '')
     : '');
+  // ---- the charter's judgment cards on the one shell (Q1541 stage 6) -----
+  // **A judgment card is built from `CardState`** like the records before it:
+  // *Current text* above the clause, which stands where its paragraph stood
+  // with its own lane where the current text is one of the choices; each
+  // proposal a block whose label is its first line (*Proposed*, *Proposed by
+  // ‹name›*, *Proposed by you* — answers Part 4 .8–.10); Indifferent the
+  // last block; the ✓ (and ❄️ on 🔥) in the one row, no 🗑️ (Q1500). Notes
+  // that are about the card — the race's *neither has to win*, a changed
+  // wording, a park, a shifted ground — are its body; a refusal is the row's
+  // note (grammar §2.6). The closed page's cards stay on today's builders
+  // until stage 7.
+  const judgeKinds = (s) => !!s && !docClosed && stateOf(s) !== 'sealed' && !stuck(s) &&
+    (s.kind === 'quick' || s.kind === 'race');
+  const whoLabel = (by, mine) => {
+    const W = window.COPY.shell;
+    if (mine) return W.proposedByYou;
+    const n = by && typeof by === 'object' ? by.n : by;
+    return n ? W.proposedBy(n) : W.proposed;
+  };
+  const refusalNote = (s) => (refusedSay.has(s.id)
+    ? '<div class="foot refusal" role="alert">' + esc(refusedSay.get(s.id)) + '</div>' : null);
+  const bodyOf = (html) => (html ? { html } : null);
+  // the rank of the heading a key names, or nothing where it is a clause
+  const headRank = (key) => {
+    const line = key && DOC ? DOC.find((l) => l.key === key) : null;
+    return line && line.t === 'h' ? (line.level ?? 1) : 0;
+  };
+  function judgePresent(s, st, hints) {
+    const W = window.COPY.shell;
+    const key = (hints && hints.siteKey) || (s.keys ?? [])[0];
+    const frame = (cls) => ({ cls: 'sugg ' + cls,
+      attrs: ' data-card="' + esc(s.id) + '" data-site="' + esc(key || '') + '"' + laneGroupAttrs(s, key) });
+    const kind = isJudged(s) ? 'judged' : s.isInsert ? 'insert' : s.kind;
+    if (s.kind === 'race') {
+      const cur = runTextFor(s, key);    // the run's text, as the head reads it (Q1308)
+      return {
+        kind,
+        frame: frame('race-open'),
+        label: { text: W.currentText },
+        // this pair is two challengers, so the clause carries no lane: a
+        // judgment is of two candidates (Q1362 (a))
+        head: { html: clauseHeadHtml(s, Object.assign(headOpts(s, key), { chips: chipsFor(key, s.id), label: null, fact: 'place',
+          onHead: headRank(key) })) },
+        body: bodyOf(reviseNote(s) + parkNote(s) + '<div class="foot">' + T.race.foot + '</div>'),
+        options: { html:
+          proposalHtml(s, { v: 'a', html: wordingHtml(cur, s.race.a.text), why: s.race.a.rationale, by: s.race.a.by,
+            label: whoLabel(s.race.a.by, s.race.a.mine), labelFact: s.race.a.by ? 'author' : null }) +
+          proposalHtml(s, { v: 'b', html: wordingHtml(cur, s.race.b.text), why: s.race.b.rationale, by: s.race.b.by,
+            label: whoLabel(s.race.b.by, s.race.b.mine), labelFact: s.race.b.by ? 'author' : null }) +
+          vinBlockHtml(s) },
+        rowNote: refusalNote(s),
+      };
+    }
+    // quick (including insert): the current text is a candidate in the field,
+    // so the head carries its lane (Q1362 (a)); a proposed section has no
+    // clause to edit into, so neither lane offers ✏️ (Q261)
+    const noEdit = s.isInsert ? false : undefined;
+    const prop = s.isInsert
+      ? (s.newHeading ? '<div class="rtext"><ins>' + esc(s.newHeading) + '</ins></div>' : '') +
+        '<div class="rtext">' + laneHtml(s.marked) + '</div>'
+      : laneHtml(s.marked);
+    return {
+      kind,
+      frame: frame('quick-open'),
+      label: { text: W.currentText },
+      head: { html: clauseHeadHtml(s, Object.assign(headOpts(s, key), { v: 'keep', edit: noEdit,
+        chips: chipsFor(key, s.id), label: null, fact: 'place', onHead: headRank(key) })) },
+      body: bodyOf(groundNote(s) + reviseNote(s) + parkNote(s)),
+      options: { html: proposalHtml(s, { v: 'approve', html: prop, why: s.rationale, by: s.by, edit: noEdit,
+        label: whoLabel(s.by, false), labelFact: s.by ? 'author' : null }) + vinBlockHtml(s) },
+      rowNote: refusalNote(s),
+    };
+  }
+
   window.CARD_STATE.register('charter', {
     owns: (id) => !!SUGGS && SUGGS.some((g) => g.id === id),
     card: (id) => {
@@ -2423,9 +2497,15 @@
       const s = SUGGS.find((g) => g.id === id);
       return s && stateOf(s) === 'sealed' && !s.amendment && !s.fold ? recordFacts(s) : null;
     },
-    // the fragments a shell record needs, drawn by this column's own renderers
-    present: (id, st) => {
+    // what this reader may send from a judgment card: the ✓, and ❄️ on 🔥
+    acts: (id) => {
       const s = SUGGS.find((g) => g.id === id);
+      return judgeKinds(s) ? judgeActs(s) : [];
+    },
+    // the fragments a shell record needs, drawn by this column's own renderers
+    present: (id, st, hints) => {
+      const s = SUGGS.find((g) => g.id === id);
+      if (judgeKinds(s)) return judgePresent(s, st, hints);
       // **the room's side of a park, on the one shell** (Q1541 stage 2;
       // SURFACE E36): *Current text* above the clause the membership passed a
       // change to, the park's one sentence, and OK only while it is owed — no
@@ -3315,6 +3395,8 @@
     // Q1367): the two judgment cards below draw the item's own pair and
     // nothing of any other pair on the race — the other pairs are their own
     // tabs in the clause's stack.
+    // on the one shell since Q1541 stage 6 (`judgePresent`, above the source)
+    if (judgeKinds(s)) return window.CARD_SHELL.cardHtml(window.CARD_STATE.stateOf(s.id, { siteKey }));
     const sv = s;
     if (sv.kind === 'race') {
       // The clause, which this card had never shown (Ed, QA 2026-08-16) — a
@@ -4418,6 +4500,8 @@ document.addEventListener('paste', (ev) => {
         // greyed rather than absent (Ed, 2026-08-16): the corner keeps its
         // shape from the moment the card opens
         submit.disabled = now === null;
+        // …and the reason it waits goes with it (P22, Q1541 stage 6)
+        if (now === null) submit.setAttribute('data-until', 'choose'); else submit.removeAttribute('data-until');
         const cast = isJudged(s) && now !== null && now === committedOf(s);
         submit.setAttribute('aria-pressed', String(cast));
         submit.title = cast ? window.COPY.grammar.commit.cast
@@ -4731,7 +4815,15 @@ document.addEventListener('paste', (ev) => {
     const d = draftOf();
     if (d && d.id === id && d.focusKey) return '[data-key="' + d.focusKey + '"]';
     const t = wireTargets(id);
-    if (!t.length) return null;
+    // **a heading is a clause too** (Q1541 stage 6): the wires land on
+    // paragraphs, so a card on a heading had nothing held and the label's
+    // room pushed the heading down instead of the content above up — its
+    // own tab's line is what stands for it
+    if (!t.length) {
+      const own = doc.querySelector('.achip[data-anchor="' + id + '"]');
+      const k = own && own.closest('[data-key]');
+      return k ? '[data-key="' + k.dataset.key + '"]' : null;
+    }
     const el = topTarget(t);
     return el.dataset.key ? '[data-key="' + el.dataset.key + '"]'
       : el.classList.contains('insert-anchor') ? '.insert-anchor[data-anchor="' + id + '"]'
@@ -4928,6 +5020,12 @@ document.addEventListener('paste', (ev) => {
         // stood, so it is held there.
         const heldEl = hold ? doc.querySelector(hold) : null;
         const heldTop = heldEl ? heldEl.getBoundingClientRect().top : null;
+        // …and on the one shell, the anchor's own tab: the card's strip hangs
+        // off its head as the anchor's did, so the tab is what stands still
+        // (Q1541 stage 6; P13, *the tab you click does not move*)
+        const heldTab = heldEl && heldEl.classList.contains('insert-anchor')
+          ? heldEl.querySelector('.achip[data-anchor="' + next + '"]') : null;
+        const heldTabTop = heldTab ? heldTab.getBoundingClientRect().top : null;
         // **A switch inside one strip holds the tab clicked** (Q1524 (a), Ed
         // 2026-09-24; M12, *the tab you click does not move*). Holding the
         // clause is not enough: a record's head stands a dateline row lower
@@ -4947,7 +5045,13 @@ document.addEventListener('paste', (ev) => {
           if (Math.abs(drift) > 0.5) scrollTo(0, scrollY + drift);
         } else if (heldTop !== null && !doc.querySelector(hold)) {
           const born = [...doc.querySelectorAll('.sugg')].find((c) => c.dataset.card === next);
-          const drift = born ? born.getBoundingClientRect().top - heldTop : 0;
+          // a card on the one shell stands its head where the anchor stood,
+          // its label in the room made above (Q1541 stage 6, space-above)
+          const shell = born && window.CARD_SHELL.isShell(born);
+          const bornTab = shell && heldTabTop !== null ? born.querySelector('.clausehead .achip[data-anchor="' + next + '"]') : null;
+          const at = shell ? born.querySelector('.clausehead .headclause') || born : born;
+          const drift = bornTab ? bornTab.getBoundingClientRect().top - heldTabTop
+            : at ? at.getBoundingClientRect().top - heldTop : 0;
           if (Math.abs(drift) > 0.5) scrollTo(0, scrollY + drift);
         }
         // **space-above** (Q1541 stage 1, 1541.44): the hold above kept the
@@ -4987,6 +5091,10 @@ document.addEventListener('paste', (ev) => {
       // the clause where it is while the card leaves (cards.js)
       const shellTop = shellHc ? shellHc.getBoundingClientRect().top : null;
       const shellSel = shellHc ? '[data-key="' + shellHc.dataset.key.replace(/["\\]/g, '\\$&') + '"]' : null;
+      // a gap's card has no clause to hold (Q1379: it replaced its anchor), so
+      // its tab is what goes back to the anchor still (Q1541 stage 6)
+      const gapTab = shellEl && !shellHc ? shellEl.querySelector('.clausehead .achip[data-anchor="' + closing + '"]') : null;
+      const gapTabTop = gapTab ? gapTab.getBoundingClientRect().top : null;
       collapseCards(closing, () => {
         if (!alive()) return;
         openId = null;
@@ -4994,6 +5102,11 @@ document.addEventListener('paste', (ev) => {
           renderAll();
           const p = doc.querySelector(shellSel);
           const drift = p ? p.getBoundingClientRect().top - shellTop : 0;
+          if (Math.abs(drift) > 0.5) scrollTo(0, scrollY + drift);
+        } else if (gapTabTop !== null) {
+          renderAll();
+          const t = doc.querySelector('.achip[data-anchor="' + closing + '"]');
+          const drift = t ? t.getBoundingClientRect().top - gapTabTop : 0;
           if (Math.abs(drift) > 0.5) scrollTo(0, scrollY + drift);
         } else keepStill(() => renderAll());
         thenMove();
