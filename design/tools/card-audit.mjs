@@ -2929,6 +2929,8 @@ async function glassPress(page, key, sub) {
   }, [key, P13_ROOM, sub]);
 }
 const pageTopDone = new Set();
+/** the shortfall reading, once per walk and per kind built on the shell */
+const shortDone = new Set();
 async function pageTopPass(page, key, walk, p13, errors) {
   if (pageTopDone.has(walk)) return;
   pageTopDone.add(walk);
@@ -3015,6 +3017,28 @@ async function openAndMeasure(page, key, cardSel, walk, cards, errors) {
         if (op.pressed) {
           await wait(page, 300);
           p13.push({ sub: 'open', a: op.a, b: await page.evaluate((k) => window.__CA.glassOpen(k), key) });
+          /* **Where room runs out** (Q1541 stage 1; answers Part 6.4): the
+           * page top is not the only place the scroll cannot give the room —
+           * a first line just under the topbar is another, and the walk's
+           * first card may have all the room it needs at scroll 0 (the
+           * band's does). So once per walk and per kind built on the one
+           * shell, the card is opened again with its first line 10px under
+           * the glass, where it must come down by the shortfall and its
+           * label land clear of the topbar — read as P13's page-top case. */
+          if (m.shellKind && !shortDone.has(walk + '·' + m.shellKind)) {
+            shortDone.add(walk + '·' + m.shellKind);
+            await page.evaluate((k) => window.__CA.closeOpenCard(k), key);
+            await wait(page, 220);
+            const sh = await page.evaluate((k) => {
+              const C = window.__CA;
+              C.placeFor(k, 10);
+              const a = C.glassClosed(k);
+              return { a, why: C.pressTab(k) };
+            }, key);
+            await wait(page, 300);
+            if (sh.why) { p13.push({ sub: 'page-top', unread: sh.why }); await clickIn(); await wait(page, 300); }
+            else p13.push({ sub: 'page-top', short: true, a: sh.a, b: await page.evaluate((k) => window.__CA.glassOpen(k), key) });
+          }
         } else {
           p13.push({ sub: 'open', unread: op.why });
           await clickIn();
@@ -4005,6 +4029,24 @@ async function walkCharter(page, base, cards, errors, { closed, doors, rails, st
           await page.evaluate((k) => window.__CA.closeOpenCard(k), id);
           await wait(page, 120);
           if (await page.evaluate(() => window.__CA.openCardEl())) errors.push(walk + ': ' + id + ' did not close after P13\'s open');
+          // where room runs out (answers Part 6.4), as `openAndMeasure`
+          // reads it: once per walk and per kind built on the one shell
+          else if (m.shellKind && !shortDone.has(walk + '·' + m.shellKind)) {
+            shortDone.add(walk + '·' + m.shellKind);
+            const sh = await page.evaluate((k) => {
+              const C = window.__CA;
+              C.placeFor(k, 10);
+              const a = C.glassClosed(k);
+              return { a, why: C.pressTab(k) };
+            }, id);
+            await wait(page, 300);
+            if (sh.why) p13.push({ sub: 'page-top', unread: sh.why });
+            else {
+              p13.push({ sub: 'page-top', short: true, a: sh.a, b: await page.evaluate((k) => window.__CA.glassOpen(k), id) });
+              await page.evaluate((k) => window.__CA.closeOpenCard(k), id);
+              await wait(page, 120);
+            }
+          }
         } else p13.push({ sub: 'open', unread: op.why });
       }
     }
