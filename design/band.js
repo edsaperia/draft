@@ -978,6 +978,8 @@ window.BAND = (function () {
       // glyphed commit. One implementation since Q1475, the admission card
       // having needed the same row: the pair groups at the far right, the
       // veto immediately left of the pen (Ed, 2026-09-02, Q1154).
+      // the band's kinds built on the one shell, stage by stage (BUILD.md §4)
+      const SHELL_KINDS = new Set(['grant', 'gate', 'begin', 'release']);
       const crownPairRow = () => (amFounder()
         ? binBtn() + '<span class="rightpair">' +
           '<button class="btn glyphbtn emojibtn" data-crownq="reject"' +
@@ -987,6 +989,12 @@ window.BAND = (function () {
         : binBtn());
       const cardFor = (g) => {
         const c = card(S.open);
+        // **A card on the one shell** (Q1541 stage 2): the kinds a stage has
+        // converted — the grants, the gates and 🍾 — are built from their
+        // `CardState` by card-shell.js, the strip handed over as the pile this
+        // card opened from; every other kind falls through to its own body
+        const shelled = window.CARD_STATE.stateOf(c.k, { siblings: g.cards });
+        if (SHELL_KINDS.has(shelled.kind)) return glyphify(window.CARD_SHELL.cardHtml(shelled));
         // A card the room owns keeps its own body — choosing to hand it over is
         // the founder's decision and stays editable — and grows a **watching**
         // half underneath, which is the whole of what anybody may see of a blind
@@ -1111,15 +1119,18 @@ window.BAND = (function () {
             g.cards);
         }
         // **A mail that gave up, in one card** (SURFACE E34): the addresses the
-        // pass could not reach, stated once, taking one OK. The commit row is
-        // the release card's — 🗑️ and an OK — a give-up having happened rather
-        // than been decided.
+        // pass could not reach, stated once, taking one OK — a give-up having
+        // happened rather than been decided. **The OK alone, no 🗑️** (Q1541
+        // stage 2, 1541.9): nothing on it can ever be put back, so the bin
+        // never has a job here, and once nothing is owed there is no row
+        // (1541.8 (a)). Its own shell waits on the Members list's anchor,
+        // stage 5's question, as the departure card's does.
         if (c.mailgiveup) {
           const b = mailGiveUpBatch(c.mailgiveup);
           if (!b) return cardHtml(c, ctx, '<p class="why">This is no longer outstanding.</p>',
-            binBtn(), g.cards);
+            null, g.cards);
           return cardHtml(c, ctx, mailGiveUpBody(b),
-            binBtn() + '<button class="btn btn-approve okbtn" data-ok="' + esc(c.k) + '">OK</button>',
+            '<button class="btn btn-approve okbtn" data-ok="' + esc(c.k) + '">OK</button>',
             g.cards);
         }
         // **A departure, in one card** (SURFACE E31, E32, E40; Q901): the
