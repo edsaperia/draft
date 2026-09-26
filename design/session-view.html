@@ -1884,6 +1884,12 @@
     el.querySelectorAll('[data-txt]').forEach((b) => ks.add(b.dataset.txt));
     el.querySelectorAll('[data-num]').forEach((b) => ks.add(b.dataset.num));
     el.querySelectorAll('[data-ans]').forEach((b) => ks.add('ans:' + b.dataset.ans));
+    // …and an answer typed rather than chosen — a number, a date, a unit —
+    // so the bin can see it and put it back (Q1541 stage 3a: the bin lights
+    // once there is something of yours on the card, 1541.9)
+    el.querySelectorAll('[data-ansnum]').forEach((b) => ks.add('ans:' + b.dataset.ansnum));
+    el.querySelectorAll('[data-ansdate]').forEach((b) => ks.add('ans:' + b.dataset.ansdate));
+    el.querySelectorAll('[data-ansunit]').forEach((b) => ks.add('ans:' + b.dataset.ansunit + 'Unit'));
     // …and a date rung's pending kind (issue #75 F1), which it writes beside
     // the answer rather than into it
     el.querySelectorAll('[data-ans][data-ansval="date"]').forEach((b) => ks.add('ans:' + b.dataset.ans + 'Kind'));
@@ -8193,7 +8199,8 @@
   const BND = window.BAND.make({
     S, M, SESSION, PAGE_COPY, CC, ctx, band, rail, BIRTH, PW_KEYS, DKEY, DELEGABLE, CHOSEN,
     TYPED, ANSTYPED, PROPOSE, snaps, ADM_RULE, AUTH_RULE, CHAMBER_RULE, JUDG_RULE,
-    REMOVAL_RULE, ENDING_NEVER, WHAT, OPTHEADLESS, EMAIL_OK, SLUG_OK, penWaitTitle,
+    REMOVAL_RULE, ENDING_NEVER, WHAT, OPTHEADLESS, EMAIL_OK, SLUG_OK, penWaitTitle, MANAGED_KEYS,
+    openCardDirty: (...a) => openCardDirty(...a),
     get cs() { return cs; },
     get strCtx() { return strCtx; },
     get WAL() { return WAL; },
@@ -9026,6 +9033,14 @@
     if (ev.target.closest('[data-revert]')) {
       const own = cardKeys();
       return closeThen(() => { revertSnap(own); S.open = null; });
+    }
+    // **the standing pill, chosen again, cancels the change** (1541.47): it is
+    // the chosen option of the card's own group, so pressing it puts the card
+    // back to what stands — the bin's act, with the card left open (Q1541
+    // stage 3a)
+    if (ev.target.closest('[data-standpick]')) {
+      revertSnap(cardKeys());
+      return render();
     }
     // 📨 names its own act like every other control on a commit row (Q522)
     if (ev.target.closest('[data-resend]')) return sendAndClose();
@@ -9941,6 +9956,9 @@
         return { kind: 'para', key: k, html: c.isGrant ? foundedClause() : ctx.headFor(c) };
       }
       if (shellRelease(c)) return { kind: 'para', key: k, html: ctx.headFor(card('begin')) };
+      // stage 3a's settings cards: the paragraph's own sentence, settled or
+      // not, without its powers line — an answer card's is its setting's
+      if (BND.settingKind(c)) { const l = BND.lineOf(c); return l == null ? null : { kind: 'rule', key: k, html: l }; }
       const html = c && bandKindOf(c) === 'rule' && ctx.headFor ? ctx.headFor(c, true) : null;
       return html == null ? null : { kind: 'rule', key: k, html }; },
     // what this reader owes a card: *Accept* on a grant or gate still to be
@@ -9948,6 +9966,7 @@
     // (1541.8 (a)); and nothing on one not yet open, whose commit is not
     // drawn at all (.19)
     owed: (k) => { const c = card(k);
+      if (BND.settingKind(c)) return BND.settingOwed(c);
       if (shellRelease(c)) return releaseBatch(c.release) ? { kind: 'ok', attrs: ' data-ok="' + esc(k) + '"', word: 'OK' } : null;
       if (!ackOwed(c)) return null;
       return { kind: 'accept', cls: 'grantok', attrs: ' data-ok="' + esc(k) + '"',
@@ -9955,6 +9974,7 @@
     // what this reader may send: 🍾's commit, the Founder's alone and only
     // before the start, dark while the membership is still answering
     acts: (k) => { const c = card(k);
+      if (BND.settingKind(c)) return BND.settingActs(c);
       if (!shellAck(c) || !c.isBegin || constituted() || !amFounder()) return [];
       const rd = readinessOf();
       const can = !rd || rd.ready;
@@ -9971,6 +9991,7 @@
         until: can ? null : 'readiness', note: can ? null : beginWaiting(rd) }]; },
     present: (k, st, hints) => {
       const c = card(k);
+      if (BND.settingKind(c)) return BND.settingPresent(c, hints);
       if (shellRelease(c) && st.place) {
         const b = releaseBatch(c.release);
         return {
@@ -10347,6 +10368,14 @@
           if (q.motion === id && q.status === 'pending') cs.answerCrownQuestion(now(), q.id, 'accept');
         }
       } catch (e) { console.warn('[fixture motion]', e && e.message); }
+    }
+    // **the page's own fields follow what now stands** (Q1541 stage 3a), as a
+    // founder's own ✒️ and a live hydration both leave them: a field still
+    // holding the value ⏩ seeded read as a change nobody had made, pre-filled
+    // under the standing rule it no longer equalled (F6)
+    for (const mid of new Set(FIX.MOTIONS.map((m) => m.payload.setting))) {
+      const st = csState(pkeyOf(mid));
+      if (st && st.value != null) { try { fieldsOf(mid, st.value, S); } catch (e) { /* a value the page has no field for */ } }
     }
   }
   // **the closed fixture closes the way a live document does** (Q1541.42, Ed
