@@ -6,6 +6,15 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-09-26, later afternoon: who is in, who is asking, who has left
+
+### Changed
+- **The list of members reads in plain groups.** Somebody invited who has not yet followed their link is listed with the members, tagged *invited*. Every vote still running on letting somebody in, whether a member proposed them or they applied, is listed under **Applications for Membership**.
+- **Members who have left are listed under Alumni**, each with their picture and the day they left, in place of a sentence at the foot of the list. Leaving the membership now starts from the Alumni heading.
+- **A tag beside a name only says what its heading does not**, and no tag looks as though it can be pressed.
+- **A new power's task reads the same words as its card**, such as *Accept Proposals*, until you accept it.
+- **The Begin card says in one short line why it cannot start yet**, beside its button, and has no 🗑️.
+
 ## 2026-09-26, afternoon: one way to separate, one way to choose
 
 ### Changed
