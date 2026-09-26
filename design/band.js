@@ -970,8 +970,9 @@ window.BAND = (function () {
       // change, not for the road it takes. `founderProposal` reads it here.
       if (amFounder() && env.cs && founderDirect(cc) && isChange(k) && !motionOn(cc) && !membersHold(cc)) {
         const v = (S.setWhy && S.setWhy[k]) || '';
-        return '<div class="body whyset"><p class="eyebrow fieldlab">' + PAGE_COPY.whyChangingLabel + '</p>' +
-          founderSpeakerLane(v) + '</div>';
+        // no heading over it (Q1560 (2)): its placeholder is its words, as on
+        // a text proposal's rationale
+        return '<div class="body whyset">' + founderSpeakerLane(v) + '</div>';
       }
       // anybody else, reading what happened: what changed, and their reason
       const am = lastAmendment(k);
@@ -1178,7 +1179,7 @@ window.BAND = (function () {
         // the reason box, on a card that can take a change (1541.21 (b)) —
         // the lane's own placeholder is its words, so no label stands over it
         const why = changeHalf(c);
-        if (why) input += why.replace(/<p class="eyebrow fieldlab">[^<]*<\/p>/, '');
+        if (why) input += why;
         body = founderPairNote(c) + (c.knote ? '<p class="setnote">' + c.knote + '</p>' : '');
       } else if (kind === 'watching' && stateOf(c, ctx) === 'news') {
         const n = newsParts(c);

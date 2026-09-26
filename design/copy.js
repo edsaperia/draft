@@ -1244,9 +1244,8 @@ window.COPY = (function () {
     },
     theFounder: 'The Founder',
     crownHand: 'The founder’s own hand — a Founder Action ✒️, not a proposal',
-    // the founder's own rationale lane on a settled card: the field's label,
-    // and the placeholder in the lane beneath it
-    whyChangingLabel: 'Why are you changing this?',
+    // the founder's own rationale lane on a settled card: its placeholder,
+    // which is its words — no heading stands over it (Q1560 (2))
     whyChangingPlaceholder: 'I am changing this because…',
     clerkNoPencil: 'You are not a member, so there is no ✏️ for you to spend — this one is yours to set.',
     nothingToPut: 'That could not be proposed: nothing is chosen on this card.',

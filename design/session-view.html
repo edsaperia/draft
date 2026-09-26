@@ -6262,16 +6262,20 @@
   // editing-card's own arrangement — you write the sentence in the place and
   // at the weight everybody else will read it in — with the founder's face
   // where a member's would be sealed.
+  // **Drawn exactly as a text proposal's rationale** (Ed, Q1560 (2)): the
+  // editing card's speaker slot — the face, then the sentence, no name line
+  // and no heading — with the face the signed form (`draftFaceHtml`'s
+  // `.spkface`), since a Founder's change is attributed by construction (T25).
+  // Only the words are its own: *I am changing this because…*
   const founderSpeakerLane = (v) => {
     const f = founderInfo();
     // raised like every other rationale composer (Ed's QA, 2026-09-02 pm):
     // the lanebox is what whyLane wraps a member's reason in
-    return '<div class="lanebox whylane"><div class="speaker founderspoke">' + avHtml(f) +
-      '<div class="spksaid"><span class="who">' + esc((f.n || '').trim() || PAGE_COPY.theFounder) +
-      ' <span title="' + PAGE_COPY.crownHand + '">' + glyphHtml('👑') + '</span></span>' +
+    return '<div class="lanebox whylane"><div class="speaker">' +
+      '<span class="spkface" title="' + esc(window.COPY.grammar.draftFace.signed) + '">' + avHtml(f) + '</span>' +
       '<div class="said edit-why' + (v ? '' : ' blank') + '" contenteditable="plaintext-only"' +
       ' spellcheck="false" data-setwhy="1"' +
-      ' data-placeholder="' + PAGE_COPY.whyChangingPlaceholder + '">' + esc(v) + '</div></div></div></div>';
+      ' data-placeholder="' + PAGE_COPY.whyChangingPlaceholder + '">' + esc(v) + '</div></div></div>';
   };
   const mvalTyped = (k, disp) => {
     if (card(k) && card(k).door) return null; // membership sentences parse at commit
