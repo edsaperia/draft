@@ -1214,10 +1214,30 @@ window.COPY = (function () {
       invite: 'Nobody has been invited yet.',
       remove: 'Nobody is proposed for removal.',
     },
-    // the chip on an invitation still being decided (Q1370): the row stands
-    // under *Invitees* and in ✉️'s head from the moment the motion is put
-    doorPending: {
-      invite: 'proposed',
+    // **The Membership subsections** (F21; Q1557, Ed 2026-09-26): an
+    // invitation sent stands under *Members*, and every vote still running on
+    // letting somebody in — a member's proposal to invite and a stranger's
+    // own application alike — under *Applications for Membership*
+    memHeads: {
+      members: 'Members',
+      applications: 'Applications for Membership',
+      lapsed: 'Lapsed',
+      removal: 'Proposed for removal',
+    },
+    // the grey row a subsection that carries a control stands on when empty
+    memEmpty: {
+      applications: '(no applications at the moment)',
+      removal: '(nobody proposed for removal)',
+    },
+    // **A tag says only what its heading does not** (Q1557 (c)): *invited*
+    // on an invitation sent and not yet followed, *email failed* in its place
+    // on the Founder's page where the mail gave up (E34), *lapsed* only under
+    // *Proposed for removal*, and *you* on your own row
+    memTags: {
+      invited: 'invited',
+      emailFailed: 'email failed',
+      lapsed: 'lapsed',
+      you: 'you',
     },
     theFounder: 'The Founder',
     crownHand: 'The founder’s own hand — a Founder Action ✒️, not a proposal',
