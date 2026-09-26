@@ -16,9 +16,11 @@ overnight mandate and its running log, stage 8's log, the design-day backlog,
 the hosting and domain notes, the stage write-ups as they stood — is
 `design/DECISIONS.md` § *PRODUCTION.md, the history lifted 2026-09-07*.
 
-## Where it stands (2026-09-22)
+## Where it stands (2026-09-26)
 
-docs.vote has served the product since 2026-08-20 — one Render service, the
+**Since the 2026-09-22 paragraph below.** The P1 batch Ed ruled that day shipped, and the open GitHub issues stand at **43, 3 of them P1** (#86 the operator docs, #67 links spent by previews, #10 the bot key's reach) — all three **after the redesign**, by Ed's word of 2026-09-26. The demo document (`docs.vote/d/demo`, `design/DEMO.md`) is live, stages 1–5. The **surface redesign** (Q1541, `design/redesign/BUILD.md`) is the main line of work — *full speed ahead* (Ed, 2026-09-26): stages 0–2 are live at `0e2039e5` (deploy-2026-09-26e), stage 3a is building. Stage 19's supervised sittings wait for it: **the next human rooms sit after redesign stage 10** (Ed, 2026-09-26). How changes ship changed the same day: **the eight gates alone before a push** (Q1545), the walks on CI after it, and a **sprint tier that runs on every push carrying a merge**, holding the guards the 2026-09-26 audit found had caught nothing in four weeks (Q1546, Q1547) — CLAUDE.md's CI bullet is the rule.
+
+**As it stood on 2026-09-22.** docs.vote has served the product since 2026-08-20 — one Render service, the
 alpha home (481 (a)), from Postgres since 23:30 that night with no disk
 (498 (b)), mail from `mail.docs.vote` via Resend, the operator mailed at every
 birth. CI deploys on green and verifies the live host afterwards, so **a push
