@@ -6,6 +6,11 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-09-26, night: the phone's task sheet shows what's next
+
+### Changed
+- **On a phone, the lowered task sheet shows your most urgent task as its own card**, in its colour and with its progress filled in, rather than a line of text. Tap it to open it; tap *+n more*, swipe up or press ≣ to see the rest.
+
 ## 2026-09-26, early: a faster restart
 
 ### Changed
