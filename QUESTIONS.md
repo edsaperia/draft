@@ -145,6 +145,7 @@ What it needs a ruling on is the evidence. A revision is a **new candidate**: an
 
 | # | Title | Raised | State | Pointers |
 |---|---|---|---|---|
+| 1554 | boot-guard re-seeds each run, so its before/after compares different sets | 2026-09-26 | **open** — condition to act: the guard audit (1546) is taken up | `boot-guard`; `design/DECISIONS.md` *Q1553 closed* |
 | 1549 | The rationale first: above the wording in each proposal block | 2026-09-25 | **raised by Ed, open** — condition to act: before redesign stage 6 starts (the stage that rebuilds these cards) | `proposal-block`, `sealed-speaker`; `design/redesign/BUILD.md` stage 6; answers.md principle 1 |
 | 1550 | Comments with votes: deliberation that later voters see | 2026-09-25 | **raised by Ed, open** — readings (a) about the proposal, never the vote · (b) shown only after you vote · (c) to the author only; condition to act: Ed picks a reading, before redesign stage 6 starts | SPEC §3.5 (blindness); `participant-api`; Q94 |
 | 1551 | Amendments per hour: the throughput number, measured after every live room | 2026-09-25 | **raised in discussion, open** — condition to act: Ed rules | `event-log`; the nh2026 and demo logs; `alpha-preset`'s `alive` |
@@ -232,7 +233,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1554** — claim by writing the block here, then commit it alone.
+**The next free number is 1555** — claim by writing the block here, then commit it alone.
+
+**1554 is boot-guard's moving sample** (claimed 2026-09-26, the Q1553 builder's finding 2). The guard seeds its ten documents afresh on every run and the seeding is not deterministic — 13,299 entries at 7c1aa381, 9,698 at main, 10,709 on the fix — so its medians compare different sets and cannot show a regression by themselves (the fix was measured on a kept set instead: 6,226 → 8,375 → 2,112 ms). A committed set or a fixed seed would make it a fair before/after. The builder's finding 3 rides with it: the next replay cost is `buildRaceGroups`, the O(n²) footprint union-find rebuilt each state version (~22% of the fixed replay), predating Smith. Condition to act: the guard audit (1546) is taken up.
 
 **1552 is an amendments counter on the demo screen** (claimed 2026-09-25, from the positioning discussion). One plain number, *amendments decided this session*, on the spectator feed or the demo panel's screen: the room watching it climb while they vote is the pitch against the huddle, felt rather than explained. The same number as 1551. Condition to act: Ed rules.
 
