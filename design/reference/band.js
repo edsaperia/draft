@@ -1225,6 +1225,9 @@ window.BAND = (function () {
     // can end up showing zero.
     function renderBand() {
       drawBand();
+      // the open shell card's row and pill against its fields, now that they
+      // are in the page (`syncShellRow`)
+      if (S.open) syncShellRow(card(S.open));
       // **…and after the birth the title stands in both places** (Ed,
       // 2026-09-16: *I want the title both at the top of the document above
       // the constitution and also at the top of the text*): from 🍾 the row
@@ -2083,6 +2086,17 @@ window.BAND = (function () {
       // (1541.47) — so a keystroke that makes the card differ from what
       // stands lights the one and releases the other, in place, and the
       // commit's `data-until` follows its state
+      syncShellRow(c);
+    }
+    /** the shell's row and pill, corrected in place against what is on the
+     *  open card. Asked on every keystroke (`refreshCommit`) **and after
+     *  every band render**: the dirty test reads the card's own fields
+     *  (`cardKeys()`), which are not in the page while the shell builds the
+     *  markup — so a card reopened holding a value you typed and closed on
+     *  (closing is not discarding, C3) was drawn with its bin dark and its
+     *  pill pressed, and the 🗑️ could not put it back (journey L9, *build
+     *  hand*; Q1541 stage 3a) */
+    function syncShellRow(c) {
       const sh = c && settingKind(c) && document.querySelector('.setupcard.gshell[data-setupcard="' + c.k + '"]');
       if (sh) {
         const dirty = openCardDirty();
