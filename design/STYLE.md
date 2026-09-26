@@ -162,14 +162,17 @@ Glyph names are stable (tabulated 2026-09-07, Q1208; the founding order's own gl
   grants; Ed, 2026-09-15, Q1374, for the gates' *Open* and a settled rule's
   value beneath its name).
 - **T3 · A settled card's head is the rule, not the task's name**; open
-  questions, 🪪, 📝, personal cards and answers keep the title (`headFor`).
+  questions, 📝, personal cards and answers keep the title (`headFor`) — 🪪
+  opens under *Current rule* like every settings card since Q1541 stage 3b.
   **A settings card opens with its paragraph's sentence as its first line,
   under the label *Current rule*** (answers.md 1541.3, 1541.46 (a), Part 4
   .3; Q1541 stage 3a, replacing Q1151's headless option-block card): *The
   Founder is deciding …* before a first decision, the rule once it stands,
   wearing its pill; the options follow beneath, and the task's name stays on
   the rail entry and the tab — the ask is the label only on a question card
-  (🪶 and 📧 at the birth). **Nor does a heading-over-text card carry a title head** (Ed,
+  (🪶 and 📧 at the birth, 🎩 before the Founder answers) and on a power card,
+  whose first line is that power's own clause naming its subject — *The
+  Founder may amend the proposal rate at will.* (1541.48; Q1541 stage 3b). **Nor does a heading-over-text card carry a title head** (Ed,
   2026-09-15, Q1373): the grants ✒️ 🛡️ open as the strip, the paragraph and
   OK, and 🏛️ 💡 ⚖️ head with the Proposals clause, their rule. The card's name
   survives on the rail entry, the tab tooltip and the record.
