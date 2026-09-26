@@ -116,7 +116,7 @@ describe('the login door (Q1341)', () => {
     expect(r.status).toBe(429);
     // another client at the same door is not refused
     expect((await login(base, slug, 'seat201@example.org', { 'cf-connecting-ip': '198.51.100.43' })).status).toBe(200);
-  });
+  }, 20_000);   // 201 real logins: near vitest's 5 s default alone, and past it twice under load on 2026-09-26
 });
 
 /**
