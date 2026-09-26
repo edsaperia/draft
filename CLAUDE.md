@@ -455,6 +455,7 @@ The post-mortems: what broke, why it broke, and the shape of the mistake so it i
 - **A record owed its OK was in neither half of the strip** (Ed, 2026-09-24, the green tab): the live half is unsealed and the filed half is read, so an unread ✔ stood only as the open card's own tab, and clicking the grey tab beside it dropped it. Guard: `card-audit` P11.
 - **A tap on a phone's darkened ground fell through to the document** (building the `task-sheet`, 2026-09-24): Chromium hit-tests a touch's click after the pointerup that took the ground away, so the click reached the clause beneath. The page eats it now. Guard: `npm run drawer-walk`.
 - **An OK opens the next thing owed, so pressing that card's entry shuts it** (Q1536's walk, 2026-09-25): eight walks that pressed an entry and then its OK, card by card, stalled on the second, its grant never accepted. The shared `open` and `openCard` leave an open card open; a walk with its own press must too. Guards: `npm run journey`, `review-walk`.
+- **A card's markup cannot read its own fields, which are not in the page yet** (Q1541 stage 3a, 2026-09-26): the shell drew a reopened settings card's bin from `cardKeys()`, found nothing, and a value left on it could not be binned; `syncShellRow` corrects the row after every render. Guard: `npm run journey`'s L9 and *build hand*.
 
 ## The spec pass
 
