@@ -15,6 +15,15 @@
  *   node scripts/copy-check.mjs            # static: copy.js against its own golden, milliseconds
  *   node scripts/copy-check.mjs --walk     # the Playwright walk against card-copy.golden.json
  *   node scripts/copy-check.mjs --update   # refresh the active mode's golden on purpose
+ *   node scripts/copy-check.mjs --walk --raw-only   # the walk's raw-value rule alone, no golden
+ *
+ * **`--raw-only`** (Q1546 (c), Ed 2026-09-26): the golden comparison runs in
+ * the sprint tier now, since a copy change reddens it on purpose and it had
+ * caught no page defect at the push; the **raw-value** rule below — no
+ * *undefined* / *NaN* printed on any card — is a page defect whatever the
+ * golden says, so it stays at the push, in CI's `probe` job, under this
+ * flag. Same walk, same payload, same verdict on a raw value; it stops
+ * before the golden is read or written, and implies `--walk`.
  *
  * **Two modes, two goldens, two failure classes** (Ed, 2026-09-05, Part 3 of
  * the copy brief). Since the move, every member-readable string lives in
@@ -25,7 +34,8 @@
  * see is what the page *does* with the words — a string dropped from a card,
  * shown twice, or interpolated wrongly — and that stays the **walk** mode's
  * job, behind `--walk`: the original ~3-minute card-audit drive against
- * `card-copy.golden.json`, in CI's `probe` job as ever. `npm run copy-freeze`
+ * `card-copy.golden.json`, in the sprint tier since Q1546 (its raw-value rule
+ * at the push, under `--raw-only`, below). `npm run copy-freeze`
  * refreshes both.
  *
  * **Why a script of its own** rather than a `--strings` mode of `card-audit`,
@@ -60,7 +70,12 @@ import vm from 'node:vm';
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const GOLDEN = join(ROOT, 'design', 'tools', 'card-copy.golden.json');
 const update = process.argv.includes('--update');
-const walkMode = process.argv.includes('--walk');
+const rawOnly = process.argv.includes('--raw-only');
+const walkMode = rawOnly || process.argv.includes('--walk');
+if (rawOnly && update) {
+  console.error('--raw-only reads no golden, so there is nothing for --update to refresh');
+  process.exit(2);
+}
 
 /**
  * The static mode: `design/copy.js`, flattened and frozen. Every string is
@@ -301,6 +316,11 @@ if (rawHits.length) {
   console.log(`\nraw-value: ${new Set(rawHits).size} rendered string(s) carry a raw value — a page defect, never a copy ` +
     'change to freeze (Q1541, BUILD.md §2)');
   process.exit(1);
+}
+if (rawOnly) {
+  console.log(`raw-value: none on ${seen.size} cards over ${Object.keys(byWalk).length} walks ` +
+    `(--raw-only: the copy golden is the sprint tier's, Q1546)`);
+  process.exit(0);
 }
 const sortKeys = (o) => Object.fromEntries(Object.keys(o).sort().map((k) => [k, o[k]]));
 const cards = sortKeys(Object.fromEntries(Object.entries(byWalk).map(([w, ks]) => [w, sortKeys(ks)])));

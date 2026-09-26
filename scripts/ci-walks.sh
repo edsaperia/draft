@@ -372,6 +372,17 @@ case "$GROUP" in
     # until Q1546; about 27 s each
     walk "founding-walk --takeback=applications" node scripts/founding-walk.mjs --takeback=applications
     walk "founding-walk --takeback=chamber" node scripts/founding-walk.mjs --takeback=chamber
+    # **The copy golden** (entry 128; Q1546 (c)): every card's strings on
+    # every walk, keyed by walk and card key, against
+    # design/tools/card-copy.golden.json. A STYLE.md pass is a snapshot and
+    # nothing pinned a card's words between passes, so the next change
+    # silently undid the last audit; now a copy change is red here until
+    # `npm run copy-freeze`, and that freeze's diff is what the next pass
+    # reads. **Expect red after an intentional copy change** — that is the
+    # point, not a defect. Its own `copy-walk` job at the push until Q1546;
+    # its raw-value rule stays at the push, in ci.yml's `probe` job, as
+    # `copy-check --walk --raw-only`. About eight and a half minutes
+    walk "copy-check --walk" npm run copy-check -- --walk
     ;;
 esac
 
