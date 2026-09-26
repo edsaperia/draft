@@ -115,8 +115,10 @@ Glyph names are stable (tabulated 2026-09-07, Q1208; the founding order's own gl
   settled clause is the rule and its provenance (*As for a meeting.*) on one
   line, and the Founder's powers over it (*The Founder may amend this at
   will…*) on the line beneath — so a reader who wants the substantive part
-  reads the first line and stops (Ed, 2026-08-28, entry 198). The opened
-  card's head shows the same two lines.
+  reads the first line and stops (Ed, 2026-08-28, entry 198). **The opened
+  card drops the powers line** (1541.10 (a); built on the settings cards in
+  Q1541 stage 3a): its first line is the rule alone, wearing who chose it as
+  its pill (T48), the powers being the ✒️ 🛡️ tabs' own cards.
 
 ## 4. Titles and labels
 
@@ -161,11 +163,13 @@ Glyph names are stable (tabulated 2026-09-07, Q1208; the founding order's own gl
   value beneath its name).
 - **T3 · A settled card's head is the rule, not the task's name**; open
   questions, 🪪, 📝, personal cards and answers keep the title (`headFor`).
-  **A settings card whose option blocks state the rule carries no head at all**
-  (Ed, 2026-09-02, card review, Q1151): since CP1 every block says completely
-  what the title restated, so the head goes from every option-block settings
-  card — founding and settled alike, its rule reading as its first block
-  (Q1167). **Nor does a heading-over-text card carry a title head** (Ed,
+  **A settings card opens with its paragraph's sentence as its first line,
+  under the label *Current rule*** (answers.md 1541.3, 1541.46 (a), Part 4
+  .3; Q1541 stage 3a, replacing Q1151's headless option-block card): *The
+  Founder is deciding …* before a first decision, the rule once it stands,
+  wearing its pill; the options follow beneath, and the task's name stays on
+  the rail entry and the tab — the ask is the label only on a question card
+  (🪶 and 📧 at the birth). **Nor does a heading-over-text card carry a title head** (Ed,
   2026-09-15, Q1373): the grants ✒️ 🛡️ open as the strip, the paragraph and
   OK, and 🏛️ 💡 ⚖️ head with the Proposals clause, their rule. The card's name
   survives on the rail entry, the tab tooltip and the record.
@@ -175,8 +179,10 @@ Glyph names are stable (tabulated 2026-09-07, Q1208; the founding order's own gl
 - **T20 · A shared body must not hard-code one caller's frame** — the quorum
   body takes the form (count or share) rather than assuming one.
 - **T21 · Read-only copy must survive the spec it summarises.** "Fixed for the
-  life of the document" predated motions and was false; the lockline says what
-  changing a setting actually takes, by kind.
+  life of the document" predated motions and was false. **The lockline goes
+  from the settings cards** (1541.14 (a); Q1541 stage 3a): who chose a rule is
+  its pill (T48), and what changing it takes is the constitution's preamble
+  and the card's own commits.
 - **T22 · Section headings carry no intro prose.**
 - **T17 · The price is said in words exactly once**, at the act: *the edit is
   spent at Propose*. Nowhere else repeats it — the flying pencil teaches it.
@@ -273,6 +279,6 @@ The rules the audit log (§7) audits against, lifted from CLAUDE.md's glossary a
 | T45 | **A card body says what the thing is, never what the control does** (Ed, 2026-09-01, Q1129: *You don't even have to say “nothing is being asked here”; just say what proposals/voting/✏️/✒️ are and then they can press OK*). No sentence in a body names its own commit, states what pressing it will do, or says that nothing is being asked — a reader who has just been told what a power **is** needs no instruction to press OK, and a sentence about the power is true whether or not the card has been acknowledged, which is what stops a body going stale when a button changes. **One exception, by ruling** (Q1502, Ed 2026-09-22): the 🏛️ grant's body says what activating it opens. It **narrows T43's task carve-out rather than closing it**: what the card is waiting for, and that *It comes back to you the moment it opens*, are about the card's own queue and stay — what leaves is the **commit**, named or described (item 78) | `gateNote`, `grantNote`; the five gate and grant bodies; SURFACE §9's gates and grants rows |
 | T46 | **Clause text wears the clause font wherever it is read, including inside a control** (Ed's QA, 2026-09-02, Q1136: *all clause text in radio options should be in clause font*). A sentence the document will carry is set in `--t-body` at the document's own weight whether it is standing in the charter, offered as an option block, offered as a ladder rung, typed in a composer lane or read back in a strip — the same words in one typography, which is the **typographic half of T43**: a constitution that speaks for itself does not change its voice when it is being chosen. Its second half is the exception, and the exception is marked rather than inferred: **a control's own word is not clause text** — *Fixed*, *Rising*, *Never*, *At a set time*, *I set it*, *They lapse*, *Kept*, *Admit them*, *A number of my own*, a shape's title, a consent answer — and keeps `--t-ui`/600. Marked on the exception, so an option carrying a clause is right by default. And a number that stands **inside** a clause is a word in it, not a field beneath it (Q1137) | `setup.css`'s `.pick .opttext`, `.opttext.ctl` and `.numin`; `ctlWord` and `numIn` in `design/setup.js`; item 79 |
 | T47 | **A button offering an act wears its glyph alone; a button reporting what already happened says so in words** (Ed, 2026-09-02, Q1155 as narrowed by Q1171). So ✏️ Propose → **✏️**, 🍾 Begin → **🍾**, 🏛️ Ask all members → **🏛️** — and **✏️ Submitted** keeps its word, being the row's only report that the proposal is in (K18); the mover's **🗑️** on both motion cards is the glyph alone since 2026-09-05 (Ed: *not have the text "withdraw" on the button itself*, then *yes* to the ordinary card matching), the word surviving only in its tooltip. **OK** keeps its word, having no glyph (T18). Sits beside T44: the glyph is still a promise about what pressing it does; this rule only strips the word that repeated the promise | every commit row; SURFACE §9.1 |
-| T48 | **A radio names the act it stands for, and a standing rule names who chose it** (Ed, 2026-09-05, Q1182 and Q1188; Q1377, 2026-09-15). On the consent card of a constitutional motion the three blocks read **Prefer this** on the rule that stands and on the rule proposed alike — the standing text is a peer since Q1362, so its radio reads like its rival's — and **Indifferent** on its own textless block, the act-naming form the race card already uses (*Keep this* and *Abstain* went with Q1377: *Keep should be Prefer*). And provenance has exactly **two labels, everywhere it is read**: ***Chosen by the membership*** and ***Chosen by the Founder ✒️*** — one wording for a founder-set value before the start and after it, so the record card's *Chosen by Founder Action ✒️* goes | the consent picks; `chosenRadio`; SURFACE §9.3 CP2 |
+| T48 | **A radio names the act it stands for, and a standing rule names who chose it** (Ed, 2026-09-05, Q1182 and Q1188; Q1377, 2026-09-15). On the consent card of a constitutional motion the three blocks read **Prefer this** on the rule that stands and on the rule proposed alike — the standing text is a peer since Q1362, so its radio reads like its rival's — and **Indifferent** on its own textless block, the act-naming form the race card already uses (*Keep this* and *Abstain* went with Q1377: *Keep should be Prefer*). And provenance has exactly **two labels, everywhere it is read**: ***Chosen by the membership*** and ***Chosen by the Founder ✒️*** — one wording for a founder-set value before the start and after it, so the record card's *Chosen by Founder Action ✒️* goes. **On the one shell the label is the standing pill on the first line** (1541.47; Q1541 stage 3a): the words are these two, the drawing the chosen radio of the card's group | the consent picks; `chosenRadio`; SURFACE §9.3 CP2 |
 | T49 | **An erased person stands as `[redacted]`, the one bracketed string on the surface** (Ed, 2026-09-08, Q1287 (b), choosing the word over *withdrawn*). Where a name would be printed for a person whose row is gone — the register, the departures, the signatures, a named author's speaker line, the door — the page prints `[redacted]` under the anonymous disc. Every other stand-in is name-shaped (*Anonymous*, *The Founder*, *A member, unnamed*); this one is not a name, and its typography says so: the brackets mean *not a name*, the lower case means *not a title*, and the word means the record was struck rather than that the person left — an erasure is a privacy act, not a departure. The one other string that wears brackets is the gap's head, *(no text here)* (Ed, 2026-09-15, Q1379, asked for by name — round brackets, an aside where a clause would stand); no copy pass re-shapes either | `PAGE_COPY.synth.redacted` (`design/copy.js`); `authorBy`, `inviteeHandle`, the register, the signatures and the door in `session-view.html`; `docs/OPERATING.md` §5 |
 | T50 | **A vote is never *paying*** (Ed, 2026-09-16, Q1400: *it's not normal to have language of "paying" meaning there having to be a vote*). Where an act needs the membership's decision the surface says so — *the membership will have to decide whether to re-admit you* — never that it *costs* or is *paid for*. Spending an edit from the ✏️ wallet is the one thing that costs, and the wallet's own strings may say so; a route through a vote is not a price on the surface, whatever the engine calls it | `PAGE_COPY.cards.leave.body`; the 🪪 and 🥾 ladders; the composer's route notes |
