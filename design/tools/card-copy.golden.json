@@ -1,6 +1,6 @@
 {
  "meta": {
-  "cards": 267,
+  "cards": 270,
   "walks": [
    "answers",
    "charter",
@@ -1837,6 +1837,23 @@
     ],
     "helpers": []
    },
+   "race-borrow": {
+    "eyebrow": "Rejected · Weekday, D Month, HH:MM",
+    "head": "The Library Corner holds the Club’s books, which may be borrowed by any member for as long as they are being read and no longer.",
+    "lock": "",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisProposed · 57%The Library Corner holds the Club’s books, which may be borrowed by any member for a fortnight at a time, and for longer if nobody else has asked.“As long as they are being read” is how the good atlas has been on one bedside table since March. A fortnight is a date anybody can check.n of m members preferred the current text to thisProposed · 34%The Library Corner holds the Club’s books, which may be borrowed by any member who writes their name in the book on the shelf.Nobody minds how long a book is out. They mind not knowing who has it.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you never voted on this",
+     "n of m members preferred the current text to this"
+    ]
+   },
    "race-claims": {
     "eyebrow": "Passed · Weekday, D Month, HH:MM",
     "head": "A claim is made by writing in the book on the landing. A claim more than a month ahead may be displaced by a member with a nearer need, who tells the displaced member within a day and offers them the next free week.",
@@ -2416,6 +2433,40 @@
     ],
     "helpers": [
      "n of m weighed in · quorum was 5 · you approved the plainer wording"
+    ]
+   },
+   "race-beds": {
+    "eyebrow": "",
+    "head": "The beds nearest the wall are given over to whatever a member wishes to grow, one bed to a member, allotted each spring by the Garden Steward.",
+    "lock": "",
+    "body": "Previous textThe beds nearest the wall are given over to whatever a member wishes to grow, one bed to a member, for as long as they want it.46%The beds nearest the wall are given over to whatever a member wishes to grow, one bed to a member, allotted each spring by lot.A Steward choosing who gets a bed is a Steward being lobbied all winter.41%The beds nearest the wall are given over to whatever a member wishes to grow, one bed to a member, for as long as they tend it.Keep the bed while you keep it up; lose it when the weeds win.29%The beds nearest the wall are shared, and the Garden Steward keeps a list of what is growing where.One bed each is fourteen small beds. Two big ones would grow more.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you never voted on this",
+     "Passed when the document closed, voted against 2 of its 3 rivals"
+    ]
+   },
+   "race-borrow": {
+    "eyebrow": "",
+    "head": "The Library Corner holds the Club’s books, which may be borrowed by any member for as long as they are being read and no longer.",
+    "lock": "",
+    "body": "57%The Library Corner holds the Club’s books, which may be borrowed by any member for a fortnight at a time, and for longer if nobody else has asked.“As long as they are being read” is how the good atlas has been on one bedside table since March. A fortnight is a date anybody can check.n of m members preferred the current text to this34%The Library Corner holds the Club’s books, which may be borrowed by any member who writes their name in the book on the shelf.Nobody minds how long a book is out. They mind not knowing who has it.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "n of m weighed in · quorum was 5 · you never voted on this",
+     "n of m members preferred the current text to this"
     ]
    },
    "race-claims": {
