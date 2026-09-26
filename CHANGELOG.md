@@ -6,6 +6,11 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-09-26, early: a faster restart
+
+### Changed
+- **docs.vote comes back faster after an update.** Reloading every document when the service restarts now takes about a third of the time it did, so the pause while a new version goes live is shorter. Nothing in any document changes.
+
 ## 2026-09-26: catching up on a busy document
 
 ### Changed
