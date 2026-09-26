@@ -1083,6 +1083,9 @@ const IN_PAGE = () => {
         if (!(n.compareDocumentPosition(head.el) & Node.DOCUMENT_POSITION_FOLLOWING)) break;
         const host = n.nodeType === 3 ? n.parentElement : n;
         if (!host || host.closest(NOT_CONTENT) || !isVis(host, card.parentElement)) continue;
+        // a multi-place proposal's ↑ ↓ ride its label (answers Part 4 .7:
+        // *Current text · 2 of 3* with ↑ ↓) — part of the one label slot
+        if (host.closest('.glabslot .psteps')) continue;
         if (n.nodeType === 3) { if (n.nodeValue.trim()) above.push(n.nodeValue.trim()); }
         else if (n.matches('button, input, textarea, select, [role="radio"]')) above.push('[' + nameOf(n) + ']');
         else if (String(n.tagName).toLowerCase() === 'svg' && n.getAttribute('data-char')) above.push(n.getAttribute('data-char'));
@@ -1141,7 +1144,9 @@ const IN_PAGE = () => {
       // a value the machine put in a field that nobody has touched — 📍's
       // suggested address at the birth (Q534 (c)) — is nobody's draft
       !(i.dataset.machine != null && i.value === i.dataset.machine)) ||
-      [...card.querySelectorAll('[contenteditable="true"], [contenteditable="plaintext-only"]')].some((e) => (e.textContent || '').trim()) ||
+      // …the deadlock desk's blank lane is the clause as it stands, nobody's
+      // draft until the first keystroke opens one (Q1541 stage 6)
+      [...card.querySelectorAll('[contenteditable="true"]:not([data-deadlane]), [contenteditable="plaintext-only"]')].some((e) => (e.textContent || '').trim()) ||
       !!card.querySelector('[data-draft]') || card.matches('[data-draft]');
     out.bins = controls.filter((c) => /🗑/.test(c.tok)).map((c) => ({ title: c.title, inRow: c.inRow,
       // Q1541 stage 0 (P24): dark or lit, and whether it carries words
@@ -2451,7 +2456,10 @@ function grammarRules(c, ref) {
     // …a recorded ✓ keeps its green (answers Part 5 (7): *green means decided
     // … a recorded ✓*; 1541.13 (c)), so the pressed ✓ is not an armed one
     if (!k.disabled && !k.on && (k.inkGreen || k.green) && tokNorm(k.tok) === '✓') at('role-drawing', 'an armed ✓ drawn green', 'green-tick');
-    if (k.radio && (k.disabled || !anyCommit)) at('role-drawing', 'a radio “' + clip(k.tok, 30) + '” on a block nobody may choose' + (k.on ? ' (pressed)' : ''), 'unchoosable');
+    // …a patch's ✓ floats at the foot of the window (Q1382), one commit for
+    // every place, so its places' radios are choosable with no row of their own
+    const floats = !anyCommit && c.shellKind === 'patch';
+    if (k.radio && (k.disabled || (!anyCommit && !floats))) at('role-drawing', 'a radio “' + clip(k.tok, 30) + '” on a block nobody may choose' + (k.on ? ' (pressed)' : ''), 'unchoosable');
   }
 
   /* P27 closed-page (as measured): nothing enabled but the tabs, 🥂 and a
