@@ -145,7 +145,6 @@ What it needs a ruling on is the evidence. A revision is a **new candidate**: an
 
 | # | Title | Raised | State | Pointers |
 |---|---|---|---|---|
-| 1553 | Replay 27% slower since the Smith set: the boot guard red at 62% of the window | 2026-09-25 | **open** — condition to act: the next session opens, or docs.vote holds 30+ documents (`/healthz` `documents`), whichever first | `boot-guard`; `packages/engine-core/src/races.ts` (`pairCores`, `viewAt`); plan-scaling.md; REPORT-smith.md |
 | 1549 | The rationale first: above the wording in each proposal block | 2026-09-25 | **raised by Ed, open** — condition to act: before redesign stage 6 starts (the stage that rebuilds these cards) | `proposal-block`, `sealed-speaker`; `design/redesign/BUILD.md` stage 6; answers.md principle 1 |
 | 1550 | Comments with votes: deliberation that later voters see | 2026-09-25 | **raised by Ed, open** — readings (a) about the proposal, never the vote · (b) shown only after you vote · (c) to the author only; condition to act: Ed picks a reading, before redesign stage 6 starts | SPEC §3.5 (blindness); `participant-api`; Q94 |
 | 1551 | Amendments per hour: the throughput number, measured after every live room | 2026-09-25 | **raised in discussion, open** — condition to act: Ed rules | `event-log`; the nh2026 and demo logs; `alpha-preset`'s `alive` |
@@ -234,8 +233,6 @@ One reversal to expect if approval is built: it produces the **more legible reco
 ## Spent numbers
 
 **The next free number is 1554** — claim by writing the block here, then commit it alone.
-
-**1553 is replay slowed by the Smith set** (claimed 2026-09-25, from CI run 36182765799 on abac5c93). `boot-guard` replays ten seeded documents three times and scales the median to 60 documents at Render's estimated speed: **10,482 ms → 13,340 ms median (+27%)**, the projected boot **440 s → 560 s**, 62% of the 900 s health-check window against a 50% budget (at 7c1aa381 it read 49%, green). The Q1538 builder had measured building 400 judgments +21% on a crowded clause; replay pays it at every event. Not a live danger — docs.vote holds 8 documents — but the margin is spent. Likely ground: the per-pair cores and the Smith set recomputed in `viewAt` during replay, where a replay could derive once at the end. `boot-guard` is report-only (not a gate). Condition to act: the next session opens, or the fleet reaches 30 documents.
 
 **1552 is an amendments counter on the demo screen** (claimed 2026-09-25, from the positioning discussion). One plain number, *amendments decided this session*, on the spectator feed or the demo panel's screen: the room watching it climb while they vote is the pitch against the huddle, felt rather than explained. The same number as 1551. Condition to act: Ed rules.
 

@@ -140,7 +140,7 @@ describe('derived state is computed once per state version (Q1324)', () => {
     expect(cast.locked).toBe(false);
   });
 
-  it('and one judgment rebuilds the picture twice, not three times (Q1326)', () => {
+  it('and one judgment rebuilds the picture once, not three times (Q1326, Q1553)', () => {
     const s = open();
     seed(s);
     const api = new ParticipantApi(s, 'p4');
@@ -166,7 +166,13 @@ describe('derived state is computed once per state version (Q1324)', () => {
     // `usableComparisons` was computed twice per race per build. This is the
     // assertion that stops the memo being suspended again — every other test
     // in this file would stay green if it were.
-    expect(builds).toBe(2);
+    //
+    // **And none inside the fold since Q1553**: `raceOfPair` and `updatePeaks`
+    // want the race's members and ground, which the grouping answers without
+    // a picture (`groupOf`), so the one build left is the sweep's. A fold that
+    // went back to `races()` for them would read two again here — and every
+    // replay would pay a whole picture per judgment, which is what Q1553 cut.
+    expect(builds).toBe(1);
   });
 
   it('replays to the same state and the same derived picture', () => {
