@@ -7542,3 +7542,23 @@ Ed walked the builder's calls (a)–(l), numbered 1–12, the same evening. **As
 | 1545 | Stop gating pushes on the walk groups locally | 2026-09-25 | **ruled by Ed 2026-09-26: gates only**; closed with the CLAUDE.md CI bullet's *Before a push, locally* sentence | CLAUDE.md *Conventions* (CI bullet: *Before a push, locally*) |
 
 **1545 is local walk-gating before a push** (claimed 2026-09-25, the velocity batch). Ed, 2026-09-25 evening: *I am worried about the guard proliferation; development velocity has noticeably slowed over recent weeks* — and then *let's add these things to the backlog and we can do them in the next session*. Measured that evening: CLAUDE.md 145 KB loaded whole into every session and builder (~36k tokens), 120 mentions of a guard, 38 repro scripts, 36 walks across CI's walk groups, 109 test files, 58 npm scripts; a push needed about an hour of local walks. The mechanism: every post-mortem earns a guard and the eviction rule (Q736) evicts the paragraph, never the guard, so guards only accumulate. The frame is Ed's guiding light of the same evening (CLAUDE.md *V1 product decisions*): speed is the edge, and speed of changing the product is the project's. This item: before a push, the eight `ci` gates and `journey` only; the walk groups run on CI after the push as they always have, a red fixed forward. About an hour back per push; in the coordinator's hands, offered as the first of the four. The CLAUDE.md CI bullet's *Before a push, locally* sentence changes with it.
+
+## Q1549 closed: the rationale stays below the wording (2026-09-26)
+
+**Ed kept the order as it is.** Offered the rationale above each proposal's wording (the reason framing the judgment) or a collapsed excerpt above it, Ed chose *Keep it below*: the wording first, the rationale under it behind the sealed speaker, so a member judges the words and then reads why. Redesign stage 6 builds the judgment cards that way.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 1549 | The rationale first: above the wording in each proposal block | 2026-09-25 | **ruled by Ed 2026-09-26: keep it below**; closed | `proposal-block`, `sealed-speaker`; `design/redesign/BUILD.md` stage 6; answers.md principle 1 |
+
+**1549 is the rationale first** (claimed 2026-09-25; Ed: *when you read a proposal, make the rationale more prominent (above the texts instead of at the bottom?)*). The redesign's principle 1 keeps the clause as the card's first line, so the place is the top of each proposal block: label, the rationale, then the wording — the reason read first frames the diff and should make a judgment faster. Cautions: most proposals carry no rationale, so the slot must vanish cleanly (a hole reads as broken); a reason read first primes the judgment, which is the point of deliberation and a shift from judging the words alone. Redesign stage 6 rebuilds these cards, so decide before it starts.
+
+## Q1544 closed: the alpha flag left where it is (2026-09-26)
+
+**Ed: *ignore it*.** The alpha flag stays outside the page's landmarks; the audit's remaining `region` finding on it is accepted, not scheduled. Should PRODUCTION.md stage 13's landmark pass move it anyway, nothing here stands in its way.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 1544 | The alpha flag stands outside every landmark | 2026-09-25 | **ruled by Ed 2026-09-26: ignore it**; closed | `alpha-flag`; `design/REPORT-a11y-2026-09-25.md` finding 3 |
+
+**1544 is the alpha flag outside every landmark** (claimed 2026-09-25, from the Q1394 builder's finding 3). After Q1394 the audit's last `region` nodes are three per page: the dev stagehand's label and `#devwho`, which never ship, and the product's own *Warning: docs.vote is in alpha!* flag, which sits outside `header`, `nav`, `main` and `aside`, so a screen reader meets it stranded. Readings: (a) with PRODUCTION.md stage 13 (recommended — it is one element, and the stage owns landmark structure); (b) now, as a one-line fix inside a landmark or as `role="note"` in `main`. Raised in chat 2026-09-25 evening; Ed has not answered.
