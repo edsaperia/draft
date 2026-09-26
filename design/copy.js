@@ -1393,6 +1393,11 @@ window.COPY = (function () {
     begin: 'Begin',
     // .22 — 🍾's dark commit, waiting on the membership's answers
     waitingFor: (n) => 'Waiting for ' + n + (n === 1 ? ' member' : ' members') + ' to answer questions.',
+    // …and where no answer can end the wait (Q1556 (3), Ed 2026-09-26, his
+    // words with the verb made plural): a question handed to a membership of
+    // one (`one-voice`), and invitations not yet followed (`invitation-open`)
+    beginOneVoice: 'Delegated questions need at least two responses.',
+    beginInvited: 'Waiting for invited members to arrive.',
     // .1 — the label above a clause's first line (the park's, stage 2)
     currentText: 'Current text',
   };
