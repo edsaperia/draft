@@ -2941,13 +2941,13 @@
      moves by the label's room and no more */
   .sugg.gshell.onhead.lvl3 { margin-top: var(--s4); }
   .sugg.gshell.onhead.lvl2 { margin-top: var(--s5); }
-  .sugg.gshell.onhead.lvl1 { margin-top: calc(2 * var(--s5)); }
+  .sugg.gshell.onhead.lvl1 { margin-top: 48px; }
   /* a multi-place proposal's ↑ ↓ ride its label (answers Part 4 .7), at the
      label's right, their feet on its line */
   .gshell > .glabslot.hassteps { display: flex; justify-content: space-between; align-items: flex-end; gap: var(--s2); }
   /* **…and a gap's card stands as the gap stood**: the held-open gap carries
      its tab flush with its top (Q1334), so the head that replaces it does */
-  .gshell .clausehead .headclause:not([data-key]) .chipcol { top: 0; }
+  .sugg.gshell.ongap .clausehead .headclause .chipcol { top: 0; }
   /* **On a phone the tabs stand flush with the glass** (1541.20 (a), Ed
      2026-09-25: *the tabs can touch the left edge on mobile, and highlight
      instead of move when they're active*; Q1541 stage 6). The column's

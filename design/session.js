@@ -2414,7 +2414,7 @@
   // note (grammar §2.6). The closed page's cards stay on today's builders
   // until stage 7.
   const judgeKinds = (s) => !!s && !docClosed && stateOf(s) !== 'sealed' &&
-    (stuck(s) || s.kind === 'quick' || s.kind === 'race' || s.kind === 'patch' ||
+    (stuck(s) || s.kind === 'quick' || s.kind === 'race' || s.kind === 'patch' || s.kind === 'diagonal' ||
       (s.kind === 'draft' && !s.unproposed));
   const whoLabel = (by, mine) => {
     const W = window.COPY.shell;
@@ -2527,11 +2527,38 @@
     const W = window.COPY.shell;
     const key = (hints && hints.siteKey) || (s.keys ?? [])[0];
     const rank = headRank(key);
-    const frame = (cls) => ({ cls: 'sugg ' + cls + (rank ? ' onhead lvl' + rank : ''),
+    const gap = !!(s.isInsert || (key && isGapKey(key)));
+    const frame = (cls) => ({ cls: 'sugg ' + cls + (rank ? ' onhead lvl' + rank : '') + (gap ? ' ongap' : ''),
       attrs: ' data-card="' + esc(s.id) + '" data-site="' + esc(key || '') + '"' + laneGroupAttrs(s, key) });
     const kind = stuck(s) ? 'deadlock' : s.kind === 'draft' ? (s.stranded ? 'stranded' : 'mine')
       : s.kind === 'patch' ? 'patch' : isJudged(s) ? 'judged' : s.isInsert ? 'insert' : s.kind;
     if (kind === 'deadlock') return deadPresent(s, st, key, frame);
+    if (s.kind === 'diagonal') {
+      // **the salience diagonal is placeless** (grammar §2.3): it stands at
+      // no clause of its own — it weighs two, in different parts of the
+      // charter — so its first line is the question it puts, and its label
+      // what the rail calls it, the card's ask (answers Part 5 (9)). Each
+      // question is a block labelled by its own name on its first line, the
+      // clause it is about quoted under its description; no speaker, since
+      // nobody argued for a dispute (SPEC §8.3)
+      const q = (c, v) => {
+        const nameId = laneNameId(s, null, v);
+        return '<div class="propblock"><span class="glab" id="' + nameId + '">' + esc(c.name) + '</span>' +
+          '<div class="rtext">' + esc(c.why) + '</div>' +
+          '<div class="qclause">' + mdLine(currentTextFor(c.key)) + '</div>' +
+          laneBarHtml(s, v, { edit: false, nameId }) + '</div>';
+      };
+      return {
+        kind: 'diag',
+        frame: { cls: 'sugg diag-open', attrs: ' data-card="' + esc(s.id) + '" data-site="' + esc((hints && hints.siteKey) || s.pair[0].key) + '"' +
+          laneGroupAttrs(s, null) },
+        label: { text: s.qLabel || T.diag.headLabel },
+        head: { html: clauseHeadHtml(s, { label: null, html: T.diag.question }) },
+        body: bodyOf(reviseNote(s) + '<div class="foot">' + T.diag.foot + '</div>'),
+        options: { html: q(s.pair[0], 'first') + q(s.pair[1], 'second') + vinBlockHtml(s) },
+        rowNote: refusalNote(s),
+      };
+    }
     if (kind === 'mine' || kind === 'stranded') return ownPresent(s, st, hints, kind);
     if (kind === 'patch') {
       // **one judgment for every place** (Ed, 181): a card at each place the

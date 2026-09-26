@@ -128,9 +128,16 @@ if (!ENGINES[BROWSER]) {
  * kind no card was measured as is a broken walk. Both are in-page drives
  * over the file fixture, no server.
  */
-const ALL_WALKS = ['founding', 'answers', 'delegated', 'settled', 'outsiders', 'charter', 'closed', 'sessionband', 'closedband', 'stranger'];
+/*
+ * **`diag`** (Q1541 stage 6) is the charter walk over one card, the salience
+ * diagonal, served: no fixture serves it (SPEC §8.3a — only to somebody with
+ * nothing else to judge), so the walk files every other pair of the fixture
+ * as judged through `SESSION.setData` first, which is exactly the state that
+ * serves it, and then opens and measures it like any charter card.
+ */
+const ALL_WALKS = ['founding', 'answers', 'delegated', 'settled', 'outsiders', 'charter', 'closed', 'sessionband', 'closedband', 'stranger', 'diag'];
 const DEFAULT_WALKS = ALL_WALKS.slice(0, 7);
-const FIXTURE_WALKS = ['founding', 'answers', 'charter', 'closed', 'sessionband', 'closedband', 'stranger'];
+const FIXTURE_WALKS = ['founding', 'answers', 'charter', 'closed', 'sessionband', 'closedband', 'stranger', 'diag'];
 const WALK_ARG = arg('walk', DEFAULT_WALKS.join(','));
 const WALKS = (WALK_ARG === 'all' ? ALL_WALKS.filter((w) => w !== 'stranger') : WALK_ARG === 'fixture' ? FIXTURE_WALKS : WALK_ARG.split(',')).filter(Boolean);
 /**
@@ -181,8 +188,7 @@ const GRAMMAR_KINDS = [
   // you have answered, the ⏳ tab reopened (`judged`), a proposal at several
   // places (`patch`), the ⚔️ card (`deadlock`), a proposal of yours
   // (`mine`) and one the text moved under (`stranded`). The fast pass meets
-  // every one on `charter`; the diagonal is served by no fixture walk and is
-  // held by \`diag-walk\`'s own reading, not here
+  // every one on `charter`
   'quick',
   'insert',
   'race',
@@ -191,6 +197,9 @@ const GRAMMAR_KINDS = [
   'deadlock',
   'mine',
   'stranded',
+  // …and the salience diagonal, placeless, which `diag` serves (the fixture
+  // walks' last)
+  'diag',
 ];
 /**
  * **The stage the build has reached, and the stage each check turns strict
@@ -2258,6 +2267,7 @@ function grammarRules(c, ref) {
       : /insert-anchor/.test(before.para) ? 'a gap heads with (no text here)'
       // (on any walk that meets the birth — the founding and answers walks both do)
       : c.key === 'title' && /titlepara/.test(String(before.para)) ? '🪶 at the birth heads with the title box'
+      : c.shellKind === 'diag' ? 'the diagonal is placeless: it heads with the question it puts (grammar §2.3)'
       : null;
     // **a run heads with the whole run** (Q1487, Q1308): a card on several
     // adjacent clauses replaces them all, so its head is their words in
@@ -2375,7 +2385,11 @@ function grammarRules(c, ref) {
       const bad = drawn(v.headLabelDraw, isRecord);
       if (bad) at('label-slot', 'the label above the first line is drawn ' + bad, 'drawing');
       const t = String(v.headLabelText || '').replace(/\s+/g, ' ').trim();
-      const ask = (v.asks || []).some((s) => String(s).replace(/\s+/g, ' ').trim().toLowerCase().startsWith(t.toLowerCase()) && t.length > 3);
+      // …a placeless card's label is its ask as the rail names it — the
+      // diagonal's *Which matters more?* (stage 6); its own tab in the card
+      // says *Close this one*, so the ask is read as a question
+      const ask = (v.asks || []).some((s) => String(s).replace(/\s+/g, ' ').trim().toLowerCase().startsWith(t.toLowerCase()) && t.length > 3) ||
+        (c.shellKind === 'diag' && /\?$/.test(t));
       if (!HEAD_WORDS.some((re) => re.test(t)) && !ask) at('label-slot', 'the label “' + clip(t, 50) + '” is not in answers Part 4\'s words', 'words');
     }
     for (const b of v.blocks || []) {
@@ -2385,7 +2399,9 @@ function grammarRules(c, ref) {
       if (!b.first) at('label-slot', 'the label “' + clip(b.label, 40) + '” is not its ' + b.cls + '\'s first line', 'block-place');
       const bad = drawn(b.draw, isRecord);
       if (bad) at('label-slot', 'the block label “' + clip(b.label, 30) + '” is drawn ' + bad, 'drawing');
-      if (!BLOCK_WORDS.test(String(b.label || '').replace(/\s+/g, ' ').trim())) at('label-slot', 'the block label “' + clip(b.label, 40) + '” is not in answers Part 4\'s words', 'words');
+      // the diagonal's blocks are two questions, not wordings, each labelled
+      // by its own name — the one block Part 4's words do not cover (stage 6)
+      if (c.shellKind !== 'diag' && !BLOCK_WORDS.test(String(b.label || '').replace(/\s+/g, ' ').trim())) at('label-slot', 'the block label “' + clip(b.label, 40) + '” is not in answers Part 4\'s words', 'words');
     }
   }
 
@@ -4031,14 +4047,29 @@ async function stripPass(page, walk, strips, errors) {
   await wait(page, 150);
 }
 
-async function walkCharter(page, base, cards, errors, { closed, doors, rails, strips } = {}) {
+async function walkCharter(page, base, cards, errors, { closed, doors, rails, strips, diag } = {}) {
   await page.goto(withQuery(pageUrl(base, '?fixture=session' + (closed ? '&closed=1&band=1' : ''))));
   await page.waitForFunction(() => !!(window.SESSION && window.SESSION.SUGGS.length && document.querySelector('.qitem')),
     null, { timeout: 20_000 });
   await page.evaluate(() => { window.scrollTo(0, 0); window.SESSION.smoothScrollBy = (dy, done) => { window.scrollBy(0, dy); if (done) done(); }; });
+  // the diagonal is served to somebody with nothing else to judge (SPEC
+  // §8.3a): every other pair still asking is filed as judged, which serves it
+  if (diag) {
+    await page.evaluate(() => {
+      const S = window.SESSION;
+      S.setData({ SUGGS: S.SUGGS.map((g) => (g.kind !== 'diagonal' && g.state === 'needs' && !g.mine
+        ? Object.assign({}, g, { state: 'deciding', pick: g.pick || 'keep' }) : g)) });
+      window.scrollTo(0, 0);
+    });
+  }
   await wait(page, 300);
-  const walk = closed ? 'closed' : 'charter';
-  const ids = await page.evaluate(() => window.SESSION.SUGGS.map((s) => s.id));
+  const walk = closed ? 'closed' : diag ? 'diag' : 'charter';
+  const all = await page.evaluate(() => window.SESSION.SUGGS.map((s) => s.id));
+  const ids = diag ? all.filter((k) => /^diag-/.test(k)) : all;
+  if (diag && !ids.length) errors.push('diag: the fixture holds no salience diagonal');
+  if (diag && !(await page.evaluate((k) => !!document.querySelector('.achip[data-anchor="' + k + '"]'), ids[0]))) {
+    errors.push('diag: the diagonal was not served — no tab for it in the gutter');
+  }
   for (const id of ids) {
     const before = await page.evaluate((k) => window.__CA.closedGeo(k), id);
     // **T2 — one proposal, one tab per place** (Ed, 2026-09-16: *for my
@@ -4237,6 +4268,7 @@ async function main() {
   await run('stranger', () => walkSettled(page, base, cards, errors, 'stranger', null, piles));
   await run('charter', () => walkCharter(page, base, cards, errors, { doors, rails, strips }));
   await run('closed', () => walkCharter(page, base, cards, errors, { closed: true }));
+  await run('diag', () => walkCharter(page, base, cards, errors, { diag: true }));
   // phase one's inventory walks (Q1541 stage 0): the band's cards on the session and closed
   // fixtures, which the audit's charter walks never open (🥂 among them)
   await run('sessionband', () => walkBand(page, base, cards, errors, '?fixture=session&band=1', 'sessionband'));
