@@ -5555,6 +5555,11 @@
   // setup.js's `birthPass` fades it in). Members and strangers are untouched
   const penTabsWithheld = (k) => (k === 'title' || k === 'slug') &&
     !!cs && amFounder() && !constituted() && !acked('grant-pen');
+  // …and **they arrive only when this page saw them go** — set by the OK's
+  // own press over withheld tabs, never by a render finding the pen accepted:
+  // a page's first render can run before its acknowledgments are hydrated,
+  // and a key keyed on *accepted* faded the tabs in on every load
+  let penTabsArrive = false;
   // a member who has not yet accepted 🏛️ is shown neither 💡 ✏️ nor ⚖️ (Q1540)
   const voiceUnaccepted = () => viewerIsMember() && !acked('grant-voice');
   const mayPropose = () => canPropose() && viewerIsMember() && acked('canpropose');
@@ -8340,6 +8345,7 @@
     founderPairNote: (...a) => founderPairNote(...a),
     founderPairOn: (...a) => founderPairOn(...a),
     founderSpeaker: (...a) => founderSpeaker(...a),
+    penTabsArrive: () => penTabsArrive,
     founderSpeakerLane: (...a) => founderSpeakerLane(...a),
     grantProv: (...a) => grantProv(...a),
     groups: (...a) => groups(...a),
@@ -8909,6 +8915,8 @@
     // Asked before the press, while this entry is still owed and standing.
     const walked = okb && S.open && SESSION.bandOwes(S.open) ? SESSION.walkFromBand(S.open) : null;
     if (okb) return closeThen(() => { const kk = okb.dataset.ok;
+      // 🪶 📍's tabs return with this press (Q1560 (5)), asked before the OK lands
+      if (kk === 'grant-pen' && penTabsWithheld('title')) penTabsArrive = true;
       S.okd.add(kk); S.open = null;
       // the grant's object flies into your wallet from this press (Q448) —
       // only the three that *have* an object; every acknowledgment that

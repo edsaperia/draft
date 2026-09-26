@@ -56,7 +56,7 @@ window.BAND = (function () {
       mailGiveUpBatch, mailGiveUpBody,
       mayPen, mayPenOn, me, membersHold, openCardDirty, midOf, motionAbstainAt, motionBlocks, motionOn, motionPicked,
       motionTargets, nameOfMember, namePickNow, oneVoiceAsk, ordinaryBody, owedDeparture,
-      pairWords, penOkFor,
+      pairWords, penOkFor, penTabsArrive,
       perpetual, picPickNow, policyNow, powerBody,
       proseCounts, pwPair, readinessOf, ready,
       recordBody, releaseBatch, releaseBody, removalPrice, removeSubjectPicker, renderDev,
@@ -1230,10 +1230,11 @@ window.BAND = (function () {
       // the save until then (`penTabsWithheld`), they return as a birth, not a
       // pop. `birthPass` remembers every key it has seen and these tabs were
       // seen at the birth, so the returning pile carries a key of its own that
-      // exists only once the pen is accepted — new the render the OK lands,
-      // known on every render after, absorbed at boot for a Founder who
-      // accepted it before loading the page
-      if (env.cs && amFounder() && acked('grant-pen')) {
+      // exists only once this page has seen the OK pressed over withheld tabs
+      // (`penTabsArrive`) — new the render the OK lands, known on every
+      // render after, and never set on a page loaded after the pen was
+      // accepted, whose first renders may run before its OKs are hydrated
+      if (penTabsArrive() && amFounder()) {
         ['title', 'slug'].forEach((k) => {
           const tab = band.querySelector('[data-tab="' + k + '"]');
           const col = tab && tab.closest('.chipcol');
