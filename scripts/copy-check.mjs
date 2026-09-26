@@ -21,7 +21,7 @@
  * the sprint tier now, since a copy change reddens it on purpose and it had
  * caught no page defect at the push; the **raw-value** rule below — no
  * *undefined* / *NaN* printed on any card — is a page defect whatever the
- * golden says, so it stays at the push, in CI's `probe` job, under this
+ * golden says, so it stays at the push, in CI's `raw-values` job, under this
  * flag. Same walk, same payload, same verdict on a raw value; it stops
  * before the golden is read or written, and implies `--walk`.
  *

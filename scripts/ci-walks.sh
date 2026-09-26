@@ -387,7 +387,7 @@ case "$GROUP" in
     # `npm run copy-freeze`, and that freeze's diff is what the next pass
     # reads. **Expect red after an intentional copy change** — that is the
     # point, not a defect. Its own `copy-walk` job at the push until Q1546;
-    # its raw-value rule stays at the push, in ci.yml's `probe` job, as
+    # its raw-value rule stays at the push, in ci.yml's `raw-values` job, as
     # `copy-check --walk --raw-only`. About eight and a half minutes
     walk "copy-check --walk" npm run copy-check -- --walk
     ;;

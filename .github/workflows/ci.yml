@@ -453,9 +453,7 @@ jobs:
   # change needs no re-freeze — only a page change does (Q914).
   probe:
     runs-on: ubuntu-latest
-    # twenty since the raw-value walk joined (Q1546 (c)): about eleven
-    # minutes with it
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -476,16 +474,8 @@ jobs:
       - if: steps.browser.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
       - run: npm run probe -- --strict
-      # **No card prints a raw value** (Q1541's raw-value rule; Q1546 (c), Ed
-      # 2026-09-26): *undefined*, *NaN*, *null*, *[object …]* or *Invalid
-      # Date* anywhere in a card's words or its rail entry is a page defect,
-      # never a copy change. `copy-check --walk` held it beside the copy
-      # golden in a job of its own until Q1546; the golden went to the sprint
-      # tier (ci-walks.sh's `sprint-pages`) and the rule stayed here, the
-      # same card-audit walk stopping before any golden is read. The walk is
-      # the cost: about eight and a half minutes, the longest step here.
-      - run: npm run copy-check -- --walk --raw-only
-        if: always()
+      # (the raw-value rule, `copy-check --walk --raw-only`, is the
+      # `raw-values` job below, on its own runner)
       #
       # which cards the setup-probe actually opens (Q914 (9), Q915). --strict
       # cannot do this job: a dead step needs a *miss*, and a card nobody
@@ -538,8 +528,42 @@ jobs:
   # (The `copy-walk` job — the copy golden, `copy-check --walk` against
   # design/tools/card-copy.golden.json — stood here from plan-ci-speed.md
   # Stage 2 until Q1546 (c): it runs in the sprint tier now, in ci-walks.sh's
-  # `sprint-pages`, and its raw-value rule stayed at the push inside `probe`
-  # above as `copy-check --walk --raw-only`.)
+  # `sprint-pages`, and its raw-value rule stayed at the push as the
+  # `raw-values` job below.)
+
+  # **No card prints a raw value** (Q1541's raw-value rule; Q1546 (c), Ed
+  # 2026-09-26): *undefined*, *NaN*, *null*, *[object …]* or *Invalid Date*
+  # anywhere in a card's words or its rail entry is a page defect, never a
+  # copy change. `copy-check --walk` held it beside the copy golden until
+  # Q1546; the golden went to the sprint tier and the rule stayed at the
+  # push, the same card-audit walk stopping before any golden is read. Its
+  # own runner rather than a step of `probe`: the walk is about eight and a
+  # half minutes, and inside `probe` it made that job the push's longest.
+  # Same standing as `probe`: in parallel with `ci`, gating nothing.
+  raw-values:
+    name: probe (raw values)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: playwright version, for the browser cache key
+        id: pw
+        run: echo "v=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        id: browser
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ steps.pw.outputs.v }}
+      - if: steps.browser.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+      - if: steps.browser.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+      - run: npm run copy-check -- --walk --raw-only
 
   # **The redesign's checks, held for the kinds converted** (Q1541,
   # design/redesign/BUILD.md §2): card-audit's P13–P33 over the fixture walks
