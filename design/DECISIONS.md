@@ -7562,3 +7562,27 @@ Ed walked the builder's calls (a)–(l), numbered 1–12, the same evening. **As
 | 1544 | The alpha flag stands outside every landmark | 2026-09-25 | **ruled by Ed 2026-09-26: ignore it**; closed | `alpha-flag`; `design/REPORT-a11y-2026-09-25.md` finding 3 |
 
 **1544 is the alpha flag outside every landmark** (claimed 2026-09-25, from the Q1394 builder's finding 3). After Q1394 the audit's last `region` nodes are three per page: the dev stagehand's label and `#devwho`, which never ship, and the product's own *Warning: docs.vote is in alpha!* flag, which sits outside `header`, `nav`, `main` and `aside`, so a screen reader meets it stranded. Readings: (a) with PRODUCTION.md stage 13 (recommended — it is one element, and the stage owns landmark structure); (b) now, as a one-line fix inside a landmark or as `role="note"` in `main`. Raised in chat 2026-09-25 evening; Ed has not answered.
+
+## Q1546 closed: the guard audit, and the CI tiers it produced (2026-09-26)
+
+**Built and proved the same day.** Merged as 0e48ce5d from branch `q1546` after both tiers ran green on GitHub first time (draft PR #101: CI run 36241037263, sprint run 36241036281). The push tier's verdict fell from about 14 to about 9½ minutes, `journey` and the new `raw-values` job tied; the sprint tier takes about 19, its `golden` job's audits the long pole, gating nothing. The seat matrix's table half runs in `spec-check` in 0.3 s. The gate's merge-commit path was first exercised on the push that carried this merge.
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 1546 | The guard audit: which walks and repros last caught a real bug | 2026-09-25 | **built and closed 2026-09-26** on branch `q1546` (0e48ce5d); PR #101 green in both tiers | `scripts/ci-walks.sh`; `scripts/repro/`; CI history |
+
+**1546 is the guard audit** (claimed 2026-09-25, the velocity batch; see 1545). An agent reads CI's history for each walk and repro: when it last went red for a real product bug, as against a stale script or a flake. What has no real catch in about four weeks is proposed for the sprint tier or retirement — a list for Ed, nothing moved without his OK.
+
+**The report (2026-09-26, all 215 CI runs since 2026-08-20):** five real product catches in CI — `journey` twice, `applicants-walk --price=assembly`, `rate-motion` (on PR #97), `boot-guard` (the Smith-set replay); about 45 red runs a guard behind an intended change, five flakes. `journey`'s script edited 128 times in four weeks. **And the sprint tier had stopped running**: it fired on plan-queue's `batch/…` tags, which ended when Ed stopped using plan-queue (2026-09-06); its last tag run was 2026-09-01.
+
+**Ruled by Ed 2026-09-26, one at a time.** **(a) The sprint tier's trigger** — Ed: *run it after we complete substantial changes / new features … doesn't make sense to run it if nothing is changing*: `sprint.yml` runs on every push to `main` and stops in seconds unless the pushed range holds a merge commit (a builder's feature or fix), plus by hand. **(b) Moved to the sprint tier**, all fifteen the audit proposed: `demo-walk`, `demo-join`, `demo-bots-walk`; `applicants-walk --price=proposal` and `=pen` (`=assembly` stays at push); `after-begin-walk`; `invite-walk`; `member-questions-walk`; `slug-walk`; `founder-answers`; `wrong-line-room --case=shapes`; `reconnecting`; `slider-walk`; `founding-walk --takeback=applications` and `=chamber`; `head-insertion-aim`; `powers-walk`; `toc-travel`. **(c) `copy-check --walk`**: the golden comparison moves to sprint; its raw-value rule (no *undefined* / *NaN* on any card) splits out and stays at push inside the probe job. **(d) The seat matrix** moves to sprint once a static `spec-check` rule turns an unread SURFACE §2 row red at push (Q1354's promise kept at push, in seconds) — the rule first, then the move. Staying at push: `journey`, `rate-motion`, `applicants-walk --price=assembly`, `boot-guard`, the probes and `probe-coverage`, `ladder`, `room-walk`, the cheap repros, `drawer-walk`, `picture-walk`, the redesign's checks and walks. One branch, `q1546`; CLAUDE.md's CI bullet and every guard's *CI's … job* pointer updated with it.
+
+## Q1547 closed: a new bug guard joins the sprint tier from its first day (2026-09-26)
+
+**Ed: *straight to sprint*.** A walk or repro written for one bug never joins the push set; the push set grows only by Ed's word. Written into CLAUDE.md's CI bullet with Q1546's merge (0e48ce5d).
+
+| # | Title | Raised | State | Pointers |
+|---|---|---|---|---|
+| 1547 | An expiry rule for new guards | 2026-09-25 | **ruled by Ed 2026-09-26: straight to sprint**; closed with CLAUDE.md's CI bullet at 0e48ce5d | CLAUDE.md *What goes in this file* (Q736) |
+
+**1547 is an expiry rule for new guards** (claimed 2026-09-25, the velocity batch; see 1545). The missing half of the eviction rule (Q736): a repro written for one bug moves to the sprint tier after 30 days green, and every push runs only the guards protecting what a member directly sees (`journey`, the probes, the seat matrices). Decide after 1546.
