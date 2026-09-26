@@ -1,22 +1,70 @@
-# The sprint-end checks (Q625): run once per shipped batch, on the
-# `batch/<letter>-<date>` tag `pq ship` pushes, and by hand from the Actions
-# tab. These are checks against a frozen golden that a day's work
-# legitimately moves, so they are compared when a batch is closed and
-# re-frozen as part of closing it, not at every push.
+# The sprint tier (Q625; its trigger re-ruled by Ed 2026-09-26, Q1546 (a)):
+# the checks against a frozen golden that a day's work legitimately moves,
+# the two audits, and the walks that have not caught a product bug at the
+# push in four weeks. None of it gates anything — the deploy is a step of
+# ci.yml's `ci` job — and a red run here is a finding about what was merged,
+# not a broken workflow.
 #
-# A tag push checks out **the tag**, so the golden compared is the one that
-# shipped with the batch. That is the intent — but it also means a re-run
-# after a re-freeze needs either a new tag or a `workflow_dispatch` aimed at
-# the ref that carries the fix. A red run here is a finding about the batch
-# that shipped, not a broken workflow.
+# **When it runs.** Until 2026-09-26 it fired on the `batch/<letter>-<date>`
+# tags `pq ship` pushed, and those stopped when Ed stopped using plan-queue
+# (2026-09-06): its last tag run was 2026-09-01, so for three weeks nothing
+# ran it at all. The tag trigger is gone. Ed: *run it after we complete
+# substantial changes / new features … doesn't make sense to run it if
+# nothing is changing* — so it runs on **every push to main**, and the
+# `gate` job below ends the run in seconds, green, unless the pushed range
+# carries a **merge commit**, which is how a builder's feature or fix lands.
+# And by hand from the Actions tab (`workflow_dispatch`), which always runs.
 name: Sprint
 on:
   push:
-    tags: ['batch/**']
+    branches: [main]
   workflow_dispatch: {}
 
 jobs:
+  # **Did this push carry a merge?** `github.event.before..github.sha` is
+  # what the push added; `git rev-list --merges` counts the merge commits in
+  # it. Where there is no range to read — a dispatch, `before` all zeros (a
+  # new branch), `before` a commit this clone has not got or not an ancestor
+  # of the new head (a force push) — the tier runs, since it cannot tell,
+  # and erring towards running costs minutes where erring the other way
+  # costs the tier. A full history, blobs left on the server: the question
+  # is about commits alone.
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      run: ${{ steps.merge.outputs.run }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
+      - id: merge
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          SHA: ${{ github.sha }}
+        run: |
+          decide() { echo "run=$1" >> "$GITHUB_OUTPUT"; echo "sprint tier: $2"; echo "**Sprint tier:** $2" >> "$GITHUB_STEP_SUMMARY"; exit 0; }
+          if [ "$EVENT" != push ]; then decide true "started by hand ($EVENT) — running"; fi
+          case "$BEFORE" in
+            '' | 0000000000000000000000000000000000000000) decide true "no earlier head to compare against (a new branch) — running" ;;
+          esac
+          if ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            decide true "the earlier head ${BEFORE:0:10} is not in this clone (a force push?) — running"
+          fi
+          if ! git merge-base --is-ancestor "$BEFORE" "$SHA"; then
+            decide true "the earlier head ${BEFORE:0:10} is not an ancestor of ${SHA:0:10} (a force push) — running"
+          fi
+          merges=$(git rev-list --merges --count "$BEFORE..$SHA")
+          if [ "$merges" -gt 0 ]; then
+            decide true "$merges merge commit(s) in ${BEFORE:0:10}..${SHA:0:10} — running"
+          fi
+          decide false "no merge commit in ${BEFORE:0:10}..${SHA:0:10} — nothing merged, so nothing to run"
+
   golden:
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -47,12 +95,11 @@ jobs:
       # is legitimate and reddens this walk until the golden is re-frozen, so
       # at every push it was red for days at a time and 52 differences stale
       # when finally run by hand. **Expect red after a founding change**, and
-      # re-freeze with `npm run qa:freeze` as part of closing the batch —
-      # which takes this golden and the other two references a batch moves in
-      # one command, and is what plan-queue's freeze offer runs after QA.
+      # re-freeze with `npm run qa:freeze` — which takes this golden and the
+      # other two references a change moves in one command.
       #
       # A red here gates nothing: the deploy already happened on the push of
-      # main that this tag was cut from.
+      # main this run was started by.
       - run: npm run founding-golden
 
       # **The two audits** (plan-ci-speed.md Stage 4): every decision card
