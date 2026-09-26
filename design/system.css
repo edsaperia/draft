@@ -2076,16 +2076,28 @@
      ring at caption size reads as a bullet, a 15px one at UI size reads as a
      radio, which is the whole of what it is trying to say. */
   .lanepick {
-    appearance: none; font: inherit; font-size: var(--t-ui); font-weight: 600;
-    display: inline-flex; align-items: center; gap: 7px;
-    padding: 5px 13px 5px 8px; border-radius: 999px;
-    border: 1.5px solid var(--border); background: var(--light); color: var(--fg);
+    appearance: none; font: inherit;
+    background: var(--light); color: var(--fg);
     cursor: pointer; transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+  }
+  /* **The radio and the standing pill are one object, drawn once** (Q1555
+     (7), Ed 2026-09-26: *this is a radio — it's in the group along with other
+     things that you might prefer or choose*): the chosen option in its group,
+     whether you can press it or not. So their box, face and dot are this one
+     rule, on the 4px grid, and only their colours and their place are their
+     own — `.standpill` (the card shell's region) is always the chosen state.
+     The control's own word is in the chrome's face (STYLE T46), never the
+     text face a standing block's sentence would hand it by inheritance. */
+  .lanepick, .standpill {
+    display: inline-flex; align-items: center; gap: var(--s2);
+    padding: var(--s1) var(--s3) var(--s1) var(--s2); border-radius: 999px;
+    border: 1.5px solid var(--border);
+    font-family: var(--font-ui); font-size: var(--t-ui); font-weight: 600; line-height: var(--lh-text);
   }
   /* the mark is a radio, because that is exactly what the judgment is: one
      of the texts on this card, or none of them yet */
+  .lanepick .dot, .standpill .dot { flex: none; width: var(--s4); height: var(--s4); border-radius: 50%; }
   .lanepick .dot {
-    flex: none; width: 15px; height: 15px; border-radius: 50%;
     border: 2px solid var(--muted); background: var(--bg);
     transition: border-color 120ms ease, box-shadow 120ms ease;
   }
@@ -3464,18 +3476,14 @@
   .gshell > .gblocks:not(.boxed) { border-top: var(--hair); padding-top: var(--s3); }
   .gshell > .gblocks .ranked:last-child { margin-bottom: 0; }
   /* **the standing pill** (1541.5 (b), .47): who chose what stands, on the
-     first line, in today's drawing of a chosen option (1541.13 (c)) — a
-     fact, not a control, so it takes no pointer and no hover */
+     first line, in the drawing of a chosen option — its box, face and dot
+     are `.lanepick`'s own rule (Q1555 (7)) — a fact, not a control, so it
+     takes no pointer and no hover */
   .standpill {
-    display: flex; align-items: center; gap: var(--s2); width: max-content;
-    margin-top: var(--s2); padding: var(--s1) var(--s3) var(--s1) var(--s2); border-radius: 999px;
-    font-family: var(--font-ui); font-size: var(--t-ui); font-weight: 600; line-height: var(--lh-text);
-    color: #fff; background: var(--primary); border: 1.5px solid var(--primary);
+    display: flex; width: max-content; margin-top: var(--s2);
+    color: #fff; background: var(--primary); border-color: var(--primary);
   }
-  .standpill .dot {
-    flex: none; width: var(--s4); height: var(--s4); border-radius: 50%;
-    border: 2px solid #fff; background: #fff; box-shadow: inset 0 0 0 3px var(--primary);
-  }
+  .standpill .dot { border: 2px solid #fff; background: #fff; box-shadow: inset 0 0 0 3px var(--primary); }
   /* **the tab you pressed does not move** (1541.44): on a filed record the
      strip opens with the filed pile itself, whose air above belongs between
      it and live tabs — with none above it, the pressed tab keeps the place
