@@ -10592,6 +10592,9 @@
     sc.src = 'fixture-session.js';
     sc.onload = () => {
       FIX = window.FIXTURE_SESSION;
+      // a record the fixture marks `atClose` can only exist once the document
+      // has closed (Q1543): the live session leaves it out
+      if (!new URLSearchParams(location.search).get('closed')) FIX.SUGGS = FIX.SUGGS.filter((g) => !g.atClose);
       SESSION.init(sessionEnv(FIX));
       setProse(fixtureText(FIX.DOC));
       // the fixture's clock: the Hollow Oak session has 2h 11m left (its old

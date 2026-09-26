@@ -61,7 +61,7 @@ window.FIXTURE_SESSION = (function () {
     { t: 'p', key: 'claims', x: 'A claim is made by writing in the book on the landing. A claim more than a month ahead may be displaced by a member with a nearer need, who tells the displaced member within a day and offers them the next free week.' },
     { t: 'p', x: 'No guest may occupy the room for more than a fortnight in any quarter without a decision of the house.' },
     { t: 'h', level: 3, x: 'The Library Corner' },
-    { t: 'p', x: 'The Library Corner holds the Club’s books, which may be borrowed by any member for as long as they are being read and no longer.' },
+    { t: 'p', key: 'borrow', x: 'The Library Corner holds the Club’s books, which may be borrowed by any member for as long as they are being read and no longer.' },
     { t: 'p', key: 'books', x: 'Books belonging to a member and left in the Corner become the house’s after a year, unless the member says otherwise in the book on the shelf.' },
     { t: 'h', level: 2, x: 'The Outbuildings' },
     { t: 'h', level: 3, x: 'The Workshop' },
@@ -70,7 +70,7 @@ window.FIXTURE_SESSION = (function () {
     { t: 'p', x: 'Work left on the bench for more than a fortnight may be moved to the shelf; work left on the shelf for a season may be moved to the shed, with a note.' },
     { t: 'h', level: 3, x: 'The Garden' },
     { t: 'p', key: 'garden', x: 'The Garden is kept up by a rota posted in the shed, with a Garden Steward to keep it organised and call heroic weekends when it gets ahead of us.' },
-    { t: 'p', x: 'The beds nearest the wall are given over to whatever a member wishes to grow, one bed to a member, allotted each spring by the Garden Steward.' },
+    { t: 'p', key: 'beds', x: 'The beds nearest the wall are given over to whatever a member wishes to grow, one bed to a member, allotted each spring by the Garden Steward.' },
     { t: 'p', x: 'Produce belongs to the member who grew it, but a good crop has always been shared and the Club would think less of anyone who stopped.' },
     // The one heading the fixture argues about (Q897). A heading is an
     // addressable block like any other, so it carries an explicit key and
@@ -881,6 +881,71 @@ window.FIXTURE_SESSION = (function () {
           text: 'A claim is made by writing in the book on the landing. No member may hold more than two claims at once, and none more than a season ahead.',
           rationale: 'The problem is not displacement, it is the two of us who book out the whole summer in February. Cap the hoarding and the clashes mostly go away.',
           p: 0.35
+        },
+      ]
+    },
+    // **A wording rated above the text that stood, and still not passed**
+    // (Q1543, the record line of Q1539 ruling 6): read and filed on
+    // § The Library Corner. The fit put the fortnight at 57% against the
+    // text's 50%, but five of the nine who answered the pair preferred the
+    // text head to head, and that is what kept it — `ranked` on the field
+    // entry, put into words as live.js's `underNoteOf` does.
+    {
+      id: 'race-borrow', kind: 'race', keys: ['borrow'], state: 'sealed',
+      verdict: null, pick: null,
+      qLabel: '§ The Library Corner — borrowing',
+      urgency: 0,
+      pct: 100, cap: 'sealed — the current text stood',
+      decided: { outcome: 'retired — the current text stood', at: at(28, 14, 30), p: 0.57, judges: 9 },
+      slate: [
+        {
+          text: 'The Library Corner holds the Club’s books, which may be borrowed by any member for a fortnight at a time, and for longer if nobody else has asked.',
+          rationale: '“As long as they are being read” is how the good atlas has been on one bedside table since March. A fortnight is a date anybody can check.',
+          p: 0.57,
+          underNote: window.COPY.session.record.rankedBelow(5, 9)
+        },
+        {
+          text: 'The Library Corner holds the Club’s books, which may be borrowed by any member who writes their name in the book on the shelf.',
+          rationale: 'Nobody minds how long a book is out. They mind not knowing who has it.',
+          p: 0.34
+        },
+      ]
+    },
+    // **A wording passed when the clock ran out** (Q1543, the record line of
+    // Q1538 ruling 7): on the closed page only — `atClose` keeps it out of the
+    // live session, where no document has closed yet. It had been put against
+    // two of its three rivals when the document closed, which waives the wait
+    // for the third (SPEC §4.6); `rivals` on the record, put into words as
+    // live.js's `underNoteOf` does.
+    {
+      id: 'race-beds', kind: 'race', keys: ['beds'], state: 'sealed', atClose: true,
+      verdict: null, pick: null,
+      qLabel: '§ The Garden — the beds',
+      urgency: 0,
+      pct: 100, cap: 'sealed — adopted at the close',
+      decided: { outcome: 'adopted', at: NOW, p: 0.63, judges: 8 },
+      replaced: 'The beds nearest the wall are given over to whatever a member wishes to grow, one bed to a member, for as long as they want it.',
+      slate: [
+        {
+          text: 'The beds nearest the wall are given over to whatever a member wishes to grow, one bed to a member, allotted each spring by the Garden Steward.',
+          rationale: 'Three of the beds have had the same tenants since the first spring. Allotting them each year lets somebody new have a go.',
+          p: 0.63, won: true,
+          underNote: window.COPY.session.record.measuredAtClose(2, 3)
+        },
+        {
+          text: 'The beds nearest the wall are given over to whatever a member wishes to grow, one bed to a member, allotted each spring by lot.',
+          rationale: 'A Steward choosing who gets a bed is a Steward being lobbied all winter.',
+          p: 0.46
+        },
+        {
+          text: 'The beds nearest the wall are shared, and the Garden Steward keeps a list of what is growing where.',
+          rationale: 'One bed each is fourteen small beds. Two big ones would grow more.',
+          p: 0.29
+        },
+        {
+          text: 'The beds nearest the wall are given over to whatever a member wishes to grow, one bed to a member, for as long as they tend it.',
+          rationale: 'Keep the bed while you keep it up; lose it when the weeds win.',
+          p: 0.41
         },
       ]
     },
