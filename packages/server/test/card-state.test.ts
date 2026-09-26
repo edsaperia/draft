@@ -212,6 +212,11 @@ describe('card-state.js over every sealed record of the Hollow Oak fixture', () 
       for (const c of rec.field) {
         expect(c.label).toMatch(/^(Previous text|Proposed( by .+)?( · \d+%)?)$/);
       }
+      // the record's notes ride the speaker, head and field alike (Q1543):
+      // the fixture's `ranked-note` and `measured-note` records reach the shell
+      const noteOf = (c: Win) => (c.incumbent ? null : c.underNote || null);
+      expect(rec.head.speaker ? rec.head.speaker.underNote : null).toBe(top ? noteOf(top) : null);
+      expect(rec.field.map((c: Win) => (c.speaker ? c.speaker.underNote : null))).toEqual(want.map(noteOf));
     });
   }
 });
