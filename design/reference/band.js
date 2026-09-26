@@ -970,8 +970,9 @@ window.BAND = (function () {
       // change, not for the road it takes. `founderProposal` reads it here.
       if (amFounder() && env.cs && founderDirect(cc) && isChange(k) && !motionOn(cc) && !membersHold(cc)) {
         const v = (S.setWhy && S.setWhy[k]) || '';
-        return '<div class="body whyset"><p class="eyebrow fieldlab">' + PAGE_COPY.whyChangingLabel + '</p>' +
-          founderSpeakerLane(v) + '</div>';
+        // no heading over it (Q1560 (2)): its placeholder is its words, as on
+        // a text proposal's rationale
+        return '<div class="body whyset">' + founderSpeakerLane(v) + '</div>';
       }
       // anybody else, reading what happened: what changed, and their reason
       const am = lastAmendment(k);
@@ -1178,7 +1179,7 @@ window.BAND = (function () {
         // the reason box, on a card that can take a change (1541.21 (b)) —
         // the lane's own placeholder is its words, so no label stands over it
         const why = changeHalf(c);
-        if (why) input += why.replace(/<p class="eyebrow fieldlab">[^<]*<\/p>/, '');
+        if (why) input += why;
         body = founderPairNote(c) + (c.knote ? '<p class="setnote">' + c.knote + '</p>' : '');
       } else if (kind === 'watching' && stateOf(c, ctx) === 'news') {
         const n = newsParts(c);
@@ -1225,6 +1226,20 @@ window.BAND = (function () {
     // can end up showing zero.
     function renderBand() {
       drawBand();
+      // **🪶 and 📍's tabs arrive at the pen's OK** (Q1560 (5)): withheld from
+      // the save until then (`penTabsWithheld`), they return as a birth, not a
+      // pop. `birthPass` remembers every key it has seen and these tabs were
+      // seen at the birth, so the returning pile carries a key of its own that
+      // exists only once the pen is accepted — new the render the OK lands,
+      // known on every render after, absorbed at boot for a Founder who
+      // accepted it before loading the page
+      if (env.cs && amFounder() && acked('grant-pen')) {
+        ['title', 'slug'].forEach((k) => {
+          const tab = band.querySelector('[data-tab="' + k + '"]');
+          const col = tab && tab.closest('.chipcol');
+          if (col) col.setAttribute('data-born', 'pen-tabs:' + k);
+        });
+      }
       // the open shell card's row and pill against its fields, now that they
       // are in the page (`syncShellRow`)
       if (S.open) syncShellRow(card(S.open));

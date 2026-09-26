@@ -2733,6 +2733,11 @@
      with the neighbours' `--s3`, so both sites measure 24px each side. */
   .lanebox .editlane + .speaker { padding-top: var(--s5); padding-bottom: var(--s5); }
   .lanebox.whylane { margin: var(--s5) 0; }
+  /* **A settings reason box is a text proposal's rationale, drawn the same**
+     (Ed, Q1560 (2)): the speaker row takes the editing card's `--s5` inside
+     the box too; with no lane above it there is nothing for its hairline to
+     separate, and a hairline at a box's edge is never drawn (H1) */
+  .lanebox.whylane > .speaker { border-top: 0; padding-top: var(--s5); padding-bottom: var(--s5); }
   .lanebox .edit-why {
     border: 0; box-shadow: none; padding: 0; min-height: 1.4rem;
     position: relative;
