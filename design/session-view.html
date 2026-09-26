@@ -377,7 +377,7 @@
     // a sheet act's own scroll (an entry travelling to its card) never hides
     // the bar it has just put back
     let quietUntil = 0;
-    let bar = null, line = null, more = null, topKey = null;
+    let bar = null, line = null, more = null, topKey = null, peekSrc = null;
     const sheetTo = (s) => {
       if (!sheet()) return;                       // nothing asks: nothing to raise
       root.setAttribute('data-sheet', s);
@@ -474,9 +474,9 @@
 
     // ---- the task sheet's bar ------------------------------------------------
     // Made on the first narrow layout, never on a wide page (the probes read
-    // the wide one): a grab handle, the most urgent entry's own title line —
-    // its `.ql`, cloned from the entry as the rail drew it, so the bar says
-    // exactly what the entry says — and *+n more*.
+    // the wide one): a grab handle, the most urgent entry's own card — its
+    // button, cloned from the entry as the rail drew it, so the bar says and
+    // shows exactly what the entry does — and *+n more*.
     const build = () => {
       const q = queueEl();
       if (bar || !q) return;
@@ -504,12 +504,26 @@
         return;
       }
       if (!sheet()) { root.setAttribute('data-sheet', 'peek'); bar.setAttribute('aria-expanded', 'false'); }
+      // **The peek is the entry itself** (Ed, 2026-09-26: *you should see the
+      // most urgent card, and it should have its colour wash progress bar*):
+      // the entry's own button, cloned with its wash attributes, so the rail's
+      // own rules draw its hue, ground and fill — and `settleWashes`, which
+      // walks every `data-washkey`, fades the copy with the original. Its
+      // `data-q` goes (nothing that looks a rail entry up may find the copy);
+      // a tap on it presses the real one (`peekSrc`), which opens its card.
+      const src = top.querySelector('button:not(.sealdot)') || top.querySelector('button');
+      peekSrc = src;
       const ql = top.querySelector('.ql');
-      const key = (top.dataset.q || '') + '\u0001' + (ql ? ql.innerHTML : top.textContent);
+      const key = (top.dataset.q || '') + '\u0001' + (src ? src.outerHTML : ql ? ql.innerHTML : top.textContent);
       if (key !== topKey) {
         topKey = key;
-        const c = ql ? ql.cloneNode(true) : document.createTextNode(top.textContent.trim());
+        const c = src ? src.cloneNode(true) : ql ? ql.cloneNode(true) : document.createTextNode(top.textContent.trim());
         if (c.querySelectorAll) for (const el of c.querySelectorAll('[id]')) el.removeAttribute('id');
+        if (src) {
+          c.removeAttribute('data-q'); c.removeAttribute('id');
+          c.classList.add('sheetcard'); c.tabIndex = -1;   // the bar is the one stop; Enter on it raises
+          c.style.cssText = src.style.cssText;             // the wash as it stands now, not as it was drawn
+        }
         line.replaceChildren(c);
       }
       const words = n > 1 ? window.COPY.session.rail.sheetMore(n - 1) : '';
@@ -553,11 +567,18 @@
       };
       bar.addEventListener('pointerup', release);
       bar.addEventListener('pointercancel', release);
-      bar.addEventListener('click', () => {
+      bar.addEventListener('click', (ev) => {
         if (Date.now() - swallow < 400) return;   // the click a drag leaves behind
+        // the peeked entry opens its own card, as it would in the list; the
+        // rest of the bar raises the sheet
+        if (sheet() === 'peek' && ev.target.closest && ev.target.closest('.sheetcard') && peekSrc && peekSrc.isConnected) {
+          peekSrc.click();
+          return;
+        }
         sheetTo(sheet() === 'open' ? 'peek' : 'open');
       });
       bar.addEventListener('keydown', (ev) => {
+        if (ev.target !== bar) return;
         if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); bar.click(); }
       });
     };
