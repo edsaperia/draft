@@ -6,6 +6,15 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-09-26, afternoon: one way to separate, one way to choose
+
+### Changed
+- **A decision's record lists its wordings the way every other card lists its choices**, separated by a thin line rather than each in its own box.
+- **The rule that stands on a card and the options you can choose are drawn as the same button**, the same size and shape wherever they appear.
+
+### For contributors
+- **Checks are split into two tiers.** Every push runs the checks that have caught real problems, and reports in about nine minutes rather than fourteen. The rest run after any push that merges a new feature or fix, off the path of the deploy.
+
 ## 2026-09-26, midday: more cards in the new shape
 
 ### Changed
