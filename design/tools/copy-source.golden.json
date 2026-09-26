@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 695
+  "entries": 698
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -691,12 +691,15 @@
   "shell.outcome.ranOut": "Ran out of time",
   "shell.outcome.refused": "Refused by the Founder",
   "shell.outcome.rejected": "Rejected",
+  "shell.previousRule": "Previous rule",
   "shell.previousText": "Previous text",
   "shell.proposed": "Proposed",
   "shell.proposedBy": "ƒ (name) => 'Proposed by ' + name",
   "shell.proposedByYou": "Proposed by you",
+  "shell.ruleAtClose": "Rule at the close",
   "shell.sep": " · ",
   "shell.sinceReplaced": "since replaced",
+  "shell.voiceOut": "You can only make one constitutional proposal 🏛️ at a time.",
   "shell.waitingFor": "ƒ (n) => 'Waiting for ' + n + (n === 1 ? ' member' : ' members') + ' to answer questions.'"
  }
 }

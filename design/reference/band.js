@@ -42,7 +42,7 @@ window.BAND = (function () {
   function make(env) {
     const { S, M, SESSION, PAGE_COPY, CC, ctx, band, rail, BIRTH, PW_KEYS, DKEY, DELEGABLE,
       CHOSEN, TYPED, ANSTYPED, PROPOSE, snaps, ADM_RULE, AUTH_RULE, CHAMBER_RULE, JUDG_RULE,
-      REMOVAL_RULE, ENDING_NEVER, WHAT, OPTHEADLESS, EMAIL_OK, SLUG_OK, penWaitTitle } = env;
+      REMOVAL_RULE, ENDING_NEVER, WHAT, OPTHEADLESS, EMAIL_OK, SLUG_OK, penWaitTitle, MANAGED_KEYS } = env;
     // the page's own functions, wrappers read when called
     const { APPL_RULE, E, LAPSE_RULE, STRCARDS, acked, admissionPrice, admitCardOf, amFounder,
       appPicPickNow, applicantById, applicantName, atTheDoor, beginBody, binBtn, card, cardHtml,
@@ -54,7 +54,7 @@ window.BAND = (function () {
       founderSpeakerLane, grantProv, groups, iDraft, isChange, isNum, isRoom, isStranger,
       heldBody, hostKeyOf, judgedOn, launchFarewell, launchGrant, liveMotionRec,
       mailGiveUpBatch, mailGiveUpBody,
-      mayPen, mayPenOn, me, membersHold, midOf, motionAbstainAt, motionBlocks, motionOn, motionPicked,
+      mayPen, mayPenOn, me, membersHold, openCardDirty, midOf, motionAbstainAt, motionBlocks, motionOn, motionPicked,
       motionTargets, nameOfMember, namePickNow, oneVoiceAsk, ordinaryBody, owedDeparture,
       pairWords, penOkFor,
       perpetual, picPickNow, policyNow, powerBody,
@@ -422,7 +422,9 @@ window.BAND = (function () {
         : '<div data-slugnote>' + slugNoteHtml() + '</div>' +
         '<span class="fld"><span class="setrow2">' +
         '<span class="setnote" style="margin:0">' + docAddr('') + '</span>' +
-        '<input data-slug="1" value="' + esc(S.slug) + '" spellcheck="false">' +
+        // a suggested address is the machine's until touched (Q534 (c)): marked,
+        // since the bin has nothing of yours to put back
+        '<input data-slug="1" value="' + esc(S.slug) + '"' + (S.slugAuto ? ' data-machine="' + esc(S.slug) + '"' : '') + ' spellcheck="false">' +
         '</span></span>') +
         // the rules recital went with the rest (Ed, 2026-08-19) — a legal link
         // says the one thing worth saying, that it is free. The illegal case
@@ -911,6 +913,294 @@ window.BAND = (function () {
     /** an address the 📧 will send to: well-formed and nobody else's */
     const appAddrOk = () => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(S.app.email) && !appAddrTaken();
 
+    // ---- a setting's change, told (hoisted out of cardFor for stage 3a, so
+    // the shell's settings cards and the old bodies read one pair) ----------
+    // **A pen change is an amendment, and reads like one** (Ed, 2026-08-22:
+    // *a unilateral rule change by the founder is still just a kind of
+    // amendment and so should be treated in the same way in terms of how
+    // it's communicated and reported*). So this stopped reading the
+    // setting's own last-set fields and reads **the amendment record**,
+    // which is where every route already lives — and the dividend is that a
+    // clause now carries its history whoever changed it, the founder's pen
+    // and the membership's motion in one line with one shape.
+    //
+    // Who it names follows the route, and has to: the pen is attributed by
+    // construction, so the founder's name and face are on it; a raised
+    // motion's mover is **sealed until the record** (§3.4), so that one is
+    // the membership's act and wears the featureless disc.
+    // The module hands back `MotionRecord`s and the wire hands back
+    // `MotionView`s, and they name two of these fields differently — so
+    // they are normalised here into the one shape the copy below reads,
+    // rather than each caller remembering which it is holding.
+    function lastAmendment(k) {
+      if (!env.cs) return null;
+      const mid = midOf(k);
+      let best = null;
+      try {
+        for (const m of env.cs.motionRecords().values()) {
+          if (m.status !== 'carried') continue;
+          if (!m.payload || m.payload.kind !== 'set' || m.payload.setting !== mid) continue;
+          const at = m.at !== undefined && m.at !== null ? m.at : (m.settledAtT || 0);
+          const from = m.from !== undefined && m.from !== null ? m.from
+            : (env.cs.amendedFrom ? env.cs.amendedFrom(m.id) : null);
+          const one = { route: m.route, why: m.why || null, at, from };
+          if (!best || one.at >= best.at) best = one;
+        }
+      } catch (e) { return null; }
+      return best;
+    }
+    // the two halves of Q530, chosen by which side of the act you are on
+    // **Declared, not assigned, so the composer above can reach it.** A
+    // member's settled card post-start renders through the composer's own
+    // early return, which is *before* this point in the function — so as an
+    // arrow const the history was drawn on the news card and lost the
+    // moment the OK turned it back into a composer. Ed's answer was that
+    // the clause keeps it permanently, and a settled clause is exactly
+    // where somebody goes to ask why a rule is the way it is.
+    function changeHalf(cc) {
+      const k = cc.k;
+      if (cc.ansFor || cc.isGate || cc.door || !PW_KEYS.includes(k) || k === 'text') return '';
+      // the founder, about to change something that already stands: a lane
+      // — where they still can (entry 62). A rationale field on a setting
+      // whose pen is down, or on a closed document, is asking for the reason
+      // for a change that cannot be made.
+      // **One lane, both routes** (entry 161): the same sentence rides the
+      // pen as `setWhy` (T25, attributed by construction) and the proposal
+      // as `openMotion`'s `why` (K12, C11) — a reason is owed for the
+      // change, not for the road it takes. `founderProposal` reads it here.
+      if (amFounder() && env.cs && founderDirect(cc) && isChange(k) && !motionOn(cc) && !membersHold(cc)) {
+        const v = (S.setWhy && S.setWhy[k]) || '';
+        return '<div class="body whyset"><p class="eyebrow fieldlab">' + PAGE_COPY.whyChangingLabel + '</p>' +
+          founderSpeakerLane(v) + '</div>';
+      }
+      // anybody else, reading what happened: what changed, and their reason
+      const am = lastAmendment(k);
+      if (!am || amFounder()) return '';
+      const from = am.from || changedFrom(k);
+      if (!from) return '';
+      const was = wordsFor(k, from);
+      const now2 = wordsFor(k, (csState(k) || {}).value);
+      if (!was) return '';
+      const what = esc(WHAT[k] || (k === 'title' ? 'the document’s title' : nounOf(cc).toLowerCase()));
+      const who = am.route === 'pen' ? 'The Founder has changed ' : 'The membership has changed ';
+      // **Long values are shown, not narrated** (2026-08-22). *from x to y*
+      // reads well for a rung, a percentage or a date, and badly for ⏱️,
+      // whose value is three numbers in a sentence — *from 4 ✏️ to start, up
+      // to 8, one more every 180 minutes to 2 ✏️ to start, up to 8, one more
+      // every 180 minutes* buries the one number that moved and loses its
+      // own *to* in the middle. Past a short value the pair goes on two
+      // aligned lines instead, where the eye finds the difference itself.
+      const longish = was.length > 32 || (now2 || '').length > 32;
+      // **News says what happened; history says when.** The same block does
+      // both jobs, because it is the same fact — but an amendment you have
+      // already acknowledged is no longer being announced to you, and a
+      // line on a settled clause that a reader may meet months later has to
+      // date itself or it reads as something that has just happened.
+      const dated = stateOf(cc, ctx) === 'news' ? ''
+        : '<p class="eyebrow fieldlab">Last amended' +
+          (am.at ? ' ' + esc(window.CARDS.longDay(am.at)) : '') + '</p>';
+      // **A 💤 change names the members it returned** (SURFACE Y26, Q902):
+      // turning it off or lengthening it past somebody's quiet returns them
+      // at once (entry 97), and who the change put back is part of what
+      // changed. The module's own record of the set (`returned`, ids) is
+      // named off the register — who is a member is public (§9.0c).
+      const back = k === 'lapse' ? ((csState(k) || {}).returned || []) : [];
+      const returned = back.length
+        ? '<p class="cpv">' + PAGE_COPY.lapseReturned(
+          listOf(back.map((mid2) => esc(nameOfMember(mid2)))), back.length) + '</p>'
+        : '';
+      return '<div class="body changed">' + dated +
+        (longish
+          ? '<p class="cpv">' + who + what + '.</p>' +
+            '<p class="waswas"><span>was</span>' + esc(was) + '</p>' +
+            (now2 ? '<p class="waswas"><span>now</span>' + esc(now2) + '</p>' : '')
+          : '<p class="cpv">' + who + what +
+            ' from ' + esc(was) + (now2 ? ' to ' + esc(now2) : '') + '.</p>') +
+        returned +
+        (am.route === 'pen' ? founderSpeaker(am.why)
+          : window.CARDS.speakerHtml(am.why)) + '</div>';
+    }
+
+    // ---- stage 3a: the band's settings on the one shell (Q1541) ------------
+    // **A settings card is its rule, opened** (answers.md 1541.3, .5, .47): the
+    // label *Current rule* above the first line (Part 4 .3); the first line the
+    // rule as the Rules paragraph states it, without its powers line (1541.10),
+    // wearing the **standing pill** — who chose it (T48) — which for a reader
+    // who can choose is the chosen radio of the card's own group, pressed on
+    // open, so choosing it again cancels a change (`data-standpick`); the other
+    // options below a hairline, what stands omitted by value (Q620, Q1293);
+    // the reason box always shown on a card that can take a change (1541.21
+    // (b)); the bin dark until there is something of yours on the card
+    // (1541.9); the Founder's ✒️ not drawn at all until Founder Actions is
+    // accepted (Part 4 .19). Four kinds, each its card-audit `data-kind`:
+    //
+    //   setting      the Founder's own card — at the birth, in the founding,
+    //                and live on a setting whose pen they hold (SURFACE §9's
+    //                *setting (founder, pen)* row)
+    //   watching     the rule read by somebody who cannot choose it now — a
+    //                member before the start, the Founder before Founder
+    //                Actions or whose hand is off it — and any settings card
+    //                while its news is owed, the OK its row
+    //   answer       a blind question put to a member (`ans-*`)
+    //   birth-email  📧 before the save
+    //
+    // 🪪 🤝 🎩, the power cards and the settled card as a member's composer
+    // (K1) are stage 3b's; motions stage 4's; the stranger's is stage 1's.
+    const SHELL_3B = new Set(['admission', 'applications', 'hat']);
+    /** the setting a card is about — an answer card's own setting */
+    const hostCard = (c) => (c && c.ansFor ? card(c.ansFor) : c);
+    /** the Founder's own body path — the card `cardFor` gives the founder's
+     *  ladder (BODY) rather than the read body; the same test it asks */
+    const founderBody = (c) => amFounder() && !founderHandOff(c) && c.own !== 'you' && !doorDirect(c);
+    /** has this reader a commit on the Founder's own card: 🪶 at the birth,
+     *  the ✒️ once Founder Actions is accepted (Part 4 .19). A card with none
+     *  cannot take a change here, so it reads as the rule (principle 4) */
+    const founderCanCommit = () => !env.cs || (mayPen() && docOpen());
+    function settingKind(c) {
+      if (!c || atTheDoor() || isStranger() || S.viewer === 'applicant') return null;
+      if (c.ansFor) return MANAGED_KEYS.includes(c.ansFor) ? 'answer' : null;
+      if (c.k === 'myemail') return !env.cs ? 'birth-email' : null;
+      if (!MANAGED_KEYS.includes(c.k) || SHELL_3B.has(c.k)) return null;
+      if (c.power || c.record || c.isGate || c.door || c.kind === 'personal' || c.admit || c.release ||
+        c.held || c.departure || c.mailgiveup || c.isBegin || c.isClosing) return null;
+      // a motion in flight on the setting is stage 4's card
+      if (motionOn(c)) return null;
+      const news = stateOf(c, ctx) === 'news';
+      // a member's settled card is the composer (K1) — stage 3b — unless its
+      // news is owed, which the composer defers to (as `cardFor` does), and
+      // never under a draft being typed there
+      const composing = S.open === c.k && !!S.draft && S.draft.k === c.k && !!(S.draft.to || S.draft.why);
+      if (composerOn(c) && (!news || composing)) return null;
+      if (news) return 'watching';
+      if (founderBody(c) && founderCanCommit()) return 'setting';
+      return 'watching';
+    }
+    const W3 = () => window.COPY.shell;
+    /** is a delegated question still collecting — nothing stands yet */
+    const collecting = (c) => isRoom(c) && !!(csState(c.k) || {}).collecting;
+    /** the first line's words: the rule as the Rules paragraph states it,
+     *  without its powers line (1541.10) — on an answer card, its setting's */
+    const lineOf = (c) => {
+      const h = hostCard(c);
+      if (h.k === 'title' && !env.cs && !titleStands()) return null;   // the title box is the first line
+      if (h.k === 'myemail') return esc(decisionLine(h, false) || '');
+      const rule = settled(h) && !collecting(h) && ctx.headFor ? ctx.headFor(h, true) : null;
+      return rule != null ? rule : window.CARDS.linkify(esc(decisionLine(h, false) || '')).replace(/\n/g, '<br>');
+    };
+    /** who chose what stands, for the pill — only where something stands */
+    const pillOf = (c) => {
+      if (c.ansFor || c.k === 'myemail') return null;
+      if (c.k === 'title' ? !titleStands() : !settled(c)) return null;
+      if (collecting(c)) return null;
+      return window.CARD_STATE.provenanceOf(c.k);
+    };
+    /** the reason a dark commit waits: a card you type into waits on typing */
+    const waitsOn = (c) => ((c.k === 'title' || c.k === 'slug' || c.k === 'myemail') ? 'type' : 'choose');
+    /** what the reader may send here — the bin, and the commits */
+    function settingActs(c) {
+      const kind = settingKind(c);
+      if (!kind || kind === 'watching') return [];
+      const dirty = S.open === c.k && openCardDirty();
+      const acts = [{ kind: 'bin', title: PAGE_COPY.binPutBack,
+        attrs: dirty ? ' data-revert="1"' : ' data-act="bin"', until: dirty ? null : 'nothing-yours' }];
+      if (kind === 'birth-email' && S.emailSent && !S.emailVerified) {
+        acts.push({ kind: 'commit', glyph: '📨', glyphHtml: glyphHtml('📨'), cls: 'btn-approve emojibtn',
+          attrs: ' data-resend="1"', title: resendTitle(), until: EMAIL_OK.test(S.myemail) ? null : 'type' });
+        return acts;
+      }
+      const glyph = !env.cs ? '🪶' : kind === 'answer' ? '🏛️' : '✒️';
+      const ready = commitReady(c) && (glyph !== '✒️' || mayPenOn(c.k) || (mayPen() && docOpen() && takingBack(c.k)));
+      acts.push({ kind: 'commit', glyph, glyphHtml: glyphHtml(glyph), cls: 'btn-approve emojibtn',
+        attrs: ' data-confirm="1"', title: commitTitle(c), until: ready ? null : waitsOn(c) });
+      // the route's own commit beside the pen, where the Founder may also put
+      // the change to the membership (entry 161) — drawn by the page, since it
+      // swaps in place as a value is typed (329a)
+      if (kind === 'setting') { const fc = founderCommit(c); if (fc) acts.push({ kind: 'commit', html: fc }); }
+      return acts;
+    }
+    /** what this reader owes the card: the OK on its news, while owed */
+    function settingOwed(c) {
+      if (settingKind(c) !== 'watching' || stateOf(c, ctx) !== 'news') return null;
+      return { kind: 'ok', attrs: ' data-ok="' + esc(isRoom(c) ? 'res-' + c.k : 'set-' + c.k) + '"', word: 'OK' };
+    }
+    /** the news of a change, told as the rule it replaced (Part 4 .11) and
+     *  the reason it changed, under the rule that now stands — the Q1556 (7)
+     *  deferral; the *Last amended* history retires with it, the records
+     *  behind the rule's tab being where a change's history is kept */
+    function newsParts(c) {
+      const am = amFounder() ? null : lastAmendment(c.k);
+      if (!am) return { blocks: [], body: '' };
+      const from = am.from || changedFrom(c.k);
+      const was = from != null ? (sentenceFor(c.k, from) || wordsFor(c.k, from)) : null;
+      const back = c.k === 'lapse' ? ((csState(c.k) || {}).returned || []) : [];
+      const returned = back.length ? '<p class="cpv">' + PAGE_COPY.lapseReturned(
+        listOf(back.map((mid2) => esc(nameOfMember(mid2)))), back.length) + '</p>' : '';
+      return {
+        body: (am.route === 'pen' ? founderSpeaker(am.why) : window.CARDS.speakerHtml(am.why)) + returned,
+        blocks: was ? [{ label: W3().previousRule, fact: 'previous', html: '<p class="cpv">' + esc(was) + '</p>' }] : [],
+      };
+    }
+    /** **the card's slots**, handed to card-state.js's `present` */
+    function settingPresent(c, hints) {
+      const kind = settingKind(c);
+      if (!kind) return {};
+      const k = c.k;
+      const closed = !!(env.cs && env.cs.closed);
+      // the label (1541.46 (a)): what the first line is — *Current rule*, and
+      // *Rule at the close* on a closed document (Part 4 .16); on 📧 at the
+      // birth, and 🪶 before a title stands, the card's ask (a question card)
+      const askCard = kind === 'birth-email' || (k === 'title' && !env.cs && !titleStands());
+      const label = askCard ? window.SETUP.labelOf(c, ctx) : closed ? W3().ruleAtClose : W3().currentRule;
+      const stand = pillOf(c);
+      const pill = !stand ? ''
+        : kind === 'setting' ? window.CARD_SHELL.pickPillHtml(stand, !(S.open === k && openCardDirty()))
+        : window.CARD_SHELL.pillHtml(stand);
+      let line = lineOf(c);
+      let input = '';
+      let options = '';
+      let body = '';
+      let blocks = [];
+      if (kind === 'birth-email') {
+        const field = BODY.myemail();
+        if (line) input = field; else line = field;
+      } else if (kind === 'answer') {
+        body = amFounder() && viewerIsMember() ? '<p class="unlocks">' + esc(PAGE_COPY.asMember) + '</p>' : '';
+        options = ANSWER[c.ansFor](S.myAns, E(), c.ansFor === 'quorum' ? S.quorumForm : undefined, roomNow(),
+          ANSTYPED, clauseCtx());
+      } else if (kind === 'setting') {
+        const b = BODY[k]();
+        // 🪶 before a title stands: the title box is the first line (P1's
+        // fourth exception); 📍 before the save: its field is an input, not a
+        // choice among options
+        if (line == null) line = b;
+        else if (k === 'slug' && !env.cs) input = b;
+        else options = b + delegateRung(c);
+        // the reason box, on a card that can take a change (1541.21 (b)) —
+        // the lane's own placeholder is its words, so no label stands over it
+        const why = changeHalf(c);
+        if (why) input += why.replace(/<p class="eyebrow fieldlab">[^<]*<\/p>/, '');
+        body = founderPairNote(c) + (c.knote ? '<p class="setnote">' + c.knote + '</p>' : '');
+      } else if (kind === 'watching' && stateOf(c, ctx) === 'news') {
+        const n = newsParts(c);
+        body = n.body; blocks = n.blocks;
+      }
+      body += doorErrHtml(k);
+      return {
+        kind,
+        // `data-draft` says the card holds something of yours not yet sent —
+        // what lights the bin, and what card-audit's P24 reads
+        frame: { cls: 'sugg setupcard', attrs: ' role="tabpanel" data-setupcard="' + esc(k) + '"' +
+          (S.open === k && openCardDirty() ? ' data-draft="1"' : '') },
+        label: { text: label },
+        head: { html: window.SETUP.headHtml(c, ctx, (hints && hints.siblings) || [c],
+          '<div class="headrule asblock" data-fact="place">' + (line || '') + pill + '</div>') },
+        body: body ? { html: body } : null,
+        blocks,
+        options: options ? { html: options } : null,
+        input: input ? { html: input } : null,
+      };
+    }
+
     // ---- the band: two piles, and the card one of them opens into ----------
     // **One title, one place, at every step** (backlog 33). The big heading at
     // the top of the page is the *pre-save* heading: before the document exists
@@ -979,7 +1269,9 @@ window.BAND = (function () {
       // having needed the same row: the pair groups at the far right, the
       // veto immediately left of the pen (Ed, 2026-09-02, Q1154).
       // the band's kinds built on the one shell, stage by stage (BUILD.md §4)
-      const SHELL_KINDS = new Set(['grant', 'gate', 'begin', 'release']);
+      // …and stage 3a's settings (Q1541): the Founder's own card, the rule read,
+      // a blind answer and 📧 at the birth
+      const SHELL_KINDS = new Set(['grant', 'gate', 'begin', 'release', 'setting', 'watching', 'answer', 'birth-email']);
       const crownPairRow = () => (amFounder()
         ? binBtn() + '<span class="rightpair">' +
           '<button class="btn glyphbtn emojibtn" data-crownq="reject"' +
@@ -1434,111 +1726,6 @@ window.BAND = (function () {
         // the one sentence only its own card can say: the ⏰ card's
         // whether/when split, where the constitutional line falls inside a
         // single setting.
-        // **A pen change is an amendment, and reads like one** (Ed, 2026-08-22:
-        // *a unilateral rule change by the founder is still just a kind of
-        // amendment and so should be treated in the same way in terms of how
-        // it's communicated and reported*). So this stopped reading the
-        // setting's own last-set fields and reads **the amendment record**,
-        // which is where every route already lives — and the dividend is that a
-        // clause now carries its history whoever changed it, the founder's pen
-        // and the membership's motion in one line with one shape.
-        //
-        // Who it names follows the route, and has to: the pen is attributed by
-        // construction, so the founder's name and face are on it; a raised
-        // motion's mover is **sealed until the record** (§3.4), so that one is
-        // the membership's act and wears the featureless disc.
-        // The module hands back `MotionRecord`s and the wire hands back
-        // `MotionView`s, and they name two of these fields differently — so
-        // they are normalised here into the one shape the copy below reads,
-        // rather than each caller remembering which it is holding.
-        function lastAmendment(k) {
-          if (!env.cs) return null;
-          const mid = midOf(k);
-          let best = null;
-          try {
-            for (const m of env.cs.motionRecords().values()) {
-              if (m.status !== 'carried') continue;
-              if (!m.payload || m.payload.kind !== 'set' || m.payload.setting !== mid) continue;
-              const at = m.at !== undefined && m.at !== null ? m.at : (m.settledAtT || 0);
-              const from = m.from !== undefined && m.from !== null ? m.from
-                : (env.cs.amendedFrom ? env.cs.amendedFrom(m.id) : null);
-              const one = { route: m.route, why: m.why || null, at, from };
-              if (!best || one.at >= best.at) best = one;
-            }
-          } catch (e) { return null; }
-          return best;
-        }
-        // the two halves of Q530, chosen by which side of the act you are on
-        // **Declared, not assigned, so the composer above can reach it.** A
-        // member's settled card post-start renders through the composer's own
-        // early return, which is *before* this point in the function — so as an
-        // arrow const the history was drawn on the news card and lost the
-        // moment the OK turned it back into a composer. Ed's answer was that
-        // the clause keeps it permanently, and a settled clause is exactly
-        // where somebody goes to ask why a rule is the way it is.
-        function changeHalf(cc) {
-          const k = cc.k;
-          if (cc.ansFor || cc.isGate || cc.door || !PW_KEYS.includes(k) || k === 'text') return '';
-          // the founder, about to change something that already stands: a lane
-          // — where they still can (entry 62). A rationale field on a setting
-          // whose pen is down, or on a closed document, is asking for the reason
-          // for a change that cannot be made.
-          // **One lane, both routes** (entry 161): the same sentence rides the
-          // pen as `setWhy` (T25, attributed by construction) and the proposal
-          // as `openMotion`'s `why` (K12, C11) — a reason is owed for the
-          // change, not for the road it takes. `founderProposal` reads it here.
-          if (amFounder() && env.cs && founderDirect(cc) && isChange(k) && !motionOn(cc) && !membersHold(cc)) {
-            const v = (S.setWhy && S.setWhy[k]) || '';
-            return '<div class="body whyset"><p class="eyebrow fieldlab">' + PAGE_COPY.whyChangingLabel + '</p>' +
-              founderSpeakerLane(v) + '</div>';
-          }
-          // anybody else, reading what happened: what changed, and their reason
-          const am = lastAmendment(k);
-          if (!am || amFounder()) return '';
-          const from = am.from || changedFrom(k);
-          if (!from) return '';
-          const was = wordsFor(k, from);
-          const now2 = wordsFor(k, (csState(k) || {}).value);
-          if (!was) return '';
-          const what = esc(WHAT[k] || (k === 'title' ? 'the document’s title' : nounOf(cc).toLowerCase()));
-          const who = am.route === 'pen' ? 'The Founder has changed ' : 'The membership has changed ';
-          // **Long values are shown, not narrated** (2026-08-22). *from x to y*
-          // reads well for a rung, a percentage or a date, and badly for ⏱️,
-          // whose value is three numbers in a sentence — *from 4 ✏️ to start, up
-          // to 8, one more every 180 minutes to 2 ✏️ to start, up to 8, one more
-          // every 180 minutes* buries the one number that moved and loses its
-          // own *to* in the middle. Past a short value the pair goes on two
-          // aligned lines instead, where the eye finds the difference itself.
-          const longish = was.length > 32 || (now2 || '').length > 32;
-          // **News says what happened; history says when.** The same block does
-          // both jobs, because it is the same fact — but an amendment you have
-          // already acknowledged is no longer being announced to you, and a
-          // line on a settled clause that a reader may meet months later has to
-          // date itself or it reads as something that has just happened.
-          const dated = stateOf(cc, ctx) === 'news' ? ''
-            : '<p class="eyebrow fieldlab">Last amended' +
-              (am.at ? ' ' + esc(window.CARDS.longDay(am.at)) : '') + '</p>';
-          // **A 💤 change names the members it returned** (SURFACE Y26, Q902):
-          // turning it off or lengthening it past somebody's quiet returns them
-          // at once (entry 97), and who the change put back is part of what
-          // changed. The module's own record of the set (`returned`, ids) is
-          // named off the register — who is a member is public (§9.0c).
-          const back = k === 'lapse' ? ((csState(k) || {}).returned || []) : [];
-          const returned = back.length
-            ? '<p class="cpv">' + PAGE_COPY.lapseReturned(
-              listOf(back.map((mid2) => esc(nameOfMember(mid2)))), back.length) + '</p>'
-            : '';
-          return '<div class="body changed">' + dated +
-            (longish
-              ? '<p class="cpv">' + who + what + '.</p>' +
-                '<p class="waswas"><span>was</span>' + esc(was) + '</p>' +
-                (now2 ? '<p class="waswas"><span>now</span>' + esc(now2) + '</p>' : '')
-              : '<p class="cpv">' + who + what +
-                ' from ' + esc(was) + (now2 ? ' to ' + esc(now2) : '') + '.</p>') +
-            returned +
-            (am.route === 'pen' ? founderSpeaker(am.why)
-              : window.CARDS.speakerHtml(am.why)) + '</div>';
-        }
         const kindLine = c.knote ? '<p class="setnote">' + c.knote + '</p>' : '';
         const newsKey = isRoom(c) ? 'res-' + c.k : 'set-' + c.k;
         // **The ground belongs to the glyph, never to the card's kind** (Ed's
@@ -1778,20 +1965,30 @@ window.BAND = (function () {
     function fitTitleCard() {
       if (S.open !== 'title' || env.cs) return; // post-save fitBand owns the card
       const cardEl = document.querySelector('#titlepara > .setupcard');
-      const hd = cardEl && cardEl.querySelector('.headdoct');
+      // **on the one shell the label stands where the heading's first line
+      // stood** (Q1541 stage 3a, `space-above`'s `fit`): the title box, the
+      // card's first line, stands the label's room below it — at the page's
+      // top, where no scroll can take the room, the first line moves down by
+      // it (answers Part 6.4) — and the strip hangs off that first line
+      const shellSlot = cardEl && cardEl.classList.contains('gshell') && cardEl.querySelector(':scope > .glabslot');
+      const hd = cardEl && (shellSlot || cardEl.querySelector('.headdoct'));
       const d = document.getElementById('doctitle');
       if (!cardEl || !hd || !d) return;
       cardEl.style.marginTop = ''; hd.style.marginLeft = '';
       d.style.display = '';
       const want = textRect(d);
       d.style.display = 'none';
-      const have = textRect(hd);
+      const have = shellSlot ? shellSlot.getBoundingClientRect() : textRect(hd);
       if (want && have) {
         const dy = want.top - have.top, dx = want.left - have.left;
         if (Math.abs(dy) > 0.5) cardEl.style.marginTop =
           ((parseFloat(getComputedStyle(cardEl).marginTop) || 0) + dy).toFixed(1) + 'px';
-        if (Math.abs(dx) > 0.5) hd.style.marginLeft = dx.toFixed(1) + 'px';
+        if (Math.abs(dx) > 0.5 && !shellSlot) hd.style.marginLeft = dx.toFixed(1) + 'px';
       }
+      // how far the first line stands below where the heading's did — the
+      // label's room, on the shell; nothing on the old card
+      const lineShift = shellSlot && want
+        ? (window.CARD_SHELL.lineTop(cardEl.querySelector('.clausehead .rtext')) || want.top) - want.top : 0;
       // pin the tab vertically onto the re-materialised closed tab — one
       // unpainted beat, never shown. No horizontal pin: the strip's x is the
       // card's edge, which is where the closed tab now stands by rule.
@@ -1807,7 +2004,7 @@ window.BAND = (function () {
         d.style.display = 'none';
         const haveG = col.querySelector('.achip span');
         if (wantG && haveG) {
-          const dy2 = wantG.top - haveG.getBoundingClientRect().top;
+          const dy2 = wantG.top + lineShift - haveG.getBoundingClientRect().top;
           if (Math.abs(dy2) > 0.5) col.style.transform = 'translateY(' + dy2.toFixed(1) + 'px)';
         }
       }
@@ -1872,7 +2069,7 @@ window.BAND = (function () {
         // the commit may stand beside a countdown since Q1486 (E), and that
         // is not part of the node being swapped — left in place it would
         // stack a second one on every keystroke
-        document.querySelectorAll('.setupcard .pdrip').forEach((n) => n.remove());
+        document.querySelectorAll('.setupcard .pdrip, .setupcard .pvoice').forEach((n) => n.remove());
         const slot = document.querySelector(
           '.setupcard [data-putmotion], .setupcard [data-holdmotion]');
         if (slot) slot.outerHTML = founderCommit(c);
@@ -1880,6 +2077,32 @@ window.BAND = (function () {
       // …and nothing else on the row has a live state to correct: since the
       // bin is always pressable there is no dirty predicate left to keep in
       // step, which is four fewer copies of "what this card stands as".
+      // **…except on the one shell** (Q1541 stage 3a): there the bin is dark
+      // until there is something of yours on the card (1541.9), and the
+      // standing pill is pressed exactly while nothing else is chosen
+      // (1541.47) — so a keystroke that makes the card differ from what
+      // stands lights the one and releases the other, in place, and the
+      // commit's `data-until` follows its state
+      const sh = c && settingKind(c) && document.querySelector('.setupcard.gshell[data-setupcard="' + c.k + '"]');
+      if (sh) {
+        const dirty = openCardDirty();
+        sh.toggleAttribute('data-draft', dirty);
+        const bin = sh.querySelector('[data-slot="row"] [data-revert], [data-slot="row"] [data-act="bin"]');
+        if (bin) {
+          bin.disabled = !dirty;
+          if (dirty) { bin.removeAttribute('data-act'); bin.removeAttribute('data-until'); bin.setAttribute('data-revert', '1'); }
+          else { bin.removeAttribute('data-revert'); bin.setAttribute('data-act', 'bin'); bin.setAttribute('data-until', 'nothing-yours'); }
+        }
+        const pill = sh.querySelector('[data-standpick]');
+        if (pill) pill.setAttribute('aria-pressed', String(!dirty));
+        const own = settingActs(c).find((a) => a.kind === 'commit' && a.html == null);
+        const cb = sh.querySelector('[data-slot="row"] [data-confirm], [data-slot="row"] [data-resend]');
+        if (own && cb) {
+          cb.disabled = !!own.until;
+          if (own.until) cb.setAttribute('data-until', own.until); else cb.removeAttribute('data-until');
+          if (own.title) cb.title = own.title;
+        }
+      }
     }
 
     const renderMail = () => (isStranger() ? renderMailModal(false, MAILS.verify(S.title, '', S.slug))
@@ -2042,6 +2265,8 @@ window.BAND = (function () {
 
     return {
       render, refreshCommit, roomNow, syncShare, standingBlock, unchangedCard,
+      // stage 3a's settings cards, for the band's card-state source (Q1541)
+      settingKind, settingActs, settingOwed, settingPresent, lineOf,
       foundedAt, foundedClause, closedAtWords, resendTitle, APPLICANT, MEMBER_EMAILS, APPCARDS,
       appCtx,
       // the rail asks this (SURFACE E33, Q901): a door that shut under a

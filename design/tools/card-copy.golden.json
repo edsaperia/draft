@@ -72,8 +72,8 @@
     "helpers": []
    },
    "ans-chamber": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "Until the members decide, only members can see the document — waiting for members.",
     "lock": "",
     "body": "This is your answer to this question as a member.The document can only be seen by members.Prefer thisThe document can be seen by anyone with the link.Prefer this",
     "options": [
@@ -152,8 +152,8 @@
     "helpers": []
    },
    "authorship": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "The Founder is deciding whether anonymous proposers are revealed.",
     "lock": "",
     "body": "All proposals are made anonymously.Choose thisProposals may be made anonymously.Choose thisAll proposals are made anonymously, and all names are revealed at the end.Choose thisProposals may be made anonymously, and all names are revealed at the end.Choose thisProposals may not be made anonymously.Choose thisThe membership will decide if anonymous proposals are allowed.Choose this",
     "options": [
@@ -236,8 +236,8 @@
     ]
    },
    "chamber": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "Until the Founder decides, only members can see the document.",
     "lock": "",
     "body": "The document can only be seen by members.Choose thisThe document can be seen by anyone with the link.Choose thisThe membership will decide whether the document can only be seen by members or by anyone with the link.Choose this",
     "options": [
@@ -278,8 +278,8 @@
     "helpers": []
    },
    "ending": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "The Founder is deciding when the drafting process will end.",
     "lock": "",
     "body": "No more changes to the document may be made after .Choose thisChanges to the document may be made perpetually.Choose thisThe membership will decide whether changes end on a set date or may be made perpetually.Choose this",
     "options": [
@@ -461,8 +461,8 @@
     ]
    },
    "judgments": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "The Founder is deciding whether votes are revealed with the record.",
     "lock": "",
     "body": "Votes are never revealed.Choose thisVotes are revealed when the document is finished, and not before.Choose thisThe membership will decide whether votes are revealed at the end or never.Choose this",
     "options": [
@@ -503,8 +503,8 @@
     "helpers": []
    },
    "lapse": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "The Founder is deciding whether an inactive membership lapses.",
     "lock": "",
     "body": "After minuteshoursdays, inactive members lapse and automatically abstain from votes.Choose thisInactive members never lapse and are still counted towards votes.Choose thisThe membership will decide whether inactive members lapse or never lapse.Choose this",
     "options": [
@@ -550,7 +550,7 @@
     "helpers": []
    },
    "myemail": {
-    "eyebrow": "",
+    "eyebrow": "Enter Your Email",
     "head": "",
     "lock": "",
     "body": "",
@@ -665,8 +665,8 @@
     "helpers": []
    },
    "quorum": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "The Founder is deciding how many members must prefer a proposal before it can pass.",
     "lock": "",
     "body": "A proposal ✏️ cannot pass until it is preferred by at least % of the membership.Choose thisA proposal ✏️ cannot pass until it is preferred by at least members.Choose thisThe membership will decide how many members must prefer a proposal ✏️ before it can pass.Choose this",
     "options": [
@@ -719,8 +719,8 @@
     ]
    },
    "rate": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "The Founder is deciding how often members may propose.",
     "lock": "",
     "body": "Members may make a new proposal ✏️ every minuteshoursdays.Choose thisThe membership will decide how often members should be able to make proposals.Choose this",
     "options": [
@@ -761,8 +761,8 @@
     "helpers": []
    },
    "removal": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "The Founder is deciding how a member is removed.",
     "lock": "",
     "body": "To remove a member, all members must agree 🏛️.Choose thisTo remove a member, all members apart from them must agree 🏛️.Choose thisTo remove a member, a majority of members must agree ✏️.Choose thisThe membership will decide how a member is removed.Choose this",
     "options": [
@@ -808,10 +808,10 @@
     "helpers": []
    },
    "slug": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "The Founder is deciding the document’s address.",
     "lock": "",
-    "body": "docs.vote/d/",
+    "body": "",
     "options": [],
     "inputs": [
      {
@@ -839,7 +839,7 @@
     ]
    },
    "title": {
-    "eyebrow": "",
+    "eyebrow": "Name the Document",
     "head": "",
     "lock": "",
     "body": "",
@@ -3111,8 +3111,8 @@
     "helpers": []
    },
    "authorship": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "The Founder is deciding whether anonymous proposers are revealed.",
     "lock": "",
     "body": "All proposals are made anonymously.Choose thisProposals may be made anonymously.Choose thisAll proposals are made anonymously, and all names are revealed at the end.Choose thisProposals may be made anonymously, and all names are revealed at the end.Choose thisProposals may not be made anonymously.Choose thisThe membership will decide if anonymous proposals are allowed.Chosen",
     "options": [
@@ -3168,8 +3168,8 @@
     "helpers": []
    },
    "chamber": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "Until the Founder decides, only members can see the document.",
     "lock": "",
     "body": "The document can only be seen by members.Choose thisThe document can be seen by anyone with the link.Choose thisThe membership will decide whether the document can only be seen by members or by anyone with the link.Chosen",
     "options": [
@@ -3210,8 +3210,8 @@
     "helpers": []
    },
    "ending": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "The Founder is deciding when the drafting process will end.",
     "lock": "",
     "body": "No more changes to the document may be made after .Choose thisChanges to the document may be made perpetually.Choose thisThe membership will decide whether changes end on a set date or may be made perpetually.Chosen",
     "options": [
@@ -3257,8 +3257,8 @@
     "helpers": []
    },
    "judgments": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "The Founder is deciding whether votes are revealed with the record.",
     "lock": "",
     "body": "Votes are never revealed.Choose thisVotes are revealed when the document is finished, and not before.Choose thisThe membership will decide whether votes are revealed at the end or never.Chosen",
     "options": [
@@ -3299,8 +3299,8 @@
     "helpers": []
    },
    "lapse": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "The Founder is deciding whether an inactive membership lapses.",
     "lock": "",
     "body": "After minuteshoursdays, inactive members lapse and automatically abstain from votes.Choose thisInactive members never lapse and are still counted towards votes.Choose thisThe membership will decide whether inactive members lapse or never lapse.Chosen",
     "options": [
@@ -3346,7 +3346,7 @@
     "helpers": []
    },
    "myemail": {
-    "eyebrow": "",
+    "eyebrow": "Enter Your Email",
     "head": "",
     "lock": "",
     "body": "",
@@ -3376,8 +3376,8 @@
     "helpers": []
    },
    "quorum": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "The Founder is deciding how many members must prefer a proposal before it can pass.",
     "lock": "",
     "body": "A proposal ✏️ cannot pass until it is preferred by at least % of the membership.Choose thisA proposal ✏️ cannot pass until it is preferred by at least members.Choose thisThe membership will decide how many members must prefer a proposal ✏️ before it can pass.Chosen",
     "options": [
@@ -3430,8 +3430,8 @@
     ]
    },
    "rate": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "The Founder is deciding how often members may propose.",
     "lock": "",
     "body": "Members may make a new proposal ✏️ every minuteshoursdays.Choose thisThe membership will decide how often members should be able to make proposals.Chosen",
     "options": [
@@ -3472,8 +3472,8 @@
     "helpers": []
    },
    "removal": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "The Founder is deciding how a member is removed.",
     "lock": "",
     "body": "To remove a member, all members must agree 🏛️.Choose thisTo remove a member, all members apart from them must agree 🏛️.Choose thisTo remove a member, a majority of members must agree ✏️.Choose thisThe membership will decide how a member is removed.Chosen",
     "options": [
@@ -3519,10 +3519,10 @@
     "helpers": []
    },
    "slug": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "The Founder is deciding the document’s address.",
     "lock": "",
-    "body": "docs.vote/d/",
+    "body": "",
     "options": [],
     "inputs": [
      {
@@ -3550,7 +3550,7 @@
     ]
    },
    "title": {
-    "eyebrow": "",
+    "eyebrow": "Name the Document",
     "head": "",
     "lock": "",
     "body": "",
@@ -3668,8 +3668,8 @@
     "helpers": []
    },
    "authorship": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "The Founder is deciding whether anonymous proposers are revealed.",
     "lock": "",
     "body": "All proposals are made anonymously.Choose thisProposals may be made anonymously.Choose thisAll proposals are made anonymously, and all names are revealed at the end.Choose thisProposals may be made anonymously, and all names are revealed at the end.Choose thisProposals may not be made anonymously.Choose thisThe membership will decide if anonymous proposals are allowed.Choose this",
     "options": [
@@ -3750,8 +3750,8 @@
     ]
    },
    "chamber": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "Until the Founder decides, only members can see the document.",
     "lock": "",
     "body": "The document can only be seen by members.Choose thisThe document can be seen by anyone with the link.Choose thisThe membership will decide whether the document can only be seen by members or by anyone with the link.Choose this",
     "options": [
@@ -3792,8 +3792,8 @@
     "helpers": []
    },
    "ending": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "The Founder is deciding when the drafting process will end.",
     "lock": "",
     "body": "No more changes to the document may be made after .Choose thisChanges to the document may be made perpetually.Choose thisThe membership will decide whether changes end on a set date or may be made perpetually.Choose this",
     "options": [
@@ -3973,8 +3973,8 @@
     "helpers": []
    },
    "judgments": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "The Founder is deciding whether votes are revealed with the record.",
     "lock": "",
     "body": "Votes are never revealed.Choose thisVotes are revealed when the document is finished, and not before.Choose thisThe membership will decide whether votes are revealed at the end or never.Choose this",
     "options": [
@@ -4015,8 +4015,8 @@
     "helpers": []
    },
    "lapse": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "The Founder is deciding whether an inactive membership lapses.",
     "lock": "",
     "body": "After minuteshoursdays, inactive members lapse and automatically abstain from votes.Choose thisInactive members never lapse and are still counted towards votes.Choose thisThe membership will decide whether inactive members lapse or never lapse.Choose this",
     "options": [
@@ -4062,7 +4062,7 @@
     "helpers": []
    },
    "myemail": {
-    "eyebrow": "",
+    "eyebrow": "Enter Your Email",
     "head": "",
     "lock": "",
     "body": "",
@@ -4177,8 +4177,8 @@
     "helpers": []
    },
    "quorum": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "The Founder is deciding how many members must prefer a proposal before it can pass.",
     "lock": "",
     "body": "A proposal ✏️ cannot pass until it is preferred by at least % of the membership.Choose thisA proposal ✏️ cannot pass until it is preferred by at least members.Choose thisThe membership will decide how many members must prefer a proposal ✏️ before it can pass.Choose this",
     "options": [
@@ -4231,8 +4231,8 @@
     ]
    },
    "rate": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "The Founder is deciding how often members may propose.",
     "lock": "",
     "body": "Members may make a new proposal ✏️ every minuteshoursdays.Choose thisThe membership will decide how often members should be able to make proposals.Choose this",
     "options": [
@@ -4273,8 +4273,8 @@
     "helpers": []
    },
    "removal": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "The Founder is deciding how a member is removed.",
     "lock": "",
     "body": "To remove a member, all members must agree 🏛️.Choose thisTo remove a member, all members apart from them must agree 🏛️.Choose thisTo remove a member, a majority of members must agree ✏️.Choose thisThe membership will decide how a member is removed.Choose this",
     "options": [
@@ -4320,10 +4320,10 @@
     "helpers": []
    },
    "slug": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "The Founder is deciding the document’s address.",
     "lock": "",
-    "body": "docs.vote/d/",
+    "body": "",
     "options": [],
     "inputs": [
      {
@@ -4351,7 +4351,7 @@
     ]
    },
    "title": {
-    "eyebrow": "",
+    "eyebrow": "Name the Document",
     "head": "",
     "lock": "",
     "body": "",
@@ -4404,7 +4404,7 @@
      },
      {
       "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
+      "title": "You can only make one constitutional proposal 🏛️ at a time."
      }
     ],
     "hints": [
@@ -4413,7 +4413,7 @@
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "One 🏛️ each — withdraw yours first"
+     "You can only make one constitutional proposal 🏛️ at a time."
     ],
     "helpers": [
      "We should change this because…"
@@ -4439,7 +4439,7 @@
      },
      {
       "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
+      "title": "You can only make one constitutional proposal 🏛️ at a time."
      }
     ],
     "hints": [
@@ -4448,7 +4448,7 @@
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "One 🏛️ each — withdraw yours first"
+     "You can only make one constitutional proposal 🏛️ at a time."
     ],
     "helpers": [
      "We should change this because…"
@@ -4489,7 +4489,7 @@
      },
      {
       "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
+      "title": "You can only make one constitutional proposal 🏛️ at a time."
      }
     ],
     "hints": [
@@ -4499,7 +4499,7 @@
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "One 🏛️ each — withdraw yours first"
+     "You can only make one constitutional proposal 🏛️ at a time."
     ],
     "helpers": [
      "We should change this because…"
@@ -4551,17 +4551,13 @@
     "helpers": []
    },
    "chamber": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "The document can be seen by anyone with the link.Chosen by the Founder ✒️",
-    "lock": "Decided by the members.",
-    "body": "Set toAnyone with the linkDecided by the members.The Founder has changed who may read the document from members only to anyone with the link.ABAsh Bellamy 👑Readers who are not members should see what we are building.",
+    "lock": "",
+    "body": "ABAsh Bellamy 👑Readers who are not members should see what we are building.Previous ruleThe document can only be seen by members.",
     "options": [],
     "inputs": [],
     "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
      {
       "label": "OK",
       "title": null
@@ -4573,12 +4569,9 @@
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Changed by the Founder: Anyone with the link — settled",
-     "The founder’s own hand — a Founder Action ✒️, not a proposal",
-     "Put it back as it stands"
+     "The founder’s own hand — a Founder Action ✒️, not a proposal"
     ],
-    "helpers": [
-     "Decided by the members."
-    ]
+    "helpers": []
    },
    "ending": {
     "eyebrow": "",
@@ -4698,7 +4691,7 @@
      },
      {
       "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
+      "title": "You can only make one constitutional proposal 🏛️ at a time."
      }
     ],
     "hints": [
@@ -4709,7 +4702,7 @@
      "Does the Founder Have a Veto over Invitations? — settled",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "One 🏛️ each — withdraw yours first"
+     "You can only make one constitutional proposal 🏛️ at a time."
     ],
     "helpers": [
      "We should change this because…"
@@ -4735,7 +4728,7 @@
      },
      {
       "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
+      "title": "You can only make one constitutional proposal 🏛️ at a time."
      }
     ],
     "hints": [
@@ -4744,7 +4737,7 @@
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "One 🏛️ each — withdraw yours first"
+     "You can only make one constitutional proposal 🏛️ at a time."
     ],
     "helpers": [
      "We should change this because…"
@@ -4769,7 +4762,7 @@
      },
      {
       "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
+      "title": "You can only make one constitutional proposal 🏛️ at a time."
      }
     ],
     "hints": [
@@ -4778,7 +4771,7 @@
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "One 🏛️ each — withdraw yours first"
+     "You can only make one constitutional proposal 🏛️ at a time."
     ],
     "helpers": [
      "We should change this because…"
@@ -5354,7 +5347,7 @@
      },
      {
       "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
+      "title": "You can only make one constitutional proposal 🏛️ at a time."
      }
     ],
     "hints": [
@@ -5364,7 +5357,7 @@
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "One 🏛️ each — withdraw yours first"
+     "You can only make one constitutional proposal 🏛️ at a time."
     ],
     "helpers": [
      "With this quorum, 2 members preferring the current text can stop a proposal.",
@@ -5467,7 +5460,7 @@
      },
      {
       "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
+      "title": "You can only make one constitutional proposal 🏛️ at a time."
      }
     ],
     "hints": [
@@ -5476,7 +5469,7 @@
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "One 🏛️ each — withdraw yours first"
+     "You can only make one constitutional proposal 🏛️ at a time."
     ],
     "helpers": [
      "We should change this because…"
@@ -5496,7 +5489,7 @@
      },
      {
       "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
+      "title": "You can only make one constitutional proposal 🏛️ at a time."
      }
     ],
     "hints": [
@@ -5506,7 +5499,7 @@
      "Does the Founder Have a Veto over Removals? — settled",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "One 🏛️ each — withdraw yours first"
+     "You can only make one constitutional proposal 🏛️ at a time."
     ],
     "helpers": [
      "Whoever it is will see the proposal — nobody is removed in secret.",
@@ -6037,7 +6030,7 @@
      },
      {
       "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
+      "title": "You can only make one constitutional proposal 🏛️ at a time."
      }
     ],
     "hints": [
@@ -6046,7 +6039,7 @@
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "One 🏛️ each — withdraw yours first"
+     "You can only make one constitutional proposal 🏛️ at a time."
     ],
     "helpers": [
      "We should change this because…"
@@ -6072,7 +6065,7 @@
      },
      {
       "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
+      "title": "You can only make one constitutional proposal 🏛️ at a time."
      }
     ],
     "hints": [
@@ -6081,7 +6074,7 @@
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "One 🏛️ each — withdraw yours first"
+     "You can only make one constitutional proposal 🏛️ at a time."
     ],
     "helpers": [
      "We should change this because…"
@@ -6122,7 +6115,7 @@
      },
      {
       "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
+      "title": "You can only make one constitutional proposal 🏛️ at a time."
      }
     ],
     "hints": [
@@ -6132,7 +6125,7 @@
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "One 🏛️ each — withdraw yours first"
+     "You can only make one constitutional proposal 🏛️ at a time."
     ],
     "helpers": [
      "We should change this because…"
@@ -6184,10 +6177,10 @@
     "helpers": []
    },
    "chamber": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "The document can be seen by anyone with the link.Chosen by the Founder ✒️",
     "lock": "",
-    "body": "The document can only be seen by members.Choose ✒️ or Propose 🏛️ thisWhy are you changing this?ABAsh Bellamy 👑",
+    "body": "The document can only be seen by members.Choose ✒️ or Propose 🏛️ this",
     "options": [
      {
       "set": "chamber",
@@ -6207,7 +6200,7 @@
      },
      {
       "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
+      "title": "You can only make one constitutional proposal 🏛️ at a time."
      }
     ],
     "hints": [
@@ -6220,7 +6213,7 @@
      "The founder’s own hand — a Founder Action ✒️, not a proposal",
      "Put it back as it stands",
      "Set it",
-     "One 🏛️ each — withdraw yours first"
+     "You can only make one constitutional proposal 🏛️ at a time."
     ],
     "helpers": [
      "I am changing this because…"
@@ -6366,7 +6359,7 @@
      },
      {
       "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
+      "title": "You can only make one constitutional proposal 🏛️ at a time."
      }
     ],
     "hints": [
@@ -6375,7 +6368,7 @@
      "Does the Founder Have a Veto over Invitations? — settled",
      "Put it back as it stands",
      "Send the invitations — your word sends",
-     "One 🏛️ each — withdraw yours first"
+     "You can only make one constitutional proposal 🏛️ at a time."
     ],
     "helpers": []
    },
@@ -6399,7 +6392,7 @@
      },
      {
       "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
+      "title": "You can only make one constitutional proposal 🏛️ at a time."
      }
     ],
     "hints": [
@@ -6408,7 +6401,7 @@
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "One 🏛️ each — withdraw yours first"
+     "You can only make one constitutional proposal 🏛️ at a time."
     ],
     "helpers": [
      "We should change this because…"
@@ -6433,7 +6426,7 @@
      },
      {
       "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
+      "title": "You can only make one constitutional proposal 🏛️ at a time."
      }
     ],
     "hints": [
@@ -6442,7 +6435,7 @@
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "One 🏛️ each — withdraw yours first"
+     "You can only make one constitutional proposal 🏛️ at a time."
     ],
     "helpers": [
      "We should change this because…"
@@ -7130,7 +7123,7 @@
      },
      {
       "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
+      "title": "You can only make one constitutional proposal 🏛️ at a time."
      }
     ],
     "hints": [
@@ -7140,7 +7133,7 @@
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "One 🏛️ each — withdraw yours first"
+     "You can only make one constitutional proposal 🏛️ at a time."
     ],
     "helpers": [
      "With this quorum, 2 members preferring the current text can stop a proposal.",
@@ -7148,10 +7141,10 @@
     ]
    },
    "rate": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "Members may make a new proposal ✏️ every 3 hours.Chosen by the Founder ✒️",
     "lock": "",
-    "body": "Members may make a new proposal ✏️ every minuteshoursdays.Choose ✒️ or Propose ✏️ thisWhy are you changing this?ABAsh Bellamy 👑",
+    "body": "Members may make a new proposal ✏️ every minuteshoursdays.Choose ✒️ or Propose ✏️ this",
     "options": [
      {
       "set": "rateBy",
@@ -7271,7 +7264,7 @@
      },
      {
       "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
+      "title": "You can only make one constitutional proposal 🏛️ at a time."
      }
     ],
     "hints": [
@@ -7280,7 +7273,7 @@
      "Propose this — nothing leaves the card until you submit",
      "This is how your reason will reach everybody else: with your name off it.",
      "Discard this motion",
-     "One 🏛️ each — withdraw yours first"
+     "You can only make one constitutional proposal 🏛️ at a time."
     ],
     "helpers": [
      "We should change this because…"
@@ -7304,7 +7297,7 @@
      },
      {
       "label": "🏛️",
-      "title": "One 🏛️ each — withdraw yours first"
+      "title": "You can only make one constitutional proposal 🏛️ at a time."
      }
     ],
     "hints": [
@@ -7313,15 +7306,15 @@
      "Does the Founder Have a Veto over Removals? — settled",
      "Put it back as it stands",
      "Remove them — your word removes",
-     "One 🏛️ each — withdraw yours first"
+     "You can only make one constitutional proposal 🏛️ at a time."
     ],
     "helpers": []
    },
    "slug": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "The document lives at docs.vote/d/the-hollow-oak-club-house-charter-3b3f.Chosen by the Founder ✒️",
     "lock": "",
-    "body": "The document lives at docs.vote/d/.Choose thisPrevious links still work.Why are you changing this?ABAsh Bellamy 👑",
+    "body": "The document lives at docs.vote/d/.Choose thisPrevious links still work.",
     "options": [],
     "inputs": [
      {
@@ -7359,10 +7352,10 @@
     ]
    },
    "title": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "The document is titled “The Hollow Oak Club — House Charter”.Chosen by the Founder ✒️",
     "lock": "",
-    "body": "The document is titled .Choose thisWhy are you changing this?ABAsh Bellamy 👑",
+    "body": "The document is titled .Choose this",
     "options": [],
     "inputs": [],
     "foot": [
