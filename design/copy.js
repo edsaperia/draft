@@ -1455,7 +1455,8 @@ window.COPY = (function () {
     // accepted (Part 4 .19: the commit is not drawn, so the card says why),
     // naming them by the four verbs' own names
     composeOnceAccepted: (which) => 'You can propose a change to this rule once you accept ' +
-      which.map((w) => (w === 'proposals' ? 'Proposals' : 'Constitutional Proposals')).join(' and ') + '.',
+      (which.length > 1 ? 'Proposals and Constitutional Proposals'
+        : which[0] === 'proposals' ? 'Proposals' : 'Constitutional Proposals') + '.',
   };
 
   // ---- the spectator feed (feed.html, Q1466) --------------------------------
