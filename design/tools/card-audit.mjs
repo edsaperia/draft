@@ -456,16 +456,21 @@ const IN_PAGE = () => {
 
   /** The strings, so one payload serves the copy lens too — founding-walk's `snap()` shape. */
   const strings = (card) => ({
-    eyebrow: txt(card.querySelector('.headlab')),
+    // the label above the first line: the eyebrow on today's builders, the
+    // label slot on a card built on the one shell (Q1541 stage 1)
+    eyebrow: txt(card.querySelector('.headlab, :scope > [data-slot="label"]')),
     head: txt(card.querySelector('.headrule, .headtitle, .clausehead .rtext')),
     // the standing rule drawn as block one (Q1167 (a)) — the F6 lens below
     // asks whether anything beneath it repeats or pre-answers it (Q1293)
     standing: (() => { const h = card.querySelector('.headrule.asblock');
       if (!h) return null;
-      const r = h.querySelector('.lanepick');
+      const r = h.querySelector('.lanepick, .standpill');
       return txt(h).replace(r ? txt(r) : '', '').trim(); })(),
     lock: txt(card.querySelector('.lockline')),
-    body: txt(card.querySelector('.field, .lanes')),
+    // …and a shell card's field is its blocks slot, its fact line beside it
+    body: txt(card.querySelector('.field, .lanes')) ??
+      (card.querySelector(':scope > [data-slot="blocks"], :scope > [data-slot="fact"]')
+        ? [...card.querySelectorAll(':scope > [data-slot="fact"], :scope > [data-slot="blocks"]')].map(txt).join('') : null),
     // **A composer's lane is an option like any other** (issue #19). It draws
     // `data-mval`, whose value is the clause sentence the lane would set — no
     // use at all to a reader asking *which rung is this*, which is what T5
@@ -978,6 +983,21 @@ const IN_PAGE = () => {
     const facts = {};
     card.querySelectorAll('[data-fact]').forEach((e) => { if (!e.closest('.chipcol')) facts[e.dataset.fact] = (facts[e.dataset.fact] || 0) + 1; });
     out.facts = facts;
+    // P19's presence half (Q1541 stage 1): on a card built on the one shell,
+    // the slots drawn against the shell's own predicates over the card's
+    // state — a slot drawn that the state says is empty, or missing that it
+    // says is not
+    if (card.hasAttribute('data-kind') && window.CARD_STATE && window.CARD_SHELL) {
+      try {
+        const st = window.CARD_STATE.stateOf(key);
+        const P = window.CARD_SHELL.PRESENT;
+        out.presence = [];
+        for (const slot of ['label', 'fact', 'body', 'blocks', 'input', 'row']) {
+          const drawn = !!card.querySelector(':scope > [data-slot="' + slot + '"]');
+          if (drawn !== !!P[slot](st)) out.presence.push(slot + (drawn ? ' drawn, and the state says it is empty' : ' missing, and the state says it is not'));
+        }
+      } catch (e) { out.presence = ['the state could not be read: ' + (e && e.message)]; }
+    }
     // P29's card half: a ✒️ or 🛡️ tab in this card's strip
     out.powerTabs = strip ? [...strip.querySelectorAll('.achip')].filter((t) => {
       const k = t.dataset.tab || t.dataset.anchor || t.dataset.chip || '';
@@ -2229,13 +2249,14 @@ function grammarRules(c, ref) {
   /* P19 empty-slot. Stated exceptions (principle 6 as ruled): the reason box
    * on a card that can take a change, always drawn (1541.21 (b)); the floor's
    * padding under the last slot (P17) is the card's own padding, never a
-   * child, so it is never read here. `presence` needs the shell's predicate
-   * (stage 1) and is not measured */
+   * child, so it is never read here. `presence` is read on a card built on
+   * the one shell, against the shell's own predicates (stage 1) */
   for (const e of g.empty || []) {
     const reason = /rationale|reason|why|\.lane/i.test(e.el) && !closed;
     at('empty-slot', e.el + ' is ' + e.h + 'px tall with nothing in it', null,
       reason ? { excepted: 'the reason box, always shown on a card that can take a change (1541.21 (b))' } : null);
   }
+  for (const p of (v && v.presence) || []) at('empty-slot', 'presence: ' + p, 'presence');
 
   /* P20 slot-order — the drawn slots top to bottom in grammar §2.3's order,
    * the label first; the fact and body slots carry no mark on today's page */
@@ -4256,9 +4277,9 @@ async function finish(cards, errors, tok, ref, version, switches, piles, doors, 
     p13: cards.flatMap((c) => (c.p13 || []).filter((e) => e.unread).map((e) => c.walk + '·' + c.key + ' ' + e.sub + ': ' + e.unread)),
     // P33: the cards with no data-fact role at all (every card, until stage 1)
     noFactRoles: cards.filter((c) => c.grammar && c.grammar.v2 && c.grammar.v2.facts && !Object.keys(c.grammar.v2.facts).length).length,
-    // P19's presence half, P30's drawer width and P18's standing-line hairline
-    // are not measured in stage 0
-    notMeasured: ['P19 presence (needs the shell\'s predicate, stage 1)', 'P30 the contents drawer\'s width at 390 (no walk opens it)',
+    // P30's drawer width and P18's standing-line hairline are not measured
+    // yet; P19's presence half is read on the shell's cards since stage 1
+    notMeasured: ['P19 presence on a card not yet built on the shell (no predicate to read)', 'P30 the contents drawer\'s width at 390 (no walk opens it)',
       'P18 the hairline under a rule card\'s standing first line (no standing first line until stage 3)'],
   };
 
