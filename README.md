@@ -61,7 +61,7 @@ Rule files hold rules; the reasoning behind them lives in `design/`. Where two d
 
 ## Checks, walks and deploys
 
-**A push to `main` is a deploy** — CI deploys on green and verifies docs.vote afterwards, and nothing gates a merge; the three jobs and what each holds are `docs/OPERATING.md` §3. **[dev.docs.vote](https://dev.docs.vote)** is a second, throwaway instance on the dev path — a ⏭ control bottom-left walks a document through its whole life, and the 📬 outbox is public, so it must never hold anything real; every deploy wipes it.
+**A push to `main` is a deploy** — CI deploys on green and verifies docs.vote afterwards, and nothing gates a merge; the jobs at every push, the sprint tier on a push that carries a merge, and what each holds are `docs/OPERATING.md` §3. **[dev.docs.vote](https://dev.docs.vote)** is a second, throwaway instance on the dev path — a ⏭ control bottom-left walks a document through its whole life, and the 📬 outbox is public, so it must never hold anything real; every deploy wipes it.
 
 The rest of `package.json`'s scripts are instruments, in two kinds:
 

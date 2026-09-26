@@ -705,12 +705,16 @@ the CPU failure's whole cause at these shares. The cheap stopgap is a
 larger Render plan (memory buys the second failure; it does not move the
 first).
 
-**The boot guard** — `npm run boot-guard -w @draft/sim-harness`, about 50 s:
-seeds ten documents in the pool's mix (one convention), replays them in a
-fresh process three times, and fails when the median scaled to **60
+**The boot guard** — `npm run boot-guard -w @draft/sim-harness`, about 15 s:
+unpacks ten documents in the pool's mix (one convention) from a committed
+fixed set — `packages/sim-harness/fixtures/boot-guard-set.json.gz`, seeded
+once by `-- --reseed` since Q1554 (2026-09-26), because a fresh seeding
+differs run to run and a before/after pair timed two sets — replays them
+in a fresh process three times, and fails when the median scaled to **60
 documents** on Render (×7) passes **half** of the 15-minute window
 (render.com/docs/health-checks, read 2026-09-23; render.yaml sets the
-path, not the time). It reads 22% here. Sixty rather than 300 because
+path, not the time). It read 22% here when built, and 14–16% on the
+fixed set seeded 2026-09-26 (after Q1553's replay fix). Sixty rather than 300 because
 nothing boots 300 today: the guard catches replay getting slower (red at
 about 2.5×) and states the headroom, and `FLEET` rises when Stages 1–3 stop
 boot growing with the fleet. Wired by the session (not by Stage 0).

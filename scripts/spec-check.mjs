@@ -25,7 +25,7 @@
  * Exit code 1 on any disagreement. `--quiet` prints findings only.
  */
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
-import { execSync } from 'node:child_process';
+import { execSync, spawnSync } from 'node:child_process';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
@@ -753,6 +753,35 @@ function checkLifecycle() {
     if (!walk.includes(`L('${k}')`)) find('lifecycle', `LIFECYCLE.${k} is named but the walk prints no L('${k}') line`);
   }
   note(`  ${rows.length} rows, ${keys.length} walk steps`);
+}
+
+/**
+ * **An unread SURFACE §2 row is red at the push** (Q1546 (d), Ed
+ * 2026-09-26; Q1354's promise, kept in seconds). The seat matrix moved to
+ * the sprint tier on this condition: the half of its *no rule* verdict that
+ * the tables decide — an event a step names with no §2 row, a keyless event
+ * not filed as a question, a cell with no `AUDIENCE` entry, §2's row count
+ * moving under the table — is read here at every push by the matrix's own
+ * `--static` mode, which runs the very `readingOf` its assertion reads, so
+ * this check and a run cannot disagree about which rows are unread. What
+ * only a run can see (a key the step cannot learn, an audience that comes
+ * out empty, Q1356) stays the sprint tier's. A row filed as `Qn` is green
+ * here as it is there.
+ */
+function checkSeatMatrixStatic() {
+  note('Seat matrix — every SURFACE §2 row a step names has a rule (seat-matrix --static)');
+  const r = spawnSync(process.execPath, [join(ROOT, 'scripts', 'seat-matrix.mjs'), '--static'],
+    { cwd: ROOT, encoding: 'utf8' });
+  let out = null;
+  try { out = JSON.parse(String(r.stdout).trim().split('\n').pop()); } catch { /* reported below */ }
+  if (!out || (r.status !== 0 && r.status !== 3)) {
+    find('seat-matrix', `seat-matrix --static did not answer (exit ${r.status}): ${String(r.stderr || r.stdout).trim().slice(0, 300)}`);
+    return;
+  }
+  for (const u of new Set(out.unread)) find('seat-matrix', `no rule: ${u} — write its AUDIENCE entry, or file the row as a question (filed: 'Qn')`);
+  if (r.status === 3 && !out.unread.length) find('seat-matrix', 'seat-matrix --static exited 3 and named nothing');
+  note(`  ${out.rows} §2 rows, ${out.events} events over ${out.steps} steps, ${out.cells} audience cells` +
+    (out.filed.length ? `, ${out.filed.length} filed` : '') + (out.unread.length ? '' : ', none unread'));
 }
 
 function checkWallets(pm) {
@@ -2236,6 +2265,7 @@ checkSetupAlphabet();
 checkSockets();
 checkNarrow();
 checkLifecycle();
+checkSeatMatrixStatic();
 checkWallets(pm);
 checkOrder(pm);
 checkFIds();

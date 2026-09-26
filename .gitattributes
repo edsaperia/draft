@@ -14,3 +14,6 @@ design/reference/fonts/OFL.txt -text -diff
 # shell scripts run under bash on the runner and in Git Bash here, and bash
 # will not run a CRLF script (CI-speed Stage 1: scripts/ci-walks.sh)
 *.sh text eol=lf
+# the boot guard's fixed set (Q1554): gzipped JSON, written only by
+# `npm run boot-guard -w @draft/sim-harness -- --reseed`
+packages/sim-harness/fixtures/*.json.gz binary
