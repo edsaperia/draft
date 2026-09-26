@@ -121,10 +121,16 @@ if (!ENGINES[BROWSER]) {
  * fixture (the session fixture seats no stranger at a band), so the fast
  * pass takes it beside the four fixture walks — it needs the in-page ⏩ and
  * no server. `--walk=all` leaves it out, `outsiders` already walking it.
+ *
+ * **`founding` and `answers`** join the fast pass for the same reason (Q1541
+ * stage 3a): 📧 at the birth (`birth-email`) lives on the founding drive
+ * alone and a blind answer (`answer`) on the answers drive alone, and a held
+ * kind no card was measured as is a broken walk. Both are in-page drives
+ * over the file fixture, no server.
  */
 const ALL_WALKS = ['founding', 'answers', 'delegated', 'settled', 'outsiders', 'charter', 'closed', 'sessionband', 'closedband', 'stranger'];
 const DEFAULT_WALKS = ALL_WALKS.slice(0, 7);
-const FIXTURE_WALKS = ['charter', 'closed', 'sessionband', 'closedband', 'stranger'];
+const FIXTURE_WALKS = ['founding', 'answers', 'charter', 'closed', 'sessionband', 'closedband', 'stranger'];
 const WALK_ARG = arg('walk', DEFAULT_WALKS.join(','));
 const WALKS = (WALK_ARG === 'all' ? ALL_WALKS.filter((w) => w !== 'stranger') : WALK_ARG === 'fixture' ? FIXTURE_WALKS : WALK_ARG.split(',')).filter(Boolean);
 /**
