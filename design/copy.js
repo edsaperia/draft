@@ -1326,7 +1326,9 @@ window.COPY = (function () {
         title: 'Activate Your Membership',
         why: 'A 🏛️ is a constitutional proposal: one at a time, returned whole, passing only when all members agree. You are already a member; activating it opens every question, proposal and vote on the rules.',
         waiting: 'Waiting on your arrival.',
-        accept: 'Activate 🏛️',
+        // *Accept 🏛️* like every grant (Q1541.24 (a), Ed 2026-09-25),
+        // replacing Q1502's *Activate 🏛️*
+        accept: 'Accept 🏛️',
       },
       pen: {
         title: 'Founder Actions',
@@ -1375,6 +1377,31 @@ window.COPY = (function () {
     // the joint in every label: *Passed · Tuesday, 29 September, 16:05*,
     // *Proposed · 23%*
     sep: ' · ',
+    // ---- stage 2: the acknowledgement cards ----
+    // .23, .24 — a grant's label is its act while it is owed (the grants,
+    // and 💡 ⚖️ drawn like grants); once accepted the card asks nothing, so
+    // its label is the power's own name — the ask-then-noun Ed ruled for 👑
+    // (answers Part 6.1)
+    accept: {
+      'grant-pen': 'Accept Founder Actions',
+      'grant-shield': 'Accept the Founder Veto',
+      'grant-voice': 'Accept Constitutional Proposals',
+      canpropose: 'Accept Proposals',
+      canjudge: 'Accept Voting',
+    },
+    accepted: {
+      'grant-pen': 'Founder Actions',
+      'grant-shield': 'Founder Veto',
+      'grant-voice': 'Constitutional Proposals',
+      canpropose: 'Proposals',
+      canjudge: 'Voting',
+    },
+    // 6.8 — 🍾's label is today's title until Q1542 reworks the card
+    begin: 'Begin',
+    // .22 — 🍾's dark commit, waiting on the membership's answers
+    waitingFor: (n) => 'Waiting for ' + n + (n === 1 ? ' member' : ' members') + ' to answer questions.',
+    // .1 — the label above a clause's first line (the park's, stage 2)
+    currentText: 'Current text',
   };
 
   // ---- the spectator feed (feed.html, Q1466) --------------------------------

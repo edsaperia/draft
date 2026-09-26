@@ -148,10 +148,16 @@ window.CARD_SHELL = (function () {
       right = '<button class="btn btn-approve okbtn"' + (st.owed.attrs || '') +
         ' title="' + esc(st.owed.title || '') + '">' + esc(st.owed.word || 'OK') + '</button>';
     } else if (shape === 'accept') {
-      right = '<button class="btn btn-approve okbtn"' + (st.owed.attrs || '') + '>' + esc(st.owed.word || '') + '</button>';
+      // *Accept ‹glyph›* (answers Part 4 .23, .24): the grants and 💡 ⚖️, a
+      // click, on the solid accent like OK
+      right = '<button class="btn btn-approve okbtn' + (st.owed.cls ? ' ' + esc(st.owed.cls) : '') + '"' +
+        (st.owed.attrs || '') + '>' + esc(st.owed.word || '') + '</button>';
     } else {
+      // a commit carries its surface's own hooks (`cls`, `attrs` — the band's
+      // `data-confirm`, 🍾's hold) beside the shell's `data-act`
       right = acts.filter((a) => a.kind === 'commit').slice(0, 2).map((a) =>
-        '<button class="btn glyphbtn" data-act="' + esc(a.act || '') + '"' +
+        '<button class="btn ' + (a.cls ? esc(a.cls) + ' ' : '') + 'glyphbtn"' +
+        (a.act ? ' data-act="' + esc(a.act) + '"' : '') + (a.attrs || '') +
         (a.until ? ' disabled data-until="' + esc(a.until) + '"' : '') +
         ' title="' + esc(a.title || '') + '">' + esc(a.glyph || '') + '</button>').join('');
     }
