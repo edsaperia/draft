@@ -651,7 +651,7 @@ const IN_PAGE = () => {
    * rendered somewhere else grows a tab strip of its own and the promise is
    * kept about the wrong object. The cheap witness is the next heading in
    * document order: the identity card drawn in your own row under *Members*
-   * has *Invitees* below it, and one appended after the last subsection has
+   * has *Applications for Membership* below it (Q1557), and one appended after the last subsection has
    * *Proposed for removal* above it and nothing below. The fold triangle is
    * skipped — it is furniture inside the heading, not the heading's name.
    */
@@ -1579,7 +1579,7 @@ const onGrid = (v) => v === 0 || Math.abs(v % 4) < 0.01 || Math.abs((v % 4) - 4)
 
 /** the three cards that ride your own row in the members list, and what stands under it */
 const ID_KEYS = ['myname', 'mypic', 'myemail'];
-const ID_NEXT_HEAD = 'Invitees';
+const ID_NEXT_HEAD = 'Applications for Membership';
 
 /** the glyph alphabet STYLE §1 calls stable, plus the lifecycle family */
 const STABLE_GLYPHS = ['🪶', '📍', '🪪', '🤝', '💤', '🥾', '⏱️', '⏰', '👥',
