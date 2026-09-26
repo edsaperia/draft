@@ -553,7 +553,9 @@
        as its own padding, so the peek is the bar and nothing of the list. */
     /* `--sheet-edge` is the peek's border-top, which stands above the bar:
        the peek shows edge + bar, or the bar's last pixel is under the glass */
-    :root { --sheet-peek: 56px; --sheet-edge: 1px; }
+    /* 64px since the peek holds the entry's own card (2026-09-26): 56 left a
+       37px card 2px off the glass, its shadow cut; 8px more gives it air */
+    :root { --sheet-peek: 64px; --sheet-edge: 1px; }
     .layout > .queue {
       position: fixed; left: 0; right: 0; top: auto; bottom: 0; z-index: 43; display: flex; flex-direction: column;
       width: auto; max-height: 74vh; max-height: 74dvh; margin: 0 !important; box-sizing: border-box; overflow: hidden;
@@ -583,6 +585,14 @@
     .sheetbar .sheetline { min-width: 0; overflow: hidden; }
     .sheetbar .sheetline .ql { display: flex; align-items: baseline; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--fg); }
     .sheetbar .sheetline .ql > :not(.qmark):not(.mk) { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    /* **The peek is the entry's own card** (Ed, 2026-09-26): the most urgent
+       entry's button, cloned with its wash, so the rail rules above draw its
+       ground and its fill as the list does; in the peek it keeps its title row
+       alone, so every kind of entry fits the one bar. The line lets the card's
+       shadow out; the card clips its own title. */
+    .sheetbar .sheetline:has(> .sheetcard) { overflow: visible; }
+    .sheetbar .sheetcard { display: block; width: 100%; }
+    .sheetbar .sheetcard > :not(.ql):not(.sparkle) { display: none; }
     .sheetbar .sheetmore { font-size: var(--t-small); color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
     .sheetbar .sheetline, .sheetbar .sheetmore { transition: opacity 160ms ease; }
     /* raised, the list says it all: the bar keeps its place, as the handle */
