@@ -599,6 +599,8 @@ export class Session {
         // `updatePeaks` below on the far side of the push. That is the second
         // whole rebuild of every race gone from every judgment; the fit
         // `updatePeaks` needs is a different question and is taken fresh.
+        // And since Q1553 the read is the grouping, never the picture: the
+        // members and the ground are all either half needs.
         const race = event.kind === 'edge' ? this.raceOfPair(event.aId, event.bId) : null;
         // **The pair's own ground, not the race's** (Q1441; SPEC §4.4 → why:
         // R-129): the current text under the lines of the two wordings being
@@ -647,7 +649,7 @@ export class Session {
             // lookup stays for the one case it is — a pair the classifier
             // would never have called an edge, reached by replaying a log
             // written by something other than `judge`
-            const peaked = race ?? this.races().find((r) => r.members.includes(candidateId));
+            const peaked = race ?? this.raceRules.groupOf(candidateId);
             if (peaked) this.raceRules.updatePeaks(peaked);
           }
         }
@@ -948,21 +950,24 @@ export class Session {
    * of them rebuilt the whole picture. Same answer: `raceIdOfEndpoint` is
    * `races().find(…)?.id`, so comparing the two races by identity is
    * comparing their ids.
+   *
+   * **And no read of `races()` at all since Q1553**: the fold wants the
+   * race's members and its ground, which the grouping and the text decide
+   * alone, and building every race's fit, tallies and Smith set to learn them
+   * was a whole picture per judgment — most of a replay's time once Q1538 made
+   * the picture a pair tally per pair. Same answer: `groupOf` is `races()`'s
+   * own `members` and `incumbentId`, and the members' first id names the race.
    */
-  private raceOfPair(aId: string, bId: string): RaceView | null {
+  private raceOfPair(aId: string, bId: string): { members: string[]; incumbentId: string } | null {
     const aInc = aId.startsWith(INC_PREFIX);
     const bInc = bId.startsWith(INC_PREFIX);
     if (aInc && bInc) return null;
-    const races = this.races();
-    const holder = (id: string): RaceView | undefined =>
-      races.find((r) => r.members.includes(id));
     if (!aInc && !bInc) {
-      const ra = holder(aId);
-      const rb = holder(bId);
-      if (!ra || !rb || ra.id !== rb.id) return null; // diagonal or dead
+      const ra = this.raceRules.groupOf(aId);
+      if (!ra || !ra.members.includes(bId)) return null; // diagonal or dead
       return ra;
     }
-    return holder(aInc ? bId : aId) ?? null;
+    return this.raceRules.groupOf(aInc ? bId : aId);
   }
 
   /** Feed exclusion: already judged on this ground (revisable, SPEC §4.4). */
