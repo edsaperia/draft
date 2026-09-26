@@ -6,6 +6,12 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-09-26: catching up on a busy document
+
+### Changed
+- **Several decisions on one clause arrive as one.** When you come back to a document where a clause changed more than once, its task list shows one entry, *3 new decisions*, and one card showing the clause now against how it was before them, with one OK for all. Each decision can still be opened from its own tab. Decisions on your own proposals keep their own entry.
+- **OK takes you to the next thing to read.** After you press OK, the next decision waiting for you opens, working down the document from the rules at the top and starting again from the top at the end. Enter presses OK. Accepting a new power always takes a click of its own.
+
 ## 2026-09-25, night: rival wordings face each other
 
 ### Changed
