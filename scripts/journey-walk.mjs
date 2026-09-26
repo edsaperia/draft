@@ -734,12 +734,15 @@ const GUEST2 = 'cy' + STAMP + '@example.org';
  *  · `memSub` renders **the card instead of its rows** whenever a card in
  *    that subsection's pile is open, so a row can only be read with the
  *    card shut — hence `closeCard` before every read below.
- *  · **status is the heading, not a chip.** Somebody is an invitee because
- *    they sit under *Invitees*; there is no `invited` chip to test.
+ *  · **an invitation sent is a row under *Members* wearing *invited***
+ *    (Q1557, Ed 2026-09-26; *email failed* in its place on the Founder's
+ *    page where the mail gave up), so `rowsUnder('invitees')` reads the
+ *    *Members* rows that wear one of those two tags, and nothing else.
  *  · `memRow` prints an address only until a name arrives, so an invitee is
  *    found by address and a joined member by name — never both. */
-const MEM_SEC = { members: 'cs-mem-members', invitees: 'cs-mem-invitees',
-  applicants: 'cs-mem-applicants', removal: 'cs-mem-proposed-for-removal' };
+const MEM_SEC = { members: 'cs-mem-members', invitees: 'cs-mem-members',
+  applications: 'cs-mem-applications-for-membership', removal: 'cs-mem-proposed-for-removal' };
+const INVITED_TAGS = ['invited', 'email failed'];
 // **A click on nothing outside the card closes it** (SURFACE C2, Ed
 // 2026-09-06): every close in this walk is that gesture, with a real pointer,
 // on the blank column left of the document — so the rule is exercised at each
@@ -773,19 +776,23 @@ const closeCard = async () => {
   }
 };
 /** Rows under one Membership subsection, or null if the heading is absent. */
-const rowsUnder = (which) => page.evaluate((id) => {
+const rowsUnder = (which) => page.evaluate(([id, tags]) => {
   const h = document.getElementById(id);
   if (!h) return null;
   const body = h.nextElementSibling;
   if (!body) return [];
   return [...body.querySelectorAll('.memrow')]
     .filter((r) => !r.classList.contains('nobody'))
+    .filter((r) => !tags || [...r.querySelectorAll('.chip')].some((c) => tags.includes(c.textContent.trim())))
     .map((r) => ({
-      t: ((r.querySelector('.mn') || {}).textContent || '').replace(/\s+/g, ' ').trim(),
+      // the name alone: a tag is read by the filter above, not matched as text
+      t: [...((r.querySelector('.mn') || {}).childNodes || [])]
+        .filter((n) => !(n.nodeType === 1 && n.classList.contains('chip')))
+        .map((n) => n.textContent).join('').replace(/\s+/g, ' ').trim(),
       face: ((r.querySelector('.emojiface') || {}).textContent ||
         ((r.querySelector('.av') || {}).className || '(no avatar)')).trim(),
     }));
-}, MEM_SEC[which]);
+}, [MEM_SEC[which], which === 'invitees' ? INVITED_TAGS : null]);
 const refusalLine = () => page.evaluate(() =>
   ((document.querySelector('.setupcard .why.refusal') || {}).textContent || '').trim());
 // **One box since Q1166** (Ed's card review, 2026-09-02): the single-address
@@ -800,7 +807,7 @@ const inviteFrom = async (addr) => {
 const inviteDoorPreBegin = async () => {
   await inviteFrom(GUEST1);
   await inviteFrom(GUEST2);
-  // the rows live under *Invitees*, which the open ✉️ card is standing in
+  // the rows live under *Members*, tagged *invited* (Q1557), beside the open ✉️ card
   // front of — so it is shut to read them, and opened again to carry on
   await closeCard();
   const rows = (await rowsUnder('invitees')) || [];
@@ -809,7 +816,7 @@ const inviteDoorPreBegin = async () => {
   const isRowFor = (r, a) => r.t.includes(a) || r.t === a.split('@')[0];
   const listed = [GUEST1, GUEST2].filter((a) => rows.some((r) => isRowFor(r, a)));
   say('invite ×2  · ' + JSON.stringify(rows.map((r) => r.t)) +
-    (listed.length === 2 ? '' : '  FAIL: both should be listed under Invitees'));
+    (listed.length === 2 ? '' : '  FAIL: both should be listed under Members, tagged invited'));
   if (listed.length !== 2) stuck.push('two invitations from the single-name field');
   await open('invite');
 
@@ -859,7 +866,7 @@ const inviteDoorPreBegin = async () => {
     pasted.lines.some((l) => l.startsWith('not-an-address@') && /not sent/i.test(l)) &&
     pasted.box.join() === [GUEST1, 'not-an-address@'].join() &&
     rows3.some((r) => isRowFor(r, GUEST3));
-  say('paste ×3   · ' + (pastedOk ? 'two refusal lines, each naming its address · the box keeps the two · the third is under Invitees'
+  say('paste ×3   · ' + (pastedOk ? 'two refusal lines, each naming its address · the box keeps the two · the third is under Members, tagged invited'
     : 'FAIL: ' + JSON.stringify({ ...pasted, rows: rows3.map((r) => r.t) })));
   if (!pastedOk) stuck.push('the pasted list\'s refusals (Q1342)');
   await typeIn('.setupcard [data-emails]', '');

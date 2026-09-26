@@ -174,14 +174,15 @@ check(!!card.rail && !/\d+ of \d+/.test(card.rail),
 const memberPage = await seatPage((await (await post(`/api/d/${SLUG}/login`, { email: m1 })).json()).devLink);
 const railM1 = await memberPage.evaluate(() => ({
   admit: [...document.querySelectorAll('#rail .qitem')].map((q) => q.dataset.q).filter((k) => /^adm:/.test(k || '')),
-  applicants: (() => { const h = [...document.querySelectorAll('.csub')]
-    .find((e) => /Applicants/.test(e.textContent || ''));
+  // the heading since Q1557: *Applications for Membership*
+  applicants: (() => { const hd = document.getElementById('cs-mem-applications-for-membership');
+    const h = hd && hd.closest('.csub');
   return h ? (h.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 80) : null; })(),
 }));
 say('member      · ' + JSON.stringify(railM1));
 check(railM1.admit.length === 0, 'the other member has no admit entry left to press', railM1.admit);
 check(!railM1.applicants || !/Rowan/.test(railM1.applicants),
-  'and the applicant is gone from Applicants', railM1.applicants);
+  'and the applicant is gone from Applications for Membership', railM1.applicants);
 
 /* ---- (4) the door is not barred ----------------------------------------- */
 const again = await post(`/api/d/${SLUG}/apply`, { email: APPLICANT });

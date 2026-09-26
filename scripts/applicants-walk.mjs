@@ -28,7 +28,8 @@
  *
  * What it asserts, per 🪪's price:
  *   proposal  — the applicant raises a **task**: a rail entry naming them, a
- *               row under *Applicants*, and a card offering the three lanes —
+ *               row under *Applications for Membership* (*Applicants*
+ *               until Q1557), and a card offering the three lanes —
  *               *Admit them* against the membership as it stands, ✓ to file it.
  *   assembly  — the same task, in its 🏛️ form: the consent card's three
  *               blocks (Q1182, T48) — the membership as it stands, the
@@ -625,14 +626,21 @@ const seen = await page.evaluate(() => ({
   subs: [...document.querySelectorAll('.csec h2.lvl3')].map((h) => h.textContent.trim()),
   applicantRows: (() => {
     const h = [...document.querySelectorAll('.csec h2.lvl3')]
-      .find((x) => /Applicants/.test(x.textContent));
+      .find((x) => /Applications for Membership/.test(x.textContent));
     if (!h || !h.nextElementSibling) return -1;
-    // real applicants only: since entry 183 an empty *Applicants* subsection
-    // carries its own `.memrow.nobody` placeholder — *(no applicants at the
-    // moment)* — so counting every `.memrow` reported one applicant where the
+    // real applicants only: since entry 183 an empty subsection (*Applicants*,
+    // *Applications for Membership* since Q1557) carries its own
+    // `.memrow.nobody` placeholder — *(no applications at the moment)* — so
+    // counting every `.memrow` reported one applicant where the
     // document has none, which is exactly the ✒️ case this walk asserts.
     // `journey-walk` and `ladder-walk` already filter it; this one did not.
     return h.nextElementSibling.querySelectorAll('.memrow:not(.nobody)').length;
+  })(),
+  // a row under *Applications for Membership* wears no tag: the heading says it (Q1557)
+  applicantTags: (() => {
+    const h = document.getElementById('cs-mem-applications-for-membership');
+    return h && h.nextElementSibling
+      ? [...h.nextElementSibling.querySelectorAll('.memrow .chip')].map((c) => c.textContent.trim()) : [];
   })(),
 }));
 
@@ -642,9 +650,13 @@ say('rail       · ' + JSON.stringify(seen.rail.map((e) => e.k)));
 say('subsections· ' + JSON.stringify(seen.subs));
 say('applicants · ' + seen.applicantRows + ' row(s) under the heading');
 
-if (!seen.subs.some((s) => /Applicants/.test(s))) {
-  say('FAIL: no *Applicants* subsection, though 🤝 allows applications');
-  stuck.push('the Applicants subsection');
+if (!seen.subs.some((s) => /Applications for Membership/.test(s))) {
+  say('FAIL: no *Applications for Membership* subsection, though 🤝 allows applications');
+  stuck.push('the Applications for Membership subsection');
+}
+if (seen.applicantTags.length) {
+  say('FAIL: a row under *Applications for Membership* wears a tag: ' + JSON.stringify(seen.applicantTags));
+  stuck.push('an untagged application row (Q1557)');
 }
 if (seen.applicantRows !== (PRICE === 'pen' ? 0 : 1)) {
   say('FAIL: expected ' + (PRICE === 'pen' ? 0 : 1) + ' applicant row, saw ' + seen.applicantRows +
@@ -1151,7 +1163,10 @@ if (PRICE === 'pen' && guestResign) {
      * below, which would rebuild the rows from the module and pass either
      * way. */
     await T(4500);
+    // every row but *Alumni*'s, where somebody who left is listed on purpose
+    // since Q1557 (e) — read separately below
     const listed = await page.evaluate(() => [...document.querySelectorAll('.memrow .mn')]
+      .filter((r) => !r.closest('.csub') || !r.closest('.csub').querySelector('#cs-mem-alumni'))
       .map((r) => (r.textContent || '').replace(/\s+/g, ' ').trim()));
     const stillThere = listed.filter((t) => t.toLowerCase().includes('rowan'));
     say('the poll   · register reads ' + JSON.stringify(listed));
@@ -1159,6 +1174,20 @@ if (PRICE === 'pen' && guestResign) {
       say('FAIL: the member who resigned is still listed on the open page — ' +
         JSON.stringify(stillThere) + ' (issue #11, F2)');
       stuck.push('the departed row on the open page');
+    }
+    // …and under *Alumni* instead, the day in a pill (Q1557 (e))
+    const alumni = await page.evaluate(() => {
+      const h = document.getElementById('cs-mem-alumni');
+      const box = h && h.closest('.csub');
+      return box ? [...box.querySelectorAll('.memrow:not(.nobody)')].map((r) => ({
+        t: (r.textContent || '').replace(/\s+/g, ' ').trim(),
+        pill: ((r.querySelector('.chip') || {}).textContent || '').trim() })) : null;
+    });
+    say('alumni     · ' + JSON.stringify(alumni));
+    const alum = (alumni || []).find((r) => r.t.toLowerCase().includes('rowan'));
+    if (!alum || !/^\d{1,2} [A-Z][a-z]+( \d{4})?$/.test(alum.pill)) {
+      say('FAIL: the member who resigned is not under *Alumni* with the day in a pill — ' + JSON.stringify(alumni));
+      stuck.push('the departed row under Alumni (Q1557)');
     }
     /* **And the page that resigned is the door** — the other side of the same
      * poll, and the one F2's splice has to be safe on. A seat that dies

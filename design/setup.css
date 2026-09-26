@@ -550,7 +550,7 @@
   .rperson .nm { font-size: var(--t-ui); }
   .rperson .em { font-size: var(--t-cap); color: var(--muted); }
   .chip { font-size: var(--t-cap); border: 1px solid var(--border); border-radius: 999px;
-    padding: 2px var(--s2); color: var(--muted); background: var(--bg); cursor: pointer; font-family: inherit; }
+    padding: 2px var(--s2); color: var(--muted); background: var(--bg); font-family: inherit; }
   .chip.pending { border-style: dashed; }
   /* the person a motion would remove */
   .rperson.picked { background: color-mix(in srgb, rgb(var(--lc-open)) 22%, var(--bg));
