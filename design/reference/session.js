@@ -2468,7 +2468,6 @@
         head: { html: clauseHeadHtml(s, Object.assign(o, { key: skey, chips: chipsFor(skey, id), label: null, fact: 'place' })) +
           (h && !rec.since ? recSpeaker(h.speaker) : '') },
         fact: rec.fact,
-        boxed: true,
         blocks: rec.field.map((c) => ({
           cls: 'ranked' + (c.role === 'previous' ? ' wasthere' : '') + (c.passed ? ' passed' : ''),
           label: c.label, fact: c.role === 'previous' ? 'previous' : c.author ? 'author' : null,

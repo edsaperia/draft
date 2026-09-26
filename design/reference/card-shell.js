@@ -98,7 +98,7 @@ window.CARD_SHELL = (function () {
     '<div class="rtext">' + (b.html || '') + '</div>' + (b.speaker || '') + '</div>';
 
   const blocksSlot = (st) => (PRESENT.blocks(st)
-    ? '<div class="gblocks' + (st.boxed ? ' boxed' : '') + '" data-slot="blocks">' +
+    ? '<div class="gblocks" data-slot="blocks">' +
       st.blocks.map(blockHtml).join('') + '</div>' : '');
 
   const inputSlot = (st) => (PRESENT.input(st)
