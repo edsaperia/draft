@@ -1322,8 +1322,11 @@ window.COPY = (function () {
         // **the 🏛️ grant is the membership's own door** (Q1502, Ed
         // 2026-09-22: *Activate your membership*); its body is about 🏛️
         // alone, and — by the same ruling — says what activating it opens,
-        // the one grant body that does (T45's exception)
-        title: 'Activate Your Membership',
+        // the one grant body that does (T45's exception). Its title is the
+        // power's name since Q1556 (14) (Ed 2026-09-26): while owed the rail
+        // and tab read *Accept Constitutional Proposals*, the card's own
+        // words, and *Activate Your Membership* went
+        title: 'Constitutional Proposals',
         why: 'A 🏛️ is a constitutional proposal: one at a time, returned whole, passing only when all members agree. You are already a member; activating it opens every question, proposal and vote on the rules.',
         waiting: 'Waiting on your arrival.',
         // *Accept 🏛️* like every grant (Q1541.24 (a), Ed 2026-09-25),
@@ -1381,7 +1384,9 @@ window.COPY = (function () {
     // .23, .24 — a grant's label is its act while it is owed (the grants,
     // and 💡 ⚖️ drawn like grants); once accepted the card asks nothing and
     // its label is what its first line is, *Current rule* (.3) — the
-    // ask-then-rule Ed ruled for 👑 (answers Part 6.1)
+    // ask-then-rule Ed ruled for 👑 (answers Part 6.1). **The rail entry and
+    // the tab read the same words while the grant is owed** (Q1556 (14), Ed
+    // 2026-09-26: *the rail matches the card*), through `labelOf`
     accept: {
       'grant-pen': 'Accept Founder Actions',
       'grant-shield': 'Accept the Founder Veto',

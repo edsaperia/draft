@@ -981,8 +981,9 @@ const secondSeatPreBegin = async () => {
     ? 'nothing set before this arrival is served · served ' + JSON.stringify(f.served)
     : 'FAIL: ' + JSON.stringify(owed) + ' are served as acknowledgements before 🍾'));
   if (owed.length) stuck.push('pre-Begin acks in the member seat: ' + owed.join(','));
-  /* **…and 🏛️ reaches them as *Activate Your Membership*** (Q1502, Ed
-   * 2026-09-22): a body about 🏛️ alone, and the commit *Accept 🏛️* (Q1541.24). Read
+  /* **…and 🏛️ reaches them as *Accept Constitutional Proposals*** (Q1502,
+   * Ed 2026-09-22; the rail matching the card since Q1556 (14)): a body
+   * about 🏛️ alone, and the commit *Accept 🏛️* (Q1541.24). Read
    * and closed, never pressed — what the OK then opens is the member
    * questions walk's. */
   const voice = await guestPage.evaluate(async () => {
@@ -999,7 +1000,7 @@ const secondSeatPreBegin = async () => {
     return out;
   });
   await guestPage.waitForTimeout(400);
-  const voiceOk = !!voice && voice.word === 'Accept 🏛️' && /Activate Your Membership/.test(voice.title || '') &&
+  const voiceOk = !!voice && voice.word === 'Accept 🏛️' && /^Accept Constitutional Proposals\b/.test(voice.title || '') &&
     /You are already a member/.test(voice.body || '');
   say('activate   · ' + (voiceOk ? 'the member’s 🏛️ grant reads “' + voice.word + '”, titled ' + voice.title
     : 'FAIL: ' + JSON.stringify(voice)));
