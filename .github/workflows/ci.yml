@@ -494,11 +494,10 @@ jobs:
       # (issue #17, F1), which is neither the cards nor the coverage.
       - run: npm run probe-coverage
         if: always()
-      # the contents rail: every click lands clear of the topbar (M17), and since
-      # Q1384 its marks queue rightwards out of the rail and cover the document's
-      # edge, unclipped, at 1600 · 1280 · 1920 (the wide step)
-      - run: npm run toc-travel
-        if: always()
+      # (`toc-travel` stood here, and the two `founding-walk --takeback`
+      # shapes at the foot of this job, until Q1546 (b) (Ed, 2026-09-26):
+      # they run in the sprint tier now, in ci-walks.sh's `sprint-pages`.)
+      #
       # the phone's task drawer at 390×844 (Q1387, Q1388): its entries 8px
       # apart in visual order — the DOM's last child included, wherever the
       # sort puts it — a tap on its empty space closes it by mouse and by
@@ -524,29 +523,6 @@ jobs:
       # Regular every entry stood a line off its clause for that second. Holds
       # one face back and times how long the rail stays stale.
       - run: npm run rail-font-walk
-        if: always()
-      # **The take-back** (Q1318, Ed 2026-09-11: *I should be able to choose
-      # a value to take it back with ✒️, but I wasn't able to do that here*):
-      # hand a setting to the membership, then reclaim it with the pen and a
-      # value in one act — the card's radios before the press, the module's
-      # holder after it, the clause no longer waiting, the founder's own
-      # answer card gone from the rail, and 🍾 beginning with nothing left
-      # delegated. Two shapes, because the defect had three causes and they
-      # do not show on one card: 🤝, whose value and holder are separate
-      # fields and is Ed's own case, and 🌍, where they are the same field.
-      #
-      # They are here rather than in `walks` because `founding-walk.mjs`
-      # **starts its own server** — it serves `design/` itself and takes no
-      # base URL, like `founder-answers` beside it, so it needs nothing this
-      # job has not already got. About 27 s each.
-      #
-      # Like `powers-walk` in the job below, these ran in **no CI job**
-      # until 2026-09-17 (issue #17, F2) while CLAUDE.md named them as
-      # Q1318's guard — *red on the pre-fix page* is worth nothing if
-      # nothing runs the page.
-      - run: node scripts/founding-walk.mjs --takeback=applications
-        if: always()
-      - run: node scripts/founding-walk.mjs --takeback=chamber
         if: always()
 
   # The copy golden (entry 128): every card's strings on every walk, keyed by
@@ -711,6 +687,14 @@ jobs:
   # `fail-fast: false` keeps it across groups: one red group cancels none of
   # the others. The seat matrix runs one hat per group, and its exit 3 still
   # reddens its group (Q1354).
+  #
+  # **Not every walk, since Q1546** (Ed, 2026-09-26). The audit of all 215
+  # runs since 2026-08-20 found five real product catches at the push; the
+  # fifteen guards with none in four weeks moved to the sprint tier
+  # (.github/workflows/sprint.yml, on a push that carries a merge). The
+  # paragraph above about *per push, not per sprint* stands
+  # for what is left here. **The push set grows only by Ed's word** (Q1547):
+  # a walk or repro written for one bug joins the sprint tier's groups.
   walks:
     name: walks (${{ matrix.group }})
     runs-on: ubuntu-latest

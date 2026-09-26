@@ -1,14 +1,17 @@
 #!/usr/bin/env bash
 # ci-walks.sh <group> — one group of CI's `walks` job (plan-ci-speed.md §2,
-# Stage 1). The job used to run every walk in series on one runner behind
-# one server, 43 minutes a push; it is now a matrix over the five groups
-# below, each on its own runner with its own server, so a push is decided by
-# the slowest group rather than by the sum.
+# Stage 1), or of the sprint tier's (Q1546). The job used to run every walk
+# in series on one runner behind one server, 43 minutes a push; it is now a
+# matrix over the groups below, each on its own runner with its own server,
+# so a push is decided by the slowest group rather than by the sum.
 #
-#   bash scripts/ci-walks.sh seat-member|seat-clerk|journey|motions|doors|repros
+#   bash scripts/ci-walks.sh seat-member|seat-clerk|journey|motions|doors|repros|repros-b
+#   bash scripts/ci-walks.sh sprint-doors|sprint-motions|sprint-pages
 #
-# (`repros`, the sixth, since Stage 4: the guards CLAUDE.md named and no
-# workflow ran.)
+# (`repros`, since Stage 4: the guards CLAUDE.md named and no workflow ran;
+# `repros-b` its second half. The `sprint-*` groups are the sprint tier's,
+# run by .github/workflows/sprint.yml and never by ci.yml — their header,
+# above the first of them, says why.)
 #
 # **Q917 (a)'s guarantee, kept in shell.** In the old job every walk was a
 # step with `if: always()`, so one walk's failure could not hide the next
@@ -44,10 +47,13 @@ case "$GROUP" in
   seat-clerk)  PORT_MAIN=8163 ;;
   journey)     PORT_MAIN=8165 ;;
   motions)     PORT_MAIN=8167 ;;
-  doors)       PORT_MAIN=8169; PORT_ROOM=8162; PORT_DEMO=8168 ;;
+  doors)       PORT_MAIN=8169; PORT_ROOM=8162 ;;
   repros)      PORT_MAIN=8171; PORT_DESIGN=8164 ;;
   repros-b)    PORT_MAIN=8173; PORT_DESIGN=8166 ;;
-  *) echo "usage: ci-walks.sh seat-member|seat-clerk|journey|motions|doors|repros|repros-b"; exit 2 ;;
+  sprint-doors)   PORT_MAIN=8175; PORT_DEMO=8168 ;;
+  sprint-motions) PORT_MAIN=8177 ;;
+  sprint-pages)   ;;
+  *) echo "usage: ci-walks.sh seat-member|seat-clerk|journey|motions|doors|repros|repros-b|sprint-doors|sprint-motions|sprint-pages"; exit 2 ;;
 esac
 
 PIDS=()
@@ -177,12 +183,6 @@ case "$GROUP" in
 
   motions)
     boot motions "$PORT_MAIN"; BASE=$BOOTED
-    # **the aim** (Q1477, the nh2026 convention): a page that polled across
-    # 🍾 kept the founder's text, drew the document in a line space that was
-    # not the engine's and aimed its proposals two lines low. The plan's own
-    # hunt — a rival's insertion at the head of the text, a draft begun
-    # beneath it — is walked beside it and is green.
-    walk "head-insertion-aim" npm run head-insertion-aim -- "$BASE"
     # **the places** (Q1492): a selection dragged across an open editing card
     # made a second place over the lines of the first, and the host refused
     # the patch whole with the member's work in it.
@@ -191,24 +191,10 @@ case "$GROUP" in
     # walk that types into a field composer rather than setting `.value` or
     # posting by `fetch`.
     walk "rate-motion" npm run rate-motion -- "$BASE"
-    # **A laid-down pen is laid down** (entry 62, K2/K29): every setting the
-    # founder's own card sets, under both hats, before 🍾, after it and on a
-    # closed document, plus ⏰ as the control that keeps its pen. **The base
-    # is an argument, not a default**: its own fallback is 8199.
-    walk "powers-walk" npm run powers-walk -- "$BASE"
     ;;
 
   doors)
     boot doors "$PORT_MAIN"; BASE=$BOOTED
-    # slug-walk asserts what happens when an address is *taken*, so one has
-    # to be taken first — the curl its own header documents. -fsS, so a
-    # refusal names itself rather than surfacing later as a walk that cannot
-    # find its collision.
-    if ! curl -fsS -o /dev/null -X POST "$BASE/api/docs" \
-        -H 'content-type: application/json' \
-        -d '{"title":"Test Charter","slug":"test-charter","email":"a@b.com"}'; then
-      echo "::error::could not reserve test-charter for slug-walk"; exit 1
-    fi
     # room-walk's own server, for **isolation**: the one walk that builds a
     # room rather than a document (fifteen members in phase A, the
     # twenty-strong ladder cast in phase B). `DRAFT_COOLDOWN_MS=0` is stated
@@ -216,18 +202,10 @@ case "$GROUP" in
     # server whose `/healthz` reports any other value.
     boot room "$PORT_ROOM" DRAFT_COOLDOWN_MS=0; ROOM_BASE=$BOOTED
 
-    # the founder answering their own delegated question, alone in the
-    # room, and 🍾 refusing to begin on one voice (R-015, R-045).
-    # Self-starting: it serves design/ itself and takes no base URL (Q1177)
-    walk "founder-answers" npm run founder-answers
-    # 🪪's three prices: the walk's three assertions are one per price
-    walk "applicants-walk (proposal)" npm run applicants-walk -- "$BASE"
+    # 🪪's three prices are one assertion each; `assembly` is the one that
+    # caught a product bug at the push (Q1546), so it stays here and the
+    # other two run in `sprint-doors`
     walk "applicants-walk --price=assembly" npm run applicants-walk -- "$BASE" --price=assembly
-    walk "applicants-walk --price=pen" npm run applicants-walk -- "$BASE" --price=pen
-    # a member's page across 🍾 when every power is laid down (Q1364)
-    walk "after-begin-walk" npm run after-begin-walk -- "$BASE"
-    # a member's invitation motion on the surface (Q1370)
-    walk "invite-walk" npm run invite-walk -- "$BASE"
     # the four live-only news families, opened on a live document at both
     # widths (Q1541 stage 2): a release, an amendment, a mail give-up, a departure
     walk "news-walk" npm run news-walk -- "$BASE"
@@ -235,25 +213,10 @@ case "$GROUP" in
     # **The first keys into an empty column**: real key presses, the server
     # compared with the literal strings typed
     walk "first-keys-walk" npm run first-keys-walk -- "$BASE"
-    # a member arrives while the founder has left 🎩 unanswered and delegated
-    # ⏱️ 👥 (Q1365, Q1372)
-    walk "member-questions-walk" npm run member-questions-walk -- "$BASE"
-    walk "slug-walk" npm run slug-walk -- "$BASE" test-charter
     walk "ladder" npm run ladder -- "$BASE"
     # the whole loop: propose → every member served → vote → adopt, twice,
     # then the 🛡️ park-and-crown path on a ladder document (Q1178)
     walk "room-walk" npm run room-walk -- "$ROOM_BASE"
-    # **the demo's bots** (design/DEMO.md Stage 4, Q1535) on their own server:
-    # the stub model, so CI never calls Claude, the walk's demo key, and a
-    # ten-second heartbeat lapse — ▶️, ⏸️, the lapse, the run clock and the cap
-    boot demo "$PORT_DEMO" DRAFT_DEMO_KEY=walk DRAFT_DEMO_STUB=1 DRAFT_DEMO_LAPSE_MS=10000; DEMO_BASE=$BOOTED
-    # the whole demo first (Stages 1–5): key, Reset, two phones, the bots on
-    # the demo document, a visitor's vote, ⏸️ ▶️, the lapse, Reset clearing
-    # it all — then the phones' own page walk — and only then demo-bots-walk,
-    # whose dev target route re-points the bots at a ladder document
-    walk "demo-walk" npm run demo-walk -- "$DEMO_BASE"
-    walk "demo-join" node scripts/repro/demo-join.mjs "$DEMO_BASE" --key=walk
-    walk "demo-bots-walk" npm run demo-bots-walk -- "$DEMO_BASE"
     ;;
 
   # **The guards that ran nowhere** (plan-ci-speed.md Stage 4; the shape
@@ -270,9 +233,6 @@ case "$GROUP" in
     # a paste keeps only the backslash escapes docs.vote needs (Ed,
     # 2026-09-24, ruling 14). Serves design/ itself
     walk "escape-paste" npm run escape-paste
-    # 👥 born untouched, and its two blocks (Q779, Q1162). Serves design/
-    # itself
-    walk "slider-walk" npm run slider-walk
     # a judged card that races the 4 s poll files as closed (Q1493 (a))
     walk "poll-race" npm run poll-race -- "$BASE"
     # an unproposed draft follows its paragraph (Q1463)
@@ -294,12 +254,12 @@ case "$GROUP" in
   repros-b)
     boot repros-b "$PORT_MAIN"; BASE=$BOOTED
     boot_design "$PORT_DESIGN"; DESIGN_BASE=$BOOTED
-    # a proposal aims at its own line: the two cases CLAUDE.md names, a
-    # seed that is not an origin (Q1483, `shapes`) and a record's span in
-    # one line space (Q1488, `record`). The walk's other six cases were
-    # green too when this group was built, but the whole walk is twelve
-    # minutes on its own, which would make this the slowest group by half
-    walk "wrong-line-room --case=shapes" node scripts/repro/wrong-line-room.mjs "$BASE" --case=shapes
+    # a proposal aims at its own line: a record's span in one line space
+    # (Q1488, `record`). Its sibling case CLAUDE.md names, a seed that is
+    # not an origin (Q1483, `shapes`), is four minutes and runs in
+    # `sprint-motions` since Q1546. The walk's other six cases were green
+    # too when this group was built, but the whole walk is twelve minutes on
+    # its own, which would make this the slowest group by half
     walk "wrong-line-room --case=record" node scripts/repro/wrong-line-room.mjs "$BASE" --case=record
     # the P1 batch's own guards (2026-09-23): Enter at a lane's end makes a
     # line (#78, the fixture page); a refused vote or withdrawal is taken
@@ -311,13 +271,107 @@ case "$GROUP" in
     # the spectator feed's scroll hold (#87) — no server, design/feed.html
     # from disk
     walk "feed-scroll-hold" node scripts/repro/feed-scroll-hold.mjs
-    # the red Reconnecting… bar (Q1505): offline, a 502, a hung poll, the
-    # pause keeping its modal, and a vote refused at the press
-    walk "reconnecting" node scripts/repro/reconnecting.mjs "$BASE"
     # a stranger reads a closed document's ✔s where 🌍 lets them (Q1508)
     walk "stranger-records" node scripts/repro/stranger-records.mjs "$BASE"
     # one OK per clause, and OK walking to the next owed record (Q1536)
     walk "review-walk" node scripts/repro/review-walk.mjs "$BASE"
+    ;;
+
+  # ======================================================================
+  # **The sprint tier's groups** (Q1546 (b), Ed 2026-09-26), run by
+  # .github/workflows/sprint.yml on a push to main that carries a merge, and
+  # by hand — never at a plain push. The audit of all 215 CI runs since
+  # 2026-08-20 found five real product catches at the push and none of them
+  # by these fifteen guards, which cost about half the push's runner-minutes.
+  # Ed moved all fifteen here, and ruled with them (Q1547) that **a walk or
+  # repro written for one bug joins these groups from its first day**: the
+  # push groups above grow only by Ed's word.
+  # ======================================================================
+
+  # the doors and the demo: a product server, and the demo's stub-bot server
+  sprint-doors)
+    boot sprint-doors "$PORT_MAIN"; BASE=$BOOTED
+    # slug-walk asserts what happens when an address is *taken*, so one has
+    # to be taken first — the curl its own header documents. -fsS, so a
+    # refusal names itself rather than surfacing later as a walk that cannot
+    # find its collision.
+    if ! curl -fsS -o /dev/null -X POST "$BASE/api/docs" \
+        -H 'content-type: application/json' \
+        -d '{"title":"Test Charter","slug":"test-charter","email":"a@b.com"}'; then
+      echo "::error::could not reserve test-charter for slug-walk"; exit 1
+    fi
+    # the founder answering their own delegated question, alone in the
+    # room, and 🍾 refusing to begin on one voice (R-015, R-045).
+    # Self-starting: it serves design/ itself and takes no base URL (Q1177)
+    walk "founder-answers" npm run founder-answers
+    # 🪪's other two prices (`assembly` runs at the push, in `doors`)
+    walk "applicants-walk (proposal)" npm run applicants-walk -- "$BASE"
+    walk "applicants-walk --price=pen" npm run applicants-walk -- "$BASE" --price=pen
+    # a member's page across 🍾 when every power is laid down (Q1364)
+    walk "after-begin-walk" npm run after-begin-walk -- "$BASE"
+    # a member's invitation motion on the surface (Q1370)
+    walk "invite-walk" npm run invite-walk -- "$BASE"
+    # a member arrives while the founder has left 🎩 unanswered and delegated
+    # ⏱️ 👥 (Q1365, Q1372)
+    walk "member-questions-walk" npm run member-questions-walk -- "$BASE"
+    walk "slug-walk" npm run slug-walk -- "$BASE" test-charter
+    # **the demo's bots** (design/DEMO.md Stage 4, Q1535) on their own server:
+    # the stub model, so CI never calls Claude, the walk's demo key, and a
+    # ten-second heartbeat lapse — ▶️, ⏸️, the lapse, the run clock and the cap
+    boot demo "$PORT_DEMO" DRAFT_DEMO_KEY=walk DRAFT_DEMO_STUB=1 DRAFT_DEMO_LAPSE_MS=10000; DEMO_BASE=$BOOTED
+    # the whole demo first (Stages 1–5): key, Reset, two phones, the bots on
+    # the demo document, a visitor's vote, ⏸️ ▶️, the lapse, Reset clearing
+    # it all — then the phones' own page walk — and only then demo-bots-walk,
+    # whose dev target route re-points the bots at a ladder document
+    walk "demo-walk" npm run demo-walk -- "$DEMO_BASE"
+    walk "demo-join" node scripts/repro/demo-join.mjs "$DEMO_BASE" --key=walk
+    walk "demo-bots-walk" npm run demo-bots-walk -- "$DEMO_BASE"
+    ;;
+
+  # the aim, the pen, the line and the red bar: a product server
+  sprint-motions)
+    boot sprint-motions "$PORT_MAIN"; BASE=$BOOTED
+    # **the aim** (Q1477, the nh2026 convention): a page that polled across
+    # 🍾 kept the founder's text, drew the document in a line space that was
+    # not the engine's and aimed its proposals two lines low. The plan's own
+    # hunt — a rival's insertion at the head of the text, a draft begun
+    # beneath it — is walked beside it and is green.
+    walk "head-insertion-aim" npm run head-insertion-aim -- "$BASE"
+    # **A laid-down pen is laid down** (entry 62, K2/K29): every setting the
+    # founder's own card sets, under both hats, before 🍾, after it and on a
+    # closed document, plus ⏰ as the control that keeps its pen. **The base
+    # is an argument, not a default**: its own fallback is 8199.
+    walk "powers-walk" npm run powers-walk -- "$BASE"
+    # a seed that is not an origin (Q1483): the `shapes` case of the walk
+    # whose `record` case runs at the push in `repros-b`
+    walk "wrong-line-room --case=shapes" node scripts/repro/wrong-line-room.mjs "$BASE" --case=shapes
+    # the red Reconnecting… bar (Q1505): offline, a 502, a hung poll, the
+    # pause keeping its modal, and a vote refused at the press
+    walk "reconnecting" node scripts/repro/reconnecting.mjs "$BASE"
+    ;;
+
+  # the self-starting walks: each serves design/ itself and takes no base URL
+  sprint-pages)
+    # 👥 born untouched, and its two blocks (Q779, Q1162). Serves design/
+    # itself
+    walk "slider-walk" npm run slider-walk
+    # the contents rail: every click lands clear of the topbar (M17), and
+    # since Q1384 its marks queue rightwards out of the rail and cover the
+    # document's edge, unclipped, at 1600 · 1280 · 1920 (the wide step).
+    # In ci.yml's `probe` job until Q1546
+    walk "toc-travel" npm run toc-travel
+    # **The take-back** (Q1318, Ed 2026-09-11: *I should be able to choose a
+    # value to take it back with ✒️, but I wasn't able to do that here*): hand
+    # a setting to the membership, then reclaim it with the pen and a value
+    # in one act — the card's radios before the press, the module's holder
+    # after it, the clause no longer waiting, the founder's own answer card
+    # gone from the rail, and 🍾 beginning with nothing left delegated. Two
+    # shapes, because the defect had three causes and they do not show on one
+    # card: 🤝, whose value and holder are separate fields and is Ed's own
+    # case, and 🌍, where they are the same field. In ci.yml's `probe` job
+    # until Q1546; about 27 s each
+    walk "founding-walk --takeback=applications" node scripts/founding-walk.mjs --takeback=applications
+    walk "founding-walk --takeback=chamber" node scripts/founding-walk.mjs --takeback=chamber
     ;;
 esac
 

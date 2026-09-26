@@ -123,3 +123,51 @@ jobs:
           name: sprint-audits
           path: ${{ runner.temp }}/*-audit*.json
           if-no-files-found: warn
+
+  # **The walks that left the push** (Q1546 (b), Ed 2026-09-26): the fifteen
+  # guards with no real catch at the push in four weeks, in groups that
+  # `scripts/ci-walks.sh` holds beside the push's own — the same script, so
+  # the same servers, the same one-verdict-per-walk and the same red at the
+  # end. Groups sized from run 36235116145's verdict lines to stay near ten
+  # minutes each. Every walk a single bug brings runs here from its first
+  # day (Q1547).
+  walks:
+    name: walks (${{ matrix.group }})
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [sprint-doors, sprint-motions, sprint-pages]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: playwright version, for the browser cache key
+        id: pw
+        run: echo "v=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        id: browser
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ steps.pw.outputs.v }}
+      - if: steps.browser.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+      - if: steps.browser.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+      - name: the ${{ matrix.group }} walks
+        run: bash scripts/ci-walks.sh "${{ matrix.group }}"
+      # the server's side beside the walk's, as ci.yml's `walks` job keeps it
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: walks-${{ matrix.group }}
+          path: |
+            ${{ runner.temp }}/walk-server-*.log
+            ${{ runner.temp }}/seat-matrix-*.json
+          if-no-files-found: warn
