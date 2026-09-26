@@ -217,10 +217,6 @@
     "inputs": [],
     "foot": [
      {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
       "label": "🍾",
       "title": "The document cannot begin yet"
      }
@@ -230,7 +226,6 @@
      "Kept — press to lay it down at the start",
      "Already given up on its own card — it comes back only there",
      "Laid down at the start — press to keep it",
-     "Put it back as it stands",
      "The document cannot begin yet"
     ],
     "helpers": [
@@ -343,8 +338,8 @@
      }
     ],
     "hints": [
-     "Founder Actions — close it",
-     "Activate Your Membership — yours to take",
+     "Accept Founder Actions — close it",
+     "Accept Constitutional Proposals — yours to take",
      "Some of the rules are reserved: changing them needs the founder’s assent"
     ],
     "helpers": [
@@ -365,8 +360,8 @@
      }
     ],
     "hints": [
-     "Founder Veto — close it",
-     "Activate Your Membership — yours to take",
+     "Accept the Founder Veto — close it",
+     "Accept Constitutional Proposals — yours to take",
      "Founder Actions — settled",
      "Some of the rules are reserved: changing them needs the founder’s assent"
     ],
@@ -388,7 +383,7 @@
      }
     ],
     "hints": [
-     "Activate Your Membership — close it",
+     "Accept Constitutional Proposals — close it",
      "Founder Actions — settled",
      "Founder Veto — settled",
      "Some of the rules are reserved: changing them needs the founder’s assent"
@@ -3738,10 +3733,6 @@
     "inputs": [],
     "foot": [
      {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
       "label": "🍾",
       "title": "Begin the document — a full one-second hold"
      }
@@ -3750,7 +3741,6 @@
      "Begin — close it",
      "Kept — press to lay it down at the start",
      "Laid down at the start — press to keep it",
-     "Put it back as it stands",
      "Begin the document — a full one-second hold"
     ],
     "helpers": [
@@ -3862,8 +3852,8 @@
      }
     ],
     "hints": [
-     "Founder Actions — close it",
-     "Activate Your Membership — yours to take",
+     "Accept Founder Actions — close it",
+     "Accept Constitutional Proposals — yours to take",
      "Some of the rules are reserved: changing them needs the founder’s assent"
     ],
     "helpers": [
@@ -3884,8 +3874,8 @@
      }
     ],
     "hints": [
-     "Founder Veto — close it",
-     "Activate Your Membership — yours to take",
+     "Accept the Founder Veto — close it",
+     "Accept Constitutional Proposals — yours to take",
      "Founder Actions — settled",
      "Some of the rules are reserved: changing them needs the founder’s assent"
     ],
@@ -3907,7 +3897,7 @@
      }
     ],
     "hints": [
-     "Activate Your Membership — close it",
+     "Accept Constitutional Proposals — close it",
      "Founder Actions — settled",
      "Founder Veto — settled",
      "Some of the rules are reserved: changing them needs the founder’s assent"
@@ -4639,7 +4629,7 @@
     "inputs": [],
     "foot": [],
     "hints": [
-     "Activate Your Membership — close it",
+     "Constitutional Proposals — close it",
      "Some of the rules are reserved: changing them needs the founder’s assent"
     ],
     "helpers": [
@@ -6293,7 +6283,7 @@
     "hints": [
      "Founder Actions — close it",
      "Founder Veto — settled",
-     "Activate Your Membership — settled",
+     "Constitutional Proposals — settled",
      "Some of the rules are reserved: changing them needs the founder’s assent"
     ],
     "helpers": [
@@ -6311,7 +6301,7 @@
     "hints": [
      "Founder Actions — settled",
      "Founder Veto — close it",
-     "Activate Your Membership — settled",
+     "Constitutional Proposals — settled",
      "Some of the rules are reserved: changing them needs the founder’s assent"
     ],
     "helpers": [
@@ -6329,7 +6319,7 @@
     "hints": [
      "Founder Actions — settled",
      "Founder Veto — settled",
-     "Activate Your Membership — close it",
+     "Constitutional Proposals — close it",
      "Some of the rules are reserved: changing them needs the founder’s assent"
     ],
     "helpers": [

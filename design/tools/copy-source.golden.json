@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 682
+  "entries": 684
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -307,7 +307,7 @@
   "page.gate.shield.waiting": "Waiting on the save.",
   "page.gate.shield.why": "As the founder of this document, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can give up this power later if you choose to.",
   "page.gate.voice.accept": "Accept 🏛️",
-  "page.gate.voice.title": "Activate Your Membership",
+  "page.gate.voice.title": "Constitutional Proposals",
   "page.gate.voice.waiting": "Waiting on your arrival.",
   "page.gate.voice.why": "A 🏛️ is a constitutional proposal: one at a time, returned whole, passing only when all members agree. You are already a member; activating it opens every question, proposal and vote on the rules.",
   "page.heldNews.couldNotBePut": "Your proposal could not be put to the membership, and your ✏️ is back in your wallet.",
@@ -672,6 +672,8 @@
   "shell.accept.grant-shield": "Accept the Founder Veto",
   "shell.accept.grant-voice": "Accept Constitutional Proposals",
   "shell.begin": "Begin",
+  "shell.beginInvited": "Waiting for invited members to arrive.",
+  "shell.beginOneVoice": "Delegated questions need at least two responses.",
   "shell.currentRule": "Current rule",
   "shell.currentText": "Current text",
   "shell.outcome.passed": "Passed",
