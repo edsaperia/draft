@@ -149,7 +149,25 @@ const GRAMMAR_KINDS = [
   // founder's 🌍 by key, and a filed record is keyed as the quick card it was.
   'stranger-rule',
   'record-filed',
+  // stage 2 (Q1541): the read-only and acknowledgement cards — the three
+  // grants and the two gates drawn like them (*Accept*, answers Part 4 .23,
+  // .24), 🍾 in every state (Part 6.8), and the room's side of a park on the
+  // charter. The fast pass meets each: `sessionband` the grants, gates and 🍾
+  // accepted, `charter` the park; their owed states are the founding walks'
+  'grant',
+  'gate',
+  'begin',
+  'park',
 ];
+/**
+ * **The stage the build has reached, and the stage each check turns strict
+ * at** — BUILD.md §2's *strict from* column, for the checks it puts later
+ * than the family's own stage. A held kind's finding on a check whose stage
+ * has not come is reported, never held (Q1541 stage 2: the grants and 🍾 are
+ * opened on the closed band too, where P29 is stage 7's).
+ */
+const STAGE = 2;
+const STRICT_FROM = { 'closed-page': 7, 'closed-keeps-content': 7, 'closed-powers': 7, 'zone-overlap': 8, 'place-head': 6 };
 const KINDS_ARG = arg('kinds', null);
 const KINDS = KINDS_ARG == null ? null
   : KINDS_ARG === 'GRAMMAR_KINDS' ? GRAMMAR_KINDS : KINDS_ARG.split(',').filter(Boolean);
@@ -1739,11 +1757,11 @@ function rulesFor(card, tok) {
     }
   }
   // GA1 — a grant not yet accepted says so (Q1501, Q1502, Ed 2026-09-22):
-  // its commit reads *Accept* and the power it hands you (🏛️: *Activate*),
+  // its commit reads *Accept* and the power it hands you (🏛️ too since Q1541.24),
   // and its tab wears the *yours* hue; once accepted it is grey like any
   // settled card and its OK only closes
   if (card.grant) {
-    const WORD = { 'grant-pen': 'Accept ✒️', 'grant-shield': 'Accept 🛡️', 'grant-voice': 'Activate 🏛️',
+    const WORD = { 'grant-pen': 'Accept ✒️', 'grant-shield': 'Accept 🛡️', 'grant-voice': 'Accept 🏛️',
       canpropose: 'Accept ✏️', canjudge: 'Accept ⚖️' };
     const g = card.grant;
     if (g.accept !== null && g.accept !== WORD[card.key]) {
@@ -2007,6 +2025,9 @@ const HEAD_WORDS = [
   /^(Passed|Rejected|Refused by the Founder|Changed by the Founder|Ran out of time)( · .+)?$/i,
   /^Final text$/i, /^Rule at the close$/i,
   /^Accept (Founder Actions|the Founder Veto|Constitutional Proposals|Proposals|Voting)$/i,
+  // …and once accepted, the power's own name (Q1541 stage 2: Part 6.1's
+  // ask-then-noun, which Ed ruled for 👑, applied to the grants and gates)
+  /^(Founder Actions|Founder Veto|Constitutional Proposals|Proposals|Voting)$/i,
   /^Add your closing comment$/i, /^Accept This Change\?$/i,
 ];
 /** …and on a block's first line (Part 4 .8–.14) */
@@ -4366,7 +4387,12 @@ async function finish(cards, errors, tok, ref, version, switches, piles, doors, 
     if (!STRICT) return;
     if (KINDS) {
       const want = new Set(KINDS);
-      const held = grammar.filter((f) => !f.excepted && want.has(f.kind));
+      // **a check is held from the stage BUILD.md §2 names for it**, never
+      // before (Q1541 stage 2): the closed page's three are strict from
+      // stage 7 and report until then, so a kind the closed band also opens
+      // — the grants, the gates, 🍾 — is not held to rules its stage cannot
+      // yet meet there; `zone-overlap` waits for stage 8, `place-head` for 6
+      const held = grammar.filter((f) => !f.excepted && want.has(f.kind) && (STRICT_FROM[String(f.check).replace(/^P\d+ /, '')] || 0) <= STAGE);
       const broken = errors.filter((e) => /walk threw|measured no cards|page error|offered no cards/.test(e));
       // **a held kind no card was measured as is a broken walk** (Q1541
       // stage 1): the kind is declared by the card's own shell, so a card
