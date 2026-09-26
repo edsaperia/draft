@@ -297,7 +297,9 @@ await sleep(1200);
 const cardOf = (id) => page.evaluate((id) => {
   const c = [...document.querySelectorAll('.sugg[data-card]')].find((x) => x.dataset.card === id);
   return c ? { back: !!c.querySelector('[data-foldback]'), ok: (c.querySelector('.okbtn[data-seen]') || { dataset: {} }).dataset.seen,
-    oks: c.querySelectorAll('.okbtn').length, counts: !!c.querySelector('.reccounts'),
+    // the participation line: the eyebrow's `.reccounts`, or the fact line
+    // of a record built on the one shell (Q1541 stage 1)
+    oks: c.querySelectorAll('.okbtn').length, counts: !!c.querySelector('.reccounts, [data-slot="fact"]'),
     focus: document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.anchor : null } : null;
 }, id);
 let inner = await cardOf(members[0]);

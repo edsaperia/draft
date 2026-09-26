@@ -58,7 +58,9 @@
  *   node design/tools/card-audit.mjs --width=390 --height=844 --baseline=<1600 payload>  # P31
  *
  * `--walk=fixture` is the four walks that open `?fixture=session` and need no
- * founding drive; `--walk=all` adds `sessionband` and `closedband` to the
+ * founding drive, and since Q1541 stage 1 `stranger` beside them (the band
+ * pilot's one home, reached by the in-page ⏩); `--walk=all` adds
+ * `sessionband` and `closedband` to the
  * default seven (which `copy-check --walk` freezes, so they stay its default).
  */
 import { createServer } from 'node:http';
@@ -110,14 +112,21 @@ if (!ENGINES[BROWSER]) {
  * (Q1541 stage 0, from phase one's inventory) open the band's cards on the
  * session and closed fixtures, which no other walk reaches — 🥂 and every
  * closed Rules card among them. `--walk=all` runs the nine, `--walk=fixture`
- * the four that open `?fixture=session` and so need no founding drive: the
- * fast strict pass CI runs (BUILD.md §2).
+ * the four that open `?fixture=session` and so need no founding drive, and
+ * `stranger` beside them: the fast strict pass CI runs (BUILD.md §2).
  */
-const ALL_WALKS = ['founding', 'answers', 'delegated', 'settled', 'outsiders', 'charter', 'closed', 'sessionband', 'closedband'];
+/*
+ * **`stranger`** (Q1541 stage 1) is the outsiders walk's stranger seat alone:
+ * the band pilot, the stranger's settled rule card, lives there and on no
+ * fixture (the session fixture seats no stranger at a band), so the fast
+ * pass takes it beside the four fixture walks — it needs the in-page ⏩ and
+ * no server. `--walk=all` leaves it out, `outsiders` already walking it.
+ */
+const ALL_WALKS = ['founding', 'answers', 'delegated', 'settled', 'outsiders', 'charter', 'closed', 'sessionband', 'closedband', 'stranger'];
 const DEFAULT_WALKS = ALL_WALKS.slice(0, 7);
-const FIXTURE_WALKS = ['charter', 'closed', 'sessionband', 'closedband'];
+const FIXTURE_WALKS = ['charter', 'closed', 'sessionband', 'closedband', 'stranger'];
 const WALK_ARG = arg('walk', DEFAULT_WALKS.join(','));
-const WALKS = (WALK_ARG === 'all' ? ALL_WALKS : WALK_ARG === 'fixture' ? FIXTURE_WALKS : WALK_ARG.split(',')).filter(Boolean);
+const WALKS = (WALK_ARG === 'all' ? ALL_WALKS.filter((w) => w !== 'stranger') : WALK_ARG === 'fixture' ? FIXTURE_WALKS : WALK_ARG.split(',')).filter(Boolean);
 /**
  * **`GRAMMAR_KINDS` — the card kinds the redesign's checks hold strictly**
  * (BUILD.md §2). Empty in stage 0: every check P13–P33 reports and nothing
@@ -132,7 +141,15 @@ const WALKS = (WALK_ARG === 'all' ? ALL_WALKS : WALK_ARG === 'fixture' ? FIXTURE
  * the report they have always been. Without `--kinds`, `--strict` is exactly
  * what it was.
  */
-const GRAMMAR_KINDS = [];
+const GRAMMAR_KINDS = [
+  // stage 1 (Q1541): the one shell's two pilots, one on each side of the page —
+  // the stranger's settled rule card on the band, and a sealed record filed
+  // on a clause of the charter. Both are declared by the shell itself
+  // (`data-kind`), since neither is a key family: a stranger's 🌍 is the
+  // founder's 🌍 by key, and a filed record is keyed as the quick card it was.
+  'stranger-rule',
+  'record-filed',
+];
 const KINDS_ARG = arg('kinds', null);
 const KINDS = KINDS_ARG == null ? null
   : KINDS_ARG === 'GRAMMAR_KINDS' ? GRAMMAR_KINDS : KINDS_ARG.split(',').filter(Boolean);
@@ -982,8 +999,15 @@ const IN_PAGE = () => {
     // still, open half (doc coordinates at scroll 0)
     out.still = atZero(() => ({ glyph: glyphBox(openTab), line: head ? firstLine(head.el, '.headlab, .glab') : null }));
     out.still.zones = stillZones();
-    // head-registration and head-form
-    out.head = head ? { sel: head.sel, text: plainText(head.el, '.headlab, .glab, .lanebar, .speaker, .lanepick, button'),
+    // **the label's room** (Q1541 stage 1): how far the first line stands
+    // below the label above it — the height the card makes above its first
+    // line (1541.44), which is what the first line stands lower *in the
+    // document* while it stands still on the glass (P14, below)
+    const hlRoom = head ? headLabelOf(card, head) : null;
+    out.room = hlRoom && hlRoom.n && out.still.line ? R2(out.still.line[1] - (hlRoom.top + window.scrollY)) : 0;
+    // head-registration and head-form — the standing pill is who chose the
+    // line, never the line's words (1541.47), so it is read out of them
+    out.head = head ? { sel: head.sel, text: plainText(head.el, '.headlab, .glab, .lanebar, .speaker, .lanepick, button, [data-fact="pill"]'),
       el: nameOf(head.el) } : null;
     if (head) {
       const above = [];
@@ -1389,6 +1413,10 @@ const IN_PAGE = () => {
       const travel = (a, b) => (a && b ? [Math.round((b[0] - a[0]) * 100) / 100, Math.round((b[1] - a[1]) * 100) / 100] : null);
       return {
         key,
+        // the kind a card built on the one shell declares (Q1541 stage 1,
+        // card-shell.js's `data-kind`): what `GRAMMAR_KINDS` holds it by, so
+        // a record filed on a clause is not a live quick card for the audit
+        shellKind: card.getAttribute('data-kind') || null,
         // off unless --specimens asked for it: the payload is the page, and
         // 270 of them would drown the numbers this instrument exists for
         ...(window.__CA_SPEC ? { spec: specimen(card, key) } : {}),
@@ -2021,15 +2049,26 @@ function classifyRow(tokens) {
  * sheet by its left and right edges (its top is content above — checks.md
  * P13, 1541.44).
  */
-function glassZoneMoves(a, b) {
+function glassZoneMoves(a, b, dScroll) {
   const out = [];
   if (!a || !b) return out;
-  const box = (name, x, y) => {
+  const box = (name, x, y, rides) => {
     if (!x || !y) return;
-    ['x', 'y', 'width', 'height'].forEach((lab, i) => { if (Math.abs(y[i] - x[i]) > GLASS_TOL) out.push(name + ' ' + lab + ' ' + r2(y[i] - x[i]) + 'px'); });
+    ['x', 'y', 'width', 'height'].forEach((lab, i) => {
+      const d = y[i] - x[i];
+      // **a rail that has not yet stuck rides the page** (Q1541 stage 1): at
+      // the page's top the contents rail sits below its sticky line, so the
+      // scroll the shortfall rule itself asks for (answers Part 6.4) carries
+      // it with the page until it sticks — against the scroll, and never
+      // further than the scroll went. That is the page moving, not the rail;
+      // a rail that moves any other way is still a finding
+      if (rides && lab === 'y' && dScroll && Math.sign(d) === -Math.sign(dScroll) &&
+        Math.abs(d) <= Math.abs(dScroll) + GLASS_TOL) return;
+      if (Math.abs(d) > GLASS_TOL) out.push(name + ' ' + lab + ' ' + r2(d) + 'px');
+    });
   };
   box('topbar', a.topbar, b.topbar);
-  box('contents rail', a.toc, b.toc);
+  box('contents rail', a.toc, b.toc, true);
   const sa = a.sheets || []; const sb = b.sheets || [];
   if (sa.length !== sb.length) out.push('the sheets went from ' + sa.length + ' to ' + sb.length);
   for (let i = 0; i < Math.min(sa.length, sb.length); i++) {
@@ -2091,7 +2130,7 @@ function p13Rules(c, at) {
       const got = r2(b.above - a.above);
       if (Math.abs(got - expect) > GLASS_TOL) bits.push('the ink above moves ' + got + 'px (the room says ' + r2(expect) + ')');
     }
-    bits.push(...glassZoneMoves(a.zones, b.zones));
+    bits.push(...glassZoneMoves(a.zones, b.zones, (b.scrollY || 0) - (a.scrollY || 0)));
     if (bits.length) at('still', e.sub + ': ' + bits.join(' · '), sub);
   }
 }
@@ -2135,8 +2174,13 @@ function grammarRules(c, ref) {
         at('head-registration', 'power-clause: the power card heads “' + clip(norm(g.head.text), 70) + '”, not the power\'s own clause', 'power-clause', { ruled: 'new' });
       }
       if (before.line && g.still.line) {
+        // **lands on the paragraph's line on the glass** (1541.44): a card
+        // that makes its label's room above its first line stands that line
+        // the room lower in the document, and the scroll takes it back — P13
+        // holds the glass; here the document's drop is read net of the room
         const d = d2(before.line, g.still.line);
-        if (moved(d)) at('head-registration', 'offset: head first line Δx ' + d[0] + ' Δy ' + d[1] + 'px', 'offset', why ? { excepted: why } : null);
+        d[1] = r2(d[1] - (g.room || 0));
+        if (moved(d)) at('head-registration', 'offset: head first line Δx ' + d[0] + ' Δy ' + d[1] + 'px' + (g.room ? ' (net of the label\'s room, ' + g.room + 'px)' : ''), 'offset', why ? { excepted: why } : null);
       } else if (!g.still.line) at('head-registration', 'offset: the head draws no first line to measure', 'offset', why ? { excepted: why } : null);
     }
   }
@@ -4034,6 +4078,7 @@ async function main() {
       if (cards.length === n) errors.push('seat:' + seat + ' offered no cards — nothing was measured for it');
     }
   });
+  await run('stranger', () => walkSettled(page, base, cards, errors, 'stranger', null, piles));
   await run('charter', () => walkCharter(page, base, cards, errors, { doors, rails, strips }));
   await run('closed', () => walkCharter(page, base, cards, errors, { closed: true }));
   // phase one's inventory walks (Q1541 stage 0): the band's cards on the session and closed
@@ -4168,15 +4213,23 @@ async function finish(cards, errors, tok, ref, version, switches, piles, doors, 
    * column (the exceptions in, the ruling's new findings out), read for the
    * checks checks.md calls unchanged */
   const grammar = [];
+  // a card's kind is the one its shell declares where it is built on the one
+  // shell (Q1541 stage 1), else its key's family — and a walk-level finding
+  // about that card (a switch, the width pass) takes the same kind
+  const shellKinds = new Map(cards.filter((c) => c.shellKind).map((c) => [c.walk + '·' + c.key, c.shellKind]));
+  const kindFor = (walk, key) => shellKinds.get(walk + '·' + key) || kindOf(key);
   for (const c of cards) {
     const fs = grammarRules(c, ref);
-    for (const f of fs) f.kind = kindOf(c.key);
+    for (const f of fs) f.kind = kindFor(c.walk, c.key);
     grammar.push(...fs);
   }
   grammar.push(...walkGrammar(zoneReads, tipReads, switches, restReads));
   grammar.push(...widthRules(cards, baseline));
   for (const f of grammar) {
-    if (!f.kind) f.kind = kindOf(String(f.key).replace(/^(open|rest):/, ''));
+    if (!f.kind) {
+      const k = String(f.key).replace(/^(open|rest):/, '');
+      f.kind = kindFor(f.walk, k);
+    }
     f.check = CHECK[f.check] || f.check;
   }
   const shapes = {};
@@ -4252,6 +4305,15 @@ async function finish(cards, errors, tok, ref, version, switches, piles, doors, 
       const want = new Set(KINDS);
       const held = grammar.filter((f) => !f.excepted && want.has(f.kind));
       const broken = errors.filter((e) => /walk threw|measured no cards|page error|offered no cards/.test(e));
+      // **a held kind no card was measured as is a broken walk** (Q1541
+      // stage 1): the kind is declared by the card's own shell, so a card
+      // that slid back onto an old builder would drop out of the list rather
+      // than fail it — over the canonical walk sets, every held kind must be
+      // met at least once
+      if (WALK_ARG === 'fixture' || WALK_ARG === 'all') {
+        const met = new Set(cards.map((c) => c.shellKind || kindOf(c.key)));
+        for (const k of KINDS) if (!met.has(k)) broken.push('the held kind ' + k + ' was measured on no card');
+      }
       if (!AS_JSON) {
         console.log('\n--strict --kinds=' + (KINDS_ARG === 'GRAMMAR_KINDS' ? 'GRAMMAR_KINDS (' + (KINDS.join(', ') || 'none') + ')' : KINDS.join(',')) + ': ' +
           held.length + ' finding' + (held.length === 1 ? '' : 's') + (held.length ? ' — ' + [...new Set(held.map((f) => f.check))].join(', ') : '') +

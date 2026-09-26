@@ -228,6 +228,14 @@ window.CARD_SHELL = (function () {
     const slot = slotOf(card);
     if (!slot) return;
     card.style.paddingTop = Math.max(0, lineOffset).toFixed(2) + 'px';
+    // **the room is a whole number of pixels**: the scroll that gives it
+    // moves by whole pixels, so a fractional room would leave the first line
+    // a fraction off its place on every open and twice that on a switch;
+    // the label's own air below it takes up the difference
+    slot.style.marginBottom = '';
+    const r = roomOf(card);
+    const up = Math.ceil(r - 0.01) - r;
+    if (up > 0.01) slot.style.marginBottom = ((parseFloat(getComputedStyle(slot).marginBottom) || 0) + up).toFixed(2) + 'px';
   }
 
   /** after an open or a switch: where the label would land above the glass
