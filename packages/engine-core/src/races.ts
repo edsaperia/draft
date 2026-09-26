@@ -49,6 +49,9 @@ import type { StoredComparison } from './session.js';
  */
 const TIE_EPS = 1e-9;
 
+/** `hashOf`'s bound: past it the cache starts afresh (a few MB at the worst). */
+const HASH_CACHE_MAX = 20_000;
+
 /** Candidate ids are `c<n>`; the number orders them by submission. */
 export function candidateNum(id: string): number {
   return Number(id.slice(1));
@@ -1027,6 +1030,19 @@ export class Races {
   }
 
   /**
+   * **A live candidate's race as its members and its ground, and nothing
+   * derived** (Q1553): what the judgment fold needs to stamp a judgment and
+   * move a peak — the grouping and the text under it, both time-free — without
+   * building every race's fit, pair tallies and Smith set to find it out.
+   * Exactly `races(t)`'s `members` and `incumbentId` for the same race.
+   */
+  groupOf(candidateId: string): { members: string[]; incumbentId: string } | null {
+    if (candidateId.startsWith(INC_PREFIX)) return null;
+    const members = this.raceGroups().find((g) => g.includes(candidateId));
+    return members ? { members, incumbentId: this.groundOf(members) } : null;
+  }
+
+  /**
    * The incumbent is positional (SPEC §4.4): its identity is the hash of
    * the contested spans' current text, so evidence goes stale exactly
    * when the text it judged stops being the status quo.
@@ -1034,7 +1050,28 @@ export class Races {
   private incumbentIdFor(contested: Span[],
     lines: readonly string[] = this.host.currentLines()): string {
     const parts = contested.map((s) => lines.slice(s.start, s.end).join('\n'));
-    return INC_PREFIX + sha256Hex(parts.join('\u0000')).slice(0, 16);
+    return INC_PREFIX + this.hashOf(parts.join('\u0000')).slice(0, 16);
+  }
+
+  /**
+   * **SHA-256, remembered by its own input** (Q1553). Since Q1538 the fold
+   * dates the ground of every pair in every race at each event that can move
+   * one (`groundIds`), a race of n wordings asking n(n+1)/2 hashes where it
+   * asked n, and nearly all of them over text the event did not touch: the
+   * boot replay spent half its time here. The key is the exact string hashed,
+   * so a hit is the hash itself and no state version, clock or event can make
+   * it stale — which is why it lives outside the per-version memo and needs
+   * no `touch()`. Bounded by clearing, never by eviction order, so what it
+   * holds changes the cost of a read and nothing else.
+   */
+  private readonly hashes = new Map<string, string>();
+  private hashOf(input: string): string {
+    const hit = this.hashes.get(input);
+    if (hit !== undefined) return hit;
+    if (this.hashes.size >= HASH_CACHE_MAX) this.hashes.clear();
+    const h = sha256Hex(input);
+    this.hashes.set(input, h);
+    return h;
   }
 
   /**
@@ -1045,7 +1082,7 @@ export class Races {
    */
   private incumbentIdForSetting(settingId: string): string {
     const standing = stableStringify(this.host.settingStanding(settingId));
-    return INC_PREFIX + sha256Hex(`setting:${settingId}\u0000${standing}`).slice(0, 16);
+    return INC_PREFIX + this.hashOf(`setting:${settingId}\u0000${standing}`).slice(0, 16);
   }
 
   classifyPair(aId: string, bId: string): PairKind {
@@ -1224,7 +1261,7 @@ export class Races {
     return this.fitRaceMembers(members, this.groundOf(members));
   }
 
-  updatePeaks(race: RaceView): void {
+  updatePeaks(race: Pick<RaceView, 'members' | 'incumbentId'>): void {
     // Performance is how the **room** received a candidate, and an author is
     // not the room — so the peak is taken on a fit with no derived preference
     // in it, and a candidate has no performance at all until somebody else
