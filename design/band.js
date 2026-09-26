@@ -1269,6 +1269,10 @@ window.BAND = (function () {
           : '<div class="lanebox"><div class="lp editlane" contenteditable="plaintext-only" spellcheck="false"' +
             ' data-motionlane="to" data-ph="The value you are proposing">' + esc(d.to) + '</div></div>';
         input = whyLane(d);
+        // …and the change line under it: the clause keeps it permanently
+        // (SURFACE §2's L7), `changeHalf`'s *has changed … from … to …* with
+        // its reason and its date
+        body = changeHalf(c);
       } else if (kind === 'setting') {
         const b = BODY[k]();
         // 🪶 before a title stands: the title box is the first line (P1's
@@ -1288,7 +1292,8 @@ window.BAND = (function () {
       } else if (kind === 'watching' && composerOn(c) && composerWaits(c).length) {
         // the composer waits on a power not yet accepted: the rule, and the
         // one sentence saying which (the grants are in the rail)
-        body = '<p class="setnote">' + esc(W3().composeOnceAccepted(composerWaits(c))) + '</p>';
+        // (with the change line the composer keeps, SURFACE §2's L7)
+        body = changeHalf(c) + '<p class="setnote">' + esc(W3().composeOnceAccepted(composerWaits(c))) + '</p>';
       }
       body += doorErrHtml(k);
       return {

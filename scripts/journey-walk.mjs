@@ -1136,10 +1136,10 @@ const lifecycleL2 = async () => {
  * in a quiet room no render lands between typing and the commit. */
 /* **🎩 from a member's seat says what it stands at** (Q1503, Ed's convention
  * observation 2026-09-22: *"Set to [blank]"*). A member opening the founder's
- * 🎩 met `readBody`'s *Set to* line with no `VALUE.hat` behind it. It is the
- * founder's own two sentences now, locked, the standing one marked — read
- * here on the guest seat, and closed by the bin so the rest of the seat's
- * walk sees the page it always saw. */
+ * 🎩 met `readBody`'s *Set to* line with no `VALUE.hat` behind it. Since
+ * Q1541 stage 3b it is the sentence that stands, wearing its pill, and no
+ * row — read here on the guest seat, and closed by its tab so the rest of
+ * the seat's walk sees the page it always saw. */
 const hatFromMemberSeat = async () => {
   if (!guestPage) return;
   const opened = await guestPage.evaluate(() => {
@@ -1150,21 +1150,26 @@ const hatFromMemberSeat = async () => {
   });
   await guestPage.waitForTimeout(420);
   if (!opened) { say('hat        · FAIL: no 🎩 tab in the member seat'); stuck.push('Q1503: the 🎩 tab'); return; }
+  // **the locked 🎩 is read** (Q1541 stage 3b): its first line the sentence
+  // that stands, wearing the pill as a fact; the unchosen sentence is not
+  // drawn (1541.6 (a)), and nothing on the card commits (CP9)
   const r = await guestPage.evaluate(() => {
-    const picks = [...document.querySelectorAll('.setupcard .choice .pick')];
+    const c = document.querySelector('.setupcard');
+    const line = c?.querySelector('[data-fact="place"]');
     const out = {
-      radios: picks.length,
-      locked: picks.filter((p) => p.querySelector('.lanepick')?.disabled).length,
-      marked: picks.filter((p) => p.classList.contains('on')).map((p) => (p.querySelector('.opttext')?.textContent ?? '').trim()),
-      setTo: /Set to/.test(document.querySelector('.setupcard')?.textContent ?? ''),
+      radios: c ? c.querySelectorAll('.choice .pick, .lanepick').length : -1,
+      line: (line?.textContent ?? '').replace(/\s+/g, ' ').trim(),
+      pill: !!c?.querySelector('.standpill'),
+      row: !!c?.querySelector('[data-slot="row"]'),
+      setTo: /Set to/.test(c?.textContent ?? ''),
     };
-    document.querySelector('.setupcard [data-revert]')?.click();
+    document.querySelector('.setupcard .chipcol .achip')?.click();
     return out;
   });
   await guestPage.waitForTimeout(400);
-  const ok = r.radios === 2 && r.locked === 2 && r.marked.length === 1 && !r.setTo;
-  say('hat        · ' + (ok ? 'ok' : 'FAIL') + ': 🎩 on the member seat — ' + r.radios + ' radios, ' + r.locked +
-    ' locked, marked ' + JSON.stringify(r.marked) + (r.setTo ? ', a *Set to* line' : ''));
+  const ok = r.radios === 0 && /^The Founder is (not )?part of the membership\./.test(r.line) && r.pill && !r.row && !r.setTo;
+  say('hat        · ' + (ok ? 'ok' : 'FAIL') + ': 🎩 on the member seat — “' + r.line + '”' +
+    (r.pill ? ' wearing its pill' : ', NO pill') + ', ' + r.radios + ' radios' + (r.row ? ', a row' : '') + (r.setTo ? ', a *Set to* line' : ''));
   if (!ok) stuck.push('Q1503: 🎩 on the member seat');
 };
 
