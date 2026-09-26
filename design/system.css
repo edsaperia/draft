@@ -1464,11 +1464,13 @@
        keeps .layout tall enough for the rails to stay pinned. */
     padding: 36px 44px 0 132px;
   }
-  /* Narrow: the gutter survives as a column at 56px (MOBILE.md §1.2) — the
-     two fitting passes measure a vertical gutter and keep working unchanged —
-     and the document *is* the page, so its box goes. */
+  /* Narrow: the gutter survives as a column (MOBILE.md §1.2) — the two
+     fitting passes measure a vertical gutter and keep working unchanged —
+     and the document *is* the page, so its box goes. **28px since Q1541
+     stage 6** (1541.20 (a)): the gutter's 34px tab stands flush with the
+     glass, the desktop's 14px between it and the clause; it was 56px. */
   /* NARROW_Q */
-  @media (max-width: 900px) { .doc { padding: var(--s4) 12px 0 56px; border: 0; border-radius: 0; } }
+  @media (max-width: 900px) { .doc { padding: var(--s4) 12px 0 28px; border: 0; border-radius: 0; } }
   /* **The runway is content, not padding** (Ed's QA, 2026-08-30): a sticky
      element travels only inside its containing block's content box, so with
      the runway as padding the riding 📝 tab stopped where the text ended and
@@ -1950,8 +1952,8 @@
      (Q1351, Ed 2026-09-12: *tabs overlap open cards too much*). The first
      cut pulled the margin in to 8px, and the open card's edge — placed for
      14 — landed 6px under the tab on every card. The column is absolute, so
-     the margin costs the prose nothing; the 56px `.doc` gutter (below) is
-     what makes the room, and a grown tab at 14 still clears the bezel. */
+     the margin costs the prose nothing; the 28px `.doc` gutter (below) is
+     what makes the room, the tab flush with the bezel (Q1541 stage 6). */
 
   /* insert-anchor: a held-open gap where a proposed section would stand. No
      border and no caption (Ed, 201) — a labelled box made an absence look like
@@ -2951,10 +2953,10 @@
   /* **On a phone the tabs stand flush with the glass** (1541.20 (a), Ed
      2026-09-25: *the tabs can touch the left edge on mobile, and highlight
      instead of move when they're active*; Q1541 stage 6). The column's
-     left padding is what puts the gutter's 34px tab at the glass's edge
-     with the desktop's 14px between it and the clause (Q1351), so the
-     prose — and every card, whose left edge is where the tabs stop — takes
-     the 28px the old 56px gutter held back. **The active tab highlights in
+     left padding (`.doc`'s narrow rule, 28px) puts the gutter's 34px tab
+     at the glass's edge with the desktop's 14px between it and the clause
+     (Q1351), so the prose — and every card, whose left edge is where the
+     tabs stop — takes the 28px the old 56px gutter held back. **The active tab highlights in
      place** (1541.53): it keeps its deeper ground and its lift and does not
      grow, since there is nowhere left of the glass to grow into; the 8px
      grows at 1600 only, the split at the 900px line (`NARROW_Q`). A marked
@@ -2962,7 +2964,6 @@
      the room is, rather than outside the tab, where there is none. */
   /* NARROW_Q */
   @media (max-width: 900px) {
-    .doc { padding-left: 28px; }
     .clausehead .achip.wmark { width: 36px; padding-left: 0; }
     .doc h2.docline.marked .sectoggle { margin-right: var(--s2); }
   }

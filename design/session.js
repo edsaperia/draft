@@ -5215,7 +5215,11 @@ document.addEventListener('paste', (ev) => {
         // first line where it was and slid the content above up by the
         // label's room; where that leaves the label under the topbar, the
         // first line comes down by the shortfall (answers Part 6.4)
-        window.CARD_SHELL.clearTop(doc.querySelector('.sugg.gshell[data-card="' + next + '"]'));
+        // …**except on a switch inside one strip** (Q1558, Q1541 stage 6):
+        // there the tab pressed is what holds (M12, *the tab you click does
+        // not move*), and a tab low in a long strip on a phone puts the head
+        // and its label above the glass — the page does not chase the label
+        if (!tabNow) window.CARD_SHELL.clearTop(doc.querySelector('.sugg.gshell[data-card="' + next + '"]'));
         // the card made the document taller, so every entry below it has moved
         layoutQueue();
         if (after) after();
