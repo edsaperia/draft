@@ -482,10 +482,13 @@
       if (bar || !q) return;
       bar = document.createElement('div');
       bar.className = 'sheetbar';
-      bar.setAttribute('role', 'button');
-      bar.setAttribute('aria-controls', 'rail');
-      bar.setAttribute('aria-expanded', 'false');
-      bar.tabIndex = 0;
+      // **A touch surface, not a control** (2026-09-26): the ≣ door beside it
+      // is the sheet's one named control for a keyboard and a screen reader,
+      // and it raises the same list; the bar, holding a picture of the top
+      // entry, is hidden from both — a button holding a card was axe's
+      // nested-interactive, and naming it for the card it hides was
+      // label-content-name-mismatch
+      bar.setAttribute('aria-hidden', 'true');
       bar.innerHTML = '<span class="grab" aria-hidden="true"></span><span class="sheetline"></span><span class="sheetmore"></span>';
       line = bar.querySelector('.sheetline');
       more = bar.querySelector('.sheetmore');
@@ -521,7 +524,11 @@
         if (c.querySelectorAll) for (const el of c.querySelectorAll('[id]')) el.removeAttribute('id');
         if (src) {
           c.removeAttribute('data-q'); c.removeAttribute('id');
-          c.classList.add('sheetcard'); c.tabIndex = -1;   // the bar is the one stop; Enter on it raises
+          // `inert`, never a second control inside the bar's own (axe's
+          // nested-interactive, serious): drawn as the rail draws it, but out
+          // of the tab order and the accessibility tree, and a tap passes
+          // through to the bar, which tells the card by where it landed
+          c.classList.add('sheetcard'); c.removeAttribute('tabindex'); c.inert = true;
           c.style.cssText = src.style.cssText;             // the wash as it stands now, not as it was drawn
         }
         line.replaceChildren(c);
@@ -571,7 +578,9 @@
         if (Date.now() - swallow < 400) return;   // the click a drag leaves behind
         // the peeked entry opens its own card, as it would in the list; the
         // rest of the bar raises the sheet
-        if (sheet() === 'peek' && ev.target.closest && ev.target.closest('.sheetcard') && peekSrc && peekSrc.isConnected) {
+        const card = sheet() === 'peek' && line.querySelector('.sheetcard');
+        const r = card && ev.detail > 0 ? card.getBoundingClientRect() : null;   // a real tap, not the keyboard's click
+        if (r && ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom && peekSrc && peekSrc.isConnected) {
           peekSrc.click();
           return;
         }
