@@ -1139,8 +1139,8 @@ window.BAND = (function () {
         // there being nothing on it to put back (Q1527 (a), Ed 2026-09-24;
         // Y20, as Q1522 ruled for the records) — a departure having happened
         // rather than been decided, and
-        // the body is `departureLine`'s so the card and the grey line under
-        // *Members* can never say two different things about one act.
+        // the body is `departureLine`'s, the one sentence saying by whose act —
+        // the *Alumni* row under which it stands says only the day (Q1557 (e)).
         if (c.departure) {
           const d = owedDeparture(c.departure);
           if (!d) return cardHtml(c, ctx, '<p class="why">This is no longer outstanding.</p>',

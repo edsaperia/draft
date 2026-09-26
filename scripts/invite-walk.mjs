@@ -13,7 +13,8 @@
  *      the 🏛️ hold (SURFACE §9's ✉️ row);
  *   2. the motion opens, and the mover's page says so: the ✉️ entry stands
  *      in the rail as **theirs** (✏️, `st-yours`, force-kept — M3), the
- *      invitee stands in ✉️'s head and under *Invitees* wearing *proposed*,
+ *      invitee stands in ✉️'s head and under *Applications for Membership*,
+ *      untagged (Q1557: the heading says what it is),
  *      and the card offers withdraw and no ✓ (K8);
  *   3. the other member is asked (`st-ask`);
  *   4. the module's refusal of a twin carries no motion id (STYLE T1),
@@ -22,8 +23,8 @@
  *   5. and, since issue #6, **the vote itself**: at *proposal* an invitation
  *      is a race, so the other member chooses *proposed* and commits, the
  *      motion carries, the invitee becomes a member row that has not
- *      arrived, a login link reaches their inbox, and *Invitees* stops
- *      calling them proposed.
+ *      arrived, a login link reaches their inbox, and they leave
+ *      *Applications for Membership* for *Members*, tagged *invited* (Q1557).
  *
  * Needs a dev server (no RESEND_API_KEY: the outbox is read for the links).
  * Red on the pre-fix page at 1 (the 🏛️ hold), 2 (no entry, *Nobody has been
@@ -208,27 +209,49 @@ const shown = await mover.evaluate(() => {
     open: [...document.querySelectorAll('.setupcard')].map((c) => c.dataset.setupcard),
     head: (card && card.querySelector('.headpeople') || {}).textContent?.replace(/\s+/g, ' ').trim(),
     chips: [...(card ? card.querySelectorAll('.headpeople .chip') : [])].map((c) => c.textContent.trim()),
+    label: ((card && card.querySelector('.headpeople .hplab')) || {}).textContent?.trim() || null,
     radios: [...(card ? card.querySelectorAll('button.lanepick') : [])].length,
     commits: [...(card ? card.querySelectorAll('.commitrow button') : [])].map((b) => (b.textContent.trim() || b.title)),
   };
 });
 say('card       · ' + JSON.stringify(shown));
 if (!shown.head || !/newbie/.test(shown.head)) fail('the head', '✉️\'s head does not list the invitee: ' + JSON.stringify(shown.head));
-if (!shown.chips.length) fail('the chip', 'the pending invitee wears no *proposed* chip');
+// Q1557: the proposal stands under the words *Applications for Membership*
+// in ✉️'s head, as in the section, and wears no tag — its heading says it
+if (shown.label !== 'Applications for Membership') {
+  fail('the head', '✉️ head does not group the proposal under *Applications for Membership*: ' + JSON.stringify(shown.label));
+}
+if (shown.chips.length) fail('the chip', 'the proposed invitee wears a tag its heading already says: ' + JSON.stringify(shown.chips));
 if (shown.radios) fail('the ask', 'the mover is offered ' + shown.radios + ' radios on their own motion (K8: the mover stands at accept)');
 if (shown.commits.some((t) => /✓|Answer/.test(t)) || shown.commits.length !== 1) {
   fail('the commit row', 'the mover\'s row should be withdraw alone, saw ' + JSON.stringify(shown.commits));
 }
-// the subsection: close the card and read *Invitees* as document text
+// the subsection: close the card and read the two headings as document text
 await mover.evaluate(() => { const t = document.querySelector('[data-tab^="mo:"]'); if (t) t.click(); });
 await T(800);
-const sub = await mover.evaluate(() => {
-  const h = document.getElementById('cs-mem-invitees');
+// a subsection's rows, each as its name and the tags it wears (Q1557)
+const readSub = (pg, id) => pg.evaluate((hid) => {
+  const h = document.getElementById(hid);
   const box = h && (h.closest('.csub') || h.parentElement);
-  return box ? box.textContent.replace(/\s+/g, ' ').trim().slice(0, 160) : null;
-});
-say('Invitees   · ' + JSON.stringify(sub));
-if (!sub || !/newbie/.test(sub) || !/proposed/.test(sub)) fail('the subsection', '*Invitees* does not list the proposed invitee: ' + JSON.stringify(sub));
+  if (!box) return null;
+  return [...box.querySelectorAll('.memrow:not(.nobody)')].map((r) => {
+    const mn = r.querySelector('.mn');
+    return {
+      n: mn ? [...mn.childNodes].filter((x) => !(x.nodeType === 1 && x.classList.contains('chip')))
+        .map((x) => x.textContent).join('').replace(/\s+/g, ' ').trim() : '',
+      tags: [...r.querySelectorAll('.chip')].map((c) => c.textContent.trim()),
+    };
+  });
+}, id);
+const APPS = 'cs-mem-applications-for-membership';
+const MEMBERS = 'cs-mem-members';
+const newbieIn = (rows) => (rows || []).find((r) => /newbie/.test(r.n)) || null;
+const sub = await readSub(mover, APPS);
+say('Applications · ' + JSON.stringify(sub));
+const subRow = newbieIn(sub);
+if (!subRow) fail('the subsection', '*Applications for Membership* does not list the proposed invitee: ' + JSON.stringify(sub));
+else if (subRow.tags.length) fail('the subsection', 'the proposed invitee wears a tag its heading already says: ' + JSON.stringify(subRow.tags));
+if (newbieIn(await readSub(mover, MEMBERS))) fail('the subsection', 'a proposal to invite sent nothing, yet it stands under *Members*');
 
 /* ---- the other member is asked ----------------------------------------- */
 const judge = await seat(m2);
@@ -357,20 +380,18 @@ say('mail       · ' + JSON.stringify(mail && linkIn(mail)));
 if (!mail || !/\/auth\/login/.test(linkIn(mail) || '')) {
   fail('the mail', 'no login link reached the carried invitee');
 }
-// the subsection stops saying *proposed*: the invitation stands. The view
-// above is the server's; the page learns it on its next 4 s poll, so read
-// until it has (up to 10 s) rather than once — a single read raced the poll
-// (PR #96's run 35803362292, 2026-09-23)
-const readInvitees = () => mover.evaluate(() => {
-  const h = document.getElementById('cs-mem-invitees');
-  const box = h && (h.closest('.csub') || h.parentElement);
-  return box ? box.textContent.replace(/\s+/g, ' ').trim().slice(0, 160) : null;
-});
-let sub2 = await readInvitees();
-for (let i = 0; i < 20 && sub2 && /proposed/.test(sub2); i++) { await T(500); sub2 = await readInvitees(); }
-say('Invitees   · ' + JSON.stringify(sub2));
-if (!sub2 || !/newbie/.test(sub2)) fail('the subsection', '*Invitees* lost the carried invitee: ' + JSON.stringify(sub2));
-else if (/proposed/.test(sub2)) fail('the subsection', '*Invitees* still calls the carried invitation proposed');
+// the invitation stands: the row leaves *Applications for Membership* for
+// *Members*, tagged *invited* (Q1557). The view above is the server's; the
+// page learns it on its next 4 s poll, so read until it has (up to 10 s)
+// rather than once — a single read raced the poll (PR #96's run
+// 35803362292, 2026-09-23)
+let mem2 = newbieIn(await readSub(mover, MEMBERS));
+for (let i = 0; i < 20 && !mem2; i++) { await T(500); mem2 = newbieIn(await readSub(mover, MEMBERS)); }
+const apps2 = await readSub(mover, APPS);
+say('Members    · ' + JSON.stringify(mem2) + ' · Applications · ' + JSON.stringify(apps2));
+if (!mem2) fail('the subsection', 'the carried invitee is not under *Members*');
+else if (!mem2.tags.includes('invited')) fail('the subsection', 'the carried invitee under *Members* wears no *invited* tag: ' + JSON.stringify(mem2.tags));
+if (newbieIn(apps2)) fail('the subsection', '*Applications for Membership* still lists the carried invitation');
 
 /* ---- an invitation the room can no longer pass lets its address go ------
  * (Q1440, Ed 2026-09-18; SPEC §4.4 → why: R-132.)
