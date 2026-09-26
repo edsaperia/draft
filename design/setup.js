@@ -853,8 +853,13 @@ window.SETUP = (function () {
     // order the settled card's chosen-radio grammar reads in; it also keeps
     // H3's one-place rule true now that stripped heads leave the lockline
     // leading otherwise)
-    return '<div class="statline"><span class="k">Set to</span><span class="v">' +
-      ctx.value(c) + '</span></div>' +
+    // **a card with no value of its own says none** (plain bug 1, 1541.29):
+    // ❌'s door, read by a member before the start, has no setting value, and
+    // the line printed *Set to undefined*. The settings cards left this body
+    // in Q1541 stage 3a; the doors keep it until stage 5
+    const v = ctx.value(c);
+    return (v == null || v === '' ? '' : '<div class="statline"><span class="k">Set to</span><span class="v">' +
+      v + '</span></div>') +
       '<div class="lockline">' + TICK + '<span>' +
       esc(ctx.lockline ? ctx.lockline(c) : window.COPY.page.lockline.founder) +
       '</span></div>';
