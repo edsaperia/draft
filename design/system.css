@@ -2948,6 +2948,24 @@
   /* **…and a gap's card stands as the gap stood**: the held-open gap carries
      its tab flush with its top (Q1334), so the head that replaces it does */
   .gshell .clausehead .headclause:not([data-key]) .chipcol { top: 0; }
+  /* **On a phone the tabs stand flush with the glass** (1541.20 (a), Ed
+     2026-09-25: *the tabs can touch the left edge on mobile, and highlight
+     instead of move when they're active*; Q1541 stage 6). The column's
+     left padding is what puts the gutter's 34px tab at the glass's edge
+     with the desktop's 14px between it and the clause (Q1351), so the
+     prose — and every card, whose left edge is where the tabs stop — takes
+     the 28px the old 56px gutter held back. **The active tab highlights in
+     place** (1541.53): it keeps its deeper ground and its lift and does not
+     grow, since there is nowhere left of the glass to grow into; the 8px
+     grows at 1600 only, the split at the 900px line (`NARROW_Q`). A marked
+     heading's fold triangle stands between the tab and the words, where
+     the room is, rather than outside the tab, where there is none. */
+  /* NARROW_Q */
+  @media (max-width: 900px) {
+    .doc { padding-left: 28px; }
+    .clausehead .achip.wmark { width: 36px; padding-left: 0; }
+    .doc h2.docline.marked .sectoggle { margin-right: var(--s2); }
+  }
   /* **The judgment's ✓ is accent blue when armed** (1541.50, Q1541 stage 6):
      green means *decided* (principle 7), and an armed ✓ has decided
      nothing yet — so it takes the accent every other armed act wears, and

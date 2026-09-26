@@ -175,6 +175,22 @@ const GRAMMAR_KINDS = [
   'watching',
   'answer',
   'birth-email',
+  // stage 6 (Q1541): the charter's judgment cards, each declared by the shell
+  // (`data-kind`, session.js's `judgePresent`) — a pair against the current
+  // text (`quick`), one on a gap (`insert`), two challengers (`race`), a pair
+  // you have answered, the ⏳ tab reopened (`judged`), a proposal at several
+  // places (`patch`), the ⚔️ card (`deadlock`), a proposal of yours
+  // (`mine`) and one the text moved under (`stranded`). The fast pass meets
+  // every one on `charter`; the diagonal is served by no fixture walk and is
+  // held by \`diag-walk\`'s own reading, not here
+  'quick',
+  'insert',
+  'race',
+  'judged',
+  'patch',
+  'deadlock',
+  'mine',
+  'stranded',
 ];
 /**
  * **The stage the build has reached, and the stage each check turns strict
@@ -183,7 +199,7 @@ const GRAMMAR_KINDS = [
  * has not come is reported, never held (Q1541 stage 2: the grants and 🍾 are
  * opened on the closed band too, where P29 is stage 7's).
  */
-const STAGE = 3;
+const STAGE = 6;
 const STRICT_FROM = { 'closed-page': 7, 'closed-keeps-content': 7, 'closed-powers': 7, 'zone-overlap': 8, 'place-head': 6 };
 const KINDS_ARG = arg('kinds', null);
 const KINDS = KINDS_ARG == null ? null
@@ -4357,7 +4373,12 @@ async function finish(cards, errors, tok, ref, version, switches, piles, doors, 
   // shell (Q1541 stage 1), else its key's family — and a walk-level finding
   // about that card (a switch, the width pass) takes the same kind
   const shellKinds = new Map(cards.filter((c) => c.shellKind).map((c) => [c.walk + '·' + c.key, c.shellKind]));
-  const kindFor = (walk, key) => shellKinds.get(walk + '·' + key) || kindOf(key);
+  // **a closed page's charter card is stage 7's** (BUILD.md §4): drawn by
+  // today's builders there, it is its own kind until that stage converts it,
+  // so a key family held from stage 6 — `quick`, `race` … — is held on the
+  // live page only (Q1541 stage 6)
+  const kindFor = (walk, key) => shellKinds.get(walk + '·' + key) ||
+    (walk === 'closed' ? 'closed-' + kindOf(key) : kindOf(key));
   for (const c of cards) {
     const fs = grammarRules(c, ref);
     for (const f of fs) f.kind = kindFor(c.walk, c.key);
@@ -4456,7 +4477,7 @@ async function finish(cards, errors, tok, ref, version, switches, piles, doors, 
       // than fail it — over the canonical walk sets, every held kind must be
       // met at least once
       if (WALK_ARG === 'fixture' || WALK_ARG === 'all') {
-        const met = new Set(cards.map((c) => c.shellKind || kindOf(c.key)));
+        const met = new Set(cards.map((c) => c.shellKind || (c.walk === 'closed' ? 'closed-' + kindOf(c.key) : kindOf(c.key))));
         for (const k of KINDS) if (!met.has(k)) broken.push('the held kind ' + k + ' was measured on no card');
       }
       if (!AS_JSON) {
