@@ -16,9 +16,11 @@ overnight mandate and its running log, stage 8's log, the design-day backlog,
 the hosting and domain notes, the stage write-ups as they stood — is
 `design/DECISIONS.md` § *PRODUCTION.md, the history lifted 2026-09-07*.
 
-## Where it stands (2026-09-22)
+## Where it stands (2026-09-26)
 
-docs.vote has served the product since 2026-08-20 — one Render service, the
+**Since the 2026-09-22 paragraph below.** The P1 batch Ed ruled that day shipped, and the open GitHub issues stand at **43, 3 of them P1** (#86 the operator docs, #67 links spent by previews, #10 the bot key's reach) — all three **after the redesign**, by Ed's word of 2026-09-26. The demo document (`docs.vote/d/demo`, `design/DEMO.md`) is live, stages 1–5. The **surface redesign** (Q1541, `design/redesign/BUILD.md`) is the main line of work — *full speed ahead* (Ed, 2026-09-26): stages 0–2 are live at `0e2039e5` (deploy-2026-09-26e), stage 3a is building. Stage 19's supervised sittings wait for it: **the next human rooms sit after redesign stage 10** (Ed, 2026-09-26). How changes ship changed the same day: **the eight gates alone before a push** (Q1545), the walks on CI after it, and a **sprint tier that runs on every push carrying a merge**, holding the guards the 2026-09-26 audit found had caught nothing in four weeks (Q1546, Q1547) — CLAUDE.md's CI bullet is the rule.
+
+**As it stood on 2026-09-22.** docs.vote has served the product since 2026-08-20 — one Render service, the
 alpha home (481 (a)), from Postgres since 23:30 that night with no disk
 (498 (b)), mail from `mail.docs.vote` via Resend, the operator mailed at every
 birth. CI deploys on green and verifies the live host afterwards, so **a push
@@ -703,12 +705,16 @@ the CPU failure's whole cause at these shares. The cheap stopgap is a
 larger Render plan (memory buys the second failure; it does not move the
 first).
 
-**The boot guard** — `npm run boot-guard -w @draft/sim-harness`, about 50 s:
-seeds ten documents in the pool's mix (one convention), replays them in a
-fresh process three times, and fails when the median scaled to **60
+**The boot guard** — `npm run boot-guard -w @draft/sim-harness`, about 15 s:
+unpacks ten documents in the pool's mix (one convention) from a committed
+fixed set — `packages/sim-harness/fixtures/boot-guard-set.json.gz`, seeded
+once by `-- --reseed` since Q1554 (2026-09-26), because a fresh seeding
+differs run to run and a before/after pair timed two sets — replays them
+in a fresh process three times, and fails when the median scaled to **60
 documents** on Render (×7) passes **half** of the 15-minute window
 (render.com/docs/health-checks, read 2026-09-23; render.yaml sets the
-path, not the time). It reads 22% here. Sixty rather than 300 because
+path, not the time). It read 22% here when built, and 14–16% on the
+fixed set seeded 2026-09-26 (after Q1553's replay fix). Sixty rather than 300 because
 nothing boots 300 today: the guard catches replay getting slower (red at
 about 2.5×) and states the headroom, and `FLEET` rises when Stages 1–3 stop
 boot growing with the fleet. Wired by the session (not by Stage 0).

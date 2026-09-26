@@ -559,13 +559,19 @@ if (DELEGATE && !TAKEBACK) {
       const t = (el) => (el ? window.CARDS.glyphTextOf(el).replace(/\s+/g, ' ').trim() : '');
       const c = document.querySelector('.setupcard');
       const cork = c && [...c.querySelectorAll('.commitrow button')].find((b) => /🍾/.test(t(b) || b.title));
-      return { open: !!c, cork: cork ? (cork.disabled ? 'off' : 'on') : 'none', said: t(c) };
+      return { open: !!c, cork: cork ? (cork.disabled ? 'off' : 'on') : 'none', said: t(c),
+        // the dark 🍾's note beside it (Q1556 (3)) and its bins (Q1556 (2))
+        note: t(c && c.querySelector(':scope > .commitrow .gnote')),
+        bins: c ? [...c.querySelectorAll('button')].filter((b) => /🗑/.test(t(b))).length : 0 };
     });
     if (!st.open || st.cork !== 'off') {
       errors.push('🍾 is ' + (st.open ? st.cork : 'not the open card') + ' with ' + DELEGATE +
         ' delegated and one voice on it — the start should be refused (R-045)');
     } else if (!/answered by one voice has not been handed to anybody/.test(st.said)) {
       errors.push('🍾 is refused but does not say why (one voice, R-015): ' + st.said.slice(0, 200));
+    } else if (st.note !== 'Delegated questions need at least two responses.' || st.bins) {
+      errors.push('🍾 on one voice should wear its own note beside the dark button and no 🗑️ (Q1556) — note ' +
+        JSON.stringify(st.note) + ', ' + st.bins + ' bins');
     }
     const said = await clauseText(DELEGATE);
     if (!/waiting for members\.$/.test(said || '')) {

@@ -204,9 +204,15 @@ window.SETUP = (function () {
      record's *Returns “…” to the founder's reserve*, the amendment news —
      is a name, not a title, and takes `nounOf`: the noun in every state,
      because *🌍 Who Can See the Document? is waiting on 🪪* is not a
-     sentence. */
+     sentence.
+     **A grant or gate still to be accepted reads the card's own *Accept …***
+     (Q1556 (14), Ed 2026-09-26: *the rail matches the card*): the five are
+     news while owed, and their ask is the act, not a question; once accepted
+     they read the power's name, `c.t`, the noun (T2). */
   const labelOf = (c, ctx) => {
     const st = stateOf(c, ctx);
+    const acc = st === 'news' && grantCard(c) && window.COPY.shell.accept[c.k];
+    if (acc) return acc;
     return (st === 'done' || st === 'news') && c.n ? c.n : c.t;
   };
   const nounOf = (c) => c.n || c.t;
@@ -350,7 +356,7 @@ window.SETUP = (function () {
     (window.CARDS.PLAIN_HUE.has(hueFor(c, st)) ? '; ' + window.CARDS.PLAIN_CHIP : '') + (o.z ? '; z-index:' + o.z : '') + '"' +
     (o.inert ? '' : ' title="' + esc(labelOf(c, ctx) + (o.active ? ' — close it'
       : st === 'ask' ? ' — waiting on you' : st === 'wait' ? ' — waiting on others'
-      : st === 'news' ? (c.grants ? ' — yours to take' : ' — decided; it waits for your OK')
+      : st === 'news' ? (c.grants || grantCard(c) ? ' — yours to take' : ' — decided; it waits for your OK')
       : st === 'yours' ? ' — yours, being voted on' : ' — settled')) + '"') +
     '><span aria-hidden="true">' + markOf(c, ctx, true, !!o.host) + '</span>' +
     (o.inert ? '' : '<span class="sr">' + esc(labelOf(c, ctx)) + '</span>') + '</span>';

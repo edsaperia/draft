@@ -1731,11 +1731,12 @@ async function mailsFor(D, evs, ms = MAIL_WAIT_MS) {
  */
 function assertMail(D, step, ev, row) {
   const cell = row.Audience;
-  const pred = AUDIENCE[cell];
-  if (!pred) {
-    D.noRule.push({ hat: D.hat, step: step.id, event: ev.id, cell, why: 'no AUDIENCE entry for this cell' });
+  const reading = readingOf(ev);
+  if (reading.verdict !== 'mail') {
+    D.noRule.push({ hat: D.hat, step: step.id, event: ev.id, cell, why: reading.why });
     say(`   ? ${ev.id} "${cell}" — no rule`); return;
   }
+  const pred = AUDIENCE[cell];
   const keys = keysOf(row.Keys);
   if (keys.length) {
     shape.push(`${ev.id} is asserted as mail-only and SURFACE's Keys cell now names ${keys.join(' ')} — read the row again`);
@@ -1778,6 +1779,35 @@ function assertMail(D, step, ev, row) {
     `; the page files no entry, and SURFACE's Keys cell for it is still empty`);
 }
 
+/* ---- the reading ------------------------------------------------------------ */
+/**
+ * **What the tables alone say of one event** — the part of the *no rule*
+ * verdict that needs no browser (Q1546 (d), Ed 2026-09-26). Four answers, in
+ * the order the assertion has always taken them: the §2 row is missing
+ * (`noRule`); the row's channel is mail, so it is read off the outbox and
+ * needs its cell in `AUDIENCE` (`mail`); the event carries no page key, so
+ * it is `filed` if it names its question and `noRule` if not; else the cell
+ * needs its `AUDIENCE` entry (`rule`, or `noRule` without one). A function
+ * key counts as a key here: learning it is the run's business, and one the
+ * run cannot learn is a `null` key then. `assertStep` and `assertMail` read
+ * this, and so does `--static`, which `spec-check` runs at every push — so
+ * the static verdict and the run's cannot drift apart.
+ */
+function readingOf(ev) {
+  const row = EVENT[ev.id];
+  if (!row) return { verdict: 'noRule', cell: '(no such row)', why: 'SURFACE §2 has no ' + ev.id };
+  const cell = row.Audience;
+  if (ev.mail) {
+    return AUDIENCE[cell] ? { verdict: 'mail', row, cell }
+      : { verdict: 'noRule', row, cell, why: 'no AUDIENCE entry for this cell' };
+  }
+  if (ev.key === null) {
+    return { verdict: ev.filed ? 'filed' : 'noRule', row, cell, why: 'page side — ' + ev.noKey };
+  }
+  return AUDIENCE[cell] ? { verdict: 'rule', row, cell }
+    : { verdict: 'noRule', row, cell, why: 'no AUDIENCE entry for this cell' };
+}
+
 /* ---- the assertion ----------------------------------------------------------- */
 function assertStep(D, step, evs, snap) {
   for (const ev of evs) {
@@ -1788,16 +1818,16 @@ function assertStep(D, step, evs, snap) {
       say(`   · ${ev.id} ${ev.key ?? '(no key)'} — not asserted: ${STEPS[ev.at].id} did not run on the ${D.hat} hat`);
       continue;
     }
-    const row = EVENT[ev.id];
-    const cell = row ? row.Audience : null;
-    if (!row) { D.noRule.push({ hat: D.hat, step: step.id, event: ev.id, cell: '(no such row)', why: 'SURFACE §2 has no ' + ev.id }); continue; }
+    const reading = readingOf(ev);
+    const { row, cell } = reading;
+    if (!row) { D.noRule.push({ hat: D.hat, step: step.id, event: ev.id, cell, why: reading.why }); continue; }
     // **A row whose channel is mail is read off the outbox** (E22, Q1355):
     // it has no key by construction, so it must be taken before the keyless
     // branch below, which would report it as *no rule* for ever
     if (ev.mail) { assertMail(D, step, ev, row); continue; }
     if (ev.key === null) {
-      const entry = { hat: D.hat, step: step.id, event: ev.id, cell, why: 'page side — ' + ev.noKey };
-      if (ev.filed) {
+      const entry = { hat: D.hat, step: step.id, event: ev.id, cell, why: reading.why };
+      if (reading.verdict === 'filed') {
         D.filed.push({ ...entry, q: ev.filed });
         say(`   · ${ev.id} "${cell}" — no key on the page, filed as ${ev.filed}`);
       } else {
@@ -1806,12 +1836,12 @@ function assertStep(D, step, evs, snap) {
       }
       continue;
     }
-    const pred = AUDIENCE[cell];
-    if (!pred) {
-      D.noRule.push({ hat: D.hat, step: step.id, event: ev.id, cell, why: 'no AUDIENCE entry for this cell' });
+    if (reading.verdict !== 'rule') {
+      D.noRule.push({ hat: D.hat, step: step.id, event: ev.id, cell, why: reading.why });
       say(`   ? ${ev.id} "${cell}" — no rule`);
       continue;
     }
+    const pred = AUDIENCE[cell];
     // **A vacuous pass is not a pass** (Q1356, Ed 2026-09-14). A predicate no
     // seat satisfies agrees with a page that carries nothing, on every seat,
     // for ever — so the row reports itself green while asserting nothing at
@@ -1953,6 +1983,34 @@ async function diffAgainst(file, now) {
 
 /* ---- the run, last: everything above is a const, and a top-level await
    before it would meet the temporal dead zone ------------------------------ */
+/* ---- `--static`: the tables' verdict, no server and no browser ----------- *
+ * (Q1546 (d), Ed 2026-09-26: the matrix moved to the sprint tier *once a
+ * static spec-check rule turns an unread SURFACE §2 row red at push*.) Every
+ * event every step names is read by `readingOf`, exactly as the run reads
+ * it, and §2's row count against `EVENT_ROWS` — the two ways a row can be
+ * unread without a browser. What only a run can see stays the run's: a key
+ * the step cannot learn, and a row whose audience comes out empty (Q1356).
+ * Prints one JSON line and exits 3 on anything unread, 0 otherwise, the
+ * matrix's own codes; `spec-check`'s `checkSeatMatrixStatic` runs it. */
+const EVENT_ROWS = 42;
+if (process.argv.includes('--static')) {
+  const unread = [];
+  const filedRows = [];
+  for (const s of STEPS) for (const ev of s.events) {
+    const r = readingOf(ev);
+    const where = `${ev.id} "${r.cell}" at step ${s.id}`;
+    if (r.verdict === 'noRule') unread.push(`${where} — ${r.why}`);
+    else if (r.verdict === 'filed') filedRows.push(`${where} — filed as ${ev.filed}`);
+  }
+  if (EVENTS.length !== EVENT_ROWS) {
+    unread.push(`SURFACE §2 has ${EVENTS.length} event rows, not the ${EVENT_ROWS} this table was written against`);
+  }
+  console.log(JSON.stringify({ rows: EVENTS.length, steps: STEPS.length,
+    events: STEPS.reduce((n, s) => n + s.events.length, 0), cells: Object.keys(AUDIENCE).length,
+    unread, filed: filedRows }));
+  process.exit(unread.length ? 3 : 0);
+}
+
 /* ---- the run ------------------------------------------------------------ */
 const health = await assertServerBuild(BASE, 'seat-matrix');
 say(`seat-matrix against ${BASE} · build ${health.build ?? 'unreported'} · hat=${HAT}` +
@@ -1988,8 +2046,8 @@ say(`tables     · SURFACE §2 events ${EVENTS.length} rows · seats ${SEATS.len
 // `proposal`, where a refusal is a dominated race (§4.4) and not one vote
 // against, and driving one to that state is a design of its own. The count
 // is 42 and the step is owed — Q1499 asks Ed which road it should take.
-if (EVENTS.length !== 42) {
-  shape.push(`SURFACE §2 has ${EVENTS.length} event rows, not the 42 this table was written against`);
+if (EVENTS.length !== EVENT_ROWS) {
+  shape.push(`SURFACE §2 has ${EVENTS.length} event rows, not the ${EVENT_ROWS} this table was written against`);
 }
 for (const s of shape) say('  ? ' + s);
 

@@ -98,25 +98,21 @@ There is no separate deploy step. **A push to `main` is a deploy.** Commit
 freely; pushing is the decision.
 
 1. Push to `main`.
-2. CI (`.github/workflows/ci.yml`) has three jobs. **`ci`** — the only one
-   that deploys — runs `npm ci`, `npm run lint`, `npm run typecheck`,
-   `npm test`, `npm run spec-check`, `npm run copy-check`,
-   `npm run clock-check`, re-runs the server's own tests against Postgres
-   with `DRAFT_TEST_STORE=pg npm test -w @draft/server`, then
-   `npm run build`. **`probe`** and **`walks`** run in parallel with `ci`
-   and cannot hold the deploy: a red there is a red X on the commit, not a
-   held deploy. **Each job's own step list in `ci.yml` is the list of
-   record** — both grow — but as they stand, `probe` runs the two design
-   probes against the frozen reference (`probe --strict`), the rendered
-   copy golden (`copy-check --walk`), `probe-coverage`, `toc-travel`,
-   `drawer-walk` and `picture-walk`; and `walks` boots a dev server in the
-   job and runs `journey`, `founder-answers` (self-starting, its own
-   server), `applicants-walk` at all three admission prices,
-   `after-begin-walk`, `invite-walk`, `member-questions-walk`, `slug-walk`,
-   `ladder`, `room-walk` against a second server with the cooldown at 0,
-   and last — about ten minutes of it — `seat-matrix --hat=both`, whose
-   exit 3 (a SURFACE §2 cell nobody has written a rule for) reddens the job
-   like any other failure.
+2. CI (`.github/workflows/ci.yml`) runs at every push. **`ci`** — the only
+   job that deploys — runs `npm ci`, `npm run lint`, `npm run typecheck`,
+   `npm test`, `npm run spec-check`, `npm run demo-check`,
+   `npm run copy-check`, `npm run clock-check`, re-runs the server's own
+   tests against Postgres with `DRAFT_TEST_STORE=pg npm test -w
+   @draft/server`, then `npm run build`. **`probe`**, **`redesign-checks`**,
+   **`boot-guard`** and **`walks`** run in parallel with `ci` and cannot
+   hold the deploy: a red there is a red X on the commit, not a held
+   deploy. **Each job's own step list in `ci.yml`, and
+   `scripts/ci-walks.sh` for the walk groups, is the list of record.**
+   The **sprint tier** (`.github/workflows/sprint.yml`) runs on a push to
+   `main` that carries a merge commit, and by hand: the goldens, the two
+   audits, the seat matrix and the walks with no real catch at the push
+   (Q1546, Ed 2026-09-26). A plain push ends it green in seconds. Its reds
+   hold nothing either.
 3. CI runs a **boot smoke** on the artifact: it must refuse to boot with no
    secrets; configured, it must serve `/`, serve `/setup.js`, answer
    `/healthz` with `"store":"file"`, send `x-content-type-options: nosniff`,

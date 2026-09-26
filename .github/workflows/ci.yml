@@ -474,8 +474,8 @@ jobs:
       - if: steps.browser.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
       - run: npm run probe -- --strict
-      # (`copy-check --walk` stood here until plan-ci-speed.md Stage 2; it is
-      # the `copy-walk` job below now, on its own runner.)
+      # (the raw-value rule, `copy-check --walk --raw-only`, is the
+      # `raw-values` job below, on its own runner)
       #
       # which cards the setup-probe actually opens (Q914 (9), Q915). --strict
       # cannot do this job: a dead step needs a *miss*, and a card nobody
@@ -494,11 +494,10 @@ jobs:
       # (issue #17, F1), which is neither the cards nor the coverage.
       - run: npm run probe-coverage
         if: always()
-      # the contents rail: every click lands clear of the topbar (M17), and since
-      # Q1384 its marks queue rightwards out of the rail and cover the document's
-      # edge, unclipped, at 1600 · 1280 · 1920 (the wide step)
-      - run: npm run toc-travel
-        if: always()
+      # (`toc-travel` stood here, and the two `founding-walk --takeback`
+      # shapes at the foot of this job, until Q1546 (b) (Ed, 2026-09-26):
+      # they run in the sprint tier now, in ci-walks.sh's `sprint-pages`.)
+      #
       # the phone's task drawer at 390×844 (Q1387, Q1388): its entries 8px
       # apart in visual order — the DOM's last child included, wherever the
       # sort puts it — a tap on its empty space closes it by mouse and by
@@ -525,45 +524,24 @@ jobs:
       # one face back and times how long the rail stays stale.
       - run: npm run rail-font-walk
         if: always()
-      # **The take-back** (Q1318, Ed 2026-09-11: *I should be able to choose
-      # a value to take it back with ✒️, but I wasn't able to do that here*):
-      # hand a setting to the membership, then reclaim it with the pen and a
-      # value in one act — the card's radios before the press, the module's
-      # holder after it, the clause no longer waiting, the founder's own
-      # answer card gone from the rail, and 🍾 beginning with nothing left
-      # delegated. Two shapes, because the defect had three causes and they
-      # do not show on one card: 🤝, whose value and holder are separate
-      # fields and is Ed's own case, and 🌍, where they are the same field.
-      #
-      # They are here rather than in `walks` because `founding-walk.mjs`
-      # **starts its own server** — it serves `design/` itself and takes no
-      # base URL, like `founder-answers` beside it, so it needs nothing this
-      # job has not already got. About 27 s each.
-      #
-      # Like `powers-walk` in the job below, these ran in **no CI job**
-      # until 2026-09-17 (issue #17, F2) while CLAUDE.md named them as
-      # Q1318's guard — *red on the pre-fix page* is worth nothing if
-      # nothing runs the page.
-      - run: node scripts/founding-walk.mjs --takeback=applications
-        if: always()
-      - run: node scripts/founding-walk.mjs --takeback=chamber
-        if: always()
 
-  # The copy golden (entry 128): every card's strings on every walk, keyed by
-  # walk and card key, against design/tools/card-copy.golden.json. A STYLE.md
-  # pass is a snapshot and nothing pinned a card's words between passes, so
-  # the next change silently undid the last audit; now a copy change is red
-  # here until `npm run copy-freeze`, and that freeze's diff is what the next
-  # pass reads. **Expect red after an intentional copy change** — that is the
-  # point, not a defect. ~3 min of headless walking, which is why it is not
-  # in `ci`; the static half (`copy-check` with no flag) is.
-  #
-  # **Its own job since plan-ci-speed.md Stage 2**: it was the longest step
-  # left in `probe` once toc-travel stopped waiting on a literal, and alone
-  # it keeps `probe` under five minutes. Same setup as `probe`, same
-  # standing: in parallel with `ci`, gating nothing, a red X on the commit.
-  copy-walk:
-    name: probe (copy-check --walk)
+  # (The `copy-walk` job — the copy golden, `copy-check --walk` against
+  # design/tools/card-copy.golden.json — stood here from plan-ci-speed.md
+  # Stage 2 until Q1546 (c): it runs in the sprint tier now, in ci-walks.sh's
+  # `sprint-pages`, and its raw-value rule stayed at the push as the
+  # `raw-values` job below.)
+
+  # **No card prints a raw value** (Q1541's raw-value rule; Q1546 (c), Ed
+  # 2026-09-26): *undefined*, *NaN*, *null*, *[object …]* or *Invalid Date*
+  # anywhere in a card's words or its rail entry is a page defect, never a
+  # copy change. `copy-check --walk` held it beside the copy golden until
+  # Q1546; the golden went to the sprint tier and the rule stayed at the
+  # push, the same card-audit walk stopping before any golden is read. Its
+  # own runner rather than a step of `probe`: the walk is about eight and a
+  # half minutes, and inside `probe` it made that job the push's longest.
+  # Same standing as `probe`: in parallel with `ci`, gating nothing.
+  raw-values:
+    name: probe (raw values)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -585,7 +563,7 @@ jobs:
         run: npx playwright install --with-deps chromium
       - if: steps.browser.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
-      - run: npm run copy-check -- --walk
+      - run: npm run copy-check -- --walk --raw-only
 
   # **The redesign's checks, held for the kinds converted** (Q1541,
   # design/redesign/BUILD.md §2): card-audit's P13–P33 over the fixture walks
@@ -632,9 +610,11 @@ jobs:
   # **The boot guard** (plan-scaling.md Stage 0, 2026-09-23): boot replay
   # outran Render's 15-minute health-check window once already (decision
   # 1253), and Stage 0 measured the fleet filling it at about 200 documents.
-  # It seeds ten documents in the measured mix, times their replay three
-  # times, scales the median to 60 documents at Render's estimated speed, and
-  # is red past half the window. **Reporting, not yet a gate**: nothing waits
+  # It unpacks ten documents in the measured mix — one fixed set, committed
+  # since Q1554 (Ed, 2026-09-26: a fresh seeding differs run to run, so a
+  # before/after pair timed two sets) — times their replay three times,
+  # scales the median to 60 documents at Render's estimated speed, and is
+  # red past half the window. **Reporting, not yet a gate**: nothing waits
   # on it until one runner reading has been seen — Stage 0's note says a
   # reading near the line means the runner is slower than assumed and FLEET
   # wants revisiting — and making it hold the deploy is then one `needs:`.
@@ -711,6 +691,16 @@ jobs:
   # `fail-fast: false` keeps it across groups: one red group cancels none of
   # the others. The seat matrix runs one hat per group, and its exit 3 still
   # reddens its group (Q1354).
+  #
+  # **Not every walk, since Q1546** (Ed, 2026-09-26). The audit of all 215
+  # runs since 2026-08-20 found five real product catches at the push; the
+  # fifteen guards with none in four weeks moved to the sprint tier
+  # (.github/workflows/sprint.yml, on a push that carries a merge), and so
+  # did the seat matrix, once `spec-check` read the tables' half of its
+  # *no rule* verdict at every push (`seat-matrix --static`). The
+  # paragraph above about *per push, not per sprint* stands
+  # for what is left here. **The push set grows only by Ed's word** (Q1547):
+  # a walk or repro written for one bug joins the sprint tier's groups.
   walks:
     name: walks (${{ matrix.group }})
     runs-on: ubuntu-latest
@@ -718,8 +708,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # repros since Stage 4: the guards CLAUDE.md named and no job ran
-        group: [seat-member, seat-clerk, journey, motions, doors, repros, repros-b]
+        # repros since Stage 4: the guards CLAUDE.md named and no job ran;
+        # seat-member and seat-clerk left for the sprint tier with Q1546 (d),
+        # `spec-check`'s `checkSeatMatrixStatic` holding their no-rule verdict
+        # at the push
+        group: [journey, motions, doors, repros, repros-b]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
