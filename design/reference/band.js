@@ -51,7 +51,7 @@ window.BAND = (function () {
       departureLine, directInvite, directRemove, docAddr, docOpen, doorDirect, doorErrHtml, doorErrOn,
       dripParts, endsAtMsOf, fieldsOf, focusOpened, founderCommit, founderDirect,
       founderHandOff, founderInfo, founderMark, founderPairNote, founderPairOn, founderSpeaker,
-      founderSpeakerLane, grantProv, groups, iDraft, isChange, isNum, isRoom, isStranger,
+      founderSpeakerLane, grantProv, groups, powerParts, powerOtherHtml, iDraft, isChange, isNum, isRoom, isStranger,
       heldBody, hostKeyOf, judgedOn, launchFarewell, launchGrant, liveMotionRec,
       mailGiveUpBatch, mailGiveUpBody,
       mayPen, mayPenOn, me, membersHold, openCardDirty, midOf, motionAbstainAt, motionBlocks, motionOn, motionPicked,
@@ -365,8 +365,8 @@ window.BAND = (function () {
         return '<div class="choice" role="radiogroup">' +
           // the consequences cut, the fact kept (Ed's card review, 2026-09-02);
           // *a clerk can stay unnamed* survives on ✋'s clerk branch alone
-          opt(o, 'hatPick', 'member', 'The Founder is part of the membership.', '', '', started || !!locked) +
-          opt(o, 'hatPick', 'clerk', 'The Founder is not part of the membership.', '', '', started || !!locked) +
+          opt(o, 'hatPick', 'member', window.COPY.shell.hat.member, '', '', started || !!locked) +
+          opt(o, 'hatPick', 'clerk', window.COPY.shell.hat.clerk, '', '', started || !!locked) +
           '</div>';
         // the *Settled.* note went with Ed's card review round 3 (2026-09-05,
         // 39 🎩): a locked card says so by its greyed radios alone
@@ -1045,9 +1045,18 @@ window.BAND = (function () {
     //   answer       a blind question put to a member (`ans-*`)
     //   birth-email  📧 before the save
     //
-    // 🪪 🤝 🎩, the power cards and the settled card as a member's composer
-    // (K1) are stage 3b's; motions stage 4's; the stranger's is stage 1's.
-    const SHELL_3B = new Set(['admission', 'applications', 'hat']);
+    //   power        a power tab ✒️ 🛡️ (stage 3b, 1541.48): the label its ask,
+    //                the first line this power's own clause naming its
+    //                subject, wearing the pill; the other state below, for
+    //                the Founder whose hand it is — read by anybody else
+    //   composer     a member's settled card, the composer (K1, stage 3b):
+    //                the rule wearing the pill as the chosen radio of the
+    //                composer's own group, the setting's controls below, the
+    //                reason box, 🗑️ and the route's commit
+    //
+    // 🪪 🤝 and 🎩 are settings cards like the rest (stage 3b): 🎩 is no
+    // catalogue setting, so it is named here; locked at 🍾, it is read. Motions
+    // are stage 4's; the stranger's is stage 1's.
     /** the setting a card is about — an answer card's own setting */
     const hostCard = (c) => (c && c.ansFor ? card(c.ansFor) : c);
     /** the Founder's own body path — the card `cardFor` gives the founder's
@@ -1057,21 +1066,44 @@ window.BAND = (function () {
      *  the ✒️ once Founder Actions is accepted (Part 4 .19). A card with none
      *  cannot take a change here, so it reads as the rule (principle 4) */
     const founderCanCommit = () => !env.cs || (mayPen() && docOpen());
+    /** is a member's composer holding something typed and not sent — the
+     *  news never takes a composer out from under a draft (the P1 sweep) */
+    const composing = (c) => S.open === c.k && !!S.draft && S.draft.k === c.k && !!(S.draft.to || S.draft.why);
+    /** has this member accepted the powers this composer sends with — ✏️
+     *  Proposals for an ordinary route, 🏛️ Constitutional Proposals for a
+     *  constitutional one, both where the route follows the value (329a). A
+     *  commit for a power not yet accepted is not drawn (answers Part 4 .19),
+     *  so until they are the settled card reads as the rule and says which to
+     *  accept */
+    const composerWaits = (c) => {
+      const routes = c.routeOf ? ['ordinary', 'constitutional'] : [routeFor(c, '')];
+      return [['ordinary', 'canpropose', 'proposals'], ['constitutional', 'grant-voice', 'constitutional']]
+        .filter(([r, k]) => routes.includes(r) && !acked(k)).map(([, , w]) => w);
+    };
     function settingKind(c) {
       if (!c || atTheDoor() || isStranger() || S.viewer === 'applicant') return null;
       if (c.ansFor) return MANAGED_KEYS.includes(c.ansFor) ? 'answer' : null;
       if (c.k === 'myemail') return !env.cs ? 'birth-email' : null;
-      if (!MANAGED_KEYS.includes(c.k) || SHELL_3B.has(c.k)) return null;
-      if (c.power || c.record || c.isGate || c.door || c.kind === 'personal' || c.admit || c.release ||
+      // a power tab (stage 3b): a return in flight on it is a motion, stage 4's
+      if (c.power) return motionOn(c) ? null : 'power';
+      // 🎩 (stage 3b): the Founder's until 🍾, read after it and from any
+      // other seat (Q1503)
+      if (c.k === 'hat') {
+        if (stateOf(c, ctx) === 'news') return 'watching';
+        return amFounder() && !constituted() && docOpen() && founderCanCommit() ? 'setting' : 'watching';
+      }
+      if (!MANAGED_KEYS.includes(c.k)) return null;
+      if (c.record || c.isGate || c.door || c.kind === 'personal' || c.admit || c.release ||
         c.held || c.departure || c.mailgiveup || c.isBegin || c.isClosing) return null;
       // a motion in flight on the setting is stage 4's card
       if (motionOn(c)) return null;
       const news = stateOf(c, ctx) === 'news';
-      // a member's settled card is the composer (K1) — stage 3b — unless its
-      // news is owed, which the composer defers to (as `cardFor` does), and
-      // never under a draft being typed there
-      const composing = S.open === c.k && !!S.draft && S.draft.k === c.k && !!(S.draft.to || S.draft.why);
-      if (composerOn(c) && (!news || composing)) return null;
+      // a member's settled card is the composer (K1) — unless its news is owed,
+      // which the composer defers to (as `cardFor` does), and never under a
+      // draft being typed there
+      // …and until the member has accepted the powers it sends with, reads the
+      // rule (Part 4 .19, principle 4)
+      if (composerOn(c) && (!news || composing(c))) return composerWaits(c).length ? 'watching' : 'composer';
       if (news) return 'watching';
       if (founderBody(c) && founderCanCommit()) return 'setting';
       return 'watching';
@@ -1082,6 +1114,10 @@ window.BAND = (function () {
     /** the first line's words: the rule as the Rules paragraph states it,
      *  without its powers line (1541.10) — on an answer card, its setting's */
     const lineOf = (c) => {
+      // a power card: this power's own clause, naming its subject (1541.48)
+      if (c.power) return esc(powerParts(c).line);
+      // 🎩: the sentence that stands, or that the Founder is deciding it
+      if (c.k === 'hat') { const h0 = hatCurrent(); return esc(h0 ? W3().hat[h0] : W3().hat.deciding); }
       const h = hostCard(c);
       if (h.k === 'title' && !env.cs && !titleStands()) return null;   // the title box is the first line
       if (h.k === 'myemail') return esc(decisionLine(h, false) || '');
@@ -1091,22 +1127,56 @@ window.BAND = (function () {
     /** who chose what stands, for the pill — only where something stands */
     const pillOf = (c) => {
       if (c.ansFor || c.k === 'myemail') return null;
+      // a power is always in one state or the other, and only the Founder puts
+      // it there; 🎩 once answered
+      if (c.power) return window.CARD_STATE.provenanceOf(c.k);
+      if (c.k === 'hat') return hatCurrent() ? window.CARD_STATE.provenanceOf(c.k) : null;
       if (c.k === 'title' ? !titleStands() : !settled(c)) return null;
       if (collecting(c)) return null;
       return window.CARD_STATE.provenanceOf(c.k);
     };
     /** the reason a dark commit waits: a card you type into waits on typing */
     const waitsOn = (c) => ((c.k === 'title' || c.k === 'slug' || c.k === 'myemail') ? 'type' : 'choose');
+    /** is there something of this reader's on the card, not yet sent — what
+     *  lights the bin and releases the pill: the open card's own fields
+     *  against what it stood as, or a composer's motion being typed */
+    const shellDirty = (c) => (settingKind(c) === 'composer' ? composing(c) : S.open === c.k && openCardDirty());
     /** what the reader may send here — the bin, and the commits */
     function settingActs(c) {
       const kind = settingKind(c);
       if (!kind || kind === 'watching') return [];
-      const dirty = S.open === c.k && openCardDirty();
+      const dirty = shellDirty(c);
+      // the composer's 🗑️ discards the motion being typed and closes (Q1560
+      // (3)'s bin); every other card's puts the card back as it stood
+      if (kind === 'composer') {
+        const acts = [{ kind: 'bin', title: PAGE_COPY.discardMotion,
+          attrs: dirty ? ' data-dropmotion="1"' : ' data-act="bin"', until: dirty ? null : 'nothing-yours' }];
+        // the route's commit, drawn by the page since it swaps in place as a
+        // value is typed (329a)
+        acts.push({ kind: 'commit', html: commitFor(c) });
+        return acts;
+      }
+      // a power card read by anybody but the Founder whose hand it is — and a
+      // state the Founder may not choose — asks nothing: no row
+      if (kind === 'power' && !powerParts(c).editable) return [];
       const acts = [{ kind: 'bin', title: PAGE_COPY.binPutBack,
         attrs: dirty ? ' data-revert="1"' : ' data-act="bin"', until: dirty ? null : 'nothing-yours' }];
       if (kind === 'birth-email' && S.emailSent && !S.emailVerified) {
         acts.push({ kind: 'commit', glyph: '📨', glyphHtml: glyphHtml('📨'), cls: 'btn-approve emojibtn',
           attrs: ' data-resend="1"', title: resendTitle(), until: EMAIL_OK.test(S.myemail) ? null : 'type' });
+        return acts;
+      }
+      // ✒️ on a power card sets the power's state — the Founder's own act, not
+      // pen-gated (Y7) — and on 🎩 the Founder's membership (Q1503)
+      if (kind === 'power') {
+        acts.push({ kind: 'commit', glyph: '✒️', glyphHtml: glyphHtml('✒️'), cls: 'btn-approve emojibtn',
+          attrs: ' data-confirm="1"', title: PAGE_COPY.setIt, until: powerParts(c).chosen ? null : 'choose' });
+        return acts;
+      }
+      if (c.k === 'hat') {
+        const ready = !!S.hatPick && S.hatPick !== hatCurrent() && mayPen() && docOpen();
+        acts.push({ kind: 'commit', glyph: '✒️', glyphHtml: glyphHtml('✒️'), cls: 'btn-approve emojibtn',
+          attrs: ' data-confirm="1"', title: PAGE_COPY.setIt, until: ready ? null : 'choose' });
         return acts;
       }
       const glyph = !env.cs ? '🪶' : kind === 'answer' ? '🏛️' : '✒️';
@@ -1150,11 +1220,19 @@ window.BAND = (function () {
       // the label (1541.46 (a)): what the first line is — *Current rule*, and
       // *Rule at the close* on a closed document (Part 4 .16); on 📧 at the
       // birth, and 🪶 before a title stands, the card's ask (a question card)
-      const askCard = kind === 'birth-email' || (k === 'title' && !env.cs && !titleStands());
+      // …and on a power card its ask, today's title (1541.48, Part 4), and on
+      // 🎩 while the Founder has not answered (1541.46 (a))
+      const askCard = kind === 'birth-email' || kind === 'power' || (k === 'title' && !env.cs && !titleStands()) ||
+        (k === 'hat' && !hatCurrent());
       const label = askCard ? window.SETUP.labelOf(c, ctx) : closed ? W3().ruleAtClose : W3().currentRule;
       const stand = pillOf(c);
+      const pp = kind === 'power' ? powerParts(c) : null;
+      // the pill is the chosen radio of the card's own group for a reader who
+      // can choose (1541.47) — the Founder's own card, a power the Founder may
+      // lay down, a member's composer — and a fact for everybody else (P26)
+      const chooses = kind === 'setting' || kind === 'composer' || (kind === 'power' && pp.editable);
       const pill = !stand ? ''
-        : kind === 'setting' ? window.CARD_SHELL.pickPillHtml(stand, !(S.open === k && openCardDirty()))
+        : chooses ? window.CARD_SHELL.pickPillHtml(stand, !shellDirty(c))
         : window.CARD_SHELL.pillHtml(stand);
       let line = lineOf(c);
       let input = '';
@@ -1168,6 +1246,33 @@ window.BAND = (function () {
         body = amFounder() && viewerIsMember() ? '<p class="unlocks">' + esc(PAGE_COPY.asMember) + '</p>' : '';
         options = ANSWER[c.ansFor](S.myAns, E(), c.ansFor === 'quorum' ? S.quorumForm : undefined, roomNow(),
           ANSTYPED, clauseCtx());
+      } else if (kind === 'setting' && k === 'hat') {
+        // 🎩's other sentence, what stands omitted by value (Q620) and nothing
+        // pressed on open (F6); no reason box — a founder's first set carries
+        // none (CP3), and 🎩 is set only before the start
+        const cur = hatCurrent();
+        const o = { hatPick: S.hatPick };
+        options = '<div class="choice" role="radiogroup">' + ['member', 'clerk'].filter((v) => v !== cur)
+          .map((v) => opt(o, 'hatPick', v, W3().hat[v], '', '', false)).join('') + '</div>';
+      } else if (kind === 'power') {
+        // the other state, where the Founder may choose it; why not, where
+        // they may not (`powerParts`)
+        options = powerOtherHtml(pp);
+        body = pp.notes.map((n) => '<p class="setnote">' + n + '</p>').join('');
+      } else if (kind === 'composer') {
+        // **the settled card is the composer** (K1): the setting's own controls
+        // below the rule, what stands omitted by value (Q620), and the reason
+        // box always shown (1541.21 (b)) — the member's drawn as the
+        // Founder's, *We should change this because…* its words (Q1560 (9))
+        const d = (S.draft && S.draft.k === k) ? S.draft : { k, to: '', why: '' };
+        options = PROPOSE[k] ? PROPOSE[k](d)
+          : '<div class="lanebox"><div class="lp editlane" contenteditable="plaintext-only" spellcheck="false"' +
+            ' data-motionlane="to" data-ph="The value you are proposing">' + esc(d.to) + '</div></div>';
+        input = whyLane(d);
+        // …and the change line under it: the clause keeps it permanently
+        // (SURFACE §2's L7), `changeHalf`'s *has changed … from … to …* with
+        // its reason and its date
+        body = changeHalf(c);
       } else if (kind === 'setting') {
         const b = BODY[k]();
         // 🪶 before a title stands: the title box is the first line (P1's
@@ -1184,6 +1289,11 @@ window.BAND = (function () {
       } else if (kind === 'watching' && stateOf(c, ctx) === 'news') {
         const n = newsParts(c);
         body = n.body; blocks = n.blocks;
+      } else if (kind === 'watching' && composerOn(c) && composerWaits(c).length) {
+        // the composer waits on a power not yet accepted: the rule, and the
+        // one sentence saying which (the grants are in the rail)
+        // (with the change line the composer keeps, SURFACE §2's L7)
+        body = changeHalf(c) + '<p class="setnote">' + esc(W3().composeOnceAccepted(composerWaits(c))) + '</p>';
       }
       body += doorErrHtml(k);
       return {
@@ -1191,7 +1301,7 @@ window.BAND = (function () {
         // `data-draft` says the card holds something of yours not yet sent —
         // what lights the bin, and what card-audit's P24 reads
         frame: { cls: 'sugg setupcard', attrs: ' role="tabpanel" data-setupcard="' + esc(k) + '"' +
-          (S.open === k && openCardDirty() ? ' data-draft="1"' : '') },
+          (shellDirty(c) ? ' data-draft="1"' : '') },
         label: { text: label },
         head: { html: window.SETUP.headHtml(c, ctx, (hints && hints.siblings) || [c],
           '<div class="headrule asblock" data-fact="place">' + (line || '') + pill + '</div>') },
@@ -1290,7 +1400,9 @@ window.BAND = (function () {
       // the band's kinds built on the one shell, stage by stage (BUILD.md §4)
       // …and stage 3a's settings (Q1541): the Founder's own card, the rule read,
       // a blind answer and 📧 at the birth
-      const SHELL_KINDS = new Set(['grant', 'gate', 'begin', 'release', 'setting', 'watching', 'answer', 'birth-email']);
+      // …and stage 3b's: 🪪 🤝 🎩 among them, the power cards and the composer
+      const SHELL_KINDS = new Set(['grant', 'gate', 'begin', 'release', 'setting', 'watching', 'answer', 'birth-email',
+        'power', 'composer']);
       const crownPairRow = () => (amFounder()
         ? binBtn() + '<span class="rightpair">' +
           '<button class="btn glyphbtn emojibtn" data-crownq="reject"' +
@@ -2115,13 +2227,15 @@ window.BAND = (function () {
     function syncShellRow(c) {
       const sh = c && settingKind(c) && document.querySelector('.setupcard.gshell[data-setupcard="' + c.k + '"]');
       if (sh) {
-        const dirty = openCardDirty();
+        const dirty = shellDirty(c);
         sh.toggleAttribute('data-draft', dirty);
-        const bin = sh.querySelector('[data-slot="row"] [data-revert], [data-slot="row"] [data-act="bin"]');
+        // the composer's bin discards the motion; every other card's puts back
+        const act = settingKind(c) === 'composer' ? 'data-dropmotion' : 'data-revert';
+        const bin = sh.querySelector('[data-slot="row"] [' + act + '], [data-slot="row"] [data-act="bin"]');
         if (bin) {
           bin.disabled = !dirty;
-          if (dirty) { bin.removeAttribute('data-act'); bin.removeAttribute('data-until'); bin.setAttribute('data-revert', '1'); }
-          else { bin.removeAttribute('data-revert'); bin.setAttribute('data-act', 'bin'); bin.setAttribute('data-until', 'nothing-yours'); }
+          if (dirty) { bin.removeAttribute('data-act'); bin.removeAttribute('data-until'); bin.setAttribute(act, '1'); }
+          else { bin.removeAttribute(act); bin.setAttribute('data-act', 'bin'); bin.setAttribute('data-until', 'nothing-yours'); }
         }
         const pill = sh.querySelector('[data-standpick]');
         if (pill) pill.setAttribute('aria-pressed', String(!dirty));
@@ -2297,6 +2411,9 @@ window.BAND = (function () {
       render, refreshCommit, roomNow, syncShare, standingBlock, unchangedCard,
       // stage 3a's settings cards, for the band's card-state source (Q1541)
       settingKind, settingActs, settingOwed, settingPresent, lineOf,
+      // stage 3b: the composer's commit swaps in place as a motion is typed,
+      // and its bin and pill follow (Q1541 stage 3b)
+      syncShellRow,
       foundedAt, foundedClause, closedAtWords, resendTitle, APPLICANT, MEMBER_EMAILS, APPCARDS,
       appCtx,
       // the rail asks this (SURFACE E33, Q901): a door that shut under a

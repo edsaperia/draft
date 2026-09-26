@@ -25,8 +25,8 @@
  "cards": {
   "answers": {
    "admission": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "The Founder is deciding how new members are admitted.",
     "lock": "",
     "body": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.Choose thisAny member may propose to invite someone to join the membership, and the membership decides ✏️.Choose thisAny member may invite someone to join the membership at will ✒️.Choose thisThe membership will decide how new members may join.Choose this",
     "options": [
@@ -110,8 +110,8 @@
     "helpers": []
    },
    "applications": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "The Founder is deciding whether strangers may apply to join.",
     "lock": "",
     "body": "New members may only join by invitation.Choose thisAnyone with the link may apply to become a member.Choose thisThe membership will decide whether new members may only join by invitation or whether anyone with the link may apply.Choose this",
     "options": [
@@ -393,8 +393,8 @@
     ]
    },
    "hat": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Is the Founder a Member?",
+    "head": "The Founder is deciding whether to be part of the membership.",
     "lock": "",
     "body": "The Founder is part of the membership.Choose thisThe Founder is not part of the membership.Choose this",
     "options": [
@@ -3022,8 +3022,8 @@
   },
   "delegated": {
    "admission": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "The Founder is deciding how new members are admitted.",
     "lock": "",
     "body": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.Choose thisAny member may propose to invite someone to join the membership, and the membership decides ✏️.Choose thisAny member may invite someone to join the membership at will ✒️.Choose thisThe membership will decide how new members may join.Chosen",
     "options": [
@@ -3069,8 +3069,8 @@
     "helpers": []
    },
    "applications": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "The Founder is deciding whether strangers may apply to join.",
     "lock": "",
     "body": "New members may only join by invitation.Choose thisAnyone with the link may apply to become a member.Choose thisThe membership will decide whether new members may only join by invitation or whether anyone with the link may apply.Chosen",
     "options": [
@@ -3579,8 +3579,8 @@
   },
   "founding": {
    "admission": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "The Founder is deciding how new members are admitted.",
     "lock": "",
     "body": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.Choose thisAny member may propose to invite someone to join the membership, and the membership decides ✏️.Choose thisAny member may invite someone to join the membership at will ✒️.Choose thisThe membership will decide how new members may join.Choose this",
     "options": [
@@ -3626,8 +3626,8 @@
     "helpers": []
    },
    "applications": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "The Founder is deciding whether strangers may apply to join.",
     "lock": "",
     "body": "New members may only join by invitation.Choose thisAnyone with the link may apply to become a member.Choose thisThe membership will decide whether new members may only join by invitation or whether anyone with the link may apply.Choose this",
     "options": [
@@ -3907,8 +3907,8 @@
     ]
    },
    "hat": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Is the Founder a Member?",
+    "head": "The Founder is deciding whether to be part of the membership.",
     "lock": "",
     "body": "The Founder is part of the membership.Choose thisThe Founder is not part of the membership.Choose this",
     "options": [
@@ -4380,7 +4380,7 @@
   },
   "seat:1": {
    "admission": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.Chosen by the membership",
     "lock": "",
     "body": "Any member may propose to invite someone to join the membership, and the membership decides ✏️.Propose thisAny member may invite someone to join the membership at will ✒️.Propose this",
@@ -4420,7 +4420,7 @@
     ]
    },
    "applications": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "New members may only join by invitation.Chosen by the membership",
     "lock": "",
     "body": "Anyone with the link may apply to become a member.Propose this",
@@ -4455,7 +4455,7 @@
     ]
    },
    "authorship": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "All proposals are made anonymously.Chosen by the membership",
     "lock": "",
     "body": "Proposals may be made anonymously.Propose thisAll proposals are made anonymously, and all names are revealed at the end.Propose thisProposals may be made anonymously, and all names are revealed at the end.Propose thisProposals may not be made anonymously.Propose this",
@@ -4574,7 +4574,7 @@
     "helpers": []
    },
    "ending": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "No more changes to the document may be made after Weekday, D Month, HH:MM.Chosen by the membership",
     "lock": "",
     "body": "The drafting process will end on .Propose thisThe drafting process has no set end — it runs until too few members are active.Propose this",
@@ -4631,21 +4631,15 @@
     ]
    },
    "hat": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "The Founder is part of the membership.Chosen by the Founder ✒️",
     "lock": "",
-    "body": "The Founder is part of the membership.ChosenThe Founder is not part of the membership.Choose this",
+    "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     }
-    ],
+    "foot": [],
     "hints": [
-     "Founder’s Membership — close it",
-     "Put it back as it stands"
+     "Founder’s Membership — close it"
     ],
     "helpers": []
    },
@@ -4709,7 +4703,7 @@
     ]
    },
    "judgments": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "Votes are never revealed.Chosen by the membership",
     "lock": "",
     "body": "Votes are revealed when the document is finished, and not before.Propose this",
@@ -4744,7 +4738,7 @@
     ]
    },
    "lapse": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "Inactive members never lapse and are still counted towards votes.Chosen by the membership",
     "lock": "",
     "body": "A membership lapses after minuteshoursdays without logging in.Propose this",
@@ -5021,318 +5015,198 @@
     "helpers": []
    },
    "pw:a:chamber": {
-    "eyebrow": "",
-    "head": "The Founder may refuse changes to the visibility rule that the membership pass.",
+    "eyebrow": "Does the Founder Have a Veto?",
+    "head": "The Founder may refuse changes to the visibility rule that the membership pass.Chosen by the Founder ✒️",
     "lock": "",
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Visibility — decided; it waits for your OK",
      "Who Can See the Document? — waiting on others",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
-     "Changed by the Founder: Anyone with the link — settled",
-     "Put it back as it stands"
+     "Changed by the Founder: Anyone with the link — settled"
     ],
     "helpers": []
    },
    "pw:a:invite": {
-    "eyebrow": "",
-    "head": "The Founder may refuse invitations and applications that the membership pass.",
+    "eyebrow": "Does the Founder Have a Veto over Invitations?",
+    "head": "The Founder may refuse invitations and applications that the membership pass.Chosen by the Founder ✒️",
     "lock": "",
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Invite a Member — settled",
      "Can the Founder Invite at Will? — settled",
-     "Does the Founder Have a Veto over Invitations? — close it",
-     "Put it back as it stands"
+     "Does the Founder Have a Veto over Invitations? — close it"
     ],
     "helpers": []
    },
    "pw:a:rate": {
-    "eyebrow": "",
-    "head": "The Founder may refuse changes to the proposal rate that the membership pass.",
+    "eyebrow": "Does the Founder Have a Veto?",
+    "head": "The Founder may refuse changes to the proposal rate that the membership pass.Chosen by the Founder ✒️",
     "lock": "",
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Proposal Rate — settled",
      "Your proposal did not pass: a new proposal every 90 minutes — decided; it waits for your OK",
      "Set the Proposal Rate — yours, being voted on",
      "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Put it back as it stands"
+     "Does the Founder Have a Veto? — close it"
     ],
     "helpers": []
    },
    "pw:a:remove": {
-    "eyebrow": "",
-    "head": "The Founder may refuse removals that the membership pass.",
+    "eyebrow": "Does the Founder Have a Veto over Removals?",
+    "head": "The Founder may refuse removals that the membership pass.Chosen by the Founder ✒️",
     "lock": "",
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Remove a Member — settled",
      "Can the Founder Remove at Will? — settled",
-     "Does the Founder Have a Veto over Removals? — close it",
-     "Put it back as it stands"
+     "Does the Founder Have a Veto over Removals? — close it"
     ],
     "helpers": []
    },
    "pw:a:slug": {
-    "eyebrow": "",
-    "head": "The Founder may refuse changes to the link that the membership pass.",
+    "eyebrow": "Does the Founder Have a Veto?",
+    "head": "The Founder may refuse changes to the link that the membership pass.Chosen by the Founder ✒️",
     "lock": "",
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Link — settled",
      "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Put it back as it stands"
+     "Does the Founder Have a Veto? — close it"
     ],
     "helpers": []
    },
    "pw:a:title": {
-    "eyebrow": "",
-    "head": "The Founder may refuse changes to the title that the membership pass.",
+    "eyebrow": "Does the Founder Have a Veto?",
+    "head": "The Founder may refuse changes to the title that the membership pass.Chosen by the Founder ✒️",
     "lock": "",
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Title — settled",
      "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Put it back as it stands"
+     "Does the Founder Have a Veto? — close it"
     ],
     "helpers": []
    },
    "pw:u:chamber": {
-    "eyebrow": "",
-    "head": "The Founder may amend the visibility rule at will.",
+    "eyebrow": "Can the Founder Make Amendments at Will?",
+    "head": "The Founder may amend the visibility rule at will.Chosen by the Founder ✒️",
     "lock": "",
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Visibility — decided; it waits for your OK",
      "Who Can See the Document? — waiting on others",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
-     "Changed by the Founder: Anyone with the link — settled",
-     "Put it back as it stands"
+     "Changed by the Founder: Anyone with the link — settled"
     ],
     "helpers": []
    },
    "pw:u:invite": {
-    "eyebrow": "",
-    "head": "The Founder may invite people at will.",
+    "eyebrow": "Can the Founder Invite at Will?",
+    "head": "The Founder may invite people at will.Chosen by the Founder ✒️",
     "lock": "",
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Invite a Member — settled",
      "Can the Founder Invite at Will? — close it",
-     "Does the Founder Have a Veto over Invitations? — settled",
-     "Put it back as it stands"
+     "Does the Founder Have a Veto over Invitations? — settled"
     ],
     "helpers": []
    },
    "pw:u:rate": {
-    "eyebrow": "",
-    "head": "The Founder may amend the proposal rate at will.",
+    "eyebrow": "Can the Founder Make Amendments at Will?",
+    "head": "The Founder may amend the proposal rate at will.Chosen by the Founder ✒️",
     "lock": "",
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Proposal Rate — settled",
      "Your proposal did not pass: a new proposal every 90 minutes — decided; it waits for your OK",
      "Set the Proposal Rate — yours, being voted on",
      "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands"
+     "Does the Founder Have a Veto? — settled"
     ],
     "helpers": []
    },
    "pw:u:remove": {
-    "eyebrow": "",
-    "head": "The Founder may remove members at will.",
+    "eyebrow": "Can the Founder Remove at Will?",
+    "head": "The Founder may remove members at will.Chosen by the Founder ✒️",
     "lock": "",
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Remove a Member — settled",
      "Can the Founder Remove at Will? — close it",
-     "Does the Founder Have a Veto over Removals? — settled",
-     "Put it back as it stands"
+     "Does the Founder Have a Veto over Removals? — settled"
     ],
     "helpers": []
    },
    "pw:u:slug": {
-    "eyebrow": "",
-    "head": "The Founder may amend the link at will.",
+    "eyebrow": "Can the Founder Make Amendments at Will?",
+    "head": "The Founder may amend the link at will.Chosen by the Founder ✒️",
     "lock": "",
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Link — settled",
      "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands"
+     "Does the Founder Have a Veto? — settled"
     ],
     "helpers": []
    },
    "pw:u:title": {
-    "eyebrow": "",
-    "head": "The Founder may amend the title at will.",
+    "eyebrow": "Can the Founder Make Amendments at Will?",
+    "head": "The Founder may amend the title at will.Chosen by the Founder ✒️",
     "lock": "",
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Title — settled",
      "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands"
+     "Does the Founder Have a Veto? — settled"
     ],
     "helpers": []
    },
    "quorum": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "A proposal ✏️ cannot pass until it is preferred by at least 38% of the membership (n of m).Chosen by the membership",
     "lock": "",
-    "body": "A proposal ✏️ cannot pass until it is preferred by at least % of the membership (n of m).With this quorum, 2 members preferring the current text can stop a proposal.Propose this",
+    "body": "A proposal ✏️ cannot pass until it is preferred by at least % of the membership.Propose this",
     "options": [],
     "inputs": [
      {
@@ -5360,12 +5234,12 @@
      "You can only make one constitutional proposal 🏛️ at a time."
     ],
     "helpers": [
-     "With this quorum, 2 members preferring the current text can stop a proposal.",
+     "",
      "We should change this because…"
     ]
    },
    "rate": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "Members may make a new proposal ✏️ every 3 hours.Chosen by the Founder ✒️",
     "lock": "",
     "body": "Members may make a new proposal ✏️ every minutes.Propose this",
@@ -5436,7 +5310,7 @@
     "helpers": []
    },
    "removal": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "To remove a member, all members must agree 🏛️.Chosen by the membership",
     "lock": "",
     "body": "To remove a member, all members apart from them must agree 🏛️.Propose thisTo remove a member, a majority of members must agree ✏️.Propose this",
@@ -5507,7 +5381,7 @@
     ]
    },
    "slug": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "The document lives at docs.vote/d/the-hollow-oak-club-house-charter-3b3f.Chosen by the Founder ✒️",
     "lock": "",
     "body": "The document lives at docs.vote/d/.Every link the document has ever had keeps working — a change leaves a redirect behind.Propose this",
@@ -5544,7 +5418,7 @@
     ]
    },
    "title": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "The document is titled “The Hollow Oak Club — House Charter”.Chosen by the Founder ✒️",
     "lock": "",
     "body": "The document is titled .Propose this",
@@ -5727,8 +5601,8 @@
     "helpers": []
    },
    "pw:a:chamber": {
-    "eyebrow": "",
-    "head": "The Founder may refuse changes to the visibility rule that the membership pass.",
+    "eyebrow": "Does the Founder Have a Veto?",
+    "head": "The Founder may refuse changes to the visibility rule that the membership pass.Chosen by the Founder ✒️",
     "lock": "",
     "body": "",
     "options": [],
@@ -5743,8 +5617,8 @@
     "helpers": []
    },
    "pw:a:rate": {
-    "eyebrow": "",
-    "head": "The Founder may refuse changes to the proposal rate that the membership pass.",
+    "eyebrow": "Does the Founder Have a Veto?",
+    "head": "The Founder may refuse changes to the proposal rate that the membership pass.Chosen by the Founder ✒️",
     "lock": "",
     "body": "",
     "options": [],
@@ -5759,8 +5633,8 @@
     "helpers": []
    },
    "pw:a:slug": {
-    "eyebrow": "",
-    "head": "The Founder may refuse changes to the link that the membership pass.",
+    "eyebrow": "Does the Founder Have a Veto?",
+    "head": "The Founder may refuse changes to the link that the membership pass.Chosen by the Founder ✒️",
     "lock": "",
     "body": "",
     "options": [],
@@ -5774,8 +5648,8 @@
     "helpers": []
    },
    "pw:a:title": {
-    "eyebrow": "",
-    "head": "The Founder may refuse changes to the title that the membership pass.",
+    "eyebrow": "Does the Founder Have a Veto?",
+    "head": "The Founder may refuse changes to the title that the membership pass.Chosen by the Founder ✒️",
     "lock": "",
     "body": "",
     "options": [],
@@ -5789,8 +5663,8 @@
     "helpers": []
    },
    "pw:u:chamber": {
-    "eyebrow": "",
-    "head": "The Founder may amend the visibility rule at will.",
+    "eyebrow": "Can the Founder Make Amendments at Will?",
+    "head": "The Founder may amend the visibility rule at will.Chosen by the Founder ✒️",
     "lock": "",
     "body": "",
     "options": [],
@@ -5805,8 +5679,8 @@
     "helpers": []
    },
    "pw:u:rate": {
-    "eyebrow": "",
-    "head": "The Founder may amend the proposal rate at will.",
+    "eyebrow": "Can the Founder Make Amendments at Will?",
+    "head": "The Founder may amend the proposal rate at will.Chosen by the Founder ✒️",
     "lock": "",
     "body": "",
     "options": [],
@@ -5821,8 +5695,8 @@
     "helpers": []
    },
    "pw:u:slug": {
-    "eyebrow": "",
-    "head": "The Founder may amend the link at will.",
+    "eyebrow": "Can the Founder Make Amendments at Will?",
+    "head": "The Founder may amend the link at will.Chosen by the Founder ✒️",
     "lock": "",
     "body": "",
     "options": [],
@@ -5836,8 +5710,8 @@
     "helpers": []
    },
    "pw:u:title": {
-    "eyebrow": "",
-    "head": "The Founder may amend the title at will.",
+    "eyebrow": "Can the Founder Make Amendments at Will?",
+    "head": "The Founder may amend the title at will.Chosen by the Founder ✒️",
     "lock": "",
     "body": "",
     "options": [],
@@ -6006,7 +5880,7 @@
   },
   "settled": {
    "admission": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.Chosen by the membership",
     "lock": "",
     "body": "Any member may propose to invite someone to join the membership, and the membership decides ✏️.Propose thisAny member may invite someone to join the membership at will ✒️.Propose this",
@@ -6046,7 +5920,7 @@
     ]
    },
    "applications": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "New members may only join by invitation.Chosen by the membership",
     "lock": "",
     "body": "Anyone with the link may apply to become a member.Propose this",
@@ -6081,7 +5955,7 @@
     ]
    },
    "authorship": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "All proposals are made anonymously.Chosen by the membership",
     "lock": "",
     "body": "Proposals may be made anonymously.Propose thisAll proposals are made anonymously, and all names are revealed at the end.Propose thisProposals may be made anonymously, and all names are revealed at the end.Propose thisProposals may not be made anonymously.Propose this",
@@ -6220,7 +6094,7 @@
     ]
    },
    "ending": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "No more changes to the document may be made after Weekday, D Month, HH:MM.Chosen by the membership",
     "lock": "",
     "body": "The drafting process will end on .Propose thisThe drafting process has no set end — it runs until too few members are active.Propose this",
@@ -6314,25 +6188,15 @@
     ]
    },
    "hat": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "The Founder is part of the membership.Chosen by the Founder ✒️",
     "lock": "",
-    "body": "The Founder is part of the membership.ChosenThe Founder is not part of the membership.Choose this",
+    "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
-     "Founder’s Membership — close it",
-     "Put it back as it stands"
+     "Founder’s Membership — close it"
     ],
     "helpers": []
    },
@@ -6373,7 +6237,7 @@
     "helpers": []
    },
    "judgments": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "Votes are never revealed.Chosen by the membership",
     "lock": "",
     "body": "Votes are revealed when the document is finished, and not before.Propose this",
@@ -6408,7 +6272,7 @@
     ]
    },
    "lapse": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "Inactive members never lapse and are still counted towards votes.Chosen by the membership",
     "lock": "",
     "body": "A membership lapses after minuteshoursdays without logging in.Propose this",
@@ -6689,15 +6553,15 @@
     "helpers": []
    },
    "pw:a:chamber": {
-    "eyebrow": "",
-    "head": "The Founder may refuse changes to the visibility rule that the membership pass.",
+    "eyebrow": "Does the Founder Have a Veto?",
+    "head": "The Founder may refuse changes to the visibility rule that the membership pass.Chosen by the Founder ✒️",
     "lock": "",
     "body": "The Founder may not refuse changes to the visibility rule that the membership pass.One way — it cannot be taken back.Choose this",
     "options": [
      {
       "set": "pw:a:chamber",
       "val": "given",
-      "label": "Choose this"
+      "label": "The Founder may not refuse changes to the visibility rule that the membership pass."
      }
     ],
     "inputs": [],
@@ -6725,15 +6589,15 @@
     ]
    },
    "pw:a:invite": {
-    "eyebrow": "",
-    "head": "The Founder may refuse invitations and applications that the membership pass.",
+    "eyebrow": "Does the Founder Have a Veto over Invitations?",
+    "head": "The Founder may refuse invitations and applications that the membership pass.Chosen by the Founder ✒️",
     "lock": "",
     "body": "The Founder may not refuse invitations and applications that the membership pass.One way — it cannot be taken back.Choose this",
     "options": [
      {
       "set": "pw:a:invite",
       "val": "given",
-      "label": "Choose this"
+      "label": "The Founder may not refuse invitations and applications that the membership pass."
      }
     ],
     "inputs": [],
@@ -6759,15 +6623,15 @@
     ]
    },
    "pw:a:rate": {
-    "eyebrow": "",
-    "head": "The Founder may refuse changes to the proposal rate that the membership pass.",
+    "eyebrow": "Does the Founder Have a Veto?",
+    "head": "The Founder may refuse changes to the proposal rate that the membership pass.Chosen by the Founder ✒️",
     "lock": "",
     "body": "The Founder may not refuse changes to the proposal rate that the membership pass.One way — it cannot be taken back.Choose this",
     "options": [
      {
       "set": "pw:a:rate",
       "val": "given",
-      "label": "Choose this"
+      "label": "The Founder may not refuse changes to the proposal rate that the membership pass."
      }
     ],
     "inputs": [],
@@ -6795,15 +6659,15 @@
     ]
    },
    "pw:a:remove": {
-    "eyebrow": "",
-    "head": "The Founder may refuse removals that the membership pass.",
+    "eyebrow": "Does the Founder Have a Veto over Removals?",
+    "head": "The Founder may refuse removals that the membership pass.Chosen by the Founder ✒️",
     "lock": "",
     "body": "The Founder may not refuse removals that the membership pass.One way — it cannot be taken back.Choose this",
     "options": [
      {
       "set": "pw:a:remove",
       "val": "given",
-      "label": "Choose this"
+      "label": "The Founder may not refuse removals that the membership pass."
      }
     ],
     "inputs": [],
@@ -6829,15 +6693,15 @@
     ]
    },
    "pw:a:slug": {
-    "eyebrow": "",
-    "head": "The Founder may refuse changes to the link that the membership pass.",
+    "eyebrow": "Does the Founder Have a Veto?",
+    "head": "The Founder may refuse changes to the link that the membership pass.Chosen by the Founder ✒️",
     "lock": "",
     "body": "The Founder may not refuse changes to the link that the membership pass.One way — it cannot be taken back.Choose this",
     "options": [
      {
       "set": "pw:a:slug",
       "val": "given",
-      "label": "Choose this"
+      "label": "The Founder may not refuse changes to the link that the membership pass."
      }
     ],
     "inputs": [],
@@ -6863,15 +6727,15 @@
     ]
    },
    "pw:a:title": {
-    "eyebrow": "",
-    "head": "The Founder may refuse changes to the title that the membership pass.",
+    "eyebrow": "Does the Founder Have a Veto?",
+    "head": "The Founder may refuse changes to the title that the membership pass.Chosen by the Founder ✒️",
     "lock": "",
     "body": "The Founder may not refuse changes to the title that the membership pass.One way — it cannot be taken back.Choose this",
     "options": [
      {
       "set": "pw:a:title",
       "val": "given",
-      "label": "Choose this"
+      "label": "The Founder may not refuse changes to the title that the membership pass."
      }
     ],
     "inputs": [],
@@ -6897,15 +6761,15 @@
     ]
    },
    "pw:u:chamber": {
-    "eyebrow": "",
-    "head": "The Founder may amend the visibility rule at will.",
+    "eyebrow": "Can the Founder Make Amendments at Will?",
+    "head": "The Founder may amend the visibility rule at will.Chosen by the Founder ✒️",
     "lock": "",
     "body": "The Founder may not amend the visibility rule at will.One way — it cannot be taken back.Choose this",
     "options": [
      {
       "set": "pw:u:chamber",
       "val": "given",
-      "label": "Choose this"
+      "label": "The Founder may not amend the visibility rule at will."
      }
     ],
     "inputs": [],
@@ -6933,15 +6797,15 @@
     ]
    },
    "pw:u:invite": {
-    "eyebrow": "",
-    "head": "The Founder may invite people at will.",
+    "eyebrow": "Can the Founder Invite at Will?",
+    "head": "The Founder may invite people at will.Chosen by the Founder ✒️",
     "lock": "",
     "body": "The Founder may not invite people at will.One way — it cannot be taken back.Choose this",
     "options": [
      {
       "set": "pw:u:invite",
       "val": "given",
-      "label": "Choose this"
+      "label": "The Founder may not invite people at will."
      }
     ],
     "inputs": [],
@@ -6967,15 +6831,15 @@
     ]
    },
    "pw:u:rate": {
-    "eyebrow": "",
-    "head": "The Founder may amend the proposal rate at will.",
+    "eyebrow": "Can the Founder Make Amendments at Will?",
+    "head": "The Founder may amend the proposal rate at will.Chosen by the Founder ✒️",
     "lock": "",
     "body": "The Founder may not amend the proposal rate at will.One way — it cannot be taken back.Choose this",
     "options": [
      {
       "set": "pw:u:rate",
       "val": "given",
-      "label": "Choose this"
+      "label": "The Founder may not amend the proposal rate at will."
      }
     ],
     "inputs": [],
@@ -7003,15 +6867,15 @@
     ]
    },
    "pw:u:remove": {
-    "eyebrow": "",
-    "head": "The Founder may remove members at will.",
+    "eyebrow": "Can the Founder Remove at Will?",
+    "head": "The Founder may remove members at will.Chosen by the Founder ✒️",
     "lock": "",
     "body": "The Founder may not remove members at will.One way — it cannot be taken back.Choose this",
     "options": [
      {
       "set": "pw:u:remove",
       "val": "given",
-      "label": "Choose this"
+      "label": "The Founder may not remove members at will."
      }
     ],
     "inputs": [],
@@ -7037,15 +6901,15 @@
     ]
    },
    "pw:u:slug": {
-    "eyebrow": "",
-    "head": "The Founder may amend the link at will.",
+    "eyebrow": "Can the Founder Make Amendments at Will?",
+    "head": "The Founder may amend the link at will.Chosen by the Founder ✒️",
     "lock": "",
     "body": "The Founder may not amend the link at will.One way — it cannot be taken back.Choose this",
     "options": [
      {
       "set": "pw:u:slug",
       "val": "given",
-      "label": "Choose this"
+      "label": "The Founder may not amend the link at will."
      }
     ],
     "inputs": [],
@@ -7071,15 +6935,15 @@
     ]
    },
    "pw:u:title": {
-    "eyebrow": "",
-    "head": "The Founder may amend the title at will.",
+    "eyebrow": "Can the Founder Make Amendments at Will?",
+    "head": "The Founder may amend the title at will.Chosen by the Founder ✒️",
     "lock": "",
     "body": "The Founder may not amend the title at will.One way — it cannot be taken back.Choose this",
     "options": [
      {
       "set": "pw:u:title",
       "val": "given",
-      "label": "Choose this"
+      "label": "The Founder may not amend the title at will."
      }
     ],
     "inputs": [],
@@ -7105,10 +6969,10 @@
     ]
    },
    "quorum": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "A proposal ✏️ cannot pass until it is preferred by at least 38% of the membership (n of m).Chosen by the membership",
     "lock": "",
-    "body": "A proposal ✏️ cannot pass until it is preferred by at least % of the membership (n of m).With this quorum, 2 members preferring the current text can stop a proposal.Propose this",
+    "body": "A proposal ✏️ cannot pass until it is preferred by at least % of the membership.Propose this",
     "options": [],
     "inputs": [
      {
@@ -7136,7 +7000,7 @@
      "You can only make one constitutional proposal 🏛️ at a time."
     ],
     "helpers": [
-     "With this quorum, 2 members preferring the current text can stop a proposal.",
+     "",
      "We should change this because…"
     ]
    },
@@ -7240,7 +7104,7 @@
     "helpers": []
    },
    "removal": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "To remove a member, all members must agree 🏛️.Chosen by the membership",
     "lock": "",
     "body": "To remove a member, all members apart from them must agree 🏛️.Propose thisTo remove a member, a majority of members must agree ✏️.Propose this",
