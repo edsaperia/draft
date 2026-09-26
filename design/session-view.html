@@ -1104,8 +1104,17 @@
     // held onto that line after the render, so the clause never moves
     const shellHead = window.CARD_SHELL.isShell(el) ? el.querySelector('.clausehead .rtext') : null;
     const shellKey = shellHead ? el.dataset.setupcard : null;
-    if (shellHead) window.CARD_SHELL.takeRoomBack(el);
-    const shellTop = shellHead && !anchored ? window.CARD_SHELL.lineTop(shellHead) : null;
+    // **where the page cannot give the whole room back, the close does not
+    // hold the clause** (Ed, Q1560 (3), 2026-09-26): near the top the scroll
+    // runs out, the first line rises by the shortfall and the clause lands at
+    // home. Holding it on the glass after the render then scrolled the page
+    // back down by that shortfall — pushing the content above up, the
+    // opposite of giving the room back — and on a slow machine the late
+    // scroll landed inside the next card's opening (card-audit at 390, CI)
+    const sy0 = scrollY;
+    const giveBack = shellHead ? window.CARD_SHELL.takeRoomBack(el) : 0;
+    const short = Math.abs((scrollY - sy0) - giveBack) > 0.5;
+    const shellTop = shellHead && !anchored && !short ? window.CARD_SHELL.lineTop(shellHead) : null;
     const settle = () => {
       if (shellTop != null) {
         const p = document.querySelector('#band .cpara:not(.open)[data-para="' + shellKey.replace(/["\\]/g, '\\$&') + '"] .cpv');
