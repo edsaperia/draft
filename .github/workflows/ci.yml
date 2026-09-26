@@ -669,7 +669,9 @@ jobs:
   # **Not every walk, since Q1546** (Ed, 2026-09-26). The audit of all 215
   # runs since 2026-08-20 found five real product catches at the push; the
   # fifteen guards with none in four weeks moved to the sprint tier
-  # (.github/workflows/sprint.yml, on a push that carries a merge). The
+  # (.github/workflows/sprint.yml, on a push that carries a merge), and so
+  # did the seat matrix, once `spec-check` read the tables' half of its
+  # *no rule* verdict at every push (`seat-matrix --static`). The
   # paragraph above about *per push, not per sprint* stands
   # for what is left here. **The push set grows only by Ed's word** (Q1547):
   # a walk or repro written for one bug joins the sprint tier's groups.
@@ -680,8 +682,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # repros since Stage 4: the guards CLAUDE.md named and no job ran
-        group: [seat-member, seat-clerk, journey, motions, doors, repros, repros-b]
+        # repros since Stage 4: the guards CLAUDE.md named and no job ran;
+        # seat-member and seat-clerk left for the sprint tier with Q1546 (d),
+        # `spec-check`'s `checkSeatMatrixStatic` holding their no-rule verdict
+        # at the push
+        group: [journey, motions, doors, repros, repros-b]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

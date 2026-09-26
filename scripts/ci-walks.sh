@@ -166,6 +166,11 @@ case "$GROUP" in
   # over an empty audience — red on purpose, never forgiven here, never a
   # predicate invented in the script. The payload goes to the group's
   # artifact rather than into the tree, where it is gitignored by design.
+  #
+  # **The sprint tier's since Q1546 (d)** (Ed, 2026-09-26): sprint.yml runs
+  # these two groups, never ci.yml. At the push, `spec-check` runs
+  # `seat-matrix --static`, the same reading of the tables, so an unread §2
+  # row is still red in seconds; what only a run can see is read here.
   seat-member|seat-clerk)
     HAT="${GROUP#seat-}"
     boot "$GROUP" "$PORT_MAIN"; BASE=$BOOTED
@@ -285,7 +290,9 @@ case "$GROUP" in
   # by these fifteen guards, which cost about half the push's runner-minutes.
   # Ed moved all fifteen here, and ruled with them (Q1547) that **a walk or
   # repro written for one bug joins these groups from its first day**: the
-  # push groups above grow only by Ed's word.
+  # push groups above grow only by Ed's word. `seat-member` and `seat-clerk`
+  # at the top of this file run in the sprint tier too since Q1546 (d), the
+  # tables' half of their no-rule verdict being `spec-check`'s at the push.
   # ======================================================================
 
   # the doors and the demo: a product server, and the demo's stub-bot server

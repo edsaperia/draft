@@ -131,6 +131,12 @@ jobs:
   # end. Groups sized from run 36235116145's verdict lines to stay near ten
   # minutes each. Every walk a single bug brings runs here from its first
   # day (Q1547).
+  #
+  # **The seat matrix, one hat per group** (Q1546 (d)), here since
+  # `spec-check` holds the tables' half of its *no rule* verdict at the push.
+  # Its exit 3 stays red here (Q1354): what only a run can see — a key a
+  # step cannot learn, an audience that comes out empty (Q1356) — still
+  # reddens its group until somebody reads it.
   walks:
     name: walks (${{ matrix.group }})
     needs: gate
@@ -140,7 +146,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        group: [sprint-doors, sprint-motions, sprint-pages]
+        group: [seat-member, seat-clerk, sprint-doors, sprint-motions, sprint-pages]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
