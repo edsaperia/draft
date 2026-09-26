@@ -982,7 +982,7 @@ const secondSeatPreBegin = async () => {
     : 'FAIL: ' + JSON.stringify(owed) + ' are served as acknowledgements before 🍾'));
   if (owed.length) stuck.push('pre-Begin acks in the member seat: ' + owed.join(','));
   /* **…and 🏛️ reaches them as *Activate Your Membership*** (Q1502, Ed
-   * 2026-09-22): a body about 🏛️ alone, and the commit *Activate 🏛️*. Read
+   * 2026-09-22): a body about 🏛️ alone, and the commit *Accept 🏛️* (Q1541.24). Read
    * and closed, never pressed — what the OK then opens is the member
    * questions walk's. */
   const voice = await guestPage.evaluate(async () => {
@@ -999,7 +999,7 @@ const secondSeatPreBegin = async () => {
     return out;
   });
   await guestPage.waitForTimeout(400);
-  const voiceOk = !!voice && voice.word === 'Activate 🏛️' && /Activate Your Membership/.test(voice.title || '') &&
+  const voiceOk = !!voice && voice.word === 'Accept 🏛️' && /Activate Your Membership/.test(voice.title || '') &&
     /You are already a member/.test(voice.body || '');
   say('activate   · ' + (voiceOk ? 'the member’s 🏛️ grant reads “' + voice.word + '”, titled ' + voice.title
     : 'FAIL: ' + JSON.stringify(voice)));
@@ -2067,8 +2067,8 @@ const stuckAtBegin = async () => {
 // 3, 2026-09-05), one row per setting since Q1195 (c): each `tr[data-bkey]`
 // holds a `.pwtoggle` per power carrying `data-bkey` and `data-bpw`,
 // `aria-pressed="true"` for kept, `"false"` for laid down — and a given cell
-// (the power promised away on the setting's own tab) is struck and
-// `disabled`. `says` reports the word the toggle spells, so every assertion
+// (the power promised away on the setting's own tab) is struck and, since
+// Q1541 stage 2, a `.given` span rather than a control. `says` reports the word the toggle spells, so every assertion
 // below keeps reading what it always read. `brSet` presses only where the
 // toggle does not already stand at the wanted position, a toggle being a
 // flip rather than a choice.
@@ -2081,7 +2081,7 @@ const brRows = () => page.evaluate(() =>
     cells: ['u', 'a'].map((pw) => {
       const b = r.querySelector('.pwtoggle[data-bpw="' + pw + '"]');
       const kept = !!b && b.getAttribute('aria-pressed') === 'true';
-      const given = !!b && !kept && b.disabled;
+      const given = !!b && !kept && b.classList.contains('given');
       return { pw, says: kept ? 'Kept' : given ? 'Given' : 'Laid down' };
     }),
   })));
@@ -2369,9 +2369,9 @@ for (let i = 0; i < 60; i++) {
     if (!tcOk) stuck.push(next + ': a title head or an entry subtitle (Q1373/Q1374)');
     /* **A grant is accepted, and says so** (Q1501, Q1502; Ed 2026-09-22):
      * until its press the card's commit reads *Accept* and the power —
-     * 🏛️'s *Activate 🏛️* — and its rail entry and tab wear the *yours* hue,
+     * 🏛️'s *Accept 🏛️* since Q1541.24 — and its rail entry and tab wear the *yours* hue,
      * the entry sparkling. Read at the same moment as the line above. */
-    const GRANT_WORD = { 'grant-pen': 'Accept ✒️', 'grant-shield': 'Accept 🛡️', 'grant-voice': 'Activate 🏛️',
+    const GRANT_WORD = { 'grant-pen': 'Accept ✒️', 'grant-shield': 'Accept 🛡️', 'grant-voice': 'Accept 🏛️',
       canpropose: 'Accept ✏️', canjudge: 'Accept ⚖️' };
     const gw = await page.evaluate((k) => {
       const ok = document.querySelector('.setupcard [data-ok="' + k + '"]');
@@ -4767,7 +4767,7 @@ if (caret) {
         b.click();
         await new Promise((r) => setTimeout(r, 900));
         const ok = document.querySelector('.setupcard[data-setupcard="grant-voice"] [data-ok]');
-        if (!ok) return 'no Activate 🏛️';
+        if (!ok) return 'no Accept 🏛️';
         ok.click();
         return null;
       });
