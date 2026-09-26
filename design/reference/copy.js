@@ -474,6 +474,9 @@ window.COPY = (function () {
       prev: 'The place before',
       next: 'The next place',
       placeOf: (i, n) => ' · place ' + i + ' of ' + n,
+      // a multi-place proposal's label, after *Current text* (answers Part 4
+      // .7: *Current text · 2 of 3*)
+      ofPlaces: (i, n) => i + ' of ' + n,
     },
     // the editing card's own labels
     compose: {
