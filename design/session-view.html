@@ -5411,7 +5411,10 @@
     : c.power ? esc(powerHeadLine(c, true))
     // a record has no VALUE of its own either — its title *is* what it says
     : c.record ? esc(c.t)
-    : esc(VALUE[c.k] ? VALUE[c.k]() : ''));
+    // **a value not yet there is empty, never the word** (plain bug 1,
+    // 1541.29): ❌'s door before 🥾 is decided reads `REMOVAL_RULE[undefined]`,
+    // and `esc` printed it *undefined*, so `readBody`'s guard never fired
+    : esc((VALUE[c.k] && VALUE[c.k]()) || ''));
   // **A task you have to do needs no subtitle** (Ed, 2026-08-19: *subtitles
   // are there to help me make choices — if I have to do them, they don't need
   // extra information*; and on 📧, *the queue-card does not need "Not given
