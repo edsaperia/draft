@@ -226,6 +226,9 @@
     margin-bottom: var(--s2); font-size: var(--t-ui); }
   .headpeople .hp { display: inline-flex; align-items: center; gap: 6px; }
   .headpeople .hpnone { color: var(--muted); font-size: var(--t-small); }
+  /* the words *Applications for Membership* over the votes still running on
+     letting somebody in (Q1557), a line of their own in the wrapping list */
+  .headpeople .hplab { flex-basis: 100%; color: var(--muted); font-size: var(--t-small); }
   .headrule .doorrule { margin-top: var(--s1); }
   .pf.waiting { color: var(--muted); }
 
@@ -1553,9 +1556,17 @@
       : d.by === 'members' ? PAGE_COPY.departed.lineMembers(who, dayOf(d.t))
       : PAGE_COPY.departed.lineFounder(who, dayOf(d.t));
   };
-  // newest first, whole — v1 rosters are 5–10, so no cap
-  const departureLines = () => departuresOf().slice().reverse()
-    .map((d) => '<p class="setnote departure">' + departureLine(d) + '</p>').join('');
+  // **Who has left is a list of people, under *Alumni*** (Q1557 (e), Ed
+  // 2026-09-26), where it was one grey sentence per departure at the foot of
+  // *Members*: a row per former member, face and name like any member row,
+  // and the day they left in a pill — **the date only**, the same whether
+  // they left, the membership removed them or the Founder did (Ed chose the
+  // date over saying how; the 🥾 news card still says how, `departureLine`).
+  // Newest first, whole — v1 rosters are 5–10, so no cap.
+  const alumniRows = () => departuresOf().slice().reverse()
+    .map((d) => '<div class="memrow">' +
+      avHtml({ n: d.erased ? '' : (d.name || d.email || ''), pic: d.erased ? null : d.picture, erased: !!d.erased }) +
+      '<span class="mn">' + esc(departedName(d)) + tagChip(dayOf(d.t)) + '</span></div>').join('');
   // **the standard proposal rate**, one literal (Q740, Ed 2026-08-23). The
   // founding pre-answers nothing (F6), and this is not a pre-answer: the card
   // still opens with three empty boxes, and these numbers are what the machine
@@ -3076,8 +3087,9 @@
       hide: () => S.viewer === 'applicant', changeable: true,
       ready: () => S.emailVerified || (!S.emailSent && EMAIL_OK.test(S.myemail)) },
     // 🌂 (Q1400, Ed 2026-09-16: *the leave button should be on a card in the
-    // profile stack*): a door on your own row, never a task — nothing asks
-    // you to leave — so it stands in the row's stack and nowhere in the rail;
+    // profile stack*): a door, never a task — nothing asks you to leave — so
+    // it stands in a pile and nowhere in the rail; since Q1557 (e) (Ed,
+    // 2026-09-26) the pile is the *Alumni* heading's, not your own row's;
     // one label in every state; its body is the warning and its ✓ resigns.
     // Post-🍾 only: before the start the founder's way out is the 🎩 untick.
     { k: 'leave', g: '🌂', t: PAGE_COPY.cards.leave.t, kind: 'personal', own: 'you', leaveDoor: true,
@@ -3337,7 +3349,8 @@
   // (the door piles filter by `visible` themselves, through `memSub`)
   const pwTabsFor = (k) => ['u', 'a'].map((p) => card('pw:' + p + ':' + k))
     .filter((c) => c && (visible(c) || S.open === c.k));
-  // **The admit judgment stands under *Applicants*** (entry 96, Ed 2026-08-26:
+  // **The admit judgment stands under *Applications for Membership*** (entry
+  // 96, Ed 2026-08-26, the heading since Q1557:
   // *a door stands by its result*). One card per person still asking, wearing
   // 🪪 because an admission is what it decides, and taking the form 🪪's price
   // gives it: a race at `proposal`, a 🏛️ question at `assembly`, and none at
@@ -4714,8 +4727,9 @@
   // line, so their ✋🖼️📧 stack joins the grants' pile on it. The open-card
   // path comes free — that paragraph already routes an open pile card through
   // `paraWith` — and so does the rail anchor, `hostParaOf` reading `data-chip`.
-  // …and 🌂 last, the way out at the end of the stack (Q1400)
-  const myIdCards = () => ['myname', 'mypic', 'myemail', 'leave'].map(card).filter((c) => c && visible(c));
+  // 🌂 rode last in this stack from Q1400 until Q1557 (e), Ed 2026-09-26: the
+  // way out is the *Alumni* heading's act now, beside the people who took it
+  const myIdCards = () => ['myname', 'mypic', 'myemail'].map(card).filter((c) => c && visible(c));
   const idOnFounded = () => (cs && amFounder() && !viewerIsMember() ? myIdCards() : []);
   // One question card per delegable setting, born when its setting is handed
   // over and gone if it is taken back. Same glyph, same title — it is the
@@ -4838,13 +4852,19 @@
         // there is nothing in their inbox at all. The line and the 📨 beside
         // it are the founder's, E34 naming *the founder's ✉️ row*; everybody
         // else is told once, by the 📭 card, and can do nothing about it.
-        const gaveUpRow = (p) => !p.in && !!p.mailGaveUp && amFounder();
-        const memRow = (p) => '<div class="memrow">' + avHtml(p) +
+        // **A tag says only what its heading does not** (Q1557 (c), Ed
+        // 2026-09-26): *invited* — or, on the Founder's page, *email failed*
+        // in its place (`inviteChip`) — on an invitation sent and not yet
+        // followed, which stands under *Members*; *lapsed* only where the
+        // heading is *Proposed for removal*, never under its own *Lapsed*;
+        // nothing on a row under *Applications for Membership*, whose heading
+        // says it all. `lapsedTag` is the caller's: only it knows the heading.
+        const gaveUpRow = (p) => !p.in && !p.pending && !!p.mailGaveUp && amFounder();
+        const memRow = (p, lapsedTag) => '<div class="memrow">' + avHtml(p) +
           '<span class="mn">' + esc(p.n || (!p.in && p.e) || 'Anonymous') +
           (p.founder ? ' ' + founderMark() : '') +
-          (p.lapsed && p.in ? ' <span class="chip pending">lapsed</span>' : '') +
-          (gaveUpRow(p) ? ' <span class="chip pending">that did not send</span>' : '') +
-          pendingChip(p) +
+          (lapsedTag && p.lapsed && p.in ? tagChip(PAGE_COPY.memTags.lapsed) : '') +
+          inviteChip(p) +
           '</span>' +
           // outside `.mn`: the name is text and this is a control
           (gaveUpRow(p) ? '<button class="btn small" data-act="resend-invite" data-member="' +
@@ -4870,8 +4890,12 @@
         // stall, not a departure, and they abstain rather than leave.
         const lapsedOut = others.filter((p) => p.in && p.lapsed && !pendingOut.has(p.mid));
         const here = others.filter((p) => p.in && !p.lapsed && !pendingOut.has(p.mid));
-        // …and the invitations still being decided, marked *proposed* (Q1370)
-        const invited = others.filter((p) => !p.in).concat(invitePendingRows());
+        // **An invitation sent is a row under *Members*, tagged *invited***
+        // (Q1557 (a)): the email went out and they have not followed it. A
+        // proposal to invite still being voted on sent nothing, and the person
+        // does not know — it is an application, under its own heading (b)
+        const invited = others.filter((p) => !p.in);
+        const applying = invitePendingRows();
         // **Leaving is free** (entry 94): a member's own row carries the one
         // act nobody may refuse — and the founder's membership is ordinary
         // membership (§9.6a, entry 248), so their row carries it too. Before
@@ -4898,15 +4922,16 @@
           : '<div class="memrow meRow">' + (my.length ? h.pile(my) : '') + avHtml(me()) +
             '<span class="mn">' + esc(S.myname || 'Anonymous') +
             (S.roster[meIdx].founder ? ' ' + founderMark() : '') +
-            ' <span class="chip">you</span>' + leaveBtn + '</span></div>';
+            ' <span class="chip">' + esc(PAGE_COPY.memTags.you) + '</span>' + leaveBtn + '</span></div>';
         // a stranger reads the register as the door serves it, under *Members*
         // alone — the per-subsection counts entry 95 asks for are unbuilt, and
         // tangled with Q508's own question about what a door may show at all
         const strangerRows = strMemberList() ||
           '<div class="memlist"><div class="memrow nobody">' + strMembersLine() + '</div></div>';
         // **A heading for a status the document cannot produce would be a rule
-        // stated as furniture** (entry 95): *Applicants* stands only where 🤝
-        // allows applications, *Lapsed* only where 💤 lapses.
+        // stated as furniture** (entry 95): *Lapsed* stands only where 💤
+        // lapses. *Applications for Membership* carries ✉️, so it stands
+        // wherever the door does, applications or not (Q1557).
         const lapsesOn = () => { const v = takenValOf('lapse');
           return v ? v.afterMs !== null : !!S.lapse && S.lapse !== 'never'; };
         // **The ones that carry a control stand when empty** (entry 95) — a
@@ -4966,22 +4991,39 @@
         // founding follows the document, so 🎩 *are you a member* and your own
         // name and picture still come before you invite anybody, which is the
         // order somebody actually does it in.
+        // **Alumni, under *Proposed for removal*** (Q1557 (e), Ed 2026-09-26):
+        // everybody who has left, newest first, each with the day in a pill.
+        // It carries 🌂 — the way out, beside the people who took it — so,
+        // like the other subsections that carry a control, it stands when
+        // empty wherever 🌂 is yours to press, with *(nobody has left)*;
+        // where it is not (before 🍾, a clerk, a stranger, the closed page) it
+        // stands on its rows alone, as *Lapsed* does. 🥾's departure news
+        // stands in its pile: the person it is about is listed here, and the
+        // card replaces the paragraph they stand in (Q901's reason, moved).
+        const leaveOn = !isStranger() && visible(card('leave'));
+        const alumni = alumniRows();
+        const alumniSub = alumni || leaveOn
+          ? memSub(PAGE_COPY.memHeads.alumni,
+            alumni || '<div class="memrow nobody">' + esc(PAGE_COPY.memEmpty.alumni) + '</div>',
+            isStranger() ? [] : ['leave'].concat(departureKeys()))
+          : '';
         // **🪪 leads** (Ed, 2026-08-26, entry 94): what admission costs comes
         // before whether strangers may apply, since an application pays it
         return (visible(card('admission')) ? h.para(card('admission')) + h.tasks(card('admission')) : '') +
           (visible(card('applications')) ? h.para(card('applications')) + h.tasks(card('applications')) : '') +
           (visible(card('lapse')) ? h.para(card('lapse')) + h.tasks(card('lapse')) : '') +
           (visible(card('removal')) ? h.para(card('removal')) + h.tasks(card('removal')) : '') +
-          // **A door stands by its result** (entry 96, Ed 2026-08-26): ✉️ on
-          // *Invitees*, ❌ on *Proposed for removal*, the admit judgment on
-          // *Applicants* — each still wearing its own ✒️/🛡️ pair, and each a
+          // **A door stands by its result** (entry 96, Ed 2026-08-26): ✉️ and
+          // the admit judgments on *Applications for Membership* (Q1557),
+          // where every vote on letting somebody in is listed, ❌ on *Proposed
+          // for removal* — each still wearing its own ✒️/🛡️ pair, and each a
           // pile rather than a button in a row. 🎩 stays on *Members*, being
           // about the founder's own place in it. The stranger reads the
-          // register as the door serves it, under *Members* alone.
-          // **The register tells the room who left** (Q901, E31–E32): one grey
-          // sentence per departure after the rows — document text, so it
-          // reads on the closed page and in the record, and the stranger
-          // reads it where 🌍 lets them read *Members*
+          // register as the door serves it, under *Members* and *Alumni*.
+          // **The register tells the room who left** (Q901, E31–E32), under
+          // *Alumni* since Q1557 (e) — document text, so it reads on the
+          // closed page and in the record, and the stranger reads it where 🌍
+          // lets them read *Members*
           // **And a subsection that stands empty says so** (entry 183, Ed's QA
           // of batch Q). The three that carry a control stand whether or not
           // they have rows (F21), so empty each was a heading over a pile and
@@ -4993,29 +5035,33 @@
           // branch — a per-title default inside a layout function would be a
           // table of words hidden where nobody reads copy.
           (isStranger()
-            ? memSub('Members', strangerRows + departureLines(), [], true)
-            // 🥾's departure news stands on the *Members* heading beside 🎩
-            // (Q901): the sentence it opens is the register line under these
-            // very rows, and the card replaces the paragraph they stand in
-            : memSub('Members', nobody + here.map(memRow).join('') + meBlock + departureLines(),
-                ['hat'].concat(departureKeys()), false, !!openId) +
-              memSub('Invitees', invited.length ? invited.map(memRow).join('')
-                : '<div class="memrow nobody">(no outstanding invitations)</div>',
-                // 📭 stands on the *Invitees* heading (E34): the give-up is
-                // about somebody listed here, and this is where a reader looks
-                // …and a running invitation motion is its own tab in this pile
-                // (Q1367: one motion, one card — `motionCardsFor`, as `chipsFor`
-                // does for a setting; this pile is listed by hand, so it lists them too)
-                ['invite', 'pw:u:invite', 'pw:a:invite'].concat(mailGiveUpKeys())
-                  .concat(motionCardsFor(card('invite')).map((c) => c.k))) +
-              (policyNow() === 'apply'
-                ? memSub('Applicants', memApplicantRows() ||
-                  '<div class="memrow nobody">(no applicants at the moment)</div>', admitKeys()) : '') +
+            ? memSub(PAGE_COPY.memHeads.members, strangerRows, [], true)
+            // The invitations sent stand after the arrived rows and before
+            // your own (Q1557 (a)), and 📭 beside 🎩 (E34): the give-up is
+            // about somebody listed here, and this is where a reader looks
+            : memSub(PAGE_COPY.memHeads.members, nobody + here.map((p) => memRow(p)).join('') +
+                invited.map((p) => memRow(p)).join('') + meBlock,
+                ['hat'].concat(mailGiveUpKeys()), false, !!openId) +
+              // **Every vote on letting somebody in, one heading** (Q1557 (b)):
+              // a member's proposal to invite, by its address, then a
+              // stranger's own application. ✉️ heads it — its result in the
+              // making is here — and a running invitation motion is its own
+              // tab in this pile (Q1367: one motion, one card — `motionCardsFor`,
+              // as `chipsFor` does for a setting; this pile is listed by hand,
+              // so it lists them too), the admit cards behind
+              memSub(PAGE_COPY.memHeads.applications,
+                (applying.map((p) => memRow(p)).join('') + (memApplicantRows() || '')) ||
+                  '<div class="memrow nobody">' + esc(PAGE_COPY.memEmpty.applications) + '</div>',
+                ['invite', 'pw:u:invite', 'pw:a:invite']
+                  .concat(motionCardsFor(card('invite')).map((c) => c.k), admitKeys())) +
               (lapsesOn() && lapsedOut.length
-                ? memSub('Lapsed', lapsedOut.map(memRow).join(''), []) : '') +
-              memSub('Proposed for removal', proposedOut.length ? proposedOut.map(memRow).join('')
-                : '<div class="memrow nobody">(nobody proposed for removal)</div>',
-                ['remove', 'pw:u:remove', 'pw:a:remove'].concat(motionCardsFor(card('remove')).map((c) => c.k))));
+                ? memSub(PAGE_COPY.memHeads.lapsed, lapsedOut.map((p) => memRow(p)).join(''), []) : '') +
+              // the one heading a *lapsed* tag says something under (Q1557 (c))
+              memSub(PAGE_COPY.memHeads.removal, proposedOut.length
+                ? proposedOut.map((p) => memRow(p, true)).join('')
+                : '<div class="memrow nobody">' + esc(PAGE_COPY.memEmpty.removal) + '</div>',
+                ['remove', 'pw:u:remove', 'pw:a:remove'].concat(motionCardsFor(card('remove')).map((c) => c.k)))) +
+          alumniSub;
       } },
     // **Proposals reads second** (Q871, Q872, Ed 2026-08-26: *Proposals above
     // Decisions* — reversing *Proposals reads fourth*, Ed 2026-08-21). That
@@ -5577,28 +5623,40 @@
   // **A member-pile card heads with its people** (CP6, Q1101, 2026-08-31):
   // the pile's avatar-and-name list is the card's standing text — the status
   // quo the act is about — so opening ❌ never hides the people it acts on.
-  // ✉️ heads with the invitees, ❌ with the proposed-for-removal; the price
-  // sentence stands beneath the list, in the same head.
+  // ✉️ heads with the same two groups the Membership section lists, the same
+  // way (Q1557): the invitations sent, each tagged *invited* (or *email
+  // failed*, the Founder's), then under the words *Applications for
+  // Membership* every vote still running on letting somebody in — a member's
+  // proposal to invite, then a stranger's own application, untagged. ❌ heads
+  // with the proposed-for-removal; the price sentence stands beneath the
+  // list, in the same head.
   // a motion card on a door (`mo:…`, Q1367) heads with its host door's people
   const doorPeople = (c) => {
-    const rows = hostKeyOf(c) === 'invite'
-      ? S.roster.filter((p) => !p.in).concat(invitePendingRows())
+    const invite = hostKeyOf(c) === 'invite';
+    const hp = (p) => '<span class="hp">' + avHtml(p) + ' ' +
+      esc(p.n || p.e || 'Anonymous') + inviteChip(p) + '</span>';
+    const rows = invite
+      ? S.roster.filter((p) => !p.in)
       : (cs ? S.roster.filter((p) => removalPendingIds().has(p.mid || 'founder')) : []);
-    const empty = hostKeyOf(c) === 'invite' ? PAGE_COPY.doorEmpty.invite : PAGE_COPY.doorEmpty.remove;
-    return '<div class="headpeople">' + (rows.length
-      ? rows.map((p) => '<span class="hp">' + avHtml(p) + ' ' +
-          esc(p.n || p.e || 'Anonymous') + pendingChip(p) + '</span>').join('')
+    const applying = invite ? invitePendingRows().concat(applicantsAsking().map((ap) =>
+      ({ n: ap.name || '', e: ap.email || '', pic: ap.picture, in: false, pending: true }))) : [];
+    const empty = invite ? PAGE_COPY.doorEmpty.invite : PAGE_COPY.doorEmpty.remove;
+    return '<div class="headpeople">' + (rows.length || applying.length
+      ? rows.map(hp).join('') + (applying.length
+        ? '<span class="hplab">' + esc(PAGE_COPY.memHeads.applications) + '</span>' +
+          applying.map(hp).join('') : '')
       : '<span class="hpnone">' + empty + '</span>') + '</div>';
   };
-  // **An invitation proposed and not yet decided is a line under *Invitees***
-  // (Q1370, Ed 2026-09-15: the mover's press *acknowledged nothing — no line
-  // under Invitees, the card still reading Nobody has been invited yet*). A
-  // door stands by its result, and a motion in flight is a result in the
-  // making: one row per running invite motion, built off the record since
-  // the person is on no roster until it carries, wearing *proposed* the way
-  // a lapsed row wears *lapsed*. It stands in ✉️'s head and in the
-  // subsection alike, so the *Nobody has been invited yet* sentence counts
-  // it — that sentence is about the list being empty, and it is not.
+  // **An invitation proposed and not yet decided is a line under
+  // *Applications for Membership*** (Q1370, Ed 2026-09-15: the mover's press
+  // *acknowledged nothing — no line under Invitees, the card still reading
+  // Nobody has been invited yet*; the heading since Q1557). A door stands by
+  // its result, and a motion in flight is a result in the making: one row per
+  // running invite motion, built off the record since the person is on no
+  // roster until it carries, its heading saying what it is. It stands in
+  // ✉️'s head and in the subsection alike, so the *Nobody has been invited
+  // yet* sentence counts it — that sentence is about the list being empty,
+  // and it is not.
   const invitePendingRows = () => {
     if (!cs || !motionsLive()) return [];
     const out = [];
@@ -5610,8 +5668,13 @@
     }
     return out;
   };
-  const pendingChip = (p) => (p.pending
-    ? ' <span class="chip pending">' + esc(PAGE_COPY.doorPending.invite) + '</span>' : '');
+  // a name's tag (Q1557 (c)): grey, dashed, and nothing to press
+  const tagChip = (word) => ' <span class="chip pending">' + esc(word) + '</span>';
+  // an invitation sent and not yet followed: *invited*, or on the Founder's
+  // page *email failed* in its place where the mail gave up (E34) — nothing
+  // on a proposal to invite, which sent nothing and whose heading says so
+  const inviteChip = (p) => (p.in || p.pending ? ''
+    : tagChip(p.mailGaveUp && amFounder() ? PAGE_COPY.memTags.emailFailed : PAGE_COPY.memTags.invited));
   const removalPendingIds = () => {
     const ids = new Set();
     if (!cs || !motionsLive()) return ids;
@@ -5843,7 +5906,7 @@
   // kept-at-close motions file nothing — Ed's words are *passes or is
   // rejected* — and `awaiting-crown` is still live, with a card of its own.
   // The membership payloads file nothing here either: a door stands by its
-  // result (entries 94–96), which is the *Invitees* / *Applicants* /
+  // result (entries 94–96), which is the *Applications for Membership* /
   // *Proposed for removal* subsections, not the band's constitutional piles.
   const settledRecord = (rec) => !!rec && !!rec.payload &&
     (rec.status === 'carried' || rec.status === 'held') &&
@@ -6520,7 +6583,7 @@
           // list is built from, not only on the member record behind it
           lapsed: !!rec.lapsed,
           // and its own dead mail (SURFACE E34), for entry 95's reason: the
-          // *Invitees* row is built from this list, so the fact has to be on
+          // invited row under *Members* is built from this list, so the fact has to be on
           // the row and not only on the member record behind it
           mailGaveUp: !!rec.mailGaveUp,
           role: 'member', in: rec.arrivedAtT !== null, mid: mid2, ans: {}, okd: new Set() });
@@ -7692,7 +7755,7 @@
       // (Ed, 2026-09-03) — the card heads call decisionLine without it
       : breakLines(linkify(esc(decisionLine(c, true))))),
     chipsFor: (c) => {
-      // 📭 stands in the *Invitees* pile, not the Proposals one (E34): the
+      // 📭 stands in the *Members* pile (Q1557), not the Proposals one (E34): the
       // give-up is about somebody in the register, so its tab is beside the
       // subsection they are listed under — which is `admitCard`'s arrangement
       // and deliberately not `releaseCard`'s, a release belonging to no clause

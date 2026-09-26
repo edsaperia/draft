@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 682
+  "entries": 693
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -286,7 +286,6 @@
   "page.door.nobodyToRemove": "There is nobody to remove.",
   "page.doorEmpty.invite": "Nobody has been invited yet.",
   "page.doorEmpty.remove": "Nobody is proposed for removal.",
-  "page.doorPending.invite": "proposed",
   "page.founderMark.crowned": "Some of the rules are reserved: changing them needs the founder’s assent",
   "page.founderMark.none": "The Founder reserves nothing — no special part in the document",
   "page.gate.accept": "ƒ (glyph) => 'Accept ' + glyph",
@@ -324,6 +323,18 @@
   "page.lapseReturned": "ƒ (names, n) => names + (n === 1 ? ' is' : ' are') +\n      ' active again — ' + (n === 1 ? 'their membership had' : 'their memberships had') +\n      ' lapsed under the old rule.'",
   "page.lockline.founder": "Set by the founder when the document was made.",
   "page.lockline.members": "Decided by the members.",
+  "page.memEmpty.alumni": "(nobody has left)",
+  "page.memEmpty.applications": "(no applications at the moment)",
+  "page.memEmpty.removal": "(nobody proposed for removal)",
+  "page.memHeads.alumni": "Alumni",
+  "page.memHeads.applications": "Applications for Membership",
+  "page.memHeads.lapsed": "Lapsed",
+  "page.memHeads.members": "Members",
+  "page.memHeads.removal": "Proposed for removal",
+  "page.memTags.emailFailed": "email failed",
+  "page.memTags.invited": "invited",
+  "page.memTags.lapsed": "lapsed",
+  "page.memTags.you": "you",
   "page.motionRec.changedByFounder": "Changed by the Founder",
   "page.motionRec.gone": "This record is no longer on the document.",
   "page.motionRec.keptAsStood": " as it stood",
