@@ -241,9 +241,11 @@ window.CARD_STATE = (function () {
   /**
    * **`CardState`**, made once per card per render. Plain data, plus the
    * fragments only the page can draw (`src.present`), so the shell's slots
-   * read this and nothing else (S1, `state-only`).
+   * read this and nothing else (S1, `state-only`). `hints` is what only the
+   * caller knows about where the card is drawn — the band's strip, the pile
+   * the card opened from (Q1541 stage 2) — handed to `present` untouched.
    */
-  function stateOf(key) {
+  function stateOf(key, hints) {
     const src = sourceOf(key);
     const base = {
       card: src && typeof src.card === 'function' ? src.card(key) : { kind: null, id: key, anchor: null },
@@ -259,7 +261,7 @@ window.CARD_STATE = (function () {
       draft: null,
       notes: null,
     };
-    return src && typeof src.present === 'function' ? Object.assign(base, src.present(key, base) || {}) : base;
+    return src && typeof src.present === 'function' ? Object.assign(base, src.present(key, base, hints || {}) || {}) : base;
   }
 
   return { register, stateOf, readerOf, phaseOf, provenanceOf, placeOf, powersOf, actsOf, alternativesOf, outcomeOf,
