@@ -175,6 +175,14 @@ const GRAMMAR_KINDS = [
   'watching',
   'answer',
   'birth-email',
+  // stage 3b (Q1541): 🪪 🤝 🎩 are settings cards like the rest (`setting`,
+  // `watching` above); the power tabs ✒️ 🛡️ (`power`, 1541.48), and a
+  // member's settled card as the composer (`composer`, K1). The fast pass
+  // meets `power` and `composer` on `sessionband` (the Founder's power tabs,
+  // and the Founder composing on a setting the membership holds) and
+  // `closedband` (the power tabs read)
+  'power',
+  'composer',
 ];
 /**
  * **The stage the build has reached, and the stage each check turns strict
@@ -2163,6 +2171,16 @@ function glassZoneMoves(a, b, dScroll) {
  * (`max(0, room − scrollY)`); on a switch the target's first line and tab
  * stay still, less the new card's shortfall.
  */
+/**
+ * **A card whose first line is not its paragraph's line** (Q1541 stage 3b):
+ * 🎩's tab hangs on the *Members* list, which writes no sentence (SURFACE
+ * F13), so its first line is its own — *The Founder is part of the
+ * membership.* — and the list's first line, drawn beside faces, is not where
+ * a sentence's stands. Its line is read off the pressed tab, as a blank
+ * paragraph's is; the tab is held to 0 px like any other.
+ */
+const OWN_LINE = (key) => key === 'hat';
+
 function p13Rules(c, at) {
   for (const e of c.p13 || []) {
     if (e.unread) continue;
@@ -2177,7 +2195,7 @@ function p13Rules(c, at) {
       // a blank paragraph — 📧's before the mail (Q1541 stage 3a) — draws no
       // line to read; its line stands where its tab says, the open card's
       // own first line keeping the same distance from the pressed tab
-      const aLine = a.line || (a.glyph && b.glyph && b.line ? [b.line[0], r2(a.glyph[1] + b.line[1] - b.glyph[1])] : null);
+      const aLine = (!OWN_LINE(c.key) && a.line) || (a.glyph && b.glyph && b.line ? [b.line[0], r2(a.glyph[1] + b.line[1] - b.glyph[1])] : null);
       dy = aLine ? Math.max(0, r2((a.glass || 0) + room - aLine[1])) : 0;
     }
     const sub = e.sub === 'page-top' || (e.sub !== 'close' && dy > GLASS_TOL) ? 'page-top' : e.sub;
@@ -2189,7 +2207,7 @@ function p13Rules(c, at) {
         bits.push(what + ' moves ' + d[0] + ', ' + d[1] + 'px on screen' + (dy ? ' (the shortfall allows 0, ' + dy + ')' : ''));
       }
     };
-    want('the first line', a.line, b.line);
+    if (!OWN_LINE(c.key)) want('the first line', a.line, b.line);
     if (a.glyph && b.glyph) want('the pressed tab', a.glyph, b.glyph);
     // the content above: up by the room on open (less the shortfall), down by
     // it on close (less what the scroll could not give back); a switch's
@@ -2231,6 +2249,7 @@ function grammarRules(c, ref) {
       : /insert-anchor/.test(before.para) ? 'a gap heads with (no text here)'
       // (on any walk that meets the birth — the founding and answers walks both do)
       : c.key === 'title' && /titlepara/.test(String(before.para)) ? '🪶 at the birth heads with the title box'
+      : OWN_LINE(c.key) ? '🎩 heads with its own sentence — the Members list writes none (F13)'
       : null;
     if (!g.head) at('head-registration', 'no head element on the card (closed paragraph ' + before.para + ': “' + clip(before.ptext, 60) + '”)', 'missing');
     else {
@@ -2278,6 +2297,9 @@ function grammarRules(c, ref) {
   if (v && v.top && v.top.label != null && v.top.label < v.top.card - TOL) at('space-above', 'the label stands ' + r2(v.top.card - v.top.label) + 'px above the card\'s box', 'label-outside');
   for (const e of c.p13 || []) {
     if (e.sub !== 'open' || e.unread || !e.a || !e.b || !e.a.ok || !e.b.ok) continue;
+    // 🎩's first line is its own, not its list's (`OWN_LINE`): the room is
+    // held by P13's tab reading instead
+    if (OWN_LINE(c.key)) continue;
     const { a, b } = e;
     if (!a.line || !b.line || a.above == null || b.above == null) continue;
     const made = r2((b.line[1] - b.above) - (a.line[1] - a.above));
