@@ -586,9 +586,11 @@ jobs:
   # **The boot guard** (plan-scaling.md Stage 0, 2026-09-23): boot replay
   # outran Render's 15-minute health-check window once already (decision
   # 1253), and Stage 0 measured the fleet filling it at about 200 documents.
-  # It seeds ten documents in the measured mix, times their replay three
-  # times, scales the median to 60 documents at Render's estimated speed, and
-  # is red past half the window. **Reporting, not yet a gate**: nothing waits
+  # It unpacks ten documents in the measured mix — one fixed set, committed
+  # since Q1554 (Ed, 2026-09-26: a fresh seeding differs run to run, so a
+  # before/after pair timed two sets) — times their replay three times,
+  # scales the median to 60 documents at Render's estimated speed, and is
+  # red past half the window. **Reporting, not yet a gate**: nothing waits
   # on it until one runner reading has been seen — Stage 0's note says a
   # reading near the line means the runner is slower than assumed and FLEET
   # wants revisiting — and making it hold the deploy is then one `needs:`.
