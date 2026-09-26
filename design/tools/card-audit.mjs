@@ -871,8 +871,11 @@ const IN_PAGE = () => {
     let el = card.closest('.cpara.open') || card;
     for (let i = 0; i < 6 && el; i++) {
       let prev = el.previousElementSibling;
+      // a held-open gap is no ink — a wash and a tab (Q1334) — so the ink
+      // above a card is read past it, whether the gap stands beside the
+      // card's anchor or inside the column the card splits (Q1541 stage 6)
       while (prev && (!prev.getBoundingClientRect().height || getComputedStyle(prev).display === 'none' ||
-        prev.matches('.chipcol, script, style, [hidden]'))) prev = prev.previousElementSibling;
+        prev.matches('.chipcol, script, style, [hidden], .insert-anchor'))) prev = prev.previousElementSibling;
       if (prev) {
         const w = document.createTreeWalker(prev, NodeFilter.SHOW_TEXT);
         let last = null;
@@ -1240,8 +1243,11 @@ const IN_PAGE = () => {
     let el = start;
     for (let i = 0; i < 6 && el; i++) {
       let prev = el.previousElementSibling;
+      // a held-open gap is no ink — a wash and a tab (Q1334) — so the ink
+      // above a card is read past it, whether the gap stands beside the
+      // card's anchor or inside the column the card splits (Q1541 stage 6)
       while (prev && (!prev.getBoundingClientRect().height || getComputedStyle(prev).display === 'none' ||
-        prev.matches('.chipcol, script, style, [hidden]'))) prev = prev.previousElementSibling;
+        prev.matches('.chipcol, script, style, [hidden], .insert-anchor'))) prev = prev.previousElementSibling;
       if (prev) {
         const w = document.createTreeWalker(prev, NodeFilter.SHOW_TEXT);
         let last = null;
@@ -2146,7 +2152,11 @@ function p13Rules(c, at) {
       dy = -Math.max(0, room - (a.scrollY || 0));
     } else {
       room = b.room || 0;
-      dy = a.line ? Math.max(0, r2((a.glass || 0) + room - a.line[1])) : 0;
+      // a blank paragraph — 📧's before the mail (Q1541 stage 3a) — draws no
+      // line to read; its line stands where its tab says, the open card's
+      // own first line keeping the same distance from the pressed tab
+      const aLine = a.line || (a.glyph && b.glyph && b.line ? [b.line[0], r2(a.glyph[1] + b.line[1] - b.glyph[1])] : null);
+      dy = aLine ? Math.max(0, r2((a.glass || 0) + room - aLine[1])) : 0;
     }
     const sub = e.sub === 'page-top' || (e.sub !== 'close' && dy > GLASS_TOL) ? 'page-top' : e.sub;
     const bits = [];
@@ -2199,11 +2209,18 @@ function grammarRules(c, ref) {
       : /insert-anchor/.test(before.para) ? 'a gap heads with (no text here)'
       : c.key === 'title' && c.walk === 'founding' ? '🪶 at the birth heads with the title box'
       : null;
+    // **a run heads with the whole run** (Q1487, Q1308): a card on several
+    // adjacent clauses replaces them all, so its head is their words in
+    // order, and the closed paragraph — the run's first — is its first line
+    // word for word (principle 1); the rest follow it (Q1541 stage 6)
+    const runOf = (h, p) => { const a = String(h || '').replace(/️/g, '').replace(/\s+/g, ' ').trim();
+      const b = String(p || '').replace(/️/g, '').replace(/\s+/g, ' ').trim();
+      return !!b && a.length > b.length && a.startsWith(b); };
     if (!g.head) at('head-registration', 'no head element on the card (closed paragraph ' + before.para + ': “' + clip(before.ptext, 60) + '”)', 'missing');
     else {
       const norm = (s) => String(s || '').replace(/️/g, '').replace(/\s+/g, ' ').trim();
       const trimPow = (s) => norm(s).replace(/\s*(From the start, )?The Founder( \(that’s you!\))? may[^.]*\.(\s*From the start, the Founder may not[^.]*\.)?\s*$/, '').trim();
-      if (norm(g.head.text) !== norm(before.ptext) && norm(g.head.text) !== trimPow(before.ptext)) {
+      if (norm(g.head.text) !== norm(before.ptext) && norm(g.head.text) !== trimPow(before.ptext) && !runOf(g.head.text, before.ptext)) {
         const power = /^pw:/.test(c.key);
         at('head-registration', 'text: paragraph “' + clip(norm(before.ptext), 70) + '” · head (' + g.head.sel + ') “' + clip(norm(g.head.text), 70) + '”', 'text',
           why ? { excepted: why } : power ? { excepted: 'a power card heads with its own clause (1541.48)' } : null);

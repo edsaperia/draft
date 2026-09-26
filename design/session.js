@@ -2413,8 +2413,9 @@
   // wording, a park, a shifted ground — are its body; a refusal is the row's
   // note (grammar §2.6). The closed page's cards stay on today's builders
   // until stage 7.
-  const judgeKinds = (s) => !!s && !docClosed && stateOf(s) !== 'sealed' && !stuck(s) &&
-    (s.kind === 'quick' || s.kind === 'race');
+  const judgeKinds = (s) => !!s && !docClosed && stateOf(s) !== 'sealed' &&
+    (stuck(s) || s.kind === 'quick' || s.kind === 'race' || s.kind === 'patch' ||
+      (s.kind === 'draft' && !s.unproposed));
   const whoLabel = (by, mine) => {
     const W = window.COPY.shell;
     if (mine) return W.proposedByYou;
@@ -2424,17 +2425,141 @@
   const refusalNote = (s) => (refusedSay.has(s.id)
     ? '<div class="foot refusal" role="alert">' + esc(refusedSay.get(s.id)) + '</div>' : null);
   const bodyOf = (html) => (html ? { html } : null);
+  // **the wording a shifted vote was about is the previous text** (answers
+  // Part 4 .11): the ground changed under the vote, so what it was cast on
+  // is what the change replaced — labelled on its first line in the one
+  // drawing, the card's own sentence (`reviseNote`) saying why it is there
+  const shiftedGround = (s) => (!s.shifted || !s.wasGround ? ''
+    : '<div class="replaced"><span class="glab">' + esc(window.COPY.shell.previousText) + '</span>' +
+      '<div class="rtext">' + esc(s.wasGround) + '</div></div>');
   // the rank of the heading a key names, or nothing where it is a clause
   const headRank = (key) => {
     const line = key && DOC ? DOC.find((l) => l.key === key) : null;
     return line && line.t === 'h' ? (line.level ?? 1) : 0;
   };
+  /**
+   * **The deadlock** (Q1541 stage 6): *Current text* above the run (answers
+   * Part 4 .6 — *still standing* goes), every wording in flight a block
+   * labelled on its first line, each with ✏️ *propose edit* and no radio,
+   * since nothing here votes; then the desk, its reason box always shown
+   * (1541.21 (b)), as the card's input; the row 🗑️ · ✒️? ✏️, the bin dark
+   * until a draft starts (1541.9) and the commits dark until there is
+   * something to propose.
+   */
+  const deskOf = (s) => {
+    const key = (s.keys ?? [])[0];
+    const d = draftOf();
+    return { key, d, site: d && siteFor(d, key) };
+  };
+  function deskActs(s) {
+    if (!MAY_PROPOSE()) return [];
+    const { site } = deskOf(s);
+    const broke = editsHeld < EDIT_RULES.stake;
+    const out = [{ kind: 'bin', act: 'draft-cancel', until: site ? null : 'nothing-yours', title: T.row.discardThis }];
+    if (MAY_PEN()) {
+      out.push({ kind: 'commit', act: 'draft-propose', until: site ? null : 'type',
+        html: '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose" data-pen="1"' +
+          (site ? '' : ' disabled data-until="type"') + ' title="' + esc(T.row.amend + T.row.penCost) + '">' + glyphHtml('✒️') + '</button>' });
+    }
+    const until = !site ? 'type' : broke ? 'drip' : null;
+    out.push({ kind: 'commit', act: 'draft-propose', until,
+      html: '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose"' +
+        (until ? ' disabled data-until="' + until + '"' : '') + ' title="' + esc(T.row.holdPropose + T.row.editCost) + '">' + glyphHtml('✏️') + '</button>' });
+    return out;
+  }
+  function deadPresent(s, st, key, frame) {
+    const W = window.COPY.shell;
+    const cur = runTextFor(s, key);
+    const { d, site } = deskOf(s);
+    const field = fieldOf(s);
+    return {
+      kind: 'deadlock',
+      frame: { cls: 'sugg dead-open', attrs: ' data-card="' + esc(s.id) + '"' + (key ? ' data-site="' + esc(key) + '"' : '') },
+      label: { text: W.currentText },
+      // the head is the whole run (Q1308, Q1487)
+      head: { html: clauseHeadHtml(s, { text: cur, key, chips: chipsFor(key, s.id), label: null, fact: 'place', onHead: headRank(key) }) },
+      options: { html: field.map((c, i) =>
+        '<div class="propblock"><span class="glab">' + esc(whoLabel(c.by, c.mine)) + '</span>' +
+        '<div class="rtext">' + wordingHtml(cur, c.text, true) + '</div>' +
+        (c.why ? speakerHtml(c.why, undefined, c.by || undefined) : '') +
+        (MAY_PROPOSE() ? '<div class="lanebar solo">' + laneProposeHtml(s, 'slate:' + i, key) + '</div>' : '') +
+        '</div>').join('') },
+      // **the desk is an offer, so it goes rather than greys** (Ed,
+      // 2026-08-21): a reader who may not yet propose keeps the reading room
+      input: MAY_PROPOSE() ? { html: '<div class="field bridgedesk"><div class="fieldlab">' + glyphify(T.dead.deskLab) + '</div>' +
+        '<div class="propblock">' + laneBoxHtml(d, site, site ? null : key) + '</div></div>' } : null,
+    };
+  }
+  /**
+   * **A proposal of yours, and the one the text moved under** (Q1541 stage
+   * 6): *Current text* above the clause it rewrites (*· 2 of 3* with ↑ ↓
+   * where it has several places, Part 4 .7), your wording labelled *Proposed
+   * by you* on its first line (.9); the withdraw the bare 🗑️ (1541.9 (b)).
+   * Stranded, a sentence says what happened and ✏️ re-makes it here. Once the
+   * membership has passed it and it waits on the Founder, nothing is left
+   * for you to do, so there is no row (principle 5: the bin can never have a
+   * job there again) and the rail's line says what it waits on.
+   */
+  function ownActs(s) {
+    if (s.awaiting) return [];
+    const n = s.sites.length;
+    const out = [{ kind: 'withdraw', act: 'draft-withdraw',
+      title: T.row.withdraw + (n > 1 ? T.row.allPlaces(n) : '') + T.row.withdrawCost }];
+    if (s.stranded) out.push({ kind: 'commit', act: 'draft-remake',
+      html: '<button class="btn btn-propose glyphbtn" data-act="draft-remake" title="' + esc(T.stranded.remake) + '">' + glyphHtml('✏️') + '</button>' });
+    return out;
+  }
+  function ownPresent(s, st, hints, kind) {
+    const W = window.COPY.shell;
+    const site = (hints && hints.siteKey && siteFor(s, hints.siteKey)) || s.sites[0];
+    const p = ownParts(s, site);
+    return {
+      kind,
+      frame: { cls: 'sugg minecard' + (kind === 'stranded' ? ' strandedcard' : ''), attrs: ' data-card="' + esc(s.id) + '" data-site="' + esc(p.key) + '"' },
+      label: { text: W.currentText + (p.n > 1 ? W.sep + T.nav.ofPlaces(p.i + 1, p.n) : ''), steps: p.steps || null },
+      head: { html: p.head({ label: null, fact: 'place', onHead: headRank(p.key) }) },
+      body: kind === 'stranded' ? { html: '<p class="setnote">' + esc(T.stranded.note) + '</p>' } : null,
+      options: { html: p.block },
+    };
+  }
+
   function judgePresent(s, st, hints) {
     const W = window.COPY.shell;
     const key = (hints && hints.siteKey) || (s.keys ?? [])[0];
-    const frame = (cls) => ({ cls: 'sugg ' + cls,
+    const rank = headRank(key);
+    const frame = (cls) => ({ cls: 'sugg ' + cls + (rank ? ' onhead lvl' + rank : ''),
       attrs: ' data-card="' + esc(s.id) + '" data-site="' + esc(key || '') + '"' + laneGroupAttrs(s, key) });
-    const kind = isJudged(s) ? 'judged' : s.isInsert ? 'insert' : s.kind;
+    const kind = stuck(s) ? 'deadlock' : s.kind === 'draft' ? (s.stranded ? 'stranded' : 'mine')
+      : s.kind === 'patch' ? 'patch' : isJudged(s) ? 'judged' : s.isInsert ? 'insert' : s.kind;
+    if (kind === 'deadlock') return deadPresent(s, st, key, frame);
+    if (kind === 'mine' || kind === 'stranded') return ownPresent(s, st, hints, kind);
+    if (kind === 'patch') {
+      // **one judgment for every place** (Ed, 181): a card at each place the
+      // patch touches, each showing only that clause, every card reading the
+      // same pick — *Current text · 2 of 3* above it with ↑ ↓ (answers Part 4
+      // .7); the clause is one of the two things judged, so its head picks;
+      // the ✓ floats at the foot of the window (Q1382), so the card's own row
+      // is absent and Indifferent is its last block
+      const n = s.sites.length;
+      const i = Math.max(0, s.sites.findIndex((x) => x.key === key));
+      const site = s.sites[i];
+      const step = (to, label, glyph) => (to === null
+        ? '<span class="pstep off">' + glyph + '</span>'
+        : '<button class="pstep" data-step="' + s.id + ':' + s.sites[to].key + '" title="' + esc(label) + '">' + glyph + '</button>');
+      return {
+        kind,
+        frame: { cls: 'sugg patch-open', attrs: ' data-card="' + esc(s.id) + '" data-site="' + esc(site.key) + '"' + laneGroupAttrs(s, site.key) },
+        label: { text: W.currentText + W.sep + T.nav.ofPlaces(i + 1, n),
+          steps: '<span class="psteps">' + step(i > 0 ? i - 1 : null, T.nav.prev, '↑') +
+            step(i < n - 1 ? i + 1 : null, T.nav.next, '↓') + '</span>' },
+        head: { html: clauseHeadHtml(s, { text: sourceTextFor(site.key), key: site.key, v: 'keep',
+          chips: chipsFor(site.key, s.id), label: null, fact: 'place', onHead: headRank(site.key) }) },
+        body: bodyOf(reviseNote(s) + '<div class="foot">' + T.patch.foot(n) + '</div>'),
+        options: { html: proposalHtml(s, { v: 'approve', html: laneHtml(site.marked), why: s.rationale, by: s.by, key: site.key,
+          label: whoLabel(s.by, false), labelFact: s.by ? 'author' : null }) + vinBlockHtml(s) },
+        rowNote: refusalNote(s),
+      };
+    }
     if (s.kind === 'race') {
       const cur = runTextFor(s, key);    // the run's text, as the head reads it (Q1308)
       return {
@@ -2444,7 +2569,7 @@
         // this pair is two challengers, so the clause carries no lane: a
         // judgment is of two candidates (Q1362 (a))
         head: { html: clauseHeadHtml(s, Object.assign(headOpts(s, key), { chips: chipsFor(key, s.id), label: null, fact: 'place',
-          onHead: headRank(key) })) },
+          onHead: rank })) },
         body: bodyOf(reviseNote(s) + parkNote(s) + '<div class="foot">' + T.race.foot + '</div>'),
         options: { html:
           proposalHtml(s, { v: 'a', html: wordingHtml(cur, s.race.a.text), why: s.race.a.rationale, by: s.race.a.by,
@@ -2468,8 +2593,8 @@
       frame: frame('quick-open'),
       label: { text: W.currentText },
       head: { html: clauseHeadHtml(s, Object.assign(headOpts(s, key), { v: 'keep', edit: noEdit,
-        chips: chipsFor(key, s.id), label: null, fact: 'place', onHead: headRank(key) })) },
-      body: bodyOf(groundNote(s) + reviseNote(s) + parkNote(s)),
+        chips: chipsFor(key, s.id), label: null, fact: 'place', onHead: rank })) },
+      body: bodyOf(shiftedGround(s) + reviseNote(s) + parkNote(s)),
       options: { html: proposalHtml(s, { v: 'approve', html: prop, why: s.rationale, by: s.by, edit: noEdit,
         label: whoLabel(s.by, false), labelFact: s.by ? 'author' : null }) + vinBlockHtml(s) },
       rowNote: refusalNote(s),
@@ -2500,7 +2625,12 @@
     // what this reader may send from a judgment card: the ✓, and ❄️ on 🔥
     acts: (id) => {
       const s = SUGGS.find((g) => g.id === id);
-      return judgeKinds(s) ? judgeActs(s) : [];
+      if (!judgeKinds(s)) return [];
+      // the patch's ✓ floats at the foot of the window (Q1382)
+      if (s.kind === 'patch') return [];
+      if (stuck(s)) return deskActs(s);
+      if (s.kind === 'draft') return ownActs(s);
+      return judgeActs(s);
     },
     // the fragments a shell record needs, drawn by this column's own renderers
     present: (id, st, hints) => {
@@ -2918,7 +3048,7 @@
     startDraft, startDraftFromTyping, startDraftFromRun,
     laneRemark, syncEditCtl, markSelection,
     commitBtnHtml, proposalRowHtml, proposeCtlTitles, draftRowState, setDraftSigned,
-    editCardHtml, mineCardHtml, strandedCardHtml } = COMPOSER;
+    editCardHtml, mineCardHtml, strandedCardHtml, ownParts } = COMPOSER;
   let mineSeq = 0;                      // proposing frees the composer for the next draft
 
   /* **A proposal closes its card and says one sentence** (Q1485 (A), Ed
@@ -3271,6 +3401,8 @@
     ? '<p class="setnote">' + glyphify(esc(s.blockedByPark)) + '</p>' : '');
   function suggCardHtml(s, siteKey) {
     if (stateOf(s) === 'sealed') return s.fold ? foldCardHtml(s) : sealedCardHtml(s, foldOf(s));
+    // on the one shell since Q1541 stage 6 (`judgePresent`, above the source)
+    if (judgeKinds(s)) return window.CARD_SHELL.cardHtml(window.CARD_STATE.stateOf(s.id, { siteKey }));
     if (stuck(s)) return deadlockCardHtml(s);
     if (s.kind === 'draft') {
       const site = (siteKey && siteFor(s, siteKey)) || s.sites[0];
@@ -3395,8 +3527,6 @@
     // Q1367): the two judgment cards below draw the item's own pair and
     // nothing of any other pair on the race — the other pairs are their own
     // tabs in the clause's stack.
-    // on the one shell since Q1541 stage 6 (`judgePresent`, above the source)
-    if (judgeKinds(s)) return window.CARD_SHELL.cardHtml(window.CARD_STATE.stateOf(s.id, { siteKey }));
     const sv = s;
     if (sv.kind === 'race') {
       // The clause, which this card had never shown (Ed, QA 2026-08-16) — a

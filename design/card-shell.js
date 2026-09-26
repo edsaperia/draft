@@ -72,8 +72,11 @@ window.CARD_SHELL = (function () {
   const labelHtml = (l) => '<span class="glab' + (l.tone === 'ok' ? ' gtone-ok' : '') + '"' +
     (l.fact ? ' data-fact="' + esc(l.fact) + '"' : '') + '>' + esc(l.text) + '</span>';
 
+  // a multi-place proposal's ↑ ↓ ride its label (answers Part 4 .7: *Current
+  // text · 2 of 3* with ↑ ↓), handed over drawn (`st.label.steps`, stage 6)
   const labelSlot = (st) => (PRESENT.label(st)
-    ? '<div class="glabslot" data-slot="label">' + labelHtml(st.label) + '</div>' : '');
+    ? '<div class="glabslot' + (st.label.steps ? ' hassteps' : '') + '" data-slot="label">' + labelHtml(st.label) +
+      (st.label.steps || '') + '</div>' : '');
 
   /** the first line — the paragraph renderer's own element, handed over drawn
    *  (S2), carrying the strip; the shell only marks the slot */
