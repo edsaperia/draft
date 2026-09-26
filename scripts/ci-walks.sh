@@ -379,6 +379,12 @@ case "$GROUP" in
     # until Q1546; about 27 s each
     walk "founding-walk --takeback=applications" node scripts/founding-walk.mjs --takeback=applications
     walk "founding-walk --takeback=chamber" node scripts/founding-walk.mjs --takeback=chamber
+    # **A close with no room to give back** (Q1560 (3), Ed 2026-09-26: *fix it
+    # properly*): a card on the one shell closed near the page top leaves the
+    # clause at home and the page still, never scrolled back down to hold it —
+    # card-audit's timing, at 390, under a 4× CPU throttle, three runs. Serves
+    # design/ itself; red before the fix on 🪶 every run
+    walk "close-no-room" node scripts/repro/close-no-room.mjs --fast --cpu=4 --runs=3
     # **The copy golden** (entry 128; Q1546 (c)): every card's strings on
     # every walk, keyed by walk and card key, against
     # design/tools/card-copy.golden.json. A STYLE.md pass is a snapshot and

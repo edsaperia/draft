@@ -85,18 +85,45 @@ for (let i = 0; i < 8; i++) {
 const openSel = (k) => '.setupcard[data-setupcard="' + k + '"], .sugg[data-card="' + k + '"]';
 
 /** open `k` from its own tab in the gutter, wherever it stands */
-const openFromTab = async (k) => (await openTab(k)) || (!!HOST[k] && (await openTab(HOST[k])) && openTab(k, true));
-const openTab = (k, inStrip) => page.evaluate(async ([k, inStrip]) => {
-  const q = String(k).replace(/["\\]/g, '\\$&');
-  const t = inStrip ? document.querySelector('.setupcard .chipcol [data-tab="' + q + '"]')
-    : document.querySelector('#band .cpara:not(.open) [data-tab="' + q + '"], #titlepara [data-tab="' + q + '"], #charter [data-anchor="' + q + '"]');
-  if (!t) return false;
-  t.scrollIntoView({ block: 'center' });
-  await new Promise((r) => setTimeout(r, 200));
-  t.click();
-  await new Promise((r) => setTimeout(r, 1200));
-  return !!document.querySelector('.setupcard[data-setupcard="' + q + '"], .sugg[data-card="' + q + '"]');
-}, [k, !!inStrip]);
+const openFromTab = async (k) => {
+  const why = [];
+  const ok = (await openTab(k, false, !HOST[k], why)) ||
+    (!!HOST[k] && (await openTab(HOST[k], false, true, why)) && openTab(k, true, true, why));
+  if (!ok) console.log('    (' + why.join('; ') + ')');
+  return ok;
+};
+/** press `k`'s tab; `patient` waits up to 5 s for a tab not drawn yet — only
+ *  where the tab must be there, since a tab behind a pile is found by its
+ *  host instead — and `why` collects what each press met */
+const openTab = async (k, inStrip, patient, why) => {
+  const r = await page.evaluate(async ([k, inStrip, patient]) => {
+    const q = String(k).replace(/["\\]/g, '\\$&');
+    const find = () => (inStrip ? document.querySelector('.setupcard .chipcol [data-tab="' + q + '"]')
+      : document.querySelector('#band .cpara:not(.open) [data-tab="' + q + '"], #titlepara [data-tab="' + q + '"], #charter [data-anchor="' + q + '"]'));
+    // **the tab may not be drawn yet** (Q1560, CI 2026-09-26): on a slow
+    // runner the first card's tab was asked for while the page was still
+    // settling after the unfolding, and a tab not found read as a card that
+    // would not open; wait for it, and say which of the two it was
+    let t = find();
+    for (let i = 0; patient && !t && i < 25; i++) { await new Promise((r) => setTimeout(r, 200)); t = find(); }
+    if (!t) return { ok: false, why: 'no tab drawn' };
+    t.scrollIntoView({ block: 'center' });
+    await new Promise((r) => setTimeout(r, 200));
+    // **the tab pressed is the one on the page now** (Q1560, CI 2026-09-26):
+    // the band is rebuilt wholesale, and a render inside the wait above left
+    // `t` detached — a click on a detached tab reaches no handler, and the
+    // walk read *opens from its tab* false with nothing wrong on the page. A
+    // finger always lands on the tab that is drawn
+    t = find() || t;
+    t.click();
+    const open = () => !!document.querySelector('.setupcard[data-setupcard="' + q + '"], .sugg[data-card="' + q + '"]');
+    const seen = [];
+    for (let i = 0; i < 8; i++) { await new Promise((r) => setTimeout(r, 150)); seen.push(open() ? 'open' : (document.querySelector('.setupcard, .sugg.gshell') ? 'other' : '-')); }
+    return { ok: open(), why: open() ? null : 'pressed; after it: ' + seen.join(' ') };
+  }, [k, !!inStrip, !!patient]);
+  if (!r.ok && why) why.push(k + (inStrip ? ' in the strip' : '') + ': ' + r.why);
+  return r.ok;
+};
 
 /**
  * **A point outside the card that holds no control**: down the column's

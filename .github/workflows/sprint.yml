@@ -14,11 +14,36 @@
 # `gate` job below ends the run in seconds, green, unless the pushed range
 # carries a **merge commit**, which is how a builder's feature or fix lands.
 # And by hand from the Actions tab (`workflow_dispatch`), which always runs.
+#
+# **Part of it, by name** (Q1562 (6), Ed 2026-09-26): a dispatch takes
+# `groups`, a comma- or space-separated list, so the fix for one red group
+# re-runs that group and not the whole twenty minutes:
+#
+#   gh workflow run sprint.yml --ref <branch> -f groups=sprint-doors
+#
+# The names, stable, and what each runs:
+#   seat-member, seat-clerk, sprint-doors, sprint-motions, sprint-pages
+#                     one `walks (<name>)` leg each — ci-walks.sh's groups
+#   founding-golden   the golden founding walk
+#   card-audit-1600   card-audit at the desk's width
+#   card-audit-390    card-audit at the phone's — and 1600 with it, its
+#                     `--baseline`
+#   a11y              a11y-audit
+#                     these four are steps of the one `golden` job, which
+#                     runs if any is named: one runner's setup, not four
+# Empty — a push, or a dispatch with nothing typed — is every one of them,
+# as before. What is not named is skipped, never failed; a name not in the
+# list reds the `select` job before anything runs.
 name: Sprint
 on:
   push:
     branches: [main]
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      groups:
+        description: 'Only these (comma or space separated; empty = all): seat-member seat-clerk sprint-doors sprint-motions sprint-pages founding-golden card-audit-1600 card-audit-390 a11y'
+        required: false
+        default: ''
 
 jobs:
   # **Did this push carry a merge?** `github.event.before..github.sha` is
@@ -62,9 +87,43 @@ jobs:
           fi
           decide false "no merge commit in ${BEFORE:0:10}..${SHA:0:10} — nothing merged, so nothing to run"
 
+  # **Which parts** (Q1562 (6)): the `groups` input read into the walks'
+  # matrix and the golden job's steps, both as JSON arrays the jobs below
+  # read with `fromJSON`. Nothing to read — a push has no inputs — is
+  # everything, so a push and an empty dispatch are the tier as it was. A
+  # separate job from `gate` so that one's question stays the one it asks.
+  select:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      walks: ${{ steps.pick.outputs.walks }}
+      steps: ${{ steps.pick.outputs.steps }}
+      golden: ${{ steps.pick.outputs.golden }}
+    steps:
+      - id: pick
+        env:
+          # not GROUPS: bash keeps the runner's group ids under that name
+          ASKED: ${{ inputs.groups }}
+        run: |
+          WALKS="seat-member seat-clerk sprint-doors sprint-motions sprint-pages"
+          STEPS="founding-golden card-audit-1600 card-audit-390 a11y"
+          asked=$(echo "${ASKED:-}" | tr ',' ' ' | xargs)
+          [ -z "$asked" ] && asked="$WALKS $STEPS"
+          w=(); st=()
+          for n in $asked; do
+            case " $WALKS " in *" $n "*) w+=("$n"); continue ;; esac
+            case " $STEPS " in *" $n "*) st+=("$n"); continue ;; esac
+            echo "::error::unknown name '$n' — one of: $WALKS $STEPS"; exit 1
+          done
+          # the phone's audit is read against the desk's: naming it runs both
+          case " ${st[*]} " in *" card-audit-390 "*) st+=(card-audit-1600) ;; esac
+          json() { jq -nc '$ARGS.positional | unique' --args "$@"; }
+          { echo "walks=$(json "${w[@]}")"; echo "steps=$(json "${st[@]}")"; echo "golden=$([ ${#st[@]} -gt 0 ] && echo true || echo false)"; } | tee -a "$GITHUB_OUTPUT"
+          echo "**Sprint parts:** walks $(json "${w[@]}") · golden steps $(json "${st[@]}")" >> "$GITHUB_STEP_SUMMARY"
+
   golden:
-    needs: gate
-    if: needs.gate.outputs.run == 'true'
+    needs: [gate, select]
+    if: needs.gate.outputs.run == 'true' && needs.select.outputs.golden == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -101,6 +160,7 @@ jobs:
       # A red here gates nothing: the deploy already happened on the push of
       # main this run was started by.
       - run: npm run founding-golden
+        if: contains(fromJSON(needs.select.outputs.steps), 'founding-golden')
 
       # **The two audits** (plan-ci-speed.md Stage 4): every decision card
       # opened and measured, and the surface read by the rules a keyboard and
@@ -112,11 +172,11 @@ jobs:
       # finding that moves with the window is dropped as a layout fact. The
       # payloads are the job's artifact.
       - run: npm run card-audit -- --out="$RUNNER_TEMP/card-audit.json"
-        if: always()
+        if: always() && contains(fromJSON(needs.select.outputs.steps), 'card-audit-1600')
       - run: npm run card-audit -- --width=390 --height=844 --baseline="$RUNNER_TEMP/card-audit.json" --out="$RUNNER_TEMP/card-audit-narrow.json"
-        if: always()
+        if: always() && contains(fromJSON(needs.select.outputs.steps), 'card-audit-390')
       - run: npm run a11y-audit -- --out="$RUNNER_TEMP/a11y-audit.json"
-        if: always()
+        if: always() && contains(fromJSON(needs.select.outputs.steps), 'a11y')
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -139,14 +199,15 @@ jobs:
   # reddens its group until somebody reads it.
   walks:
     name: walks (${{ matrix.group }})
-    needs: gate
-    if: needs.gate.outputs.run == 'true'
+    needs: [gate, select]
+    if: needs.gate.outputs.run == 'true' && needs.select.outputs.walks != '[]'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        group: [seat-member, seat-clerk, sprint-doors, sprint-motions, sprint-pages]
+        # every group, or only those `select` read out of `groups`
+        group: ${{ fromJSON(needs.select.outputs.walks) }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
