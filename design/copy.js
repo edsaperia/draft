@@ -728,6 +728,10 @@ window.COPY = (function () {
     // the wire did not answer, or answered with a status and no sentence
     noAnswer: (status) => (status ? 'the server answered ' + status : 'the server could not be reached'),
     binPutBack: 'Put it back as it stands',
+    // the composer's 🗑️ and a settings ✒️'s tooltip, where the one shell
+    // draws them (Q1541 stage 3b) — the words the old rows carried
+    discardMotion: 'Discard this motion',
+    setIt: 'Set it',
     // 👑/📯 in the topbar
     founderMark: {
       crowned: 'Some of the rules are reserved: changing them needs the founder’s assent',
@@ -1436,6 +1440,17 @@ window.COPY = (function () {
     // .21 — a 🏛️ commit dark because your 🏛️ is out on another motion (Ed's
     // words for 1541.33: *"One 🏛️ each" is meaningless*)
     voiceOut: 'You can only make one constitutional proposal 🏛️ at a time.',
+    // ---- stage 3b: 🎩, the power cards, the composer ----
+    // 🎩's two sentences, the fact and no consequences (card review
+    // 2026-09-02) — the first line when one stands, an option when it does
+    // not — and its first line while the Founder has not yet answered, in the
+    // shape of every other undecided rule (*The Founder is deciding …*, Q1560
+    // (1)); the one new sentence of the stage's settings
+    hat: {
+      member: 'The Founder is part of the membership.',
+      clerk: 'The Founder is not part of the membership.',
+      deciding: 'The Founder is deciding whether to be part of the membership.',
+    },
   };
 
   // ---- the spectator feed (feed.html, Q1466) --------------------------------
