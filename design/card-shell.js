@@ -62,7 +62,7 @@ window.CARD_SHELL = (function () {
     head: (st) => !!(st.head && st.head.html),
     fact: (st) => !!st.fact,
     body: (st) => !!(st.body && st.body.html),
-    blocks: (st) => !!(st.blocks && st.blocks.length),
+    blocks: (st) => !!(st.blocks && st.blocks.length) || !!(st.options && st.options.html),
     input: (st) => !!(st.input && st.input.html),
     row: (st) => rowShape(st) !== 'absent',
   };
@@ -85,6 +85,15 @@ window.CARD_SHELL = (function () {
   const pillHtml = (standing) => (standing && standing.label
     ? '<span class="standpill" data-fact="pill"><span class="dot"></span><span>' + esc(standing.label) + '</span></span>' : '');
 
+  /** **the standing pill, for a reader who can choose** (1541.47, Q1555 (7)):
+   *  the same drawing as a radio because it *is* one — the chosen option in
+   *  its group, pressed on open; choosing another option presses that one
+   *  instead, and choosing this again cancels the change (`data-standpick`).
+   *  Its words are who chose what stands, in either state (T48) */
+  const pickPillHtml = (standing, pressed) => (standing && standing.label
+    ? '<button class="lanepick standpick" type="button" data-fact="pill" data-standpick="1" aria-pressed="' + !!pressed + '">' +
+      '<span class="dot"></span><span>' + esc(standing.label) + '</span></button>' : '');
+
   const factSlot = (st) => (PRESENT.fact(st)
     ? '<div class="gfact rsub" data-slot="fact">' + esc(st.fact) + '</div>' : '');
 
@@ -97,9 +106,13 @@ window.CARD_SHELL = (function () {
     labelHtml({ text: b.label, fact: b.fact, tone: b.tone }) +
     '<div class="rtext">' + (b.html || '') + '</div>' + (b.speaker || '') + '</div>';
 
+  /** the blocks: a record's field or a news card's *Previous rule*, one
+   *  labelled block each — or **a settings card's options**, handed over
+   *  already drawn (`st.options`), since each is a rung whose radio's own
+   *  words are its label (CP1, CP2) and whose controls are the page's */
   const blocksSlot = (st) => (PRESENT.blocks(st)
     ? '<div class="gblocks" data-slot="blocks">' +
-      st.blocks.map(blockHtml).join('') + '</div>' : '');
+      ((st.blocks || []).map(blockHtml).join('') + (st.options && st.options.html ? st.options.html : '')) + '</div>' : '');
 
   const inputSlot = (st) => (PRESENT.input(st)
     ? '<div class="ginput" data-slot="input">' + st.input.html + '</div>' : '');
@@ -156,12 +169,17 @@ window.CARD_SHELL = (function () {
         (st.owed.attrs || '') + '>' + esc(st.owed.word || '') + '</button>';
     } else {
       // a commit carries its surface's own hooks (`cls`, `attrs` — the band's
-      // `data-confirm`, 🍾's hold) beside the shell's `data-act`
-      right = acts.filter((a) => a.kind === 'commit').slice(0, 2).map((a) =>
-        '<button class="btn ' + (a.cls ? esc(a.cls) + ' ' : '') + 'glyphbtn"' +
+      // `data-confirm`, 🍾's hold) beside the shell's `data-act`; a commit
+      // whose drawing the page already owns — the route's own ✏️ / 🏛️, which
+      // swaps in place as a value is typed (329a) — is handed over drawn
+      const commits = acts.filter((a) => a.kind === 'commit').slice(0, 2).map((a) => (a.html != null ? a.html
+        : '<button class="btn ' + (a.cls ? esc(a.cls) + ' ' : '') + 'glyphbtn"' +
         (a.act ? ' data-act="' + esc(a.act) + '"' : '') + (a.attrs || '') +
         (a.until ? ' disabled data-until="' + esc(a.until) + '"' : '') +
-        ' title="' + esc(a.title || '') + '">' + esc(a.glyph || '') + '</button>').join('');
+        ' title="' + esc(a.title || '') + '">' + (a.glyphHtml || esc(a.glyph || '')) + '</button>'));
+      // **the pair groups at the right** (Q1154): the Founder's pen
+      // immediately left of the route's own commit, never spread apart
+      right = commits.length > 1 ? '<span class="rightpair">' + commits.join('') + '</span>' : commits.join('');
     }
     // `st.owed.left` is the one thing today's rows put at the left beside an
     // OK — the way back to a clause's list of its records (Q1536) — kept as
@@ -208,6 +226,10 @@ window.CARD_SHELL = (function () {
       r.selectNodeContents(n);
       for (const q of r.getClientRects()) if (q.width && q.height) return q.top;
     }
+    // a first line that is an empty field — 🪶's title box at the birth, 📧's
+    // address before the mail (Q1541 stage 3a) — is the box itself
+    const box = el.querySelector('input:not([type="hidden"]), textarea, [contenteditable="true"], [contenteditable="plaintext-only"]');
+    if (box && !box.closest('.chipcol')) { const q = box.getBoundingClientRect(); if (q.width && q.height) return q.top; }
     return el.getBoundingClientRect().top;
   }
   const headOf = (card) => card && (card.querySelector('.clausehead .rtext') || card.querySelector('.clausehead'));
@@ -303,6 +325,6 @@ window.CARD_SHELL = (function () {
     return out;
   }
 
-  return { cardHtml, pillHtml, rowShape, PRESENT, esc,
+  return { cardHtml, pillHtml, pickPillHtml, rowShape, PRESENT, esc,
     fit, roomOf, clearTop, takeRoomBack, holdLine, lineTop, isShell, glassTop };
 })();

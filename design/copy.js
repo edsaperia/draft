@@ -1395,6 +1395,15 @@ window.COPY = (function () {
     waitingFor: (n) => 'Waiting for ' + n + (n === 1 ? ' member' : ' members') + ' to answer questions.',
     // .1 — the label above a clause's first line (the park's, stage 2)
     currentText: 'Current text',
+    // ---- stage 3a: the band's settings ----
+    // .11 — what a change replaced, on a settings card's news
+    previousRule: 'Previous rule',
+    // .16 — a rule card on a closed document (Ed: *the rules do not stand
+    // after the end of the document since it is now over*)
+    ruleAtClose: 'Rule at the close',
+    // .21 — a 🏛️ commit dark because your 🏛️ is out on another motion (Ed's
+    // words for 1541.33: *"One 🏛️ each" is meaningless*)
+    voiceOut: 'You can only make one constitutional proposal 🏛️ at a time.',
   };
 
   // ---- the spectator feed (feed.html, Q1466) --------------------------------

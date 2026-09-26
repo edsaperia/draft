@@ -1139,10 +1139,16 @@ window.SETUP = (function () {
     // **the commit wears its glyph alone** (Ed, 2026-09-02, Q1155/Q1171,
     // STYLE T47): the act's words move to the title, where the price and the
     // gesture were already said
+    // **A dark commit says what it waits on** (Q1541 stage 3a, answers Part 4
+    // .17–.21): `data-until` on every dark one — a choice or a keystroke, the
+    // next ✏️, or your 🏛️ out on another motion — and the last two say so in
+    // the row, where a phone can read it: the ✏️ countdown (.20) and one
+    // sentence for 🏛️ in use (.21). Nothing is said for a choice not yet made.
     return constitutional
-      ? '<button class="btn btn-approve glyphbtn emojibtn holdmotion"' +
-        (!dto || heldOut ? ' disabled' : '') +
-        ' title="' + (heldOut ? 'One 🏛️ each — withdraw yours first'
+      ? (heldOut ? '<span class="gnote pvoice">' + esc(window.COPY.shell.voiceOut) + '</span>' : '') +
+        '<button class="btn btn-approve glyphbtn emojibtn holdmotion"' +
+        (heldOut ? ' disabled data-until="voice-out"' : !dto ? ' disabled data-until="choose"' : '') +
+        ' title="' + (heldOut ? esc(window.COPY.shell.voiceOut)
           : clickGesture ? 'Ask all members — a full one-second assembly'
           : 'Ask all members — a full one-second hold') + '"' +
         ' data-holdmotion="' + c.k + '">' + glyphHtml('🏛️') + '</button>'
@@ -1157,7 +1163,8 @@ window.SETUP = (function () {
       : (() => {
         const broke = walletBroke();
         return (broke ? window.CARDS.abstainNoteHtml(dripAt(), 'drip') : '') +
-          '<button class="btn btn-approve glyphbtn emojibtn"' + (dto && !broke ? '' : ' disabled') +
+          '<button class="btn btn-approve glyphbtn emojibtn"' +
+          (broke ? ' disabled data-until="drip"' : !dto ? ' disabled data-until="choose"' : '') +
           ' data-putmotion="1" title="' + esc(broke ? window.COPY.session.row.broke : 'Propose it') + '">' +
           glyphHtml('✏️') + '</button>';
       })();
