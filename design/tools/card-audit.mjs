@@ -3177,6 +3177,14 @@ async function switchPass(page, walk, switches, errors) {
       const el = document.querySelector('#band [data-tab="' + String(k).replace(/["\\]/g, '\\$&') + '"]');
       if (!el) return null;
       el.scrollIntoView({ block: 'start' });
+      // …**clear of the topbar by more than a label's room** (Q1541 stage 3b):
+      // parked under it, a card on the one shell has no room for its label and
+      // its first line moves down by the shortfall — answers Part 6.4's ruled
+      // case, which P13's page-top pass measures on its own — so the switch
+      // would be read as the shortfall. 💤 met it first, on the shell since 3b
+      const nav = document.querySelector('.navbar');
+      const top = nav ? nav.getBoundingClientRect().bottom : 0;
+      window.scrollBy(0, -(top + 120));
       return Math.round(window.scrollY * 100) / 100;
     }, click);
     if (room === null) { errors.push(walk + ': switch pass — no band tab for ' + click); continue; }
