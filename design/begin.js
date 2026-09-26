@@ -363,10 +363,18 @@ window.BEGIN = (function () {
     const beginCellHtml = (k, pw) => {
       const st = beginCellState(k, pw);
       const kept = st === 'keep';
+      const g = '<span class="tg">' + glyphHtml(pw === 'u' ? '✒️' : '🛡️') + '</span>';
+      // **a given cell is not a control** (Q1541 stage 2, principle 5): it
+      // can never have a job here — the power comes back only on its own tab
+      // — so it is drawn as the struck glyph and nothing to press, where a
+      // disabled button promised a thaw that never comes
+      if (st === 'given') {
+        return '<td class="bcell"><span class="pwtoggle given" data-bkey="' + k + '" data-bpw="' + pw + '"' +
+          ' title="' + PAGE_COPY.begin.givenTip + '">' + g + '</span></td>';
+      }
       return '<td class="bcell"><button class="pwtoggle" type="button" aria-pressed="' + kept + '"' +
-        ' data-bkey="' + k + '" data-bpw="' + pw + '"' + (st === 'given' ? ' disabled' : '') +
-        ' title="' + (st === 'given' ? PAGE_COPY.begin.givenTip : kept ? PAGE_COPY.begin.keptTip : PAGE_COPY.begin.downTip) + '">' +
-        '<span class="tg">' + glyphHtml(pw === 'u' ? '✒️' : '🛡️') + '</span></button></td>';
+        ' data-bkey="' + k + '" data-bpw="' + pw + '"' +
+        ' title="' + (kept ? PAGE_COPY.begin.keptTip : PAGE_COPY.begin.downTip) + '">' + g + '</button></td>';
     };
     // the setting cell: the card's glyph and its noun through `settingNamed`,
     // the one reader of a setting's name inside a sentence — the doors read
@@ -374,16 +382,32 @@ window.BEGIN = (function () {
     const beginRowHtml = (k) => '<tr data-bkey="' + k + '">' +
       '<td class="bname">' + settingNamed(midOf(k)) + '</td>' +
       beginCellHtml(k, 'u') + beginCellHtml(k, 'a') + '</tr>';
+    // **the table holds an unsent choice** once any live cell stands off its
+    // start — the card's 🗑️ then has something to put back (Q1541 stage 2,
+    // 1541.9: the bin drawn dark from the start, lit once there is)
+    const beginDirty = () => !constituted() && amFounder() && BEGIN_ROWS.some((k) => ['u', 'a'].some((pw) =>
+      beginStillHeld(k, pw) && S.beginRows[k + ':' + pw] !== undefined &&
+      S.beginRows[k + ':' + pw] !== (k === 'text' ? 'down' : 'keep')));
     const beginTableHtml = () => {
       if (constituted() || !amFounder()) return '';
       // no header row (Ed, 2026-09-09: *no column heads*): each cell's own
       // glyph says which power it is
       return '<div class="unlocks"><b>What the Founder keeps.</b></div>' +
         '<p class="why">Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.</p>' +
-        '<table class="begintable"><tbody>' +
+        '<table class="begintable"' + (beginDirty() ? ' data-draft="1"' : '') + '><tbody>' +
         BEGIN_ROWS.map(beginRowHtml).join('') + '</tbody></table>';
     };
-    const beginBody = (c, rd) => {
+    // the card's last line while it cannot begin: when it comes back. On the
+    // one shell it is the dark 🍾's own note where no member is left to
+    // answer (Q1541 stage 2, answers Part 4 .22), so `beginBody` leaves it
+    // out when asked (`noFoot`) rather than say it twice
+    const beginFoot = (rd) => (!rd ? '' : rd.ready
+      ? 'Nobody is kept waiting by this: whoever has not answered can still answer after the start, and the document takes what was said.'
+      // *it comes back to you* is a promise about a wait that ends by
+      // itself, and `one-voice` is the one that does not (Q827)
+      : oneVoiceHolds().length ? 'It comes back to you the moment somebody else can answer.'
+      : 'It comes back to you the moment the questions stand.');
+    const beginBody = (c, rd, o) => {
       const batch =
         '<div class="unlocks"><b>' + (constituted() ? 'What beginning did.' : 'What beginning does, all at once.') + '</b></div>' +
         // the first item is a function of the power table and the rest are
@@ -450,12 +474,7 @@ window.BEGIN = (function () {
       return batch + hold + why + deps + beginTableHtml() +
         '<div class="readiness"><div class="fieldlab">The questions</div><div class="gatelist">' + qs + '</div>' +
         '<div class="fieldlab">The people</div><div class="gatelist">' + ms + '</div></div>' +
-        '<p class="setnote">' + (rd.ready
-          ? 'Nobody is kept waiting by this: whoever has not answered can still answer after the start, and the document takes what was said.'
-          // *it comes back to you* is a promise about a wait that ends by
-          // itself, and `one-voice` is the one that does not (Q827)
-          : ov.length ? 'It comes back to you the moment somebody else can answer.'
-          : 'It comes back to you the moment the questions stand.') + '</p>';
+        (o && o.noFoot ? '' : '<p class="setnote">' + beginFoot(rd) + '</p>');
     };
     // what the close did, in one card: final as of when, what adopted, what
     // carried, what the clock found still running, what was left undecided,
@@ -530,7 +549,7 @@ window.BEGIN = (function () {
     };
 
     return { readinessOf, oneVoiceRemedy, inviteTask, oneVoiceAsk, beginOffered, beginCollecting, dueMembers, releaseBody, mailGiveUpBody,
-      BEGIN_ROWS, beginStillHeld, beginPos, beginLayDown, beginBody, closingBody };
+      BEGIN_ROWS, beginStillHeld, beginPos, beginLayDown, beginDirty, beginBody, beginFoot, closingBody };
   }
   return { make };
 })();

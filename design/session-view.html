@@ -9087,7 +9087,7 @@
     // reclaims a power promised away on a tab, which is `reclaim`'s and stays
     // on the setting's own card. Unsent until the press, like any radio
     // position.
-    const bz = ev.target.closest('.pwtoggle[data-bkey][data-bpw]');
+    const bz = ev.target.closest('button.pwtoggle[data-bkey][data-bpw]');
     if (bz) {
       // **a toggle since Q1181** (Ed's card review round 3, 2026-09-05): the
       // power's glyph flips between kept and laid down — plain or struck. A
@@ -9901,6 +9901,28 @@
   // a rule card the shell builds: at the door, settled, drawn as its standing
   // block (every settings card whose blocks state the rule, 🪶 and 📍)
   const shellRule = (c) => !!c && atTheDoor() && bandKindOf(c) === 'rule' && !!ctx.blockHead(c) && settled(c);
+  // **stage 2's acknowledgement cards** (Q1541 stage 2): the three grants
+  // ✒️ 🛡️ 🏛️, the two gates 💡 ⚖️ drawn like grants (answers Part 4 .24),
+  // and 🍾 in every state (Part 6.8) — each opens in place of the paragraph
+  // its tab hangs on (the Founded line; the Proposals clause), the label its
+  // act while owed and its name after (.23, .24)
+  const ACK_SHELL = { 'grant-pen': 'grant', 'grant-shield': 'grant', 'grant-voice': 'grant',
+    canpropose: 'gate', canjudge: 'gate', begin: 'begin' };
+  const shellAck = (c) => !!c && !atTheDoor() && !!ACK_SHELL[c.k];
+  const ackOwed = (c) => shellAck(c) && !c.isBegin && !acked(c.k) && !!c.open();
+  // **👑, what one act laid down** (entry 162, SURFACE E9): news with no
+  // clause of its own, standing in 🍾's pile on the Proposals clause — so that
+  // clause is its first line, its title the label above it, its batch the
+  // body and OK its row while it is owed (Q1541 stage 2)
+  const shellRelease = (c) => !!c && !!c.release && !atTheDoor();
+  // 🍾's dark commit says what it waits on (answers Part 4 .22): the members
+  // still owing answers; where nobody is left to answer (one voice, or a
+  // question waiting on another), the card's own remedy line, moved from the
+  // body into the row so it is said once
+  const beginWaiting = (rd) => {
+    const n = ((rd && rd.members) || []).filter((m) => m.owed > 0 && m.answered < m.owed).length;
+    return n ? window.COPY.shell.waitingFor(n) : beginFoot(rd);
+  };
   window.CARD_STATE.register('band', {
     owns: (k) => !!card(k) || MANAGED_KEYS.includes(k) || DOOR_KEYS.includes(k),
     reader: () => (isStranger() ? 'stranger' : S.viewer === 'applicant' ? 'applicant'
@@ -9913,10 +9935,72 @@
     // radio a standing block wears; the powers line is never in these words
     // (1541.10), so no phase can print one
     place: (k) => { const c = card(k);
+      // an acknowledgement card's line is the paragraph its tab hangs on:
+      // the Founded line for a grant, the Proposals clause for 💡 ⚖️ 🍾
+      if (shellAck(c)) {
+        return { kind: 'para', key: k, html: c.isGrant ? foundedClause() : ctx.headFor(c) };
+      }
+      if (shellRelease(c)) return { kind: 'para', key: k, html: ctx.headFor(card('begin')) };
       const html = c && bandKindOf(c) === 'rule' && ctx.headFor ? ctx.headFor(c, true) : null;
       return html == null ? null : { kind: 'rule', key: k, html }; },
-    present: (k, st) => {
+    // what this reader owes a card: *Accept* on a grant or gate still to be
+    // accepted (Part 4 .23, .24); nothing once it is — no close-only OK
+    // (1541.8 (a)); and nothing on one not yet open, whose commit is not
+    // drawn at all (.19)
+    owed: (k) => { const c = card(k);
+      if (shellRelease(c)) return releaseBatch(c.release) ? { kind: 'ok', attrs: ' data-ok="' + esc(k) + '"', word: 'OK' } : null;
+      if (!ackOwed(c)) return null;
+      return { kind: 'accept', cls: 'grantok', attrs: ' data-ok="' + esc(k) + '"',
+        word: k === 'grant-voice' ? PAGE_COPY.gate.voice.accept : PAGE_COPY.gate.accept(c.grants || c.g) }; },
+    // what this reader may send: 🍾's commit, the Founder's alone and only
+    // before the start, dark while the membership is still answering
+    acts: (k) => { const c = card(k);
+      if (!shellAck(c) || !c.isBegin || constituted() || !amFounder()) return [];
+      const rd = readinessOf();
+      const can = !rd || rd.ready;
+      // **🍾's power table is a choice the Founder has not sent**, so the
+      // card's 🗑️ can have a job: drawn dark from the start, lit once a cell
+      // stands off its start, putting the table back (1541.9 — answers.md
+      // wins over BUILD.md's *no bin on these kinds*)
+      const dirty = beginDirty();
+      return [{ kind: 'bin', title: PAGE_COPY.binPutBack,
+        attrs: dirty ? ' data-revert="1"' : ' data-act="bin"', until: dirty ? null : 'nothing-yours' },
+      { kind: 'commit', glyph: '🍾', cls: 'btn-approve emojibtn btn-pen',
+        attrs: ' data-confirm="1" data-begin="1"',
+        title: can ? 'Begin the document — a full one-second hold' : 'The document cannot begin yet',
+        until: can ? null : 'readiness', note: can ? null : beginWaiting(rd) }]; },
+    present: (k, st, hints) => {
       const c = card(k);
+      if (shellRelease(c) && st.place) {
+        const b = releaseBatch(c.release);
+        return {
+          kind: 'release',
+          frame: { cls: 'sugg setupcard', attrs: ' role="tabpanel" data-setupcard="' + esc(k) + '"' },
+          label: { text: window.SETUP.labelOf(c, ctx) },
+          head: { html: window.SETUP.headHtml(c, ctx, hints.siblings || [c],
+            '<div class="headrule" data-fact="place">' + st.place.html + '</div>') },
+          body: { html: (b ? releaseBody(b) : '<p class="why">This is no longer outstanding.</p>') + doorErrHtml(k) },
+        };
+      }
+      if (shellAck(c) && st.place) {
+        const W = window.COPY.shell;
+        const sibs = hints.siblings || [c];
+        const rd = c.isBegin ? readinessOf() : null;
+        // a gate that is open asks nothing but its Accept: its head's clause
+        // says what members may do (Ed's card review round 3, 46 💡 / 47 ⚖️)
+        const bare = c.isGate && !c.isGrant && !c.isBegin && c.open();
+        const body = c.isBegin ? beginBody(c, rd, { noFoot: !!(rd && !rd.ready) }) : bare ? '' : grantProv(c) + gateBody(c);
+        return {
+          kind: ACK_SHELL[k],
+          frame: { cls: 'sugg setupcard', attrs: ' role="tabpanel" data-setupcard="' + esc(k) + '"' },
+          label: { text: c.isBegin ? W.begin : st.owed ? W.accept[k] : W.currentRule },
+          head: { html: window.SETUP.headHtml(c, ctx, sibs,
+            '<div class="headrule" data-fact="place">' + st.place.html + '</div>') },
+          // a refusal against this card prints under its body, as the one
+          // wrapper every old card passes through does (Q1330, SURFACE Y25)
+          body: { html: body + doorErrHtml(k) },
+        };
+      }
       if (!shellRule(c) || !st.place) return {};
       // the paragraph's pile is the strip (setup.js `bandHtml`): the rule in
       // front, its power tabs and filed records behind, its host carried
@@ -10372,7 +10456,7 @@
   // with the page bindings it reads — `cs` and `FIX` through accessors, since
   // both are reassigned; every function wrapped, read when called.
   const { readinessOf, oneVoiceRemedy, inviteTask, oneVoiceAsk, beginOffered, beginCollecting, dueMembers, releaseBody, mailGiveUpBody,
-    BEGIN_ROWS, beginStillHeld, beginPos, beginLayDown, beginBody, closingBody } = window.BEGIN.make({
+    BEGIN_ROWS, beginStillHeld, beginPos, beginLayDown, beginDirty, beginBody, beginFoot, closingBody } = window.BEGIN.make({
     S, PAGE_COPY, SEC, SESSION,
     get cs() { return cs; },
     get FIX() { return FIX; },

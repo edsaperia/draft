@@ -228,6 +228,10 @@ case "$GROUP" in
     walk "after-begin-walk" npm run after-begin-walk -- "$BASE"
     # a member's invitation motion on the surface (Q1370)
     walk "invite-walk" npm run invite-walk -- "$BASE"
+    # the four live-only news families, opened on a live document at both
+    # widths (Q1541 stage 2): a release, an amendment, a mail give-up, a departure
+    walk "news-walk" npm run news-walk -- "$BASE"
+    walk "news-walk --width=390" npm run news-walk -- "$BASE" --width=390 --height=844
     # **The first keys into an empty column**: real key presses, the server
     # compared with the literal strings typed
     walk "first-keys-walk" npm run first-keys-walk -- "$BASE"

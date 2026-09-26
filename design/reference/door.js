@@ -195,13 +195,12 @@ window.DOOR = (function () {
       // rules are, and a rule's history is part of what it is (Q942)
       const body = c.record ? recordBody(c)
         : c.k === 'text' ? strangerTextBody() : strangerReadBody(c);
-      // every card here asks nothing, so every one takes the close-only OK
-      // (reading 1190)
-      // …except a motion record, which is the member's record card and has
-      // no row at all (Q1522 (6)): nothing is owed on it, least of all here
-      return cardHtml(c, strCtx, body,
-        c.record ? null : binBtn() + '<button class="btn btn-approve okbtn" data-close="1">OK</button>',
-        g.cards);
+      // **every card here asks nothing, so none has a row** (Q1541 stage 2,
+      // 1541.8 (a), retiring reading 1190's close-only OK): its tab, a click
+      // outside and Escape close it — a motion record's already had none
+      // (Q1522 (6)). Its own shell comes with its family's stage: the power
+      // tabs 3b, the records 4, the Text 7
+      return cardHtml(c, strCtx, body, null, g.cards);
     };
     const strangerTextBody = () => {
       const p = strPayload();

@@ -136,7 +136,9 @@ window.CARD_SHELL = (function () {
     if (shape === 'absent') return '';
     const acts = st.acts || [];
     const bin = acts.find((a) => a.kind === 'bin' || a.kind === 'withdraw');
-    const binHtml = bin ? '<button class="btn glyphbtn" data-act="' + esc(bin.act || 'bin') + '"' +
+    // the bin carries its surface's own hook where it has one (the band's
+    // `data-revert`), else the shell's `data-act`
+    const binHtml = bin ? '<button class="btn glyphbtn"' + (bin.attrs ? bin.attrs : ' data-act="' + esc(bin.act || 'bin') + '"') +
       (bin.until ? ' disabled data-until="' + esc(bin.until) + '"' : '') +
       ' title="' + esc(bin.title || '') + '">🗑️</button>' : '';
     const NOTE = /^(drip|voice-out|readiness)$/;
@@ -148,10 +150,16 @@ window.CARD_SHELL = (function () {
       right = '<button class="btn btn-approve okbtn"' + (st.owed.attrs || '') +
         ' title="' + esc(st.owed.title || '') + '">' + esc(st.owed.word || 'OK') + '</button>';
     } else if (shape === 'accept') {
-      right = '<button class="btn btn-approve okbtn"' + (st.owed.attrs || '') + '>' + esc(st.owed.word || '') + '</button>';
+      // *Accept ‹glyph›* (answers Part 4 .23, .24): the grants and 💡 ⚖️, a
+      // click, on the solid accent like OK
+      right = '<button class="btn btn-approve okbtn' + (st.owed.cls ? ' ' + esc(st.owed.cls) : '') + '"' +
+        (st.owed.attrs || '') + '>' + esc(st.owed.word || '') + '</button>';
     } else {
+      // a commit carries its surface's own hooks (`cls`, `attrs` — the band's
+      // `data-confirm`, 🍾's hold) beside the shell's `data-act`
       right = acts.filter((a) => a.kind === 'commit').slice(0, 2).map((a) =>
-        '<button class="btn glyphbtn" data-act="' + esc(a.act || '') + '"' +
+        '<button class="btn ' + (a.cls ? esc(a.cls) + ' ' : '') + 'glyphbtn"' +
+        (a.act ? ' data-act="' + esc(a.act) + '"' : '') + (a.attrs || '') +
         (a.until ? ' disabled data-until="' + esc(a.until) + '"' : '') +
         ' title="' + esc(a.title || '') + '">' + esc(a.glyph || '') + '</button>').join('');
     }

@@ -209,10 +209,10 @@
     "helpers": []
    },
    "begin": {
-    "eyebrow": "",
+    "eyebrow": "Begin",
     "head": "When the document begins, members may propose changes to rules and vote on proposals.A proposal ✏️ passes once it is preferred by enough of the membership, and by more than prefer the current text.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
-    "body": "What beginning does, all at once.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.The document cannot begin while 🌍 Visibility is still being decided.🌍 Visibility is delegated to the membership, and you are its only member: a question answered by one voice has not been handed to anybody. Invite somebody at 🪪 Membership, or take it back on its own card and set it yourself.What the Founder keeps.Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.🪶 Title✒️🛡️📍 Link✒️🛡️🌍 Visibility✒️🛡️🪪 Admissions✒️🛡️🤝 Applications✒️🛡️💤 Lapsing✒️🛡️🥾 Removals✒️🛡️✉️ Invite a Member✒️🛡️❌ Remove a Member✒️🛡️⏱️ Proposal Rate✒️🛡️⏰ Ending✒️🛡️👥 Quorum✒️🛡️👤 Anonymous Proposals✒️🛡️👁️ Vote Reveal✒️🛡️📝 Text✒️🛡️The questions🌍 1 out of 1 of the membership has voted on whether the document can only be seen by members or by anyone with the link.The peopleAda Lovell · answered everythingIt comes back to you the moment somebody else can answer.",
+    "body": "What beginning does, all at once.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.The document cannot begin while 🌍 Visibility is still being decided.🌍 Visibility is delegated to the membership, and you are its only member: a question answered by one voice has not been handed to anybody. Invite somebody at 🪪 Membership, or take it back on its own card and set it yourself.What the Founder keeps.Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.🪶 Title✒️🛡️📍 Link✒️🛡️🌍 Visibility✒️🛡️🪪 Admissions✒️🛡️🤝 Applications✒️🛡️💤 Lapsing✒️🛡️🥾 Removals✒️🛡️✉️ Invite a Member✒️🛡️❌ Remove a Member✒️🛡️⏱️ Proposal Rate✒️🛡️⏰ Ending✒️🛡️👥 Quorum✒️🛡️👤 Anonymous Proposals✒️🛡️👁️ Vote Reveal✒️🛡️📝 Text✒️🛡️The questions🌍 1 out of 1 of the membership has voted on whether the document can only be seen by members or by anyone with the link.The peopleAda Lovell · answered everything",
     "options": [],
     "inputs": [],
     "foot": [
@@ -237,8 +237,7 @@
      "The document cannot begin while 🌍 Visibility is still being decided.",
      "🌍 Visibility is delegated to the membership, and you are its only member: a question answered by one voice has not been handed to anybody. Invite somebody at 🪪 Membership, or take it back on its own card and set it yourself.",
      "Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.",
-     "· answered everything",
-     "It comes back to you the moment somebody else can answer."
+     "· answered everything"
     ]
    },
    "chamber": {
@@ -331,17 +330,13 @@
     "helpers": []
    },
    "grant-pen": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Accept Founder Actions",
+    "head": "Founded by AL Ada Lovell 👑.",
     "lock": "",
     "body": "As the founder of this document, you have the power to change settings and edit the document at will. Founder Actions are denoted by ✒️. You can give up these powers later if you choose to.",
     "options": [],
     "inputs": [],
     "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
      {
       "label": "Accept ✒️",
       "title": null
@@ -350,24 +345,20 @@
     "hints": [
      "Founder Actions — close it",
      "Activate Your Membership — yours to take",
-     "Put it back as it stands"
+     "Some of the rules are reserved: changing them needs the founder’s assent"
     ],
     "helpers": [
      "As the founder of this document, you have the power to change settings and edit the document at will. Founder Actions are denoted by ✒️. You can give up these powers later if you choose to."
     ]
    },
    "grant-shield": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Accept the Founder Veto",
+    "head": "Founded by AL Ada Lovell 👑.",
     "lock": "",
     "body": "As the founder of this document, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can give up this power later if you choose to.",
     "options": [],
     "inputs": [],
     "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
      {
       "label": "Accept 🛡️",
       "title": null
@@ -377,26 +368,22 @@
      "Founder Veto — close it",
      "Activate Your Membership — yours to take",
      "Founder Actions — settled",
-     "Put it back as it stands"
+     "Some of the rules are reserved: changing them needs the founder’s assent"
     ],
     "helpers": [
      "As the founder of this document, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can give up this power later if you choose to."
     ]
    },
    "grant-voice": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Accept Constitutional Proposals",
+    "head": "Founded by AL Ada Lovell 👑.",
     "lock": "",
     "body": "A 🏛️ is a constitutional proposal: one at a time, returned whole, passing only when all members agree. You are already a member; activating it opens every question, proposal and vote on the rules.",
     "options": [],
     "inputs": [],
     "foot": [
      {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "Activate 🏛️",
+      "label": "Accept 🏛️",
       "title": null
      }
     ],
@@ -404,7 +391,7 @@
      "Activate Your Membership — close it",
      "Founder Actions — settled",
      "Founder Veto — settled",
-     "Put it back as it stands"
+     "Some of the rules are reserved: changing them needs the founder’s assent"
     ],
     "helpers": [
      "A 🏛️ is a constitutional proposal: one at a time, returned whole, passing only when all members agree. You are already a member; activating it opens every question, proposal and vote on the rules."
@@ -980,10 +967,10 @@
     "helpers": []
    },
    "park-accounts": {
-    "eyebrow": "The clause as it stands",
+    "eyebrow": "Current text",
     "head": "The Purse-holder keeps the accounts in whatever way suits them, and shows them to any member who asks.",
     "lock": "",
-    "body": "",
+    "body": "Awaiting assent from the Founder 🛡️",
     "options": [],
     "inputs": [],
     "foot": [
@@ -3743,7 +3730,7 @@
     "helpers": []
    },
    "begin": {
-    "eyebrow": "",
+    "eyebrow": "Begin",
     "head": "When the document begins, members may propose changes to rules and vote on proposals.A proposal ✏️ passes once it is preferred by enough of the membership, and by more than prefer the current text.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "What beginning does, all at once.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.What the Founder keeps.Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.🪶 Title✒️🛡️📍 Link✒️🛡️🌍 Visibility✒️🛡️🪪 Admissions✒️🛡️🤝 Applications✒️🛡️💤 Lapsing✒️🛡️🥾 Removals✒️🛡️✉️ Invite a Member✒️🛡️❌ Remove a Member✒️🛡️⏱️ Proposal Rate✒️🛡️⏰ Ending✒️🛡️👥 Quorum✒️🛡️👤 Anonymous Proposals✒️🛡️👁️ Vote Reveal✒️🛡️📝 Text✒️🛡️The questionsThe peopleAda Lovell · nothing owedNobody is kept waiting by this: whoever has not answered can still answer after the start, and the document takes what was said.",
@@ -3862,17 +3849,13 @@
     "helpers": []
    },
    "grant-pen": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Accept Founder Actions",
+    "head": "Founded by AL Ada Lovell 👑.",
     "lock": "",
     "body": "As the founder of this document, you have the power to change settings and edit the document at will. Founder Actions are denoted by ✒️. You can give up these powers later if you choose to.",
     "options": [],
     "inputs": [],
     "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
      {
       "label": "Accept ✒️",
       "title": null
@@ -3881,24 +3864,20 @@
     "hints": [
      "Founder Actions — close it",
      "Activate Your Membership — yours to take",
-     "Put it back as it stands"
+     "Some of the rules are reserved: changing them needs the founder’s assent"
     ],
     "helpers": [
      "As the founder of this document, you have the power to change settings and edit the document at will. Founder Actions are denoted by ✒️. You can give up these powers later if you choose to."
     ]
    },
    "grant-shield": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Accept the Founder Veto",
+    "head": "Founded by AL Ada Lovell 👑.",
     "lock": "",
     "body": "As the founder of this document, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can give up this power later if you choose to.",
     "options": [],
     "inputs": [],
     "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
      {
       "label": "Accept 🛡️",
       "title": null
@@ -3908,26 +3887,22 @@
      "Founder Veto — close it",
      "Activate Your Membership — yours to take",
      "Founder Actions — settled",
-     "Put it back as it stands"
+     "Some of the rules are reserved: changing them needs the founder’s assent"
     ],
     "helpers": [
      "As the founder of this document, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can give up this power later if you choose to."
     ]
    },
    "grant-voice": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Accept Constitutional Proposals",
+    "head": "Founded by AL Ada Lovell 👑.",
     "lock": "",
     "body": "A 🏛️ is a constitutional proposal: one at a time, returned whole, passing only when all members agree. You are already a member; activating it opens every question, proposal and vote on the rules.",
     "options": [],
     "inputs": [],
     "foot": [
      {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "Activate 🏛️",
+      "label": "Accept 🏛️",
       "title": null
      }
     ],
@@ -3935,7 +3910,7 @@
      "Activate Your Membership — close it",
      "Founder Actions — settled",
      "Founder Veto — settled",
-     "Put it back as it stands"
+     "Some of the rules are reserved: changing them needs the founder’s assent"
     ],
     "helpers": [
      "A 🏛️ is a constitutional proposal: one at a time, returned whole, passing only when all members agree. You are already a member; activating it opens every question, proposal and vote on the rules."
@@ -4541,77 +4516,47 @@
     ]
    },
    "begin": {
-    "eyebrow": "",
+    "eyebrow": "Begin",
     "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes once it is preferred by enough of the membership, and by more than prefer the current text.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "What beginning did.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Begin — close it",
      "Proposals — settled",
-     "Voting — settled",
-     "Put it back as it stands"
+     "Voting — settled"
     ],
     "helpers": []
    },
    "canjudge": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes once it is preferred by enough of the membership, and by more than prefer the current text.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Begin — settled",
      "Proposals — settled",
-     "Voting — close it",
-     "Put it back as it stands"
+     "Voting — close it"
     ],
     "helpers": []
    },
    "canpropose": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes once it is preferred by enough of the membership, and by more than prefer the current text.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Begin — settled",
      "Proposals — close it",
-     "Voting — settled",
-     "Put it back as it stands"
+     "Voting — settled"
     ],
     "helpers": []
    },
@@ -4686,25 +4631,16 @@
     ]
    },
    "grant-voice": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "Founded by AB Ash Bellamy 👑 at HH:MM on D Month.",
     "lock": "",
     "body": "The Founder invited you into the membership, and Constitutional Proposals came with it.A 🏛️ is a constitutional proposal: one at a time, returned whole, passing only when all members agree. You are already a member; activating it opens every question, proposal and vote on the rules.",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Activate Your Membership — close it",
-     "Put it back as it stands"
+     "Some of the rules are reserved: changing them needs the founder’s assent"
     ],
     "helpers": [
      "The Founder invited you into the membership, and Constitutional Proposals came with it.",
@@ -5772,23 +5708,13 @@
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Visibility — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Visibility — close it",
-     "Changed by the Founder: Anyone with the link — settled",
-     "Put it back as it stands"
+     "Changed by the Founder: Anyone with the link — settled"
     ],
     "helpers": []
    },
@@ -5799,20 +5725,10 @@
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Anonymous Proposals — settled",
-     "Anonymous Proposals — close it",
-     "Put it back as it stands"
+     "Anonymous Proposals — close it"
     ],
     "helpers": []
    },
@@ -5823,23 +5739,13 @@
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Proposal Rate — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — settled",
      "Proposal Rate — close it",
-     "Rejected: a new proposal every 90 minutes — settled",
-     "Put it back as it stands"
+     "Rejected: a new proposal every 90 minutes — settled"
     ],
     "helpers": []
    },
@@ -5850,22 +5756,12 @@
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Visibility — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
-     "Changed by the Founder: Anyone with the link — settled",
-     "Put it back as it stands"
+     "Changed by the Founder: Anyone with the link — settled"
     ],
     "helpers": []
    },
@@ -5876,22 +5772,12 @@
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Proposal Rate — settled",
      "Can the Founder Make Amendments at Will? — settled",
      "Does the Founder Have a Veto? — close it",
-     "Rejected: a new proposal every 90 minutes — settled",
-     "Put it back as it stands"
+     "Rejected: a new proposal every 90 minutes — settled"
     ],
     "helpers": []
    },
@@ -5902,21 +5788,11 @@
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Link — settled",
      "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Put it back as it stands"
+     "Does the Founder Have a Veto? — close it"
     ],
     "helpers": []
    },
@@ -5927,21 +5803,11 @@
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Title — settled",
      "Can the Founder Make Amendments at Will? — settled",
-     "Does the Founder Have a Veto? — close it",
-     "Put it back as it stands"
+     "Does the Founder Have a Veto? — close it"
     ],
     "helpers": []
    },
@@ -5952,22 +5818,12 @@
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Visibility — settled",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
-     "Changed by the Founder: Anyone with the link — settled",
-     "Put it back as it stands"
+     "Changed by the Founder: Anyone with the link — settled"
     ],
     "helpers": []
    },
@@ -5978,22 +5834,12 @@
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Proposal Rate — settled",
      "Can the Founder Make Amendments at Will? — close it",
      "Does the Founder Have a Veto? — settled",
-     "Rejected: a new proposal every 90 minutes — settled",
-     "Put it back as it stands"
+     "Rejected: a new proposal every 90 minutes — settled"
     ],
     "helpers": []
    },
@@ -6004,21 +5850,11 @@
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Link — settled",
      "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands"
+     "Does the Founder Have a Veto? — settled"
     ],
     "helpers": []
    },
@@ -6029,21 +5865,11 @@
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Title — settled",
      "Can the Founder Make Amendments at Will? — close it",
-     "Does the Founder Have a Veto? — settled",
-     "Put it back as it stands"
+     "Does the Founder Have a Veto? — settled"
     ],
     "helpers": []
    },
@@ -6329,77 +6155,47 @@
     ]
    },
    "begin": {
-    "eyebrow": "",
+    "eyebrow": "Begin",
     "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes once it is preferred by enough of the membership, and by more than prefer the current text.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "What beginning did.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Begin — close it",
      "Proposals — settled",
-     "Voting — settled",
-     "Put it back as it stands"
+     "Voting — settled"
     ],
     "helpers": []
    },
    "canjudge": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes once it is preferred by enough of the membership, and by more than prefer the current text.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Begin — settled",
      "Proposals — settled",
-     "Voting — close it",
-     "Put it back as it stands"
+     "Voting — close it"
     ],
     "helpers": []
    },
    "canpropose": {
-    "eyebrow": "",
+    "eyebrow": "Current rule",
     "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes once it is preferred by enough of the membership, and by more than prefer the current text.A constitutional proposal 🏛️ passes only when all members agree.",
     "lock": "",
     "body": "",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Begin — settled",
      "Proposals — close it",
-     "Voting — settled",
-     "Put it back as it stands"
+     "Voting — settled"
     ],
     "helpers": []
    },
@@ -6487,81 +6283,54 @@
     ]
    },
    "grant-pen": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "Founded by AB Ash Bellamy 👑 at HH:MM on D Month.",
     "lock": "",
     "body": "As the founder of this document, you have the power to change settings and edit the document at will. Founder Actions are denoted by ✒️. You can give up these powers later if you choose to.",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Founder Actions — close it",
      "Founder Veto — settled",
      "Activate Your Membership — settled",
-     "Put it back as it stands"
+     "Some of the rules are reserved: changing them needs the founder’s assent"
     ],
     "helpers": [
      "As the founder of this document, you have the power to change settings and edit the document at will. Founder Actions are denoted by ✒️. You can give up these powers later if you choose to."
     ]
    },
    "grant-shield": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "Founded by AB Ash Bellamy 👑 at HH:MM on D Month.",
     "lock": "",
     "body": "As the founder of this document, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can give up this power later if you choose to.",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Founder Actions — settled",
      "Founder Veto — close it",
      "Activate Your Membership — settled",
-     "Put it back as it stands"
+     "Some of the rules are reserved: changing them needs the founder’s assent"
     ],
     "helpers": [
      "As the founder of this document, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can give up this power later if you choose to."
     ]
    },
    "grant-voice": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Current rule",
+    "head": "Founded by AB Ash Bellamy 👑 at HH:MM on D Month.",
     "lock": "",
     "body": "A 🏛️ is a constitutional proposal: one at a time, returned whole, passing only when all members agree. You are already a member; activating it opens every question, proposal and vote on the rules.",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
-     {
-      "label": "OK",
-      "title": null
-     }
-    ],
+    "foot": [],
     "hints": [
      "Founder Actions — settled",
      "Founder Veto — settled",
      "Activate Your Membership — close it",
-     "Put it back as it stands"
+     "Some of the rules are reserved: changing them needs the founder’s assent"
     ],
     "helpers": [
      "A 🏛️ is a constitutional proposal: one at a time, returned whole, passing only when all members agree. You are already a member; activating it opens every question, proposal and vote on the rules."

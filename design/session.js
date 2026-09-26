@@ -2415,6 +2415,8 @@
     },
     owed: (id) => {
       const s = SUGGS.find((g) => g.id === id);
+      // a park is owed its OK once, per seat, remembered as a record's is
+      if (s && s.kind === 'park') return s.unread && !readSeals.has(s.id) ? { kind: 'ok' } : null;
       return isUnread(s) ? { kind: 'ok' } : null;
     },
     record: (id) => {
@@ -2424,6 +2426,22 @@
     // the fragments a shell record needs, drawn by this column's own renderers
     present: (id, st) => {
       const s = SUGGS.find((g) => g.id === id);
+      // **the room's side of a park, on the one shell** (Q1541 stage 2;
+      // SURFACE E36): *Current text* above the clause the membership passed a
+      // change to, the park's one sentence, and OK only while it is owed — no
+      // row once seen (1541.8 (a)), where the bin stood alone
+      if (s && s.kind === 'park' && !docClosed) {
+        const pkey = (s.keys ?? [])[0];
+        return {
+          kind: 'park',
+          frame: { cls: 'sugg quick-open park-open',
+            attrs: ' data-card="' + esc(id) + '"' + (pkey ? ' data-site="' + esc(pkey) + '"' : '') },
+          label: { text: window.COPY.shell.currentText },
+          head: { html: clauseHeadHtml(s, Object.assign(headOpts(s, pkey), { key: pkey, chips: chipsFor(pkey, id), label: null, fact: 'place' })) },
+          body: { html: s.parkNote ? '<p class="setnote">' + glyphify(esc(s.parkNote)) + '</p>' : '' },
+          owed: st.owed ? { kind: 'ok', attrs: ' data-seen="' + esc(id) + '"', title: T.record.okTitle, word: T.record.ok } : null,
+        };
+      }
       if (!shellRecord(s) || !st.record) return {};
       const rec = st.record;
       const skey = (s.keys ?? [])[0];
@@ -3277,6 +3295,8 @@
     // `data-seen`, so it is remembered per seat the way a sealed record's is,
     // and the entry stays ⏳ until the park resolves (E36's Close cell).
     if (s.kind === 'park') {
+      // on the one shell since Q1541 stage 2 (the charter source's `present`)
+      if (!docClosed) return window.CARD_SHELL.cardHtml(window.CARD_STATE.stateOf(s.id));
       const pkey = (s.keys ?? [])[0];
       return (
         '<div class="sugg quick-open park-open" data-card="' + s.id + '" data-site="' + (pkey || '') + '">' +

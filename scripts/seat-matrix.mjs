@@ -1299,7 +1299,7 @@ const RUN = {
         const b = document.querySelector(sel);
         if (!b) return null;
         if (b.getAttribute('aria-pressed') === 'true') return true;
-        if (b.disabled) return false;
+        if (b.classList.contains('given')) return false;
         b.click(); return true;
       }, '.setupcard .begintable .pwtoggle[data-bkey="' + k + '"][data-bpw="' + pw + '"]');
       if (kept !== true) throw new Error(`${step.key}: the power table has no live ${k}/${pw} cell to keep`);

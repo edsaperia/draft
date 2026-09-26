@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 674
+  "entries": 682
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -306,7 +306,7 @@
   "page.gate.shield.title": "Founder Veto",
   "page.gate.shield.waiting": "Waiting on the save.",
   "page.gate.shield.why": "As the founder of this document, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can give up this power later if you choose to.",
-  "page.gate.voice.accept": "Activate 🏛️",
+  "page.gate.voice.accept": "Accept 🏛️",
   "page.gate.voice.title": "Activate Your Membership",
   "page.gate.voice.waiting": "Waiting on your arrival.",
   "page.gate.voice.why": "A 🏛️ is a constitutional proposal: one at a time, returned whole, passing only when all members agree. You are already a member; activating it opens every question, proposal and vote on the rules.",
@@ -666,7 +666,14 @@
   "session.yours.inRace": "yours · in the race",
   "session.yours.justIn": "yours · just in, evidence starting",
   "session.yours.signedTail": " · signed",
+  "shell.accept.canjudge": "Accept Voting",
+  "shell.accept.canpropose": "Accept Proposals",
+  "shell.accept.grant-pen": "Accept Founder Actions",
+  "shell.accept.grant-shield": "Accept the Founder Veto",
+  "shell.accept.grant-voice": "Accept Constitutional Proposals",
+  "shell.begin": "Begin",
   "shell.currentRule": "Current rule",
+  "shell.currentText": "Current text",
   "shell.outcome.passed": "Passed",
   "shell.outcome.ranOut": "Ran out of time",
   "shell.outcome.refused": "Refused by the Founder",
@@ -676,6 +683,7 @@
   "shell.proposedBy": "ƒ (name) => 'Proposed by ' + name",
   "shell.proposedByYou": "Proposed by you",
   "shell.sep": " · ",
-  "shell.sinceReplaced": "since replaced"
+  "shell.sinceReplaced": "since replaced",
+  "shell.waitingFor": "ƒ (n) => 'Waiting for ' + n + (n === 1 ? ' member' : ' members') + ' to answer questions.'"
  }
 }
