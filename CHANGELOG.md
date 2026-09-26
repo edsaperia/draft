@@ -6,6 +6,14 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-09-26, early morning: the first cards in a new shape
+
+### Changed
+- **A decision's record opens without moving the text you were reading.** The card makes room above the clause, so the clause and its tab stay exactly where they were, and closing it gives the room back the same way.
+- **Every record carries one label on top** saying how it ended and when, such as *REJECTED · MONDAY, 21 SEPTEMBER, 17:40*, and each proposal in it is labelled the same way. A record of a clause that has changed since shows the wording it decided, marked *since replaced*.
+- **A visitor reading a document's rules sees each rule with who chose it**, on the same kind of card.
+- These are the first cards in a new, consistent shape; the rest follow over the coming weeks.
+
 ## 2026-09-26, night: the phone's task sheet shows what's next
 
 ### Changed
