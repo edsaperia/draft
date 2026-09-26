@@ -103,10 +103,14 @@ const snap = () => page.evaluate(() => {
   })).filter((p) => p.text);
   const c = document.querySelector('.setupcard');
   const card = c ? {
-    eyebrow: txt(c.querySelector('.headlab')),
+    // a card on the one shell names itself in its label above the first line
+    // (Q1541), where the old cards wore a `.headlab` eyebrow
+    eyebrow: txt(c.querySelector('.headlab, :scope > .glabslot .glab')),
     head: txt(c.querySelector('.headrule, .headtitle')),
     lock: txt(c.querySelector('.lockline')),
-    body: txt(c.querySelector('.field')),
+    body: txt(c.querySelector('.field, :scope > .gbody')),
+    // a dark commit's reason, where the row states one (Part 4 .20–.22)
+    note: txt(c.querySelector(':scope > .commitrow .gnote')),
     options: [...c.querySelectorAll('[data-set],[data-ans]')].map((el) => ({
       set: el.dataset.set || el.dataset.ans || null,
       val: el.dataset.val || el.dataset.ansval || null,
@@ -604,13 +608,14 @@ if (AS_JSON) {
     const rail = (e.rail || []).map((r) => (r.k || '?') + '·' + (r.title || r.all || '').slice(0, 44));
     console.log('  rail: ' + (rail.join(' | ') || '(empty)'));
     if (e.card) {
+      if (e.card.eyebrow) console.log('  label: ' + e.card.eyebrow);
       console.log('  head: ' + e.card.head);
       if (e.card.lock) console.log('  lock: ' + e.card.lock);
       console.log('  body: ' + (e.card.body || '').slice(0, 240));
       if (e.card.options.length) {
         console.log('  options: ' + e.card.options.map((o) => (o.on ? '[x] ' : '[ ] ') + (o.label || '').slice(0, 44)).join(' / '));
       }
-      console.log('  foot: ' + e.card.foot.map((f) => (f.label || '') + (f.disabled ? ' (off)' : '')).join(' | '));
+      console.log('  foot: ' + e.card.foot.map((f) => (f.label || '') + (f.disabled ? ' (off)' : '')).join(' | ') + (e.card.note ? ' — ' + e.card.note : ''));
     }
     if (e.paras && e.paras.length) {
       console.log('  clauses:');

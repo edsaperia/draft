@@ -485,10 +485,10 @@ const IN_PAGE = () => {
       const r = h.querySelector('.lanepick, .standpill');
       return txt(h).replace(r ? txt(r) : '', '').trim(); })(),
     lock: txt(card.querySelector('.lockline')),
-    // …and a shell card's field is its blocks slot, its fact line beside it
+    // …and a shell card's field is its fact line, its body and its blocks
     body: txt(card.querySelector('.field, .lanes')) ??
-      (card.querySelector(':scope > [data-slot="blocks"], :scope > [data-slot="fact"]')
-        ? [...card.querySelectorAll(':scope > [data-slot="fact"], :scope > [data-slot="blocks"]')].map(txt).join('') : null),
+      (card.querySelector(':scope > [data-slot="blocks"], :scope > [data-slot="fact"], :scope > [data-slot="body"]')
+        ? [...card.querySelectorAll(':scope > [data-slot="fact"], :scope > [data-slot="body"], :scope > [data-slot="blocks"]')].map(txt).join('') : null),
     // **A composer's lane is an option like any other** (issue #19). It draws
     // `data-mval`, whose value is the clause sentence the lane would set — no
     // use at all to a reader asking *which rung is this*, which is what T5
@@ -1090,6 +1090,9 @@ const IN_PAGE = () => {
           disabled: !!b.disabled || b.getAttribute('aria-disabled') === 'true',
           until: b.getAttribute('data-until'),
           radio: b.matches('.lanepick, [role="radio"]'),
+          // a glyph toggle off the row — 🍾's power table — is a choice as a
+          // radio is: the bin can put it back (Q1541 stage 2, P24)
+          toggle: b.matches('button[aria-pressed]:not(.lanepick)') && !b.closest('.commitrow, .race-mid, [data-slot="row"]'),
           on: b.getAttribute('aria-checked') === 'true' || b.getAttribute('aria-pressed') === 'true' ||
             (b.matches('.lanepick') && (b.classList.contains('on') || !!(b.closest('.pick') && b.closest('.pick').classList.contains('on')))),
           sign: b.hasAttribute('data-sign'), close: b.hasAttribute('data-close'),
@@ -2025,9 +2028,6 @@ const HEAD_WORDS = [
   /^(Passed|Rejected|Refused by the Founder|Changed by the Founder|Ran out of time)( · .+)?$/i,
   /^Final text$/i, /^Rule at the close$/i,
   /^Accept (Founder Actions|the Founder Veto|Constitutional Proposals|Proposals|Voting)$/i,
-  // …and once accepted, the power's own name (Q1541 stage 2: Part 6.1's
-  // ask-then-noun, which Ed ruled for 👑, applied to the grants and gates)
-  /^(Founder Actions|Founder Veto|Constitutional Proposals|Proposals|Voting)$/i,
   /^Add your closing comment$/i, /^Accept This Change\?$/i,
 ];
 /** …and on a block's first line (Part 4 .8–.14) */
@@ -2371,8 +2371,9 @@ function grammarRules(c, ref) {
     const withdraw = bins.some((b) => WITHDRAWS.test(b.title || ''));
     const indifferent = !!c.judgment || (g.controls || []).some((k) => /indifferent/i.test(k.tok || ''));
     const radios = (g.controls || []).some((k) => k.radio && !k.disabled);
+    const toggles = (g.controls || []).some((k) => k.toggle && !k.disabled);
     const commit = (g.rows || []).some((r) => r.tokens.some((t) => COMMIT_GLYPHS.has(tokNorm(t.t))));
-    const canEver = !isRecord && (!!(v && v.typeable) || withdraw || (radios && !indifferent && commit));
+    const canEver = !isRecord && (!!(v && v.typeable) || withdraw || ((radios || toggles) && !indifferent && commit));
     if (bins.length && !canEver) at('bin-job', '🗑️ on a card that can never give it a job (title “' + clip(bins[0].title || '', 50) + '”)', 'no-job-ever');
     if (!bins.length && canEver) at('bin-job', 'no 🗑️ on a card that can give it a job', 'missing');
     for (const b of bins) {
