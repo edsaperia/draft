@@ -1223,11 +1223,14 @@ window.COPY = (function () {
       applications: 'Applications for Membership',
       lapsed: 'Lapsed',
       removal: 'Proposed for removal',
+      // everybody who has left, each with the day in a pill (Q1557 (e))
+      alumni: 'Alumni',
     },
     // the grey row a subsection that carries a control stands on when empty
     memEmpty: {
       applications: '(no applications at the moment)',
       removal: '(nobody proposed for removal)',
+      alumni: '(nobody has left)',
     },
     // **A tag says only what its heading does not** (Q1557 (c)): *invited*
     // on an invitation sent and not yet followed, *email failed* in its place

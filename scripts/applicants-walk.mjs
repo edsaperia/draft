@@ -1163,7 +1163,10 @@ if (PRICE === 'pen' && guestResign) {
      * below, which would rebuild the rows from the module and pass either
      * way. */
     await T(4500);
+    // every row but *Alumni*'s, where somebody who left is listed on purpose
+    // since Q1557 (e) — read separately below
     const listed = await page.evaluate(() => [...document.querySelectorAll('.memrow .mn')]
+      .filter((r) => !r.closest('.csub') || !r.closest('.csub').querySelector('#cs-mem-alumni'))
       .map((r) => (r.textContent || '').replace(/\s+/g, ' ').trim()));
     const stillThere = listed.filter((t) => t.toLowerCase().includes('rowan'));
     say('the poll   · register reads ' + JSON.stringify(listed));
@@ -1171,6 +1174,20 @@ if (PRICE === 'pen' && guestResign) {
       say('FAIL: the member who resigned is still listed on the open page — ' +
         JSON.stringify(stillThere) + ' (issue #11, F2)');
       stuck.push('the departed row on the open page');
+    }
+    // …and under *Alumni* instead, the day in a pill (Q1557 (e))
+    const alumni = await page.evaluate(() => {
+      const h = document.getElementById('cs-mem-alumni');
+      const box = h && h.closest('.csub');
+      return box ? [...box.querySelectorAll('.memrow:not(.nobody)')].map((r) => ({
+        t: (r.textContent || '').replace(/\s+/g, ' ').trim(),
+        pill: ((r.querySelector('.chip') || {}).textContent || '').trim() })) : null;
+    });
+    say('alumni     · ' + JSON.stringify(alumni));
+    const alum = (alumni || []).find((r) => r.t.toLowerCase().includes('rowan'));
+    if (!alum || !/^\d{1,2} [A-Z][a-z]+( \d{4})?$/.test(alum.pill)) {
+      say('FAIL: the member who resigned is not under *Alumni* with the day in a pill — ' + JSON.stringify(alumni));
+      stuck.push('the departed row under Alumni (Q1557)');
     }
     /* **And the page that resigned is the door** — the other side of the same
      * poll, and the one F2's splice has to be safe on. A seat that dies

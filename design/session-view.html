@@ -1556,9 +1556,17 @@
       : d.by === 'members' ? PAGE_COPY.departed.lineMembers(who, dayOf(d.t))
       : PAGE_COPY.departed.lineFounder(who, dayOf(d.t));
   };
-  // newest first, whole — v1 rosters are 5–10, so no cap
-  const departureLines = () => departuresOf().slice().reverse()
-    .map((d) => '<p class="setnote departure">' + departureLine(d) + '</p>').join('');
+  // **Who has left is a list of people, under *Alumni*** (Q1557 (e), Ed
+  // 2026-09-26), where it was one grey sentence per departure at the foot of
+  // *Members*: a row per former member, face and name like any member row,
+  // and the day they left in a pill — **the date only**, the same whether
+  // they left, the membership removed them or the Founder did (Ed chose the
+  // date over saying how; the 🥾 news card still says how, `departureLine`).
+  // Newest first, whole — v1 rosters are 5–10, so no cap.
+  const alumniRows = () => departuresOf().slice().reverse()
+    .map((d) => '<div class="memrow">' +
+      avHtml({ n: d.erased ? '' : (d.name || d.email || ''), pic: d.erased ? null : d.picture, erased: !!d.erased }) +
+      '<span class="mn">' + esc(departedName(d)) + tagChip(dayOf(d.t)) + '</span></div>').join('');
   // **the standard proposal rate**, one literal (Q740, Ed 2026-08-23). The
   // founding pre-answers nothing (F6), and this is not a pre-answer: the card
   // still opens with three empty boxes, and these numbers are what the machine
@@ -3079,8 +3087,9 @@
       hide: () => S.viewer === 'applicant', changeable: true,
       ready: () => S.emailVerified || (!S.emailSent && EMAIL_OK.test(S.myemail)) },
     // 🌂 (Q1400, Ed 2026-09-16: *the leave button should be on a card in the
-    // profile stack*): a door on your own row, never a task — nothing asks
-    // you to leave — so it stands in the row's stack and nowhere in the rail;
+    // profile stack*): a door, never a task — nothing asks you to leave — so
+    // it stands in a pile and nowhere in the rail; since Q1557 (e) (Ed,
+    // 2026-09-26) the pile is the *Alumni* heading's, not your own row's;
     // one label in every state; its body is the warning and its ✓ resigns.
     // Post-🍾 only: before the start the founder's way out is the 🎩 untick.
     { k: 'leave', g: '🌂', t: PAGE_COPY.cards.leave.t, kind: 'personal', own: 'you', leaveDoor: true,
@@ -4718,8 +4727,9 @@
   // line, so their ✋🖼️📧 stack joins the grants' pile on it. The open-card
   // path comes free — that paragraph already routes an open pile card through
   // `paraWith` — and so does the rail anchor, `hostParaOf` reading `data-chip`.
-  // …and 🌂 last, the way out at the end of the stack (Q1400)
-  const myIdCards = () => ['myname', 'mypic', 'myemail', 'leave'].map(card).filter((c) => c && visible(c));
+  // 🌂 rode last in this stack from Q1400 until Q1557 (e), Ed 2026-09-26: the
+  // way out is the *Alumni* heading's act now, beside the people who took it
+  const myIdCards = () => ['myname', 'mypic', 'myemail'].map(card).filter((c) => c && visible(c));
   const idOnFounded = () => (cs && amFounder() && !viewerIsMember() ? myIdCards() : []);
   // One question card per delegable setting, born when its setting is handed
   // over and gone if it is taken back. Same glyph, same title — it is the
@@ -4981,6 +4991,22 @@
         // founding follows the document, so 🎩 *are you a member* and your own
         // name and picture still come before you invite anybody, which is the
         // order somebody actually does it in.
+        // **Alumni, under *Proposed for removal*** (Q1557 (e), Ed 2026-09-26):
+        // everybody who has left, newest first, each with the day in a pill.
+        // It carries 🌂 — the way out, beside the people who took it — so,
+        // like the other subsections that carry a control, it stands when
+        // empty wherever 🌂 is yours to press, with *(nobody has left)*;
+        // where it is not (before 🍾, a clerk, a stranger, the closed page) it
+        // stands on its rows alone, as *Lapsed* does. 🥾's departure news
+        // stands in its pile: the person it is about is listed here, and the
+        // card replaces the paragraph they stand in (Q901's reason, moved).
+        const leaveOn = !isStranger() && visible(card('leave'));
+        const alumni = alumniRows();
+        const alumniSub = alumni || leaveOn
+          ? memSub(PAGE_COPY.memHeads.alumni,
+            alumni || '<div class="memrow nobody">' + esc(PAGE_COPY.memEmpty.alumni) + '</div>',
+            isStranger() ? [] : ['leave'].concat(departureKeys()))
+          : '';
         // **🪪 leads** (Ed, 2026-08-26, entry 94): what admission costs comes
         // before whether strangers may apply, since an application pays it
         return (visible(card('admission')) ? h.para(card('admission')) + h.tasks(card('admission')) : '') +
@@ -4993,11 +5019,11 @@
           // for removal* — each still wearing its own ✒️/🛡️ pair, and each a
           // pile rather than a button in a row. 🎩 stays on *Members*, being
           // about the founder's own place in it. The stranger reads the
-          // register as the door serves it, under *Members* alone.
-          // **The register tells the room who left** (Q901, E31–E32): one grey
-          // sentence per departure after the rows — document text, so it
-          // reads on the closed page and in the record, and the stranger
-          // reads it where 🌍 lets them read *Members*
+          // register as the door serves it, under *Members* and *Alumni*.
+          // **The register tells the room who left** (Q901, E31–E32), under
+          // *Alumni* since Q1557 (e) — document text, so it reads on the
+          // closed page and in the record, and the stranger reads it where 🌍
+          // lets them read *Members*
           // **And a subsection that stands empty says so** (entry 183, Ed's QA
           // of batch Q). The three that carry a control stand whether or not
           // they have rows (F21), so empty each was a heading over a pile and
@@ -5009,16 +5035,13 @@
           // branch — a per-title default inside a layout function would be a
           // table of words hidden where nobody reads copy.
           (isStranger()
-            ? memSub(PAGE_COPY.memHeads.members, strangerRows + departureLines(), [], true)
-            // 🥾's departure news stands on the *Members* heading beside 🎩
-            // (Q901): the sentence it opens is the register line under these
-            // very rows, and the card replaces the paragraph they stand in.
+            ? memSub(PAGE_COPY.memHeads.members, strangerRows, [], true)
             // The invitations sent stand after the arrived rows and before
-            // your own (Q1557 (a)), and 📭 beside them (E34): the give-up is
+            // your own (Q1557 (a)), and 📭 beside 🎩 (E34): the give-up is
             // about somebody listed here, and this is where a reader looks
             : memSub(PAGE_COPY.memHeads.members, nobody + here.map((p) => memRow(p)).join('') +
-                invited.map((p) => memRow(p)).join('') + meBlock + departureLines(),
-                ['hat'].concat(mailGiveUpKeys(), departureKeys()), false, !!openId) +
+                invited.map((p) => memRow(p)).join('') + meBlock,
+                ['hat'].concat(mailGiveUpKeys()), false, !!openId) +
               // **Every vote on letting somebody in, one heading** (Q1557 (b)):
               // a member's proposal to invite, by its address, then a
               // stranger's own application. ✉️ heads it — its result in the
@@ -5037,7 +5060,8 @@
               memSub(PAGE_COPY.memHeads.removal, proposedOut.length
                 ? proposedOut.map((p) => memRow(p, true)).join('')
                 : '<div class="memrow nobody">' + esc(PAGE_COPY.memEmpty.removal) + '</div>',
-                ['remove', 'pw:u:remove', 'pw:a:remove'].concat(motionCardsFor(card('remove')).map((c) => c.k))));
+                ['remove', 'pw:u:remove', 'pw:a:remove'].concat(motionCardsFor(card('remove')).map((c) => c.k)))) +
+          alumniSub;
       } },
     // **Proposals reads second** (Q871, Q872, Ed 2026-08-26: *Proposals above
     // Decisions* — reversing *Proposals reads fourth*, Ed 2026-08-21). That
