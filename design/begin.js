@@ -382,13 +382,19 @@ window.BEGIN = (function () {
     const beginRowHtml = (k) => '<tr data-bkey="' + k + '">' +
       '<td class="bname">' + settingNamed(midOf(k)) + '</td>' +
       beginCellHtml(k, 'u') + beginCellHtml(k, 'a') + '</tr>';
+    // **the table holds an unsent choice** once any live cell stands off its
+    // start — the card's 🗑️ then has something to put back (Q1541 stage 2,
+    // 1541.9: the bin drawn dark from the start, lit once there is)
+    const beginDirty = () => !constituted() && amFounder() && BEGIN_ROWS.some((k) => ['u', 'a'].some((pw) =>
+      beginStillHeld(k, pw) && S.beginRows[k + ':' + pw] !== undefined &&
+      S.beginRows[k + ':' + pw] !== (k === 'text' ? 'down' : 'keep')));
     const beginTableHtml = () => {
       if (constituted() || !amFounder()) return '';
       // no header row (Ed, 2026-09-09: *no column heads*): each cell's own
       // glyph says which power it is
       return '<div class="unlocks"><b>What the Founder keeps.</b></div>' +
         '<p class="why">Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.</p>' +
-        '<table class="begintable"><tbody>' +
+        '<table class="begintable"' + (beginDirty() ? ' data-draft="1"' : '') + '><tbody>' +
         BEGIN_ROWS.map(beginRowHtml).join('') + '</tbody></table>';
     };
     // the card's last line while it cannot begin: when it comes back. On the
@@ -543,7 +549,7 @@ window.BEGIN = (function () {
     };
 
     return { readinessOf, oneVoiceRemedy, inviteTask, oneVoiceAsk, beginOffered, beginCollecting, dueMembers, releaseBody, mailGiveUpBody,
-      BEGIN_ROWS, beginStillHeld, beginPos, beginLayDown, beginBody, beginFoot, closingBody };
+      BEGIN_ROWS, beginStillHeld, beginPos, beginLayDown, beginDirty, beginBody, beginFoot, closingBody };
   }
   return { make };
 })();

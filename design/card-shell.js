@@ -136,7 +136,9 @@ window.CARD_SHELL = (function () {
     if (shape === 'absent') return '';
     const acts = st.acts || [];
     const bin = acts.find((a) => a.kind === 'bin' || a.kind === 'withdraw');
-    const binHtml = bin ? '<button class="btn glyphbtn" data-act="' + esc(bin.act || 'bin') + '"' +
+    // the bin carries its surface's own hook where it has one (the band's
+    // `data-revert`), else the shell's `data-act`
+    const binHtml = bin ? '<button class="btn glyphbtn"' + (bin.attrs ? bin.attrs : ' data-act="' + esc(bin.act || 'bin') + '"') +
       (bin.until ? ' disabled data-until="' + esc(bin.until) + '"' : '') +
       ' title="' + esc(bin.title || '') + '">🗑️</button>' : '';
     const NOTE = /^(drip|voice-out|readiness)$/;

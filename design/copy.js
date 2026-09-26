@@ -1379,22 +1379,15 @@ window.COPY = (function () {
     sep: ' · ',
     // ---- stage 2: the acknowledgement cards ----
     // .23, .24 — a grant's label is its act while it is owed (the grants,
-    // and 💡 ⚖️ drawn like grants); once accepted the card asks nothing, so
-    // its label is the power's own name — the ask-then-noun Ed ruled for 👑
-    // (answers Part 6.1)
+    // and 💡 ⚖️ drawn like grants); once accepted the card asks nothing and
+    // its label is what its first line is, *Current rule* (.3) — the
+    // ask-then-rule Ed ruled for 👑 (answers Part 6.1)
     accept: {
       'grant-pen': 'Accept Founder Actions',
       'grant-shield': 'Accept the Founder Veto',
       'grant-voice': 'Accept Constitutional Proposals',
       canpropose: 'Accept Proposals',
       canjudge: 'Accept Voting',
-    },
-    accepted: {
-      'grant-pen': 'Founder Actions',
-      'grant-shield': 'Founder Veto',
-      'grant-voice': 'Constitutional Proposals',
-      canpropose: 'Proposals',
-      canjudge: 'Voting',
     },
     // 6.8 — 🍾's label is today's title until Q1542 reworks the card
     begin: 'Begin',

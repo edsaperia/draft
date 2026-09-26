@@ -9958,7 +9958,14 @@
       if (!shellAck(c) || !c.isBegin || constituted() || !amFounder()) return [];
       const rd = readinessOf();
       const can = !rd || rd.ready;
-      return [{ kind: 'commit', glyph: '🍾', cls: 'btn-approve emojibtn btn-pen',
+      // **🍾's power table is a choice the Founder has not sent**, so the
+      // card's 🗑️ can have a job: drawn dark from the start, lit once a cell
+      // stands off its start, putting the table back (1541.9 — answers.md
+      // wins over BUILD.md's *no bin on these kinds*)
+      const dirty = beginDirty();
+      return [{ kind: 'bin', title: PAGE_COPY.binPutBack,
+        attrs: dirty ? ' data-revert="1"' : ' data-act="bin"', until: dirty ? null : 'nothing-yours' },
+      { kind: 'commit', glyph: '🍾', cls: 'btn-approve emojibtn btn-pen',
         attrs: ' data-confirm="1" data-begin="1"',
         title: can ? 'Begin the document — a full one-second hold' : 'The document cannot begin yet',
         until: can ? null : 'readiness', note: can ? null : beginWaiting(rd) }]; },
@@ -9972,7 +9979,7 @@
           label: { text: window.SETUP.labelOf(c, ctx) },
           head: { html: window.SETUP.headHtml(c, ctx, hints.siblings || [c],
             '<div class="headrule" data-fact="place">' + st.place.html + '</div>') },
-          body: { html: b ? releaseBody(b) : '<p class="why">This is no longer outstanding.</p>' },
+          body: { html: (b ? releaseBody(b) : '<p class="why">This is no longer outstanding.</p>') + doorErrHtml(k) },
         };
       }
       if (shellAck(c) && st.place) {
@@ -9986,10 +9993,12 @@
         return {
           kind: ACK_SHELL[k],
           frame: { cls: 'sugg setupcard', attrs: ' role="tabpanel" data-setupcard="' + esc(k) + '"' },
-          label: { text: c.isBegin ? W.begin : st.owed ? W.accept[k] : W.accepted[k] },
+          label: { text: c.isBegin ? W.begin : st.owed ? W.accept[k] : W.currentRule },
           head: { html: window.SETUP.headHtml(c, ctx, sibs,
             '<div class="headrule" data-fact="place">' + st.place.html + '</div>') },
-          body: { html: body },
+          // a refusal against this card prints under its body, as the one
+          // wrapper every old card passes through does (Q1330, SURFACE Y25)
+          body: { html: body + doorErrHtml(k) },
         };
       }
       if (!shellRule(c) || !st.place) return {};
@@ -10447,7 +10456,7 @@
   // with the page bindings it reads — `cs` and `FIX` through accessors, since
   // both are reassigned; every function wrapped, read when called.
   const { readinessOf, oneVoiceRemedy, inviteTask, oneVoiceAsk, beginOffered, beginCollecting, dueMembers, releaseBody, mailGiveUpBody,
-    BEGIN_ROWS, beginStillHeld, beginPos, beginLayDown, beginBody, beginFoot, closingBody } = window.BEGIN.make({
+    BEGIN_ROWS, beginStillHeld, beginPos, beginLayDown, beginDirty, beginBody, beginFoot, closingBody } = window.BEGIN.make({
     S, PAGE_COPY, SEC, SESSION,
     get cs() { return cs; },
     get FIX() { return FIX; },
