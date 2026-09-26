@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 695
+  "entries": 697
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -531,7 +531,6 @@
   "page.wallet.voiceHeld": "You can ask all members to agree to a constitutional change. One question at a time.",
   "page.wallet.voiceNot": "Any member can propose a constitutional change 🏛️; all members must agree for it to pass.",
   "page.wallet.voiceOut": "You are asking all members to agree to a constitutional change. This comes back when that question settles, or when you withdraw it.",
-  "page.whyChangingLabel": "Why are you changing this?",
   "page.whyChangingPlaceholder": "I am changing this because…",
   "session.blank.gap": "Start a new clause here.",
   "session.blank.mayPropose": "Nothing here yet — start typing to propose the first paragraph.",
@@ -691,12 +690,15 @@
   "shell.outcome.ranOut": "Ran out of time",
   "shell.outcome.refused": "Refused by the Founder",
   "shell.outcome.rejected": "Rejected",
+  "shell.previousRule": "Previous rule",
   "shell.previousText": "Previous text",
   "shell.proposed": "Proposed",
   "shell.proposedBy": "ƒ (name) => 'Proposed by ' + name",
   "shell.proposedByYou": "Proposed by you",
+  "shell.ruleAtClose": "Rule at the close",
   "shell.sep": " · ",
   "shell.sinceReplaced": "since replaced",
+  "shell.voiceOut": "You can only make one constitutional proposal 🏛️ at a time.",
   "shell.waitingFor": "ƒ (n) => 'Waiting for ' + n + (n === 1 ? ' member' : ' members') + ' to answer questions.'"
  }
 }
