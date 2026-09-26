@@ -6,6 +6,13 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-09-26, midday: more cards in the new shape
+
+### Changed
+- **The cards that hand you a power, the Proposals and Voting cards, the Begin card, the news of powers laid down, and the notice that a proposal is on hold now take the new shape**: one label on top, the rule itself as the first line, and one button saying what it does, such as *Accept Proposals*. Once accepted, the card reads *Current rule*.
+- **On a phone, a card that asks nothing of you closes when you tap outside it**, without pressing anything beneath.
+- **The Begin card's 🗑️ stays dark until you change a row of its table**, and lights when there is something to put back.
+
 ## 2026-09-26, early morning: the first cards in a new shape
 
 ### Changed
