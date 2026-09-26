@@ -1712,9 +1712,10 @@ function rulesFor(card, tok) {
       xs.length + ' left edges: ' + xs.map((x) => x + 'px').join(', '));
   }
   // Only the front of a pile has a position beside a clause to be measured
-  // against; and only the horizontal promise is a resting-state fact — the
-  // clause head stands under the card's own eyebrow, so a vertical travel is
-  // the eyebrow's height, which every card has and no card is wrong about.
+  // against, and this reading is taken at scroll 0, where the page cannot
+  // make the label's room above (answers Part 6.4): the vertical promise is
+  // P13's, on the glass from a scroll that allows it (Q1541 stage 6 — the
+  // eyebrow that dropped the tab by its height is gone from every card).
   if (card.tab.front && card.tab.travel && Math.abs(card.tab.travel[0]) > 0.01) {
     at('P2', 'positioning', 'the 8px goes on padding-left as well as width, so the glyph does not move',
       'the glyph moves ' + card.tab.travel[0] + 'px sideways when the card opens');
@@ -1725,8 +1726,13 @@ function rulesFor(card, tok) {
     // 8px of growth to the left, and 2px of tuck under the card on the right
     // (system.css `.clausehead .achip`, 2026-09-06: the tuck's 2px is padding,
     // so the glyph stays put) — 10px of box, all of the visible part leftward
-    if (!near(grew, 10, 0.51) || (left !== null && !near(left, -8, 0.51))) {
-      at('P3', 'positioning', 'the active tab grows 8px to the left, plus the 2px tuck under the card',
+    // …**on a phone it highlights in place** (1541.53, Q1541 stage 6): the
+    // tabs stand flush with the glass, so below the 900px line only the tuck
+    const narrow = VIEWPORT.width <= 900;
+    if (narrow ? (!near(grew, 2, 0.51) || (left !== null && !near(left, 0, 0.51)))
+      : (!near(grew, 10, 0.51) || (left !== null && !near(left, -8, 0.51)))) {
+      at('P3', 'positioning', narrow ? 'on a phone the active tab highlights in place — only the 2px tuck under the card (1541.53)'
+        : 'the active tab grows 8px to the left, plus the 2px tuck under the card',
         'it grows ' + grew + 'px and its left edge moves ' + left + 'px');
     }
   }
