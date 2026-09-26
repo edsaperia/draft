@@ -148,6 +148,7 @@ What it needs a ruling on is the evidence. A revision is a **new candidate**: an
 
 | # | Title | Raised | State | Pointers |
 |---|---|---|---|---|
+| 1559 | A `/d/` page shows *Untitled* for a second before its document loads | 2026-09-26 | **ruled by Ed 2026-09-26: a skeleton, after the redesign** — condition to act: redesign stage 10 (*Retire and fold*, BUILD.md) merged | `session-view.html:266`, `:688`; `liveBoot` (live.js) |
 | 1554 | boot-guard re-seeds each run, so its before/after compares different sets | 2026-09-26 | **the fixed set built 2026-09-26** (Ed: *fixed set now*; 0e48ce5d — a committed set, `packages/sim-harness/fixtures/boot-guard-set.json.gz`, 9,053 entries, 13% of the window); **what remains is the next replay cost**, the O(n²) `buildRaceGroups` step (~22% of replay) — condition to act: boot-guard red again | `boot-guard`; `design/DECISIONS.md` *Q1553 closed* |
 | 1550 | Comments with votes: deliberation that later voters see | 2026-09-25 | **parked by Ed 2026-09-26: *not now*** — stage 6 builds no comment slot; condition to act: redesign stage 6 merged and one live room held on it since — then ask again, readings (a)–(c) as below | SPEC §3.5 (blindness); `participant-api`; Q94 |
 | 1551 | Amendments per hour: the throughput number, measured after every live room | 2026-09-25 | **ruled by Ed 2026-09-26: after the redesign** — condition to act: redesign stage 10 (*Retire and fold*, BUILD.md) merged | `event-log`; the nh2026 and demo logs; `alpha-preset`'s `alive` |
@@ -230,7 +231,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1559** — claim by writing the block here, then commit it alone.
+**The next free number is 1560** — claim by writing the block here, then commit it alone.
+
+**1559 is the *Untitled* flash on opening a document** (claimed 2026-09-26, Ed: *when I open docs.vote/d/nh2026, for about a second I see a blank document "Untitled" before the document loads … better some kind of loading state, or failing that nothing, rather than another document*). The cause: `session-view.html` ships the birth page's *Untitled* in the topbar (`:266`) and above the column (`:688`), and on `/d/` nothing replaces it until `liveBoot`'s first view is rendered; nh2026 measured at 0.3 s each for the 684 KB page and the 1 MB view, the rest being parse and first render, so smaller payloads shorten the flash without removing it. **Ruled by Ed the same day: a skeleton** — the page's own shape, the title and first lines as soft grey bars pulsing (still under reduced motion), no words, the page knowing from its first frame that it opens an existing document (a class set in `<head>` on `/d/`, lifted at the first render); it also covers the boot's 4 s retries. **After the redesign**: condition to act, redesign stage 10 merged.
 
 **1558 is a record tab that jumps at phone width** (claimed 2026-09-26, from the Q1555 follow-up's audit). At 390px, `card-audit`'s P11 sees a record's tab in the guests strip move 24–112px down when pressed while a live card is open — 36 sightings on main before Q1555, 31 after, none new. Filed by Ed against redesign stage 6, whose acceptance is *the tab you click does not move, on the charter*: no separate fix. Condition to act: stage 6 merged — delete if its 390 audit shows no P11, else it is a stage-6 defect.
 
