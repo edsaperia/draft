@@ -355,6 +355,10 @@ case "$GROUP" in
     # the red Reconnecting… bar (Q1505): offline, a 502, a hung poll, the
     # pause keeping its modal, and a vote refused at the press
     walk "reconnecting" node scripts/repro/reconnecting.mjs "$BASE"
+    # **the strip under the 📝 riding tab** (Q1369, absorbed into redesign
+    # stage 6): on the ladder's session rung, every live judgment card's
+    # strip joins its card, clear of the riding tab, at 1600 and 390
+    walk "ridetab-strip" node scripts/repro/ridetab-strip.mjs "$BASE"
     ;;
 
   # the self-starting walks: each serves design/ itself and takes no base URL
