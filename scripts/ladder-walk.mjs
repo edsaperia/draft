@@ -165,15 +165,17 @@ async function hatCard() {
     document.querySelector('#rail [data-card="hat"], #band [data-tab="hat"]')?.click();
   });
   await T(500);
+  // **the locked 🎩 is read** (Q1541 stage 3b): the sentence that stands as
+  // its first line, wearing its pill; nothing unchosen, no row
   const r = await page.evaluate(() => {
-    const picks = [...document.querySelectorAll('.setupcard .choice .pick')];
+    const c = document.querySelector('.setupcard');
     const out = {
-      radios: picks.length,
-      locked: picks.filter((p) => p.querySelector('.lanepick')?.disabled).length,
-      marked: picks.filter((p) => p.classList.contains('on'))
-        .map((p) => (p.querySelector('.opttext')?.textContent ?? '').trim()),
+      radios: c ? c.querySelectorAll('.choice .pick, .lanepick').length : -1,
+      line: (c?.querySelector('[data-fact="place"]')?.textContent ?? '').replace(/\s+/g, ' ').trim(),
+      pill: !!c?.querySelector('.standpill'),
+      row: !!c?.querySelector('[data-slot="row"]'),
     };
-    document.querySelector('.setupcard [data-revert]')?.click();
+    document.querySelector('.setupcard .chipcol .achip')?.click();
     return out;
   });
   await T(400);
@@ -347,8 +349,9 @@ async function assertSurface(rung) {
     check(rung, 'the membership is drawn', m.members > 1, `${m.members} rows`);
     // **Q1503**: a reloaded page past 🍾 must say what 🎩 was locked at
     const hat = await hatCard();
-    check(rung, '🎩 is locked, with its answer marked', hat.radios === 2 && hat.locked === 2 && hat.marked.length === 1,
-      `${hat.radios} radios, ${hat.locked} locked, marked: ${JSON.stringify(hat.marked)}`);
+    check(rung, '🎩 is locked, with its answer standing',
+      hat.radios === 0 && /^The Founder is (not )?part of the membership\./.test(hat.line) && hat.pill && !hat.row,
+      `“${hat.line}”${hat.pill ? ' wearing its pill' : ', no pill'}, ${hat.radios} radios${hat.row ? ', a row' : ''}`);
   }
   if (rung === 'closing') {
     check(rung, 'the clock is counting down', /m|min|hour|h\b/i.test(m.clockText), m.clockText);

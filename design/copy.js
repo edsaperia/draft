@@ -1017,7 +1017,7 @@ window.COPY = (function () {
         authorship: 'the anonymity rule', judgments: 'the vote-reveal rule',
         chamber: 'the visibility rule', rate: 'the proposal rate', lapse: 'the lapse rule',
         removal: 'the removal rule',
-        admission: 'the admission price', applications: 'the applications rule',
+        admission: 'the admissions rule', applications: 'the applications rule',
         invite: 'invitations', remove: 'removals',
         fallback: 'this',
       },
