@@ -260,6 +260,9 @@ export const clickIn = async (page, sel, { settleMs = 420, scroll = true } = {})
 /** Open a task from the rail or its tab in the band (journey's). */
 export const open = async (page, k, { settleMs = 420 } = {}) => {
   const ok = await page.evaluate((kk) => {
+    // already open — the review walk opens the next owed card by itself since
+    // Q1536 (Ed 2026-09-25), and a press on an open card's tab shuts it
+    if ([...document.querySelectorAll('.setupcard[data-setupcard]')].some((c) => c.dataset.setupcard === kk)) return true;
     const el = document.querySelector('#rail [data-card="' + kk + '"], #band [data-tab="' + kk + '"]');
     if (!el) return false;
     el.click();
@@ -272,6 +275,9 @@ export const open = async (page, k, { settleMs = 420 } = {}) => {
 /** Open a card by key from the rail first, then the band (founding-walk's). */
 export const openCard = async (page, k, { settleMs = 320 } = {}) => {
   const ok = await page.evaluate((kk) => {
+    // already open — the review walk opens the next owed card by itself since
+    // Q1536 (Ed 2026-09-25), and a press on an open card's tab shuts it
+    if ([...document.querySelectorAll('.setupcard[data-setupcard]')].some((c) => c.dataset.setupcard === kk)) return true;
     const sel = '[data-card="' + kk + '"], [data-tab="' + kk + '"]';
     const el = document.querySelector('#rail ' + sel) || document.querySelector('#band ' + sel);
     if (!el) return false;

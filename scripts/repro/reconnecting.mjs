@@ -91,7 +91,9 @@ const openPage = async () => {
   await landOn(page, `${B}/d/${slug}`); await sleep(3000);
   // every OK the page asks for, so the rail holds the race
   for (let i = 0; i < 20; i++) {
-    const k = await page.evaluate(() => { const e = [...document.querySelectorAll('#rail [data-card]')]
+    // a card the review walk has already opened (Q1536) takes its OK where it stands
+    const k = await page.evaluate(() => { if (document.querySelector('.setupcard [data-ok]:not([disabled])')) return 'open';
+      const e = [...document.querySelectorAll('#rail [data-card]')]
       .find((x) => !['myname', 'mypic'].includes(x.dataset.card) && !x.dataset.card.includes('#') && !x.dataset.card.startsWith('mine:'));
       if (!e) return null; e.click(); return e.dataset.card; });
     if (!k) break;

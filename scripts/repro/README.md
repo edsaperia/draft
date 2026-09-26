@@ -144,9 +144,11 @@ pre-fix page before its fix landed.
   carries the signatures and the amendments, no member id and no mover, and the page draws
   the Amendments and the Signatures block for block as a member's closed page. The phase ladder closes the document (`--seed=`, moving on until 🌍 is readable).
 - `review-walk.mjs <dev server>` — Q1536: a clause decided three times while a reader looks
-  on (passed, rejected with the reader's vote against it, passed) folds into one entry, one
-  tab and one card — its head the net change, each record listed and opening inside it, one
-  OK for all three — while the reader's own ✔ on the same clause keeps its own; OK, and
-  Enter, walk to the next owed record in document order, wrapping to the top, and the one
-  pinned record is the one the walk would open. Asserting: exit 1 on the defect, 2 on a
-  set-up that never got there.
+  on (passed, rejected with the reader's vote against it, passed) folds into one rail entry
+  and one card — its head the net change, each record listed, one OK for all three — while
+  each record keeps its tab, which opens its own card wearing that OK, unmoved; the reader's
+  own ✔ on the same clause keeps its own; two ✖s on another line fold into a card saying the
+  text is unchanged; OK, and Enter, walk to the next owed thing in document order — the
+  Rules' owed news first, then the text — wrapping to the top, and the one pinned record is
+  the one the walk would open (Ed's rulings of 2026-09-25). Asserting: exit 1 on the defect,
+  2 on a set-up that never got there.

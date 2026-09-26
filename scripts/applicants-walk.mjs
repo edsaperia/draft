@@ -98,6 +98,10 @@ const open = async (k) => {
   const sel = `#rail [data-card="${k}"], #rail [data-q="${k}"], #doc [data-card="${k}"]`;
   const el = await page.$(sel);
   if (!el) return false;
+  // already open — the review walk opens the next owed card by itself since
+  // Q1536 (Ed 2026-09-25), and a press on an open card's entry shuts it
+  if (await page.evaluate((kk) => [...document.querySelectorAll('.setupcard[data-setupcard]')]
+    .some((c) => c.dataset.setupcard === kk), k)) return true;
   await el.scrollIntoViewIfNeeded();
   await el.click();
   await T(450);
@@ -600,6 +604,14 @@ await T(2500);
     await T(5000); // >4s: a poll lands carrying the acknowledgement
   }
 }
+// the review walk (Q1536) may have opened the next owed card after that OK;
+// the rail and the rows are read with none open, as they always were
+await page.evaluate(() => {
+  const c = document.querySelector('.setupcard[data-setupcard]');
+  const t = c && c.querySelector('.achip[data-tab="' + c.dataset.setupcard.replace(/["\\]/g, '\\$&') + '"]');
+  if (t) t.click();
+});
+await T(900);
 
 const seen = await page.evaluate(() => ({
   rail: [...document.querySelectorAll('#rail li')].map((li) => ({

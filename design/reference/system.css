@@ -3010,6 +3010,20 @@
   .sealed-open.recpass .headclause ins, .ranked.passed ins {
     background: var(--ins-passed-bg); color: var(--fg);
   }
+  /* **One OK per clause** (Q1536): the records a clause's card folds together,
+     one row each as the rail titles it — mark, change, moment — each a way
+     into that record's own card. A hairline between rows, none after the last,
+     which the commit row's own rule follows (P12: no two hairlines facing). */
+  .foldlist { margin-top: var(--s3); }
+  .foldrec {
+    display: flex; align-items: baseline; width: 100%; min-width: 0;
+    padding: var(--s2) 0; border: 0; background: transparent; text-align: left;
+    font-family: var(--font-ui); font-size: var(--t-ui); color: var(--fg); cursor: pointer;
+  }
+  .foldrec + .foldrec { border-top: 1px solid var(--border); }
+  .foldrec .qt { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .foldrec .when { margin-left: auto; padding-left: 6px; flex: none; font-size: var(--t-cap); color: var(--muted); }
+  .foldrec:hover .qt, .foldrec:focus-visible .qt { text-decoration: underline; }
 
   /* queue-wire: the run from the open entry, down the gutter between document
      and rail, and into every place in the charter it refers to (Ed, 71/78).

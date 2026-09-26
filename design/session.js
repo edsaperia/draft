@@ -487,7 +487,9 @@
   // `tabAt` is that one test, asked by every gutter: the live strip
   // (`suggFor`), the filed pile (`filedFor`) and the record's own door
   // (`sealedAt`).
-  const tabKeysOf = (s) => (s.sites
+  // …and a clause's fold (Q1536) stands at none: its records keep their own
+  // tabs, and the fold is their one rail entry and nothing in the gutter
+  const tabKeysOf = (s) => (s.fold ? [] : s.sites
     ? s.sites.map((x) => (x.keys ? x.keys[0] : x.key)).filter(Boolean)
     : (s.keys ?? []).slice(0, 1));
   const tabAt = (s, key) => tabKeysOf(s).includes(key);
@@ -627,29 +629,37 @@
   // ---- one OK per clause (Q1536, Ed 2026-09-24, option 4) ----------------
   // *If the doc is busy, someone can come back to a page with dozens of green
   // ticks to acknowledge, which is a lot of clicks.* A clause with two or more
-  // records owed stands as **one** entry, one tab and one card — the `fold` —
-  // whose head is the net change, the text before the first of them marked
-  // against the text now, with each record listed inside and openable; one
-  // OK acknowledges them all. **A record of one of your own proposals is
+  // records owed stands in the rail as **one** entry, opening one card — the
+  // `fold` — whose head is the net change, the text before the first of them
+  // marked against the text now, with each record listed inside and openable;
+  // one OK acknowledges them all. **A record of one of your own proposals is
   // never folded in** (`mineIn`, and an early ✖ which is only ever yours):
   // it keeps its entry and its OK. A ✖ owed only because you judged it folds
   // in. Nor are the Founder's amendments (E35: one card and one OK per
   // amendment, never a batch), nor a record held on a gap, whose clause is
   // gone and has no text now to mark against.
   //
-  // Page-side, as the records' OK always was (`readSeals`): the members are
-  // lifted out of SUGGS while folded and put back by `refold`, which every
-  // bind and every OK runs, so the readers of SUGGS meet the fold as one
-  // ordinary sealed record and never see its members. Once acknowledged the
-  // members come back filed, each in the clause's pile as it always was.
+  // **Only the rail folds; every record keeps its tab** (Ed, 2026-09-25, on
+  // the builder's call 4: *tabs are ok, it's stacks of queue cards that we're
+  // trying to fix here*). So the members stay in SUGGS, each with its tab in
+  // the clause's pile, and the fold stands beside them with **no tab of its
+  // own** (`tabKeysOf`) and no rail entry for any member (`queueEntries`):
+  // one entry, however many tabs. A member's tab opens that record's own card
+  // wearing the clause's OK (`FOLD_OF`, `sealedCardHtml`'s `fold`), so the
+  // tab you click is the card's own tab and one OK is still the clause's.
+  // Page-side, as the records' OK always was (`readSeals`): `refold` runs at
+  // every bind and every OK, and once acknowledged the fold is gone and the
+  // members file as they always did.
   const FOLD_PREFIX = 'fold:';
-  const FOLDED = new Map();        // fold id → its records, in arrival order
-  const foldView = new Map();      // fold id → the record opened inside it
+  const FOLD_OF = new Map();       // a folded record's id → its fold's id
   const foldable = (g) => stateOf(g) === 'sealed' && isUnread(g) && !g.fold && !g.amendment &&
     !g.early && !g.undecided && !(g.mineIn || []).length && !g.isInsert && !g.gapKey &&
     (g.keys || []).length > 0 && !(g.keys || []).some(isGapKey);
-  // the members back in place of their fold, wherever a fold stands in `arr`
-  const unfold = (arr) => arr.flatMap((g) => (!g.fold ? [g] : FOLDED.get(g.id) || g.fold));
+  // the rail's id for a card: a folded record's is its fold's (one entry)
+  const railIdOf = (id) => (id != null && FOLD_OF.has(id) ? FOLD_OF.get(id) : id);
+  const foldOf = (g) => (g && FOLD_OF.has(g.id) ? SUGGS.find((x) => x.id === FOLD_OF.get(g.id)) || null : null);
+  // every fold out of `arr`, its members standing where they always did
+  const unfold = (arr) => arr.filter((g) => !g.fold);
   function foldItem(ms) {
     const keys = [...new Set(ms.flatMap((m) => m.keys))]
       .sort((a, b) => docIndexOfKey(a) - docIndexOfKey(b));
@@ -672,7 +682,7 @@
   }
   function refold() {
     SUGGS = unfold(SUGGS);
-    FOLDED.clear();
+    FOLD_OF.clear();
     const byKey = new Map();
     for (const g of SUGGS) {
       if (!foldable(g)) continue;
@@ -682,16 +692,9 @@
     for (const ms of byKey.values()) {
       if (ms.length < 2) continue;
       const f = foldItem(ms);
-      SUGGS.splice(SUGGS.indexOf(ms[0]), 1, f);
-      for (const m of ms.slice(1)) SUGGS.splice(SUGGS.indexOf(m), 1);
-      FOLDED.set(f.id, ms);
-    }
-    for (const id of [...foldView.keys()]) {
-      if (!FOLDED.has(id) || !FOLDED.get(id).some((m) => m.id === foldView.get(id))) foldView.delete(id);
-    }
-    // a record open when it was folded opens as its clause's card, showing it
-    if (openId != null && !SUGGS.some((x) => x.id === openId)) {
-      for (const [id, ms] of FOLDED) if (ms.some((m) => m.id === openId)) { foldView.set(id, openId); openId = id; }
+      // beside its first record, so the rail meets it in the records' order
+      SUGGS.splice(SUGGS.indexOf(ms[0]), 0, f);
+      for (const m of ms) FOLD_OF.set(m.id, f.id);
     }
   }
 
@@ -701,17 +704,56 @@
   // below; Enter presses OK. `walkAt` is where the walk last stood, which is
   // also where the pinned record (Q1532's one) is counted from: the pin is
   // the next clause card the walk would open, never the oldest.
+  //
+  // **The Rules' news are on the walk too** (Ed, 2026-09-25, on the builder's
+  // call 5: *it should go downwards in the document, and when it gets to the
+  // bottom it should go back to the top, and include rules news*). The band
+  // stands above the text, so the walk's one order is the band's owed news
+  // in the band's own document order — every entry of the Rules' family an
+  // OK answers (`extraMeta`'s `news`) — then the text's owed records, then
+  // back to the top. Each item keeps its own OK; the walk only chains them.
   let walkAt = -Infinity;
   // two of the rail's owed charter rows (`fam` 1), in the walk's order: what
   // stands at or below `walkAt` first, then from the top
   const walkOrder = (x, y) => (x.fam !== 1 || y.fam !== 1 ? 0
     : ((x.at < walkAt) - (y.at < walkAt)) || x.at - y.at);
-  const owedRecords = () => SUGGS.filter((g) => stateOf(g) === 'sealed' && isUnread(g))
+  // a folded record is walked as its fold, once
+  const owedRecords = () => SUGGS.filter((g) => stateOf(g) === 'sealed' && isUnread(g) && !FOLD_OF.has(g.id))
     .map((g) => ({ g, at: docIndexOf(g) })).sort((x, y) => x.at - y.at);
-  const nextOwed = (from) => {
-    const all = owedRecords();
-    return ((all.find((x) => x.at >= from) || all[0]) || {}).g || null;
-  };
+  // the band's entries in the band's document order: by where each stands,
+  // and entries sharing a paragraph in the order the page listed them
+  const FOLLOWS = typeof Node !== 'undefined' ? Node.DOCUMENT_POSITION_FOLLOWING : 4;
+  const bandOrder = () => [...extraMeta.values()]
+    .map((x, i) => ({ x, i, a: x.anchor ? x.anchor() : null })).filter((o) => o.a)
+    .sort((p, q) => (p.a === q.a ? p.i - q.i : (p.a.compareDocumentPosition(q.a) & FOLLOWS ? -1 : 1)))
+    .map((o) => o.x);
+  // what the walk opens next: `from` is `{ band: id }` for the Rules entry
+  // just acknowledged, or `{ at }`, a place in the text; `{ band }` or
+  // `{ text }` back, or null with nothing owed anywhere
+  function walkNext(from) {
+    const band = bandOrder();
+    const here = from.band != null ? band.findIndex((x) => x.id === from.band) : -1;
+    const all = [
+      ...band.map((x, j) => ({ band: x.id, j, news: !!x.news })).filter((e) => e.news && e.band !== from.band),
+      ...owedRecords().map((t) => ({ text: t.g.id, at: t.at })),
+    ];
+    if (!all.length) return null;
+    const below = from.band != null
+      ? all.find((e) => e.text != null || e.j > here)
+      : all.find((e) => e.text != null && e.at >= from.at);
+    const e = below || all[0];
+    return e.band != null ? { band: e.band } : { text: e.text };
+  }
+  // the band's OK, from the page (the walk's other half): where the walk goes
+  // from the Rules entry `k`, and the text's pin counted from the top again
+  function walkFromBand(k) {
+    const next = walkNext({ band: k });
+    walkAt = -Infinity;
+    return next;
+  }
+  // whether the Rules entry `k` is one the walk carries: owed, and a thing an
+  // OK answers (a grant's *Accept* is one; an unanswered question is not)
+  const bandOwes = (k) => !!(extraMeta.has(k) && extraMeta.get(k).news);
 
   // Urgency — how much this wants *you* (leverage), not how close it is to
   // resolution (that stays the meter's job). It is carried by the strength of
@@ -966,6 +1008,8 @@
     for (const g of SUGGS) {
       // (A task you have no right to do is not in SUGGS at all — `withheld`,
       // applied at ingest in bindData, so the rail needs no rule of its own.)
+      // A folded record's entry is its clause's fold (Q1536): one per clause.
+      if (FOLD_OF.has(g.id)) continue;
       // a patch's entry is titled by the section it stands in, not by the patch
       // as a whole (Ed, 183) — in a margin, the local name is the useful one
       if (g.kind === 'patch') g.sites.forEach((site, i) =>
@@ -1101,7 +1145,7 @@
         const d = g.decided || {};
         html += '<li class="qitem" data-q="' + g.id + '" data-site="' + (e.site ?? '') + '">' +
           '<button class="unread' + (isUnread(g) ? '' : ' filed') + '" data-q="' + g.id +
-          '" aria-current="' + (openId === g.id) + '"' +
+          '" aria-current="' + (railIdOf(openId) === g.id) + '"' +
           washAttrs(qKey(g, e), wash(g, anchHue(g) || 'closed').col, wash(g, anchHue(g) || 'closed').fill) +
           ' title="' + esc(d.outcome || 'sealed') +
           (isUnread(g) ? ' — you haven’t opened this one yet' : '') + '">' +
@@ -1343,7 +1387,8 @@
 
   // A rail entry may stand for several judgments — a row of sealed dots — so
   // "is this the open one" is a question about the buttons inside it.
-  const holdsFocus = (el) => (!!focusId() && !!el.querySelector('button[data-q="' + focusId() + '"]')) ||
+  // …and a clause's fold is open while any record in it is (Q1536)
+  const holdsFocus = (el) => (!!focusId() && !!el.querySelector('button[data-q="' + railIdOf(focusId()) + '"]')) ||
     (!!extra && !!extra.isOpen && extraMeta.has(el.dataset.q) && extra.isOpen(el.dataset.q));
 
   function anchorForEntry(id, siteKey) {
@@ -1906,7 +1951,8 @@
       if (row.style.display === 'none') continue;
       const dots = row.querySelectorAll('.sealdot[data-q="' + id + '"]');
       if (dots.length) { for (const d of dots) starts.push({ el: d, site: d.dataset.site }); continue; }
-      if (row.dataset.q === id) starts.push({ el: row, site: row.dataset.site });
+      // a folded record's wire leaves its clause's one entry (Q1536)
+      if (row.dataset.q === railIdOf(id)) starts.push({ el: row, site: row.dataset.site });
     }
     if (!starts.length) return;
 
@@ -2280,16 +2326,15 @@
   }
 
   // **The clause's card, for a clause with several records owed** (Q1536,
-  // option 4). The head is the clause as it stands, marked against the text
-  // before the first of them — the net change, green where it passed (the
-  // record's `.recpass`) — and beneath it each record, oldest first, as the
-  // rail would title it: a row that opens that record's own card inside this
-  // one (`foldView`), the clause's OK at its foot either way. Where none of
-  // them carried there is nothing to mark and the head is the clause.
+  // option 4) — what its one rail entry opens. The head is the clause as it
+  // stands, marked against the text before the first of them — the net
+  // change, green where it passed (the record's `.recpass`) — and beneath it
+  // each record, oldest first, as the rail would title it: a row that opens
+  // that record's own card, the one its tab opens, wearing the clause's OK.
+  // **Where none of them carried the head is the clause, and says it is
+  // unchanged** (Ed, 2026-09-25, on the builder's call 3): a fold of ✖s alone
+  // has nothing to mark, and a plain head read as if nothing had happened.
   function foldCardHtml(s) {
-    const inner = foldView.get(s.id);
-    const one = inner ? s.fold.find((m) => m.id === inner) : null;
-    if (one) return sealedCardHtml(one, s);
     const skey = s.keys[0];
     const moved = carried(s);
     const o = headOpts(s, skey);
@@ -2301,7 +2346,7 @@
       '<span class="sub">' + esc(longText(last.decided)) + '</span></div>' +
       clauseHeadHtml(s, Object.assign(o, { key: skey, chips: chipsFor(skey, s.id), label: null },
         moved && o.text != null && String(o.text).trim() ? { html: wordingHtml(s.replaced ?? '', o.text) } : {})) +
-      (moved ? '<span class="rsub">' + esc(T.record.foldSince) + '</span>' : '') +
+      '<span class="rsub' + (moved ? '' : ' foldsame') + '">' + esc(moved ? T.record.foldSince : T.record.foldSame) + '</span>' +
       '<div class="field foldlist"><div class="fieldlab">' + esc(T.record.foldList) + '</div>' +
       s.fold.map((m) =>
         '<button type="button" class="foldrec" data-foldopen="' + esc(m.id) + '" title="' + esc(T.record.foldOpen) + '">' +
@@ -2313,18 +2358,20 @@
       '</div>'
     );
   }
-  // the clause's one OK, and — on a record opened inside the clause's card —
-  // the way back to the list at the row's left, where a bin would stand
+  // the clause's one OK, and — on a record of the clause's opened from its
+  // tab or its row — the way back to the list at the row's left, where a bin
+  // would stand
   const foldOkRowHtml = (fold, left) =>
     '<div class="race-mid commitrow">' + (left || '<span></span>') +
     '<button class="btn btn-approve okbtn" data-seen="' + esc(fold.id) + '"' +
     ' title="' + esc(T.record.foldOkTitle(fold.fold.length)) + '">' + T.record.ok + '</button></div>';
 
-  // `fold`, where this record is drawn inside its clause's card (Q1536): the
-  // card is the fold's — its id, its strip, its OK — and the body this one's
+  // `fold`, where this record is one of a clause's several owed (Q1536): the
+  // card is still this record's own — its id, its tab in front in the strip,
+  // so the tab clicked is the tab lit — and its OK is the clause's
   function sealedCardHtml(s, fold) {
     if (s.amendment) return amendmentCardHtml(s);
-    const cardId = fold ? fold.id : s.id;
+    const cardId = s.id;
     const d = s.decided || {};
     // The Bradley–Terry model that ran the race carries a strength for every
     // candidate, so a sealed race can be ranked outright (Ed, 121) — and the
@@ -2621,8 +2668,8 @@
         // pressing it does, the entry in the rail says it has not been pressed, and
         // a label whose whole job is to be there until you act is a caption for the
         // absence of an act.
-        // Inside its clause's card (Q1536) the OK is the clause's, and the
-        // row's left holds the way back to the list of its records.
+        // One of a clause's several (Q1536) wears the clause's OK, and the
+        // row's left holds the way to the list of its records.
         ? (fold ? foldOkRowHtml(fold, '<button type="button" class="btn btn-withdraw foldback" data-foldback="' +
             esc(fold.id) + '">' + esc(T.record.foldBack) + '</button>') :
           '<div class="race-mid commitrow"><span></span>' +
@@ -3013,7 +3060,7 @@
   const parkNote = (s) => (s.blockedByPark
     ? '<p class="setnote">' + glyphify(esc(s.blockedByPark)) + '</p>' : '');
   function suggCardHtml(s, siteKey) {
-    if (stateOf(s) === 'sealed') return s.fold ? foldCardHtml(s) : sealedCardHtml(s);
+    if (stateOf(s) === 'sealed') return s.fold ? foldCardHtml(s) : sealedCardHtml(s, foldOf(s));
     if (stuck(s)) return deadlockCardHtml(s);
     if (s.kind === 'draft') {
       const site = (siteKey && siteFor(s, siteKey)) || s.sites[0];
@@ -3767,8 +3814,9 @@ document.addEventListener('paste', (ev) => {
         // one heading, `find` returned the first, and a press on the second
         // compared its id against the first's and drew nothing — Q1298's
         // defect again, one branch over. The mark still shows the front one.
+        // (a clause's fold, open, has no tab here but is this clause's card — Q1536)
         const hOpen = line.key && !hlive.length
-          ? SUGGS.find((g) => g.id === openId && hSealedAt(g)) : undefined;
+          ? SUGGS.find((g) => g.id === openId && (hSealedAt(g) || (g.fold && g.keys[0] === line.key))) : undefined;
         // …and where one record is still owed its OK, that one is the front
         // (the green tab, 2026-09-24): a filed ✔ found first hid it
         const hDecided = line.key && !hlive.length
@@ -3821,7 +3869,8 @@ document.addEventListener('paste', (ev) => {
       // 2026-09-24): the door draws one tab, and a read record found first in
       // `SUGGS` order stood over the unread one and hid it from the gutter
       const wasResolved = line.key && !live.length
-        ? (SUGGS.find((g) => g.id === openId && sealedAt(g)) ??
+        // (a clause's fold, open, has no tab here but is this clause's card — Q1536)
+        ? (SUGGS.find((g) => g.id === openId && (sealedAt(g) || (g.fold && g.keys[0] === line.key))) ??
           SUGGS.find((g) => sealedAt(g) && isUnread(g)) ?? SUGGS.find(sealedAt))
         : undefined;
 
@@ -4311,32 +4360,25 @@ document.addEventListener('paste', (ev) => {
         seeRecord(el.dataset.seen);
       })
     );
-    // a record listed on its clause's card opens inside that card, and the
-    // row's left takes it back to the list (Q1536); the card stays the same
-    // card, its head where it stood
-    const foldSwap = (id, inner, focusSel) => {
-      if (inner) foldView.set(id, inner); else foldView.delete(id);
-      keepStill(() => renderAll(), '.sugg[data-card="' + id.replace(/["\\]/g, '\\$&') + '"] .clausehead');
-      const card = [...doc.querySelectorAll('.sugg[data-card]')].find((c) => c.dataset.card === id);
-      const el = card && card.querySelector(focusSel);
-      if (el) { try { el.focus({ preventScroll: true }); } catch (e) { /* gone */ } }
-    };
+    // a record listed on its clause's card opens that record's own card — the
+    // one its tab opens — and the row's left on it goes back to the list
+    // (Q1536); both are a switch within one strip, so the tab stays put. The
+    // keyboard goes where C5 puts it on a record, its card's own tab, so Enter
+    // still presses the clause's OK; the way back returns it to the row.
     doc.querySelectorAll('[data-foldopen]').forEach((el) =>
       el.addEventListener('click', (ev) => {
         ev.stopPropagation();
-        const card = el.closest('.sugg[data-card]');
-        // the keyboard goes where C5 puts it on any record — its card's own
-        // tab — so Enter still presses the clause's OK
-        if (card) foldSwap(card.dataset.card, el.dataset.foldopen,
-          '.achip[role="button"][data-anchor="' + card.dataset.card.replace(/["\\]/g, '\\$&') + '"]');
+        toggle(el.dataset.foldopen, false);
       })
     );
     doc.querySelectorAll('[data-foldback]').forEach((el) =>
       el.addEventListener('click', (ev) => {
         ev.stopPropagation();
-        const id = el.dataset.foldback;
-        const was = foldView.get(id) || '';
-        foldSwap(id, null, '[data-foldopen="' + was.replace(/["\\]/g, '\\$&') + '"]');
+        const was = openId || '';
+        toggle(el.dataset.foldback, false, () => {
+          const row = doc.querySelector('[data-foldopen="' + was.replace(/["\\]/g, '\\$&') + '"]');
+          if (row) { try { row.focus({ preventScroll: true }); } catch (e) { /* gone */ } }
+        });
       })
     );
   }
@@ -4344,18 +4386,26 @@ document.addEventListener('paste', (ev) => {
   // **The OK, and the walk it starts** (Q1536). Acknowledging marks the
   // record read — every record of a clause's fold at once — and then, where
   // anything else is owed, opens the next in document order from here
-  // (`nextOwed`, wrapping to the top), travelling there as a rail click
-  // does; where nothing is, the card closes behind it as it always did.
+  // (`walkNext`: on down the text, then the Rules' news from the top, then
+  // the text from the top), travelling there as a rail click does; where
+  // nothing is, the card closes behind it as it always did.
   function seeRecord(id) {
     const g = SUGGS.find((x) => x.id === id);
     const ids = g && g.fold ? g.fold.map((m) => m.id) : [id];
+    // the card the OK was pressed on: the record's own, or one of the fold's
+    const shown = openId != null && (openId === id || ids.includes(openId)) ? openId : null;
     for (const x of ids) { readSeals.add(x); if (hooks.seen) hooks.seen(x); }
     if (g) walkAt = docIndexOf(g);
     refold();
-    const next = openId === id ? nextOwed(walkAt) : null;
-    if (next) { toggle(next.id, true); return; }
-    const shut = () => { if (openId === id) openId = null; renderAll(); drawWires(); };
-    if (openId === id) collapseCards(id, shut); else shut();
+    const next = shown != null ? walkNext({ at: walkAt }) : null;
+    if (next && next.text != null) { toggle(next.text, true); return; }
+    const shut = () => {
+      if (openId === shown) openId = null;
+      renderAll(); drawWires();
+      // the Rules' next owed news is the page's to open (the walk's other half)
+      if (next && next.band != null && extra && extra.walkTo) extra.walkTo(next.band);
+    };
+    if (shown != null) collapseCards(shown, shut); else shut();
   }
   // **Enter presses OK** (Q1536): on an open card whose OK is owed, wherever
   // the keyboard stands — except in a field, and on any control but the
@@ -4364,16 +4414,23 @@ document.addEventListener('paste', (ev) => {
   let enterBound = false;
   const enterPressesOk = (ev) => {
     if (ev.key !== 'Enter' || ev.shiftKey || ev.ctrlKey || ev.metaKey || ev.altKey || ev.isComposing) return;
-    if (openId == null || pendingId != null || !doc) return;
-    const card = [...doc.querySelectorAll('.sugg[data-card]')].find((c) => c.dataset.card === openId);
-    const ok = card && card.querySelector('.okbtn[data-seen]');
+    if (pendingId != null || !doc) return;
+    // a text record's card, or — on the walk since Ed's ruling of 2026-09-25
+    // (call 5) — a Rules card whose OK is owed: the page's, by its `data-ok`.
+    // Never a grant's *Accept*, which takes a power and is pressed by hand.
+    const band = openId == null && extra && extra.openId ? extra.openId() : null;
+    if (openId == null && !(band && bandOwes(band))) return;
+    const card = band ? document.querySelector('.setupcard')
+      : [...doc.querySelectorAll('.sugg[data-card]')].find((c) => c.dataset.card === openId);
+    const ok = card && card.querySelector(band ? '.okbtn[data-ok]:not(.grantok)' : '.okbtn[data-seen]');
     if (!ok || ok.disabled) return;
     const a = document.activeElement;
     // the OK itself presses on its own Enter, natively
     if (a === ok) return;
     if (a && a !== document.body) {
       if (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;
-      const ownTab = a.matches('.achip[data-anchor]') && a.dataset.anchor === openId;
+      const ownTab = band ? a.matches('.achip[data-tab]') && a.dataset.tab === band
+        : a.matches('.achip[data-anchor]') && a.dataset.anchor === openId;
       if (!ownTab && a.matches('button, a[href], [role="button"], [tabindex]')) return;
     }
     ev.preventDefault();
@@ -6256,6 +6313,9 @@ document.addEventListener('paste', (ev) => {
   window.SESSION = {
     init, setData, renderAll, toggle, clauseKeysOf, closeCard, setWallet, setRoom, setClosed,
     unjudge,
+    // the review walk's Rules half (Q1536, Ed 2026-09-25): whether a Rules
+    // entry is owed an OK, and where the walk goes from it once pressed
+    bandOwes, walkFromBand,
     setDocClosed,
     clockText, dateWords,
     // a block as the engine's source line — marker and words (Q1403): the

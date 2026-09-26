@@ -2881,6 +2881,15 @@ async function pageTopPass(page, key, walk, p13, errors) {
 }
 
 async function openAndMeasure(page, key, cardSel, walk, cards, errors) {
+  // **The review walk may already have opened it** (Q1536, Ed 2026-09-25): an
+  // OK on owed news opens the next owed card, so a grant accepted leaves the
+  // next grant open. Closed first, it is measured from rest as it always was;
+  // pressed while open, its tab would shut it and read as opening nothing.
+  if (await page.evaluate((k) => [...document.querySelectorAll('.setupcard[data-setupcard], .sugg[data-card]')]
+    .some((c) => (c.dataset.setupcard || c.dataset.card) === k), key)) {
+    await page.evaluate((k) => window.__CA.closeOpenCard(k), key);
+    await wait(page, 400);
+  }
   const before = await page.evaluate((k) => window.__CA.closedGeo(k), key);
   if (!before.anyOpen) await zonesFor(page, walk, 'rest');
   const clickIn = () => page.evaluate((k) => {
