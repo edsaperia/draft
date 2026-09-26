@@ -981,8 +981,9 @@ const secondSeatPreBegin = async () => {
     ? 'nothing set before this arrival is served · served ' + JSON.stringify(f.served)
     : 'FAIL: ' + JSON.stringify(owed) + ' are served as acknowledgements before 🍾'));
   if (owed.length) stuck.push('pre-Begin acks in the member seat: ' + owed.join(','));
-  /* **…and 🏛️ reaches them as *Activate Your Membership*** (Q1502, Ed
-   * 2026-09-22): a body about 🏛️ alone, and the commit *Accept 🏛️* (Q1541.24). Read
+  /* **…and 🏛️ reaches them as *Accept Constitutional Proposals*** (Q1502,
+   * Ed 2026-09-22; the rail matching the card since Q1556 (14)): a body
+   * about 🏛️ alone, and the commit *Accept 🏛️* (Q1541.24). Read
    * and closed, never pressed — what the OK then opens is the member
    * questions walk's. */
   const voice = await guestPage.evaluate(async () => {
@@ -999,7 +1000,7 @@ const secondSeatPreBegin = async () => {
     return out;
   });
   await guestPage.waitForTimeout(400);
-  const voiceOk = !!voice && voice.word === 'Accept 🏛️' && /Activate Your Membership/.test(voice.title || '') &&
+  const voiceOk = !!voice && voice.word === 'Accept 🏛️' && /^Accept Constitutional Proposals\b/.test(voice.title || '') &&
     /You are already a member/.test(voice.body || '');
   say('activate   · ' + (voiceOk ? 'the member’s 🏛️ grant reads “' + voice.word + '”, titled ' + voice.title
     : 'FAIL: ' + JSON.stringify(voice)));
@@ -2142,26 +2143,27 @@ const beginRowsBeforeStart = async () => {
     : 'FAIL: ' + rows.length + ' rows · given ' + JSON.stringify(givenPen) +
       ' · laid down ' + JSON.stringify(downPen)));
   if (!ok) stuck.push('the 🍾 row holding a promised-away pen did not read given, alone');
-  /* 🗑️ puts the table back (issue #34 F2). The toggles write `S.beginRows`
-   * in place and the bin's snapshot never named it, so a struck cell survived
-   * the bin and 🍾 laid that power down for good. Two kept cells struck, 🗑️,
-   * 🍾 reopened: the rows must read as they opened — twice, since the
-   * snapshot outlives the press. Red on the pre-#34 page at the first round. */
+  /* **No 🗑️ on 🍾; a toggle is undone by toggling it back** (Q1556 (2), Ed
+   * 2026-09-26, reversing stage 2's dark bin; issue #34 F2's bin-restore is
+   * moot with the bin). Two kept cells struck and pressed again: the rows
+   * must read as they opened, and at no point may the card draw a 🗑️. */
   const said = (rs) => JSON.stringify(rs.map((r) => r.key + ' ' + r.cells.map((c) => c.pw + '=' + c.says).join(' ')));
+  const beginBins = () => page.evaluate(() => [...document.querySelectorAll('.setupcard[data-setupcard="begin"] button')]
+    .filter((b) => /🗑/.test(window.CARDS.glyphTextOf(b))).length);
   const opening = said(rows);
   const binRounds = [];
   for (const [k, pw] of [['chamber', 'u'], ['quorum', 'a']]) {
     const struck = await brSet(k, pw, 'down');
     const mid = said(await brRows());
-    const binned = await clickIn('.setupcard [data-revert]');
-    await T(500);
-    const back = await open('begin') ? said(await brRows()) : null;
-    binRounds.push({ k, pw, struck, moved: mid !== opening, binned, restored: back === opening });
+    const binsMid = await beginBins();
+    const unstruck = await brSet(k, pw, 'keep');
+    const back = said(await brRows());
+    binRounds.push({ k, pw, struck, moved: mid !== opening, unstruck, restored: back === opening, binsMid });
   }
-  const binOk = binRounds.every((r) => r.struck && r.moved && r.binned && r.restored);
-  say('begin bin  · ' + (binOk ? 'a struck cell, 🗑️, and 🍾 reopens as it opened — twice'
+  const binOk = binRounds.every((r) => r.struck && r.moved && r.unstruck && r.restored && r.binsMid === 0);
+  say('begin bin  · ' + (binOk ? 'no 🗑️ on 🍾; a struck cell pressed again reads as it opened — twice'
     : 'FAIL: ' + JSON.stringify(binRounds)));
-  if (!binOk) stuck.push('🗑️ on 🍾 puts the power table back (#34 F2)');
+  if (!binOk) stuck.push('🍾 draws no 🗑️ and a toggle undoes itself (Q1556 (2))');
   // …and one row's 🛡️ set to lay down, which is what the press must carry
   const set = await brSet('invite', 'a', 'down');
   const after = await brRows();

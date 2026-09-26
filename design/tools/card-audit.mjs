@@ -1090,9 +1090,6 @@ const IN_PAGE = () => {
           disabled: !!b.disabled || b.getAttribute('aria-disabled') === 'true',
           until: b.getAttribute('data-until'),
           radio: b.matches('.lanepick, [role="radio"]'),
-          // a glyph toggle off the row — 🍾's power table — is a choice as a
-          // radio is: the bin can put it back (Q1541 stage 2, P24)
-          toggle: b.matches('button[aria-pressed]:not(.lanepick)') && !b.closest('.commitrow, .race-mid, [data-slot="row"]'),
           on: b.getAttribute('aria-checked') === 'true' || b.getAttribute('aria-pressed') === 'true' ||
             (b.matches('.lanepick') && (b.classList.contains('on') || !!(b.closest('.pick') && b.closest('.pick').classList.contains('on')))),
           sign: b.hasAttribute('data-sign'), close: b.hasAttribute('data-close'),
@@ -2371,9 +2368,11 @@ function grammarRules(c, ref) {
     const withdraw = bins.some((b) => WITHDRAWS.test(b.title || ''));
     const indifferent = !!c.judgment || (g.controls || []).some((k) => /indifferent/i.test(k.tok || ''));
     const radios = (g.controls || []).some((k) => k.radio && !k.disabled);
-    const toggles = (g.controls || []).some((k) => k.toggle && !k.disabled);
+    // a glyph toggle — 🍾's power table — gives the bin no job: it is undone
+    // by toggling it back (Q1556 (2), Ed 2026-09-26; grammar.md's *no other
+    // control on it can undo*), so 🍾 carries no bin and one there is red
     const commit = (g.rows || []).some((r) => r.tokens.some((t) => COMMIT_GLYPHS.has(tokNorm(t.t))));
-    const canEver = !isRecord && (!!(v && v.typeable) || withdraw || ((radios || toggles) && !indifferent && commit));
+    const canEver = !isRecord && (!!(v && v.typeable) || withdraw || (radios && !indifferent && commit));
     if (bins.length && !canEver) at('bin-job', '🗑️ on a card that can never give it a job (title “' + clip(bins[0].title || '', 50) + '”)', 'no-job-ever');
     if (!bins.length && canEver) at('bin-job', 'no 🗑️ on a card that can give it a job', 'missing');
     for (const b of bins) {

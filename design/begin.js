@@ -382,32 +382,24 @@ window.BEGIN = (function () {
     const beginRowHtml = (k) => '<tr data-bkey="' + k + '">' +
       '<td class="bname">' + settingNamed(midOf(k)) + '</td>' +
       beginCellHtml(k, 'u') + beginCellHtml(k, 'a') + '</tr>';
-    // **the table holds an unsent choice** once any live cell stands off its
-    // start — the card's 🗑️ then has something to put back (Q1541 stage 2,
-    // 1541.9: the bin drawn dark from the start, lit once there is)
-    const beginDirty = () => !constituted() && amFounder() && BEGIN_ROWS.some((k) => ['u', 'a'].some((pw) =>
-      beginStillHeld(k, pw) && S.beginRows[k + ':' + pw] !== undefined &&
-      S.beginRows[k + ':' + pw] !== (k === 'text' ? 'down' : 'keep')));
+    // no 🗑️ over the table (Q1556 (2), Ed 2026-09-26): a toggle is undone by
+    // toggling it back, so the table carries no unsent mark for a bin to read
     const beginTableHtml = () => {
       if (constituted() || !amFounder()) return '';
       // no header row (Ed, 2026-09-09: *no column heads*): each cell's own
       // glyph says which power it is
       return '<div class="unlocks"><b>What the Founder keeps.</b></div>' +
         '<p class="why">Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.</p>' +
-        '<table class="begintable"' + (beginDirty() ? ' data-draft="1"' : '') + '><tbody>' +
+        '<table class="begintable"><tbody>' +
         BEGIN_ROWS.map(beginRowHtml).join('') + '</tbody></table>';
     };
-    // the card's last line while it cannot begin: when it comes back. On the
-    // one shell it is the dark 🍾's own note where no member is left to
-    // answer (Q1541 stage 2, answers Part 4 .22), so `beginBody` leaves it
-    // out when asked (`noFoot`) rather than say it twice
-    const beginFoot = (rd) => (!rd ? '' : rd.ready
+    // the card's last line once it can begin. While it cannot, what it waits
+    // on is the dark 🍾's own note, beside the button and never in the body
+    // (Q1556 (3), Ed 2026-09-26: *It comes back to you…* retired)
+    const beginFoot = (rd) => (rd && rd.ready
       ? 'Nobody is kept waiting by this: whoever has not answered can still answer after the start, and the document takes what was said.'
-      // *it comes back to you* is a promise about a wait that ends by
-      // itself, and `one-voice` is the one that does not (Q827)
-      : oneVoiceHolds().length ? 'It comes back to you the moment somebody else can answer.'
-      : 'It comes back to you the moment the questions stand.');
-    const beginBody = (c, rd, o) => {
+      : '');
+    const beginBody = (c, rd) => {
       const batch =
         '<div class="unlocks"><b>' + (constituted() ? 'What beginning did.' : 'What beginning does, all at once.') + '</b></div>' +
         // the first item is a function of the power table and the rest are
@@ -474,7 +466,7 @@ window.BEGIN = (function () {
       return batch + hold + why + deps + beginTableHtml() +
         '<div class="readiness"><div class="fieldlab">The questions</div><div class="gatelist">' + qs + '</div>' +
         '<div class="fieldlab">The people</div><div class="gatelist">' + ms + '</div></div>' +
-        (o && o.noFoot ? '' : '<p class="setnote">' + beginFoot(rd) + '</p>');
+        (beginFoot(rd) ? '<p class="setnote">' + beginFoot(rd) + '</p>' : '');
     };
     // what the close did, in one card: final as of when, what adopted, what
     // carried, what the clock found still running, what was left undecided,
@@ -549,7 +541,7 @@ window.BEGIN = (function () {
     };
 
     return { readinessOf, oneVoiceRemedy, inviteTask, oneVoiceAsk, beginOffered, beginCollecting, dueMembers, releaseBody, mailGiveUpBody,
-      BEGIN_ROWS, beginStillHeld, beginPos, beginLayDown, beginDirty, beginBody, beginFoot, closingBody };
+      BEGIN_ROWS, beginStillHeld, beginPos, beginLayDown, beginBody, closingBody };
   }
   return { make };
 })();
