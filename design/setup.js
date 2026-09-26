@@ -1847,6 +1847,13 @@ window.SETUP = (function () {
       // around them is not touched.
       band.querySelectorAll('.csub > h2[id]').forEach((h) =>
         found.push({ key: 's:' + h.id, el: h.parentElement, grow: false }));
+      // …and anything that names its own birth (`data-born`): a thing that
+      // was seen before, went, and **returns as an arrival** — 🪶 and 📍's
+      // tabs at the pen's OK (Q1560 (5)) — takes a key that did not exist
+      // when it was first seen, so the returning element is new here once
+      // and known after; it fades as a paragraph does
+      band.querySelectorAll('[data-born]').forEach((el) =>
+        found.push({ key: 'b:' + el.dataset.born, el, grow: false }));
     }
     // first render, or a stagehand act (seat switch, ⏩): absorb, don't act
     if (!bornPrimed || mute) {

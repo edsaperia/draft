@@ -4165,7 +4165,10 @@
     chips.host = 'title';
     const openHere = (cs || settled(card('title'))) && chips.find((c) => S.open === c.k);
     if (openHere) return h.paraWith(openHere, chips);
-    return '<div class="cpara">' + h.pile(chips) +
+    // the paragraph names what it is about (`data-para`), as every other
+    // clause's does: between the save and the pen's OK it wears no tab
+    // (Q1560 (5)), and the tab was the only thing that said it was 🪶's
+    return '<div class="cpara" data-para="title">' + h.pile(chips) +
       // the governance sentence on its own line (entry 198), written as a
       // `<br>` because this string is already HTML — the plain-text clauses
       // carry a newline and `breakLines` makes the markup for them instead
@@ -5543,6 +5546,15 @@
   const GATE_KEYS = ['canpropose', 'canjudge'];
   const gateSelfSet = (k) => GATE_KEYS.includes(k) && amFounder();
   const acked = (k) => S.okd.has(k) || gateSelfSet(k);
+  // **🪶 and 📍 are not drawn between the save and the pen's OK** (Ed, Q1560
+  // (5)): every rule from 🌍 on waits for the pen's OK already (`blocksOrder`),
+  // since a rule card the Founder cannot yet act on is a task they may not
+  // action; the first two had their tabs from the birth and kept them. Their
+  // clauses stand — they are what the document says — and only the tabs go,
+  // returning at the OK as an arrival (band.js marks the pile `data-born`,
+  // setup.js's `birthPass` fades it in). Members and strangers are untouched
+  const penTabsWithheld = (k) => (k === 'title' || k === 'slug') &&
+    !!cs && amFounder() && !constituted() && !acked('grant-pen');
   // a member who has not yet accepted 🏛️ is shown neither 💡 ✏️ nor ⚖️ (Q1540)
   const voiceUnaccepted = () => viewerIsMember() && !acked('grant-voice');
   const mayPropose = () => canPropose() && viewerIsMember() && acked('canpropose');
@@ -7778,6 +7790,8 @@
       // pile in the record's place, and opens alone as a record does
       if (c.power || c.ansFor || c.record || c.mailgiveup || c.departure ||
         c.held) return [c];
+      // 🪶 and 📍 wear no tabs between the save and the pen's OK (Q1560 (5))
+      if (penTabsWithheld(c.k)) return [];
       // the Proposals opening is one clause carrying four tabs (Q748): the
       // group is the same whichever of the four you come in by, and `para`
       // opens the card at 🍾's paragraph for any of them

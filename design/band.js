@@ -1226,6 +1226,20 @@ window.BAND = (function () {
     // can end up showing zero.
     function renderBand() {
       drawBand();
+      // **🪶 and 📍's tabs arrive at the pen's OK** (Q1560 (5)): withheld from
+      // the save until then (`penTabsWithheld`), they return as a birth, not a
+      // pop. `birthPass` remembers every key it has seen and these tabs were
+      // seen at the birth, so the returning pile carries a key of its own that
+      // exists only once the pen is accepted — new the render the OK lands,
+      // known on every render after, absorbed at boot for a Founder who
+      // accepted it before loading the page
+      if (env.cs && amFounder() && acked('grant-pen')) {
+        ['title', 'slug'].forEach((k) => {
+          const tab = band.querySelector('[data-tab="' + k + '"]');
+          const col = tab && tab.closest('.chipcol');
+          if (col) col.setAttribute('data-born', 'pen-tabs:' + k);
+        });
+      }
       // the open shell card's row and pill against its fields, now that they
       // are in the page (`syncShellRow`)
       if (S.open) syncShellRow(card(S.open));
