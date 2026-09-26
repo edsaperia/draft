@@ -6,6 +6,21 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-09-26, evening: every rule said once
+
+### Changed
+- **A rule's card opens on the rule itself**, under *Current rule*, marked with who chose it; any other choices sit below a thin line, and choosing the current rule again cancels a change you had started.
+- **Who chose a rule is said once**, so a card no longer names two different choosers, and no card prints *Set to undefined*.
+- **When the Founder changes a rule, members see the new rule, the Founder's reason and the previous rule**, in the same order as a change to the text.
+- **The box for the reason behind a change is always on the card**, drawn like a proposal's reason.
+- **After the document is saved, its title and link settle in quietly** once the Founder accepts Founder Actions, rather than standing there with nothing to press.
+- **Closing a card near the top of the page no longer nudges the page.**
+
+### For contributors
+- **When one group of the slower checks fails on a branch, the fix can re-run that group alone** rather than the whole twenty minutes, by naming it when the run is started.
+- **The README names both packages the server needs at run time.**
+- **Mentioning `@claude` in an issue or pull request starts an automated builder** on GitHub's machines, following the shared conventions at [edsaperia/dev-ops](https://github.com/edsaperia/dev-ops); only people who can already write to the repository can start one.
+
 ## 2026-09-26, later afternoon: who is in, who is asking, who has left
 
 ### Changed
