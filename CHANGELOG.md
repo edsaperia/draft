@@ -6,6 +6,20 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-09-27: the cards you vote on, in the new shape
+
+### Changed
+- **Every card you vote on opens without moving the text you were reading.** It makes room above the clause, so the clause and the tab you pressed stay exactly where they were, and closing it gives the room back.
+- **The clause at the top of a card is labelled *Current text*,** and each proposal is labelled on its first line: *Proposed*, *Proposed by* and the name where one is attached, or *Proposed by you*. The same goes for a proposal on a gap between two clauses, a proposal in several places (*Current text · 1 of 3*, with ↑ ↓ beside it), a stuck race and your own proposals.
+- **The ✓ turns blue when you have chosen**, and green once your vote is in.
+- **On a stuck race, the 🗑️ stays dark until you start writing**, and your own proposal's withdraw is the 🗑️ alone.
+- **The card that asks which of two questions matters more** is labelled the way its task is, and each question is labelled by its own name.
+- **On a phone, the tabs beside the text stand at the very edge of the screen**, so the text and every card are wider, and the tab of the card you have open is highlighted where it stands rather than growing.
+
+### Fixed
+- **On a phone, pressing a tab low in a clause's pile no longer makes it jump** when another card at that clause is already open.
+- **A card on a heading no longer shifts the heading as it opens.**
+
 ## 2026-09-26, evening: every rule said once
 
 ### Changed
