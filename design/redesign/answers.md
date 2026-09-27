@@ -155,3 +155,14 @@ The floating 📝 door is not a principle: it is a named exception in `zone-over
 | 6.8 | 🍾 while Q1542 is open | **Convert 🍾 in stage 2** with today's title as its label; the Q1542 session reworks it again. (Reverses BUILD.md's assumption.) |
 | 6.9 | Stage 1's second pilot | **A filed sealed record on a clause**, as proposed. |
 | 6.10 | A cut-off proposal's label | **The live label plus *· Ran out of time***: *Proposed by ‹name› · Ran out of time* signed, *Proposed · Ran out of time* anonymous. |
+
+## Part 7 — stage 3b's calls, ruled (1564, Ed 2026-09-27, one at a time)
+
+| # | Call | Ruling |
+|---|---|---|
+| 1564.1 | 🎩's first line | **(a) its own sentence** — *The Founder is (not) part of the membership.*, the Members list writing none (F13); a stated exception to P14/P16. |
+| 1564.2 | 🎩 before an answer | **(a)** *The Founder is deciding whether to be part of the membership.* |
+| 1564.3 | A composer before its grants are accepted | **(a) the rule and one sentence** — *You can propose a change to this rule once you accept …*, naming the grants its own route needs. |
+| 1564.5 | The change line (*has changed … from … to …*) | **(b) retired everywhere**: a change's history lives only in its record behind the rule's tab; SURFACE §2's L7 amended. |
+| 1564.6 | A power card's reason box | **(a) none** — laying a power down takes no reason. |
+| 1564.8 | The pill on a power nobody has touched | **(a)** *Chosen by the Founder ✒️*, `provenanceOf`'s rule. |
