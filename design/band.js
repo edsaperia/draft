@@ -1267,7 +1267,7 @@ window.BAND = (function () {
         const d = (S.draft && S.draft.k === k) ? S.draft : { k, to: '', why: '' };
         options = PROPOSE[k] ? PROPOSE[k](d)
           : '<div class="lanebox"><div class="lp editlane" contenteditable="plaintext-only" spellcheck="false"' +
-            ' data-motionlane="to" data-ph="The value you are proposing">' + esc(d.to) + '</div></div>';
+            ' data-motionlane="to" data-ph="' + esc(PAGE_COPY.composeNote.valueLane) + '">' + esc(d.to) + '</div></div>';
         input = whyLane(d);
         // …and the change line under it: the clause keeps it permanently
         // (SURFACE §2's L7), `changeHalf`'s *has changed … from … to …* with
@@ -1789,7 +1789,7 @@ window.BAND = (function () {
           const route = routeFor(c, d.to);
           const body2 = (PROPOSE[c.k] ? PROPOSE[c.k](d)
               : '<div class="lanebox"><div class="lp editlane" contenteditable="plaintext-only" spellcheck="false"' +
-                ' data-motionlane="to" data-ph="The value you are proposing">' + esc(d.to) + '</div></div>') +
+                ' data-motionlane="to" data-ph="' + esc(PAGE_COPY.composeNote.valueLane) + '">' + esc(d.to) + '</div></div>') +
             whyLane(d) +
             // the price is not said in words (Ed, 2026-08-19): the pencil
             // flying out of the wallet is what teaches it, and a sentence
