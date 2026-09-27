@@ -731,6 +731,10 @@ window.COPY = (function () {
     // the wire did not answer, or answered with a status and no sentence
     noAnswer: (status) => (status ? 'the server answered ' + status : 'the server could not be reached'),
     binPutBack: 'Put it back as it stands',
+    // the composer's 🗑️ and a settings ✒️'s tooltip, where the one shell
+    // draws them (Q1541 stage 3b) — the words the old rows carried
+    discardMotion: 'Discard this motion',
+    setIt: 'Set it',
     // 👑/📯 in the topbar
     founderMark: {
       crowned: 'Some of the rules are reserved: changing them needs the founder’s assent',
@@ -1016,7 +1020,7 @@ window.COPY = (function () {
         authorship: 'the anonymity rule', judgments: 'the vote-reveal rule',
         chamber: 'the visibility rule', rate: 'the proposal rate', lapse: 'the lapse rule',
         removal: 'the removal rule',
-        admission: 'the admission price', applications: 'the applications rule',
+        admission: 'the admissions rule', applications: 'the applications rule',
         invite: 'invitations', remove: 'removals',
         fallback: 'this',
       },
@@ -1264,6 +1268,8 @@ window.COPY = (function () {
       redirect: 'Every link the document has ever had keeps working — a change leaves a redirect behind.',
       neverNeedsAll: 'Taking the end date away needs all members to agree — every change made so far was made under a promise that the document would seal on a date and be signed.',
       removalSeen: 'Whoever it is will see the proposal — nobody is removed in secret.',
+      // the free-text lane's placeholder, on a setting with no control of its own
+      valueLane: 'The value you are proposing',
     },
     // a constitutional motion's consent card: the question and the answers
     // **The consent card is three clause blocks** (Ed's card review round 3,
@@ -1439,6 +1445,23 @@ window.COPY = (function () {
     // .21 — a 🏛️ commit dark because your 🏛️ is out on another motion (Ed's
     // words for 1541.33: *"One 🏛️ each" is meaningless*)
     voiceOut: 'You can only make one constitutional proposal 🏛️ at a time.',
+    // ---- stage 3b: 🎩, the power cards, the composer ----
+    // 🎩's two sentences, the fact and no consequences (card review
+    // 2026-09-02) — the first line when one stands, an option when it does
+    // not — and its first line while the Founder has not yet answered, in the
+    // shape of every other undecided rule (*The Founder is deciding …*, Q1560
+    // (1)); the one new sentence of the stage's settings
+    hat: {
+      member: 'The Founder is part of the membership.',
+      clerk: 'The Founder is not part of the membership.',
+      deciding: 'The Founder is deciding whether to be part of the membership.',
+    },
+    // a member's settled card before the powers its composer sends with are
+    // accepted (Part 4 .19: the commit is not drawn, so the card says why),
+    // naming them by the four verbs' own names
+    composeOnceAccepted: (which) => 'You can propose a change to this rule once you accept ' +
+      (which.length > 1 ? 'Proposals and Constitutional Proposals'
+        : which[0] === 'proposals' ? 'Proposals' : 'Constitutional Proposals') + '.',
   };
 
   // ---- the spectator feed (feed.html, Q1466) --------------------------------

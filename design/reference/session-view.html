@@ -3860,6 +3860,54 @@
       (blockGive ? '<p class="setnote">' + PAGE_COPY.pw.notes.opensWithValue + '</p>' : '') +
       (!live ? '<p class="setnote">' + PAGE_COPY.pw.notes.revisable + '</p>' : '');
   };
+  /**
+   * **A power card on the one shell** (Q1541 stage 3b, answers.md 1541.48):
+   * the facts `powerBody` drew its two blocks from, handed to band.js as data.
+   * The first line is **this power's own clause, naming its subject** — the
+   * clause as it stands, held or given (a pre-start release reading *From the
+   * start…*), the same sentence the old head wore (`powerHeadLine`, `named`);
+   * the other state is the one alternative, drawn only where the Founder may
+   * choose it — a state nobody may choose is not drawn (1541.6 (a)), its
+   * reason said in the body instead (`blocked`).
+   */
+  const powerParts = (c) => {
+    const k = c.base;
+    const p = pwPair(k);
+    const live = !!(cs && cs.constitutedAtT !== null);
+    const pend = c.power === 'u' ? pwPend(k).u : pwPend(k).a;
+    const held = (c.power === 'u' ? p.u : p.a) && !pend;
+    const key = 'pw:' + c.power + ':' + k;
+    const line = powerHeadLine(c, true);
+    // the Founder's hand, as `powerBody` asked it: never on a closed document,
+    // and past the start only while the power is still held (Q1404)
+    const editable = amFounder() && docOpen() && !(live && !held);
+    const state = held ? 'held' : 'given';
+    if (!editable) return { key, line, state, editable: false, other: null, notes: [] };
+    const otherHeldNow = c.power === 'u' ? (p.a && !pwPend(k).a) : (p.u && !pwPend(k).u);
+    // the other state and why it may not be chosen, where it may not: a veto
+    // held pre-start while the pen is given, and a power given before the
+    // setting has a value (R-048)
+    const other = held ? 'given' : 'held';
+    const blocked = other === 'held' && c.power === 'a' && !live && !p.u ? PAGE_COPY.pw.notes.vetoNeedsPen
+      : other === 'given' && !live && !pwHasValue(k) ? PAGE_COPY.pw.notes.opensWithValue : null;
+    const note = other === 'held' ? '' : live ? PAGE_COPY.pw.notes.oneWayTail
+      : !otherHeldNow && isDelegable(k) ? PAGE_COPY.pw.notes.delegatesTail
+      : PAGE_COPY.pw.notes.atBeginTail;
+    return {
+      key, line, state, editable: !blocked,
+      other: blocked ? null : { val: other, text: pwOptText(k, c.power, other === 'held'), note,
+        on: S[key] === other },
+      notes: [blocked, !live ? PAGE_COPY.pw.notes.revisable : null].filter(Boolean),
+      chosen: S[key] && S[key] !== state ? S[key] : null,
+    };
+  };
+  /** the other state as an option block (CP1) — the clause it would set, its
+   *  one consequence beneath, *Choose this / Chosen* — drawn by `opt` like
+   *  every settings rung, so its radio's words are its label (P21) */
+  const powerOtherHtml = (parts) => (parts.other
+    ? '<div class="choice" role="radiogroup">' +
+      opt({ [parts.key]: S[parts.key] }, parts.key, parts.other.val, parts.other.text, parts.other.note) + '</div>'
+    : '');
   // **Before the start a power card has no head** (Q1430, the other half of
   // Ed's ruling): the head states the rule as it stands, and before 🍾 the
   // rule as it stands *is* the held block, so the founder read *The Founder
@@ -6472,6 +6520,17 @@
   const commitFor = (c) => motionCommitHtml(c,
     (S.draft && S.draft.k === c.k) ? S.draft.to : '',
     !!myHeldOut());
+  // **the composer's commit, swapped in place** as a motion is typed (329a):
+  // the countdown (Q1486 (E)) and the 🏛️-in-use note (Part 4 .21) stand beside
+  // the node being swapped, so they go first or they would stack one per
+  // keystroke; then the shell's bin and pill follow the draft (Q1541 stage 3b)
+  const swapMotionCommit = (c) => {
+    if (!c) return;
+    document.querySelectorAll('.setupcard .pdrip, .setupcard .pvoice').forEach((n) => n.remove());
+    const slot = document.querySelector('.setupcard [data-putmotion], .setupcard [data-holdmotion]');
+    if (slot) slot.outerHTML = commitFor(c);
+    BND.syncShellRow(c);
+  };
 
   /* **A motion is composed with the setting's own control** (motion-controls),
      and the grammar is session-view's, via cards.js (Ed, 2026-08-18: *the
@@ -6759,8 +6818,11 @@
       // as 2, while the value that would have been posted was right the
       // whole time. The draft's own value is the only thing that knows.
       const n = d.val && isNum(d.val.dripMinutes) ? d.val.dripMinutes : (d.to.match(/\d+/g) || [])[0];
+      // …and **born blank** (Q1541 stage 3b): the standing number is the first
+      // line's, and a field pre-filled with it offered a value nobody chose
+      // (F6) — every composer field below holds only what has been typed
       return inputBlock('Members may make a new proposal ✏️ every ' +
-        '<input class="num" type="number" min="1" max="2880" data-mrate="z" value="' + esc(n || S.dripMin) + '"> minutes.',
+        '<input class="num" type="number" min="1" max="2880" data-mrate="z" value="' + esc(n || '') + '"> minutes.',
         '', d, 'rate');
     },
     ending: (d) => {
@@ -6771,7 +6833,7 @@
       // while the draft quietly held the new one
       return inputBlock('The drafting process will end on ' +
           '<input type="datetime-local" data-mdate="1" value="' +
-          esc(d.val && isNum(d.val.endsAtMs) ? msToLocal(d.val.endsAtMs) : (S.endsAt || '')) + '">.',
+          esc(d.val && isNum(d.val.endsAtMs) ? msToLocal(d.val.endsAtMs) : '') + '">.',
           '', d, 'ending', !!d.to && !never) +
         lanesFor(d, [['Never — it runs until too few members are active',
           'The drafting process has no set end — it runs until too few members are active.']], 'ending') +
@@ -6784,12 +6846,12 @@
     // under it. The lane re-renders on every keystroke, so `quorumSlot` is
     // redrawn here rather than repainted as the two cards repaint it.
     quorum: (d) => (S.quorumForm === 'count'
-      ? (() => { const n = (d.to.match(/\d+/) || [])[0] || takenOf('quorum') || quorumCount();
+      ? (() => { const n = (d.to.match(/\d+/) || [])[0] || '';
         return inputBlock(PAGE_COPY.quorumRule.count(
           '<input class="num" type="number" min="1" max="99" data-mnum=" of the membership" value="' +
           esc(n) + '">') + quorumSlot('quorum', 'count', n, E()),
           '', d, 'quorum'); })()
-      : (() => { const n = (d.to.match(/\d+/) || [])[0] || takenOf('quorum') || S.quorumPct;
+      : (() => { const n = (d.to.match(/\d+/) || [])[0] || '';
         return inputBlock(PAGE_COPY.quorumRule.share(
           '<input class="num" type="number" min="' + SHARE.min + '" max="' + SHARE.max +
           '" data-mnum="% of the membership" value="' + esc(n) + '">%',
@@ -6812,7 +6874,7 @@
       // number and the unit are read off the draft's own value where it has
       // one, the way ⏰'s date is (Q1289), so the picked unit is never
       // replaced by a re-derivation from the standing spell
-      (() => { const p = lapseParts(d.val && isNum(d.val.afterMs) ? d.val.afterMs : S.lapseMs);
+      (() => { const p = d.val && isNum(d.val.afterMs) ? lapseParts(d.val.afterMs) : null;
         const unit = d.lapseUnit || (p ? p.unit : 'days');
         const b = LAPSE_BOUNDS[unit] || LAPSE_BOUNDS.days;
         // the typed number rides beside the spell, as ⏱️'s does: *60 minutes*
@@ -8392,6 +8454,8 @@
     picPickNow: (...a) => picPickNow(...a),
     policyNow: (...a) => policyNow(...a),
     powerBody: (...a) => powerBody(...a),
+    powerParts: (...a) => powerParts(...a),
+    powerOtherHtml: (...a) => powerOtherHtml(...a),
     proseCounts: (...a) => proseCounts(...a),
     pwPair: (...a) => pwPair(...a),
     readinessOf: (...a) => readinessOf(...a),
@@ -8563,9 +8627,7 @@
       // the commit is swapped in place by its own node, and since Q1486 (E)
       // it may stand beside a countdown — which is not part of that node, so
       // a swap that left it would stack a second one on every keystroke
-      document.querySelectorAll('.setupcard .pdrip').forEach((n) => n.remove());
-      const slot = document.querySelector('.setupcard [data-putmotion], .setupcard [data-holdmotion]');
-      if (slot && c) slot.outerHTML = commitFor(c);
+      swapMotionCommit(c);
     }
     const msg = (S.draft && S.draft.rangeErr) || '';
     let note = document.querySelector('.setupcard .mrange');
@@ -8695,9 +8757,7 @@
       const c = card(S.open);
       if (c && founderPairOn(c)) refreshCommit();
       else {
-        document.querySelectorAll('.setupcard .pdrip').forEach((n) => n.remove());   // Q1486 (E), as above
-        const slot = document.querySelector('.setupcard [data-putmotion], .setupcard [data-holdmotion]');
-        if (slot && c) slot.outerHTML = commitFor(c);
+        swapMotionCommit(c);   // Q1486 (E), as above
       }
       return;
     }
@@ -9140,6 +9200,9 @@
     // back to what stands — the bin's act, with the card left open (Q1541
     // stage 3a)
     if (ev.target.closest('[data-standpick]')) {
+      // …and on a member's composer it drops the motion being typed, the
+      // composer's own bin with the card left open (Q1541 stage 3b)
+      if (S.draft && S.draft.k === S.open) S.draft = null;
       revertSnap(cardKeys());
       return render();
     }
@@ -9806,8 +9869,7 @@
       const addrs = String(t.value || '').split('\n').map((s) => s.trim()).filter(Boolean);
       S.draft.many = addrs;
       S.draft.to = addrs.length ? addrs[0] + ' joins the membership' : '';
-      const slot = document.querySelector('[data-putmotion], [data-holdmotion]');
-      if (slot) slot.outerHTML = commitFor(card(S.draft.k));
+      swapMotionCommit(card(S.draft.k));
       return;
     }
     // …and every other field composer, on the same rule (Q1486 (A)): the
@@ -9826,8 +9888,7 @@
       ml.classList.toggle('blank', !ml.textContent.trim());
       // the commit slot follows the route of what is now typed (329a) —
       // swapped in place, because a re-render would throw the caret out
-      const slot = document.querySelector('[data-putmotion], [data-holdmotion]');
-      if (slot && S.draft) slot.outerHTML = commitFor(card(S.draft.k));
+      if (S.draft) swapMotionCommit(card(S.draft.k));
       return; }
     // typing is what makes the address yours: from here a collision is a
     // refusal to read and correct, never something the page quietly moves
@@ -10127,6 +10188,19 @@
           // a refusal against this card prints under its body, as the one
           // wrapper every old card passes through does (Q1330, SURFACE Y25)
           body: { html: body + doorErrHtml(k) },
+        };
+      }
+      // **a power tab read at the door** (Q1541 stage 3b, 1541.48): its ask
+      // above, this power's own clause naming its subject as the first line,
+      // wearing the pill as a fact; nothing else, and no row
+      if (c && atTheDoor() && c.power && !motionOn(c)) {
+        return {
+          kind: 'power',
+          frame: { cls: 'sugg setupcard', attrs: ' role="tabpanel" data-setupcard="' + esc(k) + '"' },
+          label: { text: window.SETUP.labelOf(c, strCtx) },
+          head: { html: window.SETUP.headHtml(c, strCtx, hints.siblings || [c],
+            '<div class="headrule asblock" data-fact="place">' + esc(powerHeadLine(c, true)) +
+            window.CARD_SHELL.pillHtml(st.standing) + '</div>') },
         };
       }
       if (!shellRule(c) || !st.place) return {};

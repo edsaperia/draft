@@ -95,7 +95,7 @@ const LIFECYCLE = {
   L4: 'L4 judged',     // a judgment cast: ✓ closes; the pair's own entry files as ⏳, the other pairs' stay lit (pairs 3, pairs 7)
   L5: 'L5 proposed',   // a motion committed (and a text proposal, Q1485 (A)): on Propose the card closes; the ✏️ entry pinned
   L6: 'L6 📧 sent',    // 📧 send: the card closes on send; the clause says to check your inbox
-  L7: 'L7 owed OK',    // a decision you are owed: on OK, one press, persisted per member; the clause keeps the change line
+  L7: 'L7 owed OK',    // a decision you are owed: on OK, one press, persisted per member; the change's history is its record behind the tab (1564.5 (b))
   L8: 'L8 grant OK',   // a power arrives: on OK; ACK_KEYS per seat — not served again after a reload, the socket held
   L9: 'L9 🗑️',        // 🗑️: always closes; un-actioned input reverted (⏱️'s number, ✋'s text), the set value untouched
 };
@@ -1136,10 +1136,10 @@ const lifecycleL2 = async () => {
  * in a quiet room no render lands between typing and the commit. */
 /* **🎩 from a member's seat says what it stands at** (Q1503, Ed's convention
  * observation 2026-09-22: *"Set to [blank]"*). A member opening the founder's
- * 🎩 met `readBody`'s *Set to* line with no `VALUE.hat` behind it. It is the
- * founder's own two sentences now, locked, the standing one marked — read
- * here on the guest seat, and closed by the bin so the rest of the seat's
- * walk sees the page it always saw. */
+ * 🎩 met `readBody`'s *Set to* line with no `VALUE.hat` behind it. Since
+ * Q1541 stage 3b it is the sentence that stands, wearing its pill, and no
+ * row — read here on the guest seat, and closed by its tab so the rest of
+ * the seat's walk sees the page it always saw. */
 const hatFromMemberSeat = async () => {
   if (!guestPage) return;
   const opened = await guestPage.evaluate(() => {
@@ -1150,21 +1150,26 @@ const hatFromMemberSeat = async () => {
   });
   await guestPage.waitForTimeout(420);
   if (!opened) { say('hat        · FAIL: no 🎩 tab in the member seat'); stuck.push('Q1503: the 🎩 tab'); return; }
+  // **the locked 🎩 is read** (Q1541 stage 3b): its first line the sentence
+  // that stands, wearing the pill as a fact; the unchosen sentence is not
+  // drawn (1541.6 (a)), and nothing on the card commits (CP9)
   const r = await guestPage.evaluate(() => {
-    const picks = [...document.querySelectorAll('.setupcard .choice .pick')];
+    const c = document.querySelector('.setupcard');
+    const line = c?.querySelector('[data-fact="place"]');
     const out = {
-      radios: picks.length,
-      locked: picks.filter((p) => p.querySelector('.lanepick')?.disabled).length,
-      marked: picks.filter((p) => p.classList.contains('on')).map((p) => (p.querySelector('.opttext')?.textContent ?? '').trim()),
-      setTo: /Set to/.test(document.querySelector('.setupcard')?.textContent ?? ''),
+      radios: c ? c.querySelectorAll('.choice .pick, .lanepick').length : -1,
+      line: (line?.textContent ?? '').replace(/\s+/g, ' ').trim(),
+      pill: !!c?.querySelector('.standpill'),
+      row: !!c?.querySelector('[data-slot="row"]'),
+      setTo: /Set to/.test(c?.textContent ?? ''),
     };
-    document.querySelector('.setupcard [data-revert]')?.click();
+    document.querySelector('.setupcard .chipcol .achip')?.click();
     return out;
   });
   await guestPage.waitForTimeout(400);
-  const ok = r.radios === 2 && r.locked === 2 && r.marked.length === 1 && !r.setTo;
-  say('hat        · ' + (ok ? 'ok' : 'FAIL') + ': 🎩 on the member seat — ' + r.radios + ' radios, ' + r.locked +
-    ' locked, marked ' + JSON.stringify(r.marked) + (r.setTo ? ', a *Set to* line' : ''));
+  const ok = r.radios === 0 && /^The Founder is (not )?part of the membership\./.test(r.line) && r.pill && !r.row && !r.setTo;
+  say('hat        · ' + (ok ? 'ok' : 'FAIL') + ': 🎩 on the member seat — “' + r.line + '”' +
+    (r.pill ? ' wearing its pill' : ', NO pill') + ', ' + r.radios + ' radios' + (r.row ? ', a row' : '') + (r.setTo ? ', a *Set to* line' : ''));
   if (!ok) stuck.push('Q1503: 🎩 on the member seat');
 };
 
@@ -1469,9 +1474,12 @@ const secondSeatOnAmendment = async () => {
     (guestOks - before === 1 ? '' : '  FAIL: expected exactly one'));
   if (guestOks - before !== 1) stuck.push('give-ok was sent ' + (guestOks - before) + ' times');
   // L7 — the close and the persistence are the three lines above (one press,
-  // gone through a poll, still gone after a reload); what is left is the
-  // clause keeping the change line: the settled card, opened from its tab
-  // after the reload, carries `changeHalf`'s *has changed … from … to …*.
+  // gone through a poll, still gone after a reload); what is left is where
+  // the change's history lives: **only in its record behind the rule's tab**
+  // (Ed, 2026-09-27, 1564.5 (b)). The settled card, opened from its tab after
+  // the reload, carries no *has changed … from … to …* line, and the record
+  // in its strip states the change — *Changed by the Founder* and the
+  // *Previous rule* it replaced.
   const opened = await guestPage.evaluate((k) => {
     const t = document.querySelector('#band [data-tab="' + k + '"]');
     if (!t) return false;
@@ -1479,15 +1487,26 @@ const secondSeatOnAmendment = async () => {
     return true;
   }, AMENDED);
   await guestPage.waitForTimeout(700);
-  const l7 = await guestPage.evaluate(() => {
+  const l7 = await guestPage.evaluate((k) => {
     const c = document.querySelector('.setupcard');
-    const ch = c && c.querySelector('.body.changed');
-    return { card: !!c, changed: ch ? ch.textContent.replace(/\s+/g, ' ').trim().slice(0, 140) : null };
-  });
-  const l7Ok = opened && l7.card && !!l7.changed && /has changed/.test(l7.changed);
-  say(L('L7') + (l7Ok ? 'one press, kept through a poll and a reload; the clause keeps the change line: “' + l7.changed + '”'
-    : 'FAIL: tab ' + opened + ' · ' + JSON.stringify(l7)));
-  if (!l7Ok) stuck.push('L7: the change line on the acknowledged clause');
+    const txt = (el) => (el ? el.textContent.replace(/\s+/g, ' ').trim() : '');
+    const rec = c && [...c.querySelectorAll('.chipcol [data-tab]')].map((e) => e.dataset.tab)
+      .find((t) => t.startsWith('rec:' + k));
+    const para = document.querySelector('#band [data-para="' + k + '"]');
+    return { card: !!c, line: /has changed|Last amended/.test(txt(c)) || !!(c && c.querySelector('.body.changed')),
+      paraLine: /has changed|Last amended/.test(txt(para)), rec: rec || null };
+  }, AMENDED);
+  let recText = '';
+  if (l7.rec) {
+    await guestPage.evaluate((t) => document.querySelector('.setupcard .chipcol [data-tab="' + t + '"]')?.click(), l7.rec);
+    await guestPage.waitForTimeout(700);
+    recText = await guestPage.evaluate(() => (document.querySelector('.setupcard')?.textContent || '').replace(/\s+/g, ' ').trim());
+  }
+  const recOk = /Changed by the Founder/.test(recText) && /Previous rule/.test(recText);
+  const l7Ok = opened && l7.card && !l7.line && !l7.paraLine && recOk;
+  say(L('L7') + (l7Ok ? 'one press, kept through a poll and a reload; no change line on the clause or its card, and the record behind the tab carries the change (' + l7.rec + ')'
+    : 'FAIL: tab ' + opened + ' · ' + JSON.stringify(l7) + ' · record “' + recText.slice(0, 140) + '”'));
+  if (!l7Ok) stuck.push('L7: the change lives in its record behind the tab, and nowhere else');
   await guestPage.evaluate(() => { const a = document.querySelector('.setupcard .chipcol .achip'); if (a) a.click(); });
   await guestPage.waitForTimeout(400);
 };

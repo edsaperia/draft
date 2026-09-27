@@ -60,7 +60,7 @@ All (a), fix in the build, with these notes:
 | 1541.45 | Labels inside a card | **On each block's first line**, left, in the eyebrow treatment; nowhere else (*What you proposed* moves from the foot; the rival's share reads *Rival · 23%*). |
 | 1541.46 | What the space above holds | **(a) One label on every card**: on a place card what its first line is (*The clause as it stands*, a record's outcome in its colour), on an act or question card its ask (✋ 🖼️ 📧, 🌂, the grants, 🍾, 🥂, the power cards, 🎩 while asked, 👑). Replaces 1541.12 (c). |
 | 1541.47 | The pill and the head | **The first line is the standing option and wears the pill**; the other options follow below a hairline; choosing the first line's radio again cancels a proposed change. The rule is said once. |
-| 1541.48 | A power card's first line | **This power's own clause, naming its subject** (*The Founder may amend the proposal rate at will.*), wearing the pill; the other state below with *Choose this*. Label above: the card's ask. |
+| 1541.48 | A power card's first line | **This power's own clause, naming its subject** (*The Founder may amend the proposal rate at will.*), wearing the pill; the other state below with *Choose this*. Label above: the card's ask. **The clauses, ruled 2026-09-26** (stage 3b's list, PR #104): Q1429's nouns stand, but one changes — Ed: *"Admissions Rule" not "Admission Price"; good otherwise.* So 🪪's pair reads *The Founder may amend the admissions rule at will.* · *…refuse changes to the admissions rule that the membership pass.* |
 | 1541.49 | Does the dark bin state its reason? | **No — exempt.** The visible-reason rule (1541.33) covers commits only. |
 | 1541.50 | ✓'s colour | **Accent blue when armed, as the page draws it**; SURFACE §9.1's *the one solid green on a card* is corrected. 👑's green ✒️ (1541.38) is fixed as a plain bug. |
 | 1541.51 | The ten principles | Open: redrafted to match these answers (including *a control that can wake on this card is drawn from the start, dark*) and brought back to Ed before they enter SURFACE. |
@@ -156,3 +156,14 @@ The floating 📝 door is not a principle: it is a named exception in `zone-over
 | 6.8 | 🍾 while Q1542 is open | **Convert 🍾 in stage 2** with today's title as its label; the Q1542 session reworks it again. (Reverses BUILD.md's assumption.) |
 | 6.9 | Stage 1's second pilot | **A filed sealed record on a clause**, as proposed. |
 | 6.10 | A cut-off proposal's label | **The live label plus *· Ran out of time***: *Proposed by ‹name› · Ran out of time* signed, *Proposed · Ran out of time* anonymous. |
+
+## Part 7 — stage 3b's calls, ruled (1564, Ed 2026-09-27, one at a time)
+
+| # | Call | Ruling |
+|---|---|---|
+| 1564.1 | 🎩's first line | **(a) its own sentence** — *The Founder is (not) part of the membership.*, the Members list writing none (F13); a stated exception to P14/P16. |
+| 1564.2 | 🎩 before an answer | **(a)** *The Founder is deciding whether to be part of the membership.* |
+| 1564.3 | A composer before its grants are accepted | **(a) the rule and one sentence** — *You can propose a change to this rule once you accept …*, naming the grants its own route needs. |
+| 1564.5 | The change line (*has changed … from … to …*) | **(b) retired everywhere**: a change's history lives only in its record behind the rule's tab; SURFACE §2's L7 amended. |
+| 1564.6 | A power card's reason box | **(a) none** — laying a power down takes no reason. |
+| 1564.8 | The pill on a power nobody has touched | **(a)** *Chosen by the Founder ✒️*, `provenanceOf`'s rule. |

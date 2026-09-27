@@ -392,7 +392,10 @@ const runDocument = async (hat) => {
   await openCard('pw:u:title');
   const promise = await page.evaluate(() => ((document.querySelector('.setupcard') || {}).textContent || '')
     .replace(/\s+/g, ' '));
-  if (!/when the document begins/i.test(promise)) {
+  // the release is what stands until 🍾, so since Q1541 stage 3b it is the
+  // card's own first line — *From the start, the Founder may not …* — where
+  // it read as the *given* block's tail before
+  if (!/when the document begins|From the start, the Founder may not/i.test(promise)) {
     fail('the ✒️ tab does not say the release lands at 🍾 — ' + JSON.stringify(promise.slice(0, 160)));
   }
   await clickIn('.setupcard [data-revert]');
@@ -462,6 +465,10 @@ const runDocument = async (hat) => {
   // hangs off it. A walk that never opens the gate would find the Founder's
   // pair missing for the right reason and prove nothing.
   if (await openCard('canpropose')) await clickIn('[data-ok]');
+  await T(700);
+  // …and 🏛️ for the constitutional settings' composer: a commit for a power
+  // not yet accepted is not drawn (answers Part 4 .19, Q1541 stage 3b)
+  if (await openCard('grant-voice')) await clickIn('[data-ok]');
   await T(700);
 
   // ⏱️'s pen, by hand, on a live document — the second of the two tab routes
