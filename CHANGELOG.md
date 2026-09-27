@@ -6,6 +6,21 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-09-27: the rest of the rules in the new shape
+
+### Changed
+- **Admissions, Applications and the Founder's membership open on their rule**, like every other rule: *Current rule* on top, the rule itself as the first line marked with who chose it, and any other choices below a thin line. While the Founder has not yet said whether they are a member, the card asks *Is the Founder a Member?* instead.
+- **Once the document has begun, the Founder's membership is simply shown**: the answer and who chose it, with no greyed-out choices and nothing to press.
+- **A Founder power's card states its own rule in full, naming what it is about**, such as *The Founder may amend the proposal rate at will.*, under the card's question. The Founder sees the other choice below it; everybody else sees the rule alone, with nothing to press.
+- **Proposing a change to a rule happens on the rule's own card**: the rule on top with who chose it, your choices below, and the box for your reason. Choosing the current rule again cancels the change you had started, and the card stays open.
+- **A number or date you propose starts empty**, rather than filled in with the value that already stands, so nothing on the card looks chosen before you choose it.
+- **Until you have accepted the power a change needs, a rule's card says which one to accept**, rather than offering a button that cannot work yet.
+- **Admissions is called *the admissions rule*** wherever a Founder power names it.
+- **A rule no longer carries a line saying how it last changed.** That history is behind the rule's tab, in the record of the change.
+
+### Fixed
+- **A card that asks nothing of you no longer offers an OK that only closes it**: the Founder's membership once the document has begun, and a Founder power read by anybody but the Founder, now close from their tab, a click outside or Escape.
+
 ## 2026-09-26, evening: every rule said once
 
 ### Changed

@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 697
+  "entries": 704
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -266,6 +266,7 @@
   "page.composeNote.neverNeedsAll": "Taking the end date away needs all members to agree — every change made so far was made under a promise that the document would seal on a date and be signed.",
   "page.composeNote.redirect": "Every link the document has ever had keeps working — a change leaves a redirect behind.",
   "page.composeNote.removalSeen": "Whoever it is will see the proposal — nobody is removed in secret.",
+  "page.composeNote.valueLane": "The value you are proposing",
   "page.consent.joins": "ƒ (name) => name + ' joins the membership.'",
   "page.consent.leaves": "ƒ (name) => name + ' leaves the membership.'",
   "page.consent.removeSelfCount": "ƒ (judged, others) => judged + ' of ' + others + ' have answered. One refusal keeps you in.'",
@@ -280,6 +281,7 @@
   "page.departed.lineMembers": "ƒ (who, day) => 'The membership removed ' + who + ' on ' + day + '.'",
   "page.departed.lineSelf": "ƒ (who, day) => who + ' left on ' + day + '.'",
   "page.departed.someone": "a member",
+  "page.discardMotion": "Discard this motion",
   "page.door.anonymous": "Anonymous",
   "page.door.choose": "Choose somebody to remove…",
   "page.door.invitedNotHere": " — invited, not yet here",
@@ -398,7 +400,7 @@
   "page.pw.notes.opensWithValue": "Opens once this setting has a value.",
   "page.pw.notes.revisable": "Revisable until the document begins. Giving both up hands the question to the members — delegation is exactly the state of holding neither.",
   "page.pw.notes.vetoNeedsPen": "A veto can only be held where the Founder still amends it at will — take back the ✒️ first.",
-  "page.pw.noun.admission": "the admission price",
+  "page.pw.noun.admission": "the admissions rule",
   "page.pw.noun.applications": "the applications rule",
   "page.pw.noun.authorship": "the anonymity rule",
   "page.pw.noun.chamber": "the visibility rule",
@@ -471,6 +473,7 @@
   "page.rulesDrafting": "The rules are being drafted.",
   "page.rulesHeading": "Rules",
   "page.said": "ƒ (s) => 'You said: “' + s + '”'",
+  "page.setIt": "Set it",
   "page.slugNote.free": " is free.",
   "page.slugNote.illegal": "Lower case, digits and hyphens",
   "page.slugNote.suggested": "Suggested from the title — ",
@@ -684,8 +687,12 @@
   "shell.begin": "Begin",
   "shell.beginInvited": "Waiting for invited members to arrive.",
   "shell.beginOneVoice": "Delegated questions need at least two responses.",
+  "shell.composeOnceAccepted": "ƒ (which) => 'You can propose a change to this rule once you accept ' +\n      (which.length > 1 ? 'Proposals and Constitutional Proposals'\n        : which[0] === 'proposals' ? 'Proposals' : 'Constitutional Proposals') + '.'",
   "shell.currentRule": "Current rule",
   "shell.currentText": "Current text",
+  "shell.hat.clerk": "The Founder is not part of the membership.",
+  "shell.hat.deciding": "The Founder is deciding whether to be part of the membership.",
+  "shell.hat.member": "The Founder is part of the membership.",
   "shell.outcome.passed": "Passed",
   "shell.outcome.ranOut": "Ran out of time",
   "shell.outcome.refused": "Refused by the Founder",

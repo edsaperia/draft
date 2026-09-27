@@ -159,6 +159,32 @@ const found = async (tag) => {
 };
 
 /* ---- one member's real page ------------------------------------------------ */
+/** the welcomes a member owes (C9) — accepted before anything composes */
+const acceptWelcomes = async (page) => {
+  // the three welcomes a fresh member owes (C9): nothing composes until they
+  // are accepted — the composer's commit is not drawn for a power not yet
+  // accepted (answers Part 4 .19, Q1541 stage 3b). 🏛️ arrives first and 💡 ⚖️
+  // behind it (Q1365), so the rail is read again until none is left
+  for (let pass = 0; pass < 4; pass++) {
+    let any = false;
+    for (const k of ['grant-voice', 'canpropose', 'canjudge']) {
+      // an OK opens the next thing owed (Q1536), so the card may be open
+      // already — pressing its entry then would shut it (CLAUDE.md's gotcha)
+      const opened = await page.evaluate((kk) => { const t = document.querySelector('#rail [data-card="' + kk + '"]');
+        if (!t) return false;
+        if (!document.querySelector('.setupcard[data-setupcard="' + kk + '"]')) t.click();
+        return true; }, k);
+      if (!opened) continue;
+      any = true;
+      await page.waitForTimeout(600);
+      await page.evaluate((kk) => { const b = document.querySelector('.setupcard[data-setupcard="' + kk + '"] [data-ok]');
+        if (b && !b.disabled) { b.scrollIntoView({ block: 'center' }); b.click(); } }, k);
+      await page.waitForTimeout(1800);
+    }
+    if (!any) break;
+  }
+};
+
 const browser = await browserFor().launch();
 const seat = async (cookie, { narrow = false, unacked = false } = {}) => {
   const ctx = await browser.newContext(narrow
@@ -178,16 +204,7 @@ const seat = async (cookie, { narrow = false, unacked = false } = {}) => {
   await landOn(page, `${BASE}/d/${doc().slug}`);
   await page.waitForSelector('#band .cpara', { timeout: 20000 });
   await page.waitForTimeout(2000);
-  // the three welcomes a fresh member owes (C9): nothing composes until 💡 is OK'd
-  for (const k of (unacked ? [] : ['canpropose', 'canjudge', 'grant-voice'])) {
-    const opened = await page.evaluate((kk) => { const t = document.querySelector('#rail [data-card="' + kk + '"]');
-      if (!t) return false; t.click(); return true; }, k);
-    if (!opened) continue;
-    await page.waitForTimeout(600);
-    await page.evaluate(() => { const b = document.querySelector('.setupcard [data-ok]');
-      if (b && !b.disabled) { b.scrollIntoView({ block: 'center' }); b.click(); } });
-    await page.waitForTimeout(1800);
-  }
+  if (!unacked) await acceptWelcomes(page);
   await page.waitForTimeout(800);
   return { ctx, page, wire, errs, narrow };
 };
@@ -217,6 +234,11 @@ const openRate = async (s, again = false) => {
   if (news && !again) {
     say('   ⏱️ opened on the Founder’s news: OK pressed, then the composer');
     await s.page.waitForTimeout(1800);
+    // the welcomes stand behind the news in the rail (a seat's acceptances
+    // are its browser's, so a fresh context meets them again): accept them,
+    // since the composer draws no commit for a power not yet accepted (Part 4 .19)
+    await acceptWelcomes(s.page);
+    await s.page.waitForTimeout(600);
     if (!await s.page.evaluate(() => !!document.querySelector('.setupcard[data-setupcard="rate"] [data-mrate]'))) return openRate(s, true);
   }
   return how;
@@ -547,7 +569,11 @@ SCENARIOS['unacked'] = async (s, cookie, name) => {
   await shot(s, name);
   say('   rail: ' + JSON.stringify(await s.page.evaluate(() => [...document.querySelectorAll('#rail [data-card], #rail [data-q]')].map((e) => e.dataset.card || e.dataset.q))));
   say('   ⏱️ before the welcomes are OK’d: ' + JSON.stringify(typeof how === 'string' ? how : c && { text: c.text, inputs: c.inputs, commit: c.commit, wallet: c.wallet }));
-  verdict(name, !!c && (c.inputs.length > 0 || /OK|welcome|first/i.test(c.text)), c ? (c.inputs.length ? 'the composer is offered' : 'no composer, and the card does not say why: “' + c.text.slice(0, 260) + '”') : 'the card would not open');
+  // the composer's commit is not drawn for a power not yet accepted (answers
+  // Part 4 .19, Q1541 stage 3b), so the card is the rule and says which to accept
+  verdict(name, !!c && (c.inputs.length > 0 || /OK|welcome|first|once you accept/i.test(c.text)), c ? (c.inputs.length ? 'the composer is offered'
+    : /once you accept/i.test(c.text) ? 'the rule, saying which power to accept first: “' + (/You can propose[^.]*\./.exec(c.text) || [''])[0] + '”'
+    : 'no composer, and the card does not say why: “' + c.text.slice(0, 260) + '”') : 'the card would not open');
 };
 // the room moves while the member is still typing (the field not yet left): is the number still there?
 SCENARIOS['typing-under-poll'] = async (s, cookie, name) => {
@@ -665,6 +691,43 @@ SCENARIOS['narrow-ways'] = async (s, cookie, name) => {
     Object.entries(out).filter(([, v]) => v && v.lit).map(([k]) => k).join(' · '));
 };
 
+// **Choosing the pill again cancels the change** (Q1541 stage 3b, answers.md
+// 1541.47, Q1560 (3)): the rule on the composer's first line wears the
+// standing pill, the chosen radio of the composer's own group — pressed on
+// open, released the moment a number is typed, and pressed again it drops
+// the motion being typed and leaves the card open, the field blank, the 🗑️
+// and the ✏️ dark and nothing posted.
+SCENARIOS['pill-cancels'] = async (s, cookie, name) => {
+  await openRate(s);
+  const pill = () => s.page.evaluate(() => {
+    const c = document.querySelector('.setupcard[data-setupcard="rate"]');
+    const p = c && c.querySelector('[data-standpick]');
+    const bin = c && c.querySelector('[data-slot="row"] button');
+    const b = c && c.querySelector('[data-putmotion], [data-holdmotion]');
+    const f = c && c.querySelector('[data-mrate]');
+    return c ? { open: true, kind: c.dataset.kind, pill: p ? p.getAttribute('aria-pressed') : null,
+      bin: bin ? (bin.disabled ? 'dark' : 'lit') : null, commit: b ? (b.disabled ? 'dark' : 'lit') : null,
+      field: f ? f.value : null } : { open: false };
+  });
+  const p0 = await pill(); say('   opened: ' + JSON.stringify(p0));
+  await typeRate(s, 5);
+  const p1 = await pill(); say('   typed 5: ' + JSON.stringify(p1));
+  const box = await s.page.evaluate(() => { const p = document.querySelector('.setupcard [data-standpick]');
+    if (!p) return null; p.scrollIntoView({ block: 'center' }); const r = p.getBoundingClientRect();
+    return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
+  const before = s.wire.length;
+  if (box) { if (s.narrow) await s.page.touchscreen.tap(box.x, box.y); else await s.page.mouse.click(box.x, box.y); }
+  await s.page.waitForTimeout(900);
+  const p2 = await pill(); say('   the pill pressed again: ' + JSON.stringify(p2));
+  await shot(s, name);
+  const posted = s.wire.slice(before).filter((w) => w.cmd === 'open-motion');
+  const ok = p0.open && p0.kind === 'composer' && p0.pill === 'true' && p0.bin === 'dark' &&
+    p1.pill === 'false' && p1.bin === 'lit' && p1.commit === 'lit' &&
+    p2.open && p2.pill === 'true' && p2.bin === 'dark' && p2.commit === 'dark' && !p2.field && !posted.length;
+  verdict(name, ok, `on open ${JSON.stringify(p0)} · typed ${JSON.stringify(p1)} · the pill again ${JSON.stringify(p2)}` +
+    ` · ${posted.length} open-motion posted`);
+};
+
 
 // **The order**, each scenario with the seat it sits in. Within a document the order matters: four seats share
 // 3 ✏️ each, and the two scenarios that move what stands (the Founder's decrees) and the one that empties a
@@ -674,7 +737,7 @@ const ORDER = [
   ['wide-hour', 1], ['wide-120', 2], ['wide-one', 3],
   ['narrow', 2, { narrow: true }], ['narrow-ways', 3, { narrow: true }],
   ['others-under-poll', 1], ['one-under-poll', 0], ['bad-numbers', 2], ['typing-under-poll', 0],
-  ['decree-under', 1], ['empty-wallet', 3],
+  ['decree-under', 1], ['empty-wallet', 3], ['pill-cancels', 1],
 ];
 // **The lanes**, balanced by what each scenario waits: the under-poll scenarios sit through two polls a step,
 // the rest mostly through the welcomes. The decrees stay in one lane behind typing-under-poll's, and the empty
@@ -682,7 +745,7 @@ const ORDER = [
 // document; `--only=<name>` founds one document for that scenario alone.
 const LANES = ONLY ? [[ONLY]] : argOf('lanes') === '1' ? [ORDER.map(([n]) => n)] : [
   ['wide-type-press', 'grant-cap', 'unacked', 'same-as-stands', 'wide-hour'],
-  ['wide-120', 'wide-one', 'narrow', 'narrow-ways'],
+  ['wide-120', 'wide-one', 'narrow', 'narrow-ways', 'pill-cancels'],
   ['others-under-poll', 'one-under-poll', 'bad-numbers'],
   ['typing-under-poll', 'decree-under', 'empty-wallet'],
 ];

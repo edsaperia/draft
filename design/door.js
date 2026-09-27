@@ -188,8 +188,9 @@ window.DOOR = (function () {
       // pilot): *Current rule* above its first line, the rule wearing its
       // standing pill as a fact, and no row — nothing here asks anything, so
       // its tab, a click outside and Escape close it (1541.8 (a))
-      const st = window.CARD_STATE.stateOf(c.k);
-      if (st.kind === 'stranger-rule') return glyphify(window.CARD_SHELL.cardHtml(st));
+      // …and a power tab (stage 3b), its ask above its own clause
+      const st = window.CARD_STATE.stateOf(c.k, { siblings: g.cards });
+      if (st.kind === 'stranger-rule' || st.kind === 'power') return glyphify(window.CARD_SHELL.cardHtml(st));
       // `strCtx` inherits `chipsFor`, so a door that lets the constitution be
       // read carries the record chips too — the rules are public wherever the
       // rules are, and a rule's history is part of what it is (Q942)
@@ -199,7 +200,7 @@ window.DOOR = (function () {
       // 1541.8 (a), retiring reading 1190's close-only OK): its tab, a click
       // outside and Escape close it — a motion record's already had none
       // (Q1522 (6)). Its own shell comes with its family's stage: the power
-      // tabs 3b, the records 4, the Text 7
+      // tabs came with 3b; the records 4, the Text 7
       return cardHtml(c, strCtx, body, null, g.cards);
     };
     const strangerTextBody = () => {
