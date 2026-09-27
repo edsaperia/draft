@@ -1265,6 +1265,8 @@ window.COPY = (function () {
       redirect: 'Every link the document has ever had keeps working — a change leaves a redirect behind.',
       neverNeedsAll: 'Taking the end date away needs all members to agree — every change made so far was made under a promise that the document would seal on a date and be signed.',
       removalSeen: 'Whoever it is will see the proposal — nobody is removed in secret.',
+      // the free-text lane's placeholder, on a setting with no control of its own
+      valueLane: 'The value you are proposing',
     },
     // a constitutional motion's consent card: the question and the answers
     // **The consent card is three clause blocks** (Ed's card review round 3,

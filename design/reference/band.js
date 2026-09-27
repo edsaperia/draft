@@ -949,14 +949,9 @@ window.BAND = (function () {
       } catch (e) { return null; }
       return best;
     }
-    // the two halves of Q530, chosen by which side of the act you are on
-    // **Declared, not assigned, so the composer above can reach it.** A
-    // member's settled card post-start renders through the composer's own
-    // early return, which is *before* this point in the function — so as an
-    // arrow const the history was drawn on the news card and lost the
-    // moment the OK turned it back into a composer. Ed's answer was that
-    // the clause keeps it permanently, and a settled clause is exactly
-    // where somebody goes to ask why a rule is the way it is.
+    // what was Q530's two halves: the Founder's reason lane stays; the
+    // reader's *has changed … from … to …* line retired with 1564.5 (b)
+    // (Ed, 2026-09-27) — a change's history is its record behind the tab
     function changeHalf(cc) {
       const k = cc.k;
       if (cc.ansFor || cc.isGate || cc.door || !PW_KEYS.includes(k) || k === 'text') return '';
@@ -974,52 +969,11 @@ window.BAND = (function () {
         // a text proposal's rationale
         return '<div class="body whyset">' + founderSpeakerLane(v) + '</div>';
       }
-      // anybody else, reading what happened: what changed, and their reason
-      const am = lastAmendment(k);
-      if (!am || amFounder()) return '';
-      const from = am.from || changedFrom(k);
-      if (!from) return '';
-      const was = wordsFor(k, from);
-      const now2 = wordsFor(k, (csState(k) || {}).value);
-      if (!was) return '';
-      const what = esc(WHAT[k] || (k === 'title' ? 'the document’s title' : nounOf(cc).toLowerCase()));
-      const who = am.route === 'pen' ? 'The Founder has changed ' : 'The membership has changed ';
-      // **Long values are shown, not narrated** (2026-08-22). *from x to y*
-      // reads well for a rung, a percentage or a date, and badly for ⏱️,
-      // whose value is three numbers in a sentence — *from 4 ✏️ to start, up
-      // to 8, one more every 180 minutes to 2 ✏️ to start, up to 8, one more
-      // every 180 minutes* buries the one number that moved and loses its
-      // own *to* in the middle. Past a short value the pair goes on two
-      // aligned lines instead, where the eye finds the difference itself.
-      const longish = was.length > 32 || (now2 || '').length > 32;
-      // **News says what happened; history says when.** The same block does
-      // both jobs, because it is the same fact — but an amendment you have
-      // already acknowledged is no longer being announced to you, and a
-      // line on a settled clause that a reader may meet months later has to
-      // date itself or it reads as something that has just happened.
-      const dated = stateOf(cc, ctx) === 'news' ? ''
-        : '<p class="eyebrow fieldlab">Last amended' +
-          (am.at ? ' ' + esc(window.CARDS.longDay(am.at)) : '') + '</p>';
-      // **A 💤 change names the members it returned** (SURFACE Y26, Q902):
-      // turning it off or lengthening it past somebody's quiet returns them
-      // at once (entry 97), and who the change put back is part of what
-      // changed. The module's own record of the set (`returned`, ids) is
-      // named off the register — who is a member is public (§9.0c).
-      const back = k === 'lapse' ? ((csState(k) || {}).returned || []) : [];
-      const returned = back.length
-        ? '<p class="cpv">' + PAGE_COPY.lapseReturned(
-          listOf(back.map((mid2) => esc(nameOfMember(mid2)))), back.length) + '</p>'
-        : '';
-      return '<div class="body changed">' + dated +
-        (longish
-          ? '<p class="cpv">' + who + what + '.</p>' +
-            '<p class="waswas"><span>was</span>' + esc(was) + '</p>' +
-            (now2 ? '<p class="waswas"><span>now</span>' + esc(now2) + '</p>' : '')
-          : '<p class="cpv">' + who + what +
-            ' from ' + esc(was) + (now2 ? ' to ' + esc(now2) : '') + '.</p>') +
-        returned +
-        (am.route === 'pen' ? founderSpeaker(am.why)
-          : window.CARDS.speakerHtml(am.why)) + '</div>';
+      // …and nothing for anybody else: **a change's history lives only in its
+      // record behind the rule's tab** (Ed, 2026-09-27, 1564.5 (b), amending
+      // SURFACE §2's L7) — the *has changed … from … to …* line, its reason
+      // and its date, left the composer, the rule card and the clause
+      return '';
     }
 
     // ---- stage 3a: the band's settings on the one shell (Q1541) ------------
@@ -1267,12 +1221,8 @@ window.BAND = (function () {
         const d = (S.draft && S.draft.k === k) ? S.draft : { k, to: '', why: '' };
         options = PROPOSE[k] ? PROPOSE[k](d)
           : '<div class="lanebox"><div class="lp editlane" contenteditable="plaintext-only" spellcheck="false"' +
-            ' data-motionlane="to" data-ph="The value you are proposing">' + esc(d.to) + '</div></div>';
+            ' data-motionlane="to" data-ph="' + esc(PAGE_COPY.composeNote.valueLane) + '">' + esc(d.to) + '</div></div>';
         input = whyLane(d);
-        // …and the change line under it: the clause keeps it permanently
-        // (SURFACE §2's L7), `changeHalf`'s *has changed … from … to …* with
-        // its reason and its date
-        body = changeHalf(c);
       } else if (kind === 'setting') {
         const b = BODY[k]();
         // 🪶 before a title stands: the title box is the first line (P1's
@@ -1292,8 +1242,7 @@ window.BAND = (function () {
       } else if (kind === 'watching' && composerOn(c) && composerWaits(c).length) {
         // the composer waits on a power not yet accepted: the rule, and the
         // one sentence saying which (the grants are in the rail)
-        // (with the change line the composer keeps, SURFACE §2's L7)
-        body = changeHalf(c) + '<p class="setnote">' + esc(W3().composeOnceAccepted(composerWaits(c))) + '</p>';
+        body = '<p class="setnote">' + esc(W3().composeOnceAccepted(composerWaits(c))) + '</p>';
       }
       body += doorErrHtml(k);
       return {
@@ -1789,7 +1738,7 @@ window.BAND = (function () {
           const route = routeFor(c, d.to);
           const body2 = (PROPOSE[c.k] ? PROPOSE[c.k](d)
               : '<div class="lanebox"><div class="lp editlane" contenteditable="plaintext-only" spellcheck="false"' +
-                ' data-motionlane="to" data-ph="The value you are proposing">' + esc(d.to) + '</div></div>') +
+                ' data-motionlane="to" data-ph="' + esc(PAGE_COPY.composeNote.valueLane) + '">' + esc(d.to) + '</div></div>') +
             whyLane(d) +
             // the price is not said in words (Ed, 2026-08-19): the pencil
             // flying out of the wallet is what teaches it, and a sentence
