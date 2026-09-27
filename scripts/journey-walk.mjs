@@ -95,7 +95,7 @@ const LIFECYCLE = {
   L4: 'L4 judged',     // a judgment cast: ✓ closes; the pair's own entry files as ⏳, the other pairs' stay lit (pairs 3, pairs 7)
   L5: 'L5 proposed',   // a motion committed (and a text proposal, Q1485 (A)): on Propose the card closes; the ✏️ entry pinned
   L6: 'L6 📧 sent',    // 📧 send: the card closes on send; the clause says to check your inbox
-  L7: 'L7 owed OK',    // a decision you are owed: on OK, one press, persisted per member; the clause keeps the change line
+  L7: 'L7 owed OK',    // a decision you are owed: on OK, one press, persisted per member; the change's history is its record behind the tab (1564.5 (b))
   L8: 'L8 grant OK',   // a power arrives: on OK; ACK_KEYS per seat — not served again after a reload, the socket held
   L9: 'L9 🗑️',        // 🗑️: always closes; un-actioned input reverted (⏱️'s number, ✋'s text), the set value untouched
 };
@@ -1474,9 +1474,12 @@ const secondSeatOnAmendment = async () => {
     (guestOks - before === 1 ? '' : '  FAIL: expected exactly one'));
   if (guestOks - before !== 1) stuck.push('give-ok was sent ' + (guestOks - before) + ' times');
   // L7 — the close and the persistence are the three lines above (one press,
-  // gone through a poll, still gone after a reload); what is left is the
-  // clause keeping the change line: the settled card, opened from its tab
-  // after the reload, carries `changeHalf`'s *has changed … from … to …*.
+  // gone through a poll, still gone after a reload); what is left is where
+  // the change's history lives: **only in its record behind the rule's tab**
+  // (Ed, 2026-09-27, 1564.5 (b)). The settled card, opened from its tab after
+  // the reload, carries no *has changed … from … to …* line, and the record
+  // in its strip states the change — *Changed by the Founder* and the
+  // *Previous rule* it replaced.
   const opened = await guestPage.evaluate((k) => {
     const t = document.querySelector('#band [data-tab="' + k + '"]');
     if (!t) return false;
@@ -1484,15 +1487,26 @@ const secondSeatOnAmendment = async () => {
     return true;
   }, AMENDED);
   await guestPage.waitForTimeout(700);
-  const l7 = await guestPage.evaluate(() => {
+  const l7 = await guestPage.evaluate((k) => {
     const c = document.querySelector('.setupcard');
-    const ch = c && c.querySelector('.body.changed');
-    return { card: !!c, changed: ch ? ch.textContent.replace(/\s+/g, ' ').trim().slice(0, 140) : null };
-  });
-  const l7Ok = opened && l7.card && !!l7.changed && /has changed/.test(l7.changed);
-  say(L('L7') + (l7Ok ? 'one press, kept through a poll and a reload; the clause keeps the change line: “' + l7.changed + '”'
-    : 'FAIL: tab ' + opened + ' · ' + JSON.stringify(l7)));
-  if (!l7Ok) stuck.push('L7: the change line on the acknowledged clause');
+    const txt = (el) => (el ? el.textContent.replace(/\s+/g, ' ').trim() : '');
+    const rec = c && [...c.querySelectorAll('.chipcol [data-tab]')].map((e) => e.dataset.tab)
+      .find((t) => t.startsWith('rec:' + k));
+    const para = document.querySelector('#band [data-para="' + k + '"]');
+    return { card: !!c, line: /has changed|Last amended/.test(txt(c)) || !!(c && c.querySelector('.body.changed')),
+      paraLine: /has changed|Last amended/.test(txt(para)), rec: rec || null };
+  }, AMENDED);
+  let recText = '';
+  if (l7.rec) {
+    await guestPage.evaluate((t) => document.querySelector('.setupcard .chipcol [data-tab="' + t + '"]')?.click(), l7.rec);
+    await guestPage.waitForTimeout(700);
+    recText = await guestPage.evaluate(() => (document.querySelector('.setupcard')?.textContent || '').replace(/\s+/g, ' ').trim());
+  }
+  const recOk = /Changed by the Founder/.test(recText) && /Previous rule/.test(recText);
+  const l7Ok = opened && l7.card && !l7.line && !l7.paraLine && recOk;
+  say(L('L7') + (l7Ok ? 'one press, kept through a poll and a reload; no change line on the clause or its card, and the record behind the tab carries the change (' + l7.rec + ')'
+    : 'FAIL: tab ' + opened + ' · ' + JSON.stringify(l7) + ' · record “' + recText.slice(0, 140) + '”'));
+  if (!l7Ok) stuck.push('L7: the change lives in its record behind the tab, and nowhere else');
   await guestPage.evaluate(() => { const a = document.querySelector('.setupcard .chipcol .achip'); if (a) a.click(); });
   await guestPage.waitForTimeout(400);
 };

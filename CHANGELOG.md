@@ -16,6 +16,7 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 - **A number or date you propose starts empty**, rather than filled in with the value that already stands, so nothing on the card looks chosen before you choose it.
 - **Until you have accepted the power a change needs, a rule's card says which one to accept**, rather than offering a button that cannot work yet.
 - **Admissions is called *the admissions rule*** wherever a Founder power names it.
+- **A rule no longer carries a line saying how it last changed.** That history is behind the rule's tab, in the record of the change.
 
 ### Fixed
 - **A card that asks nothing of you no longer offers an OK that only closes it**: the Founder's membership once the document has begun, and a Founder power read by anybody but the Founder, now close from their tab, a click outside or Escape.
