@@ -2425,12 +2425,12 @@
   const refusalNote = (s) => (refusedSay.has(s.id)
     ? '<div class="foot refusal" role="alert">' + esc(refusedSay.get(s.id)) + '</div>' : null);
   const bodyOf = (html) => (html ? { html } : null);
-  // **the wording a shifted vote was about is the previous text** (answers
-  // Part 4 .11): the ground changed under the vote, so what it was cast on
-  // is what the change replaced — labelled on its first line in the one
-  // drawing, the card's own sentence (`reviseNote`) saying why it is there
+  // **the wording a shifted vote was about is *The text you voted on*** (Ed,
+  // 2026-09-27, 1563.1 (b): the voter's word, a stated exception to Part 4
+  // .11's *Previous text*) — labelled on its first line in the one drawing,
+  // the card's own sentence (`reviseNote`) saying why it is there
   const shiftedGround = (s) => (!s.shifted || !s.wasGround ? ''
-    : '<div class="replaced"><span class="glab">' + esc(window.COPY.shell.previousText) + '</span>' +
+    : '<div class="replaced"><span class="glab">' + esc(window.COPY.grammar.ground.tag) + '</span>' +
       '<div class="rtext">' + esc(s.wasGround) + '</div></div>');
   // the rank of the heading a key names, or nothing where it is a clause
   const headRank = (key) => {

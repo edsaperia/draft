@@ -2098,7 +2098,9 @@ const HEAD_WORDS = [
   /^Add your closing comment$/i, /^Accept This Change\?$/i,
 ];
 /** …and on a block's first line (Part 4 .8–.14) */
-const BLOCK_WORDS = /^(Proposed( by .+)?|Previous (text|rule))( · (\d+%|Ran out of time))?$/i;
+const BLOCK_WORDS = /^(Proposed( by .+)?|Previous (text|rule))( · (\d+%|Ran out of time))?$|^The text you voted on$/i;
+// …*The text you voted on*, a shifted vote's ground, is the stated exception
+// to .11 (Ed, 2026-09-27, 1563.1 (b))
 
 /** a row control as a token: its leading glyph (variation selector dropped), or its words */
 const tokNorm = (t) => {
