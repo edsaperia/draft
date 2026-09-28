@@ -326,16 +326,31 @@ window.DOOR = (function () {
         : (strPayload() || {}).joinOpen ? 'Anyone with the link may join' : 'Members log in by email'),
       value: (c) => strRailCtx.summary(c), isRoom: () => false,
     };
-    function strangerCardHtml() {
-      const c = STRCARDS().find((x) => x.k === S.open);
-      if (!c) return '';
+    /** the stranger's card as its shell state — what card-state's door source
+     *  hands `stateOf`, and what `strangerCardHtml` draws */
+    function strangerState(key) {
+      const c = STRCARDS().find((x) => x.k === (key || S.open));
+      if (!c) return null;
       // 👋 Try It: one sentence and one commit, the glyph alone (T47); a
       // refused join is said under the card, as a refused send is (Y25)
+      // **On the one shell** (Q1541 stage 5): the stranger's cards are
+      // placeless — nothing at the door is theirs — so each carries its title
+      // as the label (grammar §2.3's placeless exception) and its first line
+      // is what it asks: its sentence, or the address box where it has none
+      // (a box is a first line, as 📧's is at the birth)
+      const shell = (first, rest, acts) => ({
+        kind: 'stranger',
+        frame: { cls: 'sugg setupcard', attrs: ' role="tabpanel" data-setupcard="' + esc(c.k) + '"' },
+        label: { text: c.t },
+        head: { html: window.SETUP.headHtml(c, strRailCtx, [c], '<div class="headrule asblock">' + first + '</div>') },
+        body: rest.body ? { html: rest.body } : null,
+        input: rest.input ? { html: rest.input } : null,
+        acts,
+      });
       if (c.k === 'strtry') {
-        return cardHtml(c, strRailCtx, '<p class="why">' + esc(PAGE_COPY.strtry.why) + '</p>' +
-          (doorErrHtml ? doorErrHtml(c.k) : ''),
-        binBtn() + '<button class="btn btn-approve glyphbtn emojibtn" data-strtry="1" title="' +
-          esc(PAGE_COPY.strtry.press) + '">' + glyphHtml('👋') + '</button>', [c]);
+        return shell('<p class="why">' + esc(PAGE_COPY.strtry.why) + '</p>', { body: doorErrHtml ? doorErrHtml(c.k) : '' },
+          [{ kind: 'commit', glyph: '👋', glyphHtml: glyphHtml('👋'), cls: 'btn-approve emojibtn',
+            attrs: ' data-strtry="1"', title: PAGE_COPY.strtry.press }]);
       }
       const okAddr = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(STRS.email.trim());
       const p = strPayload() || {};
@@ -350,24 +365,31 @@ window.DOOR = (function () {
       const login = c.k === 'strlogin';
       const field = '<span class="fld">' + (login ? '' : '<label>Your email</label>') +
         '<input type="email" data-stremail="1" value="' + esc(STRS.email) + '" placeholder="you@example.com"></span>';
-      const body = STRS.sent === c.k
+      const said = STRS.sent === c.k
         ? '<p class="why">Sent to <b>' + esc(STRS.sentTo) + '</b>. ' +
           (c.k === 'strapply' ? (joining() ? PAGE_COPY.strjoin.sent
             : 'Follow the link to begin your application — the address is your identity here.')
-            : 'If that address is on the membership, a link is on its way.') + '</p>' +
-          // the field stays after the send (Q609): typing a different address
-          // un-sends, and the send button returns
-          field
+            : 'If that address is on the membership, a link is on its way.') + '</p>'
         : (login ? '' : '<p class="why">' + (joining() ? esc(PAGE_COPY.strjoin.why) :
-            'Membership is by application. Your email is your identity here — the link it sends is the login, and the answer arrives on it.') + '</p>') +
-          field +
-          // a refused send is said under the card that sent it (Y25; issue #36 F2)
-          (doorErrHtml ? doorErrHtml(c.k) : '');
-      const foot = binBtn() + (STRS.sent !== c.k
-        ? '<button class="btn btn-approve glyphbtn emojibtn"' + (okAddr ? '' : ' disabled') +
-          ' data-strsend="' + c.k + '" title="Send the link">' + glyphHtml('📧') + '</button>'
-        : '');
-      return cardHtml(c, strRailCtx, body, foot, [c]);
+            'Membership is by application. Your email is your identity here — the link it sends is the login, and the answer arrives on it.') + '</p>');
+      // a refused send is said under the card that sent it (Y25; issue #36 F2)
+      const err = doorErrHtml ? doorErrHtml(c.k) : '';
+      // the bin puts the address back to empty, dark until one is typed
+      // (1541.9); the 📧 is dark over a malformed address with no note (Part 4
+      // .18). The field stays after the send (Q609): typing a different
+      // address un-sends, and the send button returns
+      const typed = !!STRS.email.trim();
+      const acts = [{ kind: 'bin', title: PAGE_COPY.binPutBack,
+        attrs: typed ? ' data-strclear="1"' : ' data-act="bin"', until: typed ? null : 'nothing-yours' }];
+      if (STRS.sent !== c.k) {
+        acts.push({ kind: 'commit', glyph: '📧', glyphHtml: glyphHtml('📧'), cls: 'btn-approve emojibtn',
+          attrs: ' data-strsend="' + esc(c.k) + '"', title: PAGE_COPY.appcards.sendLink, until: okAddr ? null : 'type' });
+      }
+      return said ? shell(said, { body: err, input: field }, acts) : shell(field, { body: err }, acts);
+    }
+    function strangerCardHtml() {
+      const st = strangerState();
+      return st ? glyphify(window.CARD_SHELL.cardHtml(st)) : '';
     }
     document.addEventListener('input', (ev) => {
       const t = ev.target.closest('[data-stremail]');
@@ -377,9 +399,27 @@ window.DOOR = (function () {
       if (S.doorErr && S.doorErr.k === S.open) S.doorErr = null;
       if (STRS.sent && STRS.email.trim() !== STRS.sentTo) { STRS.sent = null; return render(); }
       const b = document.querySelector('[data-strsend]');
-      if (b) b.disabled = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(STRS.email.trim());
+      if (b) {
+        b.disabled = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(STRS.email.trim());
+        // the dark commit says what it waits on (the shell's `data-until`)
+        if (b.disabled) b.setAttribute('data-until', 'type'); else b.removeAttribute('data-until');
+      }
+      // …and the bin lights on an address typed, darkens on none (1541.9)
+      const bin = document.querySelector('.setupcard [data-strclear], .setupcard [data-slot="row"] [data-act="bin"]');
+      if (bin) {
+        const typed = !!STRS.email.trim();
+        bin.disabled = !typed;
+        if (typed) { bin.removeAttribute('data-act'); bin.removeAttribute('data-until'); bin.setAttribute('data-strclear', '1'); }
+        else { bin.removeAttribute('data-strclear'); bin.setAttribute('data-act', 'bin'); bin.setAttribute('data-until', 'nothing-yours'); }
+      }
     });
     document.addEventListener('click', (ev) => {
+      // the bin at the door: the address back to empty, and a send un-sent
+      if (ev.target.closest('.setupcard [data-strclear]')) {
+        STRS.email = ''; STRS.sent = null;
+        if (S.doorErr && S.doorErr.k === S.open) S.doorErr = null;
+        return render();
+      }
       // **👋 Try It** (design/DEMO.md Stage 3): the host seats this browser on
       // the demo document under a made-up name and sets its cookie; the page
       // then reloads into the seat, with `?try=1` dropped from the address
@@ -436,7 +476,7 @@ window.DOOR = (function () {
       }
     });
 
-    return { setStranger, strPayload, shapeOf, strangerAsView, applicantAsView, hydrateApplicant, founderInfo, strMembersLine, strMemberList, strCtx, strangerReadCard, syncStrangerCharter, STRCARDS, strRailCtx, strangerCardHtml };
+    return { setStranger, strPayload, shapeOf, strangerAsView, applicantAsView, hydrateApplicant, founderInfo, strMembersLine, strMemberList, strCtx, strangerReadCard, syncStrangerCharter, STRCARDS, strRailCtx, strangerCardHtml, strangerState };
   }
   return { make };
 })();

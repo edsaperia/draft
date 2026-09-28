@@ -589,6 +589,11 @@ window.SETUP = (function () {
     // label's room lower, and the open path holds the pressed tab still on
     // the glass by scrolling that room away (`holdTab`, session-view.html)
     const lineIn = (card) => {
+      // your ✋ 🖼️ 📧 stand where your row stood, so its first line is the
+      // row's own — the same drawing heads the card (Q1541 stage 5)
+      // …and a door's, its subsection's list (the same drawing, top to top)
+      const row = card.querySelector('.clausehead .meRow') || card.querySelector('.clausehead .memlist');
+      if (row) { const t = window.CARD_SHELL.lineTop(row); return t == null ? null : t - row.getBoundingClientRect().top; }
       const ref = card.closest('.constsec, body').querySelector('.cpara:not(.open):not(.textanchor) .cpv');
       const lt = ref && window.CARD_SHELL.lineTop(ref);
       return lt == null ? null : lt - ref.closest('.cpara').getBoundingClientRect().top;
@@ -909,7 +914,9 @@ window.SETUP = (function () {
     // `locked` is the closed document (CP9): the blocks stay readable and
     // nothing on them commits
     return '<div class="choice" role="radiogroup">' +
-      (keep ? opt(pk, 'namePick', 'keep', esc(keep), '', '', o.locked) : '') +
+      // on the one shell the standing name is the card's first line (your
+      // row), so the *keep* block is not drawn again (`noKeep`, Q1541 stage 5)
+      (keep && !o.noKeep ? opt(pk, 'namePick', 'keep', esc(keep), '', '', o.locked) : '') +
       opt(pk, 'namePick', 'name',
         '<input id="myname" class="namein" data-txt="myname" value="' + esc(draft) +
         '" placeholder="Your name"' + (o.locked ? ' disabled' : '') + '>', '', '', o.locked) +
@@ -1021,7 +1028,7 @@ window.SETUP = (function () {
     // avatar size; the three answers stand beneath it unchanged.
     // `locked` is the closed document (CP9): readable, nothing commits
     return '<div class="choice" role="radiogroup">' +
-      (pic ? opt(pickState, pk, 'keep', avHtml(me, 'big'), '', '', oo.locked) : '') +
+      (pic && !oo.noKeep ? opt(pickState, pk, 'keep', avHtml(me, 'big'), '', '', oo.locked) : '') +
       // **Anonymous is the avatar, not the word** (Ed's card review round 3,
       // 2026-09-05, 06/41): the block shows what anonymous looks like for
       // this member — initials where they have a name, the anonymous mark

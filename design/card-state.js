@@ -22,8 +22,10 @@
  *   draft, notes  unsent choices; the clocks about an act
  *
  * **The readers ask the surfaces for raw facts and decide here.** A surface
- * — the band (session-view.html) and the charter (session.js) — registers a
- * source with `register(name, src)`: `owns(key)` says which keys are its,
+ * — the band (session-view.html), the charter (session.js), and since Q1541
+ * stage 5 the door's own seats (the stranger's cards and the applicant's
+ * five, registered by session-view.html as `door`, with `seat: true`) —
+ * registers a source with `register(name, src)`: `owns(key)` says which keys are its,
  * and the rest are raw getters (a setting's `settledBy`, a record's field).
  * What the facts *mean* — which of two words says who chose a rule, what a
  * record's outcome was, which wording heads it — is decided once, here.
@@ -133,14 +135,19 @@ window.CARD_STATE = (function () {
    * voice-out, readiness, reconnect, flight). **An act for a power not yet
    * accepted is absent, not dark** (answers Part 4 .19). On a closed
    * document nothing is offered but 🥂's signature, which is the closed
-   * page's own card; a stranger and an applicant send nothing from a card.
+   * page's own card, and the door's own presses; a stranger and an applicant send nothing from any card
+   * but their own seat's — the door source's (`seat: true`: Log In, Apply,
+   * the applicant's five), whose acts are that seat's own presses.
    */
   function actsOf(key) {
     const phase = phaseOf();
     const reader = readerOf();
-    if (phase === 'closed') return [];
-    if (reader === 'stranger' || reader === 'applicant') return [];
     const src = sourceOf(key);
+    // the door's own seat keeps its presses (a member logs in to read a
+    // closed document too); every other card offers nothing then
+    const seat = !!(src && src.seat);
+    if (phase === 'closed' && !seat) return [];
+    if ((reader === 'stranger' || reader === 'applicant') && !seat) return [];
     if (!src || typeof src.acts !== 'function') return [];
     return (src.acts(key) || []).filter((a) => a && a.accepted !== false);
   }

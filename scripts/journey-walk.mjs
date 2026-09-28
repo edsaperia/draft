@@ -893,14 +893,19 @@ const inviteDoorPreBegin = async () => {
       send: send ? window.CARDS.glyphTextOf(send).trim() : '(no send button)',
       h: send ? Math.round(send.getBoundingClientRect().height) : 0,
       title: send ? send.title : '',
-      bin: !!(row && row.querySelector('[data-revert]')),
+      // the box is empty here, so the bin is drawn and dark (1541.9, Q1541
+      // stage 5) — and so is the send, over the empty box (Part 4 .18)
+      bin: !!(row && row.querySelector('[data-revert], [data-act="bin"]')),
+      binDark: !!(row && row.querySelector('[data-act="bin"][disabled]')),
+      sendDark: !!(send && send.disabled),
       confirm: !!(row && row.querySelector('[data-confirm]')),
     };
   });
-  const marksOk = marks.send === '✒️' && marks.bin && !marks.confirm;
+  const marksOk = marks.send === '✒️' && marks.bin && marks.binDark && marks.sendDark && !marks.confirm;
   say('the mark   · send ' + JSON.stringify(marks.send) + ' (' + marks.h + 'px, “' +
-    marks.title + '”) · row 🗑️ ' + marks.bin + ' confirm ' + marks.confirm +
-    (marksOk ? '' : '  FAIL: the ✒️ send belongs on the row, with 🗑️ and no pen'));
+    marks.title + '”) · row 🗑️ ' + marks.bin + (marks.binDark ? ' (dark)' : '') + (marks.sendDark ? ' · ✒️ dark' : '') +
+    ' confirm ' + marks.confirm +
+    (marksOk ? '' : '  FAIL: the ✒️ send belongs on the row, with 🗑️ and no pen — both dark over the empty box'));
   if (!marksOk) stuck.push('the ✒️ on ✉️’s row');
 };
 

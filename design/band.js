@@ -541,7 +541,7 @@ window.BAND = (function () {
       // the place a removal is *done*.
       remove: () => (directRemove()
         ? (constituted() ? ''
-            : '<p class="why">Until the document begins, taking somebody off the list is yours alone — an invitation withdrawn is nobody else’s business yet.</p>') +
+            : '<p class="why">' + PAGE_COPY.door.removeBeforeStart + '</p>') +
           removeSubjectPicker() +
           doorErrHtml('remove')
         // a member's card is unchanged by that QA — Ed reviewed the founder's
@@ -861,52 +861,81 @@ window.BAND = (function () {
         '<div class="lanebox"><div class="lp editlane' + (S.app.text ? '' : ' blank') + '" contenteditable="plaintext-only"' +
         ' spellcheck="false" data-apptext="1" data-ph="To the members…">' + esc(S.app.text) + '</div></div>',
     };
-    function applicantCardHtml() {
-      const c = APPCARDS().find((x) => x.k === S.open);
-      if (!c) return '';
+    /**
+     * **The applicant's five, on the one shell** (Q1541 stage 5): placeless —
+     * there is nothing of theirs in the document yet — so each heads with its
+     * title as the label (grammar §2.3, the placeless exception) and opens at
+     * the top of the band where it always has. The body is what it always
+     * was; the acts move to the row unchanged: *Begin*, *Submit*, the 📧 that
+     * sends the link, and ✓ that closes and keeps (Q1366) — dark until the
+     * card is done, as before. A shut door's news takes its OK (E33). No bin
+     * where it can never have a job (1541.9): only 🖼️'s choice can be put
+     * back. A submitted application's card asks nothing, so it has no row —
+     * the module has no withdrawal for 1541.9 (b)'s bare 🗑️ to draw.
+     */
+    function applicantShell(key) {
+      const c = APPCARDS().find((x) => x.k === (key || S.open));
+      if (!c) return null;
       const a = S.app;
-      let foot;
+      const T = PAGE_COPY.appcards;
       let body = APPBODY[c.k]();
+      const acts = [];
+      let owed = null;
       if (c.k === 'apply') {
         const shut = applyShutOnMe();
         // the door has shut (E33): the sentence stands before the press; a
         // refusal from the wire lands in the same place through `doorErrHtml`;
         // both retire the way Y25 says — the door opening again, or a keystroke
         if (!shut && S.doorErr && S.doorErr.k === 'apply') S.doorErr = null;
-        // **and a shut door's card is the sentence and nothing else** (Q901):
-        // what an application is and what it will cost is copy for somebody who
-        // can still make one, so it goes while the door stands shut
+        // **and a shut door's card is the sentence and nothing else** (Q901)
         if (shut) body = '';
-        foot = a.submitted ? binBtn()
-          // **a shut door commits with OK** (SURFACE E33, Q901): the card is
-          // news, and a Submit standing dark beside it would be a commit on a
-          // card that asks nothing (§9.1, CP9). Once acknowledged the OK goes
-          // too and the bin is the way out, exactly as an acked gate's is
-          : shut ? (a.shutAcked ? binBtn()
-            : binBtn() + '<button class="btn btn-approve okbtn" data-appshutok="1">OK</button>')
-          : !a.started ? '<button class="btn btn-approve" data-appstart="1">Begin</button>'
-          // a word, not 🏛️: an application becomes an ordinary motion, and
-          // the 🏛️ glyph belongs to the assembly-press hold — a plain click
-          // wearing it claimed the constitutional route it does not take
-          : binBtn() +
-            '<button class="btn btn-approve"' + (a.name.trim() && a.pic ? '' : ' disabled') +
-            ' data-appsubmit="1" title="Your application goes before the members">Submit</button>';
         if (a.started && !a.submitted) {
-          body += shut && !doorErrOn('apply')
-            ? '<p class="why">' + esc(APPLY_SHUT) + '</p>'
-            : doorErrHtml('apply');
+          body += shut && !doorErrOn('apply') ? '<p class="why">' + esc(APPLY_SHUT) + '</p>' : doorErrHtml('apply');
+        }
+        if (a.submitted) { /* asks nothing */ }
+        else if (shut) { if (!a.shutAcked) owed = { kind: 'ok', attrs: ' data-appshutok="1"', word: 'OK' }; }
+        // a word, not 🏛️: an application becomes an ordinary motion, and the
+        // 🏛️ glyph belongs to the assembly-press hold
+        else if (!a.started) acts.push({ kind: 'commit', cls: 'btn-approve wordbtn', attrs: ' data-appstart="1"', glyphHtml: esc(T.begin), title: T.begin });
+        else {
+          acts.push({ kind: 'commit', cls: 'btn-approve wordbtn', attrs: ' data-appsubmit="1"', glyphHtml: esc(T.submit),
+            title: T.submitTitle, until: a.name.trim() && a.pic ? null : 'choose' });
         }
       } else if (c.k === 'appmail' && !a.emailSent && !a.emailVerified) {
         // the send is the row's 📧, armed by a valid address that is nobody
         // else's — the stranger's 📧 rule (reading 1194, T47), since Q1399
-        foot = binBtn() +
-          '<button class="btn btn-approve glyphbtn emojibtn"' + (appAddrOk() ? '' : ' disabled') +
-          ' data-appmailsend="1" title="Send the link">' + glyphHtml('📧') + '</button>';
+        acts.push({ kind: 'commit', glyph: '📧', glyphHtml: glyphHtml('📧'), cls: 'btn-approve emojibtn',
+          attrs: ' data-appmailsend="1"', title: T.sendLink, until: appAddrOk() ? null : 'type' });
       } else {
-        foot = binBtn() +
-          '<button class="btn btn-approve glyphbtn"' + (c.done() || c.optional ? '' : ' disabled') + ' data-close="1">' + TICK + '</button>';
+        if (c.k === 'apppic') {
+          const dirty = openCardDirty();
+          acts.push({ kind: 'bin', title: PAGE_COPY.binPutBack,
+            attrs: dirty ? ' data-revert="1"' : ' data-act="bin"', until: dirty ? null : 'nothing-yours' });
+        }
+        acts.push({ kind: 'commit', glyph: '✓', glyphHtml: TICK, cls: 'btn-approve', attrs: ' data-close="1"',
+          until: c.done() || c.optional ? null : (c.k === 'apppic' ? 'choose' : 'type') });
       }
-      return cardHtml(c, appCtx, body, foot, [c]);
+      // the opening sentence (or lockline), else a field, leads the card
+      const lead = /^\s*(<p class="why">[\s\S]*?<\/p>|<div class="lockline">[\s\S]*?<\/span><\/div>|<span class="fld">[\s\S]*?<\/span>)/.exec(body);
+      const first = lead ? lead[1] : '';
+      const rest = lead ? body.slice(lead[0].length) : body;
+      return {
+        kind: 'applicant',
+        frame: { cls: 'sugg setupcard', attrs: ' role="tabpanel" data-setupcard="' + esc(c.k) + '"' },
+        label: { text: c.t },
+        // **one drawing with the stranger's two** (the coordinator's call 10
+        // (b), stage 5): the first line is what the card asks — its opening
+        // sentence, or its address box where it has none; 🖼️ has neither, its
+        // blocks being the whole of it, so it carries the strip alone
+        head: { html: window.SETUP.headHtml(c, appCtx, [c], first ? '<div class="headrule asblock">' + first + '</div>' : '') },
+        body: rest ? { html: rest } : null,
+        acts, owed,
+      };
+    }
+    // drawn from `stateOf`, as the band's kinds are (the door source)
+    function applicantCardHtml() {
+      if (!applicantShell()) return '';
+      return glyphify(window.CARD_SHELL.cardHtml(window.CARD_STATE.stateOf(S.open)));
     }
     /** the applicant's address is already a member's — one identity per address (§9.7½) */
     const appAddrTaken = () => MEMBER_EMAILS.has(S.app.email.trim().toLowerCase());
@@ -1355,7 +1384,9 @@ window.BAND = (function () {
       // …and stage 4's: the motion cards, 👑, and the settled motion records
       // with a failed motion's news
       const SHELL_KINDS = new Set(['grant', 'gate', 'begin', 'release', 'setting', 'watching', 'answer', 'birth-email',
-        'power', 'composer', 'motion', 'crown', 'motion-record', 'failed-motion-news']);
+        'power', 'composer', 'motion', 'crown', 'motion-record', 'failed-motion-news',
+        // …and stage 5's: ✋ 🖼️ 📧, the doors, the admissions, the applicant's
+        'identity', 'door', 'admission']);
       const crownPairRow = () => (amFounder()
         ? binBtn() + '<span class="rightpair">' +
           '<button class="btn glyphbtn emojibtn" data-crownq="reject"' +
@@ -2230,13 +2261,16 @@ window.BAND = (function () {
     // among the fields carrying that key, not by the key alone. A date box
     // holds no value until it is whole, so a half-typed one comes back empty
     // with the caret in it — Q1513.
+    // …and ✉️'s address boxes, the Founder's and a member's, which are
+    // textareas (Q1541 stage 5: a render landing while an address was typed
+    // took the caret, and the next keys went nowhere)
     const KEEP_ATTRS = ['data-txt', 'data-num', 'data-mtext', 'data-mslug',
-      'data-mpace', 'data-mrate', 'data-mnum', 'data-ansnum', 'data-ansdate'];
-    const keptSel = (attr, key) => '.setupcard input[' + attr + '="' + key + '"]';
+      'data-mpace', 'data-mrate', 'data-mnum', 'data-ansnum', 'data-ansdate', 'data-emails', 'data-mjoin'];
+    const keptSel = (attr, key) => '.setupcard :is(input, textarea)[' + attr + '="' + key + '"]';
     const renderKeep = () => {
       const a = document.activeElement;
       const inp = a && a.closest && a.closest('.setupcard') &&
-        a.matches(KEEP_ATTRS.map((x) => 'input[' + x + ']').join(', ')) ? a : null;
+        a.matches(KEEP_ATTRS.map((x) => 'input[' + x + '], textarea[' + x + ']').join(', ')) ? a : null;
       const attr = inp ? KEEP_ATTRS.find((x) => inp.hasAttribute(x)) : null;
       const nth = attr ? [...document.querySelectorAll(keptSel(attr, inp.getAttribute(attr)))].indexOf(inp) : 0;
       const box = document.querySelector('.setupcard .emojibox');
@@ -2364,6 +2398,8 @@ window.BAND = (function () {
       render, refreshCommit, roomNow, syncShare, standingBlock, unchangedCard,
       // stage 3a's settings cards, for the band's card-state source (Q1541)
       settingKind, settingActs, settingOwed, settingPresent, lineOf,
+      // stage 5: the doors' bodies, for their cards on the one shell
+      BODY,
       // stage 4: a motion's card heads with its host's rule and pill (Q1541)
       pillOf,
       // stage 3b: the composer's commit swaps in place as a motion is typed,
@@ -2371,6 +2407,8 @@ window.BAND = (function () {
       syncShellRow,
       foundedAt, foundedClause, closedAtWords, resendTitle, APPLICANT, MEMBER_EMAILS, APPCARDS,
       appCtx,
+      // stage 5: the applicant's five as shell states, for card-state's door source
+      applicantShell,
       // the rail asks this (SURFACE E33, Q901): a door that shut under a
       // verified applicant is news owed an OK, and the news has to be
       // reachable — `renderRail` empties the applicant's rail the moment 🤝

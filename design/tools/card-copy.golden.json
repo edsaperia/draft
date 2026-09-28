@@ -1,6 +1,6 @@
 {
  "meta": {
-  "cards": 270,
+  "cards": 273,
   "walks": [
    "answers",
    "charter",
@@ -428,10 +428,10 @@
     "helpers": []
    },
    "invite": {
-    "eyebrow": "",
-    "head": "Nobody has been invited yet.",
+    "eyebrow": "Invite a Member",
+    "head": "There are no applications at the moment.",
     "lock": "",
-    "body": "🌍 Visibility is waiting for somebody to answer it. You handed it to the membership, and you are its only member — a question answered by one voice has not been handed to anybody, so one more member is enough to start it. If you would rather not invite anybody, take it back on its own card and set it yourself.",
+    "body": "",
     "options": [],
     "inputs": [
      {
@@ -580,8 +580,8 @@
     "helpers": []
    },
    "myname": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Choose Your Name",
+    "head": "Anonymous 👑 you",
     "lock": "",
     "body": "Choose thisAnonymousChoose this",
     "options": [
@@ -617,14 +617,15 @@
      "Choose Your Name — close it",
      "Choose Your Picture — waiting on you",
      "Your Email — settled",
+     "Some of the rules are reserved: changing them needs the founder’s assent",
      "Put it back as it stands",
      "Save"
     ],
     "helpers": []
    },
    "mypic": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Choose Your Picture",
+    "head": "ALAda Lovell 👑 you",
     "lock": "",
     "body": "ALChoose thisUpload an imageChoose thisPick an emojiChoose this",
     "options": [
@@ -659,6 +660,7 @@
      "Choose Your Picture — close it",
      "Your Name — settled",
      "Your Email — settled",
+     "Some of the rules are reserved: changing them needs the founder’s assent",
      "Put it back as it stands",
      "Save"
     ],
@@ -3940,8 +3942,8 @@
     "helpers": []
    },
    "invite": {
-    "eyebrow": "",
-    "head": "Nobody has been invited yet.",
+    "eyebrow": "Invite a Member",
+    "head": "There are no applications at the moment.",
     "lock": "",
     "body": "",
     "options": [],
@@ -4090,8 +4092,8 @@
     "helpers": []
    },
    "myname": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Choose Your Name",
+    "head": "Anonymous 👑 you",
     "lock": "",
     "body": "Choose thisAnonymousChoose this",
     "options": [
@@ -4127,14 +4129,15 @@
      "Choose Your Name — close it",
      "Choose Your Picture — waiting on you",
      "Your Email — settled",
+     "Some of the rules are reserved: changing them needs the founder’s assent",
      "Put it back as it stands",
      "Save"
     ],
     "helpers": []
    },
    "mypic": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Choose Your Picture",
+    "head": "ALAda Lovell 👑 you",
     "lock": "",
     "body": "ALChoose thisUpload an imageChoose thisPick an emojiChoose this",
     "options": [
@@ -4169,6 +4172,7 @@
      "Choose Your Picture — close it",
      "Your Name — settled",
      "Your Email — settled",
+     "Some of the rules are reserved: changing them needs the founder’s assent",
      "Put it back as it stands",
      "Save"
     ],
@@ -4665,10 +4669,10 @@
     "helpers": []
    },
    "invite": {
-    "eyebrow": "",
-    "head": "Nobody has been invited yet.Anyone may be proposed as a new member, and every member has to agree — one refusal keeps them out.",
+    "eyebrow": "Invite a Member",
+    "head": "sorrel@example.org",
     "lock": "",
-    "body": "",
+    "body": "Anyone may be proposed as a new member, and every member has to agree — one refusal keeps them out.",
     "options": [],
     "inputs": [
      {
@@ -4689,6 +4693,7 @@
     "hints": [
      "name@example.com",
      "We should change this because…",
+     "Invite a Member — waiting on others",
      "Invite a Member — close it",
      "Can the Founder Invite at Will? — settled",
      "Does the Founder Have a Veto over Invitations? — settled",
@@ -4770,17 +4775,13 @@
     ]
    },
    "leave": {
-    "eyebrow": "",
-    "head": "Leave the Membership",
+    "eyebrow": "Leave the Membership",
+    "head": "Nobody has left.",
     "lock": "",
     "body": "If you give up your membership you may not be able to rejoin: the membership will have to decide whether to re-admit you. Leaving is immediate, and nobody has to agree.",
     "options": [],
     "inputs": [],
     "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
      {
       "label": "Leave the Membership",
       "title": "Leave the Membership"
@@ -4788,7 +4789,6 @@
     ],
     "hints": [
      "Leave the Membership — close it",
-     "Put it back as it stands",
      "Leave the Membership"
     ],
     "helpers": [
@@ -4815,7 +4815,26 @@
      "Awaiting assent from the Founder 🛡️"
     ]
    },
-   "mo:mo-4": {
+   "mo:mo-5": {
+    "eyebrow": "Invite a Member",
+    "head": "sorrel@example.org",
+    "lock": "",
+    "body": "Awaiting assent from the Founder 🛡️Proposedsorrel@example.org joins the membership.Sorrel knows the building better than any of us.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Invite a Member — close it",
+     "Invite a Member — settled",
+     "Can the Founder Invite at Will? — settled",
+     "Does the Founder Have a Veto over Invitations? — settled",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "Awaiting assent from the Founder 🛡️"
+    ]
+   },
+   "mo:mo-6": {
     "eyebrow": "Current rule",
     "head": "All proposals are made anonymously.Chosen by the membershipPrefer this",
     "lock": "",
@@ -4852,7 +4871,7 @@
     ],
     "helpers": []
    },
-   "mo:mo-5": {
+   "mo:mo-7": {
     "eyebrow": "Current rule",
     "head": "Members may make a new proposal ✏️ every 3 hours.Chosen by the Founder ✒️",
     "lock": "",
@@ -4877,10 +4896,10 @@
     "helpers": []
    },
    "myemail": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Enter Your Email",
+    "head": "🦉Ivy Fen you",
     "lock": "",
-    "body": "ivy@hollowoak.orgChosenChoose this",
+    "body": "ivy@hollowoak.orgChoose this",
     "options": [],
     "inputs": [
      {
@@ -4909,16 +4928,11 @@
     "helpers": []
    },
    "myname": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Choose Your Name",
+    "head": "🦉Ivy Fen you",
     "lock": "",
-    "body": "Ivy FenChosenChoose thisAnonymousChoose this",
+    "body": "Choose thisAnonymousChoose this",
     "options": [
-     {
-      "set": "namePick",
-      "val": "keep",
-      "label": "Ivy Fen"
-     },
      {
       "set": "namePick",
       "val": "name",
@@ -4957,16 +4971,11 @@
     "helpers": []
    },
    "mypic": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Choose Your Picture",
+    "head": "🦉Ivy Fen you",
     "lock": "",
-    "body": "🦉ChosenIFChoose thisUpload an imageChoose thisPick an emojiChoose this",
+    "body": "IFChoose thisUpload an imageChoose thisPick an emojiChoose this",
     "options": [
-     {
-      "set": "picPick",
-      "val": "keep",
-      "label": "🦉"
-     },
      {
       "set": "picPick",
       "val": "anon",
@@ -5029,6 +5038,7 @@
     "inputs": [],
     "foot": [],
     "hints": [
+     "Invite a Member — waiting on others",
      "Invite a Member — settled",
      "Can the Founder Invite at Will? — settled",
      "Does the Founder Have a Veto over Invitations? — close it"
@@ -5123,6 +5133,7 @@
     "inputs": [],
     "foot": [],
     "hints": [
+     "Invite a Member — waiting on others",
      "Invite a Member — settled",
      "Can the Founder Invite at Will? — close it",
      "Does the Founder Have a Veto over Invitations? — settled"
@@ -5339,7 +5350,7 @@
     ]
    },
    "remove": {
-    "eyebrow": "",
+    "eyebrow": "Remove a Member",
     "head": "Nobody is proposed for removal.",
     "lock": "",
     "body": "Choose somebody to remove…Moss WhitlowWhoever it is will see the proposal — nobody is removed in secret.",
@@ -5561,7 +5572,7 @@
      "Awaiting assent from the Founder 🛡️"
     ]
    },
-   "mo:mo-4": {
+   "mo:mo-6": {
     "eyebrow": "Current rule",
     "head": "All proposals are made anonymously.Chosen by the membership",
     "lock": "",
@@ -5576,7 +5587,7 @@
     ],
     "helpers": []
    },
-   "mo:mo-5": {
+   "mo:mo-7": {
     "eyebrow": "Current rule",
     "head": "Members may make a new proposal ✏️ every 3 hours.Chosen by the Founder ✒️",
     "lock": "",
@@ -5827,7 +5838,7 @@
     "helpers": []
    },
    "strlogin": {
-    "eyebrow": "",
+    "eyebrow": "Log In",
     "head": "",
     "lock": "",
     "body": "",
@@ -6194,9 +6205,32 @@
     ],
     "helpers": []
    },
+   "held:mo-4": {
+    "eyebrow": "Rejected · Weekday, D Month, HH:MM",
+    "head": "sorrel@example.org",
+    "lock": "",
+    "body": "Proposed by youbramble@example.org joins the membership.Bramble mends the bikes for free.",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "OK",
+      "title": null
+     }
+    ],
+    "hints": [
+     "Invite a Member — waiting on you",
+     "Your proposal did not pass: bramble@example.org joins the membership — close it",
+     "Invite a Member — settled",
+     "Can the Founder Invite at Will? — settled",
+     "Does the Founder Have a Veto over Invitations? — settled",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": []
+   },
    "invite": {
-    "eyebrow": "",
-    "head": "Nobody has been invited yet.",
+    "eyebrow": "Invite a Member",
+    "head": "sorrel@example.org",
     "lock": "",
     "body": "",
     "options": [],
@@ -6221,14 +6255,20 @@
      }
     ],
     "hints": [
+     "I am changing this because…",
+     "Invite a Member — waiting on you",
+     "Your proposal did not pass: bramble@example.org joins the membership — decided; it waits for your OK",
      "Invite a Member — close it",
      "Can the Founder Invite at Will? — settled",
      "Does the Founder Have a Veto over Invitations? — settled",
+     "This is how your reason will reach everybody else: with your name on it.",
      "Put it back as it stands",
      "Send the invitations — your word sends",
      "You can only make one constitutional proposal 🏛️ at a time."
     ],
-    "helpers": []
+    "helpers": [
+     "I am changing this because…"
+    ]
    },
    "judgments": {
     "eyebrow": "Current rule",
@@ -6300,17 +6340,13 @@
     ]
    },
    "leave": {
-    "eyebrow": "",
-    "head": "Leave the Membership",
+    "eyebrow": "Leave the Membership",
+    "head": "Nobody has left.",
     "lock": "",
     "body": "If you give up your membership you may not be able to rejoin: the membership will have to decide whether to re-admit you. Leaving is immediate, and nobody has to agree.",
     "options": [],
     "inputs": [],
     "foot": [
-     {
-      "label": "🗑️",
-      "title": "Put it back as it stands"
-     },
      {
       "label": "Leave the Membership",
       "title": "Leave the Membership"
@@ -6318,7 +6354,6 @@
     ],
     "hints": [
      "Leave the Membership — close it",
-     "Put it back as it stands",
      "Leave the Membership"
     ],
     "helpers": [
@@ -6356,7 +6391,38 @@
      "The membership passed this. Until you answer, the rule above stands."
     ]
    },
-   "mo:mo-4": {
+   "mo:mo-5": {
+    "eyebrow": "Accept This Change?",
+    "head": "sorrel@example.org",
+    "lock": "",
+    "body": "The membership passed this. Until you answer, the membership stays as it is.Proposedsorrel@example.org joins the membership.Sorrel knows the building better than any of us.",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🛡️",
+      "title": "Refuse — the Founder Veto holds it, and what stands stands"
+     },
+     {
+      "label": "✒️",
+      "title": "Accept — a Founder Action passes it now"
+     }
+    ],
+    "hints": [
+     "Invite a Member — close it",
+     "Your proposal did not pass: bramble@example.org joins the membership — decided; it waits for your OK",
+     "Invite a Member — settled",
+     "Can the Founder Invite at Will? — settled",
+     "Does the Founder Have a Veto over Invitations? — settled",
+     "A member wrote this. Who, is sealed until the closing record.",
+     "Refuse — the Founder Veto holds it, and what stands stands",
+     "Accept — a Founder Action passes it now"
+    ],
+    "helpers": [
+     "The membership passed this. Until you answer, the membership stays as it is."
+    ]
+   },
+   "mo:mo-6": {
     "eyebrow": "Current rule",
     "head": "All proposals are made anonymously.Chosen by the membership",
     "lock": "",
@@ -6377,7 +6443,7 @@
     ],
     "helpers": []
    },
-   "mo:mo-5": {
+   "mo:mo-7": {
     "eyebrow": "Current rule",
     "head": "Members may make a new proposal ✏️ every 3 hours.Chosen by the Founder ✒️Prefer this",
     "lock": "",
@@ -6418,10 +6484,10 @@
     "helpers": []
    },
    "myemail": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Enter Your Email",
+    "head": "ABAsh Bellamy 👑 you",
     "lock": "",
-    "body": "ash@hollowoak.orgChosenChoose this",
+    "body": "ash@hollowoak.orgChoose this",
     "options": [],
     "inputs": [
      {
@@ -6444,22 +6510,18 @@
      "Your Name — settled",
      "Your Picture — settled",
      "Your Email — close it",
+     "Some of the rules are reserved: changing them needs the founder’s assent",
      "Put it back as it stands",
      "Save"
     ],
     "helpers": []
    },
    "myname": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Choose Your Name",
+    "head": "ABAsh Bellamy 👑 you",
     "lock": "",
-    "body": "Ash BellamyChosenChoose thisAnonymousChoose this",
+    "body": "Choose thisAnonymousChoose this",
     "options": [
-     {
-      "set": "namePick",
-      "val": "keep",
-      "label": "Ash Bellamy"
-     },
      {
       "set": "namePick",
       "val": "name",
@@ -6492,14 +6554,15 @@
      "Your Name — close it",
      "Your Picture — settled",
      "Your Email — settled",
+     "Some of the rules are reserved: changing them needs the founder’s assent",
      "Put it back as it stands",
      "Save"
     ],
     "helpers": []
    },
    "mypic": {
-    "eyebrow": "",
-    "head": "",
+    "eyebrow": "Choose Your Picture",
+    "head": "ABAsh Bellamy 👑 you",
     "lock": "",
     "body": "ABChosenUpload an imageChoose thisPick an emojiChoose this",
     "options": [
@@ -6534,6 +6597,7 @@
      "Your Name — settled",
      "Your Picture — close it",
      "Your Email — settled",
+     "Some of the rules are reserved: changing them needs the founder’s assent",
      "Put it back as it stands",
      "Save"
     ],
@@ -6599,6 +6663,8 @@
      }
     ],
     "hints": [
+     "Invite a Member — waiting on you",
+     "Your proposal did not pass: bramble@example.org joins the membership — decided; it waits for your OK",
      "Invite a Member — settled",
      "Can the Founder Invite at Will? — settled",
      "Does the Founder Have a Veto over Invitations? — close it",
@@ -6807,6 +6873,8 @@
      }
     ],
     "hints": [
+     "Invite a Member — waiting on you",
+     "Your proposal did not pass: bramble@example.org joins the membership — decided; it waits for your OK",
      "Invite a Member — settled",
      "Can the Founder Invite at Will? — close it",
      "Does the Founder Have a Veto over Invitations? — settled",
@@ -7131,7 +7199,7 @@
     ]
    },
    "remove": {
-    "eyebrow": "",
+    "eyebrow": "Remove a Member",
     "head": "Nobody is proposed for removal.",
     "lock": "",
     "body": "Choose somebody to remove…Ivy FenMoss Whitlow",
@@ -7152,14 +7220,18 @@
      }
     ],
     "hints": [
+     "I am changing this because…",
      "Remove a Member — close it",
      "Can the Founder Remove at Will? — settled",
      "Does the Founder Have a Veto over Removals? — settled",
+     "This is how your reason will reach everybody else: with your name on it.",
      "Put it back as it stands",
      "Remove them — your word removes",
      "You can only make one constitutional proposal 🏛️ at a time."
     ],
-    "helpers": []
+    "helpers": [
+     "I am changing this because…"
+    ]
    },
    "slug": {
     "eyebrow": "Current rule",

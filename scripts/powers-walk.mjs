@@ -175,9 +175,13 @@ const runDocument = async (hat) => {
     el.click();
     return true;
   }, sel);
+  // a locator, never a held handle: the 4 s poll may rebuild the card
+  // between finding the field and clicking it, and a handle to the node it
+  // replaced is *not attached to the DOM* (sprint run 40, 2026-09-28) — the
+  // locator finds the field again at the click
   const typeIn = async (sel, text) => {
-    const el = await page.$(sel);
-    if (!el) return false;
+    const el = page.locator(sel).first();
+    if (!(await el.count())) return false;
     await el.click();
     await page.keyboard.type(text, { delay: 8 });
     return true;

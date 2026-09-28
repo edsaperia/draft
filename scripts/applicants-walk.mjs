@@ -353,21 +353,64 @@ if (knock.status !== 200 || !knock.body || !knock.body.devLink) {
       await T(420);
       return ok;
     };
+    /* **The applicant's five are on the one shell** (Q1541 stage 5): each is
+     * placeless — its title is the label, and its first line is what it asks,
+     * its opening sentence (🖼️, all blocks, has none: the strip alone) — and
+     * its acts are its row's, in one of the six shapes. Read off the card as
+     * it opens, before anything is typed; `rowWant` is the shape and the hook
+     * of the one act the card should offer at that moment, and `first`
+     * whether a first line is drawn. */
+    const slotBad = [];
+    const slotsOf = async (k, rowWant) => {
+      const got = await guest.evaluate((key) => {
+        const c = document.querySelector('.setupcard[data-setupcard="' + key + '"]');
+        if (!c) return null;
+        const head = c.querySelector('.clausehead');
+        return {
+          kind: c.dataset.kind || null,
+          label: ((c.querySelector(':scope > [data-slot="label"]') || {}).textContent || '').trim(),
+          firstLine: head ? [...head.querySelectorAll('.rtext, .headrule, .cpv')].map((e) => e.textContent.trim()).join('') : '',
+          shape: ((c.querySelector('[data-slot="row"]') || { dataset: {} }).dataset.shape) || 'absent',
+          acts: [...c.querySelectorAll('[data-slot="row"] button')].map((b) =>
+            [...b.attributes].map((x) => x.name).filter((n) => /^data-(app|close|revert|act)/.test(n)).join(',') + (b.disabled ? ':dark' : '')),
+        };
+      }, k);
+      const title = COPY.page.appcards[k];
+      const bits = [];
+      if (!got) bits.push('no card');
+      else {
+        if (got.kind !== 'applicant') bits.push('kind ' + JSON.stringify(got.kind));
+        if (got.label !== title) bits.push('label ' + JSON.stringify(got.label) + ', not its title');
+        if (!!got.firstLine !== !!rowWant.first) {
+          bits.push(rowWant.first ? 'no first line where the card has a sentence' : 'a first line ' + JSON.stringify(got.firstLine.slice(0, 40)) + ' where it has none');
+        }
+        if (got.shape !== rowWant.shape) bits.push('row ' + got.shape + ', not ' + rowWant.shape);
+        if (rowWant.act && !got.acts.some((x) => x.split(':')[0].split(',').includes(rowWant.act) && (x.endsWith(':dark') === !!rowWant.dark))) {
+          bits.push('no ' + (rowWant.dark ? 'dark ' : '') + rowWant.act + ' in ' + JSON.stringify(got.acts));
+        }
+      }
+      say('shell      · ' + k + ' ' + (bits.length ? 'FAIL: ' + bits.join(' · ') : got.shape + ' ' + JSON.stringify(got.acts)));
+      if (bits.length) slotBad.push(k);
+    };
     const filled = [];
     // ✋ the name
     if (await openOn('appname')) {
+      await slotsOf('appname', { shape: 'commit', act: 'data-close', dark: true, first: true });
       const inp = await guest.$('.setupcard input[data-appname]');
       if (inp) { await inp.click(); await guest.keyboard.type(NAME, { delay: 8 }); }
       if (!(await clickOn('.setupcard button[data-close]'))) filled.push('the name card would not close');
     } else filled.push('no ✋ card');
     // 🖼️ the picture: the emoji block, then the first free glyph in the grid
     if (await openOn('apppic')) {
+      await slotsOf('apppic', { shape: 'commit', act: 'data-close', dark: true, first: false });
       if (!(await clickOn('.setupcard [data-set="appPicPick"][data-val="emoji"]'))) filled.push('no emoji block on 🖼️');
       if (!(await clickOn('.setupcard button[data-apppic]:not([disabled])'))) filled.push('no glyph to pick on 🖼️');
       if (!(await clickOn('.setupcard button[data-close]'))) filled.push('the picture card would not close');
     } else filled.push('no 🖼️ card');
     // 👋 the words
     if (await openOn('apptext')) {
+      // the words are optional, so its ✓ is live from the start
+      await slotsOf('apptext', { shape: 'commit', act: 'data-close', dark: false, first: true });
       const lane = await guest.$('.setupcard [data-apptext]');
       if (lane) { await lane.click(); await guest.keyboard.type('I bake.', { delay: 8 }); }
       if (!(await clickOn('.setupcard button[data-close]'))) filled.push('the words card would not close');
@@ -375,8 +418,13 @@ if (knock.status !== 200 || !knock.body || !knock.body.devLink) {
     if (filled.length) { say('FAIL: filling the application in — ' + filled.join(' · ')); stuck.push('the application'); }
     // 🪪 Submit — a plain click, not a hold (the application becomes an
     // ordinary motion; the assembly hold is the members', not the applicant's)
+    // 📧, verified by now: its ✓ closes and keeps
+    if (await openOn('appmail')) {
+      await slotsOf('appmail', { shape: 'commit', act: 'data-close', dark: false, first: true });
+      await clickOn('.setupcard button[data-close]');
+    }
     if (!(await openOn('apply'))) { say('FAIL: no Apply card to submit from'); stuck.push('the Apply card'); }
-    else if (!(await clickOn('.setupcard button[data-appsubmit]'))) {
+    else if ((await slotsOf('apply', { shape: 'commit', act: 'data-appsubmit', dark: false, first: true })), !(await clickOn('.setupcard button[data-appsubmit]'))) {
       const why = await guest.evaluate(() => {
         const b = document.querySelector('.setupcard button[data-appsubmit]');
         return b ? 'Submit is dark' : 'no Submit button';
@@ -395,6 +443,10 @@ if (knock.status !== 200 || !knock.body || !knock.body.devLink) {
       const c = document.querySelector('.setupcard');
       return c ? (c.textContent || '').replace(/\s+/g, ' ').trim() : '';
     });
+    // submitted, the card asks nothing: no row (the module has no withdrawal
+    // for 1541.9 (b)'s bare 🗑️ to draw)
+    await slotsOf('apply', { shape: 'absent', first: true });
+    if (slotBad.length) stuck.push('the applicant\'s cards on the shell: ' + [...new Set(slotBad)].join(', '));
     if (!after || !after.applicant || !after.applicant.submitted) {
       say('FAIL: the application never read as submitted on the page — ' + JSON.stringify(after && after.applicant));
       stuck.push('submitted on the page');
@@ -630,7 +682,7 @@ const seen = await page.evaluate(() => ({
     if (!h || !h.nextElementSibling) return -1;
     // real applicants only: since entry 183 an empty subsection (*Applicants*,
     // *Applications for Membership* since Q1557) carries its own
-    // `.memrow.nobody` placeholder — *(no applications at the moment)* — so
+    // `.memrow.nobody` sentence — *There are no applications at the moment.* — so
     // counting every `.memrow` reported one applicant where the
     // document has none, which is exactly the ✒️ case this walk asserts.
     // `journey-walk` and `ladder-walk` already filter it; this one did not.
@@ -940,21 +992,24 @@ if (admEntry) {
           if (!c) return null;
           return {
             crownq: [...c.querySelectorAll('[data-crownq]')].map((b) => b.dataset.crownq),
-            // nothing left to press: the one radio on a parked card is the
-            // membership's own choice, marked and disabled
-            radios: c.querySelectorAll('.lanepick:not([disabled])').length,
-            chosen: [...c.querySelectorAll('.pick.on .lanepick[disabled]')]
+            // nothing left to press: on the one shell (Q1541 stage 5) the
+            // parked change is one block under *Proposed*, and a block nobody
+            // may choose has no radio at all (1541.37) — 👑's own drawing
+            radios: c.querySelectorAll('.lanepick').length,
+            proposed: [...c.querySelectorAll('[data-slot="blocks"] .glab, .pick .glab')]
               .map((b) => (b.textContent || '').trim()),
+            label: ((c.querySelector('[data-slot="label"]') || {}).textContent || '').trim(),
             confirm: c.querySelectorAll('[data-confirm], [data-admitgo]').length,
             text: (c.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 200),
           };
         });
         say('👑 card    · ' + JSON.stringify(pc));
         const pcOk = !!pc && pc.crownq.join('|') === 'reject|accept' && pc.radios === 0 &&
-          pc.confirm === 0 && pc.chosen.join('') === 'Chosen by the membership' &&
-          pc.text.includes(NAME);
+          pc.confirm === 0 && pc.proposed.join('|') === COPY.shell.proposed &&
+          pc.label === COPY.shell.acceptChange && pc.text.includes(NAME);
         if (!pcOk) {
-          say('FAIL: the parked card should carry the 👑 pair, the membership\'s choice and no vote');
+          say('FAIL: the parked card should ask ' + COPY.shell.acceptChange + ' with the 👑 pair, the change under ' +
+            COPY.shell.proposed + ' and no vote');
           stuck.push('the 👑 card');
         }
         const pressed = await page.evaluate(() => {

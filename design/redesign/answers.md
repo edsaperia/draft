@@ -175,3 +175,13 @@ The floating 📝 door is not a principle: it is a named exception in `zone-over
 | 1566.2 | 👑's sentence for the Founder, on a rule | **Keep** — *The membership passed this. Until you answer, the rule above stands.* (`design/copy.js`, `shell.crownRule`), where the pressed *Chosen by the membership* radio stood. |
 | 1566.3 | The standing rule on a motion card | **The lane, as built**: the standing rule's pill is a fact, and the rule's own *Prefer this* lane is the vote to keep it, as on a text race. 1541.47's pill-as-radio stays the rule where the reader's own change is what the pill would cancel. |
 | 1566.7 | card-audit's fast pass walking `settled` and `outsiders` | **Keep**, at every push — Ed's word under Q1547, so the push set grows by it. |
+
+## Part 9 — stage 5's calls, ruled (1567, Ed 2026-09-28, one at a time)
+
+| # | Call | Ruling |
+|---|---|---|
+| 1567.2 | The empty-list sentences | **Keep** — *There are no applications at the moment.* · *Nobody is proposed for removal.* · *Nobody has left.*, in the Members section and on the door's card alike (1541.25 (a)); O9 (a)'s *Nobody has been invited yet.* is retired. |
+| 1567.3 | The label over a door motion and an `adm:` application | **The door's ask** — *Invite a Member* over an invitation proposal and an application, *Remove a Member* over a removal proposal; not the subsection's heading. |
+| 1567.4 | 👑's sentence on a person | **Keep** — *The membership passed this. Until you answer, the membership stays as it is.* |
+| 1567.5 | A door's failed-motion news | **The door's own pile**, with a tab: the mover's news card stands there (SURFACE E41 as amended). |
+| 1567.11 | Withdrawing a submitted application | **No** — a submitted application is not withdrawn; its card has no row, and 1541.9 (b)'s bare 🗑️ does not apply to applications. No command is built. |

@@ -209,6 +209,19 @@ const GRAMMAR_KINDS = [
   'crown',
   'motion-record',
   'failed-motion-news',
+  // stage 5 (Q1541): doors and people — your ✋ 🖼️ 📧 once the document is
+  // saved (`identity`, heading with your row, O6 (b)); the fast pass meets
+  // them on `settled`, `outsiders` (a member's seat), `sessionband` and
+  // `closedband` (frozen, 1541.28 (a)); the doors ✉️ ❌ 🌂 (`door`, heading
+  // with their subsection's rows or its sentence, 1541.25 (a)), met on the
+  // same four from the Founder's seat and a member's; the stranger's two at
+  // the door (`stranger`, placeless), met on `outsiders`' stranger seat. The
+  // applicant's five (`applicant`) are live-only — the file page can never
+  // seat an applicant (the outsiders walk's stated exemption) — so they are
+  // held by applicants-walk's slot assertions instead
+  'identity',
+  'door',
+  'stranger',
   // stage 6 (Q1541): the charter's judgment cards, each declared by the shell
   // (`data-kind`, session.js's `judgePresent`) — a pair against the current
   // text (`quick`), one on a gap (`insert`), two challengers (`race`), a pair
@@ -677,7 +690,9 @@ const IN_PAGE = () => {
     // and whether another card already stood open (then this is a switch)
     // a gap's anchor is its paragraph; an item with no tab of its own (behind
     // a pile) is found by the clause its engine key names
-    let gpara = tab ? tab.closest('.cpara, .anch, .insert-anchor, p') : null;
+    // your ✋ 🖼️ 📧 stand on your own row, and the row is their paragraph —
+    // the card opens in its place with the row as its first line (Q1541 stage 5)
+    let gpara = tab ? tab.closest('.meRow, .cpara, .anch, .insert-anchor, p') : null;
     if (!gpara && window.SESSION && window.SESSION.clauseKeysOf) {
       try {
         const ck = (window.SESSION.clauseKeysOf(key) || [])[0];
@@ -1067,7 +1082,9 @@ const IN_PAGE = () => {
     const INPUTS = 'textarea, input[type="text"], input[type="email"], input:not([type]), [contenteditable="true"], [contenteditable="plaintext-only"], select';
     for (const i of [...card.querySelectorAll(INPUTS)]
       .filter((i) => vis(i) && !blocks.some((b) => b.contains(i)) && !(head && head.el.contains(i)))) {
-      order.push({ slot: 'input', y: R2(i.getBoundingClientRect().top) });
+      // a composer that is an option block's own text — ✋'s name field, first
+      // by Q1164 — is that block in the order, not an input slot beneath them
+      order.push({ slot: i.closest('.pick > .opttext') ? 'block' : 'input', y: R2(i.getBoundingClientRect().top) });
     }
     for (const r of rows) order.push({ slot: 'row', y: R2(r.getBoundingClientRect().top) });
     out.order = order;
@@ -1360,7 +1377,7 @@ const IN_PAGE = () => {
     const q = CSS.escape(key);
     const tab = document.querySelector('#band [data-tab="' + q + '"], #titlepara [data-tab="' + q + '"], ' +
       '#charter .achip[data-anchor="' + q + '"], .achip[data-anchor="' + q + '"]');
-    let para = tab ? tab.closest('.cpara, .anch, .insert-anchor, p') : null;
+    let para = tab ? tab.closest('.meRow, .cpara, .anch, .insert-anchor, p') : null;
     if (!para && window.SESSION && window.SESSION.clauseKeysOf) {
       try {
         const ck = (window.SESSION.clauseKeysOf(key) || [])[0];
@@ -1420,6 +1437,9 @@ const IN_PAGE = () => {
     const room = lab && lab.n && line ? R2(Math.max(0, line[1] - lab.top)) : 0;
     const cr = card.getBoundingClientRect();
     return { ok: true, scrollY: R2(window.scrollY), glass: glassTop(), glyph: glyphOnGlass(tab), line,
+      // whether the first line is a list of people (a door's, stage 5) — a
+      // different drawing from a clause, which `p13Rules` reads on a switch
+      list: !!(head && head.el.querySelector('.memlist')),
       above: inkAboveFrom(card.closest('.cpara.open') || card), room,
       label: lab && lab.n ? { top: lab.top, bottom: lab.bottom, n: lab.n } : null,
       cardTop: R2(cr.top), cardBottom: R2(cr.bottom), zones: glassZones() };
@@ -1436,7 +1456,8 @@ const IN_PAGE = () => {
     if (!inStrip) return { ...glassClosed(key), within: false };
     const head = headOf(card);
     return { ok: true, within: true, scrollY: R2(window.scrollY), glass: glassTop(), glyph: glyphOnGlass(inStrip),
-      line: head ? lineOnGlass(head.el, LABEL_SEL) : null, above: inkAboveFrom(card.closest('.cpara.open') || card),
+      line: head ? lineOnGlass(head.el, LABEL_SEL) : null, list: !!(head && head.el.querySelector('.memlist')),
+      above: inkAboveFrom(card.closest('.cpara.open') || card),
       zones: glassZones() };
   };
   /** scroll so the key's first line stands `room` px under the glass — a
@@ -2123,6 +2144,13 @@ const HEAD_WORDS = [
   /^Final text$/i, /^Rule at the close$/i,
   /^Accept (Founder Actions|the Founder Veto|Constitutional Proposals|Proposals|Voting)$/i,
   /^Add your closing comment$/i, /^Accept This Change\?$/i,
+  // stage 5's asks, today's titles unchanged (Part 4; 1541.46 (a)) — and the
+  // door's ask over its motions and an application too (1567.3)
+  /^(Choose Your (Name|Picture)|Enter Your Email|Invite a Member|Remove a Member|Leave the Membership)$/i,
+  // …and the placeless cards at the door and the applicant's, which head with
+  // their titles (grammar §2.3): the stranger's two (and the demo's 👋), and
+  // the applicant's five in each state E33, E42 and Q1473 give their 🪪
+  /^(Log In|Join|Try It|Apply for Membership|Applications Have Closed|Your Application Was (Not )?Accepted|Your (Email|Name|Picture|Application))$/i,
 ];
 /** …and on a block's first line (Part 4 .8–.14) */
 const BLOCK_WORDS = /^(Proposed( by .+)?|Previous (text|rule))( · (\d+%|Ran out of time))?$|^The text you voted on$/i;
@@ -2275,7 +2303,13 @@ function p13Rules(c, at) {
         bits.push(what + ' moves ' + d[0] + ', ' + d[1] + 'px on screen' + (dy ? ' (the shortfall allows 0, ' + dy + ')' : ''));
       }
     };
-    if (!OWN_LINE(c.key)) want('the first line', a.line, b.line);
+    // **a list and a clause are two drawings** (Q1541 stage 5): inside a
+    // door's strip the door's first line is its subsection's rows, in the
+    // list's face, and a power tab's is the power's own clause (1541.48), so
+    // a switch between the two holds the pressed tab, not a line the other
+    // card does not draw — stage 5's call, put to Ed in its FINAL
+    const drawings = e.sub === 'switch' && a.within && !!a.list !== !!b.list;
+    if (!OWN_LINE(c.key) && !drawings) want('the first line', a.line, b.line);
     if (a.glyph && b.glyph) want('the pressed tab', a.glyph, b.glyph);
     // the content above: up by the room on open (less the shortfall), down by
     // it on close (less what the scroll could not give back); a switch's
@@ -3536,6 +3570,19 @@ async function walkSettled(page, base, cards, errors, seat, switches, piles) {
         { kind: 'set', setting: 'chamber', value: { rung: cv2 === 'link' ? 'closed' : 'link' } },
         'Who reads the document should be the membership’s call.');
       for (const id of voters) if (id !== mover) cs.answerMotion(tick(), id, m3, 'accept');
+      // **…and two on a door** (Q1541 stage 5): the Founder's invitation the
+      // membership turns down, whose news is the Founder's (E41), and one it
+      // passes, parked at the Founder's 👑 on the ✉️ door — 👑 on a person.
+      // The first is the Founder's and frees their 🏛️ by failing, before the
+      // second mover (the Founder, here) spends it below; the second is the
+      // one member whose 🏛️ is still free (one out per member, §9.6)
+      const d1 = cs.openMotion(tick(), 'founder', { kind: 'invite', email: 'bramble@example.org' },
+        'Bramble mends the bikes for free.');
+      cs.answerMotion(tick(), mover, d1, 'keep');
+      const free = voters.find((id) => id !== 'founder' && id !== mover) || 'founder';
+      const d2 = cs.openMotion(tick(), free, { kind: 'invite', email: 'sorrel@example.org' },
+        'Sorrel knows the building better than any of us.');
+      for (const id of voters) if (id !== free) cs.answerMotion(tick(), id, d2, 'accept');
       const av = (cs.settingState('authorship').value || {}).rung;
       // a second mover, because m3 is still live and a member has one 🏛️
       // out at a time (§9.6)
@@ -3555,11 +3602,13 @@ async function walkSettled(page, base, cards, errors, seat, switches, piles) {
           value: { grant: rate2.grant, cap: rate2.cap, dripMinutes: rate2.dripMinutes * 2 } },
         'Fewer, better proposals — let the wait be longer.');
       return { carried: [m1, cs.motionRecords().get(m1).status],
+        doorHeld: [d1, cs.motionRecords().get(d1).status],
+        doorCrown: [d2, cs.motionRecords().get(d2).status],
         held: [m2, cs.motionRecords().get(m2).status],
         crowned: [m3, cs.motionRecords().get(m3).status],
         running: [m4, cs.motionRecords().get(m4).status],
         ordinary: [m5, cs.motionRecords().get(m5).status] };
-    } catch (e) { return { error: String((e && e.message) || e) }; }
+    } catch (e) { return { error: String((e && e.message) || e) + ' — ' + [...window.cs.motionRecords().values()].map((m) => m.id + ':' + m.payload.kind + ':' + (m.by || '-') + ':' + m.status).join(' ') }; }
   }, chamberTo);
   if (seeded.error) errors.push(walk + ': the motion seed failed — ' + seeded.error);
   else {
@@ -3569,6 +3618,10 @@ async function walkSettled(page, base, cards, errors, seat, switches, piles) {
       errors.push(walk + ': the seeded ' + seeded.crowned[0] + ' is ' + seeded.crowned[1] + ', not awaiting-crown');
     if (seeded.running && seeded.running[1] !== 'running')
       errors.push(walk + ': the seeded ' + seeded.running[0] + ' is ' + seeded.running[1] + ', not running');
+    if (seeded.doorHeld && seeded.doorHeld[1] !== 'held')
+      errors.push(walk + ': the seeded door ' + seeded.doorHeld[0] + ' is ' + seeded.doorHeld[1] + ', not held');
+    if (seeded.doorCrown && seeded.doorCrown[1] !== 'awaiting-crown')
+      errors.push(walk + ': the seeded door ' + seeded.doorCrown[0] + ' is ' + seeded.doorCrown[1] + ', not awaiting-crown');
     if (seeded.ordinary && seeded.ordinary[1] !== 'running')
       errors.push(walk + ': the seeded ordinary ' + seeded.ordinary[0] + ' is ' + seeded.ordinary[1] + ', not running');
   }
