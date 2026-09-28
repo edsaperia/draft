@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 729
+  "entries": 727
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -296,8 +296,6 @@
   "page.door.invitedNotHere": " — invited, not yet here",
   "page.door.nobodyToRemove": "There is nobody to remove.",
   "page.door.removeBeforeStart": "Until the document begins, taking somebody off the list is yours alone — an invitation withdrawn is nobody else’s business yet.",
-  "page.doorEmpty.invite": "Nobody has been invited yet.",
-  "page.doorEmpty.remove": "Nobody is proposed for removal.",
   "page.founderMark.crowned": "Some of the rules are reserved: changing them needs the founder’s assent",
   "page.founderMark.none": "The Founder reserves nothing — no special part in the document",
   "page.gate.accept": "ƒ (glyph) => 'Accept ' + glyph",
