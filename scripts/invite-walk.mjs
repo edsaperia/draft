@@ -207,9 +207,11 @@ const shown = await mover.evaluate(() => {
   return {
     tabs: [...document.querySelectorAll('[data-tab]')].map((t) => t.dataset.tab).filter((k) => /invite|mo:/.test(k)),
     open: [...document.querySelectorAll('.setupcard')].map((c) => c.dataset.setupcard),
-    head: (card && card.querySelector('.headpeople') || {}).textContent?.replace(/\s+/g, ' ').trim(),
-    chips: [...(card ? card.querySelectorAll('.headpeople .chip') : [])].map((c) => c.textContent.trim()),
-    label: ((card && card.querySelector('.headpeople .hplab')) || {}).textContent?.trim() || null,
+    // on the one shell (Q1541 stage 5) the head is the subsection's own rows
+    // and the label above it the subsection's heading
+    head: (card && card.querySelector('[data-fact="place"] .memlist') || {}).textContent?.replace(/\s+/g, ' ').trim(),
+    chips: [...(card ? card.querySelectorAll('[data-fact="place"] .memlist .chip') : [])].map((c) => c.textContent.trim()),
+    label: ((card && card.querySelector('[data-slot="label"]')) || {}).textContent?.trim() || null,
     radios: [...(card ? card.querySelectorAll('button.lanepick') : [])].length,
     commits: [...(card ? card.querySelectorAll('.commitrow button') : [])].map((b) => (b.textContent.trim() || b.title)),
   };
@@ -217,7 +219,8 @@ const shown = await mover.evaluate(() => {
 say('card       · ' + JSON.stringify(shown));
 if (!shown.head || !/newbie/.test(shown.head)) fail('the head', '✉️\'s head does not list the invitee: ' + JSON.stringify(shown.head));
 // Q1557: the proposal stands under the words *Applications for Membership*
-// in ✉️'s head, as in the section, and wears no tag — its heading says it
+// — the card's label since Q1541 stage 5 — as in the section, and wears no
+// tag: its heading says it
 if (shown.label !== 'Applications for Membership') {
   fail('the head', '✉️ head does not group the proposal under *Applications for Membership*: ' + JSON.stringify(shown.label));
 }
