@@ -2652,6 +2652,15 @@
     // what this reader may send from a judgment card: the ✓, and ❄️ on 🔥
     acts: (id) => {
       const s = SUGGS.find((g) => g.id === id);
+      // 👑 on the Text: the two reserved powers are the two answers (CP5),
+      // drawn as every glyph commit is — ✒️ never solid green (1541.38, .50);
+      // no 🗑️, which could never have a job here (1541.9)
+      if (s && s.kind === 'crown' && !docClosed) {
+        return [
+          { kind: 'commit', glyph: '🛡️', glyphHtml: glyphHtml('🛡️'), cls: 'emojibtn', act: 'crown-refuse', title: T.crown.refuse },
+          { kind: 'commit', glyph: '✒️', glyphHtml: glyphHtml('✒️'), cls: 'btn-approve emojibtn', act: 'crown-accept', title: T.crown.accept },
+        ];
+      }
       if (!judgeKinds(s)) return [];
       // the patch's ✓ floats at the foot of the window (Q1382)
       if (s.kind === 'patch') return [];
@@ -2677,6 +2686,25 @@
           head: { html: clauseHeadHtml(s, Object.assign(headOpts(s, pkey), { key: pkey, chips: chipsFor(pkey, id), label: null, fact: 'place' })) },
           body: { html: s.parkNote ? '<p class="setnote">' + glyphify(esc(s.parkNote)) + '</p>' : '' },
           owed: st.owed ? { kind: 'ok', attrs: ' data-seen="' + esc(id) + '"', title: T.record.okTitle, word: T.record.ok } : null,
+        };
+      }
+      // **👑 on the Text, on the one shell** (Q1541 stage 4; SURFACE §9's 👑
+      // (the Text) row): *Accept This Change?* above the clause it rewrites
+      // — the Founder's answer is owed for as long as the card exists
+      // (answers Part 6.1) — the parked wording against it as one proposal
+      // block under its live label (Part 4 .8), the card's one sentence, and
+      // the two powers as the row
+      if (s && s.kind === 'crown' && !docClosed) {
+        const ckey = (s.keys ?? [])[0];
+        return {
+          kind: 'crown',
+          frame: { cls: 'sugg quick-open', attrs: ' data-card="' + esc(id) + '"' + (ckey ? ' data-site="' + esc(ckey) + '"' : '') },
+          label: { text: window.COPY.shell.acceptChange },
+          head: { html: clauseHeadHtml(s, Object.assign(headOpts(s, ckey), { key: ckey, chips: chipsFor(ckey, id), label: null, fact: 'place',
+            onHead: headRank(ckey) })) },
+          body: bodyOf('<div class="foot">' + T.crown.foot + '</div>'),
+          options: { html: proposalHtml(s, { html: laneHtml(s.marked), why: s.rationale, by: s.by,
+            label: whoLabel(s.by, false), labelFact: s.by ? 'author' : null }) },
         };
       }
       if (!shellRecord(s) || !st.record) return {};
@@ -3505,6 +3533,8 @@
     // radios: this is not a judgment, and nothing about the room's decision
     // is being re-asked.
     if (s.kind === 'crown') {
+      // on the one shell since Q1541 stage 4 (the charter source's `present`)
+      if (!docClosed) return window.CARD_SHELL.cardHtml(window.CARD_STATE.stateOf(s.id));
       const ckey = (s.keys ?? [])[0];
       return (
         '<div class="sugg quick-open" data-card="' + s.id + '" data-site="' + (ckey || '') + '">' +
@@ -5734,8 +5764,13 @@ document.addEventListener('paste', (ev) => {
   // on the first, and until they were made to agree the gutter fell through to
   // fixture order while the rail promoted the more urgent, so the front tab and
   // the rail entry were different judgments about the same clause.
+  // **The Founder's 👑 on the Text leads its pile** (1541.38, plain bug 8;
+  // Q1541 stage 4): the question waiting on the Founder's answer is the one
+  // thing at that clause asked of them, and its strip led with the race's 💡
+  // — pressing the pile opened the race, not the question
+  const stackKey = (g) => (g.kind === 'crown' ? -1 : stackRank(markKindOf(g)));
   const stackOrder = (gs) =>
-    gs.slice().sort((a, b) => stackRank(markKindOf(a)) - stackRank(markKindOf(b)) ||
+    gs.slice().sort((a, b) => stackKey(a) - stackKey(b) ||
       leverage(b) - leverage(a));
 
   function tocMarksHtml(n) {
