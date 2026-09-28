@@ -1137,7 +1137,11 @@
   // and the label is kept clear of the topbar (answers Part 6.4). Asked only
   // where a card on the shell is opening or leaving, so every other card
   // opens exactly as it always has.
-  const holdTabFor = (k, from) => {
+  // …**except on a switch inside one strip** (M12, Q1558 — the charter's rule
+  // since stage 6, the band's since stage 4): there the tab pressed is what
+  // holds, and a tab low in a long strip on a phone leaves the new card's
+  // label above the glass rather than moving (`within`, the morph's)
+  const holdTabFor = (k, from, within) => {
     const t0 = from && from.getBoundingClientRect ? from.getBoundingClientRect().top : null;
     const wasShell = !!document.querySelector('.setupcard.gshell');
     return () => {
@@ -1146,7 +1150,7 @@
       const t = card && card.querySelector('.chipcol [data-tab="' + String(k).replace(/["\\]/g, '\\$&') + '"]');
       const d = t ? t.getBoundingClientRect().top - t0 : 0;
       if (Math.abs(d) > 0.5) scrollTo(scrollX, scrollY + d);
-      window.CARD_SHELL.clearTop(card);
+      if (!within) window.CARD_SHELL.clearTop(card);
     };
   };
   // **Clicking a rail entry travels to its card** (Ed, 2026-08-21). The
@@ -1202,7 +1206,7 @@
     const h0 = was ? was.offsetHeight : 0;
     // a card on the one shell makes or takes back its label's room across
     // the switch, the tab pressed held still (Q1541 stage 1; answers 6.5)
-    const holdTab = holdTabFor(k, from);
+    const holdTab = holdTabFor(k, from, true);
     S.open = k; lastOpen = k;            // the morph is the entrance — no expandCard
     render();
     holdTab();
@@ -7047,6 +7051,211 @@
   const ordinaryBody = (c, m) => motionPairBody(c, m, 'ordinary',
     m.by !== null && m.by !== undefined && m.by === viewerId());
 
+  // ---- stage 4: motions, 👑 and settled motion records on the one shell ----
+  // (Q1541 stage 4, BUILD.md §4.) **A motion's card is its rule, opened**, in
+  // stage 3's form: *Current rule* above the first line (answers Part 4 .3),
+  // the first line the host's rule as the Rules paragraph states it, wearing
+  // the standing pill as a fact — who chose it (1541.5, .47) — and, for a
+  // member asked, the rule's own *Prefer this* lane beside it, the standing
+  // rule being a peer of the change (Q1362, Q1377); the change below as one
+  // block labelled on its first line — *Proposed*, or *Proposed by you* on the
+  // mover's own (Part 4 .8, .9; a motion is never signed, so no name) — and
+  // Indifferent as the last block (CP4). **A block nobody may choose has no
+  // radio** (1541.37): the mover's card draws none, and its one act is the
+  // bare 🗑️ that withdraws (1541.9 (b)). No bin on anybody else's: a lane is
+  // undone by choosing another, as on a judgment (Q1500). 👑 is the same card
+  // waiting on the Founder (K11): *Accept This Change?* above while their
+  // answer is owed, *Current rule* for everybody else (Part 6.1); no bin — it
+  // can never have a job there (1541.9) — and the two powers as the two
+  // answers, drawn as every glyph commit is (1541.38, .50). A door's motion
+  // (✉️ ❌) and an admission are stage 5's, and keep their builders.
+  const W4 = () => window.COPY.shell;
+  // …and read at the door too, where a stranger's tab opens the same card
+  // with nothing on it to press (Q1556: the stranger's records are stage 4's)
+  const motionShellKind = (c) => {
+    if (!c || !cs) return null;
+    if (c.record) return recOf(c) ? 'motion-record' : null;
+    if (c.held) return heldIsRecord(c) && !atTheDoor() ? 'failed-motion-news' : null;
+    if (!c.motion || c.door || c.admit) return null;
+    const m = motionOn(c);
+    if (!m) return null;
+    return m.status === 'awaiting-crown' ? 'crown' : 'motion';
+  };
+  /** the facts of a live motion's card: its host, the change in the host's
+   *  own sentence (A3), the route it takes and whether this reader moved it */
+  const motionParts = (c) => {
+    const m = motionOn(c);
+    const host = card(hostKeyOf(c)) || c;
+    const rec = liveMotionRec(c);
+    const v = rec && rec.payload && rec.payload.kind === 'set' ? rec.payload.value : null;
+    const proposed = c.power ? m.to : ((v !== null && sentenceFor(hostKeyOf(c), v)) || m.to);
+    // a return in flight on a power tab is answered as a constitutional
+    // motion whatever its route (the power branch it replaces)
+    const route = !c.power && routeOfM(m) === 'ordinary' ? 'ordinary' : 'constitutional';
+    return { m, host, proposed, route, mover: moverOf(m) };
+  };
+  /** the first line: a rule's paragraph sentence, carrying the strip (S2) */
+  const ruleHead = (c, sibs, html) => window.SETUP.headHtml(c, atTheDoor() ? strCtx : ctx, sibs,
+    '<div class="headrule asblock" data-fact="place">' + html + '</div>');
+  const cpv = (text) => '<p class="cpv">' + esc(text || '') + '</p>';
+  /** a motion lane: *Prefer this* / *Preferred*, or *Indifferent* on the
+   *  textless block (CP2, CP4), pressed where this reader's pick stands */
+  const motionLane = (c, v, vin) => {
+    const G = window.COPY.grammar;
+    const on = pressedOn(c.k) === v;
+    return '<button class="lanepick' + (vin ? ' vin' : '') + '" type="button" aria-pressed="' + on + '" data-motion="' + esc(v) + '">' +
+      '<span class="dot"></span><span class="off">' + (vin ? G.commit.indifferent : G.lane.prefer) + '</span>' +
+      '<span class="on">' + (vin ? G.commit.indifferent : G.lane.preferred) + '</span></button>';
+  };
+  /** **the Founder's reason, read**: the face on the speaker's disc and the
+   *  sentence, no name line (Q1560's note for stage 4) — the label above
+   *  already says whose hand it was (*Changed by the Founder*), and a signed
+   *  author's name lives on the label, never twice (Part 4 .8) */
+  const founderFace = (why) => {
+    const f = founderInfo();
+    return '<div class="speaker revealed founderspoke">' +
+      '<span class="spkface" title="' + esc(PAGE_COPY.crownHand) + '">' + avHtml(f) + '</span>' +
+      (why ? '<div class="said">' + window.CARDS.reasonHtml(why) + '</div>'
+        : '<div class="said none">' + window.COPY.grammar.speaker.noReason + '</div>') + '</div>';
+  };
+  function motionShellActs(c) {
+    const kind = motionShellKind(c);
+    const W = W4();
+    if (kind === 'motion') {
+      const p = motionParts(c);
+      if (p.mover) {
+        return [{ kind: 'withdraw', attrs: ' data-withdrawmotion="' + esc(c.k) + '"',
+          title: p.route === 'ordinary' ? W.withdrawOrdinary : W.withdrawConstitutional }];
+      }
+      const tick = p.route === 'ordinary';
+      return [{ kind: 'commit', glyph: tick ? '✓' : '🏛️', glyphHtml: tick ? window.CARDS.TICK : glyphHtml('🏛️'),
+        cls: tick ? 'btn-approve' : 'btn-approve emojibtn', attrs: ' data-confirm="1"', title: W.giveAnswer,
+        until: motionPicked(c) ? null : 'choose' }];
+    }
+    if (kind === 'crown' && amFounder() && docOpen()) {
+      return [
+        { kind: 'commit', glyph: '🛡️', glyphHtml: glyphHtml('🛡️'), cls: 'emojibtn', attrs: ' data-crownq="reject"', title: W.crownRefuse },
+        { kind: 'commit', glyph: '✒️', glyphHtml: glyphHtml('✒️'), cls: 'btn-approve emojibtn', attrs: ' data-crownq="accept"', title: W.crownAccept },
+      ];
+    }
+    return [];
+  }
+  /** the mover's OK on their own failed motion, while it is owed (E41) */
+  const motionShellOwed = (c) => (motionShellKind(c) === 'failed-motion-news' && docOpen()
+    ? { kind: 'ok', attrs: ' data-ok="' + esc(c.k) + '"', word: 'OK' } : null);
+  /**
+   * **A settled motion's record, on the one shell** (answers Part 4 .4, .5,
+   * .11, .13; Q1522's outcome first): the label is how it ended and when —
+   * *Passed* or *Changed by the Founder* in `--ok`, *Rejected*, *Refused by
+   * the Founder* — with *· since replaced* where the rule has moved on since;
+   * the first line the rule the record recorded (principle 1): what it made,
+   * where it carried, and what stood, where it failed; the change's reason
+   * beneath the rule it made. Below, *Previous rule* on what a change
+   * replaced, and a failed motion's wording under its live label, *Proposed*
+   * or *Proposed by you*, the outcome said once above. No pill (the label is
+   * the record's home for who decided, principle 3) and no radio; no row but
+   * the mover's OK while their failed motion's news is owed.
+   */
+  function recordShellPresent(c, kind, sibs) {
+    const W = W4();
+    const rec = recOf(c);
+    const frame = { cls: 'sugg setupcard', attrs: ' role="tabpanel" data-setupcard="' + esc(c.k) + '"' };
+    const carried = rec.status === 'carried';
+    const at = recAt(rec);
+    const pen = rec.route === 'pen';
+    const outcome = !carried ? (heldByOf(rec) === 'crown' ? W.outcome.refused : W.outcome.rejected)
+      : pen ? W.changedByFounder : W.outcome.passed;
+    const speaker = pen ? founderFace(rec.why) : window.CARDS.speakerHtml(rec.why);
+    let head = null;
+    let body = '';
+    const blocks = [];
+    let since = false;
+    if (rec.payload.kind === 'reserve') {
+      const rc = card(pkeyOf(rec.payload.setting));
+      const what = rc ? LD + nounOf(rc) + RD : rec.payload.setting;
+      head = esc(carried ? PAGE_COPY.motionRec.reserveReturned(what) : PAGE_COPY.motionRec.reserveKept(what));
+      body = speaker;
+    } else {
+      const k = pkeyOf(rec.payload.setting);
+      const moot = carried && rec.moot ? rec.moot : null;
+      const was = moot ? null : sentenceFor(k, stoodBefore(rec));
+      const now2 = sentenceFor(k, rec.payload.value);
+      const st = csState(k);
+      const stands = st && st.value !== null && st.value !== undefined ? sentenceFor(k, st.value) : null;
+      const recorded = carried ? now2 : was;
+      since = !!(recorded && stands && stands !== recorded);
+      if (carried) {
+        head = esc(now2 || '');
+        body = speaker + (moot ? '<p class="setnote">' + (moot === 'pen' ? PAGE_COPY.motionRec.mootPen : PAGE_COPY.motionRec.mootMembers) + '</p>' : '');
+        if (was) blocks.push({ label: W.previousRule, fact: 'previous', html: cpv(was) });
+      } else {
+        // what stood is the first line; where no record says what it was, the
+        // rule that stands now, which a failed motion did not change
+        head = was ? esc(was) : (BND.lineOf(card(k)) || '');
+        const mine = !!(rec.mine || (rec.by !== null && rec.by !== undefined && rec.by === viewerId()));
+        blocks.push({ label: mine ? W.proposedByYou : W.proposed, fact: null, html: cpv(now2), speaker });
+      }
+    }
+    const green = carried;
+    return {
+      kind,
+      frame,
+      label: { text: outcome + (at ? W.sep + window.CARDS.longWhen(at) : '') + (since ? W.sep + W.sinceReplaced : ''),
+        tone: green ? 'ok' : null, fact: 'outcome' },
+      head: { html: ruleHead(c, sibs, head) },
+      body: body || doorErrHtml(c.k) ? { html: body + doorErrHtml(c.k) } : null,
+      blocks,
+    };
+  }
+  function motionShellPresent(c, hints) {
+    const kind = motionShellKind(c);
+    const sibs = (hints && hints.siblings) || [c];
+    if (kind === 'motion-record' || kind === 'failed-motion-news') return recordShellPresent(c, kind, sibs);
+    const W = W4();
+    const p = motionParts(c);
+    const frame = { cls: 'sugg setupcard', attrs: ' role="tabpanel" data-setupcard="' + esc(c.k) + '"' };
+    const line = BND.lineOf(p.host) || esc(decisionLine(c) || '');
+    const pill = window.CARD_SHELL.pillHtml(BND.pillOf(p.host));
+    const speaker = window.CARDS.speakerHtml(p.m.why);
+    if (kind === 'crown') {
+      const asks = amFounder() && docOpen();
+      return {
+        kind, frame,
+        label: { text: asks ? W.acceptChange : W.currentRule },
+        head: { html: ruleHead(c, sibs, line + pill) },
+        body: { html: '<p class="setnote">' + glyphify(esc(asks ? W.crownRule : window.COPY.session.park.awaiting)) + '</p>' + doorErrHtml(c.k) },
+        blocks: [{ label: W.proposed, html: cpv(p.proposed), speaker }],
+      };
+    }
+    // the mover's own, and a reader at the door, who may choose nothing
+    if (p.mover || atTheDoor()) {
+      return {
+        kind, frame,
+        label: { text: W.currentRule },
+        head: { html: ruleHead(c, sibs, line + pill) },
+        body: doorErrHtml(c.k) ? { html: doorErrHtml(c.k) } : null,
+        blocks: [{ label: p.mover ? W.proposedByYou : W.proposed, html: cpv(p.proposed), speaker }],
+      };
+    }
+    const [keep, prefer, vin] = MOTION_PICKS[p.route];
+    // **every ordinary motion wears the abstention clock** on its Indifferent
+    // block (Q1460 (c)); a 🏛️ one has no deadline to read
+    const absAt = p.route === 'ordinary' ? motionAbstainAt(c) : undefined;
+    const note = absAt != null ? window.CARDS.abstainNoteHtml(absAt) : '';
+    const on = (v) => (pressedOn(c.k) === v ? ' on' : '');
+    return {
+      kind, frame,
+      label: { text: W.currentRule },
+      head: { html: ruleHead(c, sibs, line + pill + '<div class="lanebar">' + motionLane(c, keep) + '</div>') },
+      body: doorErrHtml(c.k) ? { html: doorErrHtml(c.k) } : null,
+      options: { html: '<div class="choice" role="radiogroup">' +
+        '<div class="pick' + on(prefer) + '"><span class="glab">' + esc(W.proposed) + '</span>' +
+        '<span class="opttext">' + esc(p.proposed) + '</span>' + speaker + motionLane(c, prefer) + '</div>' +
+        '<div class="pick vinblock' + on(vin) + (note ? ' absrow' : '') + '">' + motionLane(c, vin, true) + note + '</div>' +
+        '</div>' },
+    };
+  }
+
   /* **The road back is closed** (Q1404, Ed 2026-09-16: *when a founder
      relinquishes a power ✒️🛡️, that power tab should disappear from the tab
      stack, so there's no longer a route to regaining it*). Q386 had offered a
@@ -8418,6 +8627,7 @@
     founderSpeaker: (...a) => founderSpeaker(...a),
     penTabsArrive: () => penTabsArrive,
     founderSpeakerLane: (...a) => founderSpeakerLane(...a),
+    founderFace: (...a) => founderFace(...a),
     grantProv: (...a) => grantProv(...a),
     groups: (...a) => groups(...a),
     iDraft: (...a) => iDraft(...a),
@@ -10139,6 +10349,7 @@
     // drawn at all (.19)
     owed: (k) => { const c = card(k);
       if (BND.settingKind(c)) return BND.settingOwed(c);
+      if (motionShellKind(c)) return motionShellOwed(c);
       if (shellRelease(c)) return releaseBatch(c.release) ? { kind: 'ok', attrs: ' data-ok="' + esc(k) + '"', word: 'OK' } : null;
       if (!ackOwed(c)) return null;
       return { kind: 'accept', cls: 'grantok', attrs: ' data-ok="' + esc(k) + '"',
@@ -10147,6 +10358,7 @@
     // before the start, dark while the membership is still answering
     acts: (k) => { const c = card(k);
       if (BND.settingKind(c)) return BND.settingActs(c);
+      if (motionShellKind(c)) return motionShellActs(c);
       if (!shellAck(c) || !c.isBegin || constituted() || !amFounder()) return [];
       const rd = readinessOf();
       const can = !rd || rd.ready;
@@ -10160,6 +10372,7 @@
     present: (k, st, hints) => {
       const c = card(k);
       if (BND.settingKind(c)) return BND.settingPresent(c, hints);
+      if (motionShellKind(c)) return motionShellPresent(c, hints);
       if (shellRelease(c) && st.place) {
         const b = releaseBatch(c.release);
         return {
