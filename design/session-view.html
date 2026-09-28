@@ -7483,9 +7483,14 @@
   const IDENTITY = ['myname', 'mypic', 'myemail'];
   const identityShellKind = (c) => (!!c && !!cs && IDENTITY.includes(c.k) && !atTheDoor() &&
     S.viewer !== 'applicant' ? 'identity' : null);
+  /** something of yours on the card: a choice moved, or — on ✋ — a name
+   *  typed into the composer, which is a draft beside the standing name
+   *  (Q1327) rather than a key the snapshot holds */
+  const identityDirty = (c) => S.open === c.k && (openCardDirty() ||
+    (c.k === 'myname' && !!(S.mynameDraft || '').trim()));
   function identityActs(c) {
     if (!docOpen()) return [];
-    const dirty = S.open === c.k && openCardDirty();
+    const dirty = identityDirty(c);
     const bin = { kind: 'bin', title: PAGE_COPY.binPutBack,
       attrs: dirty ? ' data-revert="1"' : ' data-act="bin"', until: dirty ? null : 'nothing-yours' };
     if (c.k === 'myemail' && S.emailSent && !S.emailVerified) {
@@ -7510,7 +7515,7 @@
     return {
       kind: 'identity',
       frame: { cls: 'sugg setupcard', attrs: ' role="tabpanel" data-setupcard="' + esc(c.k) + '"' +
-        (S.open === c.k && openCardDirty() ? ' data-draft="1"' : '') },
+        (identityDirty(c) ? ' data-draft="1"' : '') },
       label: { text: c.t },
       head: { html: window.SETUP.headHtml(c, ctx, sibs,
         '<div class="headrule asblock" data-fact="place"><div class="memrow meRow">' + meRowInner() + '</div></div>') },
@@ -7518,6 +7523,26 @@
       options: locked ? null : { html: body },
       body: doorErrHtml(c.k) ? { html: doorErrHtml(c.k) } : null,
     };
+  }
+  /** the row follows the typing in place (Q1486): the bin and the commit */
+  function syncIdentityRow(c) {
+    const sh = c && identityShellKind(c) && document.querySelector('.setupcard.gshell[data-setupcard="' + c.k + '"]');
+    const row = sh && sh.querySelector('[data-slot="row"]');
+    if (!row) return;
+    const dirty = identityDirty(c);
+    sh.toggleAttribute('data-draft', dirty);
+    const bin = row.querySelector('[data-revert], [data-act="bin"]');
+    if (bin) {
+      bin.disabled = !dirty;
+      if (dirty) { bin.removeAttribute('data-act'); bin.removeAttribute('data-until'); bin.setAttribute('data-revert', '1'); }
+      else { bin.removeAttribute('data-revert'); bin.setAttribute('data-act', 'bin'); bin.setAttribute('data-until', 'nothing-yours'); }
+    }
+    const own = identityActs(c).find((a) => a.kind === 'commit');
+    const cb = row.querySelector('[data-confirm], [data-resend]');
+    if (own && cb && (own.attrs || '').includes(cb.hasAttribute('data-resend') ? 'data-resend' : 'data-confirm')) {
+      cb.disabled = !!own.until;
+      if (own.until) cb.setAttribute('data-until', own.until); else cb.removeAttribute('data-until');
+    }
   }
   /** 📧 after the save: the address that stands as a fact, a new one as the
    *  one choice beneath it (what stands is never a radio here, 1541.37) */
@@ -10524,7 +10549,7 @@
     if (t.matches && t.matches('[data-emails]')) { S.inviteMany = t.value; syncDoorRow(card('invite')); return; }
     // the field is the draft, never the standing name (Q1327)
     if (t.dataset.txt === 'myname') { S.mynameDraft = t.value; S.namePick = 'name';
-      renderRail(); SESSION.refreshRail(); refreshCommit(); return; }
+      renderRail(); SESSION.refreshRail(); refreshCommit(); syncIdentityRow(card('myname')); return; }
     if (t.dataset.txt === 'myemail') { S.myemail = t.value.trim();
       S.emailSent = false; S.emailVerified = false; S.seen.delete('myemail');
       // **Your address is yours** (Q755). A line here wrote `S.myemail` onto
@@ -10536,7 +10561,7 @@
       // rebuild the card under the caret
       const sv = document.querySelector('[data-resend="1"]');
       if (sv) { sv.disabled = !EMAIL_OK.test(S.myemail); sv.title = resendTitle(); }
-      renderRail(); SESSION.refreshRail(); refreshCommit(); return; }
+      renderRail(); SESSION.refreshRail(); refreshCommit(); syncIdentityRow(card('myemail')); return; }
     if (t.dataset.txt) { S[t.dataset.txt] = t.value;
       renderRail(); SESSION.refreshRail(); refreshCommit(); }
     // refreshCommit too: with no defaults a number IS the answer, so the

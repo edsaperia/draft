@@ -1437,6 +1437,9 @@ const IN_PAGE = () => {
     const room = lab && lab.n && line ? R2(Math.max(0, line[1] - lab.top)) : 0;
     const cr = card.getBoundingClientRect();
     return { ok: true, scrollY: R2(window.scrollY), glass: glassTop(), glyph: glyphOnGlass(tab), line,
+      // whether the first line is a list of people (a door's, stage 5) — a
+      // different drawing from a clause, which `p13Rules` reads on a switch
+      list: !!(head && head.el.querySelector('.memlist')),
       above: inkAboveFrom(card.closest('.cpara.open') || card), room,
       label: lab && lab.n ? { top: lab.top, bottom: lab.bottom, n: lab.n } : null,
       cardTop: R2(cr.top), cardBottom: R2(cr.bottom), zones: glassZones() };
@@ -1453,7 +1456,8 @@ const IN_PAGE = () => {
     if (!inStrip) return { ...glassClosed(key), within: false };
     const head = headOf(card);
     return { ok: true, within: true, scrollY: R2(window.scrollY), glass: glassTop(), glyph: glyphOnGlass(inStrip),
-      line: head ? lineOnGlass(head.el, LABEL_SEL) : null, above: inkAboveFrom(card.closest('.cpara.open') || card),
+      line: head ? lineOnGlass(head.el, LABEL_SEL) : null, list: !!(head && head.el.querySelector('.memlist')),
+      above: inkAboveFrom(card.closest('.cpara.open') || card),
       zones: glassZones() };
   };
   /** scroll so the key's first line stands `room` px under the glass — a
@@ -2301,7 +2305,13 @@ function p13Rules(c, at) {
         bits.push(what + ' moves ' + d[0] + ', ' + d[1] + 'px on screen' + (dy ? ' (the shortfall allows 0, ' + dy + ')' : ''));
       }
     };
-    if (!OWN_LINE(c.key)) want('the first line', a.line, b.line);
+    // **a list and a clause are two drawings** (Q1541 stage 5): inside a
+    // door's strip the door's first line is its subsection's rows, in the
+    // list's face, and a power tab's is the power's own clause (1541.48), so
+    // a switch between the two holds the pressed tab, not a line the other
+    // card does not draw — stage 5's call, put to Ed in its FINAL
+    const drawings = e.sub === 'switch' && a.within && !!a.list !== !!b.list;
+    if (!OWN_LINE(c.key) && !drawings) want('the first line', a.line, b.line);
     if (a.glyph && b.glyph) want('the pressed tab', a.glyph, b.glyph);
     // the content above: up by the room on open (less the shortfall), down by
     // it on close (less what the scroll could not give back); a switch's
