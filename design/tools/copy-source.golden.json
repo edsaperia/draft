@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 713
+  "entries": 716
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -696,6 +696,8 @@
   "shell.crownRule": "The membership passed this. Until you answer, the rule above stands.",
   "shell.currentRule": "Current rule",
   "shell.currentText": "Current text",
+  "shell.emailSentWhy": "The mail is the login: clicking its link is what proves the address works.",
+  "shell.emailWhy": "Your address is the only way back in — there are no passwords — so a new one has to prove it works before it replaces the old.",
   "shell.giveAnswer": "Give your answer",
   "shell.hat.clerk": "The Founder is not part of the membership.",
   "shell.hat.deciding": "The Founder is deciding whether to be part of the membership.",
@@ -710,6 +712,7 @@
   "shell.proposedBy": "ƒ (name) => 'Proposed by ' + name",
   "shell.proposedByYou": "Proposed by you",
   "shell.ruleAtClose": "Rule at the close",
+  "shell.save": "Save",
   "shell.sep": " · ",
   "shell.sinceReplaced": "since replaced",
   "shell.voiceOut": "You can only make one constitutional proposal 🏛️ at a time.",
