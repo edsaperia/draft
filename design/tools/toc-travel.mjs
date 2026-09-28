@@ -5,6 +5,7 @@
  *
  *   npm run toc-travel
  *   npm run toc-travel -- --slow   (settle on a 400 ms timer, for a tab where rAF never fires)
+ *   npm run toc-travel -- --throttle=4   (the browser's CPU slowed 4×: CI's runner, reproduced here)
  *
  * Clicks every in-page anchor in `#toc` and asserts the thing it points at comes
  * to rest **at or below the bottom of `.navbar`** — the bar is `position: sticky;
@@ -54,6 +55,11 @@ const SIZES = [{ width: 1600, height: 1000 }, { width: 1280, height: 900 }, { wi
 const FIXTURE = '/session-view.html?fixture=session&band=1';
 // `--slow`: settle on the old 400 ms timer rather than on animation frames
 const SLOW = process.argv.includes('--slow');
+// `--throttle=N`: the page's CPU slowed N× through the devtools protocol, which
+// is what a shared runner looks like from inside the page — the sprint red of
+// 2026-09-28 (run 36416821043) showed at 4× on every developer machine and
+// never at 1×, so a timing fault in a walk is reproduced here, not on CI
+const THROTTLE = Number((process.argv.find((a) => a.startsWith('--throttle=')) || '').split('=')[1]) || 1;
 
 function serveDesign() {
   const server = createServer(async (req, res) => {
@@ -75,6 +81,10 @@ async function measureAt(browser, base, size, fails) {
   const label = size.width + '×' + size.height;
   const context = await browser.newContext({ viewport: size, deviceScaleFactor: 1, locale: 'en-GB', timezoneId: 'Europe/London' });
   const page = await context.newPage();
+  if (THROTTLE > 1) {
+    const cdp = await context.newCDPSession(page);
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: THROTTLE });
+  }
   const pageErrors = [];
   page.on('pageerror', (e) => pageErrors.push(String(e)));
   await page.goto(base + FIXTURE);
@@ -195,9 +205,21 @@ async function measureAt(browser, base, size, fails) {
       // the rail, and only then find the mark: a rail rebuilt under a
       // measured point is a click on its neighbour
       await page.evaluate(() => { if (window.SESSION.openId) { try { window.SESSION.toggle(window.SESSION.openId, false); } catch { /* shut */ } } window.scrollTo(0, 0); });
-      await settleMs(450);   // the collapse, COLLAPSE_MS
-      const at = await page.evaluate(({ li, which }) => {
+      // **A page at rest, not a timer** (sprint run 36416821043, 2026-09-28):
+      // the old 450 ms outran the collapse on a fast machine and not on CI's.
+      // A shell card holds its clause still as it closes, by a scroll of its
+      // own once the collapse ends; the rail follows the reader, drawing the
+      // heading that last crossed the top bold, and a bold row is a few
+      // pixels taller — so a scroll landing after the wait moved every row
+      // below it between the measurement and the click, and the click took
+      // the mark one row down (*Front-door Keys* opened *Locking Up*'s
+      // quick-lockup). Now: the card is gone, then the mark is measured
+      // twice a frame apart and clicked only once the two agree.
+      await page.waitForFunction(() => !window.SESSION.openId, null, { timeout: 5_000 });
+      const at = await page.evaluate(async ({ li, which }) => {
+        const frames = () => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(() => ok())));
         window.scrollTo(0, 0);
+        await frames();
         const row = document.querySelectorAll('#toc li')[li];
         const sp = row && row.querySelector('.tocmarks');
         if (!sp) return { gone: true };
@@ -206,7 +228,14 @@ async function measureAt(browser, base, size, fails) {
         // the list scrolls its own box: bring the row to the list's middle
         const ul = document.querySelector('#toc');
         if (ul) ul.scrollTop = Math.max(0, row.offsetTop - ul.clientHeight / 2);
-        const b = el.getBoundingClientRect();
+        // still: the same box two frames running, up to a second of trying
+        let b = el.getBoundingClientRect();
+        for (let tries = 0; tries < 30; tries++) {
+          await frames();
+          const c = el.getBoundingClientRect();
+          if (Math.abs(c.top - b.top) < 0.5 && Math.abs(c.left - b.left) < 0.5) break;
+          b = c;
+        }
         const x = b.left + b.width / 2, y = b.top + b.height / 2;
         const hit = document.elementFromPoint(x, y);
         return { x, y, id: el.dataset.tocq || null, named: el.getAttribute('aria-label') || '',
