@@ -6,6 +6,25 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-09-28, evening: your name, the doors and applications, in the new shape
+
+### Changed
+- **Your name, picture and email open with their question on top** — *Choose Your Name*, *Choose Your Picture*, *Enter Your Email* — and your own row from the Members list as the first line, so the card opens exactly where your row was. After the document closes they stay as they are, with nothing to press.
+- **Inviting, removing and leaving open over the list they belong to**: *Invite a Member* over the applications, *Remove a Member* over the people proposed for removal, *Leave the Membership* over the people who have left.
+- **An empty list says so in a sentence**, in the document and on the card alike: *There are no applications at the moment.*, *Nobody is proposed for removal.*, *Nobody has left.*
+- **The 🗑️ and the send stay dark until you type an address or choose somebody**, and light up as you type, without the card redrawing under you.
+- **A proposal to invite or remove somebody** opens over the same list, labelled with the door it came through: the membership as it is, then the change marked *Proposed* with its reason, then Indifferent. Your own proposal reads *Proposed by you*, with the 🗑️ alone to withdraw it.
+- **When the membership lets somebody in and the Founder can refuse**, the Founder's card asks *Accept This Change?*, and says the membership stays as it is until they answer.
+- **An application shows the applicant's own words** as the reason under the change.
+- **The cards for applying and logging in** carry their title on top and what they ask as the first line.
+
+### Fixed
+- **If the membership turned down your proposal to invite or remove somebody**, the card telling you so could not be opened. It now stands with the invitation or removal tabs, and opens from its entry.
+- **Typing an address to invite somebody no longer loses your place** when the page refreshes.
+
+### For contributors
+- **The identity cards, the doors, proposals about a person, applications, and the applicant's and stranger's cards are built on the one card shell**, and card-audit holds them strictly. The applicant's cards, which only a live document can show, are checked by applicants-walk.
+
 ## 2026-09-28, afternoon: proposals to change a rule, in the new shape
 
 ### Changed
