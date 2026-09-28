@@ -212,8 +212,11 @@ const GRAMMAR_KINDS = [
   // stage 5 (Q1541): doors and people — your ✋ 🖼️ 📧 once the document is
   // saved (`identity`, heading with your row, O6 (b)); the fast pass meets
   // them on `settled`, `outsiders` (a member's seat), `sessionband` and
-  // `closedband` (frozen, 1541.28 (a))
+  // `closedband` (frozen, 1541.28 (a)); the doors ✉️ ❌ 🌂 (`door`, heading
+  // with their subsection's rows or its sentence, 1541.25 (a)), met on the
+  // same four from the Founder's seat and a member's
   'identity',
+  'door',
   // stage 6 (Q1541): the charter's judgment cards, each declared by the shell
   // (`data-kind`, session.js's `judgePresent`) — a pair against the current
   // text (`quick`), one on a gap (`insert`), two challengers (`race`), a pair

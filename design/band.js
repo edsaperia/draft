@@ -541,7 +541,7 @@ window.BAND = (function () {
       // the place a removal is *done*.
       remove: () => (directRemove()
         ? (constituted() ? ''
-            : '<p class="why">Until the document begins, taking somebody off the list is yours alone — an invitation withdrawn is nobody else’s business yet.</p>') +
+            : '<p class="why">' + PAGE_COPY.door.removeBeforeStart + '</p>') +
           removeSubjectPicker() +
           doorErrHtml('remove')
         // a member's card is unchanged by that QA — Ed reviewed the founder's
@@ -1357,7 +1357,7 @@ window.BAND = (function () {
       const SHELL_KINDS = new Set(['grant', 'gate', 'begin', 'release', 'setting', 'watching', 'answer', 'birth-email',
         'power', 'composer', 'motion', 'crown', 'motion-record', 'failed-motion-news',
         // …and stage 5's: ✋ 🖼️ 📧, the doors, the admissions, the applicant's
-        'identity']);
+        'identity', 'door']);
       const crownPairRow = () => (amFounder()
         ? binBtn() + '<span class="rightpair">' +
           '<button class="btn glyphbtn emojibtn" data-crownq="reject"' +
@@ -2232,13 +2232,16 @@ window.BAND = (function () {
     // among the fields carrying that key, not by the key alone. A date box
     // holds no value until it is whole, so a half-typed one comes back empty
     // with the caret in it — Q1513.
+    // …and ✉️'s address boxes, the Founder's and a member's, which are
+    // textareas (Q1541 stage 5: a render landing while an address was typed
+    // took the caret, and the next keys went nowhere)
     const KEEP_ATTRS = ['data-txt', 'data-num', 'data-mtext', 'data-mslug',
-      'data-mpace', 'data-mrate', 'data-mnum', 'data-ansnum', 'data-ansdate'];
-    const keptSel = (attr, key) => '.setupcard input[' + attr + '="' + key + '"]';
+      'data-mpace', 'data-mrate', 'data-mnum', 'data-ansnum', 'data-ansdate', 'data-emails', 'data-mjoin'];
+    const keptSel = (attr, key) => '.setupcard :is(input, textarea)[' + attr + '="' + key + '"]';
     const renderKeep = () => {
       const a = document.activeElement;
       const inp = a && a.closest && a.closest('.setupcard') &&
-        a.matches(KEEP_ATTRS.map((x) => 'input[' + x + ']').join(', ')) ? a : null;
+        a.matches(KEEP_ATTRS.map((x) => 'input[' + x + '], textarea[' + x + ']').join(', ')) ? a : null;
       const attr = inp ? KEEP_ATTRS.find((x) => inp.hasAttribute(x)) : null;
       const nth = attr ? [...document.querySelectorAll(keptSel(attr, inp.getAttribute(attr)))].indexOf(inp) : 0;
       const box = document.querySelector('.setupcard .emojibox');
@@ -2366,6 +2369,8 @@ window.BAND = (function () {
       render, refreshCommit, roomNow, syncShare, standingBlock, unchangedCard,
       // stage 3a's settings cards, for the band's card-state source (Q1541)
       settingKind, settingActs, settingOwed, settingPresent, lineOf,
+      // stage 5: the doors' bodies, for their cards on the one shell
+      BODY,
       // stage 4: a motion's card heads with its host's rule and pill (Q1541)
       pillOf,
       // stage 3b: the composer's commit swaps in place as a motion is typed,

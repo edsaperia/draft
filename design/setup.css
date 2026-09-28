@@ -835,6 +835,9 @@ button.cline:hover b { text-decoration: underline; }
    `fitBand` reads its line off the row itself; it keeps the list's face
    and leading, not the head's text face, so it is the row's drawing exactly */
 .clausehead .memrow.meRow { margin-top: 0; font-family: var(--font-ui); line-height: 1.5; }
+/* …and a door ✉️ ❌ 🌂 heads with its subsection's rows, drawn as the list
+   draws them (Q1541 stage 5) */
+.clausehead .memlist { font-family: var(--font-ui); line-height: 1.5; }
 /* only avatars and names keep the compact dress (Ed) */
 .memrow { display: flex; align-items: center; gap: 8px; font-size: var(--t-small);
   position: relative; }

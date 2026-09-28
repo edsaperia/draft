@@ -591,7 +591,8 @@ window.SETUP = (function () {
     const lineIn = (card) => {
       // your ✋ 🖼️ 📧 stand where your row stood, so its first line is the
       // row's own — the same drawing heads the card (Q1541 stage 5)
-      const row = card.querySelector('.clausehead .meRow');
+      // …and a door's, its subsection's list (the same drawing, top to top)
+      const row = card.querySelector('.clausehead .meRow') || card.querySelector('.clausehead .memlist');
       if (row) { const t = window.CARD_SHELL.lineTop(row); return t == null ? null : t - row.getBoundingClientRect().top; }
       const ref = card.closest('.constsec, body').querySelector('.cpara:not(.open):not(.textanchor) .cpv');
       const lt = ref && window.CARD_SHELL.lineTop(ref);

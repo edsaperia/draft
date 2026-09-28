@@ -689,6 +689,8 @@ window.COPY = (function () {
       choose: 'Choose somebody to remove…',
       invitedNotHere: ' — invited, not yet here',
       anonymous: 'Anonymous',
+      // ❌ with the Founder's word, before the start
+      removeBeforeStart: 'Until the document begins, taking somebody off the list is yours alone — an invitation withdrawn is nobody else’s business yet.',
     },
     refuseSet: (reason) => 'That could not be set: ' + reason + '.',
     // every other refusal, under the card that sent it (Q1330, SURFACE Y25)
@@ -1233,11 +1235,17 @@ window.COPY = (function () {
       // everybody who has left, each with the day in a pill (Q1557 (e))
       alumni: 'Alumni',
     },
-    // the grey row a subsection that carries a control stands on when empty
+    // the grey row a subsection that carries a control stands on when empty —
+    // a sentence since the redesign (1541.25 (a), O9 (a)): the band says it
+    // and the door's card heads with the same line. *Nobody is proposed for
+    // removal* is ❌'s STYLE-passed sentence; O9's ✉️ sentence, *Nobody has
+    // been invited yet*, stopped being true of this heading when the
+    // invitations sent moved under *Members* (Q1557 (a)), so the heading's own
+    // words stand here as a sentence, and *Alumni* takes the same shape
     memEmpty: {
-      applications: '(no applications at the moment)',
-      removal: '(nobody proposed for removal)',
-      alumni: '(nobody has left)',
+      applications: 'There are no applications at the moment.',
+      removal: 'Nobody is proposed for removal.',
+      alumni: 'Nobody has left.',
     },
     // **A tag says only what its heading does not** (Q1557 (c)): *invited*
     // on an invitation sent and not yet followed, *email failed* in its place
@@ -1481,6 +1489,10 @@ window.COPY = (function () {
     // ---- stage 5: doors and people ----
     // the ✓ on ✋ 🖼️ 📧 — a name, a picture, an address bind nobody (§9.0c)
     save: 'Save',
+    // the doors' own acts (Q1541 stage 5), their words unchanged from the
+    // commit row they were written into
+    inviteSend: 'Send the invitations — your word sends',
+    removeNow: 'Remove them — your word removes',
     // 📧 after the save, moved here from the old builder's body word for word
     emailWhy: 'Your address is the only way back in — there are no passwords — so a new one has to prove it works before it replaces the old.',
     emailSentWhy: 'The mail is the login: clicking its link is what proves the address works.',

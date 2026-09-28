@@ -5065,16 +5065,23 @@
         // everybody who has left, newest first, each with the day in a pill.
         // It carries 🌂 — the way out, beside the people who took it — so,
         // like the other subsections that carry a control, it stands when
-        // empty wherever 🌂 is yours to press, with *(nobody has left)*;
+        // empty wherever 🌂 is yours to press, with *Nobody has left.*;
         // where it is not (before 🍾, a clerk, a stranger, the closed page) it
         // stands on its rows alone, as *Lapsed* does. 🥾's departure news
         // stands in its pile: the person it is about is listed here, and the
         // card replaces the paragraph they stand in (Q901's reason, moved).
         const leaveOn = !isStranger() && visible(card('leave'));
         const alumni = alumniRows();
+        // the three door subsections' rows, kept for their doors' cards, which
+        // head with exactly these lines (Q1541 stage 5, `doorRowsNow`)
+        const emptyRow = (k) => '<div class="memrow nobody">' + esc(PAGE_COPY.memEmpty[k]) + '</div>';
+        doorRowsNow = {
+          invite: (applying.map((p) => memRow(p)).join('') + (memApplicantRows() || '')) || emptyRow('applications'),
+          remove: proposedOut.length ? proposedOut.map((p) => memRow(p, true)).join('') : emptyRow('removal'),
+          leave: alumni || emptyRow('alumni'),
+        };
         const alumniSub = alumni || leaveOn
-          ? memSub(PAGE_COPY.memHeads.alumni,
-            alumni || '<div class="memrow nobody">' + esc(PAGE_COPY.memEmpty.alumni) + '</div>',
+          ? memSub(PAGE_COPY.memHeads.alumni, doorRowsNow.leave,
             isStranger() ? [] : ['leave'].concat(departureKeys()))
           : '';
         // **🪪 leads** (Ed, 2026-08-26, entry 94): what admission costs comes
@@ -5119,17 +5126,13 @@
               // tab in this pile (Q1367: one motion, one card — `motionCardsFor`,
               // as `chipsFor` does for a setting; this pile is listed by hand,
               // so it lists them too), the admit cards behind
-              memSub(PAGE_COPY.memHeads.applications,
-                (applying.map((p) => memRow(p)).join('') + (memApplicantRows() || '')) ||
-                  '<div class="memrow nobody">' + esc(PAGE_COPY.memEmpty.applications) + '</div>',
+              memSub(PAGE_COPY.memHeads.applications, doorRowsNow.invite,
                 ['invite', 'pw:u:invite', 'pw:a:invite']
                   .concat(motionCardsFor(card('invite')).map((c) => c.k), admitKeys())) +
               (lapsesOn() && lapsedOut.length
                 ? memSub(PAGE_COPY.memHeads.lapsed, lapsedOut.map((p) => memRow(p)).join(''), []) : '') +
               // the one heading a *lapsed* tag says something under (Q1557 (c))
-              memSub(PAGE_COPY.memHeads.removal, proposedOut.length
-                ? proposedOut.map((p) => memRow(p, true)).join('')
-                : '<div class="memrow nobody">' + esc(PAGE_COPY.memEmpty.removal) + '</div>',
+              memSub(PAGE_COPY.memHeads.removal, doorRowsNow.remove,
                 ['remove', 'pw:u:remove', 'pw:a:remove'].concat(motionCardsFor(card('remove')).map((c) => c.k)))) +
           alumniSub;
       } },
@@ -6534,6 +6537,7 @@
     const slot = document.querySelector('.setupcard [data-putmotion], .setupcard [data-holdmotion]');
     if (slot) slot.outerHTML = commitFor(c);
     BND.syncShellRow(c);
+    syncDoorRow(c);
   };
 
   /* **A motion is composed with the setting's own control** (motion-controls),
@@ -7323,6 +7327,121 @@
       '<span class="on">' + PAGE_COPY.pw.chosen + '</span></button></div></div>'
     : '<p class="why">' + esc(S.emailSent ? W5().emailSentWhy : W5().emailWhy) + '</p>' +
       '<span class="fld"><input type="email" data-txt="myemail" value="' + esc(S.myemail) + '" placeholder="you@example.com"></span>');
+
+  // **The doors ✉️ ❌ 🌂 on the one shell** (Q1541 stage 5). A door heads with
+  // its subsection's own lines — the votes on letting somebody in, the
+  // proposed for removal, the alumni — or the sentence the subsection says
+  // when it has none (1541.25 (a)), so the card replaces its paragraph
+  // exactly; its ask is the label (*Invite a Member*, Part 4). Nothing here
+  // changes what a door does: the acts are the presses the row always made.
+  const DOORS = ['invite', 'remove', 'leave'];
+  /** each door subsection's rows as the Members section last drew them */
+  let doorRowsNow = {};
+  const doorShellKind = (c) => (!!c && !!cs && DOORS.includes(c.k) && !atTheDoor() && !isStranger() &&
+    S.viewer !== 'applicant' ? 'door' : null);
+  /** where the viewer's word does not send, a member composes (K1) */
+  const doorComposes = (c) => c.k !== 'leave' && !doorDirect(c) && composerOn(c);
+  const doorWhy = (k) => ((S.setWhy || {})[k] || '').trim();
+  /** something of yours on the door: an address, a person chosen, a reason */
+  const doorDirty = (c) => (c.k === 'leave' ? false
+    : doorComposes(c) ? !!(S.draft && S.draft.k === c.k && (S.draft.to || S.draft.why || (S.draft.many || []).length))
+    : c.k === 'invite' ? !!((S.inviteMany || '').trim() || doorWhy('invite'))
+    : !!(S.removeWho || doorWhy('remove')));
+  function doorActs(c) {
+    if (!docOpen()) return [];
+    // 🌂: the warning is the body and leaving the one act, free and nobody's
+    // to refuse (E32, Q1400) — nothing to type, so no bin (1541.9)
+    if (c.k === 'leave') {
+      return [{ kind: 'commit', glyph: '🌂', glyphHtml: window.CARDS.ARROW_OUT, cls: 'btn-approve emojibtn',
+        attrs: ' data-act="resign"', title: PAGE_COPY.cards.leave.t }];
+    }
+    const dirty = doorDirty(c);
+    if (doorComposes(c)) {
+      return [{ kind: 'bin', title: PAGE_COPY.discardMotion,
+        attrs: dirty ? ' data-dropmotion="1"' : ' data-act="bin"', until: dirty ? null : 'nothing-yours' },
+      { kind: 'commit', html: commitFor(c) }];
+    }
+    if (!doorDirect(c)) return [];
+    // the bin dark until an address is typed or a person chosen (1541.9)
+    const acts = [{ kind: 'bin', title: PAGE_COPY.binPutBack,
+      attrs: dirty ? ' data-revert="1"' : ' data-act="bin"', until: dirty ? null : 'nothing-yours' }];
+    // ✒️ where the viewer's word sends, dark over the empty box with no note
+    // (Part 4 .18) — a click, not a hold: a direct invitation spends nothing
+    const typed = c.k === 'invite' ? !!(S.inviteMany || '').trim() : !!S.removeWho;
+    acts.push({ kind: 'commit', glyph: '✒️', glyphHtml: glyphHtml('✒️'), cls: 'btn-approve emojibtn',
+      attrs: c.k === 'invite' ? ' data-act="invite"' : ' data-exile="1"',
+      title: c.k === 'invite' ? W5().inviteSend : W5().removeNow, until: typed ? null : (c.k === 'invite' ? 'type' : 'choose') });
+    // …and the route's commit beside it where the Founder may also put it to
+    // the membership (entry 161), dark over the empty box as well (.18)
+    const fc = founderCommit(c);
+    if (fc) acts.push({ kind: 'commit', html: fc });
+    return acts;
+  }
+  /** a door's row follows what is typed, patched in place — never a render
+   *  under the caret (Q1486): the bin lights on something of yours (1541.9),
+   *  the ✒️ and the route's commit on an address or a person (Part 4 .18) */
+  function syncDoorRow(c) {
+    const sh = c && doorShellKind(c) && document.querySelector('.setupcard.gshell[data-setupcard="' + c.k + '"]');
+    if (!sh) return;
+    const dirty = doorDirty(c);
+    sh.toggleAttribute('data-draft', dirty);
+    const row = sh.querySelector('[data-slot="row"]');
+    if (!row) return;
+    const act = doorComposes(c) ? 'data-dropmotion' : 'data-revert';
+    const bin = row.querySelector('[' + act + '], [data-act="bin"]');
+    if (bin) {
+      bin.disabled = !dirty;
+      if (dirty) { bin.removeAttribute('data-act'); bin.removeAttribute('data-until'); bin.setAttribute(act, '1'); }
+      else { bin.removeAttribute(act); bin.setAttribute('data-act', 'bin'); bin.setAttribute('data-until', 'nothing-yours'); }
+    }
+    const own = doorActs(c).find((a) => a.kind === 'commit' && a.html == null && a.glyph === '✒️');
+    const cb = row.querySelector('[data-act="invite"], [data-exile]');
+    if (own && cb) {
+      cb.disabled = !!own.until;
+      if (own.until) cb.setAttribute('data-until', own.until); else cb.removeAttribute('data-until');
+    }
+    if (doorDirect(c)) {
+      const slot = row.querySelector('[data-holdmotion], [data-putmotion]');
+      const fc = founderCommit(c);
+      if (slot && fc) slot.outerHTML = fc;
+    }
+  }
+  function doorPresent(c, hints) {
+    const k = c.k;
+    const sibs = (hints && hints.siblings) || [c];
+    const B = BND.BODY;
+    let body = '';
+    let options = '';
+    let input = '';
+    if (k === 'leave') body = B.leave();
+    else if (doorComposes(c)) {
+      const d = (S.draft && S.draft.k === k) ? S.draft : { k, to: '', why: '' };
+      // ✉️'s price once, as 🪪's clause states it; ❌'s is 🥾's to state
+      if (k === 'invite' && settled(c)) body = '<p class="cpv doorrule">' + breakLines(linkify(esc(decisionLine(c)))) + '</p>';
+      options = PROPOSE[k](d);
+      // the reason box, always shown (1541.21 (b))
+      input = whyLane(d);
+    } else if (doorDirect(c)) {
+      if (k === 'invite') input = B.invite();
+      else { body = constituted() ? '' : '<p class="why">' + PAGE_COPY.door.removeBeforeStart + '</p>'; options = removeSubjectPicker(); }
+      // the Founder's reason, where the change may also go to the membership
+      // (entry 161) — always shown there (1541.21 (b))
+      if (founderPair(c)) input += '<div class="body whyset">' + founderSpeakerLane(doorWhy(k) ? S.setWhy[k] : '') + '</div>';
+    } else if (k === 'remove') body = B.remove().replace(doorErrHtml('remove'), '');
+    else if (settled(c)) body = '<p class="cpv doorrule">' + breakLines(linkify(esc(decisionLine(c)))) + '</p>';
+    body += k === 'invite' && doorDirect(c) ? '' : doorErrHtml(k);
+    return {
+      kind: 'door',
+      frame: { cls: 'sugg setupcard', attrs: ' role="tabpanel" data-setupcard="' + esc(k) + '"' +
+        (doorDirty(c) ? ' data-draft="1"' : '') },
+      label: { text: c.t },
+      head: { html: window.SETUP.headHtml(c, ctx, sibs,
+        '<div class="headrule asblock" data-fact="place"><div class="memlist">' + (doorRowsNow[k] || '') + '</div></div>') },
+      body: body ? { html: body } : null,
+      options: options ? { html: options } : null,
+      input: input ? { html: input } : null,
+    };
+  }
 
   /* **The road back is closed** (Q1404, Ed 2026-09-16: *when a founder
      relinquishes a power ✒️🛡️, that power tab should disappear from the tab
@@ -10137,6 +10256,7 @@
       if (!S.setWhy) S.setWhy = {};
       S.setWhy[S.open] = sw.textContent.trim();
       sw.classList.toggle('blank', !sw.textContent.trim());
+      syncDoorRow(card(S.open));
       return;
     }
     // the ✉️ composer's box (Q1187): every non-empty line is an address, the
@@ -10199,7 +10319,7 @@
     // route's button wakes on the typing — in place, never a render, because
     // this is the field under the caret
     if (t.matches && t.matches('[data-add]')) { S.inviteOne = t.value; refreshCommit(); return; }
-    if (t.matches && t.matches('[data-emails]')) { S.inviteMany = t.value; return; }
+    if (t.matches && t.matches('[data-emails]')) { S.inviteMany = t.value; syncDoorRow(card('invite')); return; }
     // the field is the draft, never the standing name (Q1327)
     if (t.dataset.txt === 'myname') { S.mynameDraft = t.value; S.namePick = 'name';
       renderRail(); SESSION.refreshRail(); refreshCommit(); return; }
@@ -10419,6 +10539,7 @@
       if (BND.settingKind(c)) return BND.settingOwed(c);
       if (motionShellKind(c)) return motionShellOwed(c);
       if (identityShellKind(c)) return null;
+      if (doorShellKind(c)) return null;
       if (shellRelease(c)) return releaseBatch(c.release) ? { kind: 'ok', attrs: ' data-ok="' + esc(k) + '"', word: 'OK' } : null;
       if (!ackOwed(c)) return null;
       return { kind: 'accept', cls: 'grantok', attrs: ' data-ok="' + esc(k) + '"',
@@ -10429,6 +10550,7 @@
       if (BND.settingKind(c)) return BND.settingActs(c);
       if (motionShellKind(c)) return motionShellActs(c);
       if (identityShellKind(c)) return identityActs(c);
+      if (doorShellKind(c)) return doorActs(c);
       if (!shellAck(c) || !c.isBegin || constituted() || !amFounder()) return [];
       const rd = readinessOf();
       const can = !rd || rd.ready;
@@ -10444,6 +10566,7 @@
       if (BND.settingKind(c)) return BND.settingPresent(c, hints);
       if (motionShellKind(c)) return motionShellPresent(c, hints);
       if (identityShellKind(c)) return identityPresent(c, hints);
+      if (doorShellKind(c)) return doorPresent(c, hints);
       if (shellRelease(c) && st.place) {
         const b = releaseBatch(c.release);
         return {
