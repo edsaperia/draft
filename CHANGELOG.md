@@ -11,6 +11,11 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 ### For contributors
 - **The names of the engine's and the tooling's parts now live in `design/GLOSSARY.md`**, moved out of `CLAUDE.md`, which keeps the names of what a member sees. Nothing on docs.vote changes.
 
+## 2026-09-28, midday: every deploy tags itself
+
+### For contributors
+- **CI now tags every deploy it has verified live** (`deploy-YYYY-MM-DD`, then `b`, `c`, … on the same day), so nobody pushes a deploy tag by hand any more. Nothing on docs.vote changes.
+
 ## 2026-09-27, evening: the cards you vote on, in the new shape
 
 ### Changed
