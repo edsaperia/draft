@@ -2972,11 +2972,14 @@
      nothing yet — so it takes the accent every other armed act wears, and
      only the recorded ✓ above keeps the green, the judgment being on the
      record. SURFACE §9.1's *the one solid green on a card* is corrected with
-     it. The band's glyph commits are their own stages' */
-  .btn.btn-approve.glyphbtn[data-act="submit"]:not([disabled]):not([aria-pressed="true"]) {
+     it. The band's glyph commits are their own stages' — an ordinary
+     motion's ✓ on the one shell since stage 4 */
+  .btn.btn-approve.glyphbtn[data-act="submit"]:not([disabled]):not([aria-pressed="true"]),
+  .gshell .btn.btn-approve.glyphbtn[data-confirm]:not(.emojibtn):not([disabled]):not([aria-pressed="true"]) {
     background: var(--primary); border-color: var(--primary); color: #fff;
   }
-  .btn.btn-approve.glyphbtn[data-act="submit"]:not([disabled]):not([aria-pressed="true"]):hover {
+  .btn.btn-approve.glyphbtn[data-act="submit"]:not([disabled]):not([aria-pressed="true"]):hover,
+  .gshell .btn.btn-approve.glyphbtn[data-confirm]:not(.emojibtn):not([disabled]):not([aria-pressed="true"]):hover {
     background: var(--primary-hover); border-color: var(--primary-hover); color: #fff;
   }
 

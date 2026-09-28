@@ -51,7 +51,7 @@ window.BAND = (function () {
       departureLine, directInvite, directRemove, docAddr, docOpen, doorDirect, doorErrHtml, doorErrOn,
       dripParts, endsAtMsOf, fieldsOf, focusOpened, founderCommit, founderDirect,
       founderHandOff, founderInfo, founderMark, founderPairNote, founderPairOn, founderSpeaker,
-      founderSpeakerLane, grantProv, groups, powerParts, powerOtherHtml, iDraft, isChange, isNum, isRoom, isStranger,
+      founderSpeakerLane, founderFace, grantProv, groups, powerParts, powerOtherHtml, iDraft, isChange, isNum, isRoom, isStranger,
       heldBody, hostKeyOf, judgedOn, launchFarewell, launchGrant, liveMotionRec,
       mailGiveUpBatch, mailGiveUpBody,
       mayPen, mayPenOn, me, membersHold, openCardDirty, midOf, motionAbstainAt, motionBlocks, motionOn, motionPicked,
@@ -1161,7 +1161,9 @@ window.BAND = (function () {
       const returned = back.length ? '<p class="cpv">' + PAGE_COPY.lapseReturned(
         listOf(back.map((mid2) => esc(nameOfMember(mid2)))), back.length) + '</p>' : '';
       return {
-        body: (am.route === 'pen' ? founderSpeaker(am.why) : window.CARDS.speakerHtml(am.why)) + returned,
+        // the Founder's reason drawn as a signed rationale's, the face on the disc
+        // and no name line (Q1560's note, taken at stage 4)
+        body: (am.route === 'pen' ? founderFace(am.why) : window.CARDS.speakerHtml(am.why)) + returned,
         blocks: was ? [{ label: W3().previousRule, fact: 'previous', html: '<p class="cpv">' + esc(was) + '</p>' }] : [],
       };
     }
@@ -1350,8 +1352,10 @@ window.BAND = (function () {
       // …and stage 3a's settings (Q1541): the Founder's own card, the rule read,
       // a blind answer and 📧 at the birth
       // …and stage 3b's: 🪪 🤝 🎩 among them, the power cards and the composer
+      // …and stage 4's: the motion cards, 👑, and the settled motion records
+      // with a failed motion's news
       const SHELL_KINDS = new Set(['grant', 'gate', 'begin', 'release', 'setting', 'watching', 'answer', 'birth-email',
-        'power', 'composer']);
+        'power', 'composer', 'motion', 'crown', 'motion-record', 'failed-motion-news']);
       const crownPairRow = () => (amFounder()
         ? binBtn() + '<span class="rightpair">' +
           '<button class="btn glyphbtn emojibtn" data-crownq="reject"' +
@@ -2360,6 +2364,8 @@ window.BAND = (function () {
       render, refreshCommit, roomNow, syncShare, standingBlock, unchangedCard,
       // stage 3a's settings cards, for the band's card-state source (Q1541)
       settingKind, settingActs, settingOwed, settingPresent, lineOf,
+      // stage 4: a motion's card heads with its host's rule and pill (Q1541)
+      pillOf,
       // stage 3b: the composer's commit swaps in place as a motion is typed,
       // and its bin and pill follow (Q1541 stage 3b)
       syncShellRow,

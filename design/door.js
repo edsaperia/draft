@@ -190,7 +190,8 @@ window.DOOR = (function () {
       // its tab, a click outside and Escape close it (1541.8 (a))
       // …and a power tab (stage 3b), its ask above its own clause
       const st = window.CARD_STATE.stateOf(c.k, { siblings: g.cards });
-      if (st.kind === 'stranger-rule' || st.kind === 'power') return glyphify(window.CARD_SHELL.cardHtml(st));
+      // …and a settled motion's record, and a motion read (stage 4)
+      if (/^(stranger-rule|power|motion|crown|motion-record)$/.test(st.kind || '')) return glyphify(window.CARD_SHELL.cardHtml(st));
       // `strCtx` inherits `chipsFor`, so a door that lets the constitution be
       // read carries the record chips too — the rules are public wherever the
       // rules are, and a rule's history is part of what it is (Q942)

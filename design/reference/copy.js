@@ -1462,6 +1462,22 @@ window.COPY = (function () {
     composeOnceAccepted: (which) => 'You can propose a change to this rule once you accept ' +
       (which.length > 1 ? 'Proposals and Constitutional Proposals'
         : which[0] === 'proposals' ? 'Proposals' : 'Constitutional Proposals') + '.',
+    // ---- stage 4: motions, 👑 and settled motion records ----
+    // .4 — a ✒️ change was put to nobody, so it did not pass (Q1514)
+    changedByFounder: 'Changed by the Founder',
+    // .26, 6.1 — 👑's label while the Founder's answer is owed; *Current
+    // rule* (.3) once it is not, and for every other reader
+    acceptChange: 'Accept This Change?',
+    // 👑's one sentence for the Founder, the Text 👑's (`session.crown.foot`)
+    // said of a rule: the membership has decided, and the card waits on you
+    crownRule: 'The membership passed this. Until you answer, the rule above stands.',
+    // the row's tooltips (CP5, K8): the two answers 👑 takes, and the mover's
+    // bare 🗑️ by route
+    crownRefuse: 'Refuse — the Founder Veto holds it, and what stands stands',
+    crownAccept: 'Accept — a Founder Action passes it now',
+    withdrawOrdinary: 'Withdraw it — the ✏️ comes back in full',
+    withdrawConstitutional: 'Withdraw it — your 🏛️ comes back whole',
+    giveAnswer: 'Give your answer',
   };
 
   // ---- the spectator feed (feed.html, Q1466) --------------------------------

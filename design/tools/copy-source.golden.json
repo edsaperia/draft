@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 705
+  "entries": 713
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -685,12 +685,18 @@
   "shell.accept.grant-pen": "Accept Founder Actions",
   "shell.accept.grant-shield": "Accept the Founder Veto",
   "shell.accept.grant-voice": "Accept Constitutional Proposals",
+  "shell.acceptChange": "Accept This Change?",
   "shell.begin": "Begin",
   "shell.beginInvited": "Waiting for invited members to arrive.",
   "shell.beginOneVoice": "Delegated questions need at least two responses.",
+  "shell.changedByFounder": "Changed by the Founder",
   "shell.composeOnceAccepted": "ƒ (which) => 'You can propose a change to this rule once you accept ' +\n      (which.length > 1 ? 'Proposals and Constitutional Proposals'\n        : which[0] === 'proposals' ? 'Proposals' : 'Constitutional Proposals') + '.'",
+  "shell.crownAccept": "Accept — a Founder Action passes it now",
+  "shell.crownRefuse": "Refuse — the Founder Veto holds it, and what stands stands",
+  "shell.crownRule": "The membership passed this. Until you answer, the rule above stands.",
   "shell.currentRule": "Current rule",
   "shell.currentText": "Current text",
+  "shell.giveAnswer": "Give your answer",
   "shell.hat.clerk": "The Founder is not part of the membership.",
   "shell.hat.deciding": "The Founder is deciding whether to be part of the membership.",
   "shell.hat.member": "The Founder is part of the membership.",
@@ -707,6 +713,8 @@
   "shell.sep": " · ",
   "shell.sinceReplaced": "since replaced",
   "shell.voiceOut": "You can only make one constitutional proposal 🏛️ at a time.",
-  "shell.waitingFor": "ƒ (n) => 'Waiting for ' + n + (n === 1 ? ' member' : ' members') + ' to answer questions.'"
+  "shell.waitingFor": "ƒ (n) => 'Waiting for ' + n + (n === 1 ? ' member' : ' members') + ' to answer questions.'",
+  "shell.withdrawConstitutional": "Withdraw it — your 🏛️ comes back whole",
+  "shell.withdrawOrdinary": "Withdraw it — the ✏️ comes back in full"
  }
 }

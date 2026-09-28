@@ -6,6 +6,19 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-09-28, afternoon: proposals to change a rule, in the new shape
+
+### Changed
+- **A proposal to change a rule opens as the rule's own card**: *Current rule* on top, the rule as it stands marked with who chose it, with *Prefer this* beside it, and the change below labelled *Proposed*. If the proposal is yours, it reads *Proposed by you*, with no choices to make and the 🗑️ alone to withdraw it.
+- **The ✓ on a proposal to change a rule turns blue when you have chosen.**
+- **When the membership passes a change the Founder can refuse, the Founder's card asks *Accept This Change?***, with one sentence saying the rule stands until they answer, and 🛡️ and ✒️ as the two answers. Everybody else sees the rule, the change, and that it is waiting on the Founder.
+- **The same question about the text leads its clause's pile of tabs**, so pressing the pile opens the question rather than a vote on the clause.
+- **The record of a change to a rule is labelled by how it ended and when**: *Passed*, *Changed by the Founder*, *Rejected* or *Refused by the Founder*, with *since replaced* where the rule has changed again since. The rule that passed is the first line, with *Previous rule* beneath it; a proposal that failed keeps its own label.
+- **The Founder's reason for a change shows their picture and no name line**, since the card already says it was the Founder.
+
+### For contributors
+- **Proposals to change a rule, the Founder's questions on them, and their records are built on the one card shell**, and card-audit holds them strictly. Its fast pass now also walks the settled rules and a member's and a stranger's seats at every push (Q1547, Ed 1566.7).
+
 ## 2026-09-28: the glossary in two files
 
 ### For contributors
