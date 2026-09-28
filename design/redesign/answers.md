@@ -167,3 +167,11 @@ The floating 📝 door is not a principle: it is a named exception in `zone-over
 | 1564.5 | The change line (*has changed … from … to …*) | **(b) retired everywhere**: a change's history lives only in its record behind the rule's tab; SURFACE §2's L7 amended. |
 | 1564.6 | A power card's reason box | **(a) none** — laying a power down takes no reason. |
 | 1564.8 | The pill on a power nobody has touched | **(a)** *Chosen by the Founder ✒️*, `provenanceOf`'s rule. |
+
+## Part 8 — stage 4's calls, ruled (1566, Ed 2026-09-28, one at a time)
+
+| # | Call | Ruling |
+|---|---|---|
+| 1566.2 | 👑's sentence for the Founder, on a rule | **Keep** — *The membership passed this. Until you answer, the rule above stands.* (`design/copy.js`, `shell.crownRule`), where the pressed *Chosen by the membership* radio stood. |
+| 1566.3 | The standing rule on a motion card | **The lane, as built**: the standing rule's pill is a fact, and the rule's own *Prefer this* lane is the vote to keep it, as on a text race. 1541.47's pill-as-radio stays the rule where the reader's own change is what the pill would cancel. |
+| 1566.7 | card-audit's fast pass walking `settled` and `outsiders` | **Keep**, at every push — Ed's word under Q1547, so the push set grows by it. |
