@@ -97,7 +97,7 @@ Glyph names are stable (tabulated 2026-09-07, Q1208; the founding order's own gl
   until somebody arrives — a statement about the list, not a caption on you
   (Q753). A clerk has no row there, so the list reads *(nobody here yet)*.
   The subsections that carry a door say so in a **sentence** since the
-  redesign (1541.25 (a), O9 (a)), because the door's card heads with the same
+  redesign (1541.25 (a); the words 1567.2), because the door's card heads with the same
   line: *There are no applications at the moment.* · *Nobody is proposed for
   removal.* · *Nobody has left.* — SURFACE §8's statuses table (F21).
 - T10's second exception, the birth's title clause, where the Founder meets
