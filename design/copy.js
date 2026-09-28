@@ -854,6 +854,12 @@ window.COPY = (function () {
       appname: 'Your Name',
       apppic: 'Your Picture',
       apptext: 'Your Application',
+      // the row's words (Q1541 stage 5: out of the page, unchanged) — Begin
+      // opens the application, Submit sends it, the 📧 sends the link
+      begin: 'Begin',
+      submit: 'Submit',
+      submitTitle: 'Your application goes before the members',
+      sendLink: 'Send the link',
       // **the door shut under you** (SURFACE E33, Q901): the sentence the 🪪
       // card wears once 🤝 has shut and before Submit, moved here from the page
       // with the OK that now closes it. `shutTitle` replaces *Apply for

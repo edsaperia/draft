@@ -861,52 +861,73 @@ window.BAND = (function () {
         '<div class="lanebox"><div class="lp editlane' + (S.app.text ? '' : ' blank') + '" contenteditable="plaintext-only"' +
         ' spellcheck="false" data-apptext="1" data-ph="To the members…">' + esc(S.app.text) + '</div></div>',
     };
-    function applicantCardHtml() {
+    /**
+     * **The applicant's five, on the one shell** (Q1541 stage 5): placeless —
+     * there is nothing of theirs in the document yet — so each heads with its
+     * title as the label (grammar §2.3, the placeless exception) and opens at
+     * the top of the band where it always has. The body is what it always
+     * was; the acts move to the row unchanged: *Begin*, *Submit*, the 📧 that
+     * sends the link, and ✓ that closes and keeps (Q1366) — dark until the
+     * card is done, as before. A shut door's news takes its OK (E33). No bin
+     * where it can never have a job (1541.9): only 🖼️'s choice can be put
+     * back. A submitted application's card asks nothing, so it has no row —
+     * the module has no withdrawal for 1541.9 (b)'s bare 🗑️ to draw.
+     */
+    function applicantShell() {
       const c = APPCARDS().find((x) => x.k === S.open);
-      if (!c) return '';
+      if (!c) return null;
       const a = S.app;
-      let foot;
+      const T = PAGE_COPY.appcards;
       let body = APPBODY[c.k]();
+      const acts = [];
+      let owed = null;
       if (c.k === 'apply') {
         const shut = applyShutOnMe();
         // the door has shut (E33): the sentence stands before the press; a
         // refusal from the wire lands in the same place through `doorErrHtml`;
         // both retire the way Y25 says — the door opening again, or a keystroke
         if (!shut && S.doorErr && S.doorErr.k === 'apply') S.doorErr = null;
-        // **and a shut door's card is the sentence and nothing else** (Q901):
-        // what an application is and what it will cost is copy for somebody who
-        // can still make one, so it goes while the door stands shut
+        // **and a shut door's card is the sentence and nothing else** (Q901)
         if (shut) body = '';
-        foot = a.submitted ? binBtn()
-          // **a shut door commits with OK** (SURFACE E33, Q901): the card is
-          // news, and a Submit standing dark beside it would be a commit on a
-          // card that asks nothing (§9.1, CP9). Once acknowledged the OK goes
-          // too and the bin is the way out, exactly as an acked gate's is
-          : shut ? (a.shutAcked ? binBtn()
-            : binBtn() + '<button class="btn btn-approve okbtn" data-appshutok="1">OK</button>')
-          : !a.started ? '<button class="btn btn-approve" data-appstart="1">Begin</button>'
-          // a word, not 🏛️: an application becomes an ordinary motion, and
-          // the 🏛️ glyph belongs to the assembly-press hold — a plain click
-          // wearing it claimed the constitutional route it does not take
-          : binBtn() +
-            '<button class="btn btn-approve"' + (a.name.trim() && a.pic ? '' : ' disabled') +
-            ' data-appsubmit="1" title="Your application goes before the members">Submit</button>';
         if (a.started && !a.submitted) {
-          body += shut && !doorErrOn('apply')
-            ? '<p class="why">' + esc(APPLY_SHUT) + '</p>'
-            : doorErrHtml('apply');
+          body += shut && !doorErrOn('apply') ? '<p class="why">' + esc(APPLY_SHUT) + '</p>' : doorErrHtml('apply');
+        }
+        if (a.submitted) { /* asks nothing */ }
+        else if (shut) { if (!a.shutAcked) owed = { kind: 'ok', attrs: ' data-appshutok="1"', word: 'OK' }; }
+        // a word, not 🏛️: an application becomes an ordinary motion, and the
+        // 🏛️ glyph belongs to the assembly-press hold
+        else if (!a.started) acts.push({ kind: 'commit', cls: 'btn-approve wordbtn', attrs: ' data-appstart="1"', glyphHtml: esc(T.begin), title: T.begin });
+        else {
+          acts.push({ kind: 'commit', cls: 'btn-approve wordbtn', attrs: ' data-appsubmit="1"', glyphHtml: esc(T.submit),
+            title: T.submitTitle, until: a.name.trim() && a.pic ? null : 'choose' });
         }
       } else if (c.k === 'appmail' && !a.emailSent && !a.emailVerified) {
         // the send is the row's 📧, armed by a valid address that is nobody
         // else's — the stranger's 📧 rule (reading 1194, T47), since Q1399
-        foot = binBtn() +
-          '<button class="btn btn-approve glyphbtn emojibtn"' + (appAddrOk() ? '' : ' disabled') +
-          ' data-appmailsend="1" title="Send the link">' + glyphHtml('📧') + '</button>';
+        acts.push({ kind: 'commit', glyph: '📧', glyphHtml: glyphHtml('📧'), cls: 'btn-approve emojibtn',
+          attrs: ' data-appmailsend="1"', title: T.sendLink, until: appAddrOk() ? null : 'type' });
       } else {
-        foot = binBtn() +
-          '<button class="btn btn-approve glyphbtn"' + (c.done() || c.optional ? '' : ' disabled') + ' data-close="1">' + TICK + '</button>';
+        if (c.k === 'apppic') {
+          const dirty = openCardDirty();
+          acts.push({ kind: 'bin', title: PAGE_COPY.binPutBack,
+            attrs: dirty ? ' data-revert="1"' : ' data-act="bin"', until: dirty ? null : 'nothing-yours' });
+        }
+        acts.push({ kind: 'commit', glyph: '✓', glyphHtml: TICK, cls: 'btn-approve', attrs: ' data-close="1"',
+          until: c.done() || c.optional ? null : (c.k === 'apppic' ? 'choose' : 'type') });
       }
-      return cardHtml(c, appCtx, body, foot, [c]);
+      return {
+        kind: 'applicant',
+        frame: { cls: 'sugg setupcard', attrs: ' role="tabpanel" data-setupcard="' + esc(c.k) + '"' },
+        label: { text: c.t },
+        // the strip alone: the tab pressed has its place, and no first line
+        head: { html: window.SETUP.headHtml(c, appCtx, [c], '') },
+        body: body ? { html: body } : null,
+        acts, owed,
+      };
+    }
+    function applicantCardHtml() {
+      const st = applicantShell();
+      return st ? glyphify(window.CARD_SHELL.cardHtml(st)) : '';
     }
     /** the applicant's address is already a member's — one identity per address (§9.7½) */
     const appAddrTaken = () => MEMBER_EMAILS.has(S.app.email.trim().toLowerCase());
