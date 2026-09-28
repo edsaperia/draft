@@ -940,21 +940,24 @@ if (admEntry) {
           if (!c) return null;
           return {
             crownq: [...c.querySelectorAll('[data-crownq]')].map((b) => b.dataset.crownq),
-            // nothing left to press: the one radio on a parked card is the
-            // membership's own choice, marked and disabled
-            radios: c.querySelectorAll('.lanepick:not([disabled])').length,
-            chosen: [...c.querySelectorAll('.pick.on .lanepick[disabled]')]
+            // nothing left to press: on the one shell (Q1541 stage 5) the
+            // parked change is one block under *Proposed*, and a block nobody
+            // may choose has no radio at all (1541.37) — 👑's own drawing
+            radios: c.querySelectorAll('.lanepick').length,
+            proposed: [...c.querySelectorAll('[data-slot="blocks"] .glab, .pick .glab')]
               .map((b) => (b.textContent || '').trim()),
+            label: ((c.querySelector('[data-slot="label"]') || {}).textContent || '').trim(),
             confirm: c.querySelectorAll('[data-confirm], [data-admitgo]').length,
             text: (c.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 200),
           };
         });
         say('👑 card    · ' + JSON.stringify(pc));
         const pcOk = !!pc && pc.crownq.join('|') === 'reject|accept' && pc.radios === 0 &&
-          pc.confirm === 0 && pc.chosen.join('') === 'Chosen by the membership' &&
-          pc.text.includes(NAME);
+          pc.confirm === 0 && pc.proposed.join('|') === COPY.shell.proposed &&
+          pc.label === COPY.shell.acceptChange && pc.text.includes(NAME);
         if (!pcOk) {
-          say('FAIL: the parked card should carry the 👑 pair, the membership\'s choice and no vote');
+          say('FAIL: the parked card should ask ' + COPY.shell.acceptChange + ' with the 👑 pair, the change under ' +
+            COPY.shell.proposed + ' and no vote');
           stuck.push('the 👑 card');
         }
         const pressed = await page.evaluate(() => {
