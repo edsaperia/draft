@@ -137,7 +137,14 @@ if (!ENGINES[BROWSER]) {
  */
 const ALL_WALKS = ['founding', 'answers', 'delegated', 'settled', 'outsiders', 'charter', 'closed', 'sessionband', 'closedband', 'stranger', 'diag'];
 const DEFAULT_WALKS = ALL_WALKS.slice(0, 7);
-const FIXTURE_WALKS = ['founding', 'answers', 'charter', 'closed', 'sessionband', 'closedband', 'stranger', 'diag'];
+/*
+ * **`settled` and `outsiders`** join the fast pass in stage 4 (Q1541): the
+ * motion kinds live on the motions `walkSettled` seeds — the Founder's 👑,
+ * a running motion of each route, the records — and on no fixture, and the
+ * mover's own card and failed-motion news are seat 1's. `outsiders` walks the
+ * stranger too, so `stranger` stands down from the list rather than run twice.
+ */
+const FIXTURE_WALKS = ['founding', 'answers', 'settled', 'outsiders', 'charter', 'closed', 'sessionband', 'closedband', 'diag'];
 const WALK_ARG = arg('walk', DEFAULT_WALKS.join(','));
 const WALKS = (WALK_ARG === 'all' ? ALL_WALKS.filter((w) => w !== 'stranger') : WALK_ARG === 'fixture' ? FIXTURE_WALKS : WALK_ARG.split(',')).filter(Boolean);
 /**
@@ -190,6 +197,18 @@ const GRAMMAR_KINDS = [
   // `closedband` (the power tabs read)
   'power',
   'composer',
+  // stage 4 (Q1541): a motion running on a rule, constitutional or ordinary,
+  // the mover's and anybody else's (`motion`); the same motion waiting on the
+  // Founder's 👑 — and the Text's, on the charter (`crown`); a settled
+  // motion's record behind its rule's tab (`motion-record`); and the mover's
+  // own failed motion still owed its OK (`failed-motion-news`). All four are
+  // declared by the shell. The fast pass's fixture walks meet none of them —
+  // the `settled` walk seeds each, and `outsiders` reads them from a member's
+  // seat and the door; the Text's 👑 is live-only (room-walk's park-and-crown)
+  'motion',
+  'crown',
+  'motion-record',
+  'failed-motion-news',
   // stage 6 (Q1541): the charter's judgment cards, each declared by the shell
   // (`data-kind`, session.js's `judgePresent`) — a pair against the current
   // text (`quick`), one on a gap (`insert`), two challengers (`race`), a pair
@@ -2241,6 +2260,11 @@ function p13Rules(c, at) {
       // own first line keeping the same distance from the pressed tab
       const aLine = (!OWN_LINE(c.key) && a.line) || (a.glyph && b.glyph && b.line ? [b.line[0], r2(a.glyph[1] + b.line[1] - b.glyph[1])] : null);
       dy = aLine ? Math.max(0, r2((a.glass || 0) + room - aLine[1])) : 0;
+      // **inside one strip the tab wins over the label's room** (M12, Q1558;
+      // the band's since Q1541 stage 4): a tab low in a long strip on a phone
+      // leaves the new card's label above the glass rather than moving, so a
+      // switch within a strip allows no shortfall — P11's own reading
+      if (e.sub === 'switch' && a.within) dy = 0;
     }
     const sub = e.sub === 'page-top' || (e.sub !== 'close' && dy > GLASS_TOL) ? 'page-top' : e.sub;
     const bits = [];
