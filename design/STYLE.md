@@ -96,9 +96,10 @@ Glyph names are stable (tabulated 2026-09-07, Q1208; the founding order's own gl
   your own line (Ed, 2026-08-21), with *(nobody else here yet)* **above** you
   until somebody arrives — a statement about the list, not a caption on you
   (Q753). A clerk has no row there, so the list reads *(nobody here yet)*.
-  Each subsection that stands when empty says so the same way, level with its
-  own control: *(no outstanding invitations)* · *(no applicants at the
-  moment)* · *(nobody proposed for removal)* — SURFACE §8's statuses table (F21).
+  The subsections that carry a door say so in a **sentence** since the
+  redesign (1541.25 (a), O9 (a)), because the door's card heads with the same
+  line: *There are no applications at the moment.* · *Nobody is proposed for
+  removal.* · *Nobody has left.* — SURFACE §8's statuses table (F21).
 - T10's second exception, the birth's title clause, where the Founder meets
   the word for the first time, says *(that’s you!)* once and only there (Ed,
   2026-08-27, entry 140) — only the Founder ever sees the birth, and after the
