@@ -1600,18 +1600,21 @@ const motionFillOnAmended = async () => {
     await new Promise((r) => setTimeout(r, 700));
     const c = document.querySelector('[data-setupcard="' + k + '"]');
     if (!c) return { open: false };
-    const out = { open: true, lanes: c.querySelectorAll('[data-motion]').length,
-      blocks: c.querySelectorAll('.pick').length,
-      marked: c.querySelectorAll('.pick.on').length,
+    // on the one shell since Q1541 stage 4: the one block labelled
+    // *Proposed by you*, no radio anywhere (1541.37), the bare 🗑️ its row
+    const out = { open: true, lanes: c.querySelectorAll('[data-motion], .lanepick').length,
+      labels: [...c.querySelectorAll('[data-slot="block"] > .glab')].map((l) => l.textContent.trim()),
       answer: !!c.querySelector('[data-confirm]'),
-      withdraw: !!c.querySelector('[data-withdrawmotion]') };
+      withdraw: !!c.querySelector('[data-withdrawmotion]'),
+      shape: (c.querySelector('[data-slot="row"]') || {}).dataset?.shape || null };
     const a = c.querySelector('.chipcol .achip'); if (a) a.click();
     return out;
   }, mKey);
   await guestPage.waitForTimeout(400);
-  const moverOk = !!moverCard && moverCard.open && moverCard.lanes === 0 && moverCard.blocks === 2 &&
-    moverCard.marked === 1 && !moverCard.answer && moverCard.withdraw;
-  say('mover’s 🏛️ · ' + (moverOk ? 'the mover’s own card: two inert blocks, the proposed one marked, no lane and no 🏛️, 🗑️ its one act'
+  const moverOk = !!moverCard && moverCard.open && moverCard.lanes === 0 &&
+    JSON.stringify(moverCard.labels) === '["Proposed by you"]' && !moverCard.answer && moverCard.withdraw &&
+    moverCard.shape === 'withdraw';
+  say('mover’s 🏛️ · ' + (moverOk ? 'the mover’s own card: *Proposed by you*, no radio and no 🏛️, the bare 🗑️ its one act'
     : 'FAIL: ' + JSON.stringify(moverCard)));
   if (!moverOk) stuck.push('the mover’s own 🏛️ card draws no lane (#88)');
   /* **The founder answers *keep*, and that is the end of it** (Q1473, Ed
@@ -1746,22 +1749,22 @@ const heldNewsOnRefusal = async () => {
   // it with 🛡️ above, so the dateline says so in the Founder's word,
   // *Refused by the Founder* (Q1526 (a), Ed 2026-09-24), and the box reads
   // *Refused proposal* (Q1526 as amended, the same day)
+  // …on the one shell since Q1541 stage 4: the outcome and when as the
+  // label (answers Part 4 .4), the rule that stood as the first line, the
+  // refused wording under its live label, *Proposed by you* (.13), OK alone
   const heldShape = await guestPage.evaluate((k) => {
     const c = document.querySelector('.setupcard[data-setupcard="' + k + '"]');
     if (!c) return null;
-    const body = c.querySelector('.field .body');
-    return { head: !!c.querySelector('.headtitle, .headrule'),
-      eyebrow: ((c.querySelector('.field .eyebrow') || {}).textContent || '').trim(),
-      box: ((c.querySelector('.recbox .eyebrow') || {}).textContent || '').trim(),
-      order: body ? [...body.children].map((n) => n.className) : null,
-      bin: !!c.querySelector('[data-revert]'),
+    return { kind: c.dataset.kind || null,
+      label: ((c.querySelector(':scope > .glabslot .glab') || {}).textContent || '').trim(),
+      blocks: [...c.querySelectorAll('[data-slot="block"] > .glab')].map((l) => l.textContent.trim()),
+      bin: !!c.querySelector('[data-revert], [data-act="bin"]'),
       row: [...c.querySelectorAll('.commitrow button')].map((b) => b.textContent.trim()) };
   }, hKey);
-  const heldShaped = !!heldShape && !heldShape.head && /Refused by the Founder$/.test(heldShape.eyebrow) &&
-    heldShape.box === 'Refused proposal' && !heldShape.bin &&
-    JSON.stringify(heldShape.row) === '["OK"]' &&
-    JSON.stringify(heldShape.order) === JSON.stringify(['eyebrow fieldlab', 'pick on', 'recbox']);
-  say('rejected ▭ · ' + (heldShaped ? 'the record’s shape: dateline, the rule that stands, the refused one boxed, OK alone'
+  const heldShaped = !!heldShape && heldShape.kind === 'failed-motion-news' && /^Refused by the Founder · /.test(heldShape.label) &&
+    JSON.stringify(heldShape.blocks) === '["Proposed by you"]' && !heldShape.bin &&
+    JSON.stringify(heldShape.row) === '["OK"]';
+  say('rejected ▭ · ' + (heldShaped ? 'the record’s shape: *Refused by the Founder* above, the rule that stood, the refused one as *Proposed by you*, OK alone'
     : 'FAIL: ' + JSON.stringify(heldShape)));
   if (!heldShaped) stuck.push('E41’s card in the record’s shape (Q1522)');
   const pressed = await guestPage.evaluate(() => {
