@@ -172,7 +172,18 @@ Glyph names are stable (tabulated 2026-09-07, Q1208; the founding order's own gl
   the rail entry and the tab — the ask is the label only on a question card
   (🪶 and 📧 at the birth, 🎩 before the Founder answers) and on a power card,
   whose first line is that power's own clause naming its subject — *The
-  Founder may amend the proposal rate at will.* (1541.48; Q1541 stage 3b). **Nor does a heading-over-text card carry a title head** (Ed,
+  Founder may amend the proposal rate at will.* (1541.48; Q1541 stage 3b).
+  **A motion's card opens as its rule's does** (Q1541 stage 4): *Current
+  rule* over the rule, the change below labelled *Proposed* — *Proposed by
+  you* on the mover's own (Part 4 .8, .9) — and 👑's label its ask, *Accept
+  This Change?*, while the Founder's answer is owed, *Current rule* for
+  everybody else (.26, 6.1). **A settled motion's record is labelled by its
+  outcome and when** — *Passed*, *Changed by the Founder*, *Rejected*,
+  *Refused by the Founder*, each `· ‹longWhen›`, *· since replaced* where
+  the rule has moved on (.4, .5) — *Previous rule* on what a change replaced
+  and a failed wording under its live label (.11, .13); the record's old
+  *Rejected proposal* and *Refused proposal* boxes go with the dateline
+  eyebrow. **Nor does a heading-over-text card carry a title head** (Ed,
   2026-09-15, Q1373): the grants ✒️ 🛡️ open as the strip, the paragraph and
   OK, and 🏛️ 💡 ⚖️ head with the Proposals clause, their rule. The card's name
   survives on the rail entry, the tab tooltip and the record.
