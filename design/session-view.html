@@ -7142,7 +7142,7 @@
   }
   /** the mover's OK on their own failed motion, while it is owed (E41) */
   const motionShellOwed = (c) => (motionShellKind(c) === 'failed-motion-news' && docOpen()
-    ? { kind: 'ok', attrs: ' data-ok="' + esc(c.k) + '"', word: 'OK' } : null);
+    ? { kind: 'ok', attrs: ' data-ok="' + esc(c.k) + '"', word: window.COPY.session.record.ok } : null);
   /**
    * **A settled motion's record, on the one shell** (answers Part 4 .4, .5,
    * .11, .13; Q1522's outcome first): the label is how it ended and when —
@@ -7189,9 +7189,11 @@
         body = speaker + (moot ? '<p class="setnote">' + (moot === 'pen' ? PAGE_COPY.motionRec.mootPen : PAGE_COPY.motionRec.mootMembers) + '</p>' : '');
         if (was) blocks.push({ label: W.previousRule, fact: 'previous', html: cpv(was) });
       } else {
-        // what stood is the first line; where no record says what it was, the
-        // rule that stands now, which a failed motion did not change
-        head = was ? esc(was) : (BND.lineOf(card(k)) || '');
+        // what stood is the first line; **where no record says what it was,
+        // no first line** — never the rule standing now, which a later
+        // motion may have carried since (the coordinator's review of stage
+        // 4): the failed wording under its live label, the outcome above
+        head = was ? esc(was) : null;
         const mine = !!(rec.mine || (rec.by !== null && rec.by !== undefined && rec.by === viewerId()));
         blocks.push({ label: mine ? W.proposedByYou : W.proposed, fact: null, html: cpv(now2), speaker });
       }
@@ -7202,7 +7204,10 @@
       frame,
       label: { text: outcome + (at ? W.sep + window.CARDS.longWhen(at) : '') + (since ? W.sep + W.sinceReplaced : ''),
         tone: green ? 'ok' : null, fact: 'outcome' },
-      head: { html: ruleHead(c, sibs, head) },
+      // with no first line the head carries the strip alone, so the tab
+      // pressed still has its place
+      head: { html: head != null ? ruleHead(c, sibs, head)
+        : window.SETUP.headHtml(c, atTheDoor() ? strCtx : ctx, sibs, '') },
       body: body || doorErrHtml(c.k) ? { html: body + doorErrHtml(c.k) } : null,
       blocks,
     };
