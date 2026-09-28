@@ -1357,7 +1357,7 @@ window.BAND = (function () {
       const SHELL_KINDS = new Set(['grant', 'gate', 'begin', 'release', 'setting', 'watching', 'answer', 'birth-email',
         'power', 'composer', 'motion', 'crown', 'motion-record', 'failed-motion-news',
         // …and stage 5's: ✋ 🖼️ 📧, the doors, the admissions, the applicant's
-        'identity', 'door']);
+        'identity', 'door', 'admission']);
       const crownPairRow = () => (amFounder()
         ? binBtn() + '<span class="rightpair">' +
           '<button class="btn glyphbtn emojibtn" data-crownq="reject"' +

@@ -1297,6 +1297,13 @@ window.COPY = (function () {
       leaves: (name) => name + ' leaves the membership.',
       removeSelfWhy: 'Whether <b>you</b> leave the membership. Under this document’s rule that is decided by <b>everyone but you</b> — you see it running, and your answer is not asked.',
       removeSelfCount: (judged, others) => judged + ' of ' + others + ' have answered. One refusal keeps you in.',
+      // the `adm:` card's words (Q1541 stage 5: out of the page, unchanged) —
+      // at ✏️ price its two lanes name the acts, as they always have
+      admitThem: 'Admit them',
+      keepAsIs: 'Keep the membership as it is',
+      admitVoted: 'Before the members — you have voted on it.',
+      admitGone: 'This application is no longer open.',
+      admitPen: (name) => 'Anybody may join on their own word here, so ' + name + ' is a member from the moment they asked.',
     },
     // 🍾's power table (Q1181, Ed 2026-09-05; one row per setting since
     // Q1195 (c), Ed 2026-09-09): the two column heads name the powers in the

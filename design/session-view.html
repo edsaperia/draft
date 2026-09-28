@@ -7357,6 +7357,116 @@
     };
   }
 
+  /**
+   * **An application, on the one shell** (`adm:`, Q1541 stage 5): it stands in
+   * *Applications for Membership*'s pile and opens in its place, so its first
+   * line is that subsection's rows, the applicant's among them (§9's `adm:`
+   * row: the applicant at its head), under the subsection's heading; their
+   * address is the body, and their own words are the sealed reason under the
+   * change. What it asks follows 🪪's price, as it always has: at ✒️ it is
+   * news and takes an OK; at 🏛️ the consent card's three blocks and 🏛️; at ✏️
+   * a judgment between admitting them and the membership as it stands, filed
+   * with ✓; parked at the Founder's 👑, *Accept This Change?* and the two
+   * powers. A vote carries no bin — another lane undoes it (grammar §2's
+   * bin rule, Q1500).
+   */
+  const admissionShellKind = (c) => {
+    if (!c || !c.admit || !cs || atTheDoor() || S.viewer === 'applicant') return null;
+    const parked = liveMotionRec(c);
+    return parked && parked.status === 'awaiting-crown' ? 'crown' : 'admission';
+  };
+  function admissionActs(c) {
+    const ap = applicantById(c.admit);
+    if (!ap || !docOpen()) return [];
+    if (admissionShellKind(c) === 'crown') {
+      const W = W4();
+      return amFounder() ? [
+        { kind: 'commit', glyph: '🛡️', glyphHtml: glyphHtml('🛡️'), cls: 'emojibtn', attrs: ' data-crownq="reject"', title: W.crownRefuse },
+        { kind: 'commit', glyph: '✒️', glyphHtml: glyphHtml('✒️'), cls: 'btn-approve emojibtn', attrs: ' data-crownq="accept"', title: W.crownAccept },
+      ] : [];
+    }
+    const price = admissionPrice();
+    if (price === 'pen') return [];
+    if (price === 'assembly') {
+      return [{ kind: 'commit', glyph: '🏛️', glyphHtml: glyphHtml('🏛️'), cls: 'btn-approve emojibtn',
+        attrs: ' data-confirm="1"', title: W4().giveAnswer, until: motionPicked(c) ? null : 'choose' }];
+    }
+    if (!admitCardOf(c.admit)) return [];
+    return [{ kind: 'commit', glyph: '✓', glyphHtml: window.CARDS.TICK, cls: 'btn-approve',
+      attrs: ' data-admitgo="' + esc(c.admit) + '"', title: W4().giveAnswer, until: S['adm:' + c.admit] ? null : 'choose' }];
+  }
+  /** at ✒️ the card is news, owed its OK until pressed (E42) */
+  const admissionOwed = (c) => (admissionShellKind(c) === 'admission' && admissionPrice() === 'pen' &&
+    docOpen() && !!applicantById(c.admit) && !S.okd.has(c.k)
+    ? { kind: 'ok', attrs: ' data-ok="' + esc(c.k) + '"', word: 'OK' } : null);
+  function admissionPresent(c, hints) {
+    const W = W4();
+    const kind = admissionShellKind(c);
+    const sibs = (hints && hints.siblings) || [c];
+    const frame = { cls: 'sugg setupcard', attrs: ' role="tabpanel" data-setupcard="' + esc(c.k) + '"' };
+    const head = { html: window.SETUP.headHtml(c, ctx, sibs,
+      '<div class="headrule asblock" data-fact="place"><div class="memlist">' + (doorRowsNow.invite || '') + '</div></div>') };
+    const heading = PAGE_COPY.memHeads.applications;
+    const C = PAGE_COPY.consent;
+    const ap = applicantById(c.admit);
+    const err = doorErrHtml(c.k);
+    if (!ap) return { kind, frame, head, label: { text: heading }, body: { html: '<p class="why">' + esc(C.admitGone) + '</p>' + err } };
+    const name = applicantName(ap);
+    const words = (ap.words || '').trim();
+    const speaker = window.CARDS.speakerHtml(words || null);
+    const addr = ap.email ? '<p class="cpv">' + esc(ap.email) + '</p>' : '';
+    if (kind === 'crown') {
+      const asks = amFounder() && docOpen();
+      return {
+        kind, frame, head,
+        label: { text: asks ? W.acceptChange : heading },
+        body: { html: addr + '<p class="setnote">' + glyphify(esc(asks ? W.crownPerson : window.COPY.session.park.awaiting)) + '</p>' + err },
+        blocks: [{ label: W.proposed, html: cpv(C.joins(name)), speaker }],
+      };
+    }
+    const price = admissionPrice();
+    if (price === 'pen') {
+      return { kind, frame, head, label: { text: heading },
+        body: { html: addr + '<p class="why">' + esc(C.admitPen(name)) + '</p>' + err } };
+    }
+    if (price === 'assembly') {
+      const [keep, prefer, vin] = MOTION_PICKS.constitutional;
+      const on = (v) => (pressedOn(c.k) === v ? ' on' : '');
+      return {
+        kind, frame, head, label: { text: heading },
+        body: addr || err ? { html: addr + err } : null,
+        options: { html: '<div class="choice" role="radiogroup">' +
+          '<div class="pick' + on(keep) + '"><span class="opttext">' + esc(C.staysAsIs) + '</span>' + motionLane(c, keep) + '</div>' +
+          '<div class="pick' + on(prefer) + '"><span class="glab">' + esc(W.proposed) + '</span>' +
+          '<span class="opttext">' + esc(C.joins(name)) + '</span>' + speaker + motionLane(c, prefer) + '</div>' +
+          '<div class="pick vinblock' + on(vin) + '">' + motionLane(c, vin, true) + '</div>' +
+          '</div>' },
+      };
+    }
+    // ✏️: the applicant's own one-candidate race, and the clock on it (Q1460 (c))
+    const rc = admitCardOf(c.admit);
+    const pick = S['adm:' + c.admit] || null;
+    const absAt = motionAbstainAt(c);
+    const G = window.COPY.grammar;
+    const lane = (v, label, extra) => {
+      const note = (v === 'either' && absAt != null) ? window.CARDS.abstainNoteHtml(absAt) : '';
+      return '<div class="pick' + (pick === v ? ' on' : '') + (v === 'either' ? ' vinblock' : '') + (note ? ' absrow' : '') + '">' +
+        // `ctl` (T46): *Admit them* is the lane's own act, not the clause
+        (label ? '<span class="opttext ctl">' + esc(label) + '</span>' : '') + (extra || '') +
+        '<button class="lanepick' + (v === 'either' ? ' vin' : '') + '" type="button" aria-pressed="' + (pick === v) +
+        '" data-admitpick="' + esc(c.admit) + '" data-v="' + v + '">' +
+        '<span class="dot"></span>' + (v === 'either' ? '<span>' + esc(G.commit.indifferent) + '</span>'
+          : '<span class="off">' + esc(G.lane.prefer) + '</span><span class="on">' + esc(G.lane.preferred) + '</span>') +
+        '</button>' + note + '</div>';
+    };
+    return {
+      kind, frame, head, label: { text: heading },
+      body: { html: addr + (rc ? '' : '<p class="setnote">' + esc(C.admitVoted) + '</p>') + err },
+      options: rc ? { html: '<div class="choice" role="radiogroup">' +
+        lane('admit', C.admitThem, speaker) + lane('stands', C.keepAsIs) + lane('either', '') + '</div>' } : null,
+    };
+  }
+
   // ---- stage 5: doors and people on the one shell (Q1541 stage 5) --------
   // **Your ✋ 🖼️ 📧 open in your own row's place** (entry 188), and on the
   // shell your row is their first line: your face and name as the Members
@@ -10632,6 +10742,7 @@
       if (motionShellKind(c)) return motionShellOwed(c);
       if (identityShellKind(c)) return null;
       if (doorShellKind(c)) return null;
+      if (admissionShellKind(c)) return admissionOwed(c);
       if (shellRelease(c)) return releaseBatch(c.release) ? { kind: 'ok', attrs: ' data-ok="' + esc(k) + '"', word: 'OK' } : null;
       if (!ackOwed(c)) return null;
       return { kind: 'accept', cls: 'grantok', attrs: ' data-ok="' + esc(k) + '"',
@@ -10643,6 +10754,7 @@
       if (motionShellKind(c)) return motionShellActs(c);
       if (identityShellKind(c)) return identityActs(c);
       if (doorShellKind(c)) return doorActs(c);
+      if (admissionShellKind(c)) return admissionActs(c);
       if (!shellAck(c) || !c.isBegin || constituted() || !amFounder()) return [];
       const rd = readinessOf();
       const can = !rd || rd.ready;
@@ -10659,6 +10771,7 @@
       if (motionShellKind(c)) return motionShellPresent(c, hints);
       if (identityShellKind(c)) return identityPresent(c, hints);
       if (doorShellKind(c)) return doorPresent(c, hints);
+      if (admissionShellKind(c)) return admissionPresent(c, hints);
       if (shellRelease(c) && st.place) {
         const b = releaseBatch(c.release);
         return {
