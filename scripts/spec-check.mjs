@@ -1734,34 +1734,50 @@ function sourceCorpus() {
  * indexing a live entry; 7 of the 62 in the file today name numbers that are
  * gone by that rule, and asserting them would make the checker red for
  * doing what the numbering rules say to do.
+ *
+ * **The glossary is in two files since Q1548** (Ed, 2026-09-26: *move
+ * half*): its Engine and Tooling halves are `design/GLOSSARY.md`, whole, and
+ * its Design system and Product halves stay in CLAUDE.md's *Glossary*
+ * section. Every glossary rule above reads both, a finding naming the file
+ * it is in, and the entry count is the two together — so the move itself
+ * changed no number. GLOSSARY.md stays out of `sourceCorpus` for the reason
+ * given there: it is prose, and prose cannot answer for a `[symbol]`.
  */
+const GLOSSARY_MD = 'design/GLOSSARY.md';
+
 function checkClaudeMd() {
   note('CLAUDE.md — the glossary shape, the entry kinds, the pointers');
   const lines = read('CLAUDE.md').split(/\r?\n/);
   const idx = (p) => lines.findIndex((l) => l.startsWith(p));
   const gloss = idx('## Glossary'), gotcha = idx('## Gotchas'), end = idx('## The spec pass');
   if (gloss < 0 || gotcha < 0 || end < 0) return find('claude', 'the Glossary / Gotchas / spec-pass sections are not all present');
+  if (!existsSync(join(ROOT, GLOSSARY_MD))) return find('claude', `${GLOSSARY_MD} is gone — the glossary's Engine and Tooling halves have no home (Q1548)`);
+  const glossaryLines = read(GLOSSARY_MD).split(/\r?\n/);
 
   const NAMED = /^\s*- `([^`]+)`[^—]*\[(file|symbol|concept)\]/;
   const ENTRY_CAP = 400;
   const entries = [];
-  for (const l of lines.slice(gloss, gotcha)) {
-    if (!/^\s*- /.test(l)) continue;
-    const m = l.match(NAMED);
-    if (!m) {
-      // a bullet that opens with a backticked name but declares no kind, and a
-      // bullet that names nothing at all, are the same failure at two depths
-      find('claude', /^\s*- `/.test(l)
-        ? `glossary bullet names something and declares no kind: ${l.trim().slice(0, 70)}`
-        : `glossary bullet names nothing — it is a rule, a reason or a gotcha (SURFACE/SPEC/STYLE · DECISIONS · Gotchas): ${l.trim().slice(0, 70)}`);
-      continue;
-    }
-    entries.push({ name: m[1], kind: m[2] });
-    if (l.length > ENTRY_CAP) {
-      find('claude', `glossary entry \`${m[1]}\` is ${l.length} chars, past the ${ENTRY_CAP} cap — send the rule, reason or post-mortem to its own file: ${l.trim().slice(0, 70)}`);
+  const counted = { 'CLAUDE.md': 0, [GLOSSARY_MD]: 0 };
+  for (const [file, body] of [['CLAUDE.md', lines.slice(gloss, gotcha)], [GLOSSARY_MD, glossaryLines]]) {
+    for (const l of body) {
+      if (!/^\s*- /.test(l)) continue;
+      const m = l.match(NAMED);
+      if (!m) {
+        // a bullet that opens with a backticked name but declares no kind, and a
+        // bullet that names nothing at all, are the same failure at two depths
+        find('claude', /^\s*- `/.test(l)
+          ? `${file}: glossary bullet names something and declares no kind: ${l.trim().slice(0, 70)}`
+          : `${file}: glossary bullet names nothing — it is a rule, a reason or a gotcha (SURFACE/SPEC/STYLE · DECISIONS · Gotchas): ${l.trim().slice(0, 70)}`);
+        continue;
+      }
+      entries.push({ name: m[1], kind: m[2], file });
+      counted[file] += 1;
+      if (l.length > ENTRY_CAP) {
+        find('claude', `${file}: glossary entry \`${m[1]}\` is ${l.length} chars, past the ${ENTRY_CAP} cap — send the rule, reason or post-mortem to its own file: ${l.trim().slice(0, 70)}`);
+      }
     }
   }
-  note(`  ${entries.length} glossary entries`);
+  note(`  ${entries.length} glossary entries (${counted['CLAUDE.md']} in CLAUDE.md, ${counted[GLOSSARY_MD]} in ${GLOSSARY_MD})`);
 
   // A gotcha entry is a top-level bullet plus its indented continuation lines.
   // Only the guarded ones are capped; an unguarded gotcha is capped by nothing,
@@ -1788,18 +1804,20 @@ function checkClaudeMd() {
 
   const roots = ['', 'design/', 'design/tools/', 'packages/', 'scripts/', 'docs/'];
   const code = sourceCorpus();
-  for (const { name, kind } of entries) {
+  for (const { name, kind, file } of entries) {
     if (kind === 'concept') continue;
     if (kind === 'file') {
-      if (!roots.some((r) => existsSync(join(ROOT, r + name)))) find('claude', `[file] \`${name}\` is not a path in the repo`);
+      if (!roots.some((r) => existsSync(join(ROOT, r + name)))) find('claude', `${file}: [file] \`${name}\` is not a path in the repo`);
       continue;
     }
     if (!code.exact.includes(name) && !code.flat.includes(name.toLowerCase().replace(/-/g, ''))) {
-      find('claude', `[symbol] \`${name}\` appears in no source file — it names an idea, so it is [concept]`);
+      find('claude', `${file}: [symbol] \`${name}\` appears in no source file — it names an idea, so it is [concept]`);
     }
   }
 
-  const src = lines.join('\n');
+  // the pointers are read over both files: a moved entry cites SPEC and
+  // SURFACE exactly as it did in CLAUDE.md
+  const src = lines.concat(glossaryLines).join('\n');
   const cache = new Map();
   const has = (rel, re) => { if (!cache.has(rel)) cache.set(rel, read(rel)); return re.test(cache.get(rel)); };
   for (const n of new Set([...src.matchAll(/SPEC §([0-9]+(?:\.[0-9]+)*[a-z]?)/g)].map((m) => m[1]))) {
@@ -1832,10 +1850,11 @@ function checkClaudeMd() {
  * What counts as a named guard: every `npm run …` or `node scripts|design/…`
  * invocation in a Gotchas bullet (the same reading `checkClaudeMd`'s GUARD
  * takes), and any script, tool or test named after *Guard:*, *guard*,
- * *Measured by*, *Walked by* or *reproduces it* anywhere in the Glossary or
- * Gotchas. It resolves when the workflows (and `scripts/ci-walks.sh`, which
- * the walks job calls) run that npm script or that file — comments do not
- * count — and a `*.test.ts` resolves to `npm test`.
+ * *Measured by*, *Walked by* or *reproduces it* anywhere in the Glossary —
+ * both its files, `design/GLOSSARY.md` since Q1548 — or Gotchas. It resolves
+ * when the workflows (and `scripts/ci-walks.sh`, which the walks job calls)
+ * run that npm script or that file — comments do not count — and a
+ * `*.test.ts` resolves to `npm test`.
  *
  * **A warning, not a finding** (the builder's brief, 2026-09-23: *don't make
  * spec-check red on day one*). What is left is a list for Ed to rule on —
@@ -1846,12 +1865,14 @@ function checkGuardsRun() {
   const lines = read('CLAUDE.md').split(/\r?\n/);
   const idx = (p) => lines.findIndex((l) => l.startsWith(p));
   const gloss = idx('## Glossary'), gotcha = idx('## Gotchas'), end = idx('## The spec pass');
-  if (gloss < 0 || gotcha < 0 || end < 0) return; // checkClaudeMd has said so
+  if (gloss < 0 || gotcha < 0 || end < 0 || !existsSync(join(ROOT, GLOSSARY_MD))) return; // checkClaudeMd has said so
   const bullets = [];
-  lines.slice(gloss, end).forEach((l, i) => {
-    if (/^\s*- /.test(l)) bullets.push({ text: l, gotcha: gloss + i > gotcha });
+  const gather = (file, body, isGotcha) => body.forEach((l, i) => {
+    if (/^\s*- /.test(l)) bullets.push({ text: l, gotcha: isGotcha(i), file });
     else if (bullets.length && /^\s+\S/.test(l)) bullets[bullets.length - 1].text += ' ' + l.trim();
   });
+  gather('CLAUDE.md', lines.slice(gloss, end), (i) => gloss + i > gotcha);
+  gather(GLOSSARY_MD, read(GLOSSARY_MD).split(/\r?\n/), () => false);
   const pkg = JSON.parse(read('package.json')).scripts;
   // what the runner runs: the workflows and the walks script, comment lines out
   const code = (t) => t.split(/\r?\n/).filter((l) => !/^\s*#/.test(l)).join('\n');
@@ -1872,7 +1893,8 @@ function checkGuardsRun() {
   const guards = new Map();
   const add = (g, head) => { if (!NOT_GUARDS.has(g) && !guards.has(g)) guards.set(g, head); };
   for (const b of bullets) {
-    const head = b.text.trim().slice(2, 60);
+    // the head names its file, so the list for Ed says where each guard is named
+    const head = (b.file === 'CLAUDE.md' ? '' : `${b.file}: `) + b.text.trim().slice(2, 60);
     const toks = [];
     // *measured with `x`, an instrument, not a guard* (Ed, 2026-09-23): a
     // script that measures and asserts nothing is named, never counted
@@ -1900,12 +1922,12 @@ function checkGuardsRun() {
       : ranText.includes(g) || ranText.includes(base(g));
     if (!ok) unrun.push(`${g} — named by: ${head}`);
   }
-  note(`  ${guards.size} guards named in CLAUDE.md, ${guards.size - unrun.length} of them run by a workflow`);
+  note(`  ${guards.size} guards named in CLAUDE.md and ${GLOSSARY_MD}, ${guards.size - unrun.length} of them run by a workflow`);
   if (!unrun.length) return;
-  console.log(`  ⚠ [guards] ${unrun.length} guard(s) CLAUDE.md names that no workflow runs — a warning, not a finding:`);
+  console.log(`  ⚠ [guards] ${unrun.length} guard(s) CLAUDE.md or ${GLOSSARY_MD} names that no workflow runs — a warning, not a finding:`);
   for (const u of unrun) console.log(`      ${u}`);
   if (process.env.GITHUB_ACTIONS === 'true') {
-    console.log(`::warning title=guards run nowhere::${unrun.length} guard(s) CLAUDE.md names run in no workflow: ${unrun.map((u) => u.split(' — ')[0]).join(', ')}`);
+    console.log(`::warning title=guards run nowhere::${unrun.length} guard(s) CLAUDE.md or ${GLOSSARY_MD} names run in no workflow: ${unrun.map((u) => u.split(' — ')[0]).join(', ')}`);
   }
 }
 
