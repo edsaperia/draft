@@ -72,8 +72,11 @@ window.CARD_SHELL = (function () {
   const labelHtml = (l) => '<span class="glab' + (l.tone === 'ok' ? ' gtone-ok' : '') + '"' +
     (l.fact ? ' data-fact="' + esc(l.fact) + '"' : '') + '>' + esc(l.text) + '</span>';
 
+  // a multi-place proposal's ↑ ↓ ride its label (answers Part 4 .7: *Current
+  // text · 2 of 3* with ↑ ↓), handed over drawn (`st.label.steps`, stage 6)
   const labelSlot = (st) => (PRESENT.label(st)
-    ? '<div class="glabslot" data-slot="label">' + labelHtml(st.label) + '</div>' : '');
+    ? '<div class="glabslot' + (st.label.steps ? ' hassteps' : '') + '" data-slot="label">' + labelHtml(st.label) +
+      (st.label.steps || '') + '</div>' : '');
 
   /** the first line — the paragraph renderer's own element, handed over drawn
    *  (S2), carrying the strip; the shell only marks the slot */
@@ -157,7 +160,10 @@ window.CARD_SHELL = (function () {
     const NOTE = /^(drip|voice-out|readiness)$/;
     const notes = [...new Set(acts.filter((a) => a.kind === 'commit' && a.until && NOTE.test(a.until) && a.note)
       .map((a) => a.note))];
-    const noteHtml = notes.length ? '<span class="gnote">' + notes.map(esc).join(w.sep || ' · ') + '</span>' : '';
+    // …and a refusal, handed over drawn (`st.rowNote`, Q1541 stage 6): the
+    // row's middle is where the one note a press earns stands (grammar §2.6)
+    const noteHtml = (notes.length ? '<span class="gnote">' + notes.map(esc).join(w.sep || ' · ') + '</span>' : '') +
+      (st.rowNote ? '<span class="gnote">' + st.rowNote + '</span>' : '');
     let right = '';
     if (shape === 'acknowledge') {
       right = '<button class="btn btn-approve okbtn"' + (st.owed.attrs || '') +

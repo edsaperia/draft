@@ -1896,7 +1896,11 @@ window.CARDS = (function () {
         // that is the box `.anch` is: hold the text instead and the scroll
         // anchoring lands six pixels out, which is exactly the paragraph's own
         // padding-top that the text does not carry.
-        '<div class="headclause"' + (o.key ? ' data-key="' + o.key + '"' : '') +
+        // `o.onHead`, a heading's rank, where the clause is a heading (Q1541
+        // stage 6): the head then stands as the heading stood — no clause
+        // padding above its words, its tab centred on its first line — so
+        // the tab and the words keep their places when it opens
+        '<div class="headclause' + (o.onHead ? ' onhead lvl' + o.onHead : '') + '"' + (o.key ? ' data-key="' + o.key + '"' : '') +
         (o.washAttrs !== undefined ? o.washAttrs
           : o.wash === false ? '' : env.washFor(s, o.key)) + '>' + marks +
         // `html` for the one head built of several paragraphs: a composer site is
@@ -1939,6 +1943,10 @@ window.CARDS = (function () {
     const proposalHtml = (s, o) => {
       const nameId = o.v ? laneNameId(s, o.key, o.v) : '';
       return '<div class="propblock">' +
+        // **the block's label is its first line** (Q1541 stage 6, 1541.45):
+        // *Proposed*, *Proposed by ‹name›*, *Proposed by you* (answers Part 4
+        // .8–.10), in the shell's one label drawing; absent, nothing changes
+        (o.label ? '<span class="glab"' + (o.labelFact ? ' data-fact="' + esc(o.labelFact) + '"' : '') + '>' + esc(o.label) + '</span>' : '') +
         (o.tag ? '<div class="rtag">' + o.tag + '</div>' : '') +
         '<div class="rtext"' + (nameId ? ' id="' + nameId + '"' : '') + '>' + o.html + '</div>' +
         speakerHtml(o.why, o.by ? undefined : env.speakerTitle, o.by || undefined) +
@@ -2026,6 +2034,35 @@ window.CARDS = (function () {
             : pick ? G.commit.submit : G.commit.choose) + '">' + TICK + '</button>') +
         '</span>' +
         '</div>';
+    }
+
+    /**
+     * **A judgment's acts, for the one shell's row** (Q1541 stage 6): the
+     * same two buttons `commitBarHtml` draws — ❄️ where the entry is 🔥 or
+     * chilled, then the ✓ — handed to `card-shell.js` already drawn, the
+     * shell placing them (the pair at the right, Q1154) and naming the
+     * row's shape. The ✓ is dark until a lane is chosen, and says so as
+     * `data-until="choose"` (P22), with no note (answers Part 4 .17). A
+     * locked card draws no ✓, as today; there is no 🗑️ on a judgment
+     * (Q1500).
+     */
+    function judgeActs(s) {
+      const pick = env.pickOf(s);
+      const insists = env.isTopUrgent(s) && env.stateOf(s) === 'needs';
+      const out = [];
+      if (insists || env.isChilled(s.id)) {
+        out.push({ kind: 'commit', act: 'chill', html: '<button class="btn glyphbtn chill" data-act="chill"' +
+          ' aria-pressed="' + env.isChilled(s.id) + '" title="' +
+          (env.isChilled(s.id) ? G.commit.chillOn : G.commit.chillOff) + '">' + glyphHtml('❄️') + '</button>' });
+      }
+      if (!env.lockedOf(s)) {
+        out.push({ kind: 'commit', act: 'submit', until: pick ? null : 'choose',
+          html: '<button class="btn btn-approve glyphbtn"' +
+          (pick ? '' : ' disabled data-until="choose"') +
+          ' data-act="submit" aria-pressed="' + env.isCast(s) + '" title="' +
+          (env.isCast(s) ? G.commit.cast : pick ? G.commit.submit : G.commit.choose) + '">' + TICK + '</button>' });
+      }
+      return out;
     }
 
     function reviseNote(s) {
@@ -2328,7 +2365,7 @@ window.CARDS = (function () {
     }
 
     return {
-      laneBarHtml, clauseHeadHtml, proposalHtml, commitRowHtml, vinBlockHtml, commitBarHtml, reviseNote,
+      laneBarHtml, clauseHeadHtml, proposalHtml, commitRowHtml, vinBlockHtml, commitBarHtml, judgeActs, reviseNote,
       laneBoxHtml, draftFaceHtml, collapseCard, expandCard, openCardEls, runOnCards,
       collapseCards, expandCards, stillRef, restoreStill, keepStill,
     };

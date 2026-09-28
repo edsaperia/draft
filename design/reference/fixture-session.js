@@ -534,8 +534,8 @@ window.FIXTURE_SESSION = (function () {
       // one tab for it, at the first
       sites: [{ key: 'guests', keys: ['guests', 'guestsDuty'], label: '§ Guests',
         text: 'Friends of the house are welcome whenever a member is in, which is what makes them guests and not visitors.\nA member answers for their guest: for what the guest breaks, and for what the guest is told about the other members.',
-        origin: [{ t: 'p', key: 'guests', x: 'Friends of the house are welcome whenever a member is in.' },
-          { t: 'p', key: 'guestsDuty', x: 'A member is responsible for their guest: for what the guest breaks, for what the guest is told about the other members, and for the guest’s knowing when to go home.' }] }]
+        origin: [{ t: 'p', key: 'guests', text: 'Friends of the house are welcome whenever a member is in.' },
+          { t: 'p', key: 'guestsDuty', text: 'A member is responsible for their guest: for what the guest breaks, for what the guest is told about the other members, and for the guest’s knowing when to go home.' }] }]
     },
     {
       id: 'quick-guests-pets', kind: 'quick', keys: ['guests'], state: 'sealed',

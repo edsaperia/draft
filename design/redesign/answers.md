@@ -98,6 +98,7 @@ Ed's words, one at a time. They go into `design/copy.js` and STYLE (T3, §3's la
 | .12 | a losing wording on a record | the live label + share: **Proposed · 23%**, **Proposed by Ada Kline · 23%**, **Proposed by you · 23%** |
 | .13 | a failed motion's wording | the live label (**Proposed** / **Proposed by ‹name›**); the outcome is said once, above the card |
 | .14 | a proposal the close cut off | **Proposed by ‹name› · Ran out of time** (Ed's words) |
+| .11a | a shifted vote's ground — the wording a vote was cast on before the clause changed | **The text you voted on** (Ed, 2026-09-27, 1563.1 (b): the voter's word, a stated exception to .11's *Previous text*; the sub-line *the clause changed after you voted* stays dropped, the card's sentence saying it) |
 
 **Why a commit is dark** — the visible note (1541.33) is narrower than the grammar had it:
 

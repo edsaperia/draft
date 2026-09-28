@@ -128,9 +128,16 @@ if (!ENGINES[BROWSER]) {
  * kind no card was measured as is a broken walk. Both are in-page drives
  * over the file fixture, no server.
  */
-const ALL_WALKS = ['founding', 'answers', 'delegated', 'settled', 'outsiders', 'charter', 'closed', 'sessionband', 'closedband', 'stranger'];
+/*
+ * **`diag`** (Q1541 stage 6) is the charter walk over one card, the salience
+ * diagonal, served: no fixture serves it (SPEC §8.3a — only to somebody with
+ * nothing else to judge), so the walk files every other pair of the fixture
+ * as judged through `SESSION.setData` first, which is exactly the state that
+ * serves it, and then opens and measures it like any charter card.
+ */
+const ALL_WALKS = ['founding', 'answers', 'delegated', 'settled', 'outsiders', 'charter', 'closed', 'sessionband', 'closedband', 'stranger', 'diag'];
 const DEFAULT_WALKS = ALL_WALKS.slice(0, 7);
-const FIXTURE_WALKS = ['founding', 'answers', 'charter', 'closed', 'sessionband', 'closedband', 'stranger'];
+const FIXTURE_WALKS = ['founding', 'answers', 'charter', 'closed', 'sessionband', 'closedband', 'stranger', 'diag'];
 const WALK_ARG = arg('walk', DEFAULT_WALKS.join(','));
 const WALKS = (WALK_ARG === 'all' ? ALL_WALKS.filter((w) => w !== 'stranger') : WALK_ARG === 'fixture' ? FIXTURE_WALKS : WALK_ARG.split(',')).filter(Boolean);
 /**
@@ -183,6 +190,24 @@ const GRAMMAR_KINDS = [
   // `closedband` (the power tabs read)
   'power',
   'composer',
+  // stage 6 (Q1541): the charter's judgment cards, each declared by the shell
+  // (`data-kind`, session.js's `judgePresent`) — a pair against the current
+  // text (`quick`), one on a gap (`insert`), two challengers (`race`), a pair
+  // you have answered, the ⏳ tab reopened (`judged`), a proposal at several
+  // places (`patch`), the ⚔️ card (`deadlock`), a proposal of yours
+  // (`mine`) and one the text moved under (`stranded`). The fast pass meets
+  // every one on `charter`
+  'quick',
+  'insert',
+  'race',
+  'judged',
+  'patch',
+  'deadlock',
+  'mine',
+  'stranded',
+  // …and the salience diagonal, placeless, which `diag` serves (the fixture
+  // walks' last)
+  'diag',
 ];
 /**
  * **The stage the build has reached, and the stage each check turns strict
@@ -191,7 +216,7 @@ const GRAMMAR_KINDS = [
  * has not come is reported, never held (Q1541 stage 2: the grants and 🍾 are
  * opened on the closed band too, where P29 is stage 7's).
  */
-const STAGE = 3;
+const STAGE = 6;
 const STRICT_FROM = { 'closed-page': 7, 'closed-keeps-content': 7, 'closed-powers': 7, 'zone-overlap': 8, 'place-head': 6 };
 const KINDS_ARG = arg('kinds', null);
 const KINDS = KINDS_ARG == null ? null
@@ -904,8 +929,11 @@ const IN_PAGE = () => {
     let el = card.closest('.cpara.open') || card;
     for (let i = 0; i < 6 && el; i++) {
       let prev = el.previousElementSibling;
+      // a held-open gap is no ink — a wash and a tab (Q1334) — so the ink
+      // above a card is read past it, whether the gap stands beside the
+      // card's anchor or inside the column the card splits (Q1541 stage 6)
       while (prev && (!prev.getBoundingClientRect().height || getComputedStyle(prev).display === 'none' ||
-        prev.matches('.chipcol, script, style, [hidden]'))) prev = prev.previousElementSibling;
+        prev.matches('.chipcol, script, style, [hidden], .insert-anchor'))) prev = prev.previousElementSibling;
       if (prev) {
         const w = document.createTreeWalker(prev, NodeFilter.SHOW_TEXT);
         let last = null;
@@ -1088,6 +1116,9 @@ const IN_PAGE = () => {
         if (!(n.compareDocumentPosition(head.el) & Node.DOCUMENT_POSITION_FOLLOWING)) break;
         const host = n.nodeType === 3 ? n.parentElement : n;
         if (!host || host.closest(NOT_CONTENT) || !isVis(host, card.parentElement)) continue;
+        // a multi-place proposal's ↑ ↓ ride its label (answers Part 4 .7:
+        // *Current text · 2 of 3* with ↑ ↓) — part of the one label slot
+        if (host.closest('.glabslot .psteps')) continue;
         if (n.nodeType === 3) { if (n.nodeValue.trim()) above.push(n.nodeValue.trim()); }
         else if (n.matches('button, input, textarea, select, [role="radio"]')) above.push('[' + nameOf(n) + ']');
         else if (String(n.tagName).toLowerCase() === 'svg' && n.getAttribute('data-char')) above.push(n.getAttribute('data-char'));
@@ -1146,7 +1177,9 @@ const IN_PAGE = () => {
       // a value the machine put in a field that nobody has touched — 📍's
       // suggested address at the birth (Q534 (c)) — is nobody's draft
       !(i.dataset.machine != null && i.value === i.dataset.machine)) ||
-      [...card.querySelectorAll('[contenteditable="true"], [contenteditable="plaintext-only"]')].some((e) => (e.textContent || '').trim()) ||
+      // …the deadlock desk's blank lane is the clause as it stands, nobody's
+      // draft until the first keystroke opens one (Q1541 stage 6)
+      [...card.querySelectorAll('[contenteditable="true"]:not([data-deadlane]), [contenteditable="plaintext-only"]')].some((e) => (e.textContent || '').trim()) ||
       !!card.querySelector('[data-draft]') || card.matches('[data-draft]');
     out.bins = controls.filter((c) => /🗑/.test(c.tok)).map((c) => ({ title: c.title, inRow: c.inRow,
       // Q1541 stage 0 (P24): dark or lit, and whether it carries words
@@ -1276,8 +1309,11 @@ const IN_PAGE = () => {
     let el = start;
     for (let i = 0; i < 6 && el; i++) {
       let prev = el.previousElementSibling;
+      // a held-open gap is no ink — a wash and a tab (Q1334) — so the ink
+      // above a card is read past it, whether the gap stands beside the
+      // card's anchor or inside the column the card splits (Q1541 stage 6)
       while (prev && (!prev.getBoundingClientRect().height || getComputedStyle(prev).display === 'none' ||
-        prev.matches('.chipcol, script, style, [hidden]'))) prev = prev.previousElementSibling;
+        prev.matches('.chipcol, script, style, [hidden], .insert-anchor'))) prev = prev.previousElementSibling;
       if (prev) {
         const w = document.createTreeWalker(prev, NodeFilter.SHOW_TEXT);
         let last = null;
@@ -1684,9 +1720,10 @@ function rulesFor(card, tok) {
       xs.length + ' left edges: ' + xs.map((x) => x + 'px').join(', '));
   }
   // Only the front of a pile has a position beside a clause to be measured
-  // against; and only the horizontal promise is a resting-state fact — the
-  // clause head stands under the card's own eyebrow, so a vertical travel is
-  // the eyebrow's height, which every card has and no card is wrong about.
+  // against, and this reading is taken at scroll 0, where the page cannot
+  // make the label's room above (answers Part 6.4): the vertical promise is
+  // P13's, on the glass from a scroll that allows it (Q1541 stage 6 — the
+  // eyebrow that dropped the tab by its height is gone from every card).
   if (card.tab.front && card.tab.travel && Math.abs(card.tab.travel[0]) > 0.01) {
     at('P2', 'positioning', 'the 8px goes on padding-left as well as width, so the glyph does not move',
       'the glyph moves ' + card.tab.travel[0] + 'px sideways when the card opens');
@@ -1697,8 +1734,13 @@ function rulesFor(card, tok) {
     // 8px of growth to the left, and 2px of tuck under the card on the right
     // (system.css `.clausehead .achip`, 2026-09-06: the tuck's 2px is padding,
     // so the glyph stays put) — 10px of box, all of the visible part leftward
-    if (!near(grew, 10, 0.51) || (left !== null && !near(left, -8, 0.51))) {
-      at('P3', 'positioning', 'the active tab grows 8px to the left, plus the 2px tuck under the card',
+    // …**on a phone it highlights in place** (1541.53, Q1541 stage 6): the
+    // tabs stand flush with the glass, so below the 900px line only the tuck
+    const narrow = VIEWPORT.width <= 900;
+    if (narrow ? (!near(grew, 2, 0.51) || (left !== null && !near(left, 0, 0.51)))
+      : (!near(grew, 10, 0.51) || (left !== null && !near(left, -8, 0.51)))) {
+      at('P3', 'positioning', narrow ? 'on a phone the active tab highlights in place — only the 2px tuck under the card (1541.53)'
+        : 'the active tab grows 8px to the left, plus the 2px tuck under the card',
         'it grows ' + grew + 'px and its left edge moves ' + left + 'px');
     }
   }
@@ -2064,7 +2106,9 @@ const HEAD_WORDS = [
   /^Add your closing comment$/i, /^Accept This Change\?$/i,
 ];
 /** …and on a block's first line (Part 4 .8–.14) */
-const BLOCK_WORDS = /^(Proposed( by .+)?|Previous (text|rule))( · (\d+%|Ran out of time))?$/i;
+const BLOCK_WORDS = /^(Proposed( by .+)?|Previous (text|rule))( · (\d+%|Ran out of time))?$|^The text you voted on$/i;
+// …*The text you voted on*, a shifted vote's ground, is the stated exception
+// to .11 (Ed, 2026-09-27, 1563.1 (b))
 
 /** a row control as a token: its leading glyph (variation selector dropped), or its words */
 const tokNorm = (t) => {
@@ -2250,12 +2294,20 @@ function grammarRules(c, ref) {
       // (on any walk that meets the birth — the founding and answers walks both do)
       : c.key === 'title' && /titlepara/.test(String(before.para)) ? '🪶 at the birth heads with the title box'
       : OWN_LINE(c.key) ? '🎩 heads with its own sentence — the Members list writes none (F13)'
+      : c.shellKind === 'diag' ? 'the diagonal is placeless: it heads with the question it puts (grammar §2.3)'
       : null;
+    // **a run heads with the whole run** (Q1487, Q1308): a card on several
+    // adjacent clauses replaces them all, so its head is their words in
+    // order, and the closed paragraph — the run's first — is its first line
+    // word for word (principle 1); the rest follow it (Q1541 stage 6)
+    const runOf = (h, p) => { const a = String(h || '').replace(/️/g, '').replace(/\s+/g, ' ').trim();
+      const b = String(p || '').replace(/️/g, '').replace(/\s+/g, ' ').trim();
+      return !!b && a.length > b.length && a.startsWith(b); };
     if (!g.head) at('head-registration', 'no head element on the card (closed paragraph ' + before.para + ': “' + clip(before.ptext, 60) + '”)', 'missing');
     else {
       const norm = (s) => String(s || '').replace(/️/g, '').replace(/\s+/g, ' ').trim();
       const trimPow = (s) => norm(s).replace(/\s*(From the start, )?The Founder( \(that’s you!\))? may[^.]*\.(\s*From the start, the Founder may not[^.]*\.)?\s*$/, '').trim();
-      if (norm(g.head.text) !== norm(before.ptext) && norm(g.head.text) !== trimPow(before.ptext)) {
+      if (norm(g.head.text) !== norm(before.ptext) && norm(g.head.text) !== trimPow(before.ptext) && !runOf(g.head.text, before.ptext)) {
         const power = /^pw:/.test(c.key);
         at('head-registration', 'text: paragraph “' + clip(norm(before.ptext), 70) + '” · head (' + g.head.sel + ') “' + clip(norm(g.head.text), 70) + '”', 'text',
           why ? { excepted: why } : power ? { excepted: 'a power card heads with its own clause (1541.48)' } : null);
@@ -2363,7 +2415,11 @@ function grammarRules(c, ref) {
       const bad = drawn(v.headLabelDraw, isRecord);
       if (bad) at('label-slot', 'the label above the first line is drawn ' + bad, 'drawing');
       const t = String(v.headLabelText || '').replace(/\s+/g, ' ').trim();
-      const ask = (v.asks || []).some((s) => String(s).replace(/\s+/g, ' ').trim().toLowerCase().startsWith(t.toLowerCase()) && t.length > 3);
+      // …a placeless card's label is its ask as the rail names it — the
+      // diagonal's *Which matters more?* (stage 6); its own tab in the card
+      // says *Close this one*, so the ask is read as a question
+      const ask = (v.asks || []).some((s) => String(s).replace(/\s+/g, ' ').trim().toLowerCase().startsWith(t.toLowerCase()) && t.length > 3) ||
+        (c.shellKind === 'diag' && /\?$/.test(t));
       if (!HEAD_WORDS.some((re) => re.test(t)) && !ask) at('label-slot', 'the label “' + clip(t, 50) + '” is not in answers Part 4\'s words', 'words');
     }
     for (const b of v.blocks || []) {
@@ -2373,7 +2429,9 @@ function grammarRules(c, ref) {
       if (!b.first) at('label-slot', 'the label “' + clip(b.label, 40) + '” is not its ' + b.cls + '\'s first line', 'block-place');
       const bad = drawn(b.draw, isRecord);
       if (bad) at('label-slot', 'the block label “' + clip(b.label, 30) + '” is drawn ' + bad, 'drawing');
-      if (!BLOCK_WORDS.test(String(b.label || '').replace(/\s+/g, ' ').trim())) at('label-slot', 'the block label “' + clip(b.label, 40) + '” is not in answers Part 4\'s words', 'words');
+      // the diagonal's blocks are two questions, not wordings, each labelled
+      // by its own name — the one block Part 4's words do not cover (stage 6)
+      if (c.shellKind !== 'diag' && !BLOCK_WORDS.test(String(b.label || '').replace(/\s+/g, ' ').trim())) at('label-slot', 'the block label “' + clip(b.label, 40) + '” is not in answers Part 4\'s words', 'words');
     }
   }
 
@@ -2457,8 +2515,13 @@ function grammarRules(c, ref) {
   const anyCommit = (g.rows || []).some((r) => r.tokens.some((t) => tokNorm(t.t) !== '🗑'));
   for (const k of g.controls || []) {
     if (k.green) at('role-drawing', 'a button on solid --ok green: “' + clip(k.tok || k.el, 30) + '”', 'green');
-    if (!k.disabled && k.inkGreen && tokNorm(k.tok) === '✓') at('role-drawing', 'an armed ✓ drawn green', 'green-tick');
-    if (k.radio && (k.disabled || !anyCommit)) at('role-drawing', 'a radio “' + clip(k.tok, 30) + '” on a block nobody may choose' + (k.on ? ' (pressed)' : ''), 'unchoosable');
+    // …a recorded ✓ keeps its green (answers Part 5 (7): *green means decided
+    // … a recorded ✓*; 1541.13 (c)), so the pressed ✓ is not an armed one
+    if (!k.disabled && !k.on && (k.inkGreen || k.green) && tokNorm(k.tok) === '✓') at('role-drawing', 'an armed ✓ drawn green', 'green-tick');
+    // …a patch's ✓ floats at the foot of the window (Q1382), one commit for
+    // every place, so its places' radios are choosable with no row of their own
+    const floats = !anyCommit && c.shellKind === 'patch';
+    if (k.radio && (k.disabled || (!anyCommit && !floats))) at('role-drawing', 'a radio “' + clip(k.tok, 30) + '” on a block nobody may choose' + (k.on ? ' (pressed)' : ''), 'unchoosable');
   }
 
   /* P27 closed-page (as measured): nothing enabled but the tabs, 🥂 and a
@@ -4022,14 +4085,29 @@ async function stripPass(page, walk, strips, errors) {
   await wait(page, 150);
 }
 
-async function walkCharter(page, base, cards, errors, { closed, doors, rails, strips } = {}) {
+async function walkCharter(page, base, cards, errors, { closed, doors, rails, strips, diag } = {}) {
   await page.goto(withQuery(pageUrl(base, '?fixture=session' + (closed ? '&closed=1&band=1' : ''))));
   await page.waitForFunction(() => !!(window.SESSION && window.SESSION.SUGGS.length && document.querySelector('.qitem')),
     null, { timeout: 20_000 });
   await page.evaluate(() => { window.scrollTo(0, 0); window.SESSION.smoothScrollBy = (dy, done) => { window.scrollBy(0, dy); if (done) done(); }; });
+  // the diagonal is served to somebody with nothing else to judge (SPEC
+  // §8.3a): every other pair still asking is filed as judged, which serves it
+  if (diag) {
+    await page.evaluate(() => {
+      const S = window.SESSION;
+      S.setData({ SUGGS: S.SUGGS.map((g) => (g.kind !== 'diagonal' && g.state === 'needs' && !g.mine
+        ? Object.assign({}, g, { state: 'deciding', pick: g.pick || 'keep' }) : g)) });
+      window.scrollTo(0, 0);
+    });
+  }
   await wait(page, 300);
-  const walk = closed ? 'closed' : 'charter';
-  const ids = await page.evaluate(() => window.SESSION.SUGGS.map((s) => s.id));
+  const walk = closed ? 'closed' : diag ? 'diag' : 'charter';
+  const all = await page.evaluate(() => window.SESSION.SUGGS.map((s) => s.id));
+  const ids = diag ? all.filter((k) => /^diag-/.test(k)) : all;
+  if (diag && !ids.length) errors.push('diag: the fixture holds no salience diagonal');
+  if (diag && !(await page.evaluate((k) => !!document.querySelector('.achip[data-anchor="' + k + '"]'), ids[0]))) {
+    errors.push('diag: the diagonal was not served — no tab for it in the gutter');
+  }
   for (const id of ids) {
     const before = await page.evaluate((k) => window.__CA.closedGeo(k), id);
     // **T2 — one proposal, one tab per place** (Ed, 2026-09-16: *for my
@@ -4228,6 +4306,7 @@ async function main() {
   await run('stranger', () => walkSettled(page, base, cards, errors, 'stranger', null, piles));
   await run('charter', () => walkCharter(page, base, cards, errors, { doors, rails, strips }));
   await run('closed', () => walkCharter(page, base, cards, errors, { closed: true }));
+  await run('diag', () => walkCharter(page, base, cards, errors, { diag: true }));
   // phase one's inventory walks (Q1541 stage 0): the band's cards on the session and closed
   // fixtures, which the audit's charter walks never open (🥂 among them)
   await run('sessionband', () => walkBand(page, base, cards, errors, '?fixture=session&band=1', 'sessionband'));
@@ -4364,7 +4443,12 @@ async function finish(cards, errors, tok, ref, version, switches, piles, doors, 
   // shell (Q1541 stage 1), else its key's family — and a walk-level finding
   // about that card (a switch, the width pass) takes the same kind
   const shellKinds = new Map(cards.filter((c) => c.shellKind).map((c) => [c.walk + '·' + c.key, c.shellKind]));
-  const kindFor = (walk, key) => shellKinds.get(walk + '·' + key) || kindOf(key);
+  // **a closed page's charter card is stage 7's** (BUILD.md §4): drawn by
+  // today's builders there, it is its own kind until that stage converts it,
+  // so a key family held from stage 6 — `quick`, `race` … — is held on the
+  // live page only (Q1541 stage 6)
+  const kindFor = (walk, key) => shellKinds.get(walk + '·' + key) ||
+    (walk === 'closed' ? 'closed-' + kindOf(key) : kindOf(key));
   for (const c of cards) {
     const fs = grammarRules(c, ref);
     for (const f of fs) f.kind = kindFor(c.walk, c.key);
@@ -4463,7 +4547,7 @@ async function finish(cards, errors, tok, ref, version, switches, piles, doors, 
       // than fail it — over the canonical walk sets, every held kind must be
       // met at least once
       if (WALK_ARG === 'fixture' || WALK_ARG === 'all') {
-        const met = new Set(cards.map((c) => c.shellKind || kindOf(c.key)));
+        const met = new Set(cards.map((c) => c.shellKind || (c.walk === 'closed' ? 'closed-' + kindOf(c.key) : kindOf(c.key))));
         for (const k of KINDS) if (!met.has(k)) broken.push('the held kind ' + k + ' was measured on no card');
       }
       if (!AS_JSON) {

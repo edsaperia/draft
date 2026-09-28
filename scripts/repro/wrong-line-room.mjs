@@ -583,7 +583,7 @@ await run('deadlock', async () => {
       const card = document.querySelector('.sugg.dead-open');
       const h = card && card.querySelector('.clausehead .rtext');
       out.push({ id: it.id, keys: it.keys, dead: !!card, head: h ? h.textContent.trim() : null,
-        field: card ? [...card.querySelectorAll('.field .propblock .rtext')].map((e) => { const k = e.cloneNode(true); k.querySelectorAll('del').forEach((x) => x.remove()); return k.textContent.trim(); }) : null });
+        field: card ? [...card.querySelectorAll('.field .propblock .rtext, .gblocks .propblock .rtext')].map((e) => { const k = e.cloneNode(true); k.querySelectorAll('del').forEach((x) => x.remove()); return k.textContent.trim(); }) : null });
     }
     return out;
   });

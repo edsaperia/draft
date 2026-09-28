@@ -5130,7 +5130,7 @@ if (caret) {
           const card = document.querySelector('.sugg[data-card="' + q + '"], .sugg[data-card^="' + q + '#"]');
           if (!card) return { card: false };
           return { card: true, cls: card.className,
-            whys: [...card.querySelectorAll('.field .propblock .speaker .said')].map((e) => e.textContent.trim()),
+            whys: [...card.querySelectorAll('.field .propblock .speaker .said, .gblocks .propblock .speaker .said')].map((e) => e.textContent.trim()),
             keepLane: !!card.querySelector('.clausehead [data-v="keep"]'),
             // a decision card's lanes are `role="radio"` since Q1395 (a), so
             // what is chosen reads `aria-checked`; anything else wearing

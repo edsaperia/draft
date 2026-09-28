@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 704
+  "entries": 705
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -573,6 +573,7 @@
   "session.gap.atStart": "A new clause at the start",
   "session.insert.headLabel": "The gap as it stands",
   "session.nav.next": "The next place",
+  "session.nav.ofPlaces": "ƒ (i, n) => i + ' of ' + n",
   "session.nav.placeOf": "ƒ (i, n) => ' · place ' + i + ' of ' + n",
   "session.nav.prev": "The place before",
   "session.park.awaiting": "Awaiting assent from the Founder 🛡️",

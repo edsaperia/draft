@@ -1123,6 +1123,36 @@ window.COMPOSER = (function () {
       );
     }
 
+    /**
+     * **The same reading, as parts for the one shell** (Q1541 stage 6): a
+     * proposal of yours once it is in, and the stranded one beside it, are
+     * built from `CardState` by the charter's source, which asks this for the
+     * fragments only the composer can draw — the place (its index and its
+     * ↑ ↓), the clause at the head, and your wording as a block labelled
+     * *Proposed by you* on its first line (answers Part 4 .9).
+     */
+    function ownParts(d, site) {
+      const n = d.sites.length;
+      const i = Math.max(0, d.sites.indexOf(site));
+      const s = site || d.sites[0];
+      const step = (to, label, glyph) => (to === null
+        ? '<span class="pstep off">' + glyph + '</span>'
+        : '<button class="pstep" data-step="' + d.id + ':' + d.sites[to].keys[0] + '" title="' + esc(label) + '">' + glyph + '</button>');
+      const gap = !!(s.origin && s.origin[0] && s.origin[0].gap);
+      return {
+        i, n, key: s.keys[0], gap,
+        steps: n > 1 ? '<span class="psteps">' + step(i > 0 ? i - 1 : null, T.nav.prev, '↑') +
+          step(i < n - 1 ? i + 1 : null, T.nav.next, '↓') + '</span>' : '',
+        head: (o) => clauseHeadHtml(d, Object.assign(gap
+          ? { text: null, key: s.keys[0], chips: chipsFor(s.keys[0], d.id) }
+          : { text: originText(s), key: s.keys[0], chips: chipsFor(s.keys[0], d.id) }, o || {})),
+        block: '<div class="propblock"><span class="glab">' + esc(window.COPY.shell.proposedByYou) + '</span>' +
+          '<div class="rtext">' +
+          (String(s.text || '').trim() ? laneBlocks(s.text, originText(s)) : removedHtml()) + '</div>' +
+          speakerHtml(d.rationale, undefined, mineSpeaker(d)) + '</div>',
+      };
+    }
+
     // Once it is in, the same geometry read-only, and your proposal on the right
     // (Ed, 229) — the side it will always be on wherever it is shown to you.
     function mineCardHtml(d, site) {
@@ -1197,7 +1227,7 @@ window.COMPOSER = (function () {
       startDraft, startDraftFromTyping, startDraftFromRun,
       laneRemark, syncEditCtl, markSelection,
       commitBtnHtml, proposalRowHtml, proposeCtlTitles, draftRowState, setDraftSigned,
-      editCardHtml, mineCardHtml, strandedCardHtml };
+      editCardHtml, mineCardHtml, strandedCardHtml, ownParts };
   }
   return { make };
 })();
