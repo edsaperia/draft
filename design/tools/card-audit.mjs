@@ -214,9 +214,14 @@ const GRAMMAR_KINDS = [
   // them on `settled`, `outsiders` (a member's seat), `sessionband` and
   // `closedband` (frozen, 1541.28 (a)); the doors ✉️ ❌ 🌂 (`door`, heading
   // with their subsection's rows or its sentence, 1541.25 (a)), met on the
-  // same four from the Founder's seat and a member's
+  // same four from the Founder's seat and a member's; the stranger's two at
+  // the door (`stranger`, placeless), met on `outsiders`' stranger seat. The
+  // applicant's five (`applicant`) are live-only — the file page can never
+  // seat an applicant (the outsiders walk's stated exemption) — so they are
+  // held by applicants-walk's slot assertions instead
   'identity',
   'door',
+  'stranger',
   // stage 6 (Q1541): the charter's judgment cards, each declared by the shell
   // (`data-kind`, session.js's `judgePresent`) — a pair against the current
   // text (`quick`), one on a gap (`insert`), two challengers (`race`), a pair
@@ -2140,6 +2145,10 @@ const HEAD_WORDS = [
   // …and a door motion's, the subsection its first line is (1541.46 (a) read
   // for a list of people; stage 5's call, put to Ed in its FINAL)
   /^(Applications for Membership|Proposed for removal)$/i,
+  // …and the placeless cards at the door and the applicant's, which head with
+  // their titles (grammar §2.3): the stranger's two (and the demo's 👋), and
+  // the applicant's five in each state E33, E42 and Q1473 give their 🪪
+  /^(Log In|Join|Try It|Apply for Membership|Applications Have Closed|Your Application Was (Not )?Accepted|Your (Email|Name|Picture|Application))$/i,
 ];
 /** …and on a block's first line (Part 4 .8–.14) */
 const BLOCK_WORDS = /^(Proposed( by .+)?|Previous (text|rule))( · (\d+%|Ran out of time))?$|^The text you voted on$/i;

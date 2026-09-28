@@ -873,8 +873,8 @@ window.BAND = (function () {
      * back. A submitted application's card asks nothing, so it has no row —
      * the module has no withdrawal for 1541.9 (b)'s bare 🗑️ to draw.
      */
-    function applicantShell() {
-      const c = APPCARDS().find((x) => x.k === S.open);
+    function applicantShell(key) {
+      const c = APPCARDS().find((x) => x.k === (key || S.open));
       if (!c) return null;
       const a = S.app;
       const T = PAGE_COPY.appcards;
@@ -2399,6 +2399,8 @@ window.BAND = (function () {
       syncShellRow,
       foundedAt, foundedClause, closedAtWords, resendTitle, APPLICANT, MEMBER_EMAILS, APPCARDS,
       appCtx,
+      // stage 5: the applicant's five as shell states, for card-state's door source
+      applicantShell,
       // the rail asks this (SURFACE E33, Q901): a door that shut under a
       // verified applicant is news owed an OK, and the news has to be
       // reachable — `renderRail` empties the applicant's rail the moment 🤝

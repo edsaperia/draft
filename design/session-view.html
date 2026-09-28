@@ -10634,7 +10634,7 @@
   // by `setStranger`.
   const { setStranger, strPayload, shapeOf, strangerAsView, applicantAsView, hydrateApplicant,
     founderInfo, strMembersLine, strMemberList, strCtx, strangerReadCard, syncStrangerCharter,
-    STRCARDS, strRailCtx, strangerCardHtml } = window.DOOR.make({
+    STRCARDS, strRailCtx, strangerCardHtml, strangerState } = window.DOOR.make({
     S, PAGE_COPY, FOUNDER, LIVEMODE, LIVESLUG, api, SESSION, ctx,
     get cs() { return cs; },
     get charterKey() { return charterKey; }, set charterKey(v) { charterKey = v; },
@@ -10710,6 +10710,15 @@
     if (why('invitation-open')) return W.beginInvited;
     return null;
   };
+  // **the door's own seats** (Q1541 stage 5): the stranger's cards and the
+  // applicant's five are placeless and belong to no paragraph, so they are
+  // their own surface to card-state — `stateOf` reads the state each card is
+  // drawn from, exactly as it reads the band's and the charter's
+  window.CARD_STATE.register('door', {
+    owns: (k) => (isStranger() && STRCARDS().some((c) => c.k === k)) ||
+      (S.viewer === 'applicant' && BND.APPCARDS().some((c) => c.k === k)),
+    present: (k) => (isStranger() ? strangerState(k) : BND.applicantShell(k)) || {},
+  });
   window.CARD_STATE.register('band', {
     owns: (k) => !!card(k) || MANAGED_KEYS.includes(k) || DOOR_KEYS.includes(k),
     reader: () => (isStranger() ? 'stranger' : S.viewer === 'applicant' ? 'applicant'
