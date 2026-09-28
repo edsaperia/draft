@@ -209,6 +209,11 @@ const GRAMMAR_KINDS = [
   'crown',
   'motion-record',
   'failed-motion-news',
+  // stage 5 (Q1541): doors and people — your ✋ 🖼️ 📧 once the document is
+  // saved (`identity`, heading with your row, O6 (b)); the fast pass meets
+  // them on `settled`, `outsiders` (a member's seat), `sessionband` and
+  // `closedband` (frozen, 1541.28 (a))
+  'identity',
   // stage 6 (Q1541): the charter's judgment cards, each declared by the shell
   // (`data-kind`, session.js's `judgePresent`) — a pair against the current
   // text (`quick`), one on a gap (`insert`), two challengers (`race`), a pair
@@ -677,7 +682,9 @@ const IN_PAGE = () => {
     // and whether another card already stood open (then this is a switch)
     // a gap's anchor is its paragraph; an item with no tab of its own (behind
     // a pile) is found by the clause its engine key names
-    let gpara = tab ? tab.closest('.cpara, .anch, .insert-anchor, p') : null;
+    // your ✋ 🖼️ 📧 stand on your own row, and the row is their paragraph —
+    // the card opens in its place with the row as its first line (Q1541 stage 5)
+    let gpara = tab ? tab.closest('.meRow, .cpara, .anch, .insert-anchor, p') : null;
     if (!gpara && window.SESSION && window.SESSION.clauseKeysOf) {
       try {
         const ck = (window.SESSION.clauseKeysOf(key) || [])[0];
@@ -1067,7 +1074,9 @@ const IN_PAGE = () => {
     const INPUTS = 'textarea, input[type="text"], input[type="email"], input:not([type]), [contenteditable="true"], [contenteditable="plaintext-only"], select';
     for (const i of [...card.querySelectorAll(INPUTS)]
       .filter((i) => vis(i) && !blocks.some((b) => b.contains(i)) && !(head && head.el.contains(i)))) {
-      order.push({ slot: 'input', y: R2(i.getBoundingClientRect().top) });
+      // a composer that is an option block's own text — ✋'s name field, first
+      // by Q1164 — is that block in the order, not an input slot beneath them
+      order.push({ slot: i.closest('.pick > .opttext') ? 'block' : 'input', y: R2(i.getBoundingClientRect().top) });
     }
     for (const r of rows) order.push({ slot: 'row', y: R2(r.getBoundingClientRect().top) });
     out.order = order;
@@ -1360,7 +1369,7 @@ const IN_PAGE = () => {
     const q = CSS.escape(key);
     const tab = document.querySelector('#band [data-tab="' + q + '"], #titlepara [data-tab="' + q + '"], ' +
       '#charter .achip[data-anchor="' + q + '"], .achip[data-anchor="' + q + '"]');
-    let para = tab ? tab.closest('.cpara, .anch, .insert-anchor, p') : null;
+    let para = tab ? tab.closest('.meRow, .cpara, .anch, .insert-anchor, p') : null;
     if (!para && window.SESSION && window.SESSION.clauseKeysOf) {
       try {
         const ck = (window.SESSION.clauseKeysOf(key) || [])[0];
@@ -2123,6 +2132,8 @@ const HEAD_WORDS = [
   /^Final text$/i, /^Rule at the close$/i,
   /^Accept (Founder Actions|the Founder Veto|Constitutional Proposals|Proposals|Voting)$/i,
   /^Add your closing comment$/i, /^Accept This Change\?$/i,
+  // stage 5's asks, today's titles unchanged (Part 4; 1541.46 (a))
+  /^(Choose Your (Name|Picture)|Enter Your Email|Invite a Member|Remove a Member|Leave the Membership)$/i,
 ];
 /** …and on a block's first line (Part 4 .8–.14) */
 const BLOCK_WORDS = /^(Proposed( by .+)?|Previous (text|rule))( · (\d+%|Ran out of time))?$|^The text you voted on$/i;

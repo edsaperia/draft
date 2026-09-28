@@ -1355,7 +1355,9 @@ window.BAND = (function () {
       // …and stage 4's: the motion cards, 👑, and the settled motion records
       // with a failed motion's news
       const SHELL_KINDS = new Set(['grant', 'gate', 'begin', 'release', 'setting', 'watching', 'answer', 'birth-email',
-        'power', 'composer', 'motion', 'crown', 'motion-record', 'failed-motion-news']);
+        'power', 'composer', 'motion', 'crown', 'motion-record', 'failed-motion-news',
+        // …and stage 5's: ✋ 🖼️ 📧, the doors, the admissions, the applicant's
+        'identity']);
       const crownPairRow = () => (amFounder()
         ? binBtn() + '<span class="rightpair">' +
           '<button class="btn glyphbtn emojibtn" data-crownq="reject"' +

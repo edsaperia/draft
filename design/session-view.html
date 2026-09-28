@@ -7261,6 +7261,69 @@
     };
   }
 
+  // ---- stage 5: doors and people on the one shell (Q1541 stage 5) --------
+  // **Your ✋ 🖼️ 📧 open in your own row's place** (entry 188), and on the
+  // shell your row is their first line: your face and name as the Members
+  // list draws them — what stands — under the card's ask as its label (*Choose
+  // Your Name*, answers Part 4, 1541.46 (a)). The body is the choices only,
+  // what stands omitted (Q620): the *keep* block is the row above it. After
+  // the close they are frozen (1541.28 (a)): the row, and nothing to press.
+  const W5 = () => window.COPY.shell;
+  /** your row, as the Members list draws it — the one drawing for the list
+   *  and for the first line of your own cards */
+  const meRowInner = () => avHtml(me()) + '<span class="mn">' + esc(S.myname || 'Anonymous') +
+    (viewerRow() && viewerRow().founder ? ' ' + founderMark() : '') +
+    ' <span class="chip">' + esc(PAGE_COPY.memTags.you) + '</span></span>';
+  const IDENTITY = ['myname', 'mypic', 'myemail'];
+  const identityShellKind = (c) => (!!c && !!cs && IDENTITY.includes(c.k) && !atTheDoor() &&
+    S.viewer !== 'applicant' ? 'identity' : null);
+  function identityActs(c) {
+    if (!docOpen()) return [];
+    const dirty = S.open === c.k && openCardDirty();
+    const bin = { kind: 'bin', title: PAGE_COPY.binPutBack,
+      attrs: dirty ? ' data-revert="1"' : ' data-act="bin"', until: dirty ? null : 'nothing-yours' };
+    if (c.k === 'myemail' && S.emailSent && !S.emailVerified) {
+      return [bin, { kind: 'commit', glyph: '📨', glyphHtml: glyphHtml('📨'), cls: 'btn-approve emojibtn',
+        attrs: ' data-resend="1"', title: BND.resendTitle(), until: EMAIL_OK.test(S.myemail) ? null : 'type' }];
+    }
+    // a name, a picture and an address bind nobody (§9.0c): ✓, never the pen
+    // 📧's ✓ sends a new address, so it is dark over the empty box a verified
+    // address leaves beneath it (P22) — typing un-verifies and arms it
+    const ok = c.k === 'myemail' ? !S.emailVerified && EMAIL_OK.test(S.myemail || '') : ready(c) && commitReady(c);
+    return [bin, { kind: 'commit', glyph: '✓', glyphHtml: window.CARDS.TICK, cls: 'btn-approve',
+      attrs: ' data-confirm="1"', title: W5().save, until: ok ? null : (c.k === 'myemail' ? 'type' : 'choose') }];
+  }
+  function identityPresent(c, hints) {
+    const sibs = (hints && hints.siblings) || [c];
+    const locked = !docOpen();
+    const body = c.k === 'myname'
+      ? nameBody(me(), { optional: viewerIsClerk(), pick: namePickNow(), draft: S.mynameDraft, locked, noKeep: true })
+      : c.k === 'mypic'
+      ? pictureBody(me(), { pick: picPickNow(), draft: S.mypicDraft, locked, noKeep: true })
+      : BODY_EMAIL();
+    return {
+      kind: 'identity',
+      frame: { cls: 'sugg setupcard', attrs: ' role="tabpanel" data-setupcard="' + esc(c.k) + '"' +
+        (S.open === c.k && openCardDirty() ? ' data-draft="1"' : '') },
+      label: { text: c.t },
+      head: { html: window.SETUP.headHtml(c, ctx, sibs,
+        '<div class="headrule asblock" data-fact="place"><div class="memrow meRow">' + meRowInner() + '</div></div>') },
+      // frozen after the close (1541.28 (a)): the row, and no choice beneath it
+      options: locked ? null : { html: body },
+      body: doorErrHtml(c.k) ? { html: doorErrHtml(c.k) } : null,
+    };
+  }
+  /** 📧 after the save: the address that stands as a fact, a new one as the
+   *  one choice beneath it (what stands is never a radio here, 1541.37) */
+  const BODY_EMAIL = () => (S.emailVerified
+    ? '<p class="cpv">' + esc(S.myemail) + '</p>' +
+      '<div class="choice"><div class="pick"><span class="opttext"><input type="email" data-txt="myemail" value="" placeholder="you@example.com"></span>' +
+      '<button class="lanepick" type="button" aria-pressed="false" data-pickinput="1">' +
+      '<span class="dot"></span><span class="off">' + PAGE_COPY.pw.chooseThis + '</span>' +
+      '<span class="on">' + PAGE_COPY.pw.chosen + '</span></button></div></div>'
+    : '<p class="why">' + esc(S.emailSent ? W5().emailSentWhy : W5().emailWhy) + '</p>' +
+      '<span class="fld"><input type="email" data-txt="myemail" value="' + esc(S.myemail) + '" placeholder="you@example.com"></span>');
+
   /* **The road back is closed** (Q1404, Ed 2026-09-16: *when a founder
      relinquishes a power ✒️🛡️, that power tab should disappear from the tab
      stack, so there's no longer a route to regaining it*). Q386 had offered a
@@ -10355,6 +10418,7 @@
     owed: (k) => { const c = card(k);
       if (BND.settingKind(c)) return BND.settingOwed(c);
       if (motionShellKind(c)) return motionShellOwed(c);
+      if (identityShellKind(c)) return null;
       if (shellRelease(c)) return releaseBatch(c.release) ? { kind: 'ok', attrs: ' data-ok="' + esc(k) + '"', word: 'OK' } : null;
       if (!ackOwed(c)) return null;
       return { kind: 'accept', cls: 'grantok', attrs: ' data-ok="' + esc(k) + '"',
@@ -10364,6 +10428,7 @@
     acts: (k) => { const c = card(k);
       if (BND.settingKind(c)) return BND.settingActs(c);
       if (motionShellKind(c)) return motionShellActs(c);
+      if (identityShellKind(c)) return identityActs(c);
       if (!shellAck(c) || !c.isBegin || constituted() || !amFounder()) return [];
       const rd = readinessOf();
       const can = !rd || rd.ready;
@@ -10378,6 +10443,7 @@
       const c = card(k);
       if (BND.settingKind(c)) return BND.settingPresent(c, hints);
       if (motionShellKind(c)) return motionShellPresent(c, hints);
+      if (identityShellKind(c)) return identityPresent(c, hints);
       if (shellRelease(c) && st.place) {
         const b = releaseBatch(c.release);
         return {

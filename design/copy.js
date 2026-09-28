@@ -1478,6 +1478,12 @@ window.COPY = (function () {
     withdrawOrdinary: 'Withdraw it — the ✏️ comes back in full',
     withdrawConstitutional: 'Withdraw it — your 🏛️ comes back whole',
     giveAnswer: 'Give your answer',
+    // ---- stage 5: doors and people ----
+    // the ✓ on ✋ 🖼️ 📧 — a name, a picture, an address bind nobody (§9.0c)
+    save: 'Save',
+    // 📧 after the save, moved here from the old builder's body word for word
+    emailWhy: 'Your address is the only way back in — there are no passwords — so a new one has to prove it works before it replaces the old.',
+    emailSentWhy: 'The mail is the login: clicking its link is what proves the address works.',
   };
 
   // ---- the spectator feed (feed.html, Q1466) --------------------------------

@@ -829,6 +829,12 @@ button.cline:hover b { text-decoration: underline; }
    you are last (Q1316), on your own line, your identity pile in the gutter
    beside you; the min-height is the 30px front tab of that pile */
 .memrow.meRow { flex-basis: 100%; min-height: 30px; }
+/* …and on your ✋ 🖼️ 📧 on the one shell (Q1541 stage 5) the row is the
+   card's first line: the card already stands where the row stood, the --s2
+   above being the card's, so the row in its head takes none of its own and
+   `fitBand` reads its line off the row itself; it keeps the list's face
+   and leading, not the head's text face, so it is the row's drawing exactly */
+.clausehead .memrow.meRow { margin-top: 0; font-family: var(--font-ui); line-height: 1.5; }
 /* only avatars and names keep the compact dress (Ed) */
 .memrow { display: flex; align-items: center; gap: 8px; font-size: var(--t-small);
   position: relative; }
