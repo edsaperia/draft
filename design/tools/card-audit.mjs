@@ -2137,6 +2137,9 @@ const HEAD_WORDS = [
   /^Add your closing comment$/i, /^Accept This Change\?$/i,
   // stage 5's asks, today's titles unchanged (Part 4; 1541.46 (a))
   /^(Choose Your (Name|Picture)|Enter Your Email|Invite a Member|Remove a Member|Leave the Membership)$/i,
+  // …and a door motion's, the subsection its first line is (1541.46 (a) read
+  // for a list of people; stage 5's call, put to Ed in its FINAL)
+  /^(Applications for Membership|Proposed for removal)$/i,
 ];
 /** …and on a block's first line (Part 4 .8–.14) */
 const BLOCK_WORDS = /^(Proposed( by .+)?|Previous (text|rule))( · (\d+%|Ran out of time))?$|^The text you voted on$/i;
@@ -3550,6 +3553,19 @@ async function walkSettled(page, base, cards, errors, seat, switches, piles) {
         { kind: 'set', setting: 'chamber', value: { rung: cv2 === 'link' ? 'closed' : 'link' } },
         'Who reads the document should be the membership’s call.');
       for (const id of voters) if (id !== mover) cs.answerMotion(tick(), id, m3, 'accept');
+      // **…and two on a door** (Q1541 stage 5): the Founder's invitation the
+      // membership turns down, whose news is the Founder's (E41), and one it
+      // passes, parked at the Founder's 👑 on the ✉️ door — 👑 on a person.
+      // The first is the Founder's and frees their 🏛️ by failing, before the
+      // second mover (the Founder, here) spends it below; the second is the
+      // one member whose 🏛️ is still free (one out per member, §9.6)
+      const d1 = cs.openMotion(tick(), 'founder', { kind: 'invite', email: 'bramble@example.org' },
+        'Bramble mends the bikes for free.');
+      cs.answerMotion(tick(), mover, d1, 'keep');
+      const free = voters.find((id) => id !== 'founder' && id !== mover) || 'founder';
+      const d2 = cs.openMotion(tick(), free, { kind: 'invite', email: 'sorrel@example.org' },
+        'Sorrel knows the building better than any of us.');
+      for (const id of voters) if (id !== free) cs.answerMotion(tick(), id, d2, 'accept');
       const av = (cs.settingState('authorship').value || {}).rung;
       // a second mover, because m3 is still live and a member has one 🏛️
       // out at a time (§9.6)
@@ -3569,11 +3585,13 @@ async function walkSettled(page, base, cards, errors, seat, switches, piles) {
           value: { grant: rate2.grant, cap: rate2.cap, dripMinutes: rate2.dripMinutes * 2 } },
         'Fewer, better proposals — let the wait be longer.');
       return { carried: [m1, cs.motionRecords().get(m1).status],
+        doorHeld: [d1, cs.motionRecords().get(d1).status],
+        doorCrown: [d2, cs.motionRecords().get(d2).status],
         held: [m2, cs.motionRecords().get(m2).status],
         crowned: [m3, cs.motionRecords().get(m3).status],
         running: [m4, cs.motionRecords().get(m4).status],
         ordinary: [m5, cs.motionRecords().get(m5).status] };
-    } catch (e) { return { error: String((e && e.message) || e) }; }
+    } catch (e) { return { error: String((e && e.message) || e) + ' — ' + [...window.cs.motionRecords().values()].map((m) => m.id + ':' + m.payload.kind + ':' + (m.by || '-') + ':' + m.status).join(' ') }; }
   }, chamberTo);
   if (seeded.error) errors.push(walk + ': the motion seed failed — ' + seeded.error);
   else {
@@ -3583,6 +3601,10 @@ async function walkSettled(page, base, cards, errors, seat, switches, piles) {
       errors.push(walk + ': the seeded ' + seeded.crowned[0] + ' is ' + seeded.crowned[1] + ', not awaiting-crown');
     if (seeded.running && seeded.running[1] !== 'running')
       errors.push(walk + ': the seeded ' + seeded.running[0] + ' is ' + seeded.running[1] + ', not running');
+    if (seeded.doorHeld && seeded.doorHeld[1] !== 'held')
+      errors.push(walk + ': the seeded door ' + seeded.doorHeld[0] + ' is ' + seeded.doorHeld[1] + ', not held');
+    if (seeded.doorCrown && seeded.doorCrown[1] !== 'awaiting-crown')
+      errors.push(walk + ': the seeded door ' + seeded.doorCrown[0] + ' is ' + seeded.doorCrown[1] + ', not awaiting-crown');
     if (seeded.ordinary && seeded.ordinary[1] !== 'running')
       errors.push(walk + ': the seeded ordinary ' + seeded.ordinary[0] + ' is ' + seeded.ordinary[1] + ', not running');
   }

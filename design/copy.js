@@ -1479,6 +1479,8 @@ window.COPY = (function () {
     // 👑's one sentence for the Founder, the Text 👑's (`session.crown.foot`)
     // said of a rule: the membership has decided, and the card waits on you
     crownRule: 'The membership passed this. Until you answer, the rule above stands.',
+    // …and on a person (Q1541 stage 5): there is no rule above, only the list
+    crownPerson: 'The membership passed this. Until you answer, the membership stays as it is.',
     // the row's tooltips (CP5, K8): the two answers 👑 takes, and the mover's
     // bare 🗑️ by route
     crownRefuse: 'Refuse — the Founder Veto holds it, and what stands stands',

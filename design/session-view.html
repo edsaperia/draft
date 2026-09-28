@@ -3548,6 +3548,10 @@
   const heldKeys = () => [...owedHeldIds()]
     .filter((id) => !S.okd.has('held:' + id) && !!heldMotionRec(id))
     .map((id) => 'held:' + id);
+  // …and a door's (E41): its news stands in its door's own pile, since the
+  // doors have had piles on their subsections (Q1557) — listed nowhere, it was
+  // an entry in the rail whose press opened nothing (found at Q1541 stage 5)
+  const heldDoorKeys = (host) => heldKeys().filter((k) => { const c = card(k); return !!c && c.base === host; });
   // **A settled motion files behind the rule it was about** (Q942, entry 72,
   // Ed 2026-08-25: *when a proposal for a change in a setting passes or is
   // rejected, it should leave a tab, the same as with a text amendment*). The
@@ -4043,6 +4047,11 @@
    */
   // whether E41's card is a record's (a `set` or a `reserve` filed one), and
   // so takes the record's shape whole: its body, and no head (Q1522 (2))
+  // a door's failed motion (✉️ ❌), whose news is its own card (E41)
+  const heldOnDoor = (c) => {
+    const rec = c && c.held ? recOf(c) : null;
+    return !!(rec && rec.payload && (rec.payload.kind === 'invite' || rec.payload.kind === 'remove'));
+  };
   const heldIsRecord = (c) => {
     if (!c || !c.held) return false;
     const rec = recOf(c);
@@ -5128,12 +5137,13 @@
               // so it lists them too), the admit cards behind
               memSub(PAGE_COPY.memHeads.applications, doorRowsNow.invite,
                 ['invite', 'pw:u:invite', 'pw:a:invite']
-                  .concat(motionCardsFor(card('invite')).map((c) => c.k), admitKeys())) +
+                  .concat(motionCardsFor(card('invite')).map((c) => c.k), admitKeys(), heldDoorKeys('invite'))) +
               (lapsesOn() && lapsedOut.length
                 ? memSub(PAGE_COPY.memHeads.lapsed, lapsedOut.map((p) => memRow(p)).join(''), []) : '') +
               // the one heading a *lapsed* tag says something under (Q1557 (c))
               memSub(PAGE_COPY.memHeads.removal, doorRowsNow.remove,
-                ['remove', 'pw:u:remove', 'pw:a:remove'].concat(motionCardsFor(card('remove')).map((c) => c.k)))) +
+                ['remove', 'pw:u:remove', 'pw:a:remove'].concat(motionCardsFor(card('remove')).map((c) => c.k),
+                  heldDoorKeys('remove')))) +
           alumniSub;
       } },
     // **Proposals reads second** (Q871, Q872, Ed 2026-08-26: *Proposals above
@@ -7079,8 +7089,9 @@
   const motionShellKind = (c) => {
     if (!c || !cs) return null;
     if (c.record) return recOf(c) ? 'motion-record' : null;
-    if (c.held) return heldIsRecord(c) && !atTheDoor() ? 'failed-motion-news' : null;
-    if (!c.motion || c.door || c.admit) return null;
+    if (c.held) return (heldIsRecord(c) || heldOnDoor(c)) && !atTheDoor() ? 'failed-motion-news' : null;
+    // a door's motion (✉️ ❌) is stage 5's, on the same two kinds
+    if (!c.motion || c.admit) return null;
     const m = motionOn(c);
     if (!m) return null;
     return m.status === 'awaiting-crown' ? 'crown' : 'motion';
@@ -7131,6 +7142,7 @@
         return [{ kind: 'withdraw', attrs: ' data-withdrawmotion="' + esc(c.k) + '"',
           title: p.route === 'ordinary' ? W.withdrawOrdinary : W.withdrawConstitutional }];
       }
+      if (c.door && removalPrice() === 'assembly' && p.m.removee && p.m.removee === viewerId()) return [];
       const tick = p.route === 'ordinary';
       return [{ kind: 'commit', glyph: tick ? '✓' : '🏛️', glyphHtml: tick ? window.CARDS.TICK : glyphHtml('🏛️'),
         cls: tick ? 'btn-approve' : 'btn-approve emojibtn', attrs: ' data-confirm="1"', title: W.giveAnswer,
@@ -7174,6 +7186,21 @@
     let body = '';
     const blocks = [];
     let since = false;
+    if (rec.payload.kind === 'invite' || rec.payload.kind === 'remove') {
+      // a door's failed motion (E41): its door's subsection as the first line,
+      // and the wording it proposed under *Proposed by you* — it is only ever
+      // its mover's news; where the system withdrew it, the sentence says so
+      const host = rec.payload.kind;
+      return {
+        kind, frame,
+        label: { text: outcome + (at ? W.sep + window.CARDS.longWhen(at) : ''), fact: 'outcome' },
+        head: { html: window.SETUP.headHtml(c, ctx, sibs,
+          '<div class="headrule asblock" data-fact="place"><div class="memlist">' + (doorRowsNow[host] || '') + '</div></div>') },
+        body: heldByOf(rec) === 'system' || doorErrHtml(c.k)
+          ? { html: (heldByOf(rec) === 'system' ? '<p class="why">' + esc(PAGE_COPY.heldNews.couldNotBePut) + '</p>' : '') + doorErrHtml(c.k) } : null,
+        blocks: [{ label: W.proposedByYou, fact: null, html: cpv(String(motionDisplay(rec) || '').replace(/\.?$/, '.')), speaker }],
+      };
+    }
     if (rec.payload.kind === 'reserve') {
       const rc = card(pkeyOf(rec.payload.setting));
       const what = rc ? LD + nounOf(rc) + RD : rec.payload.setting;
@@ -7220,6 +7247,7 @@
     const kind = motionShellKind(c);
     const sibs = (hints && hints.siblings) || [c];
     if (kind === 'motion-record' || kind === 'failed-motion-news') return recordShellPresent(c, kind, sibs);
+    if (c.door) return doorMotionPresent(c, kind, sibs);
     const W = W4();
     const p = motionParts(c);
     const frame = { cls: 'sugg setupcard', attrs: ' role="tabpanel" data-setupcard="' + esc(c.k) + '"' };
@@ -7260,6 +7288,70 @@
       options: { html: '<div class="choice" role="radiogroup">' +
         '<div class="pick' + on(prefer) + '"><span class="glab">' + esc(W.proposed) + '</span>' +
         '<span class="opttext">' + esc(p.proposed) + '</span>' + speaker + motionLane(c, prefer) + '</div>' +
+        '<div class="pick vinblock' + on(vin) + (note ? ' absrow' : '') + '">' + motionLane(c, vin, true) + note + '</div>' +
+        '</div>' },
+    };
+  }
+
+  /**
+   * **A door's motion, on the one shell** (Q1541 stage 5, stage 4's hand-off):
+   * a proposal to invite somebody or to remove a member opens in place of its
+   * door's subsection, so its first line is that subsection's rows — the
+   * person it is about among them — under the subsection's own heading as the
+   * label (1541.46 (a): a place card's label says what its first line is). The
+   * two answers are what they always were, each a block of clause text: the
+   * membership as it stands, then the change under *Proposed* with its sealed
+   * reason, then Indifferent (CP4). The mover's own card is theirs, not an
+   * ask (K8): *Proposed by you* alone, and the bare 🗑️ that withdraws
+   * (1541.9 (b)). 👑 on a person (K11): *Accept This Change?* above while
+   * the Founder's answer is owed, the two powers as the two answers.
+   */
+  function doorMotionPresent(c, kind, sibs) {
+    const W = W4();
+    const p = motionParts(c);
+    const host = hostKeyOf(c);
+    const frame = { cls: 'sugg setupcard', attrs: ' role="tabpanel" data-setupcard="' + esc(c.k) + '"' };
+    const head = { html: window.SETUP.headHtml(c, ctx, sibs,
+      '<div class="headrule asblock" data-fact="place"><div class="memlist">' + (doorRowsNow[host] || '') + '</div></div>') };
+    const heading = host === 'invite' ? PAGE_COPY.memHeads.applications : PAGE_COPY.memHeads.removal;
+    const nm = p.m.removee !== undefined ? nameOfMember(p.m.removee) : null;
+    const stays = p.m.invite ? PAGE_COPY.consent.staysAsIs : PAGE_COPY.consent.staysIn(nm);
+    const change = p.m.invite ? PAGE_COPY.consent.joins(p.m.invite) : PAGE_COPY.consent.leaves(nm);
+    const speaker = window.CARDS.speakerHtml(p.m.why);
+    const err = doorErrHtml(c.k);
+    if (kind === 'crown') {
+      const asks = amFounder() && docOpen();
+      return {
+        kind, frame, head,
+        label: { text: asks ? W.acceptChange : heading },
+        body: { html: '<p class="setnote">' + glyphify(esc(asks ? W.crownPerson : window.COPY.session.park.awaiting)) + '</p>' + err },
+        blocks: [{ label: W.proposed, html: cpv(change), speaker }],
+      };
+    }
+    // the member a removal runs against, where every other member answers
+    // it (Q401a): told, and asked nothing
+    const removee = removalPrice() === 'assembly' && p.m.removee && p.m.removee === viewerId();
+    if (p.mover || atTheDoor() || removee) {
+      return {
+        kind, frame, head,
+        label: { text: heading },
+        body: removee || err ? { html: (removee ? '<p class="why">' + PAGE_COPY.consent.removeSelfWhy + '</p>' +
+          '<p class="setnote">' + PAGE_COPY.consent.removeSelfCount(p.m.judged || 0, Math.max(E() - 1, 0)) + '</p>' : '') + err } : null,
+        blocks: [{ label: p.mover ? W.proposedByYou : W.proposed, html: cpv(change), speaker }],
+      };
+    }
+    const [keep, prefer, vin] = MOTION_PICKS[p.route];
+    const absAt = p.route === 'ordinary' ? motionAbstainAt(c) : undefined;
+    const note = absAt != null ? window.CARDS.abstainNoteHtml(absAt) : '';
+    const on = (v) => (pressedOn(c.k) === v ? ' on' : '');
+    return {
+      kind, frame, head,
+      label: { text: heading },
+      body: err ? { html: err } : null,
+      options: { html: '<div class="choice" role="radiogroup">' +
+        '<div class="pick' + on(keep) + '"><span class="opttext">' + esc(stays) + '</span>' + motionLane(c, keep) + '</div>' +
+        '<div class="pick' + on(prefer) + '"><span class="glab">' + esc(W.proposed) + '</span>' +
+        '<span class="opttext">' + esc(change) + '</span>' + speaker + motionLane(c, prefer) + '</div>' +
         '<div class="pick vinblock' + on(vin) + (note ? ' absrow' : '') + '">' + motionLane(c, vin, true) + note + '</div>' +
         '</div>' },
     };
