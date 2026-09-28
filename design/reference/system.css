@@ -2891,6 +2891,9 @@
   /* the solid --primary fill is retired with the subtle one (Q1153): a word
      commit is the base .btn at weight 600, armed said by elevation */
   .btn.btn-approve { font-weight: 600; }
+  /* a commit whose act is a word — the applicant's *Begin* and *Submit*
+     (Y20) — keeps the glyph button's height and takes its own width */
+  .btn.glyphbtn.wordbtn { width: auto; padding: 0 var(--s3); font-size: var(--t-ui); }
   /* **Every OK is blue** (Q1174, Ed 2026-09-02 pm, reversing Q1153's reach
      over OK): a glyph commit offers an act and stays flat; OK acknowledges or
      closes, and wears the solid accent it had before Q1153 — the two are
