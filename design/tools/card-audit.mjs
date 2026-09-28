@@ -2144,11 +2144,9 @@ const HEAD_WORDS = [
   /^Final text$/i, /^Rule at the close$/i,
   /^Accept (Founder Actions|the Founder Veto|Constitutional Proposals|Proposals|Voting)$/i,
   /^Add your closing comment$/i, /^Accept This Change\?$/i,
-  // stage 5's asks, today's titles unchanged (Part 4; 1541.46 (a))
+  // stage 5's asks, today's titles unchanged (Part 4; 1541.46 (a)) — and the
+  // door's ask over its motions and an application too (1567.3)
   /^(Choose Your (Name|Picture)|Enter Your Email|Invite a Member|Remove a Member|Leave the Membership)$/i,
-  // …and a door motion's, the subsection its first line is (1541.46 (a) read
-  // for a list of people; stage 5's call, put to Ed in its FINAL)
-  /^(Applications for Membership|Proposed for removal)$/i,
   // …and the placeless cards at the door and the applicant's, which head with
   // their titles (grammar §2.3): the stranger's two (and the demo's 👋), and
   // the applicant's five in each state E33, E42 and Q1473 give their 🪪

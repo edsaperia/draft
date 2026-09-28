@@ -219,10 +219,10 @@ const shown = await mover.evaluate(() => {
 say('card       · ' + JSON.stringify(shown));
 if (!shown.head || !/newbie/.test(shown.head)) fail('the head', '✉️\'s head does not list the invitee: ' + JSON.stringify(shown.head));
 // Q1557: the proposal stands under the words *Applications for Membership*
-// — the card's label since Q1541 stage 5 — as in the section, and wears no
-// tag: its heading says it
-if (shown.label !== 'Applications for Membership') {
-  fail('the head', '✉️ head does not group the proposal under *Applications for Membership*: ' + JSON.stringify(shown.label));
+// in the section and wears no tag, its heading saying it; the card over it
+// carries the door's ask as its label (1567.3, Ed 2026-09-28)
+if (shown.label !== 'Invite a Member') {
+  fail('the head', '✉️\'s motion card should wear the door\'s ask, *Invite a Member*, as its label: ' + JSON.stringify(shown.label));
 }
 if (shown.chips.length) fail('the chip', 'the proposed invitee wears a tag its heading already says: ' + JSON.stringify(shown.chips));
 if (shown.radios) fail('the ask', 'the mover is offered ' + shown.radios + ' radios on their own motion (K8: the mover stands at accept)');

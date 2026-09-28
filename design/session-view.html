@@ -1860,6 +1860,8 @@
     'quorumForm', 'quorumPct', 'quorumN', 'joinBy', 'policyBy', 'titleBy', 'slugBy',
     // 💤's spell and its typed pair (Q1439), ⏱️'s three below it
     'lapse', 'lapseMs', 'lapseN', 'lapseUnit', 'removal', 'removeWho', 'admission', 'authorship', 'judgments',
+    // ✉️'s address box, which its bin puts back (1541.9, Q1541 stage 5)
+    'inviteMany',
     // ⏱️'s number and unit fields (Q1161) — missing until Q1286 (e), so 🗑️ on
     // ⏱️ left the typed number on the card and a later ✒️ would have committed it
     'grant', 'dripMin', 'dripN', 'dripUnit', 'cap', 'chamber',
@@ -1923,6 +1925,7 @@
     if (el.querySelector('[data-titlelane]')) ks.add('titleDraft');
     // ❌'s subject is provisional input like any other, so 🗑️ puts it back
     if (el.querySelector('[data-removewho]')) ks.add('removeWho');
+    if (el.querySelector('[data-emails]')) ks.add('inviteMany');
     // **A derived value rides with its field** (Q1286 (e), Ed 2026-09-08):
     // ⏱️'s typed number rescales `dripMin` and claims `rateBy` as it is typed
     // (Q1161), so a bin that put back `dripN` alone left the minutes standing
@@ -4998,10 +5001,8 @@
         // since it is your row's card (entry 188).
         const meBlock = !showMe ? ''
           : openId ? h.paraWith(openId, my)
-          : '<div class="memrow meRow">' + (my.length ? h.pile(my) : '') + avHtml(me()) +
-            '<span class="mn">' + esc(S.myname || 'Anonymous') +
-            (S.roster[meIdx].founder ? ' ' + founderMark() : '') +
-            ' <span class="chip">' + esc(PAGE_COPY.memTags.you) + '</span>' + leaveBtn + '</span></div>';
+          // one drawing for your row, here and as your ✋ 🖼️ 📧's first line
+          : '<div class="memrow meRow">' + (my.length ? h.pile(my) : '') + meRowInner() + leaveBtn + '</div>';
         // a stranger reads the register as the door serves it, under *Members*
         // alone — the per-subsection counts entry 95 asks for are unbuilt, and
         // tangled with Q508's own question about what a door may show at all
@@ -5740,7 +5741,8 @@
       : (cs ? S.roster.filter((p) => removalPendingIds().has(p.mid || 'founder')) : []);
     const applying = invite ? invitePendingRows().concat(applicantsAsking().map((ap) =>
       ({ n: ap.name || '', e: ap.email || '', pic: ap.picture, in: false, pending: true }))) : [];
-    const empty = invite ? PAGE_COPY.doorEmpty.invite : PAGE_COPY.doorEmpty.remove;
+    // one sentence per empty list, the band's and the card's alike (1541.25 (a), 1567.2)
+    const empty = invite ? PAGE_COPY.memEmpty.applications : PAGE_COPY.memEmpty.removal;
     return '<div class="headpeople">' + (rows.length || applying.length
       ? rows.map(hp).join('') + (applying.length
         ? '<span class="hplab">' + esc(PAGE_COPY.memHeads.applications) + '</span>' +
@@ -5754,9 +5756,9 @@
   // its result, and a motion in flight is a result in the making: one row per
   // running invite motion, built off the record since the person is on no
   // roster until it carries, its heading saying what it is. It stands in
-  // ✉️'s head and in the subsection alike, so the *Nobody has been invited
-  // yet* sentence counts it — that sentence is about the list being empty,
-  // and it is not.
+  // ✉️'s head and in the subsection alike, so the empty-list sentence counts
+  // it (*There are no applications at the moment.*, 1567.2) — that sentence
+  // is about the list being empty, and it is not.
   const invitePendingRows = () => {
     if (!cs || !motionsLive()) return [];
     const out = [];
@@ -7297,8 +7299,8 @@
    * **A door's motion, on the one shell** (Q1541 stage 5, stage 4's hand-off):
    * a proposal to invite somebody or to remove a member opens in place of its
    * door's subsection, so its first line is that subsection's rows — the
-   * person it is about among them — under the subsection's own heading as the
-   * label (1541.46 (a): a place card's label says what its first line is). The
+   * person it is about among them — under the door's ask as the label,
+   * *Invite a Member* or *Remove a Member* (1567.3, Ed 2026-09-28). The
    * two answers are what they always were, each a block of clause text: the
    * membership as it stands, then the change under *Proposed* with its sealed
    * reason, then Indifferent (CP4). The mover's own card is theirs, not an
@@ -7313,7 +7315,9 @@
     const frame = { cls: 'sugg setupcard', attrs: ' role="tabpanel" data-setupcard="' + esc(c.k) + '"' };
     const head = { html: window.SETUP.headHtml(c, ctx, sibs,
       '<div class="headrule asblock" data-fact="place"><div class="memlist">' + (doorRowsNow[host] || '') + '</div></div>') };
-    const heading = host === 'invite' ? PAGE_COPY.memHeads.applications : PAGE_COPY.memHeads.removal;
+    // the label is the door's ask (1567.3, Ed 2026-09-28): *Invite a Member*,
+    // *Remove a Member* — the card is the door's act, put to the membership
+    const heading = card(host).t;
     const nm = p.m.removee !== undefined ? nameOfMember(p.m.removee) : null;
     const stays = p.m.invite ? PAGE_COPY.consent.staysAsIs : PAGE_COPY.consent.staysIn(nm);
     const change = p.m.invite ? PAGE_COPY.consent.joins(p.m.invite) : PAGE_COPY.consent.leaves(nm);
@@ -7361,7 +7365,7 @@
    * **An application, on the one shell** (`adm:`, Q1541 stage 5): it stands in
    * *Applications for Membership*'s pile and opens in its place, so its first
    * line is that subsection's rows, the applicant's among them (§9's `adm:`
-   * row: the applicant at its head), under the subsection's heading; their
+   * row: the applicant at its head), under ✉️'s ask (1567.3); their
    * address is the body, and their own words are the sealed reason under the
    * change. What it asks follows 🪪's price, as it always has: at ✒️ it is
    * news and takes an OK; at 🏛️ the consent card's three blocks and 🏛️; at ✏️
@@ -7406,7 +7410,8 @@
     const frame = { cls: 'sugg setupcard', attrs: ' role="tabpanel" data-setupcard="' + esc(c.k) + '"' };
     const head = { html: window.SETUP.headHtml(c, ctx, sibs,
       '<div class="headrule asblock" data-fact="place"><div class="memlist">' + (doorRowsNow.invite || '') + '</div></div>') };
-    const heading = PAGE_COPY.memHeads.applications;
+    // …and an application is labelled with ✉️'s ask too (1567.3)
+    const heading = card('invite').t;
     const C = PAGE_COPY.consent;
     const ap = applicantById(c.admit);
     const err = doorErrHtml(c.k);
@@ -7477,7 +7482,7 @@
   const W5 = () => window.COPY.shell;
   /** your row, as the Members list draws it — the one drawing for the list
    *  and for the first line of your own cards */
-  const meRowInner = () => avHtml(me()) + '<span class="mn">' + esc(S.myname || 'Anonymous') +
+  const meRowInner = () => avHtml(me()) + '<span class="mn">' + esc(S.myname || PAGE_COPY.synth.anonymous) +
     (viewerRow() && viewerRow().founder ? ' ' + founderMark() : '') +
     ' <span class="chip">' + esc(PAGE_COPY.memTags.you) + '</span></span>';
   const IDENTITY = ['myname', 'mypic', 'myemail'];
@@ -7517,8 +7522,11 @@
       frame: { cls: 'sugg setupcard', attrs: ' role="tabpanel" data-setupcard="' + esc(c.k) + '"' +
         (identityDirty(c) ? ' data-draft="1"' : '') },
       label: { text: c.t },
-      head: { html: window.SETUP.headHtml(c, ctx, sibs,
-        '<div class="headrule asblock" data-fact="place"><div class="memrow meRow">' + meRowInner() + '</div></div>') },
+      // …and a clerk's, who has no row in Members, stand on the Founded line
+      // (Q759), so it is their first line, as it is the grants' (principle 1)
+      head: { html: window.SETUP.headHtml(c, ctx, sibs, idOnFounded().length
+        ? '<div class="headrule" data-fact="place">' + foundedClause() + '</div>'
+        : '<div class="headrule asblock" data-fact="place"><div class="memrow meRow">' + meRowInner() + '</div></div>') },
       // frozen after the close (1541.28 (a)): the row, and no choice beneath it
       options: locked ? null : { html: body },
       body: doorErrHtml(c.k) ? { html: doorErrHtml(c.k) } : null,
@@ -7572,8 +7580,9 @@
   /** something of yours on the door: an address, a person chosen, a reason */
   const doorDirty = (c) => (c.k === 'leave' ? false
     : doorComposes(c) ? !!(S.draft && S.draft.k === c.k && (S.draft.to || S.draft.why || (S.draft.many || []).length))
-    : c.k === 'invite' ? !!((S.inviteMany || '').trim() || doorWhy('invite'))
-    : !!(S.removeWho || doorWhy('remove')));
+    // a direct door: the box, the person or the reason moved since the card
+    // opened — the bin puts back exactly those (`REVERTKEYS`, `cardKeys`)
+    : S.open === c.k && openCardDirty());
   function doorActs(c) {
     if (!docOpen()) return [];
     // 🌂: the warning is the body and leaving the one act, free and nobody's
@@ -7641,6 +7650,9 @@
     let options = '';
     let input = '';
     if (k === 'leave') body = B.leave();
+    // a closed document takes no act at any door, so it draws no box or
+    // picker for one (stage 7 closes the rest of the page the same way)
+    else if (!docOpen()) body = '';
     else if (doorComposes(c)) {
       const d = (S.draft && S.draft.k === k) ? S.draft : { k, to: '', why: '' };
       // ✉️'s price once, as 🪪's clause states it; ❌'s is 🥾's to state
@@ -10739,10 +10751,16 @@
   // applicant's five are placeless and belong to no paragraph, so they are
   // their own surface to card-state — `stateOf` reads the state each card is
   // drawn from, exactly as it reads the band's and the charter's
+  // …each fact through its own reader: the acts and what is owed through
+  // `actsOf` and `owed`, the drawing through `present` (card-state stage 1)
+  const seatShell = (k) => (isStranger() ? strangerState(k) : BND.applicantShell(k)) || {};
   window.CARD_STATE.register('door', {
+    seat: true,
     owns: (k) => (isStranger() && STRCARDS().some((c) => c.k === k)) ||
       (S.viewer === 'applicant' && BND.APPCARDS().some((c) => c.k === k)),
-    present: (k) => (isStranger() ? strangerState(k) : BND.applicantShell(k)) || {},
+    acts: (k) => seatShell(k).acts || [],
+    owed: (k) => seatShell(k).owed || null,
+    present: (k) => { const st = { ...seatShell(k) }; delete st.acts; delete st.owed; return st; },
   });
   window.CARD_STATE.register('band', {
     owns: (k) => !!card(k) || MANAGED_KEYS.includes(k) || DOOR_KEYS.includes(k),
