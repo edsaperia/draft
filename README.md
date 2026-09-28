@@ -70,7 +70,7 @@ The rest of `package.json`'s scripts are instruments, in two kinds:
 | Headless over `design/` | `probe`, `probe-coverage`, `card-audit`, `a11y-audit`, `toc-travel`, `drawer-walk`, `picture-walk`, `slider-walk`, `founder-answers`, `founding-golden`, `copy-check -- --walk` | Playwright's Chromium (`npm run playwright:install`); each serves `design/` itself. `clock-check` needs only node. |
 | Against a running dev server | `journey`, `applicants-walk`, `after-begin-walk`, `invite-walk`, `member-questions-walk`, `slug-walk`, `powers-walk`, `proposal-shapes`, `ladder`, `room-walk`, `seat-matrix`, `room-bots -- <document url>` | `npm run server` in another terminal, with no `RESEND_API_KEY`. Each checks it is talking to a server built from your tree before it starts. `room-bots` alone also runs against docs.vote itself: invite bots at `*@bots.docs.vote`, whose mail the host catches, and pass `--key=<DRAFT_BOT_KEY>` (`docs/OPERATING.md` §10). |
 
-What each asserts is in `CLAUDE.md`'s glossary under *Tooling*.
+What each asserts is in `design/GLOSSARY.md` under *Tooling*.
 
 ## Licence
 

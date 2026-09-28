@@ -6,6 +6,11 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-09-28: the glossary in two files
+
+### For contributors
+- **The names of the engine's and the tooling's parts now live in `design/GLOSSARY.md`**, moved out of `CLAUDE.md`, which keeps the names of what a member sees. Nothing on docs.vote changes.
+
 ## 2026-09-27, evening: the cards you vote on, in the new shape
 
 ### Changed
