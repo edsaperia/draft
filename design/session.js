@@ -2414,8 +2414,8 @@
       const h = rec.head;
       const headWords = h && h.text != null && String(h.text).trim() ? marked(base, h) : '';
       return {
-        cls: 'ranked foldrec' + (h && h.passed ? ' passed' : ''),
-        label: rec.label, tone: rec.green ? 'ok' : null, fact: 'outcome',
+        cls: 'ranked foldpart' + (h && h.passed ? ' passed' : ''),
+        label: rec.label, tone: rec.green ? 'ok' : null, fact: null,
         html: headWords,
         speaker: (h ? recSpeaker(h.speaker) : '') +
           (rec.fact ? '<div class="rsub">' + esc(rec.fact) + '</div>' : '') +
@@ -5978,6 +5978,7 @@ document.addEventListener('paste', (ev) => {
     get editsToNext() { return editsToNext; },
     get EDIT_RULES() { return EDIT_RULES; },
     get closedMode() { return closedMode; },
+    get docClosed() { return docClosed; },
   });
   const { arcFrames, refundFlight, flyGlyph, nudgeHome, pencilStorm,
     setWalletHeld, setWalletGhost, setWalletTitle, renderWallet,
@@ -5992,6 +5993,9 @@ document.addEventListener('paste', (ev) => {
     // hold and nothing about when the next lands, so the tray says nothing
     // rather than inventing a time (stage 8; the title still says it accrues)
     if (!isFinite(SESSION_MINUTES)) return '';
+    // **nothing drips on a closed document** (1541.30, plain bug 4): the
+    // countdown stops with the clock that closed it
+    if (docClosed) return '';
     const secs = Math.max(0, Math.round((1 - Math.max(0, Math.min(1, editsToNext))) * SESSION_MINUTES * 6));
     const m = Math.floor(secs / 60), s = secs % 60;
     // mm:ss (Ed, 2026-08-17) — a clock reads as a clock, and the fixed shape

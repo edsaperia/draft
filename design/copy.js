@@ -1396,7 +1396,9 @@ window.COPY = (function () {
       // hands you — 💡's power is ✏️ — and 🏛️'s reads its own word above
       accept: (glyph) => 'Accept ' + glyph,
       begin: { title: 'Begin' },
-      closing: { title: 'The Close' },
+      // 🥂's OK signs the document (1541.7 (a)): its tooltip, moved here from
+      // the old builder word for word
+      closing: { title: 'The Close', signTitle: 'OK signs the document; your comment goes on the record' },
     },
   };
 
@@ -1507,6 +1509,10 @@ window.COPY = (function () {
     // 📧 after the save, moved here from the old builder's body word for word
     emailWhy: 'Your address is the only way back in — there are no passwords — so a new one has to prove it works before it replaces the old.',
     emailSentWhy: 'The mail is the login: clicking its link is what proves the address works.',
+    // ---- stage 7: records, the backlog and the closed page ----
+    // .25 — 🥂's label while your signature is owed (the input's own
+    // *Your closing comment* is not drawn)
+    addClosingComment: 'Add your closing comment',
   };
 
   // ---- the spectator feed (feed.html, Q1466) --------------------------------

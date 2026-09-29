@@ -1155,7 +1155,7 @@ const IN_PAGE = () => {
     out.powerTabs = strip ? [...strip.querySelectorAll('.achip')].filter((t) => {
       const k = t.dataset.tab || t.dataset.anchor || t.dataset.chip || '';
       const g = [...t.querySelectorAll('svg[data-char]')].map((e) => e.getAttribute('data-char')).join('') + (t.textContent || '');
-      return /^pw:/.test(k) || /[✒🛡]/.test(g);
+      return /^pw:/.test(k) || /[✒🛡]/u.test(g);
     }).map((t) => t.dataset.tab || t.dataset.anchor || t.dataset.chip || '?') : [];
     // P24: can anything be typed on this card (a lane, a box, a composer)
     out.typeable = [...card.querySelectorAll(INPUTS)].some((i) => vis(i) && i.tagName !== 'SELECT');
@@ -1539,7 +1539,7 @@ const IN_PAGE = () => {
       if (!isVis(t, null) || !t.getBoundingClientRect().width) return;
       const k = t.dataset.tab || t.dataset.anchor || t.dataset.chip || '';
       const g = [...t.querySelectorAll('svg[data-char]')].map((e) => e.getAttribute('data-char')).join('') + (t.textContent || '');
-      if (/^pw:/.test(k) || /[✒🛡]/.test(g)) out.push({ where: 'strip', key: k, text: g.trim() });
+      if (/^pw:/.test(k) || /[✒🛡]/u.test(g)) out.push({ where: 'strip', key: k, text: g.trim() });
     });
     return out;
   };
@@ -2182,6 +2182,10 @@ const HEAD_WORDS = [
   /^Final text$/i, /^Rule at the close$/i,
   /^Accept (Founder Actions|the Founder Veto|Constitutional Proposals|Proposals|Voting)$/i,
   /^Add your closing comment$/i, /^Accept This Change\?$/i,
+  // stage 7: 🥂 once signed or for a reader who signs nothing, its title; a
+  // clause's fold, how many decisions and when the last was (Q1561; the
+  // builder's call, the PR's FINAL)
+  /^The Close$/i, /^\d+ decisions · .+$/i,
   // stage 5's asks, today's titles unchanged (Part 4; 1541.46 (a)) — and the
   // door's ask over its motions and an application too (1567.3)
   /^(Choose Your (Name|Picture)|Enter Your Email|Invite a Member|Remove a Member|Leave the Membership)$/i,
@@ -2192,6 +2196,9 @@ const HEAD_WORDS = [
 ];
 /** …and on a block's first line (Part 4 .8–.14) */
 const BLOCK_WORDS = /^(Proposed( by .+)?|Previous (text|rule))( · (\d+%|Ran out of time))?$|^The text you voted on$/i;
+/** …and a clause fold's blocks, each a record in full under its own outcome
+ *  label (Q1561 (m); Part 4 .4) */
+const FOLD_BLOCK_WORDS = /^(Passed|Rejected|Refused by the Founder|Changed by the Founder|Ran out of time)( · .+)?$/i;
 // …*The text you voted on*, a shifted vote's ground, is the stated exception
 // to .11 (Ed, 2026-09-27, 1563.1 (b))
 
@@ -2527,7 +2534,8 @@ function grammarRules(c, ref) {
       if (bad) at('label-slot', 'the block label “' + clip(b.label, 30) + '” is drawn ' + bad, 'drawing');
       // the diagonal's blocks are two questions, not wordings, each labelled
       // by its own name — the one block Part 4's words do not cover (stage 6)
-      if (c.shellKind !== 'diag' && !BLOCK_WORDS.test(String(b.label || '').replace(/\s+/g, ' ').trim())) at('label-slot', 'the block label “' + clip(b.label, 40) + '” is not in answers Part 4\'s words', 'words');
+      if (c.shellKind !== 'diag' && !BLOCK_WORDS.test(String(b.label || '').replace(/\s+/g, ' ').trim()) &&
+        !(c.shellKind === 'clause-fold' && FOLD_BLOCK_WORDS.test(String(b.label || '').replace(/\s+/g, ' ').trim()))) at('label-slot', 'the block label “' + clip(b.label, 40) + '” is not in answers Part 4\'s words', 'words');
     }
   }
 
