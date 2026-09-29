@@ -542,10 +542,14 @@ const STEPS = [
   // neither in the rail nor as a tab on the Founded line (`railOf` reads
   // both). Red on the page before #119, which served the grant to everybody
   // from the cork; `E8`'s `at` is the early seat's arrival, where the voice
-  // first arrived to a member on this document.
+  // first arrived to a member on this document. `staged` as E4's gates are:
+  // the grant is a gate on the card, and a member owed a decision's OK at 🍾
+  // (`early` and `lapsed`, owed 💤's, both hats) is shown no gate until they
+  // have given it — read off the module's `owedOks`, never assumed.
   { id: 'begin', epoch: 'live', kind: 'hold', seat: 'founder', key: 'begin',
     keep: [['text', 'a'], ['text', 'u']],
-    events: [E4('canpropose'), E4('canjudge'), { id: 'E25', key: 'strapply', at: 'begin' }, E8('grant-voice')] },
+    events: [E4('canpropose'), E4('canjudge'), { id: 'E25', key: 'strapply', at: 'begin' },
+      { ...E8('grant-voice'), staged: true }] },
   // `ok-propose` and `ok-judge` are **retired** (2026-09-07). They opened 💡
   // and ⚖️ on the founder's page and pressed their OK; since Ed's ruling of
   // 2026-09-01 (`gateSelfSet`) the founder has no such card to open, so both
