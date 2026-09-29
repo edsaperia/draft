@@ -6,6 +6,11 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-09-29: a Founder outside the membership
+
+### Fixed
+- **A Founder who is not a member is no longer asked to accept Constitutional Proposals** once the document begins. That power arrives with membership, and they hold none.
+
 ## 2026-09-28, evening: your name, the doors and applications, in the new shape
 
 ### Changed

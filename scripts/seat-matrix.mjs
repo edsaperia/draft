@@ -300,7 +300,12 @@ const isMember = (s) => !s.left &&
  */
 const activeButTheMover = (s, step, ctx, ev) => isMember(s) && s.name !== ctx.actorOf(ev);
 const AUDIENCE = {
-  'the holder': (s) => s.role === 'founder',
+  // E8, a power arrives — to the holder, and the key says which power. ✒️ and
+  // 🛡️ are the founder's on either hat; 🏛️ *arrives when you first become a
+  // member* (the row's own words, Q1365), so its holder is every member and
+  // never a clerk founder (#119: the card had no `hide`, and `visible`'s
+  // last clause let it through to everybody once the document had begun)
+  'the holder': (s, step, ctx, ev) => (ev && ev.key === 'grant-voice' ? isMember(s) : s.role === 'founder'),
   'every member': (s) => isMember(s),
   'every member who had no say **and arrived when it was set**, lapsed included; a later joiner reads it as the document':
     (s, step, ctx, ev) => isMember(s) && s.name !== ctx.actorOf(ev) &&
@@ -515,8 +520,10 @@ const STEPS = [
   // 🏛️ is served to a member founder as news once the constitution is settled,
   // and `beginOffered` holds 🍾 until it is acknowledged (first run, 2026-08-27:
   // `no begin card to hold … rail ["grant-voice"]`). journey OKs every served
-  // task; this table has to say so. No events: the voice's audience row is
-  // not in this table (E8 here is the founder's pen and shield).
+  // task; this table has to say so. No events here: the voice's E8 is
+  // asserted at `begin` below, on both hats, where the founder's own
+  // acknowledgement (this step, member hat) and the clerk's absence from
+  // the audience are both facts the assertion can read (#119).
   { id: 'ok-voice', epoch: 'before', kind: 'ok', seat: 'founder', key: 'grant-voice', ifHat: 'member', events: [] },
   // ---- live ---------------------------------------------------------------
   // `keep`: 🛡️ kept on the Text at 🍾 (the table's own toggle, journey's
@@ -529,9 +536,16 @@ const STEPS = [
   // instead (the shield above) and never reaches `rebaseOthers` at all. The
   // Text is the one row of 🍾's table whose cells default to *down*
   // (`beginPos`), so both of its powers have to be asked for by name.
+  // **and 🏛️, the holder's** (E8, #119): once the document has begun a
+  // member carries the voice's entry, or has acknowledged it (the founder at
+  // `ok-voice`), and a clerk founder — never a member — carries it nowhere,
+  // neither in the rail nor as a tab on the Founded line (`railOf` reads
+  // both). Red on the page before #119, which served the grant to everybody
+  // from the cork; `E8`'s `at` is the early seat's arrival, where the voice
+  // first arrived to a member on this document.
   { id: 'begin', epoch: 'live', kind: 'hold', seat: 'founder', key: 'begin',
     keep: [['text', 'a'], ['text', 'u']],
-    events: [E4('canpropose'), E4('canjudge'), { id: 'E25', key: 'strapply', at: 'begin' }] },
+    events: [E4('canpropose'), E4('canjudge'), { id: 'E25', key: 'strapply', at: 'begin' }, E8('grant-voice')] },
   // `ok-propose` and `ok-judge` are **retired** (2026-09-07). They opened 💡
   // and ⚖️ on the founder's page and pressed their OK; since Ed's ruling of
   // 2026-09-01 (`gateSelfSet`) the founder has no such card to open, so both

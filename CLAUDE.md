@@ -385,6 +385,7 @@ The post-mortems: what broke, why it broke, and the shape of the mistake so it i
 - **An OK opens the next thing owed, so pressing that card's entry shuts it** (Q1536's walk, 2026-09-25): eight walks that pressed an entry and then its OK, card by card, stalled on the second, its grant never accepted. The shared `open` and `openCard` leave an open card open; a walk with its own press must too. Guards: `npm run journey`, `review-walk`.
 - **A seat's accepted grants are its browser's, not the seat's** (Q1541 stage 3b): `saveGrants` keeps them in localStorage, so a walk opening a fresh context meets the welcomes again, behind any news owed — and a composer draws no commit for a power not yet accepted (Part 4 .19). Guard: `npm run rate-motion`.
 - **A card's markup cannot read its own fields, which are not in the page yet** (Q1541 stage 3a, 2026-09-26): the shell drew a reopened settings card's bin from `cardKeys()`, found nothing, and a value left on it could not be binned; `syncShellRow` corrects the row after every render. Guard: `npm run journey`'s L9 and *build hand*.
+- **A card with no `hide` is served to everybody once the document begins** (#119): `grant-voice` was unseen by a clerk founder before 🍾 only because `visible`'s last clause had nothing true for them, and `constituted()` was true for all — a 🏛️ grant for somebody who is never a member. The pen's seam, `hide: () => !viewerIsMember()`. Guard: `npm run seat-matrix -- --hat=clerk`, E8 at `begin`.
 
 ## The spec pass
 
