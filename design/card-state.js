@@ -217,9 +217,13 @@ window.CARD_STATE = (function () {
     const since = !!r.changedSince;
     const label = W.outcome ? W.outcome[outcome] + (r.when ? W.sep + r.when : '') + (since ? W.sep + W.sinceReplaced : '') : null;
     const share = (p) => (p == null ? null : Math.round(p * 100) + '%');
+    // a wording the clock cut off keeps its live label and says so, with no
+    // share: nothing was decided, so nothing ranks it (answers Part 4 .14,
+    // Part 6.10 — *Proposed by ‹name› · Ran out of time*)
     const blockLabel = (c) => {
       if (c.incumbent) return W.previousText;
       const who = c.mine ? W.proposedByYou : c.by ? W.proposedBy(c.by) : W.proposed;
+      if (und) return who + W.sep + W.outcome.ranOut;
       const s = share(c.p);
       return who + (s ? W.sep + s : '');
     };

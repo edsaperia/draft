@@ -2365,6 +2365,7 @@ window.BAND = (function () {
       // rendered again and the record never arrived.
       const closedNow = !!(env.cs && env.cs.closed);
       SESSION.setDocClosed(closedNow);
+      SESSION.setSigned(closedNow && signedClose());
       renderTitle(); renderRail(); renderBand(); syncCharter(); renderMail(); renderPowerWallets();
       document.getElementById('mebtn').innerHTML = avHtml(
         S.viewer === 'applicant' ? { n: S.app.name || '?', pic: S.app.pic }

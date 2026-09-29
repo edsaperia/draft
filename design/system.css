@@ -812,7 +812,7 @@
      same grayscale filter, `--ok` drains to 108 where the purple drained to
      106, and `--muted` to 115 — nine levels lighter than before, and the
      luminance of the `--muted` ⏸ and ↻ beside it exactly. */
-  .mk-adopted, .mk-filedYes { color: var(--ok); }
+  .mk-adopted, .mk-filedYes, .mk-fold { color: var(--ok); }
   .mk-retired, .mk-filedNo { color: var(--muted); }
   /* **The three the palette still paints.** ⏸ is a stroked glyph and ↻ a
      character, so both take `color` like any other ink, and the grey is the same
