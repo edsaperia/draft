@@ -331,8 +331,10 @@ window.FLIGHTS = (function () {
         // cap too: the stylesheet hides it there (`.wallet.full .pwhen`), so
         // `full` is a class with a look and the socket table is true of the CSS
         // (Ed, 2026-09-08, Q1286 (d)).
-        '<span class="pwhen" style="--fill: ' +
-          (Math.max(0, Math.min(1, env.editsToNext)) * 100).toFixed(1) + '%">' + dripIn() + '</span>' +
+        // …and none on a closed document, whose drip stopped with the clock
+        // (1541.30, plain bug 4)
+        (env.docClosed ? '' : '<span class="pwhen" style="--fill: ' +
+          (Math.max(0, Math.min(1, env.editsToNext)) * 100).toFixed(1) + '%">' + dripIn() + '</span>') +
         '</span>';
       applyLean();
     }

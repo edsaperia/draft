@@ -41,6 +41,22 @@
   // post-mortem for, so the second one gets its own.
   let docClosed = false;
   const setDocClosed = (on) => { docClosed = !!on; };
+  // **🥂's signature answers every OK owed** (1541.7 (a), Q1541 stage 7): the
+  // host moves the signer's news to answered in the fold, and the records'
+  // OKs, which are the page's (`readSeals`), are answered here the same way —
+  // once this seat has signed, no record is owed it, on any browser it signs
+  // in on, since the signature is the host's fact and not this page's
+  let signedDone = false;
+  // …and the column is re-read the moment it changes: the charter's own data
+  // key does not move when a signature lands, so nothing else would re-draw
+  // the rail's owed records away (closed-press-walk)
+  const setSigned = (on) => {
+    if (!!on === signedDone) return;
+    signedDone = !!on;
+    if (!doc) return;
+    refold();
+    setTimeout(() => { renderAll(); drawWires(); }, 0);
+  };
   // **A host's own rail entries** (stage 8, the merge): the setup tasks are
   // entries in this rail, laid out by the same margin-index rules as every
   // other. The host hands them in as {id, html, anchor(), pinned, rank, u,
@@ -487,9 +503,10 @@
   // `tabAt` is that one test, asked by every gutter: the live strip
   // (`suggFor`), the filed pile (`filedFor`) and the record's own door
   // (`sealedAt`).
-  // …and a clause's fold (Q1536) stands at none: its records keep their own
-  // tabs, and the fold is their one rail entry and nothing in the gutter
-  const tabKeysOf = (s) => (s.fold ? [] : s.sites
+  // …and a clause's fold (Q1536) stands at its clause too, **at the head of
+  // the pile** (Q1561 (n), Ed 2026-09-26): its own tab, wearing its own
+  // mark, beside its records' own tabs, each of which opens that record alone
+  const tabKeysOf = (s) => (s.fold ? (s.keys ?? []).slice(0, 1) : s.sites
     ? s.sites.map((x) => (x.keys ? x.keys[0] : x.key)).filter(Boolean)
     : (s.keys ?? []).slice(0, 1));
   const tabAt = (s, key) => tabKeysOf(s).includes(key);
@@ -623,7 +640,7 @@
   // because the charter moved and that is news whatever I proposed.
   const EARLY_SEAL = 'rec:early:';
   const minePending = (g) => (g.mineIn || []).some((id) => !readSeals.has(EARLY_SEAL + id));
-  const isUnread = (g) => stateOf(g) === 'sealed' && g.unread &&
+  const isUnread = (g) => !signedDone && stateOf(g) === 'sealed' && g.unread &&
     (carried(g) || youJudged(g) || minePending(g)) && !readSeals.has(g.id);
 
   // ---- one OK per clause (Q1536, Ed 2026-09-24, option 4) ----------------
@@ -2287,6 +2304,29 @@
    * The **record** is the other half and is unchanged: `amendmentBlocks` names
    * the office, because a record outlives whoever held it.
    */
+  /**
+   * **…on the one shell** (Q1541 stage 7; Q1556, 1555 (1) deferring it here):
+   * the label is how it ended and when, *Changed by the Founder · ‹when›* in
+   * `--ok` (answers Part 4 .4); the first line the clause as it now reads,
+   * its changes marked green against what it replaced (Q1531); the Founder's
+   * reason under it, in their own name; *Previous text* the one block (.11);
+   * OK only while it is owed.
+   */
+  function amendmentPresent(s) {
+    const skey = (s.keys ?? [])[0];
+    const W = window.COPY.shell;
+    const now = skey ? sourceTextFor(skey) : '';
+    return {
+      kind: 'amendment-news',
+      frame: { cls: 'sugg sealed-open recpass', attrs: ' data-card="' + esc(s.id) + '"' + (skey ? ' data-site="' + esc(skey) + '"' : '') },
+      label: { text: W.changedByFounder + W.sep + longText(s.decided), tone: 'ok', fact: 'outcome' },
+      head: skey ? { html: clauseHeadHtml(s, Object.assign({ text: now, key: skey, chips: chipsFor(skey, s.id), label: null, fact: 'place' },
+        s.replaced && now.trim() ? { html: wordingHtml(s.replaced, now) } : {})) +
+        speakerHtml(s.rationale, undefined, s.by || T.record.founder) } : null,
+      blocks: s.replaced ? [{ cls: 'ranked wasthere', label: W.previousText, fact: 'previous', html: mdBlocksHtml(null, s.replaced) }] : [],
+      owed: owesOk(s) ? { kind: 'ok', attrs: ' data-seen="' + esc(s.id) + '"', title: T.record.okTitle, word: T.record.ok } : null,
+    };
+  }
   function amendmentCardHtml(s) {
     const skey = (s.keys ?? [])[0];
     return (
@@ -2358,6 +2398,53 @@
       '</div>'
     );
   }
+  /**
+   * **The clause's fold, on the one shell** (Q1561 (m), Ed 2026-09-26): the
+   * clause as it stands, marked against the text before the first of them
+   * (the net change), its one fact line saying which, and **every change in
+   * full, oldest first, one hairline between each** — each record a block
+   * labelled with its own outcome and when, its recorded wording marked as its
+   * own card marks it, who argued for it, its participation line and every
+   * other wording it weighed. No rows opening sub-cards and no *Back*. Its OK
+   * acknowledges the whole fold (C18).
+   */
+  function foldPresent(s, st) {
+    const skey = s.keys[0];
+    const moved = carried(s);
+    const o = headOpts(s, skey);
+    const last = s.fold[s.fold.length - 1];
+    const W = window.COPY.shell;
+    const marked = (base, c) => (c.mark && c.mark.against != null ? wordingHtml(c.mark.against, c.text) || mdBlocksHtml(null, c.text)
+      : c.mark ? wordingHtml(base, c.text) : mdBlocksHtml(null, c.text));
+    const blocks = s.fold.map((m) => {
+      const rec = window.CARD_STATE.outcomeOf(m.id);
+      if (!rec) return null;
+      const base = recordBaseOf(m, rec.outcome === 'passed');
+      const h = rec.head;
+      const headWords = h && h.text != null && String(h.text).trim() ? marked(base, h) : '';
+      return {
+        cls: 'ranked foldpart' + (h && h.passed ? ' passed' : ''),
+        label: rec.label, tone: rec.green ? 'ok' : null, fact: null,
+        html: headWords,
+        speaker: (h ? recSpeaker(h.speaker) : '') +
+          (rec.fact ? '<div class="rsub">' + esc(rec.fact) + '</div>' : '') +
+          rec.field.map((c) => '<div class="ranked' + (c.role === 'previous' ? ' wasthere' : '') + (c.passed ? ' passed' : '') + '">' +
+            '<span class="glab">' + esc(c.label) + '</span>' +
+            '<div class="rtext">' + marked(base, c) + '</div>' + recSpeaker(c.speaker) + '</div>').join(''),
+      };
+    }).filter(Boolean);
+    return {
+      kind: 'clause-fold',
+      frame: { cls: 'sugg sealed-open foldcard' + (moved ? ' recpass' : ''),
+        attrs: ' data-card="' + esc(s.id) + '" data-site="' + esc(skey) + '"' },
+      label: { text: T.record.foldHead(s.fold.length) + W.sep + longText(last.decided), fact: 'outcome' },
+      head: { html: clauseHeadHtml(s, Object.assign(o, { key: skey, chips: chipsFor(skey, s.id), label: null, fact: 'place' },
+        moved && o.text != null && String(o.text).trim() ? { html: wordingHtml(s.replaced ?? '', o.text) } : {})) },
+      fact: moved ? T.record.foldSince : T.record.foldSame,
+      blocks,
+      owed: owesOk(s) ? { kind: 'ok', attrs: ' data-seen="' + esc(s.id) + '"', title: T.record.foldOkTitle(s.fold.length), word: T.record.ok } : null,
+    };
+  }
   // the clause's one OK, and — on a record of the clause's opened from its
   // tab or its row — the way back to the list at the row's left, where a bin
   // would stand
@@ -2374,7 +2461,13 @@
   // speaker. Stage 1 builds one kind on the shell: **a sealed record on a
   // clause of a live document** (`shellRecord`); the closed page's records
   // and the backlog are stage 7's, the Founder's amendments stage 4's.
-  const shellRecord = (s) => !!s && stateOf(s) === 'sealed' && !s.amendment && !s.undecided && !s.fold && !docClosed;
+  // **and since stage 7 every record is**: the closed page's, and a record
+  // the clock cut off (*Ran out of time*, answers Part 4 .4, .14)
+  const shellRecord = (s) => !!s && stateOf(s) === 'sealed' && !s.amendment && !s.fold;
+  // **a closed card offers nothing but 🥂** (1541.7 (a)): a record owed its OK
+  // on a closed document is answered by the signature, so its card draws no
+  // OK of its own — the rail keeps the entry until 🥂 is signed
+  const owesOk = (s) => !docClosed && isUnread(s);
   const recordFacts = (s) => {
     const d = s.decided || {};
     const field = fieldOf(s);
@@ -2642,8 +2735,8 @@
     owed: (id) => {
       const s = SUGGS.find((g) => g.id === id);
       // a park is owed its OK once, per seat, remembered as a record's is
-      if (s && s.kind === 'park') return s.unread && !readSeals.has(s.id) ? { kind: 'ok' } : null;
-      return isUnread(s) ? { kind: 'ok' } : null;
+      if (s && s.kind === 'park') return !docClosed && s.unread && !readSeals.has(s.id) ? { kind: 'ok' } : null;
+      return owesOk(s) ? { kind: 'ok' } : null;
     },
     record: (id) => {
       const s = SUGGS.find((g) => g.id === id);
@@ -2707,6 +2800,8 @@
             label: whoLabel(s.by, false), labelFact: s.by ? 'author' : null }) },
         };
       }
+      if (s && s.fold) return foldPresent(s, st);
+      if (s && s.amendment) return amendmentPresent(s, st);
       if (!shellRecord(s) || !st.record) return {};
       const rec = st.record;
       const skey = (s.keys ?? [])[0];
@@ -2726,7 +2821,7 @@
         : c.mark ? wordingHtml(base, c.text) : mdBlocksHtml(null, c.text));
       const fold = foldOf(s);
       return {
-        kind: isUnread(s) ? 'record-owed' : 'record-filed',
+        kind: owesOk(s) ? 'record-owed' : 'record-filed',
         frame: { cls: 'sugg sealed-open' + (h && h.passed ? ' recpass' : ''),
           attrs: ' data-card="' + esc(id) + '"' + (skey ? ' data-site="' + esc(skey) + '"' : '') },
         label: { text: rec.label, tone: rec.green ? 'ok' : null, fact: 'outcome' },
@@ -2737,11 +2832,11 @@
           cls: 'ranked' + (c.role === 'previous' ? ' wasthere' : '') + (c.passed ? ' passed' : ''),
           label: c.label, fact: c.role === 'previous' ? 'previous' : c.author ? 'author' : null,
           html: marked(c), speaker: recSpeaker(c.speaker) })),
-        // OK only while owed (Q1522 (6)); one of a clause's several wears the
-        // clause's OK, with the way back to its list at the row's left (Q1536)
-        owed: !isUnread(s) ? null : fold
-          ? { kind: 'ok', attrs: ' data-seen="' + esc(fold.id) + '"', title: T.record.foldOkTitle(fold.fold.length), word: T.record.ok,
-            left: '<button type="button" class="btn btn-withdraw foldback" data-foldback="' + esc(fold.id) + '">' + esc(T.record.foldBack) + '</button>' }
+        // OK only while owed (Q1522 (6)); **a record's own tab shows just
+        // that record, and its OK acknowledges that record only** (Q1561, Ed
+        // 2026-09-26) — one of a clause's several included, the fold going on
+        // with the rest
+        owed: !owesOk(s) ? null
           : { kind: 'ok', attrs: ' data-seen="' + esc(id) + '"', title: T.record.okTitle, word: T.record.ok },
       };
     },
@@ -2751,7 +2846,7 @@
   // card is still this record's own — its id, its tab in front in the strip,
   // so the tab clicked is the tab lit — and its OK is the clause's
   function sealedCardHtml(s, fold) {
-    if (s.amendment) return amendmentCardHtml(s);
+    if (s.amendment) return window.CARD_SHELL.cardHtml(window.CARD_STATE.stateOf(s.id));
     // **A sealed record on a live document is built on the one shell** (Q1541
     // stage 1's pilot): its label above the first line, the recorded wording
     // as that line, its participation as the one fact line, the field's
@@ -3455,7 +3550,7 @@
   const parkNote = (s) => (s.blockedByPark
     ? '<p class="setnote">' + glyphify(esc(s.blockedByPark)) + '</p>' : '');
   function suggCardHtml(s, siteKey) {
-    if (stateOf(s) === 'sealed') return s.fold ? foldCardHtml(s) : sealedCardHtml(s, foldOf(s));
+    if (stateOf(s) === 'sealed') return s.fold ? window.CARD_SHELL.cardHtml(window.CARD_STATE.stateOf(s.id)) : sealedCardHtml(s, foldOf(s));
     // on the one shell since Q1541 stage 6 (`judgePresent`, above the source)
     if (judgeKinds(s)) return window.CARD_SHELL.cardHtml(window.CARD_STATE.stateOf(s.id, { siteKey }));
     if (stuck(s)) return deadlockCardHtml(s);
@@ -4272,7 +4367,12 @@ document.addEventListener('paste', (ev) => {
       const wasResolved = line.key && !live.length
         // (a clause's fold, open, has no tab here but is this clause's card — Q1536)
         ? (SUGGS.find((g) => g.id === openId && (sealedAt(g) || (g.fold && g.keys[0] === line.key))) ??
-          SUGGS.find((g) => sealedAt(g) && isUnread(g)) ?? SUGGS.find(sealedAt))
+          SUGGS.find((g) => sealedAt(g) && isUnread(g)) ??
+          // …and where every record here is read, the newest in front, as
+          // the filed pile it opens into stands (newest at the top, the
+          // strip's front): the oldest had stood over the pile, and the tab
+          // pressed jumped down the opened strip (card-audit P13, stage 7)
+          filedFor(line.key).slice(-1)[0] ?? SUGGS.find(sealedAt))
         : undefined;
 
       if (live.length) {
@@ -4763,31 +4863,11 @@ document.addEventListener('paste', (ev) => {
         seeRecord(el.dataset.seen);
       })
     );
-    // a record listed on its clause's card opens that record's own card — the
-    // one its tab opens — and the row's left on it goes back to the list
-    // (Q1536); both are a switch within one strip, so the tab stays put. The
-    // keyboard goes where C5 puts it on a record, its card's own tab, so Enter
-    // still presses the clause's OK; the way back returns it to the row.
-    doc.querySelectorAll('[data-foldopen]').forEach((el) =>
-      el.addEventListener('click', (ev) => {
-        ev.stopPropagation();
-        toggle(el.dataset.foldopen, false);
-      })
-    );
-    doc.querySelectorAll('[data-foldback]').forEach((el) =>
-      el.addEventListener('click', (ev) => {
-        ev.stopPropagation();
-        const was = openId || '';
-        toggle(el.dataset.foldback, false, () => {
-          const row = doc.querySelector('[data-foldopen="' + was.replace(/["\\]/g, '\\$&') + '"]');
-          if (row) { try { row.focus({ preventScroll: true }); } catch (e) { /* gone */ } }
-        });
-      })
-    );
   }
 
   // **The OK, and the walk it starts** (Q1536). Acknowledging marks the
-  // record read — every record of a clause's fold at once — and then, where
+  // record read — every record of a clause's fold at once from the fold's
+  // own OK, that record alone from a record's own (Q1561) — and then, where
   // anything else is owed, opens the next in document order from here
   // (`walkNext`: on down the text, then the Rules' news from the top, then
   // the text from the top), travelling there as a rail click does; where
@@ -5674,6 +5754,8 @@ document.addEventListener('paste', (ev) => {
   // collapses the duplicated ternary that markOf and its colour lookup had
   // each grown.
   const markKindOf = (g) => {
+    // a clause's fold wears a stack of three ✔s whatever it holds (Q1561 (n))
+    if (g && g.fold) return 'fold';
     const st = stateOf(g);
     // the third filed mark (Q469): a race unresolved at the close is
     // *undecided*, distinct from kept — the pause button, grey from the start
@@ -5720,7 +5802,7 @@ document.addEventListener('paste', (ev) => {
   // ↻ blue sits immediately ahead of ✏️ (Q170): it is a proposal of your own
   // like any other, and the act on it is larger — a proposal nobody can carry
   // across but you, against text that has already moved once.
-  const KEEP_ORDER = ['urgent', 'stuck', 'stranded', 'propose', 'weigh', 'needs', 'adopted', 'retired', 'deciding', 'shifted', 'filedYes', 'filedNo', 'filedUndecided'];
+  const KEEP_ORDER = ['urgent', 'stuck', 'stranded', 'propose', 'weigh', 'needs', 'fold', 'adopted', 'retired', 'deciding', 'shifted', 'filedYes', 'filedNo', 'filedUndecided'];
   // the three filed marks — ✔ ✖ and undecided — as one set, so a rule about
   // *filed* cannot quietly apply to two of them (Q607)
   const FILED_KINDS = new Set(['filedYes', 'filedNo', 'filedUndecided']);
@@ -5753,7 +5835,7 @@ document.addEventListener('paste', (ev) => {
   // the two orders agree about a mark of your own: unlike a proposal in the
   // race, a stranded one *is* waiting on an act of yours, so opening its pile
   // should reach it before it reaches work that is merely yours (Q170).
-  const STACK_ORDER = ['urgent', 'stuck', 'needs', 'weigh', 'adopted', 'retired',
+  const STACK_ORDER = ['urgent', 'stuck', 'needs', 'weigh', 'fold', 'adopted', 'retired',
     'stranded', 'propose', 'deciding', 'shifted', 'filedYes', 'filedNo', 'filedUndecided'];
   const stackRank = (kind) => {
     const i = STACK_ORDER.indexOf(kind);
@@ -5768,7 +5850,9 @@ document.addEventListener('paste', (ev) => {
   // Q1541 stage 4): the question waiting on the Founder's answer is the one
   // thing at that clause asked of them, and its strip led with the race's 💡
   // — pressing the pile opened the race, not the question
-  const stackKey = (g) => (g.kind === 'crown' ? -1 : stackRank(markKindOf(g)));
+  // …and **a clause's fold leads its records** (Q1561 (n)): the one tab that
+  // opens them all stands at the head of the pile
+  const stackKey = (g) => (g.kind === 'crown' ? -1 : g.fold ? -0.5 : stackRank(markKindOf(g)));
   const stackOrder = (gs) =>
     gs.slice().sort((a, b) => stackKey(a) - stackKey(b) ||
       leverage(b) - leverage(a));
@@ -5903,6 +5987,7 @@ document.addEventListener('paste', (ev) => {
     get editsToNext() { return editsToNext; },
     get EDIT_RULES() { return EDIT_RULES; },
     get closedMode() { return closedMode; },
+    get docClosed() { return docClosed; },
   });
   const { arcFrames, refundFlight, flyGlyph, nudgeHome, pencilStorm,
     setWalletHeld, setWalletGhost, setWalletTitle, renderWallet,
@@ -5917,6 +6002,9 @@ document.addEventListener('paste', (ev) => {
     // hold and nothing about when the next lands, so the tray says nothing
     // rather than inventing a time (stage 8; the title still says it accrues)
     if (!isFinite(SESSION_MINUTES)) return '';
+    // **nothing drips on a closed document** (1541.30, plain bug 4): the
+    // countdown stops with the clock that closed it
+    if (docClosed) return '';
     const secs = Math.max(0, Math.round((1 - Math.max(0, Math.min(1, editsToNext))) * SESSION_MINUTES * 6));
     const m = Math.floor(secs / 60), s = secs % 60;
     // mm:ss (Ed, 2026-08-17) — a clock reads as a clock, and the fixed shape
@@ -6501,6 +6589,10 @@ document.addEventListener('paste', (ev) => {
   // The data, keyed and seeded exactly as the page did it at load. `prev` is
   // the document being replaced, where there is one (Q1463).
   function bindData(d, s, prev) {
+    // the card being read, and every id this column held, before the swap:
+    // what the open card travels from where its race is decided (Q1565)
+    const before = openId != null && SUGGS ? SUGGS.find((g) => g.id === openId) || null : null;
+    const had = new Set((SUGGS || []).map((g) => g.id));
     // a fold handed back in (a `setData` with no fresh items) is its members
     // again before anything is filtered; `refold`, at the end, decides afresh
     s = unfold(s);
@@ -6547,9 +6639,38 @@ document.addEventListener('paste', (ev) => {
     // one OK per clause (Q1536): once the keys are the document's, since the
     // fold reads the clause as it stands and sorts its span by position
     refold();
-    // a card that has just been withheld cannot stay open behind it — asked
-    // after the fold, so a fold open across a poll keeps its card
-    if (openId != null && !SUGGS.some((g) => g.id === openId)) openId = null;
+    // **The card you are reading when its race is decided travels to its
+    // record** (Q1565, Ed 2026-09-28 and 2026-09-29): the record opens in its
+    // place, the clause and the tab pressed still, its OK owed as ever — a
+    // wording that passed, one that failed (1565 (a)) and a proposal of your
+    // own alike (1565 (b)). Anything else that leaves — a card withheld —
+    // cannot stay open behind it; asked after the fold, so a fold open across
+    // a poll keeps its card
+    if (openId != null && !SUGGS.some((g) => g.id === openId)) {
+      const to = before ? successorOf(before, had) : null;
+      openId = to ? to.id : null;
+      // …and **your own proposal passing is news you have just watched
+      // happen** (1565 (b), as the builder reads it — the PR's question): its
+      // record opens already read, nothing owed, and closes like any card
+      // that asks nothing
+      if (to && before.kind === 'draft' && before.mine && carried(to) && !readSeals.has(to.id)) {
+        readSeals.add(to.id);
+        if (hooks.seen) hooks.seen(to.id);
+      }
+    }
+  }
+  // the record a live item became: its race's record (`rec:<race>`, or
+  // `rec:<race>/<n>` after an adoption split it — Q1534), or for a proposal
+  // of your own the record holding your wording (`mineIn`) or its early ✖;
+  // one that has just arrived before one already here
+  function successorOf(item, had) {
+    const race = item.raceId || null;
+    const cand = item.candidate || null;
+    const ofIt = (g) => stateOf(g) === 'sealed' && !g.fold && (
+      (race && (g.id === 'rec:' + race || g.id.startsWith('rec:' + race + '/'))) ||
+      (cand && (g.id === 'rec:early:' + cand || (g.mineIn || []).includes(cand))));
+    const found = SUGGS.filter(ofIt);
+    return found.filter((g) => !had.has(g.id)).pop() || found.pop() || null;
   }
 
   // A host that derives the document and its items from a server view hands
@@ -6774,7 +6895,7 @@ document.addEventListener('paste', (ev) => {
   }
 
   window.SESSION = {
-    init, setData, renderAll, toggle, clauseKeysOf, closeCard, setWallet, setRoom, setClosed,
+    init, setData, renderAll, toggle, clauseKeysOf, closeCard, setWallet, setRoom, setClosed, setSigned,
     unjudge,
     // the review walk's Rules half (Q1536, Ed 2026-09-25): whether a Rules
     // entry is owed an OK, and where the walk goes from it once pressed

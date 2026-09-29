@@ -1,6 +1,6 @@
 {
  "meta": {
-  "cards": 273,
+  "cards": 275,
   "walks": [
    "answers",
    "charter",
@@ -869,6 +869,33 @@
    }
   },
   "charter": {
+   "fold:quick-lockup-lamp": {
+    "eyebrow": "2 decisions · Weekday, D Month, HH:MM",
+    "head": "The last member out locks the front door, closes the Workshop, and puts out the lamp in the Common Room.",
+    "lock": "",
+    "body": "Marked against the text before themPassed · last Weekday, 22:10The last member out locks the front door and puts out the lamp in the Common Room.The lamp in the Common Room has been found burning at breakfast three times this month. Whoever locks up is already walking past it.n of m weighed in · quorum was 5 · you preferred this wordingPrevious textThe last member out locks the front door.Passed · Weekday, D Month, 11:56The last member out locks the front door, closes the Workshop, and puts out the lamp in the Common Room.The Workshop door swings open in a draught and nobody thinks to check it. Add it to the same list as the lamp and it gets done with everything else.n of m weighed in · quorum was 5 · you preferred this wordingPrevious textThe last member out locks the front door and puts out the lamp in the Common Room.",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "OK",
+      "title": "All 2 leave your margin"
+     }
+    ],
+    "hints": [
+     "Close this one",
+     "Locking Up — the lamp — open it",
+     "Locking Up — open it",
+     "1 decided and filed at this clause — open them",
+     "A member wrote this. Who, is sealed until the closing record.",
+     "All 2 leave your margin"
+    ],
+    "helpers": [
+     "Marked against the text before them",
+     "n of m weighed in · quorum was 5 · you preferred this wording",
+     "n of m weighed in · quorum was 5 · you preferred this wording"
+    ]
+   },
    "insert-quiet": {
     "eyebrow": "Current text",
     "head": "(no text here)",
@@ -1596,8 +1623,9 @@
      }
     ],
     "hints": [
+     "Locking Up — the lamp — open it",
      "Close this one",
-     "2 decided and filed at this clause — open them",
+     "1 decided and filed at this clause — open them",
      "A member wrote this. Who, is sealed until the closing record.",
      "It leaves your margin and stays in the record"
     ],
@@ -1614,8 +1642,8 @@
     "inputs": [],
     "foot": [],
     "hints": [
+     "Locking Up — the lamp — open it",
      "Locking Up — open it",
-     "Locking Up — the lamp — the record",
      "Close this one",
      "A member wrote this. Who, is sealed until the closing record."
     ],
@@ -1630,12 +1658,19 @@
     "body": "n of m weighed in · quorum was 5 · you preferred this wordingPrevious textThe last member out locks the front door.",
     "options": [],
     "inputs": [],
-    "foot": [],
+    "foot": [
+     {
+      "label": "OK",
+      "title": "It leaves your margin and stays in the record"
+     }
+    ],
     "hints": [
-     "Locking Up — open it",
+     "Locking Up — the lamp — open it",
      "Close this one",
-     "Locking Up — the key — the record",
-     "A member wrote this. Who, is sealed until the closing record."
+     "Locking Up — open it",
+     "1 decided and filed at this clause — open them",
+     "A member wrote this. Who, is sealed until the closing record.",
+     "It leaves your margin and stays in the record"
     ],
     "helpers": [
      "n of m weighed in · quorum was 5 · you preferred this wording"
@@ -2082,33 +2117,48 @@
    }
   },
   "closed": {
-   "quick-calling": {
-    "eyebrow": "",
-    "head": "House matters are decided at a meeting called with at least seven days’ notice to all members, by majority of those present, with the proposal and result minuted in the Members’ Book.",
+   "fold:quick-lockup-lamp": {
+    "eyebrow": "2 decisions · Weekday, D Month, HH:MM",
+    "head": "The last member out locks the front door, closes the Workshop, and puts out the lamp in the Common Room.",
     "lock": "",
-    "body": "Previous textHouse matters are settled by whoever is in the room when they come up.",
+    "body": "Marked against the text before themPassed · last Weekday, 22:10The last member out locks the front door and puts out the lamp in the Common Room.The lamp in the Common Room has been found burning at breakfast three times this month. Whoever locks up is already walking past it.n of m weighed in · quorum was 5 · you preferred this wordingPrevious textThe last member out locks the front door.Passed · Weekday, D Month, 11:56The last member out locks the front door, closes the Workshop, and puts out the lamp in the Common Room.The Workshop door swings open in a draught and nobody thinks to check it. Add it to the same list as the lamp and it gets done with everything else.n of m weighed in · quorum was 5 · you preferred this wordingPrevious textThe last member out locks the front door and puts out the lamp in the Common Room.",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "OK",
-      "title": "It leaves your margin and stays in the record"
-     }
-    ],
+    "foot": [],
     "hints": [
      "Close this one",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "It leaves your margin and stays in the record"
+     "Locking Up — the lamp — open it",
+     "Locking Up — open it",
+     "1 decided and filed at this clause — open them",
+     "A member wrote this. Who, is sealed until the closing record."
+    ],
+    "helpers": [
+     "Marked against the text before them",
+     "n of m weighed in · quorum was 5 · you preferred this wording",
+     "n of m weighed in · quorum was 5 · you preferred this wording"
+    ]
+   },
+   "quick-calling": {
+    "eyebrow": "Passed · Weekday, D Month, HH:MM",
+    "head": "House matters are decided at a meeting called with at least seven days’ notice to all members, by majority of those present, with the proposal and result minuted in the Members’ Book.",
+    "lock": "",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisPrevious textHouse matters are settled by whoever is in the room when they come up.",
+    "options": [],
+    "inputs": [],
+    "foot": [],
+    "hints": [
+     "Close this one",
+     "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
      "n of m weighed in · quorum was 5 · you never voted on this"
     ]
    },
    "quick-guests-book": {
-    "eyebrow": "",
+    "eyebrow": "Rejected · Weekday, D Month, HH:MM",
     "head": "Friends of the house are welcome whenever a member is in.",
     "lock": "",
-    "body": "44%Friends of the house are welcome whenever a member is in, and are written in the book on the landing.If the house burns down we should know who was in it. It costs a line of a pen.",
+    "body": "n of m weighed in · quorum was 5 · you kept the current textProposed · 44%Friends of the house are welcome whenever a member is in, and are written in the book on the landing.If the house burns down we should know who was in it. It costs a line of a pen.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2128,10 +2178,10 @@
     ]
    },
    "quick-guests-children": {
-    "eyebrow": "",
+    "eyebrow": "Rejected · Weekday, D Month, HH:MM",
     "head": "Friends of the house are welcome whenever a member is in.",
     "lock": "",
-    "body": "22%Friends of the house are welcome whenever a member is in; children under twelve are welcome in the Garden only.The Library Corner is not a place for a four-year-old and none of us wants to be the one who says so.",
+    "body": "n of m weighed in · quorum was 5 · you kept the current textProposed · 22%Friends of the house are welcome whenever a member is in; children under twelve are welcome in the Garden only.The Library Corner is not a place for a four-year-old and none of us wants to be the one who says so.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2151,10 +2201,10 @@
     ]
    },
    "quick-guests-dinner": {
-    "eyebrow": "",
+    "eyebrow": "Rejected · Weekday, D Month, HH:MM",
     "head": "Friends of the house are welcome whenever a member is in.",
     "lock": "",
-    "body": "66%Friends of the house are welcome whenever a member is in, though not at the Weekday Dinner unless the cook is told the day before.The cook buys for the number they are given. A guest nobody mentioned is somebody else going without.",
+    "body": "n of m weighed in · quorum was 5 · you preferred the new wordingProposed · 66%Friends of the house are welcome whenever a member is in, though not at the Weekday Dinner unless the cook is told the day before.The cook buys for the number they are given. A guest nobody mentioned is somebody else going without.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2174,10 +2224,10 @@
     ]
    },
    "quick-guests-inhouse": {
-    "eyebrow": "",
+    "eyebrow": "Passed · Weekday, D Month, HH:MM",
     "head": "Friends of the house are welcome whenever a member is in.",
     "lock": "",
-    "body": "Previous textFriends of the house are welcome.",
+    "body": "n of m weighed in · 6 preferred it · 4 did not answer in time · quorum was 5 · you preferred the new wordingPrevious textFriends of the house are welcome.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2197,10 +2247,10 @@
     ]
    },
    "quick-guests-late": {
-    "eyebrow": "",
+    "eyebrow": "Rejected · Weekday, D Month, HH:MM",
     "head": "Friends of the house are welcome whenever a member is in.",
     "lock": "",
-    "body": "49%Friends of the house are welcome whenever a member is in, and are not brought in after ten in the evening.The Upper Floors hear everything. Ten is not early and the rule would be kind to whoever is asleep.",
+    "body": "n of m weighed in · quorum was 5 · you kept the current textProposed · 49%Friends of the house are welcome whenever a member is in, and are not brought in after ten in the evening.The Upper Floors hear everything. Ten is not early and the rule would be kind to whoever is asleep.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2220,10 +2270,10 @@
     ]
    },
    "quick-guests-pets": {
-    "eyebrow": "",
+    "eyebrow": "Rejected · Weekday, D Month, HH:MM",
     "head": "Friends of the house are welcome whenever a member is in.",
     "lock": "",
-    "body": "38%Friends of the house are welcome, and so are their dogs, on the ground floor.Hollis’s lurcher has been coming for two years and nobody has ever objected. Write down what we already do.",
+    "body": "n of m weighed in · quorum was 5 · you kept the current textProposed · 38%Friends of the house are welcome, and so are their dogs, on the ground floor.Hollis’s lurcher has been coming for two years and nobody has ever objected. Write down what we already do.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2243,10 +2293,10 @@
     ]
    },
    "quick-guests-three": {
-    "eyebrow": "",
+    "eyebrow": "Rejected · Weekday, D Month, HH:MM",
     "head": "Friends of the house are welcome whenever a member is in.",
     "lock": "",
-    "body": "31%Friends of the house are welcome whenever a member is in, to a maximum of three at a time.The Common Room holds nine at a push. Four of us bringing three friends each is not an evening, it is an incident.",
+    "body": "n of m weighed in · quorum was 5 · you kept the current textProposed · 31%Friends of the house are welcome whenever a member is in, to a maximum of three at a time.The Common Room holds nine at a push. Four of us bringing three friends each is not an evening, it is an incident.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2266,10 +2316,10 @@
     ]
    },
    "quick-guests-wine": {
-    "eyebrow": "",
+    "eyebrow": "Rejected · Weekday, D Month, HH:MM",
     "head": "Friends of the house are welcome whenever a member is in.",
     "lock": "",
-    "body": "18%Friends of the house are welcome whenever a member is in; a member bringing the same guest twice in a week brings the wine.Half a joke, but the house does keep buying drink for people who are not in it.",
+    "body": "n of m weighed in · quorum was 5 · you kept the current textProposed · 18%Friends of the house are welcome whenever a member is in; a member bringing the same guest twice in a week brings the wine.Half a joke, but the house does keep buying drink for people who are not in it.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2289,10 +2339,10 @@
     ]
    },
    "quick-kitchen": {
-    "eyebrow": "",
+    "eyebrow": "Passed · Weekday, D Month, HH:MM",
     "head": "The Kitchen is common to all members and is governed by one rule: you leave it as you would wish to find it at seven in the morning.",
     "lock": "",
-    "body": "Previous textThe Kitchen is common to all members and is to be kept clean and tidy at all times.",
+    "body": "n of m weighed in · quorum was 5 · you approved the seven-in-the-morning testPrevious textThe Kitchen is common to all members and is to be kept clean and tidy at all times.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2305,32 +2355,26 @@
     ]
    },
    "quick-knives": {
-    "eyebrow": "",
+    "eyebrow": "Passed · Weekday, D Month, HH:MM",
     "head": "The good knives are sharpened by the Steward and are not to be used on bone, frozen food, or the garden.",
     "lock": "",
-    "body": "Previous textThe good knives are sharpened by the Steward and are not to be used on bone or frozen food.",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisPrevious textThe good knives are sharpened by the Steward and are not to be used on bone or frozen food.",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "OK",
-      "title": "It leaves your margin and stays in the record"
-     }
-    ],
+    "foot": [],
     "hints": [
      "Close this one",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "It leaves your margin and stays in the record"
+     "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
      "n of m weighed in · quorum was 5 · you never voted on this"
     ]
    },
    "quick-larderfood": {
-    "eyebrow": "",
+    "eyebrow": "Rejected · Weekday, D Month, HH:MM",
     "head": "Food in the larder marked with a name belongs to that member. Food not marked belongs to the house and may be eaten by anyone.",
     "lock": "",
-    "body": "41%Food in the larder belongs to the house after a fortnight, marked or not, and may be eaten by anyone.Half the marked food in there is somebody’s week of lunches. A fortnight rule turns the larder into a race.",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisProposed · 41%Food in the larder belongs to the house after a fortnight, marked or not, and may be eaten by anyone.Half the marked food in there is somebody’s week of lunches. A fortnight rule turns the larder into a race.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2343,39 +2387,34 @@
     ]
    },
    "quick-lockup": {
-    "eyebrow": "",
+    "eyebrow": "Passed · Weekday, D Month, HH:MM",
     "head": "The last member out locks the front door, closes the Workshop, and puts out the lamp in the Common Room.",
     "lock": "",
-    "body": "Previous textThe last member out locks the front door and puts out the lamp in the Common Room.",
+    "body": "n of m weighed in · quorum was 5 · you preferred this wordingPrevious textThe last member out locks the front door and puts out the lamp in the Common Room.",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "OK",
-      "title": "It leaves your margin and stays in the record"
-     }
-    ],
+    "foot": [],
     "hints": [
+     "Locking Up — the lamp — open it",
      "Close this one",
-     "2 decided and filed at this clause — open them",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "It leaves your margin and stays in the record"
+     "1 decided and filed at this clause — open them",
+     "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
      "n of m weighed in · quorum was 5 · you preferred this wording"
     ]
    },
    "quick-lockup-first": {
-    "eyebrow": "",
+    "eyebrow": "Rejected · last Weekday, HH:MM",
     "head": "The last member out locks the front door, closes the Workshop, and puts out the lamp in the Common Room.",
     "lock": "",
-    "body": "34%The last member out locks the front door and leaves the key with the Steward.Eleven keys and nobody knows who has one. The Steward should hold the spare, not a flowerpot.",
+    "body": "n of m weighed in · quorum was 5 · you kept the current textProposed · 34%The last member out locks the front door and leaves the key with the Steward.Eleven keys and nobody knows who has one. The Steward should hold the spare, not a flowerpot.",
     "options": [],
     "inputs": [],
     "foot": [],
     "hints": [
+     "Locking Up — the lamp — open it",
      "Locking Up — open it",
-     "Locking Up — the lamp — the record",
      "Close this one",
      "A member wrote this. Who, is sealed until the closing record."
     ],
@@ -2384,17 +2423,18 @@
     ]
    },
    "quick-lockup-lamp": {
-    "eyebrow": "",
+    "eyebrow": "Passed · last Weekday, HH:MM",
     "head": "The last member out locks the front door, closes the Workshop, and puts out the lamp in the Common Room.",
     "lock": "",
-    "body": "Previous textThe last member out locks the front door.",
+    "body": "n of m weighed in · quorum was 5 · you preferred this wordingPrevious textThe last member out locks the front door.",
     "options": [],
     "inputs": [],
     "foot": [],
     "hints": [
-     "Locking Up — open it",
+     "Locking Up — the lamp — open it",
      "Close this one",
-     "Locking Up — the key — the record",
+     "Locking Up — open it",
+     "1 decided and filed at this clause — open them",
      "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
@@ -2402,10 +2442,10 @@
     ]
    },
    "quick-notice": {
-    "eyebrow": "",
+    "eyebrow": "Passed · Weekday, D Month, HH:MM",
     "head": "Notice of a meeting is given by writing it in the Members’ Book and telling every member by whatever means reaches them.",
     "lock": "",
-    "body": "Previous textNotice of a meeting shall be effected by entry in the Members’ Book and by such further communication to each member as the Steward shall deem sufficient in the circumstances.",
+    "body": "n of m weighed in · quorum was 5 · you approved the plainer wordingPrevious textNotice of a meeting shall be effected by entry in the Members’ Book and by such further communication to each member as the Steward shall deem sufficient in the circumstances.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2418,10 +2458,10 @@
     ]
    },
    "race-beds": {
-    "eyebrow": "",
+    "eyebrow": "Passed · Weekday, D Month, HH:MM",
     "head": "The beds nearest the wall are given over to whatever a member wishes to grow, one bed to a member, allotted each spring by the Garden Steward.",
     "lock": "",
-    "body": "Previous textThe beds nearest the wall are given over to whatever a member wishes to grow, one bed to a member, for as long as they want it.46%The beds nearest the wall are given over to whatever a member wishes to grow, one bed to a member, allotted each spring by lot.A Steward choosing who gets a bed is a Steward being lobbied all winter.41%The beds nearest the wall are given over to whatever a member wishes to grow, one bed to a member, for as long as they tend it.Keep the bed while you keep it up; lose it when the weeds win.29%The beds nearest the wall are shared, and the Garden Steward keeps a list of what is growing where.One bed each is fourteen small beds. Two big ones would grow more.",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisPrevious textThe beds nearest the wall are given over to whatever a member wishes to grow, one bed to a member, for as long as they want it.Proposed · 46%The beds nearest the wall are given over to whatever a member wishes to grow, one bed to a member, allotted each spring by lot.A Steward choosing who gets a bed is a Steward being lobbied all winter.Proposed · 41%The beds nearest the wall are given over to whatever a member wishes to grow, one bed to a member, for as long as they tend it.Keep the bed while you keep it up; lose it when the weeds win.Proposed · 29%The beds nearest the wall are shared, and the Garden Steward keeps a list of what is growing where.One bed each is fourteen small beds. Two big ones would grow more.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2430,15 +2470,15 @@
      "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
-     "n of m weighed in · quorum was 5 · you never voted on this",
-     "Passed when the document closed, voted against 2 of its 3 rivals"
+     "Passed when the document closed, voted against 2 of its 3 rivals",
+     "n of m weighed in · quorum was 5 · you never voted on this"
     ]
    },
    "race-borrow": {
-    "eyebrow": "",
+    "eyebrow": "Rejected · Weekday, D Month, HH:MM",
     "head": "The Library Corner holds the Club’s books, which may be borrowed by any member for as long as they are being read and no longer.",
     "lock": "",
-    "body": "57%The Library Corner holds the Club’s books, which may be borrowed by any member for a fortnight at a time, and for longer if nobody else has asked.“As long as they are being read” is how the good atlas has been on one bedside table since March. A fortnight is a date anybody can check.n of m members preferred the current text to this34%The Library Corner holds the Club’s books, which may be borrowed by any member who writes their name in the book on the shelf.Nobody minds how long a book is out. They mind not knowing who has it.",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisProposed · 57%The Library Corner holds the Club’s books, which may be borrowed by any member for a fortnight at a time, and for longer if nobody else has asked.“As long as they are being read” is how the good atlas has been on one bedside table since March. A fortnight is a date anybody can check.n of m members preferred the current text to thisProposed · 34%The Library Corner holds the Club’s books, which may be borrowed by any member who writes their name in the book on the shelf.Nobody minds how long a book is out. They mind not knowing who has it.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2452,54 +2492,42 @@
     ]
    },
    "race-claims": {
-    "eyebrow": "",
+    "eyebrow": "Passed · Weekday, D Month, HH:MM",
     "head": "A claim is made by writing in the book on the landing. A claim more than a month ahead may be displaced by a member with a nearer need, who tells the displaced member within a day and offers them the next free week.",
     "lock": "",
-    "body": "58%A claim is made by writing in the book on the landing. Claims are taken in the order they are written and are not displaced for any reason.A rule with an exception in it is a rule people argue about at ten at night. First come, first served is the only version nobody can lawyer.Previous textA claim is made by writing in the book on the landing. A claim more than a month ahead may be displaced by a member with a nearer need, on notice and with apologies.49%A claim is made by writing in the book on the landing. A claim may be displaced by a member with a nearer need, at the Steward’s discretion.Somebody has to weigh a wedding against a fortnight of decorating. That is what we have a Steward for, and they can see the whole book.35%A claim is made by writing in the book on the landing. No member may hold more than two claims at once, and none more than a season ahead.The problem is not displacement, it is the two of us who book out the whole summer in February. Cap the hoarding and the clashes mostly go away.21%The Guest Bedroom is booked by asking the Steward, who keeps the calendar and settles clashes.The book on the landing is lost twice a year. One person with one calendar is how every other house in the world does this.",
+    "body": "n of m weighed in · quorum was 5 · you voted on three pairs — twice for the wording that stoodProposed · 58%A claim is made by writing in the book on the landing. Claims are taken in the order they are written and are not displaced for any reason.A rule with an exception in it is a rule people argue about at ten at night. First come, first served is the only version nobody can lawyer.Previous textA claim is made by writing in the book on the landing. A claim more than a month ahead may be displaced by a member with a nearer need, on notice and with apologies.Proposed · 49%A claim is made by writing in the book on the landing. A claim may be displaced by a member with a nearer need, at the Steward’s discretion.Somebody has to weigh a wedding against a fortnight of decorating. That is what we have a Steward for, and they can see the whole book.Proposed · 35%A claim is made by writing in the book on the landing. No member may hold more than two claims at once, and none more than a season ahead.The problem is not displacement, it is the two of us who book out the whole summer in February. Cap the hoarding and the clashes mostly go away.Proposed · 21%The Guest Bedroom is booked by asking the Steward, who keeps the calendar and settles clashes.The book on the landing is lost twice a year. One person with one calendar is how every other house in the world does this.",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "OK",
-      "title": "It leaves your margin and stays in the record"
-     }
-    ],
+    "foot": [],
     "hints": [
      "Close this one",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "It leaves your margin and stays in the record"
+     "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
      "n of m weighed in · quorum was 5 · you voted on three pairs — twice for the wording that stood"
     ]
    },
    "race-nomination": {
-    "eyebrow": "",
+    "eyebrow": "Rejected · Weekday, D Month, HH:MM",
     "head": "A candidate for membership is nominated by one member and seconded by another.",
     "lock": "",
-    "body": "52%A candidate for membership is nominated by one member and seconded by another, neither of whom may be the candidate’s household.A household nominating and seconding its own candidate is two names out of one kitchen. The bar costs nothing and keeps the door honest.29%A candidate for membership is nominated by any two members.The household bar reads as suspicion of our own members. Two names are two names — and if the house has doubts, the meeting is where they belong.",
+    "body": "n of m weighed in · quorum was 5 · you preferred “A candidate for membership is nominated…”Proposed · 52%A candidate for membership is nominated by one member and seconded by another, neither of whom may be the candidate’s household.A household nominating and seconding its own candidate is two names out of one kitchen. The bar costs nothing and keeps the door honest.Proposed · 29%A candidate for membership is nominated by any two members.The household bar reads as suspicion of our own members. Two names are two names — and if the house has doubts, the meeting is where they belong.",
     "options": [],
     "inputs": [],
-    "foot": [
-     {
-      "label": "OK",
-      "title": "It leaves your margin and stays in the record"
-     }
-    ],
+    "foot": [],
     "hints": [
      "Close this one",
-     "A member wrote this. Who, is sealed until the closing record.",
-     "It leaves your margin and stays in the record"
+     "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
      "n of m weighed in · quorum was 5 · you preferred “A candidate for membership is nominated…”"
     ]
    },
    "rec:fx-u0": {
-    "eyebrow": "",
+    "eyebrow": "Ran out of time · Weekday, D Month, HH:MM",
     "head": "The Purse-holder pays only bills approved under the budget or by a house decision, reimburses claims against receipts, keeps accounts and receipts open to any member on request, and reports income and spending at every meeting.",
     "lock": "",
-    "body": "the text that standsThe Purse-holder pays the bills and reimburses what seems fair, and keeps the receipts in the tin.47%The Purse-holder pays the house’s bills and reimburses members’ reasonable claims as trust and good sense direct, keeping accounts in whatever simple way suits, and is glad to talk any member through them who asks.The old rule buries our volunteer in budget sign-offs and minute-taking. We’re friends who trust each other — spare whoever takes this on the paperwork.",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisPrevious textThe Purse-holder pays the bills and reimburses what seems fair, and keeps the receipts in the tin.Proposed · Ran out of timeThe Purse-holder pays the house’s bills and reimburses members’ reasonable claims as trust and good sense direct, keeping accounts in whatever simple way suits, and is glad to talk any member through them who asks.The old rule buries our volunteer in budget sign-offs and minute-taking. We’re friends who trust each other — spare whoever takes this on the paperwork.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2508,15 +2536,14 @@
      "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
-     "n of m weighed in · quorum was 5 · you never voted on this",
-     "the text that stands"
+     "n of m weighed in · quorum was 5 · you never voted on this"
     ]
    },
    "rec:fx-u1": {
-    "eyebrow": "",
+    "eyebrow": "Ran out of time · Weekday, D Month, HH:MM",
     "head": "The Treasurer pays the bills and reimburses what seems fair, keeps the receipts in the tin, and hands the tin and books to their successor.",
     "lock": "",
-    "body": "the text that standsThe Purse-holder pays the bills and reimburses what seems fair, and keeps the receipts in the tin.The club has a Steward and a Purse-holder, chosen by acclaim, who do what needs doing until they stop.The Purse-holder keeps the accounts in whatever way suits them, and shows them to any member who asks.",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisPrevious textThe Purse-holder pays the bills and reimburses what seems fair, and keeps the receipts in the tin.The club has a Steward and a Purse-holder, chosen by acclaim, who do what needs doing until they stop.The Purse-holder keeps the accounts in whatever way suits them, and shows them to any member who asks.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2525,15 +2552,14 @@
      "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
-     "n of m weighed in · quorum was 5 · you never voted on this",
-     "the text that stands"
+     "n of m weighed in · quorum was 5 · you never voted on this"
     ]
    },
    "rec:fx-u10": {
-    "eyebrow": "",
+    "eyebrow": "Ran out of time · Weekday, D Month, HH:MM",
     "head": "No candidate may be nominated twice in one year, counted from the date of the first nomination.",
     "lock": "",
-    "body": "the text that standsNo candidate may be nominated twice in one year.",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisPrevious textNo candidate may be nominated twice in one year.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2542,15 +2568,14 @@
      "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
-     "n of m weighed in · quorum was 5 · you never voted on this",
-     "the text that stands"
+     "n of m weighed in · quorum was 5 · you never voted on this"
     ]
    },
    "rec:fx-u11": {
-    "eyebrow": "",
+    "eyebrow": "Ran out of time · Weekday, D Month, HH:MM",
     "head": "Every member is expected at three of the four quarterly meetings; a member who attends none in a year is asked, kindly, whether they still want to be a member, and the asking is done by the Steward in private.",
     "lock": "",
-    "body": "the text that standsEvery member is expected at three of the four quarterly meetings; a member who attends none in a year is asked, kindly, whether they still want to be a member.",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisPrevious textEvery member is expected at three of the four quarterly meetings; a member who attends none in a year is asked, kindly, whether they still want to be a member.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2559,15 +2584,14 @@
      "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
-     "n of m weighed in · quorum was 5 · you never voted on this",
-     "the text that stands"
+     "n of m weighed in · quorum was 5 · you never voted on this"
     ]
    },
    "rec:fx-u12": {
-    "eyebrow": "",
+    "eyebrow": "Ran out of time · Weekday, D Month, HH:MM",
     "head": "The subscription is set once a year at the spring meeting, and may not be raised by more than a tenth in any year without a reserved decision.",
     "lock": "",
-    "body": "the text that standsThe subscription is set once a year at the spring meeting, and may not be raised by more than a quarter in any year without a reserved decision.",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisPrevious textThe subscription is set once a year at the spring meeting, and may not be raised by more than a quarter in any year without a reserved decision.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2576,15 +2600,14 @@
      "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
-     "n of m weighed in · quorum was 5 · you never voted on this",
-     "the text that stands"
+     "n of m weighed in · quorum was 5 · you never voted on this"
     ]
    },
    "rec:fx-u13": {
-    "eyebrow": "",
+    "eyebrow": "Ran out of time · Weekday, D Month, HH:MM",
     "head": "Friends of the house are welcome whenever a member is in, and until the quiet hours begin.",
     "lock": "",
-    "body": "the text that standsFriends of the house are welcome whenever a member is in.",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisPrevious textFriends of the house are welcome whenever a member is in.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2593,15 +2616,14 @@
      "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
-     "n of m weighed in · quorum was 5 · you never voted on this",
-     "the text that stands"
+     "n of m weighed in · quorum was 5 · you never voted on this"
     ]
    },
    "rec:fx-u14": {
-    "eyebrow": "",
+    "eyebrow": "Ran out of time · Weekday, D Month, HH:MM",
     "head": "Friends of the house are welcome whenever a member is in, up to three at a time without telling anybody.",
     "lock": "",
-    "body": "the text that standsFriends of the house are welcome whenever a member is in.",
+    "body": "n of m weighed in · quorum was 5 · you voted on thisPrevious textFriends of the house are welcome whenever a member is in.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2610,15 +2632,14 @@
      "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
-     "n of m weighed in · quorum was 5 · you voted on this",
-     "the text that stands"
+     "n of m weighed in · quorum was 5 · you voted on this"
     ]
    },
    "rec:fx-u15": {
-    "eyebrow": "",
+    "eyebrow": "Ran out of time · Weekday, D Month, HH:MM",
     "head": "Friends of the house are welcome whenever a member is in, up to three at a time without telling anybody.",
     "lock": "",
-    "body": "the text that standsFriends of the house are welcome whenever a member is in.47%Friends of the house are welcome whenever a member is in, and until the quiet hours begin.Welcome and “welcome at three in the morning” are different offers, and only one of them is fair on whoever is asleep upstairs.",
+    "body": "n of m weighed in · quorum was 5 · you voted on thisPrevious textFriends of the house are welcome whenever a member is in.Proposed · Ran out of timeFriends of the house are welcome whenever a member is in, and until the quiet hours begin.Welcome and “welcome at three in the morning” are different offers, and only one of them is fair on whoever is asleep upstairs.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2627,15 +2648,14 @@
      "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
-     "n of m weighed in · quorum was 5 · you voted on this",
-     "the text that stands"
+     "n of m weighed in · quorum was 5 · you voted on this"
     ]
    },
    "rec:fx-u16": {
-    "eyebrow": "",
+    "eyebrow": "Ran out of time · Weekday, D Month, HH:MM",
     "head": "Friends of the house are welcome whenever a member is in, and a member expecting more than one says so in the Members’ Book.",
     "lock": "",
-    "body": "the text that standsFriends of the house are welcome whenever a member is in.",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisPrevious textFriends of the house are welcome whenever a member is in.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2644,15 +2664,14 @@
      "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
-     "n of m weighed in · quorum was 5 · you never voted on this",
-     "the text that stands"
+     "n of m weighed in · quorum was 5 · you never voted on this"
     ]
    },
    "rec:fx-u17": {
-    "eyebrow": "",
+    "eyebrow": "Ran out of time · Weekday, D Month, HH:MM",
     "head": "Friends of the house are welcome whenever a member is in, which is what makes them guests and not visitors.",
     "lock": "",
-    "body": "",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisPrevious textThis clause would be removed.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2665,10 +2684,10 @@
     ]
    },
    "rec:fx-u18": {
-    "eyebrow": "",
+    "eyebrow": "Ran out of time · Weekday, D Month, HH:MM",
     "head": "No guest holds a key, and no guest is left alone in the house unless the member who brought them says so and is reachable.",
     "lock": "",
-    "body": "the text that standsNo guest holds a key, and no guest is left alone in the house.",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisPrevious textNo guest holds a key, and no guest is left alone in the house.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2677,15 +2696,14 @@
      "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
-     "n of m weighed in · quorum was 5 · you never voted on this",
-     "the text that stands"
+     "n of m weighed in · quorum was 5 · you never voted on this"
     ]
    },
    "rec:fx-u19": {
-    "eyebrow": "",
+    "eyebrow": "Ran out of time · Weekday, D Month, HH:MM",
     "head": "The Steward is not the Club’s head. The Club has no head.",
     "lock": "",
-    "body": "the text that standsThe Steward is not the Club’s head. The Club has no head, and has managed for nine years without noticing the lack.",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisPrevious textThe Steward is not the Club’s head. The Club has no head, and has managed for nine years without noticing the lack.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2694,15 +2712,14 @@
      "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
-     "n of m weighed in · quorum was 5 · you never voted on this",
-     "the text that stands"
+     "n of m weighed in · quorum was 5 · you never voted on this"
     ]
    },
    "rec:fx-u2": {
-    "eyebrow": "",
+    "eyebrow": "Ran out of time · Weekday, D Month, HH:MM",
     "head": "Every member holds a front-door key, and may lend or cut a spare for a regular they trust, provided the Steward keeps a simple note of who holds one.",
     "lock": "",
-    "body": "the text that standsEvery member holds a front-door key, and members may lend or cut spares for regulars they trust.",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisPrevious textEvery member holds a front-door key, and members may lend or cut spares for regulars they trust.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2711,15 +2728,14 @@
      "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
-     "n of m weighed in · quorum was 5 · you never voted on this",
-     "the text that stands"
+     "n of m weighed in · quorum was 5 · you never voted on this"
     ]
    },
    "rec:fx-u20": {
-    "eyebrow": "",
+    "eyebrow": "Ran out of time · Weekday, D Month, HH:MM",
     "head": "Once a year, before the spring meeting, the Steward opens the cellar and the house decides together what may go, and anything nobody speaks for is offered to members before it is thrown.",
     "lock": "",
-    "body": "the text that standsOnce a year, before the spring meeting, the Steward opens the cellar and the house decides together what may go.",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisPrevious textOnce a year, before the spring meeting, the Steward opens the cellar and the house decides together what may go.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2728,15 +2744,14 @@
      "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
-     "n of m weighed in · quorum was 5 · you never voted on this",
-     "the text that stands"
+     "n of m weighed in · quorum was 5 · you never voted on this"
     ]
    },
    "rec:fx-u21": {
-    "eyebrow": "",
+    "eyebrow": "Ran out of time · Weekday, D Month, HH:MM",
     "head": "A member who loses a key tells the Steward as soon as they know, and the house decides at the next meeting whether the locks are worth changing.",
     "lock": "",
-    "body": "the text that standsA member who loses a key tells the Steward the same day, and the house decides at the next meeting whether the locks are worth changing.",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisPrevious textA member who loses a key tells the Steward the same day, and the house decides at the next meeting whether the locks are worth changing.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2745,15 +2760,14 @@
      "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
-     "n of m weighed in · quorum was 5 · you never voted on this",
-     "the text that stands"
+     "n of m weighed in · quorum was 5 · you never voted on this"
     ]
    },
    "rec:fx-u22": {
-    "eyebrow": "",
+    "eyebrow": "Ran out of time · Weekday, D Month, HH:MM",
     "head": "A member more than two quarters in arrears, who has not asked for hardship, is reminded once by the Purse-holder and once by the Steward, in that order . No further reminder is given by anyone.",
     "lock": "",
-    "body": "the text that standsA member more than two quarters in arrears, who has not asked for hardship, is reminded once by the Purse-holder and once by the Steward, in that order and not more.",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisPrevious textA member more than two quarters in arrears, who has not asked for hardship, is reminded once by the Purse-holder and once by the Steward, in that order and not more.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2762,15 +2776,14 @@
      "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
-     "n of m weighed in · quorum was 5 · you never voted on this",
-     "the text that stands"
+     "n of m weighed in · quorum was 5 · you never voted on this"
     ]
    },
    "rec:fx-u23": {
-    "eyebrow": "",
+    "eyebrow": "Ran out of time · Weekday, D Month, HH:MM",
     "head": "Ordinary spending on the running of the house needs nobody’s permission. Anything above a quarter’s subscriptions needs the meeting’s, and the Purse-holder writes anything above a month’s in the Members’ Book within the week.",
     "lock": "",
-    "body": "the text that standsOrdinary spending on the running of the house needs nobody’s permission. Anything above a quarter’s subscriptions needs the meeting’s.",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisPrevious textOrdinary spending on the running of the house needs nobody’s permission. Anything above a quarter’s subscriptions needs the meeting’s.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2779,15 +2792,14 @@
      "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
-     "n of m weighed in · quorum was 5 · you never voted on this",
-     "the text that stands"
+     "n of m weighed in · quorum was 5 · you never voted on this"
     ]
    },
    "rec:fx-u24": {
-    "eyebrow": "",
+    "eyebrow": "Ran out of time · Weekday, D Month, HH:MM",
     "head": "The house may ask for an apology or suspend a right for a season; removal under Part III is available only where a sanction has already been imposed and has not been kept to.",
     "lock": "",
-    "body": "the text that standsThe house may ask for an apology, may suspend a right for a season, or in the last resort may remove a member under Part III.47%The house may ask for an apology, may suspend a right for a season, or in the last resort may remove a member under Part III; every sanction is proposed by a member who is not party to the dispute.The problem isn’t the ladder of sanctions, it’s who proposes them. An uninvolved proposer stops a hearing turning into the aggrieved party naming their own remedy.36%The house may ask for an apology or suspend a right for a season. Removal is not a sanction and is dealt with only under Part III, at a meeting called for that purpose alone.Putting removal in the same sentence as an apology makes them the same kind of thing. They are not, and a charter that lists them together will eventually be read as a menu.25%The house may ask for an apology, suspend a right for a season, or remove a member under Part III. No sanction may be proposed by a member party to the dispute, and none may be decided at the meeting it was proposed at.Both halves of the argument are right and they do not conflict. A neutral proposer and a night’s sleep between proposing and deciding cost nothing and prevent most of what we are worried about.14%The house may ask for an apology or suspend a right for a season. Where a sanction has been imposed twice in a year and not kept to, the house may remove a member under Part III.The one-broken-sanction version is still a two-step to the door. Twice in a year is a pattern, and a pattern is the only honest ground for removing somebody.5%The house may ask for an apology, may suspend a right for a season, or in the last resort may remove a member under Part III. Every sanction expires when its reason does, and the Steward says so at the next meeting.We keep arguing about the ladder and nobody has said what happens afterwards. A sanction with no end is a removal in instalments.5%The house may ask for an apology or suspend a right for a season. Removal under Part III requires the agreement of two thirds of those present, and may not be proposed by a member party to the dispute.If removal is going to stay on the list, it should be harder to reach than a suspension. A bare majority is the same bar as choosing the wine.5%The house may ask for an apology or suspend a right for a season, and may ask the Trust’s visitor to sit with the matter. Removal under Part III is available only where the visitor has been asked and the matter has not settled.We have a visitor and never use them. An outside pair of eyes before the door is opened is cheaper than any of the rules being argued over here.",
+    "body": "n of m weighed in · quorum was 5 · you voted on thisPrevious textThe house may ask for an apology, may suspend a right for a season, or in the last resort may remove a member under Part III.Proposed · Ran out of timeThe house may ask for an apology, may suspend a right for a season, or in the last resort may remove a member under Part III; every sanction is proposed by a member who is not party to the dispute.The problem isn’t the ladder of sanctions, it’s who proposes them. An uninvolved proposer stops a hearing turning into the aggrieved party naming their own remedy.Proposed · Ran out of timeThe house may ask for an apology or suspend a right for a season. Removal is not a sanction and is dealt with only under Part III, at a meeting called for that purpose alone.Putting removal in the same sentence as an apology makes them the same kind of thing. They are not, and a charter that lists them together will eventually be read as a menu.Proposed · Ran out of timeThe house may ask for an apology, suspend a right for a season, or remove a member under Part III. No sanction may be proposed by a member party to the dispute, and none may be decided at the meeting it was proposed at.Both halves of the argument are right and they do not conflict. A neutral proposer and a night’s sleep between proposing and deciding cost nothing and prevent most of what we are worried about.Proposed · Ran out of timeThe house may ask for an apology or suspend a right for a season. Where a sanction has been imposed twice in a year and not kept to, the house may remove a member under Part III.The one-broken-sanction version is still a two-step to the door. Twice in a year is a pattern, and a pattern is the only honest ground for removing somebody.Proposed · Ran out of timeThe house may ask for an apology, may suspend a right for a season, or in the last resort may remove a member under Part III. Every sanction expires when its reason does, and the Steward says so at the next meeting.We keep arguing about the ladder and nobody has said what happens afterwards. A sanction with no end is a removal in instalments.Proposed · Ran out of timeThe house may ask for an apology or suspend a right for a season. Removal under Part III requires the agreement of two thirds of those present, and may not be proposed by a member party to the dispute.If removal is going to stay on the list, it should be harder to reach than a suspension. A bare majority is the same bar as choosing the wine.Proposed · Ran out of timeThe house may ask for an apology or suspend a right for a season, and may ask the Trust’s visitor to sit with the matter. Removal under Part III is available only where the visitor has been asked and the matter has not settled.We have a visitor and never use them. An outside pair of eyes before the door is opened is cheaper than any of the rules being argued over here.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2796,15 +2808,14 @@
      "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
-     "n of m weighed in · quorum was 5 · you voted on this",
-     "the text that stands"
+     "n of m weighed in · quorum was 5 · you voted on this"
     ]
    },
    "rec:fx-u25": {
-    "eyebrow": "",
+    "eyebrow": "Ran out of time · Weekday, D Month, HH:MM",
     "head": "Any member may bring any worry to any other in confidence, and that confidence is kept; nothing kept from a respondent may ever count against them.",
     "lock": "",
-    "body": "the text that standsAny member may bring any worry to any other in confidence, and confidence is kept; nothing undisclosed to a respondent may ever count against them.",
+    "body": "n of m weighed in · quorum was 5 · you voted on thisPrevious textAny member may bring any worry to any other in confidence, and confidence is kept; nothing undisclosed to a respondent may ever count against them.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2813,15 +2824,14 @@
      "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
-     "n of m weighed in · quorum was 5 · you voted on this",
-     "the text that stands"
+     "n of m weighed in · quorum was 5 · you voted on this"
     ]
    },
    "rec:fx-u26": {
-    "eyebrow": "",
+    "eyebrow": "Ran out of time · Weekday, D Month, HH:MM",
     "head": "A member in difficulty may ask the Purse-holder to reduce or suspend their subscription for up to two quarters, and the Purse-holder tells no one, including the Steward and the meeting.",
     "lock": "",
-    "body": "the text that standsA member in difficulty may ask the Purse-holder to reduce or suspend their subscription, and the Purse-holder may do so for up to two quarters without telling anyone why.47%A member in difficulty may reduce or suspend their own subscription for up to two quarters by telling the Purse-holder, who may not refuse and may not ask why.Asking permission to be poor is the humiliating part. Make it a notification, not a request, and the office-holder never has to weigh a friend’s circumstances.",
+    "body": "n of m weighed in · quorum was 5 · you voted on thisPrevious textA member in difficulty may ask the Purse-holder to reduce or suspend their subscription, and the Purse-holder may do so for up to two quarters without telling anyone why.Proposed · Ran out of timeA member in difficulty may reduce or suspend their own subscription for up to two quarters by telling the Purse-holder, who may not refuse and may not ask why.Asking permission to be poor is the humiliating part. Make it a notification, not a request, and the office-holder never has to weigh a friend’s circumstances.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2830,15 +2840,14 @@
      "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
-     "n of m weighed in · quorum was 5 · you voted on this",
-     "the text that stands"
+     "n of m weighed in · quorum was 5 · you voted on this"
     ]
    },
    "rec:fx-u27": {
-    "eyebrow": "",
+    "eyebrow": "Ran out of time · Weekday, D Month, HH:MM",
     "head": "A new member is on probation for a full year, during which they hold every right of membership except the right to vote on admissions, removals, or changes to these rules.",
     "lock": "",
-    "body": "the text that standsA new member is on probation for six months, during which they hold every right of membership except the right to vote on admissions.",
+    "body": "n of m weighed in · quorum was 5 · you voted on thisPrevious textA new member is on probation for six months, during which they hold every right of membership except the right to vote on admissions.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2847,15 +2856,14 @@
      "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
-     "n of m weighed in · quorum was 5 · you voted on this",
-     "the text that stands"
+     "n of m weighed in · quorum was 5 · you voted on this"
     ]
    },
    "rec:fx-u28": {
-    "eyebrow": "",
+    "eyebrow": "Ran out of time · Weekday, D Month, HH:MM",
     "head": "The Purse-holder keeps the accounts in whatever way suits them, and shows them to any member who asks, within a week of being asked.",
     "lock": "",
-    "body": "the text that standsThe Purse-holder keeps the accounts in whatever way suits them, and shows them to any member who asks.",
+    "body": "n of m weighed in · quorum was 5 · you voted on thisPrevious textThe Purse-holder keeps the accounts in whatever way suits them, and shows them to any member who asks.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2864,15 +2872,14 @@
      "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
-     "n of m weighed in · quorum was 5 · you voted on this",
-     "the text that stands"
+     "n of m weighed in · quorum was 5 · you voted on this"
     ]
    },
    "rec:fx-u29": {
-    "eyebrow": "",
+    "eyebrow": "Ran out of time · Weekday, D Month, HH:MM",
     "head": "The Garden is kept up by a rota posted in the shed, with a Garden Steward to keep it organised and set two working weekends a year, in spring and in autumn.",
     "lock": "",
-    "body": "the text that standsThe Garden is kept up by a rota posted in the shed, with a Garden Steward to keep it organised and call heroic weekends when it gets ahead of us.",
+    "body": "n of m weighed in · quorum was 5 · you voted on thisPrevious textThe Garden is kept up by a rota posted in the shed, with a Garden Steward to keep it organised and call heroic weekends when it gets ahead of us.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2881,15 +2888,14 @@
      "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
-     "n of m weighed in · quorum was 5 · you voted on this",
-     "the text that stands"
+     "n of m weighed in · quorum was 5 · you voted on this"
     ]
    },
    "rec:fx-u3": {
-    "eyebrow": "",
+    "eyebrow": "Ran out of time · Weekday, D Month, HH:MM",
     "head": "A meeting needs eight members present to decide anything, and ten to decide anything reserved, counted at the moment the question is put.",
     "lock": "",
-    "body": "the text that standsA meeting needs half the membership present to decide anything, and two-thirds to decide anything reserved.A meeting that falls short of quorum may still be held, and may still talk, and may minute what it thinks, but decides nothing.47%A meeting needs half the membership present to decide anything, and two-thirds to decide anything reserved; a member who has given their view in writing to the Steward counts as present for quorum but not for the vote.A meeting that falls short of quorum may still be held, and may still talk, and may minute what it thinks, but decides nothing.People travel and people work nights. Letting a written view hold your place stops the house from being unable to act because three of us are away.",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisPrevious textA meeting needs half the membership present to decide anything, and two-thirds to decide anything reserved.A meeting that falls short of quorum may still be held, and may still talk, and may minute what it thinks, but decides nothing.Proposed · Ran out of timeA meeting needs half the membership present to decide anything, and two-thirds to decide anything reserved; a member who has given their view in writing to the Steward counts as present for quorum but not for the vote.A meeting that falls short of quorum may still be held, and may still talk, and may minute what it thinks, but decides nothing.People travel and people work nights. Letting a written view hold your place stops the house from being unable to act because three of us are away.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2898,15 +2904,14 @@
      "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
-     "n of m weighed in · quorum was 5 · you never voted on this",
-     "the text that stands"
+     "n of m weighed in · quorum was 5 · you never voted on this"
     ]
    },
    "rec:fx-u30": {
-    "eyebrow": "",
+    "eyebrow": "Ran out of time · Weekday, D Month, HH:MM",
     "head": "The lease under Section 2. ends on D Month YYYY. The Steward writes to the Trust about renewing it in September.",
     "lock": "",
-    "body": "the text that standsThe lease under Section 2. ends on D Month YYYY. The Club asks the Trust to renew it *before* the spring meeting, not after it!47%The lease under Section 2. ends on D Month YYYY. The Club asks the Trust to renew it *before* the spring meeting (and says so in the Members’ Book).Write the asking down, so the next Steward can see that it was done.",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisPrevious textThe lease under Section 2. ends on D Month YYYY. The Club asks the Trust to renew it *before* the spring meeting, not after it!Proposed · Ran out of timeThe lease under Section 2. ends on D Month YYYY. The Club asks the Trust to renew it *before* the spring meeting (and says so in the Members’ Book).Write the asking down, so the next Steward can see that it was done.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2915,15 +2920,14 @@
      "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
-     "n of m weighed in · quorum was 5 · you never voted on this",
-     "the text that stands"
+     "n of m weighed in · quorum was 5 · you never voted on this"
     ]
    },
    "rec:fx-u4": {
-    "eyebrow": "",
+    "eyebrow": "Ran out of time · Weekday, D Month, HH:MM",
     "head": "The house keeps quiet hours from eleven at night to eight in the morning: voices low in the Common Areas, the Workshop’s louder tools asleep, and any gathering still going moves to the Garden or winds down.",
     "lock": "",
-    "body": "",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisPrevious textThis clause would be removed.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2936,10 +2940,10 @@
     ]
    },
    "rec:fx-u5": {
-    "eyebrow": "",
+    "eyebrow": "Ran out of time · Weekday, D Month, HH:MM",
     "head": "The house keeps quiet hours from eleven at night to eight in the morning.",
     "lock": "",
-    "body": "47%After eleven at night the Common Areas are for reading, and the Workshop is closed until eight.Say what the rooms are for after dark rather than what people may not do — a house rule reads better as an invitation.",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisPrevious textThis clause would be removed.Proposed · Ran out of timeAfter eleven at night the Common Areas are for reading, and the Workshop is closed until eight.Say what the rooms are for after dark rather than what people may not do — a house rule reads better as an invitation.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2952,10 +2956,10 @@
     ]
    },
    "rec:fx-u6": {
-    "eyebrow": "",
+    "eyebrow": "Ran out of time · Weekday, D Month, HH:MM",
     "head": "Furniture in the Common Room may be moved but must be put back before the room is left empty.",
     "lock": "",
-    "body": "the text that standsFurniture in the Common Room may be moved but must be put back. The armchair by the window is not anybody’s, whatever Hollis says.",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisPrevious textFurniture in the Common Room may be moved but must be put back. The armchair by the window is not anybody’s, whatever Hollis says.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2964,15 +2968,14 @@
      "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
-     "n of m weighed in · quorum was 5 · you never voted on this",
-     "the text that stands"
+     "n of m weighed in · quorum was 5 · you never voted on this"
     ]
    },
    "rec:fx-u7": {
-    "eyebrow": "",
+    "eyebrow": "Ran out of time · Weekday, D Month, HH:MM",
     "head": "Books belonging to a member and left in the Corner become the house’s after two years, unless the member says otherwise in the book on the shelf.",
     "lock": "",
-    "body": "the text that standsBooks belonging to a member and left in the Corner become the house’s after a year, unless the member says otherwise in the book on the shelf.",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisPrevious textBooks belonging to a member and left in the Corner become the house’s after a year, unless the member says otherwise in the book on the shelf.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2981,15 +2984,14 @@
      "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
-     "n of m weighed in · quorum was 5 · you never voted on this",
-     "the text that stands"
+     "n of m weighed in · quorum was 5 · you never voted on this"
     ]
    },
    "rec:fx-u8": {
-    "eyebrow": "",
+    "eyebrow": "Ran out of time · Weekday, D Month, HH:MM",
     "head": "Power tools are not used when the member is alone in the house, unless another member knows they are there and when they expect to finish, and not after the beginning of quiet hours.",
     "lock": "",
-    "body": "the text that standsPower tools are not used when the member is alone in the house, and not after the beginning of quiet hours.",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisPrevious textPower tools are not used when the member is alone in the house, and not after the beginning of quiet hours.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2998,15 +3000,14 @@
      "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
-     "n of m weighed in · quorum was 5 · you never voted on this",
-     "the text that stands"
+     "n of m weighed in · quorum was 5 · you never voted on this"
     ]
    },
    "rec:fx-u9": {
-    "eyebrow": "",
+    "eyebrow": "Ran out of time · Weekday, D Month, HH:MM",
     "head": "The Outdoor Stores",
     "lock": "",
-    "body": "the text that standsThe Shed, the Cellar and the Space Under the Stairs",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisPrevious textThe Shed, the Cellar and the Space Under the Stairs",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -3015,8 +3016,7 @@
      "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
-     "n of m weighed in · quorum was 5 · you never voted on this",
-     "the text that stands"
+     "n of m weighed in · quorum was 5 · you never voted on this"
     ]
    }
   },
