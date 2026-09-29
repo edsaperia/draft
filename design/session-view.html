@@ -2996,6 +2996,11 @@
     // are asked* and F20's 🪪/⚖️ hosts.
     { k: 'grant-voice', g: '🏛️', t: PAGE_COPY.gate.voice.title, own: 'you', isGate: true, isGrant: true,
       grants: '🏛️', textcard: true,
+      // **the holder's, like the pen and the shield** (E8; #119): a clerk
+      // founder is never a member, so 🏛️ is never theirs — and without this
+      // the card was unseen before 🍾 only by accident (`visible`'s last
+      // clause had nothing true for them) and served to them from the cork
+      hide: () => !viewerIsMember(),
       open: () => !!cs && viewerIsMember() && !!viewerRow().in,
       early: () => !!cs && viewerIsMember() && !!viewerRow().in,
       // **a body of its own, about 🏛️ alone** (Q1502, Ed 2026-09-22): it
