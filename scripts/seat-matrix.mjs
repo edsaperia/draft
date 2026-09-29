@@ -545,11 +545,15 @@ const STEPS = [
   // first arrived to a member on this document. `staged` as E4's gates are:
   // the grant is a gate on the card, and a member owed a decision's OK at 🍾
   // (`early` and `lapsed`, owed 💤's, both hats) is shown no gate until they
-  // have given it — read off the module's `owedOks`, never assumed.
+  // have given it — read off the module's `owedOks`, never assumed. And
+  // `noLedger`: the page before #119 gave the clerk the voice as a ⏳ tab —
+  // `open` false, so `waiting` — which the `wants` reading sets aside for
+  // E10's mover; a power you do not hold has no state to file as, so outside
+  // the audience any state is the finding.
   { id: 'begin', epoch: 'live', kind: 'hold', seat: 'founder', key: 'begin',
     keep: [['text', 'a'], ['text', 'u']],
     events: [E4('canpropose'), E4('canjudge'), { id: 'E25', key: 'strapply', at: 'begin' },
-      { ...E8('grant-voice'), staged: true }] },
+      { ...E8('grant-voice'), staged: true, noLedger: true }] },
   // `ok-propose` and `ok-judge` are **retired** (2026-09-07). They opened 💡
   // and ⚖️ on the founder's page and pressed their OK; since Ed's ruling of
   // 2026-09-01 (`gateSelfSet`) the founder has no such card to open, so both
@@ -1897,7 +1901,18 @@ function assertStep(D, step, evs, snap) {
       const wants = (e) => e.kind !== 'wait' && e.kind !== 'done';
       const asks = snap[name].rail.filter(wants).map((e) => e.key);
       const tabs = (snap[name].band || []).filter(wants).map((e) => e.key);
-      const has = asks.some(match) || tabs.some(match);
+      // **A power you do not hold has no ledger to file as** (E8, #119). The
+      // `wants` reading above is right for E10's mover, whose ⏳ is the ledger
+      // of their own answers — and blind to a clerk founder's 🏛️, which stood
+      // on their Founded line as a ⏳ tab (`open` false, so `waiting`) and
+      // read as nothing. A row says so with `noLedger`: outside its audience a
+      // seat carrying the key in **any** state is a finding. Inside it the
+      // reading is unchanged. Per event, since only the row knows whether its
+      // key has a state a seat may rightly file as.
+      const inAny = (e) => match(e.key);
+      const stray = !inAud && !!ev.noLedger
+        ? (snap[name].rail.find(inAny) || (snap[name].band || []).find(inAny) || null) : null;
+      const has = asks.some(match) || tabs.some(match) || !!stray;
       // `match`, not `includes`: a prefix key (`rel:`, `mail:`) is acknowledged
       // under its own batch id, so an exact test never sees the OK and a seat
       // that has answered reads as one that was never served.
@@ -1944,6 +1959,7 @@ function assertStep(D, step, evs, snap) {
         !((snap[name].readout || {}).okd || []).includes(ev.waitsOn) ? ev.waitsOn : null;
       const carries = has || okd || signed || departed || self || !!stagedBehind || !!heldBack;
       const how = asks.some(match) ? 'carries it'
+        : stray ? 'carries it as ' + (snap[name].rail.includes(stray) ? 'a ' + stray.kind + ' entry' : 'a ' + stray.kind + ' tab') + ' (no ledger state is theirs)'
         : has ? 'carries it as a tab (' + ((snap[name].band || []).find((e) => match(e.key)) || {}).kind + ')'
         : okd ? 'acknowledged it' : signed ? 'signed it'
         : departed ? "was told by the door's departure sentence"
