@@ -8,13 +8,13 @@
  * Serves `design/` itself and drives the session fixture. A live card is
  * opened, given a race id as the live path's items carry one, and then the
  * race is decided the way a poll decides it — `SESSION.setData` with the item
- * gone and its record (`rec:<race>`) arrived. Three cases:
+ * gone and its record (`rec:<race>`) arrived. Three cases, each opening the
+ * record in the card's place **already read** (1565 (b), Ed 2026-09-29 17:27
+ * UTC, ruling (a): a record you watched decide is read at the travel):
  *
- *   pass  — a wording carried: the ✔ record stands open in the card's place,
- *           its OK owed;
- *   fail  — the text held (1565 (a)): the ✖ record opens, its OK owed;
- *   mine  — your own proposal passed (1565 (b), as the builder asked it on
- *           PR #125): the ✔ record opens already read, no OK owed.
+ *   pass  — a wording carried: the ✔ record;
+ *   fail  — the text held (1565 (a)): the ✖ record;
+ *   mine  — your own proposal passed: its ✔ record.
  *
  * Before stage 7 each card closed by itself on the swap and the record stood
  * unread behind its tab. Joins the sprint tier from its first day (Q1547).
@@ -89,12 +89,13 @@ async function travel(name, { kind, carried, mine }) {
       oldGone: !document.querySelector('.sugg[data-card="' + it.id + '"]'),
       label: card ? (card.querySelector('.glab') || {}).textContent : null,
       ok: !!(card && card.querySelector('[data-slot="row"] [data-seen]')),
+      read: [...S.readSeals].includes(rec.id),
     };
   }, { kind, carried, mine });
   if (r.setup) { check(name + ': set-up', false, r.setup); await page.close(); return; }
   check(name + ': the card was open on ' + r.from, r.openBefore);
   check(name + ': it became its record, in place', r.opened && r.oldGone, JSON.stringify({ label: r.label }));
-  check(name + (mine ? ': and nothing is owed on it' : ': and its OK is owed'), mine ? !r.ok : r.ok);
+  check(name + ': read at the travel, nothing owed on it', r.read && !r.ok, JSON.stringify({ read: r.read, ok: r.ok }));
   check(name + ': the page threw nothing', errors.length === 0, errors.slice(0, 2).join(' | '));
   await page.close();
 }
