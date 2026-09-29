@@ -47,7 +47,16 @@
   // once this seat has signed, no record is owed it, on any browser it signs
   // in on, since the signature is the host's fact and not this page's
   let signedDone = false;
-  const setSigned = (on) => { signedDone = !!on; };
+  // …and the column is re-read the moment it changes: the charter's own data
+  // key does not move when a signature lands, so nothing else would re-draw
+  // the rail's owed records away (closed-press-walk)
+  const setSigned = (on) => {
+    if (!!on === signedDone) return;
+    signedDone = !!on;
+    if (!doc) return;
+    refold();
+    setTimeout(() => { renderAll(); drawWires(); }, 0);
+  };
   // **A host's own rail entries** (stage 8, the merge): the setup tasks are
   // entries in this rail, laid out by the same margin-index rules as every
   // other. The host hands them in as {id, html, anchor(), pinned, rank, u,

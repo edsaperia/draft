@@ -386,5 +386,71 @@ async function assertSurface(rung) {
       !close.railKeys.some((k) => close.closeIds.includes(k.replace(/^held:/, ''))
         && /^held:/.test(k)),
       `${JSON.stringify(close.closeIds)} in ${JSON.stringify(close.railKeys)}`);
+    // **A closed card offers nothing but 🥂, and no power is stated** (Q1541
+    // stage 7; 1541.7 (a), 1541.34, .52): for the Founder, a member and a
+    // stranger, nothing enabled on the page but the ways of reading it — the
+    // tabs, the rail, the contents, the fold triangles, the topbar — and 🥂's
+    // own OK and comment; no ✒️ 🛡️ tab in any strip and no *The Founder may*
+    // in any paragraph. Read before anybody signs, so 🥂 is still owed
+    await closedSeat('the Founder', page);
+    const url = page.url();
+    const seats = await page.evaluate(() => [...document.querySelectorAll('#ladseat option')]
+      .map((o) => ({ v: o.value, t: (o.textContent || '').trim() })));
+    const member = seats.find((x) => x.v && !/founder|🎩|👑/i.test(x.t)) || seats[1];
+    const mctx = await browser.newContext({ viewport: { width: 1600, height: 1100 } });
+    const mp = await mctx.newPage();
+    for (const c of await page.context().cookies()) await mctx.addCookies([c]);
+    await mp.goto(url, { waitUntil: 'domcontentloaded' });
+    await mp.waitForTimeout(1500);
+    if (member) {
+      await mp.evaluate(async ({ slug, v }) => {
+        await fetch('/api/dev/seat', { method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ slug, member: v }) });
+      }, { slug: (/\/d\/([^/?#]+)/.exec(url) ?? [])[1], v: member.v });
+      await mp.goto(url, { waitUntil: 'domcontentloaded' });
+      await mp.waitForTimeout(1500);
+      await closedSeat('a member (' + member.t + ')', mp);
+    } else check(rung, 'a member seat to read the closed page from', false, JSON.stringify(seats));
+    await mctx.close();
+    const sctx = await browser.newContext({ viewport: { width: 1600, height: 1100 } });
+    const sp = await sctx.newPage();
+    await sp.goto(url, { waitUntil: 'domcontentloaded' });
+    await sp.waitForTimeout(1500);
+    await closedSeat('a stranger', sp);
+    await sctx.close();
+  }
+
+  /** the closed page, read from one seat (stage 7's rung) */
+  async function closedSeat(who, pg) {
+    // 🥂 opened, so its controls are counted where they stand
+    await pg.evaluate(() => {
+      if (!document.querySelector('.setupcard[data-setupcard="closing"]')) {
+        document.querySelector('#rail [data-card="closing"], #rail li[data-q="closing"] button, #band [data-tab="closing"]')?.click();
+      }
+    });
+    await pg.waitForTimeout(700);
+    const r = await pg.evaluate(() => {
+      const vis = (e) => { const b = e.getBoundingClientRect(); return b.width > 0 && b.height > 0 && getComputedStyle(e).visibility !== 'hidden'; };
+      // the ways of reading the page, and the stagehand's own furniture
+      const NAV = '.navbar, #rail, #toc, .chipcol, .sectoggle, #ladderbar, #devmailbtn, .devdrop, #devbar, .devswitch, #sheetbar, .sheetbar';
+      const enabled = [...document.querySelectorAll('button, input, textarea, select, [contenteditable="true"], [contenteditable="plaintext-only"], [role="button"]')]
+        .filter((e) => vis(e) && !e.disabled && !e.closest(NAV) && !e.closest('#prose') &&
+          !e.closest('.setupcard[data-setupcard="closing"]'))
+        .map((e) => (e.tagName + ':' + (e.title || e.textContent || e.id || e.className)).replace(/\s+/g, ' ').slice(0, 50));
+      const closing = document.querySelector('.setupcard[data-setupcard="closing"]');
+      const inClosing = closing ? [...closing.querySelectorAll('button, [contenteditable="true"], [contenteditable="plaintext-only"]')]
+        .filter((e) => vis(e) && !e.disabled && !e.closest('.chipcol') && !e.matches('[data-sign], [data-signwhy]'))
+        .map((e) => (e.tagName + ':' + (e.title || e.textContent)).slice(0, 50)) : [];
+      const powerTabs = [...document.querySelectorAll('.chipcol .achip')].filter((t) =>
+        /^pw:/.test(t.dataset.tab || '') || [...t.querySelectorAll('svg[data-char]')].some((g) => /[✒🛡]/u.test(g.getAttribute('data-char'))))
+        .map((t) => t.dataset.tab || t.dataset.anchor || '?');
+      const band = document.getElementById('band');
+      const powersLine = band && /The Founder (may|could)(?! not)/.test(band.textContent || '') ? 1 : 0;
+      return { enabled, inClosing, powerTabs, powersLine };
+    });
+    check('closed', who + ': nothing enabled but the tabs and 🥂', r.enabled.length === 0 && r.inClosing.length === 0,
+      JSON.stringify(r.enabled.concat(r.inClosing).slice(0, 6)));
+    check('closed', who + ': no ✒️ 🛡️ tab and no powers line anywhere', r.powerTabs.length === 0 && !r.powersLine,
+      JSON.stringify(r.powerTabs.slice(0, 6)) + (r.powersLine ? ' · a powers line in Rules' : ''));
   }
 }

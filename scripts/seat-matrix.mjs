@@ -63,7 +63,9 @@
  *     changed, for ever. `early` and `lapsed` report it on E4, E5 and E10; the
  *     `late` seat, freshly booted, carries all of them, which is the proof.
  *   · **Q920**, `view.convenor.isMember` stale for a clerk — the clerk
- *     document never begins, and every clerk row after `begin` is that.
+ *     document never began, and every clerk row after `begin` was that.
+ *     **Closed with PR #120** (2026-09-29): 🏛️ is no longer served to a clerk,
+ *     so the clerk document begins and its live rows stand.
  *   · the **applicant's live page** had no branch at all (Q1281, fixed
  *     2026-09-07): the server's applicant payload carried no `view`, and
  *     `remoteCS` read `self.v.view.*` unguarded, so the seat was dead from
@@ -109,8 +111,8 @@
  * applicant live; six of the seven rows, the clerk row on its own document.
  * Every member-hat finding is **Q919** (💤 cannot be rehydrated from the
  * module, so every card below it in `ORDER` is withheld from members) and
- * every clerk-hat one is **Q920** (`view.convenor.isMember` stays `true` for
- * a clerk, so 🏛️ is served and 🍾 waits on it); with those two built the
+ * every clerk-hat one was **Q920** (`view.convenor.isMember` stayed `true` for
+ * a clerk, so 🏛️ was served and 🍾 waited on it — closed with PR #120); with those two built the
  * expected line is `findings=0 noRule=3 filed=0 … unstood=0 exit=3` — `filed=1`
  * while Q918's row was the exception, and 0 since it was asserted, so **exit 3
  * was the green line for a while** and 0 was not reachable until somebody
@@ -664,12 +666,10 @@ const STEPS = [
   // ❌ door's *Proposed for removal* subsection (`removalPendingIds`). The
   // motion stays running for the rest of the epoch and `carry-removal`, the
   // last row of it, carries it — E40 (Q1359).
-  // `ifHat: 'member'` is **not** about the hat: it is about the clerk document
-  // never reaching the live epoch at HEAD (Q920 — 🍾 waits on a voice a clerk
-  // does not hold), so a motion put on it is refused *before the start
-  // nothing is amended* and reports a 400 that says nothing about 🥾. When
-  // Q920 is built, drop the mark and let the row stand on both hats.
-  { id: 'remove-motion', epoch: 'live', kind: 'cmd', seat: 'early', cmd: 'open-motion', ifHat: 'member',
+  // It stood on the member hat alone while the clerk document never reached
+  // the live epoch (Q920 — 🍾 waited on a voice a clerk does not hold); Q920
+  // closed with PR #120, so the row stands on both hats.
+  { id: 'remove-motion', epoch: 'live', kind: 'cmd', seat: 'early', cmd: 'open-motion',
     // the subject is named by id, and the harness knows the seats by address:
     // read `late`'s row off the mover's own view rather than assuming `m-n`
     args: async (D) => {

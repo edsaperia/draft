@@ -7447,6 +7447,16 @@
         blocks: [{ label: W.proposed, html: cpv(C.joins(name)), speaker }],
       };
     }
+    // **a closed document offers nothing but 🥂** (1541.7 (a), plain bug 2 —
+    // *every seat is served the 🪪 admission card with Prefer this radios*):
+    // an application the clock found still running is cut off, read as a
+    // record is, the applicant's words under *Proposed · Ran out of time*
+    // (answers Part 4 .4, .14)
+    if (!docOpen()) {
+      return { kind, frame, head, label: { text: W.outcome.ranOut },
+        body: addr || err ? { html: addr + err } : null,
+        blocks: [{ label: W.proposed + W.sep + W.outcome.ranOut, html: cpv(C.joins(name)), speaker }] };
+    }
     const price = admissionPrice();
     if (price === 'pen') {
       return { kind, frame, head, label: { text: heading },

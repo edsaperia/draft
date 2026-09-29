@@ -241,6 +241,16 @@ const GRAMMAR_KINDS = [
   // …and the salience diagonal, placeless, which `diag` serves (the fixture
   // walks' last)
   'diag',
+  // stage 7 (Q1541): a sealed record still owed its OK (`record-owed`, on
+  // `charter`), a clause's fold (`clause-fold`, Q1561 — the fixture's lockup
+  // clause, on `charter` and `closed`) and 🥂 (`closing`, on `closedband`).
+  // **Every card on the closed page is held, whatever its kind** (BUILD.md
+  // stage 7's acceptance: the closed page is every card) — `CLOSED_WALKS` in
+  // the verdict. The Founder's amendment news (`amendment-news`) is live-only
+  // and held by news-walk, which opens it on a live document
+  'record-owed',
+  'clause-fold',
+  'closing',
 ];
 /**
  * **The stage the build has reached, and the stage each check turns strict
@@ -249,7 +259,7 @@ const GRAMMAR_KINDS = [
  * has not come is reported, never held (Q1541 stage 2: the grants and 🍾 are
  * opened on the closed band too, where P29 is stage 7's).
  */
-const STAGE = 6;
+const STAGE = 7;
 /** the checks held on every card under `--kinds`, whatever its kind: a
  *  rendering fault no stage converts (P34, issue #121) */
 const EVERY_KIND = new Set(['glyph-space']);
@@ -4668,7 +4678,8 @@ async function finish(cards, errors, tok, ref, version, switches, piles, doors, 
       // stage 7 and report until then, so a kind the closed band also opens
       // — the grants, the gates, 🍾 — is not held to rules its stage cannot
       // yet meet there; `zone-overlap` waits for stage 8, `place-head` for 6
-      const held = grammar.filter((f) => !f.excepted && (want.has(f.kind) || EVERY_KIND.has(String(f.check).replace(/^P\d+ /, ''))) && (STRICT_FROM[String(f.check).replace(/^P\d+ /, '')] || 0) <= STAGE);
+      const held = grammar.filter((f) => !f.excepted && (want.has(f.kind) || EVERY_KIND.has(String(f.check).replace(/^P\d+ /, '')) ||
+        CLOSED_WALKS.has(f.walk)) && (STRICT_FROM[String(f.check).replace(/^P\d+ /, '')] || 0) <= STAGE);
       const broken = errors.filter((e) => /walk threw|measured no cards|page error|offered no cards/.test(e));
       // **a held kind no card was measured as is a broken walk** (Q1541
       // stage 1): the kind is declared by the card's own shell, so a card
