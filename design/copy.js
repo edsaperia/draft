@@ -426,10 +426,10 @@ window.COPY = (function () {
       // can read lives here.
       capAdopted: 'decided — adopted',
       capStood: 'decided — the current text stood',
-      capUndecided: 'undecided at the close — the text stood',
+      capUndecided: 'ran out of time — the text stood',
       outAdopted: 'adopted',
       outStood: 'retired — the current text stood',
-      outUndecided: 'undecided',
+      outUndecided: 'ran out of time',
     },
     // **a proposal of your own, as its line says it** (Q1493's list): the
     // three faces the caption wears between the press and the race, and the

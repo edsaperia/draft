@@ -185,3 +185,14 @@ The floating 📝 door is not a principle: it is a named exception in `zone-over
 | 1567.4 | 👑's sentence on a person | **Keep** — *The membership passed this. Until you answer, the membership stays as it is.* |
 | 1567.5 | A door's failed-motion news | **The door's own pile**, with a tab: the mover's news card stands there (SURFACE E41 as amended). |
 | 1567.11 | Withdrawing a submitted application | **No** — a submitted application is not withdrawn; its card has no row, and 1541.9 (b)'s bare 🗑️ does not apply to applications. No command is built. |
+
+## Part 10 — stage 7's rulings (Ed, 2026-09-28 and 2026-09-29)
+
+| # | Call | Ruling |
+|---|---|---|
+| 1565 | The card you are looking at when its race is decided | **It travels to its record** (Ed, 2026-09-28): the record opens in the card's place, the clause and the tab pressed still, its OK owed as ever. SURFACE C18; `successorOf` (session.js); guard `scripts/repro/record-travel.mjs`. |
+| 1565 (a) | A proposal that **fails** while you look at it | **The same** (Ed, 2026-09-29, 13:58 UTC) — the card travels to its ✖ record. |
+| 1565 (b) | **Your own** proposal passing while you look at it | **The same** (Ed, 2026-09-29, 13:58 UTC) — the ✔ record opens in place. Given on the premise that a record of your own proposal is owed nothing, which C18 does not say (it is *never folded in*); what its OK does is re-put to Ed on PR #125, the builder building it opened already read in the meantime. |
+| the close fold | What the 🥂 signature does to the OKs still owed | **A fold change, no new event** (Ed, 2026-09-29; 1541.7 (a)): `close-acknowledged`'s case moves the signer's `okOwed`, `releasesOwed`, `amendmentsOwed`, `mailGaveUpOwed`, `departuresOwed` and `heldOwed` to their given sets beside setting `closingAck`; the golden log replays unedited; no SPEC change. On the page the signature files every record (`setSigned`). Guards `close-owed.test.ts`, `closed-press-walk`. |
+| the merge | When and how stage 7 ships | **A full deploy, not surface-only** (1541.56) — the first stage to touch `packages/`; the merge is Ed's tap as usual; no room is planned (Ed, 2026-09-29). |
+| 1561 (m), (n) | The clause fold redrawn (Ed, 2026-09-26, folded here) | Its tab a stack of three ✔s, always — built as the lifecycle mark `fold`, not a `GLYPH` entry (the coordinator, PR #125: *the brief's "through GLYPH" was my wording, not a ruling*); every record in full, oldest first, a hairline between each; a record's own OK acknowledges that record only. |
