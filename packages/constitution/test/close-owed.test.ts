@@ -36,7 +36,8 @@ describe('🥂 answers every OK owed (1541.7 (a))', () => {
   it('signing moves every owed set to its given set, for the signer alone', () => {
     const { s, bo, cy } = closedWithNews();
     const before = (id: string) => s.memberRecords().get(id)!;
-    const boOwed = Object.fromEntries(OWED.map((k) => [k, [...before(bo)[k]]]));
+    const boOwed = Object.fromEntries(OWED.map((k) => [k, [...before(bo)[k]] as string[]])) as
+      Record<(typeof OWED)[number], string[]>;
     expect(owedCount(before(bo))).toBeGreaterThan(1);
     expect(before(bo).releasesOwed.size).toBe(1);
     expect(before(bo).departuresOwed.size).toBe(1);
