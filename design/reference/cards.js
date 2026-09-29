@@ -431,10 +431,33 @@ window.CARDS = (function () {
      a whole card, rail entry or band paragraph be handed to this in one piece
      instead of the sentence sites being hunted one at a time. */
   const VOIDTAG = /^(area|base|br|col|embed|hr|img|input|link|meta|source|track|wbr)$/;
+  /* **A glyph beside a word keeps its space** (Ed, 2026-09-29; STYLE.md T50).
+     A picture splits its sentence into a text node and an element, and inside
+     a flex box — every commit row's button — the two are separate flex items,
+     so the text's trailing space collapsed at the boundary and *Accept 🏛️*
+     read *Accept🏛️*. An ordinary space against a drawn glyph, on either side,
+     becomes a non-breaking one, which no box collapses; `glyphTextOf` hands it
+     back as the space the copy wrote. */
+  const NBSP = ' ';
+  const glyphRun = (seg) => {
+    const out = [];
+    let at = 0, m;
+    GLYPH_RX.lastIndex = 0;
+    while ((m = GLYPH_RX.exec(seg))) {
+      const k = glyphKey(m[0]);
+      let before = seg.slice(at, m.index);
+      if (k && before.endsWith(' ')) before = before.slice(0, -1) + NBSP;
+      out.push(before, glyphHtml(m[0]));
+      at = m.index + m[0].length;
+      if (k && seg[at] === ' ') { out.push(NBSP); at++; }
+    }
+    out.push(seg.slice(at));
+    return out.join('');
+  };
   function glyphify(html) {
     let skip = 0, holder = null;
     return String(html).split(/(<[^>]*>)/).map((seg) => {
-      if (!seg.startsWith('<')) return skip ? seg : seg.replace(GLYPH_RX, (m) => glyphHtml(m));
+      if (!seg.startsWith('<')) return skip ? seg : glyphRun(seg);
       const m = seg.match(/^<\/?([a-zA-Z][\w-]*)/);
       const tag = m ? m[1].toLowerCase() : '';
       if (skip) {
@@ -462,8 +485,15 @@ window.CARDS = (function () {
   function glyphTextOf(node) {
     if (!node) return '';
     let out = '';
+    // a drawn glyph as the sibling on that side: `glyphify`'s kept space
+    const drawn = (s) => !!(s && s.nodeType === 1 && String(s.tagName).toLowerCase() === 'svg' && s.getAttribute('data-char'));
     for (const n of node.childNodes) {
-      if (n.nodeType === 3) out += n.nodeValue;
+      if (n.nodeType === 3) {
+        let v = n.nodeValue;
+        if (v.endsWith(NBSP) && drawn(n.nextSibling)) v = v.slice(0, -1) + ' ';
+        if (v.startsWith(NBSP) && drawn(n.previousSibling)) v = ' ' + v.slice(1);
+        out += v;
+      }
       else if (n.nodeType === 1) {
         const tag = String(n.tagName).toLowerCase();
         if (tag === 'svg' && n.getAttribute('data-char')) out += n.getAttribute('data-char');

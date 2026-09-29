@@ -915,19 +915,27 @@ window.BAND = (function () {
         acts.push({ kind: 'commit', glyph: '✓', glyphHtml: TICK, cls: 'btn-approve', attrs: ' data-close="1"',
           until: c.done() || c.optional ? null : (c.k === 'apppic' ? 'choose' : 'type') });
       }
+      // the opening sentence (or lockline), else a field, leads the card
+      const lead = /^\s*(<p class="why">[\s\S]*?<\/p>|<div class="lockline">[\s\S]*?<\/span><\/div>|<span class="fld">[\s\S]*?<\/span>)/.exec(body);
+      const first = lead ? lead[1] : '';
+      const rest = lead ? body.slice(lead[0].length) : body;
       return {
         kind: 'applicant',
         frame: { cls: 'sugg setupcard', attrs: ' role="tabpanel" data-setupcard="' + esc(c.k) + '"' },
         label: { text: c.t },
-        // the strip alone: the tab pressed has its place, and no first line
-        head: { html: window.SETUP.headHtml(c, appCtx, [c], '') },
-        body: body ? { html: body } : null,
+        // **one drawing with the stranger's two** (the coordinator's call 10
+        // (b), stage 5): the first line is what the card asks — its opening
+        // sentence, or its address box where it has none; 🖼️ has neither, its
+        // blocks being the whole of it, so it carries the strip alone
+        head: { html: window.SETUP.headHtml(c, appCtx, [c], first ? '<div class="headrule asblock">' + first + '</div>' : '') },
+        body: rest ? { html: rest } : null,
         acts, owed,
       };
     }
+    // drawn from `stateOf`, as the band's kinds are (the door source)
     function applicantCardHtml() {
-      const st = applicantShell();
-      return st ? glyphify(window.CARD_SHELL.cardHtml(st)) : '';
+      if (!applicantShell()) return '';
+      return glyphify(window.CARD_SHELL.cardHtml(window.CARD_STATE.stateOf(S.open)));
     }
     /** the applicant's address is already a member's — one identity per address (§9.7½) */
     const appAddrTaken = () => MEMBER_EMAILS.has(S.app.email.trim().toLowerCase());

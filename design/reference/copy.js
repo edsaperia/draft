@@ -1225,10 +1225,6 @@ window.COPY = (function () {
       mostGenerous: 'The most generous you will accept',
     },
     penWait: 'Founder Actions ✒️ are waiting in your tasks — accept them and this turns.',
-    doorEmpty: {
-      invite: 'Nobody has been invited yet.',
-      remove: 'Nobody is proposed for removal.',
-    },
     // **The Membership subsections** (F21; Q1557, Ed 2026-09-26): an
     // invitation sent stands under *Members*, and every vote still running on
     // letting somebody in — a member's proposal to invite and a stranger's
