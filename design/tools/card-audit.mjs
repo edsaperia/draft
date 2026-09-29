@@ -51,9 +51,10 @@
  * from a scroll that leaves its label room above it (the general case) and
  * the walk's first card at scroll 0 (the page-top case), and reads the glass,
  * not the page. They print as their own table, as ruled and v2-comparable,
- * and they are **held only for the kinds in `GRAMMAR_KINDS`**:
+ * and they are **held only for the kinds in `GRAMMAR_KINDS`** — save P34
+ * `glyph-space` (issue #121, STYLE.md T50), held on every card (`EVERY_KIND`):
  *
- *   node design/tools/card-audit.mjs --walk=all             # the nine walks, P13–P33 among the findings
+ *   node design/tools/card-audit.mjs --walk=all             # the nine walks, P13–P34 among the findings
  *   node design/tools/card-audit.mjs --strict --kinds=GRAMMAR_KINDS --walk=fixture   # CI's fast pass
  *   node design/tools/card-audit.mjs --width=390 --height=844 --baseline=<1600 payload>  # P31
  *
@@ -2130,7 +2131,7 @@ const RETIRED = [
 const GLYPH_ONLY = /^[^\p{L}\p{N}]{1,4}$/u;
 
 /* ============================================================================
-   **The redesign's checks, P13–P33** (Q1541; design/redesign/checks.md, *The
+   **The redesign's checks, P13–P34** (Q1541; design/redesign/checks.md, *The
    checks as ruled*, which is the specification — answers.md over it). In
    node, over the readings `grammarOf`, `glassOpen`/`glassClosed` and the
    walks took in the page. Stage 0 runs every one in **report mode**: they
@@ -4553,7 +4554,7 @@ async function finish(cards, errors, tok, ref, version, switches, piles, doors, 
     }));
   }
 
-  /* **The redesign's checks** (P13–P33 and raw-value), per card and per walk,
+  /* **The redesign's checks** (P13–P34 and raw-value), per card and per walk,
    * and the table over them. `findings` is the count **as ruled** (stated
    * exceptions out); `v2` is the count comparable with checks.md's *today*
    * column (the exceptions in, the ruling's new findings out), read for the

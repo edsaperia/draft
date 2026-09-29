@@ -6,6 +6,14 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-09-29: a word and its glyph keep their space
+
+### Fixed
+- **A button no longer runs a word into its glyph**: *Accept 🏛️* read *Accept🏛️* on the cards that hand you a power. Wherever a word stands beside a glyph, the space between them now stays.
+
+### For contributors
+- **card-audit's P34 `glyph-space`** measures the space between a word and a drawn glyph on every card and its rail entry, in the fast pass at both widths; STYLE.md T50 is the rule.
+
 ## 2026-09-28, evening: your name, the doors and applications, in the new shape
 
 ### Changed
