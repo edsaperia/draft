@@ -2036,7 +2036,20 @@ var CONSTITUTION = (() => {
       }
       case "close-acknowledged": {
         const m = s.members.get(event.member);
-        if (m) m.closingAck = { t: event.t, comment: event.comment };
+        if (!m) break;
+        m.closingAck = { t: event.t, comment: event.comment };
+        for (const id of m.okOwed) m.okGiven.add(id);
+        m.okOwed.clear();
+        for (const id of m.releasesOwed) m.releasesGiven.add(id);
+        m.releasesOwed.clear();
+        for (const id of m.amendmentsOwed) m.amendmentsGiven.add(id);
+        m.amendmentsOwed.clear();
+        for (const id of m.mailGaveUpOwed) m.mailGaveUpGiven.add(id);
+        m.mailGaveUpOwed.clear();
+        for (const id of m.departuresOwed) m.departuresGiven.add(id);
+        m.departuresOwed.clear();
+        for (const id of m.heldOwed) m.heldGiven.add(id);
+        m.heldOwed.clear();
         break;
       }
       case "application-started": {
