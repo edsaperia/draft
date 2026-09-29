@@ -387,9 +387,11 @@ window.DOOR = (function () {
       }
       return said ? shell(said, { body: err, input: field }, acts) : shell(field, { body: err }, acts);
     }
+    // drawn from `stateOf`, as the band's kinds are: the door source hands
+    // card-state this card's parts and its acts (session-view.html)
     function strangerCardHtml() {
-      const st = strangerState();
-      return st ? glyphify(window.CARD_SHELL.cardHtml(st)) : '';
+      if (!strangerState()) return '';
+      return glyphify(window.CARD_SHELL.cardHtml(window.CARD_STATE.stateOf(S.open)));
     }
     document.addEventListener('input', (ev) => {
       const t = ev.target.closest('[data-stremail]');
