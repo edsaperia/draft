@@ -300,7 +300,12 @@ const isMember = (s) => !s.left &&
  */
 const activeButTheMover = (s, step, ctx, ev) => isMember(s) && s.name !== ctx.actorOf(ev);
 const AUDIENCE = {
-  'the holder': (s) => s.role === 'founder',
+  // E8, a power arrives — to the holder, and the key says which power. ✒️ and
+  // 🛡️ are the founder's on either hat; 🏛️ *arrives when you first become a
+  // member* (the row's own words, Q1365), so its holder is every member and
+  // never a clerk founder (#119: the card had no `hide`, and `visible`'s
+  // last clause let it through to everybody once the document had begun)
+  'the holder': (s, step, ctx, ev) => (ev && ev.key === 'grant-voice' ? isMember(s) : s.role === 'founder'),
   'every member': (s) => isMember(s),
   'every member who had no say **and arrived when it was set**, lapsed included; a later joiner reads it as the document':
     (s, step, ctx, ev) => isMember(s) && s.name !== ctx.actorOf(ev) &&
@@ -515,8 +520,10 @@ const STEPS = [
   // 🏛️ is served to a member founder as news once the constitution is settled,
   // and `beginOffered` holds 🍾 until it is acknowledged (first run, 2026-08-27:
   // `no begin card to hold … rail ["grant-voice"]`). journey OKs every served
-  // task; this table has to say so. No events: the voice's audience row is
-  // not in this table (E8 here is the founder's pen and shield).
+  // task; this table has to say so. No events here: the voice's E8 is
+  // asserted at `begin` below, on both hats, where the founder's own
+  // acknowledgement (this step, member hat) and the clerk's absence from
+  // the audience are both facts the assertion can read (#119).
   { id: 'ok-voice', epoch: 'before', kind: 'ok', seat: 'founder', key: 'grant-voice', ifHat: 'member', events: [] },
   // ---- live ---------------------------------------------------------------
   // `keep`: 🛡️ kept on the Text at 🍾 (the table's own toggle, journey's
@@ -529,9 +536,24 @@ const STEPS = [
   // instead (the shield above) and never reaches `rebaseOthers` at all. The
   // Text is the one row of 🍾's table whose cells default to *down*
   // (`beginPos`), so both of its powers have to be asked for by name.
+  // **and 🏛️, the holder's** (E8, #119): once the document has begun a
+  // member carries the voice's entry, or has acknowledged it (the founder at
+  // `ok-voice`), and a clerk founder — never a member — carries it nowhere,
+  // neither in the rail nor as a tab on the Founded line (`railOf` reads
+  // both). Red on the page before #119, which served the grant to everybody
+  // from the cork; `E8`'s `at` is the early seat's arrival, where the voice
+  // first arrived to a member on this document. `staged` as E4's gates are:
+  // the grant is a gate on the card, and a member owed a decision's OK at 🍾
+  // (`early` and `lapsed`, owed 💤's, both hats) is shown no gate until they
+  // have given it — read off the module's `owedOks`, never assumed. And
+  // `noLedger`: the page before #119 gave the clerk the voice as a ⏳ tab —
+  // `open` false, so `waiting` — which the `wants` reading sets aside for
+  // E10's mover; a power you do not hold has no state to file as, so outside
+  // the audience any state is the finding.
   { id: 'begin', epoch: 'live', kind: 'hold', seat: 'founder', key: 'begin',
     keep: [['text', 'a'], ['text', 'u']],
-    events: [E4('canpropose'), E4('canjudge'), { id: 'E25', key: 'strapply', at: 'begin' }] },
+    events: [E4('canpropose'), E4('canjudge'), { id: 'E25', key: 'strapply', at: 'begin' },
+      { ...E8('grant-voice'), staged: true, noLedger: true }] },
   // `ok-propose` and `ok-judge` are **retired** (2026-09-07). They opened 💡
   // and ⚖️ on the founder's page and pressed their OK; since Ed's ruling of
   // 2026-09-01 (`gateSelfSet`) the founder has no such card to open, so both
@@ -1879,7 +1901,18 @@ function assertStep(D, step, evs, snap) {
       const wants = (e) => e.kind !== 'wait' && e.kind !== 'done';
       const asks = snap[name].rail.filter(wants).map((e) => e.key);
       const tabs = (snap[name].band || []).filter(wants).map((e) => e.key);
-      const has = asks.some(match) || tabs.some(match);
+      // **A power you do not hold has no ledger to file as** (E8, #119). The
+      // `wants` reading above is right for E10's mover, whose ⏳ is the ledger
+      // of their own answers — and blind to a clerk founder's 🏛️, which stood
+      // on their Founded line as a ⏳ tab (`open` false, so `waiting`) and
+      // read as nothing. A row says so with `noLedger`: outside its audience a
+      // seat carrying the key in **any** state is a finding. Inside it the
+      // reading is unchanged. Per event, since only the row knows whether its
+      // key has a state a seat may rightly file as.
+      const inAny = (e) => match(e.key);
+      const stray = !inAud && !!ev.noLedger
+        ? (snap[name].rail.find(inAny) || (snap[name].band || []).find(inAny) || null) : null;
+      const has = asks.some(match) || tabs.some(match) || !!stray;
       // `match`, not `includes`: a prefix key (`rel:`, `mail:`) is acknowledged
       // under its own batch id, so an exact test never sees the OK and a seat
       // that has answered reads as one that was never served.
@@ -1926,6 +1959,7 @@ function assertStep(D, step, evs, snap) {
         !((snap[name].readout || {}).okd || []).includes(ev.waitsOn) ? ev.waitsOn : null;
       const carries = has || okd || signed || departed || self || !!stagedBehind || !!heldBack;
       const how = asks.some(match) ? 'carries it'
+        : stray ? 'carries it as ' + (snap[name].rail.includes(stray) ? 'a ' + stray.kind + ' entry' : 'a ' + stray.kind + ' tab') + ' (no ledger state is theirs)'
         : has ? 'carries it as a tab (' + ((snap[name].band || []).find((e) => match(e.key)) || {}).kind + ')'
         : okd ? 'acknowledged it' : signed ? 'signed it'
         : departed ? "was told by the door's departure sentence"
