@@ -82,6 +82,13 @@ describe('the demo document (DEMO.md Stage 1)', () => {
     const b = await boot();
     expect((await health(b)).demo.state).toBe('built');
     expect((await fetch(b.base + '/d/demo')).status).toBe(200);
+    // a trailing slash (typed, or a link that gained one) is redirected to
+    // the address without it, the query kept — at `/d/demo/` the page's
+    // relative assets all resolved to 404s and the page was a bare skeleton
+    const slashed = await fetch(b.base + '/d/demo/?try=1', { redirect: 'manual' });
+    expect(slashed.status).toBe(302);
+    expect(slashed.headers.get('location')).toBe('/d/demo?try=1');
+    expect((await fetch(b.base + '/d/demo//', { redirect: 'manual' })).headers.get('location')).toBe('/d/demo');
     const v = await (await fetch(b.base + '/api/d/demo/view')).json() as {
       title: string; canRead: boolean; text: string; stranger: boolean };
     expect(v.stranger).toBe(true);

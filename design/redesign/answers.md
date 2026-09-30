@@ -85,7 +85,7 @@ Ed's words, one at a time. They go into `design/copy.js` and STYLE (T3, §3's la
 | .5 | a record whose wording has since been changed | the outcome label + **· since replaced** |
 | .6 | the deadlock | **Current text** (the *still standing* clause goes) |
 | .7 | a multi-place proposal | **Current text · 2 of 3** with ↑ ↓ |
-| .15 | a text card on a closed document | **Final text** |
+| .15 | a text card on a closed document | ~~**Final text**~~ — **retired by 1569.4 (c)** (Ed, 2026-09-30): on a closed document 📝 opens no card, and none is built; the text is the document itself |
 | .16 | a rule card on a closed document | **Rule at the close** (Ed: *the rules do not stand after the end of the document since it is now over*) |
 
 **Labels on blocks**
@@ -206,3 +206,4 @@ The floating 📝 door is not a principle: it is a named exception in `zone-over
 | 1569.2 | How the column makes room for the proposal row and the patch row (P30) | **(c) The rows stay where they are, named as P30 exceptions beside the 📝 door** (Ed, 2026-09-30 16:07 UTC) — no move into the margins, no grounded band; K17/K18's *one row that does not move* stands. **And *They should be larger, like the 📝 circle***: the row's circles — 🗑️, ✏️ (✒️ where the Founder holds the pen), the patch row's ❄️ and ✓ — take the door's 4.5rem; still circles, the glyph at B6's one size, the count between them as it was. SURFACE K17, §9's 📝 row; checks.md P30. |
 | 1541.22 (a), as built | The editing card's commit outside edit mode | **Accepted by the coordinator** (PR #127, 2026-09-30) from the ruling as it stands (*one ✏️ in edit mode*): a draft opened by ✏️ *propose edit* in read mode (K24) never enters edit mode, so no row stands and its card keeps its ✏️ and countdown. |
 | 1569.3 | The label over a draft started by ✏️ *propose edit* off another wording | **(a) Keep *the proposal you are editing*** (Ed, 2026-09-30 17:15 UTC, on the questions page) rather than *Current text*, the card's head being that wording. |
+| 1569.4 | The *Final text* label (Part 4 .15), deferred by stage 7 to a closed 📝 card that stage 8 did not build | **(c) Dropped** (Ed, 2026-09-30 17:31 UTC, on the questions page): Part 4 .15 is retired; on a closed document the text is the document itself, 📝 opens no card and none is built. 1568's deferral (7) closes. |
