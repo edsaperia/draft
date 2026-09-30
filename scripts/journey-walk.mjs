@@ -2946,23 +2946,24 @@ const beneathOk = !!door.atTop && !!door.tabUp &&
 // a floating control is a circle (Q1380): width is height, and fully round
 const circleOk = !!door.before && door.before[2] === door.before[3] && door.before[6] === '50%' &&
   !!door.entered.commit && door.entered.commit[2] === door.entered.commit[3] && door.entered.commit[6] === '50%';
-/* **Its own corner, about 1.5× the row's circles** (Q1516 (3), (4)): the
- * door's right and bottom edges `--s5` (24px) off the window's, its diameter
- * 1.5× the row's ✏️'s, and its box meeting neither the ✏️ nor the 🗑️ the row
+/* **Its own corner, at the row's circles' size** (Q1516 (3); 1569.2, Ed
+ * 2026-09-30 — 1.5× them under Q1516 (4)): the door's right and bottom edges
+ * `--s5` (24px) off the window's, its diameter the row's ✏️'s, and its box
+ * meeting neither the ✏️ nor the 🗑️ the row
  * draws in edit mode. The pre-fix page stood the door in the ✏️'s own box. */
 // …since Ed, 2026-09-24, its centre on the page's right edge, never nearer
 // the window's than 24px
 const doorRight = !door.before || door.win.edge == null ? 24 : Math.max(24, door.win.w - door.win.edge - door.before[2] / 2);
 const cornerOk = !!door.before && Math.abs(door.win.w - (door.before[0] + door.before[2]) - doorRight) <= 0.5 &&
   Math.abs(door.win.h - (door.before[1] + door.before[3]) - 24) <= 0.5;
-const sizeOk = !!door.before && !!door.entered.commit && Math.abs(door.before[2] - 1.5 * door.entered.commit[2]) <= 1;
+const sizeOk = !!door.before && !!door.entered.commit && Math.abs(door.before[2] - door.entered.commit[2]) <= 1;
 const meets = (a, b) => !!a && !!b && a[0] < b[0] + b[2] && b[0] < a[0] + a[2] && a[1] < b[1] + b[3] && b[1] < a[1] + a[3];
 const clearOk = !meets(door.before, door.entered.commit) && !meets(door.before, door.entered.bin);
 const sparkleOk = door.sparkleBefore === 1 && door.left.sparkles === 0 && !!door.reloaded.door && door.reloaded.sparkles === 0;
 const doorOk = beneathOk && circleOk && cornerOk && sizeOk && clearOk && !!door.before && door.before[4] === '43.2px' && door.entered.editing && door.entered.editable === 'true' &&
   !door.entered.door &&
   !door.left.editing && !door.left.row && sameBox(door.before, door.left.door);
-say('door       · ' + (doorOk ? 'the floating 📝 at ' + door.before.slice(0, 4).join('×') + ' (“' + door.before[5] + '”), a circle in the window’s corner at 1.5× the row’s ' + door.entered.commit[2] + 'px, clear of the row’s ✏️ and 🗑️, hidden at the top with the tab ' + (door.atTop.chipBottom - door.atTop.doorTop) + 'px below it and shown with it up, enters edit mode, and 📝 on the tab brings it back in the same box'
+say('door       · ' + (doorOk ? 'the floating 📝 at ' + door.before.slice(0, 4).join('×') + ' (“' + door.before[5] + '”), a circle in the window’s corner at the row’s circles’ size, ' + door.entered.commit[2] + 'px (1569.2), clear of the row’s ✏️ and 🗑️, hidden at the top with the tab ' + (door.atTop.chipBottom - door.atTop.doorTop) + 'px below it and shown with it up, enters edit mode, and 📝 on the tab brings it back in the same box'
   : 'FAIL: ' + JSON.stringify({ cornerOk, sizeOk, clearOk, beneathOk, circleOk, door })));
 if (!doorOk) stuck.push('the floating 📝 (Q1335, Q1516)');
 say('sparkle    · ' + (sparkleOk ? 'the floating 📝 sparkles before its first press, not after it, and not after a reload (Q1516 (1))'
