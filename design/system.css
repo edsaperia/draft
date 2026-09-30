@@ -319,6 +319,15 @@
      entry stay red */
   :root[data-slash="muted"] { --lc-wrong: 107, 116, 124; --slash: var(--muted); }
   * { box-sizing: border-box; }
+  /* **The page holds its own scroll** (redesign stage 9): every compensation
+     the page makes — `space-above`, the tab that does not move, the travel —
+     is measured and written by hand, and when every render replaced the
+     column the browser's scroll anchoring had no node to anchor on. A patched
+     page keeps its nodes, so anchoring would move the scroll a second time,
+     a frame later, on top of the page's own: P13 read the title card at the
+     page's top 1–2px short at 390, intermittently, under the patch renderer
+     and never under ?render=replace. */
+  html { overflow-anchor: none; }
   body {
     background: var(--bg);
     color: var(--fg);
