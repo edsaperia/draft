@@ -80,7 +80,27 @@
     return blk && a.contains(blk) ? blk : a;
   };
 
+  // **a kept node lands where a new one would, still**: a node the render
+  // keeps and whose class or style it changes would otherwise play its CSS
+  // transitions to the new box (a tab's `transform`, a rail entry's `top`),
+  // where the node `innerHTML` made was born at rest — P13 read one mid-glide
+  // at 390. So each such node takes the change with its transitions off for
+  // one style flush, and they come back at once for whatever the page itself
+  // animates after (the washes, the lift: those paint from rest by hand).
+  let settled = [];
+  const lookChanged = (el, nu) => el.getAttribute('class') !== nu.getAttribute('class') ||
+    el.getAttribute('style') !== nu.getAttribute('style');
+  function landStill(nodes) {
+    if (!nodes.length) return;
+    // the style attribute put back as the markup wrote it, byte for byte: the
+    // CSSOM would re-serialise it, and the probes read markup
+    const was = nodes.map((el) => el.getAttribute('style'));
+    for (const el of nodes) el.style.setProperty('transition', 'none', 'important');
+    void document.body.offsetHeight;
+    nodes.forEach((el, i) => { if (was[i] === null) el.removeAttribute('style'); else el.setAttribute('style', was[i]); });
+  }
   function patchAttrs(el, nu) {
+    if (lookChanged(el, nu) && !pressed(el)) settled.push(el);
     const keepPress = pressed(el) ? PRESS_CLASSES.filter((c) => el.classList.contains(c)) : [];
     const want = [];
     for (const a of nu.attributes) want.push([a.name, a.value]);
@@ -206,7 +226,10 @@
     const t = scratch();
     t.innerHTML = html;
     hold = holdOf();
+    settled = [];
     try { patchChildren(el, t.content); } finally { hold = null; }
+    landStill(settled);
+    settled = [];
   }
   window.PATCH = { mode: MODE, set, keyOf };
 })();
