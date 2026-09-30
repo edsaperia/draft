@@ -280,6 +280,13 @@ case "$GROUP" in
     walk "stranger-records" node scripts/repro/stranger-records.mjs "$BASE"
     # one OK per clause, and OK walking to the next owed record (Q1536)
     walk "review-walk" node scripts/repro/review-walk.mjs "$BASE"
+    # **nothing you are in the middle of is taken by the page updating**
+    # (principle 10, redesign stage 9): every in-flight kind on an open card
+    # under a forced poll and a room event, patch renderer, strict. Beside it
+    # focus-steal's `--gap` (Q1461 (iii)), which asserts; its `--lane` case
+    # needs a bot room and is the walk's *caret in a lane*
+    walk "render-hold-walk" node scripts/render-hold-walk.mjs "$BASE"
+    walk "focus-steal --gap" node scripts/repro/focus-steal.mjs "$BASE" --gap
     ;;
 
   # ======================================================================
