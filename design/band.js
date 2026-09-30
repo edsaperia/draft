@@ -2371,9 +2371,9 @@ window.BAND = (function () {
       SESSION.setDocClosed(closedNow);
       SESSION.setSigned(closedNow && signedClose());
       renderTitle(); renderRail(); renderBand(); syncCharter(); renderMail(); renderPowerWallets();
-      document.getElementById('mebtn').innerHTML = avHtml(
+      window.PATCH.set(document.getElementById('mebtn'), avHtml(
         S.viewer === 'applicant' ? { n: S.app.name || '?', pic: S.app.pic }
-        : isStranger() ? { n: '?', pic: '' } : me(), 'face');
+        : isStranger() ? { n: '?', pic: '' } : me(), 'face'));
       if (S.open && S.open !== env.lastOpen) {
         const el = document.querySelector('.setupcard');
         if (el) { CC.expandCard(el, () => {}); focusOpened(el, S.open); }

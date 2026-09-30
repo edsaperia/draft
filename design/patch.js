@@ -47,7 +47,13 @@
     for (const a of KEY_ATTRS) { const v = n.getAttribute(a); if (v !== null) return a + '=' + v; }
     return null;
   };
-  const sameKind = (a, b) => a.nodeType === b.nodeType && (a.nodeType !== 1 || a.nodeName === b.nodeName);
+  // an unkeyed element's kind is its tag and its first class — the base
+  // class a template names it by (`memrow`, `cpara`, `said`), which a state
+  // class after it (`open`, `blank`) never changes — so a row added above an
+  // open card is a new row, not the card turned into one
+  const kindOf = (n) => n.nodeType !== 1 ? '#' + n.nodeType
+    : n.nodeName + '.' + ((n.getAttribute('class') || '').trim().split(/\s+/)[0] || '');
+  const sameKind = (a, b) => kindOf(a) === kindOf(b);
 
   // **in flight** (U1): what the reader is holding on this node. Focus alone
   // is not a thing held — a button keeps it after its own press — so only a
@@ -122,11 +128,14 @@
     const byKey = new Map();
     for (const o of olds) { const k = keyOf(o); if (k !== null && !byKey.has(k)) byKey.set(k, o); }
     let cursor = 0;
+    // the next unkeyed old node of the same kind, from where the last match
+    // left off: nodes of other kinds between are skipped (they will be matched
+    // or leave on their own), so an insertion never shifts a match down a row
     const nextUnkeyed = (nu) => {
+      const want = kindOf(nu);
       for (let i = cursor; i < olds.length; i++) {
         const o = olds[i];
-        if (used.has(o) || keyOf(o) !== null) continue;
-        if (!sameKind(o, nu)) return null;   // a different kind here: a new node, not a skip
+        if (used.has(o) || keyOf(o) !== null || kindOf(o) !== want) continue;
         cursor = i + 1;
         return o;
       }
