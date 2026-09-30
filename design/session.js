@@ -2412,7 +2412,6 @@
     const skey = s.keys[0];
     const moved = carried(s);
     const o = headOpts(s, skey);
-    const last = s.fold[s.fold.length - 1];
     const W = window.COPY.shell;
     const marked = (base, c) => (c.mark && c.mark.against != null ? wordingHtml(c.mark.against, c.text) || mdBlocksHtml(null, c.text)
       : c.mark ? wordingHtml(base, c.text) : mdBlocksHtml(null, c.text));
@@ -2437,7 +2436,8 @@
       kind: 'clause-fold',
       frame: { cls: 'sugg sealed-open foldcard' + (moved ? ' recpass' : ''),
         attrs: ' data-card="' + esc(s.id) + '" data-site="' + esc(skey) + '"' },
-      label: { text: T.record.foldHead(s.fold.length) + W.sep + longText(last.decided), fact: 'outcome' },
+      // the count alone (1568.2, Ed 2026-09-29 21:57 UTC): no moment after it
+      label: { text: T.record.foldHead(s.fold.length), fact: 'outcome' },
       head: { html: clauseHeadHtml(s, Object.assign(o, { key: skey, chips: chipsFor(skey, s.id), label: null, fact: 'place' },
         moved && o.text != null && String(o.text).trim() ? { html: wordingHtml(s.replaced ?? '', o.text) } : {})) },
       fact: moved ? T.record.foldSince : T.record.foldSame,

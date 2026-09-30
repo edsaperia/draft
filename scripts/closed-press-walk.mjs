@@ -9,11 +9,13 @@
  * The ladder closes a document. Then, for the Founder, a member who has not
  * signed and a stranger — each in a fresh browser — every tab in the gutter,
  * every tab in the Rules and every rail entry is opened, and **every enabled
- * control on the card it opens is pressed**, 🥂's signature last. A closed
- * page is meant to offer nothing but 🥂, so almost nothing should be pressed;
- * what the walk guards is the other half of that promise — whatever the page
- * *does* offer, the host accepts: no refused `/api/` call, no page error, and
- * no row written to the error log while the walk ran.
+ * control on the card it opens is pressed**, 🥂's signature last. **A closed
+ * page offers nothing but 🥂** (1541.7 (a)), asserted card by card: on every
+ * card opened, no control is enabled but its tabs — on 🥂, its own row (the
+ * signature and the comment) as well — which also holds ✋ 🖼️ 📧 frozen on
+ * the closed page (1541.28 (a)). And the other half of the promise: whatever
+ * the page *does* offer, the host accepts — no refused `/api/` call, no page
+ * error, and no row written to the error log while the walk ran.
  *
  * And the signature answers every OK owed (the host's fold, `close-owed.test`
  * in @draft/constitution; the page's `SESSION.setSigned`): after it, the
@@ -108,6 +110,8 @@ async function pressEverything(who, cookie, { sign }) {
   ])]);
   let pressed = 0;
   const pressedWhat = [];
+  const offered = [];
+  let cardsRead = 0;
   for (const way of ways) {
     const [kind, key] = way.split(/:(.*)/s);
     await page.evaluate(({ kind, key }) => {
@@ -118,6 +122,22 @@ async function pressEverything(who, cookie, { sign }) {
       if (el) { el.scrollIntoView({ block: 'center' }); el.click(); }
     }, { kind, key });
     await page.waitForTimeout(700);
+    // **nothing but tabs on the card** — and on 🥂 its own row
+    const extra = await page.evaluate(() => {
+      const vis = (e) => { const b = e.getBoundingClientRect(); return b.width > 0 && b.height > 0 && getComputedStyle(e).visibility !== 'hidden'; };
+      const card = document.querySelector('.setupcard, .sugg.gshell, .sugg[data-card]');
+      if (!card) return null;
+      const key = card.dataset.setupcard || card.dataset.card || '?';
+      return [...card.querySelectorAll('button, input, textarea, select, [contenteditable="true"], [contenteditable="plaintext-only"], [role="button"]')]
+        .filter((e) => vis(e) && !e.disabled && !e.closest('.chipcol, .sectoggle') &&
+          !(key === 'closing' && e.matches('[data-sign], [data-signwhy]')) &&
+          // the stranger's sign-in is the door itself, not an offer the
+          // document makes: it is how a member who has not yet signed comes
+          // back to 🥂 on a closed page
+          key !== 'strlogin')
+        .map((e) => key + ' → ' + (e.tagName + ':' + (e.title || e.textContent || e.className)).replace(/\s+/g, ' ').trim().slice(0, 50));
+    });
+    if (extra) { cardsRead++; offered.push(...extra); }
     // every enabled control on the open card, but its tabs and 🥂's signature
     const n = await page.evaluate(async () => {
       const vis = (e) => { const b = e.getBoundingClientRect(); return b.width > 0 && b.height > 0; };
@@ -170,6 +190,8 @@ async function pressEverything(who, cookie, { sign }) {
     check(who + ': and nothing is owed after it — no ✔ ✖ ✔✔✔ unread, no 🥂', owedNow.length === 0,
       JSON.stringify(owedNow.slice(0, 8)));
   }
+  check(who + ': every card opened offers nothing but its tabs (and 🥂 its own row)', cardsRead > 0 && offered.length === 0,
+    cardsRead + ' cards · ' + JSON.stringify(offered.slice(0, 6)));
   say(`   ${who}: ${ways.length} ways in, ${pressed} controls pressed${pressedWhat.length ? ' — ' + pressedWhat.slice(0, 6).join(' | ') : ''}`);
   check(who + ': the host refused nothing', refused.length === 0, refused.slice(0, 3).join(' | '));
   check(who + ': the page threw nothing', errors.length === 0, errors.slice(0, 2).join(' | '));

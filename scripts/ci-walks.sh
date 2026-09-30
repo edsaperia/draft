@@ -397,7 +397,8 @@ case "$GROUP" in
     walk "close-no-room" node scripts/repro/close-no-room.mjs --fast --cpu=4 --runs=3
     # **The card you are reading travels to its record** (Q1565, Q1541
     # stage 7): a card open when its race is decided becomes the ✔ or ✖
-    # record in its place, its OK owed — none when your own proposal passed.
+    # record in its place, read at the travel — a pass, a fail and your own
+    # proposal alike, nothing owed on it (1565 (b), Ed 2026-09-29 17:27).
     # Serves design/ itself
     walk "record-travel" node scripts/repro/record-travel.mjs
     # **The copy golden** (entry 128; Q1546 (c)): every card's strings on

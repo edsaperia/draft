@@ -2195,7 +2195,7 @@ const HEAD_WORDS = [
   // stage 7: 🥂 once signed or for a reader who signs nothing, its title; a
   // clause's fold, how many decisions and when the last was (Q1561; the
   // builder's call, the PR's FINAL)
-  /^The Close$/i, /^\d+ decisions · .+$/i,
+  /^The Close$/i, /^\d+ decisions$/i,
   // stage 5's asks, today's titles unchanged (Part 4; 1541.46 (a)) — and the
   // door's ask over its motions and an application too (1567.3)
   /^(Choose Your (Name|Picture)|Enter Your Email|Invite a Member|Remove a Member|Leave the Membership)$/i,

@@ -2412,7 +2412,6 @@
     const skey = s.keys[0];
     const moved = carried(s);
     const o = headOpts(s, skey);
-    const last = s.fold[s.fold.length - 1];
     const W = window.COPY.shell;
     const marked = (base, c) => (c.mark && c.mark.against != null ? wordingHtml(c.mark.against, c.text) || mdBlocksHtml(null, c.text)
       : c.mark ? wordingHtml(base, c.text) : mdBlocksHtml(null, c.text));
@@ -2437,7 +2436,8 @@
       kind: 'clause-fold',
       frame: { cls: 'sugg sealed-open foldcard' + (moved ? ' recpass' : ''),
         attrs: ' data-card="' + esc(s.id) + '" data-site="' + esc(skey) + '"' },
-      label: { text: T.record.foldHead(s.fold.length) + W.sep + longText(last.decided), fact: 'outcome' },
+      // the count alone (1568.2, Ed 2026-09-29 21:57 UTC): no moment after it
+      label: { text: T.record.foldHead(s.fold.length), fact: 'outcome' },
       head: { html: clauseHeadHtml(s, Object.assign(o, { key: skey, chips: chipsFor(skey, s.id), label: null, fact: 'place' },
         moved && o.text != null && String(o.text).trim() ? { html: wordingHtml(s.replaced ?? '', o.text) } : {})) },
       fact: moved ? T.record.foldSince : T.record.foldSame,
@@ -6641,19 +6641,19 @@ document.addEventListener('paste', (ev) => {
     refold();
     // **The card you are reading when its race is decided travels to its
     // record** (Q1565, Ed 2026-09-28 and 2026-09-29): the record opens in its
-    // place, the clause and the tab pressed still, its OK owed as ever — a
-    // wording that passed, one that failed (1565 (a)) and a proposal of your
-    // own alike (1565 (b)). Anything else that leaves — a card withheld —
-    // cannot stay open behind it; asked after the fold, so a fold open across
-    // a poll keeps its card
+    // place, the clause and the tab pressed still — a wording that passed,
+    // one that failed (1565 (a)) and a proposal of your own alike (1565 (b)).
+    // Anything else that leaves — a card withheld — cannot stay open behind
+    // it; asked after the fold, so a fold open across a poll keeps its card
     if (openId != null && !SUGGS.some((g) => g.id === openId)) {
       const to = before ? successorOf(before, had) : null;
       openId = to ? to.id : null;
-      // …and **your own proposal passing is news you have just watched
-      // happen** (1565 (b), as the builder reads it — the PR's question): its
-      // record opens already read, nothing owed, and closes like any card
-      // that asks nothing
-      if (to && before.kind === 'draft' && before.mine && carried(to) && !readSeals.has(to.id)) {
+      // …and **a record you watched decide is read at the travel** (1565 (b),
+      // Ed 2026-09-29 17:27 UTC, ruling (a)): every travelled-to record files
+      // as read the moment the card becomes it, nothing owed on it, so the
+      // walk does not go on from it; a record you did not watch is owed as
+      // ever (C18)
+      if (to && !readSeals.has(to.id)) {
         readSeals.add(to.id);
         if (hooks.seen) hooks.seen(to.id);
       }

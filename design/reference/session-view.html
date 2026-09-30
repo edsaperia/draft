@@ -7420,7 +7420,7 @@
   /** at ✒️ the card is news, owed its OK until pressed (E42) */
   const admissionOwed = (c) => (admissionShellKind(c) === 'admission' && admissionPrice() === 'pen' &&
     docOpen() && !!applicantById(c.admit) && !S.okd.has(c.k)
-    ? { kind: 'ok', attrs: ' data-ok="' + esc(c.k) + '"', word: 'OK' } : null);
+    ? { kind: 'ok', attrs: ' data-ok="' + esc(c.k) + '"', word: window.COPY.session.record.ok } : null);
   function admissionPresent(c, hints) {
     const W = W4();
     const kind = admissionShellKind(c);
@@ -10824,7 +10824,7 @@
       // 🥂's OK is owed until this seat signs: it signs the document
       // (1541.23 (a), 1541.7 (a)) — the one press a closed page offers
       if (c && c.isClosing) return viewerIsMember() && !signedClose()
-        ? { kind: 'ok', attrs: ' data-sign="1"', title: PAGE_COPY.gate.closing.signTitle, word: 'OK' } : null;
+        ? { kind: 'ok', attrs: ' data-sign="1"', title: PAGE_COPY.gate.closing.signTitle, word: window.COPY.session.record.ok } : null;
       // **a closed card offers nothing but 🥂** (1541.7 (a), plain bug 2): no
       // news OK and no grant's *Accept* on a closed document — the signature
       // answers every OK owed, and a power granted has nothing left to do
@@ -10834,7 +10834,7 @@
       if (identityShellKind(c)) return null;
       if (doorShellKind(c)) return null;
       if (admissionShellKind(c)) return admissionOwed(c);
-      if (shellRelease(c)) return releaseBatch(c.release) ? { kind: 'ok', attrs: ' data-ok="' + esc(k) + '"', word: 'OK' } : null;
+      if (shellRelease(c)) return releaseBatch(c.release) ? { kind: 'ok', attrs: ' data-ok="' + esc(k) + '"', word: window.COPY.session.record.ok } : null;
       if (!ackOwed(c)) return null;
       return { kind: 'accept', cls: 'grantok', attrs: ' data-ok="' + esc(k) + '"',
         word: k === 'grant-voice' ? PAGE_COPY.gate.voice.accept : PAGE_COPY.gate.accept(c.grants || c.g) }; },

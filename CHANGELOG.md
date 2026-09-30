@@ -6,6 +6,29 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-09-29, evening: records, and the closed document
+
+### New
+- **Every record says how it ended and when**, above its first line: *Passed*, *Rejected*, *Refused by the Founder*, or *Ran out of time* where the document closed before anything was decided.
+- **When a clause has several records you have not seen, they are one card.** Its tab is a stack of three ✔s, the card is labelled with how many decisions it holds, and it shows every change in full, oldest first. Each record keeps its own tab too, and its OK answers that record alone.
+- **The card you are reading becomes its record** when its vote is decided, in the same place, whether the wording passed, failed or was your own. You watched it happen, so you are not asked to OK it again.
+
+### Changed
+- **A closed document asks nothing but your signature.** There is nothing else to press, no sentence about the Founder's powers and no ✒️ 🛡️ tabs; 🥂 asks you to *Add your closing comment*, and its OK signs.
+- **Proposals the clock cut off read *Proposed · Ran out of time*.**
+- **Signing the document answers everything else you were owed**, so nothing is left waiting in your margin afterwards.
+
+### Fixed
+- **A wording the membership stopped early no longer says the Founder refused it**; it reads *Rejected*.
+- **An application still open when the document closed** no longer offers *Prefer this*.
+- **Your margin clears the moment you sign**, not at the next refresh.
+- **The ✏️ countdown stops** once the document is closed.
+
+### For contributors
+- **A full deploy, not surface-only**: signing now clears every OK a member is owed. It is a change to how the existing sign-off event is read, with no new event, so every existing log replays unchanged (`close-owed.test.ts`).
+- **The records, the clause fold, the Founder's amendment news, the backlog and 🥂 are built on the one card shell**, and card-audit holds every card kind strictly at both widths, the closed document included.
+- **Two new walks join the sprint tier**: `closed-press-walk` opens and presses everything on a closed document as the Founder, a member and a visitor; `record-travel` checks the card you are reading becoming its record.
+
 ## 2026-09-29, afternoon: a word and its glyph keep their space
 
 ### Fixed
