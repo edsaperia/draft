@@ -6,6 +6,12 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-09-30, night: two plans for a livelier document
+
+### For contributors
+- **Documents only, nothing a member sees changes yet.** Two plans ruled by Ed this evening, each in MOBILE.md's shape: `design/SWEEP.md`, the queue card wash sweep transition (Q1571) — a vote landing on a race in your rail sweeps its entry's wash from where it stands to full, resets and climbs to the new value, always left to right; a decision runs to full (✔) or to full and empty (✖) and stamps the mark — and `design/PRESENCE.md`, where each member is reading (Q1570, unshelving Q314) — faces on the document's left edge beside the clause each member's reading line rests on, named wherever proposals may be signed, 👀 otherwise, on the 4 s poll and never in the log. Every call in both is ruled; the builder brief is issue #134 and starts when redesign stage 9 merges.
+- **QUESTIONS.md claims 1570, 1571 and 1572** (stage 9's calls, 1572.1 ruled); the next free number is 1573. CLAUDE.md's Documents table gains the two plans' rows.
+
 ## 2026-09-30, late: a document address with a slash on the end
 
 ### Fixed
