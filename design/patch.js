@@ -94,8 +94,11 @@
     if (!nodes.length) return;
     // the style attribute put back as the markup wrote it, byte for byte: the
     // CSSOM would re-serialise it, and the probes read markup
+    // (by the attribute, never `el.style`: a node whose inline style the CSSOM
+    // has touched answers a later `style.x = ''` with an empty `style=""`,
+    // which a fresh node never grows)
     const was = nodes.map((el) => el.getAttribute('style'));
-    for (const el of nodes) el.style.setProperty('transition', 'none', 'important');
+    nodes.forEach((el, i) => el.setAttribute('style', (was[i] ? was[i] + '; ' : '') + 'transition: none !important'));
     void document.body.offsetHeight;
     nodes.forEach((el, i) => { if (was[i] === null) el.removeAttribute('style'); else el.setAttribute('style', was[i]); });
   }
