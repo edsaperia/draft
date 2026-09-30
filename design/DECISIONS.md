@@ -7653,3 +7653,5 @@ The keyed re-render (`design/patch.js`, principle 10) retired the deferral flags
     - **Both polls defer while a hold is in flight** (`penHold || SESSION.holding`), the flag being module-level because the propose hold's own state is re-created by every render. Guard: `npm run journey`.
 - `dateInFlight` retired:
   - **A half-typed date has no value, so no render keeper can carry it** (Q1513): a poll after the day and month gave back an empty box and the rest of the keys made a year 0001; a focused answer or motion date box holds off the poll, 30 s from its last key (`dateInFlight`). Guard: `member-questions-walk`'s Q1513 step.
+- `heldCaret`/`restoreCaret` retired:
+  - **A data swap under a caret takes it** (the residency room, 2026-09-18): the typing guard spares the column only while its key stands, and an adoption anywhere moves the key — seven rebuilds a minute under a rationale in a fast room, the words kept and the caret gone. `setData` holds the caret by position. Measured by `node scripts/repro/focus-steal.mjs` (`--lane`); no CI guard.
