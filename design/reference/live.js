@@ -34,7 +34,7 @@ window.LIVE = (function () {
   function wire(env) {
     const { LIVESLUG, PAGE_COPY, SESSION } = env;
     const { amFounder, applicantAsView, atTheDoor, constituted, esc, hydrateApplicant,
-      hydrateSeen, hydrateValues, openCardDirty, pressInFlight, proseText, refusalNoted,
+      hydrateSeen, hydrateValues, openCardDirty, pressInFlight, gestureInFlight, proseText, refusalNoted,
       render, setProse, setStranger, strangerAsView, syncFromCs } = env;
     // **The host's two flags** (Q1345, Q1346; Ed, 2026-09-12). `paused` is the
     // announced pause a deploy runs under: the whole page goes behind a modal
@@ -57,8 +57,10 @@ window.LIVE = (function () {
     // else. Each clause is read live, never copied at make time — a value
     // taken here would stop deferring the moment the page moved on (the same
     // trap `wallets.js` names for the poll's own `pressInFlight`):
-    //  · `pressInFlight()` — a hold, a drag, a travel or the assembly is a
-    //    gesture in the air, and nothing rebuilds under a press;
+    //  · `gestureInFlight()` — a hold, a flight, a drag, a travel or the
+    //    assembly is a gesture in the air, and a reload would take it (the
+    //    poll's own `pressInFlight` is narrower since stage 9: a render
+    //    patches under a press it holds, a reload cannot);
     //  · `S.editMode` — the column is lifted and the caret is in it;
     //  · an `unproposed` draft of your own in `SUGGS`, which is exactly the
     //    item `setData` carries across a data swap (closing a card is not
@@ -77,7 +79,7 @@ window.LIVE = (function () {
     //    this asks F4's own question (`handUnsent`, below `make`'s
     //    hydration) rather than a second one, and a value committed, binned
     //    or overtaken by the room stops counting by F4's own two clauses.
-    const unsent = () => pressInFlight() || !!env.S.editMode || openCardDirty() ||
+    const unsent = () => gestureInFlight() || !!env.S.editMode || openCardDirty() ||
       (SESSION.SUGGS || []).some((x) => x.unproposed && (x.mine || x.id === SESSION.DRAFT_ID)) ||
       (!!api.handUnsent && api.handUnsent());
     function noteBuild(build) {
@@ -304,6 +306,12 @@ window.LIVE = (function () {
         let answer = null;
         const card = (opts && opts.card) || env.S.open || null;
         const sentAt = Date.now();
+        // **a confirm pressed shuts the stash at the press** (journey's refused
+        // stash on f69975f): `cs.textConfirmed` turns only when a view after the
+        // confirm lands, so a stash debounce landing inside the confirm's round
+        // trip still posted and the route refused it. Marked here, where ✒️
+        // hands the command over, and let go only if the confirm is refused.
+        if (name === 'confirm-starting-text') this.confirming = true;
         // **one request that never answers must not hold every later one**
         // (issue #37 F3): the command and its refresh are one chain, so a
         // half-open socket held every vote, proposal and OK behind it. The
@@ -323,6 +331,7 @@ window.LIVE = (function () {
           })
           .then(({ status, j }) => {
             answer = j && (j.error || j.ok) ? j : { error: PAGE_COPY.noAnswer(status), status };
+            if (name === 'confirm-starting-text' && answer.error) this.confirming = false;
             // a paused host (Q1345) is not a refusal: the modal says it all
             if (status === 503 && j && j.paused) { noteHost(j); return; }
             // **…unless the caller says it is answering this one itself**
@@ -341,6 +350,7 @@ window.LIVE = (function () {
           })
           .catch((e) => {
             answer = { error: PAGE_COPY.noAnswer(0), status: 0 };
+            if (name === 'confirm-starting-text') this.confirming = false;
             console.warn('[live]', name, e && e.message);
             refusalNoted({ name, args, card, status: 0, error: answer.error, detail: String(e && e.message), at: sentAt });
           })
@@ -1236,13 +1246,15 @@ window.LIVE = (function () {
           if (constituted() || !amFounder()) return;
           syncProseRow();
           clearTimeout(deb);
-          if (env.cs.textConfirmed) return;
+          if (env.cs.textConfirmed || api.confirming) return;
           deb = setTimeout(() => {
             // …and asked again when the debounce lands: a confirm can arrive
             // inside the 800ms (journey's ✒️ follows its typing at once), and
             // the route refuses a stash after it — a refusal CI's walks job
-            // counted red on every push from 2026-09-05 (Ed, 2026-09-06)
-            if (env.cs.textConfirmed || constituted()) return;
+            // counted red on every push from 2026-09-05 (Ed, 2026-09-06).
+            // `api.confirming` closes the rest of it: the confirm pressed and
+            // not yet answered, which no served view says yet
+            if (env.cs.textConfirmed || api.confirming || constituted()) return;
             api.post('/api/d/' + LIVESLUG + '/stash', { text: proseText() }).catch(() => {});
           }, 800);
         });
