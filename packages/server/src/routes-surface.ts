@@ -21,7 +21,7 @@
  * (Q1347), so they must read it through the context and never capture it.
  */
 import { join, normalize } from 'node:path';
-import { json, serveFile } from './routes.js';
+import { json, redirect, serveFile } from './routes.js';
 import type { Route } from './routes.js';
 
 /* -- the surface ------------------------------------------------------ */
@@ -67,6 +67,16 @@ export const surfaceTable: Route[] = [
     method: 'GET',
     match: ({ seg }) => seg[0] === 'd' && seg.length === 2,
     handler: (ctx, r) => {
+      // A trailing slash is answered with the address without it, the query
+      // kept: the page's stylesheet and scripts are relative addresses, so
+      // at `/d/demo/` a browser asked for `/d/demo/system.css` and every one
+      // of them was a 404 — the bare skeleton, *Untitled* twice, no code
+      // (Ed's screenshot, 2026-09-30). The segments already ignore the
+      // slash; it is the browser's base that does not.
+      if (r.path.endsWith('/')) {
+        redirect(r.res, r.path.replace(/\/+$/, '') + r.url.search);
+        return true;
+      }
       if (r.docOr404(ctx.store.bySlug(r.seg[1]!)) === null) return true;
       serveFile(r.res, join(ctx.designDir, 'session-view.html'));
       return true;

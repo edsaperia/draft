@@ -6,6 +6,15 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-09-30, late: a document address with a slash on the end
+
+### Fixed
+- **A document address typed or pasted with a slash on the end** (`docs.vote/d/demo/`) **now opens the document.** It used to show an unstyled page reading *Untitled*, because the page's own files were looked for under the slash. The address is redirected to the one without it, and anything after a `?` is kept.
+
+### For contributors
+- **A server change, so a full deploy**: `GET /d/:slug/` answers 302 to `/d/:slug` with the query kept (`routes-surface.ts`; the demo store's test asserts it).
+- **The *Final text* label is retired** (1569.4 (c)): a closed document's text is the document itself, and 📝 opens no card there; Part 4 .15, BUILD.md's P29 and QUESTIONS.md's 1568 (7) say so.
+
 ## 2026-09-30, evening: edit mode, the proposal row and the phone's drawers
 
 ### New
