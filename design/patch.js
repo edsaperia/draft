@@ -62,8 +62,23 @@
   const focusedHere = (el) => el === document.activeElement && el !== document.body &&
     (ENTRY.test(el.nodeName) || el.isContentEditable);
   const pressed = (el) => el.classList && PRESS_CLASSES.some((c) => el.classList.contains(c));
-  const holdsChildren = (el) => focusedHere(el) &&
-    (el.isContentEditable || el.nodeName === 'SELECT' || el.nodeName === 'TEXTAREA');
+  // **the block the reader is writing in**, whose children the render leaves
+  // alone: a focused select or textarea; in an editable, the block holding the
+  // caret — its clause (`data-key`), its lane (`data-lane`) or the lane's line
+  // — never the whole editing host, which in edit mode is the column itself
+  // and must still take a card opening in it. Read once per `set`.
+  let hold = null;
+  const holdOf = () => {
+    const a = document.activeElement;
+    if (!a || a === document.body) return null;
+    if (a.nodeName === 'SELECT' || a.nodeName === 'TEXTAREA') return a;
+    if (!a.isContentEditable) return null;
+    const sel = getSelection();
+    const n = sel && sel.rangeCount ? sel.getRangeAt(0).startContainer : null;
+    const el = n && (n.nodeType === 1 ? n : n.parentElement);
+    const blk = el && el.closest && el.closest('[data-key], [data-lane], .lp');
+    return blk && a.contains(blk) ? blk : a;
+  };
 
   function patchAttrs(el, nu) {
     const keepPress = pressed(el) ? PRESS_CLASSES.filter((c) => el.classList.contains(c)) : [];
@@ -95,7 +110,24 @@
   // nobody is holding takes the value its new markup states, as a fresh node
   // would; the focused one keeps what the reader has put in it
   function patchValue(el, nu) {
-    if (focusedHere(el)) return;
+    // the focused control keeps what the reader put in it — except where the
+    // render states a different value, which is the page's own act (a list
+    // sent and cut down to the refused lines): taken, with the selection put
+    // back where it can stand. A date box is never touched while focused: a
+    // half-typed one reads as no value at all (Q1513)
+    if (focusedHere(el)) {
+      if (el.nodeName !== 'INPUT' && el.nodeName !== 'TEXTAREA') return;
+      if (el.nodeName === 'INPUT' && /^(date|datetime-local|time|month|week|checkbox|radio|file)$/.test(el.type)) return;
+      const v = el.nodeName === 'TEXTAREA' ? nu.value : (nu.getAttribute('value') ?? '');
+      if (el.value === v) return;
+      let ss = null;
+      try { ss = [el.selectionStart, el.selectionEnd]; } catch (e) { /* type=email has none */ }
+      el.value = v;
+      if (ss && typeof ss[0] === 'number') {
+        try { el.setSelectionRange(Math.min(ss[0], v.length), Math.min(ss[1], v.length)); } catch (e) { /* none */ }
+      }
+      return;
+    }
     const t = el.nodeName;
     if (t === 'INPUT') {
       if (el.type === 'checkbox' || el.type === 'radio') { el.checked = nu.hasAttribute('checked'); return; }
@@ -117,7 +149,7 @@
       return;
     }
     patchAttrs(el, nu);
-    if (!holdsChildren(el)) patchChildren(el, nu);
+    if (el !== hold) patchChildren(el, nu);
     patchValue(el, nu);
   }
 
@@ -173,7 +205,8 @@
     if (MODE === 'replace') { el.innerHTML = html; return; }
     const t = scratch();
     t.innerHTML = html;
-    patchChildren(el, t.content);
+    hold = holdOf();
+    try { patchChildren(el, t.content); } finally { hold = null; }
   }
   window.PATCH = { mode: MODE, set, keyOf };
 })();
