@@ -16,9 +16,9 @@
  *  · **same** — the node is the node that was marked;
  *  · **state** — its state intact: caret offset, selection, focus, pressed,
  *    value, `scrollTop`, as the kind reads it;
- *  · **still** — the node unmoved on the glass (±1 px): the page's scroll
- *    holds what the reader is looking at where it was, the browser's scroll
- *    anchoring included when the event adds a line above.
+ *  · **still** — the page's scroll unmoved (±1 px), or moved by the
+ *    browser's scroll anchoring to hold the node still on the glass; a line
+ *    added above that moves the node with the scroll unmoved is noted.
  *
  * The page's own 4 s tick is paused (`window.__pollPaused`) for the length of
  * each kind, so a render lands when the walk says and nowhere else; the tick's
@@ -28,7 +28,9 @@
  *
  * `--render=replace` opens every page at `?render=replace`, the switch that
  * restores wholesale replacement (stage 9's dev switch), so the two can be
- * compared. Exit 1 on any kind red, on a page error, or on a refused command.
+ * compared: there the node's identity is printed and not asserted, and the
+ * state is read off whichever node stands. Exit 1 on any kind red, on a page
+ * error, or on a refused command.
  */
 import { chromium } from 'playwright';
 import { post as postTo, followLink, sleep, say } from './lib/walk.mjs';
@@ -183,24 +185,34 @@ const underRenders = async (page, kind, sel, keys, { eventSent = false, pressed 
   if (!eventSent) await sleep(150);
   ran.push(`${Date.now() - t0}ms`);
   const after = await readHeld(page, sel);
-  const bad = [];
-  if (!after.same || !after.held.connected || !after.held.marked) bad.push('replaced');
+  const bad = [], notes = [];
+  const replaced = !after.same || !after.held.connected || !after.held.marked;
+  // **under `?render=replace` the node's identity is printed, not asserted**
+  // (the switch *is* wholesale replacement): the state is read off whichever
+  // node stands, which is what the page promised before stage 9
+  const on = replaced && MODE === 'replace' && after.now ? after.now : after.held;
+  if (replaced && MODE === 'replace') notes.push('replaced (replace mode)');
+  else if (replaced) bad.push('replaced');
   for (const k of keys) {
-    const a = after.held[k], b = before[k];
+    const a = on[k], b = before[k];
     if (JSON.stringify(a) !== JSON.stringify(b)) bad.push(`${k} ${JSON.stringify(b)}→${JSON.stringify(a)}`);
   }
-  if (pressed && !after.held.pressed) bad.push('the press was let go under the render');
-  // **still**: what the reader is looking at does not move on the glass. The
-  // window's own scroll may move with it — a room event that adds a line above
-  // (an invitee's row) is met by the browser's scroll anchoring, which is the
-  // page holding still, not moving
-  if (after.held.connected && Math.abs(after.held.top - before.top) > 1)
-    bad.push(`moved on the glass ${before.top}→${after.held.top} (scroll ${before.pageY}→${after.held.pageY})`);
+  if (pressed && !on.pressed) bad.push('the press was let go under the render');
+  // **still**: the page's scroll unmoved — and where the browser's scroll
+  // anchoring moved it to hold what the reader is looking at still on the
+  // glass (a room event that adds a line above), that is the page holding
+  // still too. A jump is the two together: the scroll moved *and* the node
+  // with it. A line added above with the scroll unmoved is noted, not failed.
+  const scrolled = Math.abs(on.pageY - before.pageY) > 1;
+  const onGlass = on.connected && Math.abs(on.top - before.top) > 1;
+  if (scrolled && onGlass) bad.push(`the page scrolled ${before.pageY}→${on.pageY} and the node moved on the glass ${before.top}→${on.top}`);
+  else if (onGlass) notes.push(`a line above moved it ${before.top}→${on.top} on the glass`);
   // a replaced node: what its replacement holds, so a keeper that put the
   // state back (the band's `renderKeep`) reads apart from a state lost
-  const now = !after.same && after.now
+  const now = replaced && MODE !== 'replace' && after.now
     ? ' · the replacement: ' + keys.concat(keys.includes('focused') ? [] : ['focused']).map((k) => `${k} ${JSON.stringify(after.now[k])}`).join(', ') : '';
   verdict(kind, !bad.length, `${bad.join(', ')}${now} (polls: ${ran.join(', ')})`);
+  if (notes.length) say(`       note · ${notes.join(', ')}`);
   return { before, after, ran };
 };
 

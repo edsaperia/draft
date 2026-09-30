@@ -2051,13 +2051,15 @@ window.BAND = (function () {
       // use it on. Until the first answer there is still nothing to state, and
       // the open card alone stands in the band's own geometry.
       if (!settled(card('myemail'))) {
-        band.innerHTML = settled(card('title'))
+        window.PATCH.set(band, settled(card('title'))
           ? bandHtml(groups(), ctx, cardFor)
           : (S.open && S.open !== 'title')
           ? '<div class="setrow constsec"><div class="csec"><div class="cpara open">' + cardFor(groups()[0]) + '</div></div></div>'
-          : '';
+          : '');
       } else {
-        band.innerHTML = bandHtml(groups(), ctx, cardFor);
+        // **patched, not replaced** (U1, redesign stage 9): a render under the
+        // reader's caret, open select or scrolled grid leaves them standing
+        window.PATCH.set(band, bandHtml(groups(), ctx, cardFor));
       }
       fitBand(band);
       fitBand(tp.closest('.titlerow'));

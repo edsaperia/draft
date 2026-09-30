@@ -761,6 +761,9 @@
      session.js and the inline script, so they load ahead of all three -->
 <script src="card-state.js"></script>
 <script src="card-shell.js"></script>
+<!-- the keyed re-render (redesign stage 9): every render that puts a string
+     into the page patches through it, so it loads ahead of every renderer -->
+<script src="patch.js"></script>
 <!-- generated from Unicode's emoji-test.txt by scripts/emoji-data.mjs; the
      picker reads it, so it loads before setup.js -->
 <script src="emoji-data.js"></script>
