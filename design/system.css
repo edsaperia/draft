@@ -532,14 +532,19 @@
        tabs keep the left gutter. */
     .layout > .toc {
       position: fixed; top: var(--nav-h); bottom: 0; z-index: 45; display: flex; flex-direction: column;
-      width: min(86vw, 360px); max-height: none; margin: 0 !important; box-sizing: border-box;
+      width: 100%; max-height: none; margin: 0 !important; box-sizing: border-box;
       overflow-y: auto; overscroll-behavior: contain; background: var(--bg);
       padding: var(--s3) var(--s3) calc(var(--s3) + env(safe-area-inset-bottom, 0px));
       transition: transform 220ms ease; will-change: transform;
     }
-    .layout > .toc { left: 0; transform: translateX(-100%); border-right: 1px solid var(--border); box-shadow: none; }
+    /* **Full width** (1541.40, .54; Ed: *so the lifecycle marks can be seen*):
+       the whole glass, the marks inside it; no edge to draw, so no border */
+    .layout > .toc { left: 0; right: 0; transform: translateX(-100%); box-shadow: none; }
     html[data-drawer="left"] .layout > .toc { transform: none; box-shadow: var(--shadow-lg); }
     .layout > .toc ul { overflow: visible; }
+    /* …and inside it the marks take their own room at the heading's end,
+       rather than riding out over an edge the full-width drawer no longer has */
+    .layout > .toc .tocmarks { width: auto; margin-right: var(--s1); }
     /* **The task rail is a sheet that peeks** (`task-sheet`, Ed 2026-09-24,
        replacing the right-hand drawer): fixed to the window's foot, full
        width, as tall as its list up to three quarters of the window. At rest
