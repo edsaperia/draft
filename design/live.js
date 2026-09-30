@@ -522,6 +522,19 @@ window.LIVE = (function () {
           .catch((e) => console.warn('[live] view', e && e.message));
       },
     };
+    // **A walk's poll** (`render-hold-walk`, redesign stage 9): the 4s tick's
+    // own body, deferral included, on demand — `window.__pollPaused` stops the
+    // tick so a walk decides when a poll lands, and `force` re-renders as a
+    // poll that brought news does, whether or not anything moved. Answers
+    // whether the poll ran (false: a gesture was in the air and it waited).
+    if (typeof window !== 'undefined') {
+      window.__poll = (o) => {
+        if (pressInFlight()) return Promise.resolve(false);
+        if (!(o && o.force)) return Promise.resolve(api.refresh()).then(() => true);
+        syncFromCs(); hydrateSeen(false); hydrateValues(env.S.open); render();
+        return Promise.resolve(true);
+      };
+    }
     return { api };
   }
 
@@ -1147,7 +1160,7 @@ window.LIVE = (function () {
           // a pen hold here, a propose hold in the charter, a slider drag on an
           // answer card — either way a press is in progress and the surface
           // must not move under it
-          if (pressInFlight()) return;
+          if (pressInFlight() || window.__pollPaused) return;
           api.refresh();
         }, 4000);
           return;
@@ -1166,7 +1179,7 @@ window.LIVE = (function () {
           hydrateS();
           render();
           setInterval(() => {
-            if (pressInFlight()) return;
+            if (pressInFlight() || window.__pollPaused) return;
             api.refresh();
           }, 4000);
           return;
@@ -1204,7 +1217,7 @@ window.LIVE = (function () {
           // a pen hold here, a propose hold in the charter, a slider drag on an
           // answer card — either way a press is in progress and the surface
           // must not move under it
-          if (pressInFlight()) return;
+          if (pressInFlight() || window.__pollPaused) return;
           api.refresh();
         }, 4000);
         // **✒️ is the only save** (Ed, 2026-08-30, QA on the text card). Until
