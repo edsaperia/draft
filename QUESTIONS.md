@@ -233,7 +233,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1572** — claim by writing the block here, then commit it alone.
+**The next free number is 1573** — claim by writing the block here, then commit it alone.
+
+**1572 is redesign stage 9's builder's calls** (claimed 2026-09-30 by the cloud coordinator; branch `claude/edsaperia-draft-issue-107-12xxlc`, draft PR #132, the keyed re-render, issue #130). **1572.1 — a second setup-probe freeze, against the stage's ruling of one** (Ed's d-item of 19:22 UTC): `overflow-anchor: none` on the root cured the 390 card-audit's intermittent P13 on the title card (the browser's scroll anchoring, which had nothing to hold while every render replaced its nodes, nudging the scroll a frame after the page's own compensation once the patcher kept them) and moved 15 founding-walk rail readings 1px, nothing else — **ruled (a), keep the change and the freeze, by Ed 2026-09-30 in the coordinator's session**. The stage's remaining calls are recorded here at the FINAL's review.
 
 **1571 is the queue card wash sweep transition** (claimed 2026-09-30 by the cloud coordinator; Ed's rulings in the coordinator's session the same evening; plan `design/SWEEP.md`). Its open calls 1571.1–1571.2 are in *Open* above.
 
