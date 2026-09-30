@@ -409,6 +409,26 @@ await page.click('#drawerright');
 await settle(page);
 say((await sheet(page)).state === 'peek', 'and lowers it again');
 
+// 8b. **the contents drawer is full width** (1541.40, .54; Ed: *so the
+// lifecycle marks can be seen*): the whole glass, every heading's marks
+// inside it
+await page.click('#drawerleft');
+await settle(page);
+const toc = await page.evaluate(() => {
+  const t = document.querySelector('.layout > .toc');
+  const r = t.getBoundingClientRect();
+  const marks = [...t.querySelectorAll('.tocmarks .run')].map((m) => m.getBoundingClientRect())
+    .filter((m) => m.width > 0);
+  return { left: r.left, width: r.width, vw: document.documentElement.clientWidth,
+    open: document.documentElement.getAttribute('data-drawer'), marks: marks.length,
+    outside: marks.filter((m) => m.left < r.left - 0.5 || m.right > r.right + 0.5).length };
+});
+say(toc.open === 'left' && Math.abs(toc.left) <= 0.5 && Math.abs(toc.width - toc.vw) <= 0.5,
+  'the contents drawer opens the full width of the glass (' + px(toc.width) + ' of ' + toc.vw + ')');
+say(toc.marks > 0 && toc.outside === 0, 'with every heading\'s marks inside it (' + toc.marks + ' runs, ' + toc.outside + ' outside)');
+await page.keyboard.press('Escape');
+await settle(page);
+
 // 9. overflow, errors, reduced motion, wide
 s = await sheet(page);
 say(s.sw <= s.vw, 'no horizontal overflow (' + s.sw + ' of ' + s.vw + ')');

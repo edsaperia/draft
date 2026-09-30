@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 729
+  "entries": 730
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -731,6 +731,7 @@
   "shell.voiceOut": "You can only make one constitutional proposal 🏛️ at a time.",
   "shell.waitingFor": "ƒ (n) => 'Waiting for ' + n + (n === 1 ? ' member' : ' members') + ' to answer questions.'",
   "shell.withdrawConstitutional": "Withdraw it — your 🏛️ comes back whole",
-  "shell.withdrawOrdinary": "Withdraw it — the ✏️ comes back in full"
+  "shell.withdrawOrdinary": "Withdraw it — the ✏️ comes back in full",
+  "shell.yourDraft": "Your proposal"
  }
 }

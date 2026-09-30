@@ -532,14 +532,19 @@
        tabs keep the left gutter. */
     .layout > .toc {
       position: fixed; top: var(--nav-h); bottom: 0; z-index: 45; display: flex; flex-direction: column;
-      width: min(86vw, 360px); max-height: none; margin: 0 !important; box-sizing: border-box;
+      width: 100%; max-height: none; margin: 0 !important; box-sizing: border-box;
       overflow-y: auto; overscroll-behavior: contain; background: var(--bg);
       padding: var(--s3) var(--s3) calc(var(--s3) + env(safe-area-inset-bottom, 0px));
       transition: transform 220ms ease; will-change: transform;
     }
-    .layout > .toc { left: 0; transform: translateX(-100%); border-right: 1px solid var(--border); box-shadow: none; }
+    /* **Full width** (1541.40, .54; Ed: *so the lifecycle marks can be seen*):
+       the whole glass, the marks inside it; no edge to draw, so no border */
+    .layout > .toc { left: 0; right: 0; transform: translateX(-100%); box-shadow: none; }
     html[data-drawer="left"] .layout > .toc { transform: none; box-shadow: var(--shadow-lg); }
     .layout > .toc ul { overflow: visible; }
+    /* …and inside it the marks take their own room at the heading's end,
+       rather than riding out over an edge the full-width drawer no longer has */
+    .layout > .toc .tocmarks { width: auto; margin-right: var(--s1); }
     /* **The task rail is a sheet that peeks** (`task-sheet`, Ed 2026-09-24,
        replacing the right-hand drawer): fixed to the window's foot, full
        width, as tall as its list up to three quarters of the window. At rest
@@ -1395,7 +1400,11 @@
      own height, so nothing else about it moves — and fully round. Scoped by
      the floating context, never by re-styling `.btn.glyphbtn`: B6's one glyph
      size is untouched. */
-  .proposalrow { --float-d: 3rem; }
+  /* **4.5rem, the 📝 door's size** (1569.2, Ed 2026-09-30: *They should be
+     larger, like the 📝 circle*): the rows stay where they stand and may
+     overlap, as the door may (1541.17), so they are drawn as the door is
+     drawn — the disc grew, the glyph at B6's one size */
+  .proposalrow { --float-d: 4.5rem; }
   .proposalrow .btn.glyphbtn { width: var(--float-d); height: var(--float-d); border-radius: 50%; }
   /* **A floating control is above the page, and says so by depth** (Ed,
      2026-09-16: *larger, and stand out more from the text … I don't want to
@@ -1518,8 +1527,8 @@
   /* **The door has its own corner** (Q1516 (3), (4), Ed 2026-09-23): it
      stood in the row's ✏️'s own box (Q1335) and covered 🗑️ ✏️ and 🗑️ ❄️ ✓
      from there, so it moves to the window's bottom-right corner, `--s5` off
-     both edges — the gutter the row keeps from the foot — and is about 1.5×
-     the row's circles: 4.5rem against the row's 3rem. The disc grew, not the
+     both edges — the gutter the row keeps from the foot — at 4.5rem, which
+     the row's circles took too (1569.2; they were 3rem). The disc grew, not the
      picture in it (B6's one glyph size, as when the row's circles grew). The
      row's box collapses to the button alone, so nothing of it lies over the
      page; card-audit D1 holds the corner and the size, D4 that it meets none

@@ -2616,6 +2616,31 @@
     };
   }
 
+  /**
+   * **The editing card** (Q1541 stage 8): *Current text* above the clause
+   * your draft rewrites (*· 2 of 3* with ↑ ↓ on a patch, answers Part 4 .7;
+   * a gap's *(no text here)*, .2), your draft as one block labelled on its
+   * own first line (`shell.yourDraft`), and the site's own 🗑️ alone (K17,
+   * Q1306) — the ✏️, the ✒️ and the *✏️ hh:mm* countdown are the
+   * proposal-row's (1541.22 (a), grammar B9).
+   */
+  const editing = (s) => !!s && !docClosed && s.kind === 'draft' && !!s.unproposed;
+  function editPresent(s, st, hints) {
+    const W = window.COPY.shell;
+    const site = (hints && hints.siteKey && siteFor(s, hints.siteKey)) || s.sites[0];
+    const p = editParts(s, site);
+    return {
+      kind: 'editing',
+      frame: { cls: 'sugg editcard', attrs: ' data-card="' + esc(s.id) + '" data-anchor="' + esc(s.id) + '" data-site="' + esc(p.key) + '"' },
+      label: { text: (p.seeded || W.currentText) + (p.n > 1 ? W.sep + T.nav.ofPlaces(p.i + 1, p.n) : ''), steps: p.steps || null },
+      head: { html: p.head({ label: null, fact: 'place', chips: chipsFor(p.key, s.id), onHead: headRank(p.key) }) },
+      body: p.body ? { html: p.body } : null,
+      options: { html: p.block },
+      // the countdown stands beside the card's ✏️ only where the card has one
+      rowNote: [EDITING() ? '' : cardCommitActs(s).drip, p.refusal || ''].join('') || null,
+    };
+  }
+
   function judgePresent(s, st, hints) {
     const W = window.COPY.shell;
     const key = (hints && hints.siteKey) || (s.keys ?? [])[0];
@@ -2754,6 +2779,12 @@
           { kind: 'commit', glyph: '✒️', glyphHtml: glyphHtml('✒️'), cls: 'btn-approve emojibtn', act: 'crown-accept', title: T.crown.accept },
         ];
       }
+      // the editing card's one control: its own site's 🗑️ (K17, Q1306)
+      if (editing(s)) {
+        const bin = { kind: 'withdraw', act: 'draft-cancel', title: T.row.discardThis };
+        // outside edit mode no row stands, so the card carries the commit
+        return EDITING() ? [bin] : [bin].concat(cardCommitActs(s).acts);
+      }
       if (!judgeKinds(s)) return [];
       // the patch's ✓ floats at the foot of the window (Q1382)
       if (s.kind === 'patch') return [];
@@ -2765,6 +2796,7 @@
     present: (id, st, hints) => {
       const s = SUGGS.find((g) => g.id === id);
       if (judgeKinds(s)) return judgePresent(s, st, hints);
+      if (editing(s)) return editPresent(s, st, hints);
       // **the room's side of a park, on the one shell** (Q1541 stage 2;
       // SURFACE E36): *Current text* above the clause the membership passed a
       // change to, the park's one sentence, and OK only while it is owed — no
@@ -3198,7 +3230,7 @@
     startDraft, startDraftFromTyping, startDraftFromRun,
     laneRemark, syncEditCtl, markSelection,
     commitBtnHtml, proposalRowHtml, proposeCtlTitles, draftRowState, setDraftSigned,
-    editCardHtml, mineCardHtml, strandedCardHtml, ownParts } = COMPOSER;
+    editCardHtml, mineCardHtml, strandedCardHtml, ownParts, editParts, cardCommitActs } = COMPOSER;
   let mineSeq = 0;                      // proposing frees the composer for the next draft
 
   /* **A proposal closes its card and says one sentence** (Q1485 (A), Ed
@@ -3567,7 +3599,9 @@
       // site with nowhere to go — so it stays the editing card and says so
       // there. `unproposed` is tested first for exactly that.
       if (s.stranded && !s.unproposed) return strandedCardHtml(s, site, closedMode);
-      return s.unproposed ? editCardHtml(s, site) : mineCardHtml(s, site);
+      // the editing card on the one shell since Q1541 stage 8 (`editPresent`)
+      return s.unproposed ? window.CARD_SHELL.cardHtml(window.CARD_STATE.stateOf(s.id, { siteKey: site.keys[0] }))
+        : mineCardHtml(s, site);
     }
     if (s.kind === 'diagonal') {
       // The same card as everything else (Ed, 276), holding two *questions*
@@ -4272,7 +4306,7 @@ document.addEventListener('paste', (ev) => {
         // `EDITING()` was false by then, and the gap block above was skipped
         // wholesale.
         if (!line.gap && site.keys[0] === line.key) {
-          html += '</div>' + editCardHtml(writing, site) + PROSE();
+          html += '</div>' + window.CARD_SHELL.cardHtml(window.CARD_STATE.stateOf(writing.id, { siteKey: site.keys[0] })) + PROSE();
         }
         html += gapsAfter(line.key);
         continue;

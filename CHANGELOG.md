@@ -6,6 +6,24 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-09-30, evening: edit mode, the proposal row and the phone's drawers
+
+### New
+- **While you write in edit mode, the card for your change says what it is**: *Current text* over the clause, *Your proposal* over your words.
+
+### Changed
+- **One ✏️ while you write.** In edit mode the card's only button is its own 🗑️; you propose with the ✏️ floating at the foot of the window. A change started with *✏️ propose edit*, outside edit mode, keeps its ✏️ on the card, because no floating row stands there.
+- **The floating buttons at the foot of the window** — 🗑️, ✏️, ✒️, ❄️ and ✓ — are now as large as the 📝 button, and sit over the text as it does.
+
+### Fixed
+- **On a phone, the contents drawer opens the full width of the screen**, and every heading's marks can be seen inside it.
+
+### For contributors
+- **Surface-only.** The editing card is built on the one card shell, and card-audit holds it strictly (`GRAMMAR_KINDS`).
+- **card-audit's `STAGE` is 8, so P30 is strict**: an overlay is read by what it paints, against every text line and enabled control; the 📝 door, the proposal row and the patch row are its named exceptions.
+- **The rows' circles take the door's 4.5rem**, and card-audit's D1 and journey's *door* step hold the door and the row's ✏️ at one size.
+- **`drawer-walk` asserts the contents drawer is full width at 390** and every heading's marks sit inside it.
+
 ## 2026-09-29, evening: records, and the closed document
 
 ### New

@@ -15,7 +15,7 @@ Every surface is the `session-view`: three columns — contents rail · document
 5. This document lives at `design/MOBILE.md`, with two pointer rows in PRODUCTION.md's stage table (17, 18) and one line in CLAUDE.md's Documents list.
 6. Devices that define *works*: **iPhone Safari** and **Pixel-class Android Chrome**. Tablets get whatever the 1240px two-column breakpoint gives them; not a target.
 7. Q419–429 each get a recommended answer (§4); Ed accepts or vetoes by number; accepted ones fold into SURFACE.md at build time and leave QUESTIONS.md.
-8. The contents rail on a phone is **a drawer behind a topbar button**: the headings with their lifecycle marks (M10 survives), tapping travels.
+8. The contents rail on a phone is **a drawer behind a topbar button**: the headings with their lifecycle marks (M10 survives), tapping travels. **Full width** since redesign stage 8 (1541.40, .54; Ed: *so the lifecycle marks can be seen*): the whole glass, each heading's marks inside it at the heading's end.
 
 ### What the survey found (2026-08-22, read-only)
 
@@ -65,6 +65,7 @@ Ed's ruling: the task drawer that slid in from the right becomes a **bottom shee
 - **Reading down slides the peek away, any scroll up brings it back** (`data-sheethide`) — never while raised or dragged, never on the scroll a choice set off (1.2 s, or while the page travels to a card), and never within 48px of the document's foot. The document keeps a foot of the bar's height, so its last line is never under the bar.
 - **Reduced motion**: no easing, the states change at once. **Wide is untouched**: the bar is made on the first narrow layout only, and every rule is inside `NARROW_Q`; both probes IDENTICAL at 1600.
 - **Found on the way**: a tap on the darkened ground used to fall through. Chromium hit-tests a touch's click after the pointerup that took the ground away, so the click landed on the document beneath — measured on a clause, where a gutter tab would open a card. That click is now eaten, for the ground and a panel's empty space only; a press on the topbar with a panel open still acts. The contents drawer gets the same fix.
+- **The contents drawer is full width** (redesign stage 8; 1541.40, .54): it took `min(86vw, 360px)` and its marks rode rightwards out over an edge it no longer has; now it is the glass's width and each heading's marks take their own room at the heading's end, inside it. `drawer-walk` asserts both.
 - **Guard: `npm run drawer-walk`** (rewritten for the sheet; `--shots=<dir>` saves the peek and the raised sheet): the peek's place and words, the raise, the spacing and ↻ from before, the ground and the empty space, the drag (under the finger, a rebuild under it, both detents, a flick each way, a real touch drag), an entry's card and the peek following it, the scroll hiding, the door, overflow, errors, reduced motion, and no sheet at 1600.
 
 ## 1. Layout and touch (read + judge)
