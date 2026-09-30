@@ -10447,7 +10447,10 @@
   // gesture in flight too, and a poll landing inside it lost the card
   // …and a finger on the phone's `task-sheet` (Ed, 2026-09-24): a drag is a
   // press held down, and a rebuild under it would move the list it carries
-  const pressInFlight = () => WAL.penHold || SESSION.holding || SESSION.travelling || assembly ||
+  // (`WAL.penHold` left this list at stage 9: a ✒️ flight's button is patched,
+  // never replaced, and keeps `.penholding` through a render — `render-hold-walk`'s
+  // *held ✒️ on a card* and `journey` are the proof)
+  const pressInFlight = () => SESSION.holding || SESSION.travelling || assembly ||
     (sliderHold && Date.now() - sliderHold < 30_000) ||
     document.documentElement.hasAttribute('data-sheetdrag');
   // A lane rebuilt on every keystroke would lose the caret, so typing repaints

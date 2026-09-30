@@ -166,9 +166,9 @@ const readHeld = (page, sel) => page.evaluate(([q, READ]) => {
 const poll = (page, force) => page.evaluate((f) => (window.__poll ? window.__poll({ force: f }) : 'no seam'), force);
 
 const results = [];
-const verdict = (kind, ok, detail) => {
+const verdict = (kind, ok, detail, polls) => {
   results.push({ kind, ok });
-  say(`${ok ? 'ok  ' : 'FAIL'} · ${kind}${ok ? '' : ' · ' + detail}`);
+  say(`${ok ? 'ok  ' : 'FAIL'} · ${kind}${ok ? (polls ? ` (polls: ${polls})` : '') : ' · ' + detail}`);
 };
 // the two renders under a placed thing, and what each left: `keys` names the
 // parts of the state this kind asserts
@@ -211,7 +211,8 @@ const underRenders = async (page, kind, sel, keys, { eventSent = false, pressed 
   // state back (the band's `renderKeep`) reads apart from a state lost
   const now = replaced && MODE !== 'replace' && after.now
     ? ' · the replacement: ' + keys.concat(keys.includes('focused') ? [] : ['focused']).map((k) => `${k} ${JSON.stringify(after.now[k])}`).join(', ') : '';
-  verdict(kind, !bad.length, `${bad.join(', ')}${now} (polls: ${ran.join(', ')})`);
+  // (a poll that ran is `true`; one that waited under a gesture is `false`)
+  verdict(kind, !bad.length, `${bad.join(', ')}${now} (polls: ${ran.join(', ')})`, ran.join(', '));
   if (notes.length) say(`       note · ${notes.join(', ')}`);
   return { before, after, ran };
 };
