@@ -10451,14 +10451,17 @@
   // (`WAL.penHold` left this list at stage 9: a ✒️ flight's button is patched,
   // never replaced, and keeps `.penholding` through a render — `render-hold-walk`'s
   // *held ✒️ on a card* and `journey` are the proof)
-  const pressInFlight = () => SESSION.holding || SESSION.travelling || assembly ||
+  // (`SESSION.holding`, the ✏️ propose hold, left it too: the row is patched
+  // and its button keeps `.holding` through a render — `render-hold-walk`'s
+  // *held ✏️ on the row* and `journey`'s *propose* are the proof)
+  const pressInFlight = () => SESSION.travelling || assembly ||
     (sliderHold && Date.now() - sliderHold < 30_000) ||
     document.documentElement.hasAttribute('data-sheetdrag');
   // **A press in the air is still unsent to the reload** (issue #12): the
   // poll no longer waits for a ✒️ flight, but a deploy's reload must — it
   // would take the flight and its act with the page. So the reload asks every
   // gesture, the ones the render now holds included.
-  const gestureInFlight = () => pressInFlight() || !!WAL.penHold;
+  const gestureInFlight = () => pressInFlight() || !!WAL.penHold || SESSION.holding;
   // A lane rebuilt on every keystroke would lose the caret, so typing repaints
   // the bar and the rail and leaves the card alone — only the commit control,
   // which is about what you have just typed, is set directly.
