@@ -34,7 +34,7 @@ window.LIVE = (function () {
   function wire(env) {
     const { LIVESLUG, PAGE_COPY, SESSION } = env;
     const { amFounder, applicantAsView, atTheDoor, constituted, esc, hydrateApplicant,
-      hydrateSeen, hydrateValues, openCardDirty, pressInFlight, proseText, refusalNoted,
+      hydrateSeen, hydrateValues, openCardDirty, pressInFlight, gestureInFlight, proseText, refusalNoted,
       render, setProse, setStranger, strangerAsView, syncFromCs } = env;
     // **The host's two flags** (Q1345, Q1346; Ed, 2026-09-12). `paused` is the
     // announced pause a deploy runs under: the whole page goes behind a modal
@@ -57,8 +57,10 @@ window.LIVE = (function () {
     // else. Each clause is read live, never copied at make time — a value
     // taken here would stop deferring the moment the page moved on (the same
     // trap `wallets.js` names for the poll's own `pressInFlight`):
-    //  · `pressInFlight()` — a hold, a drag, a travel or the assembly is a
-    //    gesture in the air, and nothing rebuilds under a press;
+    //  · `gestureInFlight()` — a hold, a flight, a drag, a travel or the
+    //    assembly is a gesture in the air, and a reload would take it (the
+    //    poll's own `pressInFlight` is narrower since stage 9: a render
+    //    patches under a press it holds, a reload cannot);
     //  · `S.editMode` — the column is lifted and the caret is in it;
     //  · an `unproposed` draft of your own in `SUGGS`, which is exactly the
     //    item `setData` carries across a data swap (closing a card is not
@@ -77,7 +79,7 @@ window.LIVE = (function () {
     //    this asks F4's own question (`handUnsent`, below `make`'s
     //    hydration) rather than a second one, and a value committed, binned
     //    or overtaken by the room stops counting by F4's own two clauses.
-    const unsent = () => pressInFlight() || !!env.S.editMode || openCardDirty() ||
+    const unsent = () => gestureInFlight() || !!env.S.editMode || openCardDirty() ||
       (SESSION.SUGGS || []).some((x) => x.unproposed && (x.mine || x.id === SESSION.DRAFT_ID)) ||
       (!!api.handUnsent && api.handUnsent());
     function noteBuild(build) {

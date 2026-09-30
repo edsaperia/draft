@@ -1347,6 +1347,7 @@
     // than as it stood when the wire was made
     openCardDirty: (...a) => openCardDirty(...a),
     pressInFlight: (...a) => pressInFlight(...a),
+    gestureInFlight: (...a) => gestureInFlight(...a),
     proseText: (...a) => proseText(...a),
     refusalNoted: (...a) => refusalNoted(...a),
     render: (...a) => render(...a),
@@ -10453,6 +10454,11 @@
   const pressInFlight = () => SESSION.holding || SESSION.travelling || assembly ||
     (sliderHold && Date.now() - sliderHold < 30_000) ||
     document.documentElement.hasAttribute('data-sheetdrag');
+  // **A press in the air is still unsent to the reload** (issue #12): the
+  // poll no longer waits for a ✒️ flight, but a deploy's reload must — it
+  // would take the flight and its act with the page. So the reload asks every
+  // gesture, the ones the render now holds included.
+  const gestureInFlight = () => pressInFlight() || !!WAL.penHold;
   // A lane rebuilt on every keystroke would lose the caret, so typing repaints
   // the bar and the rail and leaves the card alone — only the commit control,
   // which is about what you have just typed, is set directly.
@@ -10965,6 +10971,7 @@
     now: (...a) => now(...a),
     pkeyOf: (...a) => pkeyOf(...a),
     pressInFlight: (...a) => pressInFlight(...a),
+    gestureInFlight: (...a) => gestureInFlight(...a),
     proseText: (...a) => proseText(...a),
     pwPair: (...a) => pwPair(...a),
     // Y25's card sentence for a refused vote (Q1505), in the wording every
