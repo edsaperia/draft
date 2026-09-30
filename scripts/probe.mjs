@@ -96,6 +96,9 @@ const FROZEN = [
   // both ahead of setup.js, and the pilots' cards are built from them
   'card-state.js',
   'card-shell.js',
+  // the keyed re-render (redesign stage 9): every renderer patches through
+  // it, so a reference page without it would draw nothing at all
+  'patch.js',
   'copy.js',
   'system.css',
   'constitution.js',

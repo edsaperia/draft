@@ -2051,13 +2051,15 @@ window.BAND = (function () {
       // use it on. Until the first answer there is still nothing to state, and
       // the open card alone stands in the band's own geometry.
       if (!settled(card('myemail'))) {
-        band.innerHTML = settled(card('title'))
+        window.PATCH.set(band, settled(card('title'))
           ? bandHtml(groups(), ctx, cardFor)
           : (S.open && S.open !== 'title')
           ? '<div class="setrow constsec"><div class="csec"><div class="cpara open">' + cardFor(groups()[0]) + '</div></div></div>'
-          : '';
+          : '');
       } else {
-        band.innerHTML = bandHtml(groups(), ctx, cardFor);
+        // **patched, not replaced** (U1, redesign stage 9): a render under the
+        // reader's caret, open select or scrolled grid leaves them standing
+        window.PATCH.set(band, bandHtml(groups(), ctx, cardFor));
       }
       fitBand(band);
       fitBand(tp.closest('.titlerow'));
@@ -2369,9 +2371,9 @@ window.BAND = (function () {
       SESSION.setDocClosed(closedNow);
       SESSION.setSigned(closedNow && signedClose());
       renderTitle(); renderRail(); renderBand(); syncCharter(); renderMail(); renderPowerWallets();
-      document.getElementById('mebtn').innerHTML = avHtml(
+      window.PATCH.set(document.getElementById('mebtn'), avHtml(
         S.viewer === 'applicant' ? { n: S.app.name || '?', pic: S.app.pic }
-        : isStranger() ? { n: '?', pic: '' } : me(), 'face');
+        : isStranger() ? { n: '?', pic: '' } : me(), 'face'));
       if (S.open && S.open !== env.lastOpen) {
         const el = document.querySelector('.setupcard');
         if (el) { CC.expandCard(el, () => {}); focusOpened(el, S.open); }

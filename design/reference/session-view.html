@@ -761,6 +761,9 @@
      session.js and the inline script, so they load ahead of all three -->
 <script src="card-state.js"></script>
 <script src="card-shell.js"></script>
+<!-- the keyed re-render (redesign stage 9): every render that puts a string
+     into the page patches through it, so it loads ahead of every renderer -->
+<script src="patch.js"></script>
 <!-- generated from Unicode's emoji-test.txt by scripts/emoji-data.mjs; the
      picker reads it, so it loads before setup.js -->
 <script src="emoji-data.js"></script>
@@ -8835,7 +8838,7 @@
 
     stageWords = canJudge() ? 'open' : 'reading only';
     renderClock();
-    document.getElementById('mebtn').innerHTML = avHtml(me(), 'face');
+    window.PATCH.set(document.getElementById('mebtn'), avHtml(me(), 'face'));
   }
   // ---- `session-clock` (Q466/Q471) ----------------------------------------
   // The topbar middle reads the room: pulse · clock · quorum. Before the
@@ -8896,10 +8899,10 @@
       // the overflow counts everybody else the row could not fit, which is the
       // stack's own arithmetic and not the room's: the row is the register's
       // arrived rows, where the quorum line above is the engine's electorate
-      faces.innerHTML = shown.map((p) => '<span class="seat"' +
+      window.PATCH.set(faces, shown.map((p) => '<span class="seat"' +
         (p.mid ? ' data-mid="' + esc(p.mid) + '"' : '') + '>' + avHtml(p) + '</span>').join('') +
         (others.length > shown.length
-          ? '<span class="more">+' + (others.length - shown.length) + '</span>' : '');
+          ? '<span class="more">+' + (others.length - shown.length) + '</span>' : ''));
     }
     // and the head count stays reachable. It used to be printed as *n in the
     // room*; entry 215 took that word off the surface, and *n members here* is
@@ -8953,8 +8956,8 @@
     // in two places*). The heading carried one because until the birth wrote
     // its own clauses there was nothing else to carry it. From the moment
     // the title is set the clause has it, and the heading is just a heading.
-    document.getElementById('titlechip').innerHTML =
-      (cs || S.open === 'title' || settled(card('title'))) ? '' : pileHtml([card('title')], ctx);
+    window.PATCH.set(document.getElementById('titlechip'),
+      (cs || S.open === 'title' || settled(card('title'))) ? '' : pileHtml([card('title')], ctx));
     // from the save until 🍾, the empty column says you may write in it
     // (Q1084: keyed on the column being the founder's and empty, not on a
     // task's turn — there is no task); the words are copy.js's, handed to

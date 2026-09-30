@@ -62,7 +62,7 @@ window.WALLETS = (function () {
         ? '<i' + (quillGhost ? ' class="gone"' : '') + '>' + glyphHtml('🪶') + '</i>' + (left > 1 ? '<span class="pmore">' + left + '</span>' : '')
         : Array.from({ length: left }, (_, i) =>
           '<i' + (quillGhost && i === left - 1 ? ' class="gone"' : '') + '>' + glyphHtml('🪶') + '</i>').join('');
-      if (q.innerHTML !== qh) q.innerHTML = qh;
+      window.PATCH.set(q, qh);
       const notApp = S.viewer !== 'applicant' && !isStranger() &&
         // after the farewell the wallets are gone (a reader arriving after the
         // close, or one who has signed, never sees them)
@@ -118,7 +118,7 @@ window.WALLETS = (function () {
         // markup every render destroys any animation running on the token —
         // which is why `.navbar .quill i`'s own 240ms transition could never run
         // here, and what the spend-preview would have stuttered against.
-        if (el.innerHTML !== h) el.innerHTML = h;
+        window.PATCH.set(el, h);
         el.classList.toggle('notheld', gone || !held);
       };
       socket(pen, showPen, penh, '✒️');
