@@ -207,3 +207,10 @@ The floating 📝 door is not a principle: it is a named exception in `zone-over
 | 1541.22 (a), as built | The editing card's commit outside edit mode | **Accepted by the coordinator** (PR #127, 2026-09-30) from the ruling as it stands (*one ✏️ in edit mode*): a draft opened by ✏️ *propose edit* in read mode (K24) never enters edit mode, so no row stands and its card keeps its ✏️ and countdown. |
 | 1569.3 | The label over a draft started by ✏️ *propose edit* off another wording | **(a) Keep *the proposal you are editing*** (Ed, 2026-09-30 17:15 UTC, on the questions page) rather than *Current text*, the card's head being that wording. |
 | 1569.4 | The *Final text* label (Part 4 .15), deferred by stage 7 to a closed 📝 card that stage 8 did not build | **(c) Dropped** (Ed, 2026-09-30 17:31 UTC, on the questions page): Part 4 .15 is retired; on a closed document the text is the document itself, 📝 opens no card and none is built. 1568's deferral (7) closes. |
+
+## Part 12 — stage 9's calls (the keyed re-render, PR #132)
+
+| # | Call | Ruling |
+|---|---|---|
+| render-hold, the two switch positions | How `render-hold-walk` is judged under `?render=replace`, and when it joins CI (the brief's step 1 assumed flags covered every kind; five band kinds had none) | **(a) Accepted by the coordinator** (PR #132, 2026-09-30 19:22 UTC; the question on Ed's page, OK'd 18:56 UTC): under the patch renderer the walk asserts U1 in full — the same node, its state intact, the page still; under `?render=replace` it asserts what the old page promised and prints the node's identity without requiring it. It joined CI's `repros-b` once the band kinds were green (`f69975f`). |
+| the page's scroll | Scroll anchoring under a patched page (P13 at 390) | **As built, put to the coordinator** (PR #132 REPORT, 2026-09-30): `html { overflow-anchor: none }` — the page makes every scroll it makes by measurement, and a patched page's kept nodes gave the browser's anchoring something to move a frame later; the setup-probe re-frozen for 15 rail readings 1 px higher (a second freeze, read in `5287211`'s message). |

@@ -100,7 +100,7 @@ The two probes (`session-probe.js`, `setup-probe.js`) diff the page against a fr
 | 6 | ☑ **The charter's judgment cards** | the tab you click does not move, on the charter; the phone's flush tabs | L — 3–4 sessions, 1–2 QA |
 | 7 | ☑ **Records, the backlog and the closed page** (and the one host change) | the closed page offers only 🥂 and carries no powers; bugs 2, 4, 5 | L — 3 sessions, 1 QA |
 | 8 | ☑ **Edit mode, the proposal row, the phone's drawers** | overlays never cover text, the 📝 door excepted; bugs 9, 10 | M — 2 sessions, 1 QA |
-| 9 | ☐ **Keyed re-render** (principle 10) | `render-hold` green | L — 3–4 sessions, 1 QA |
+| 9 | ☑ **Keyed re-render** (principle 10) | `render-hold` green | L — 3–4 sessions, 1 QA |
 | 10 | ☐ **Retire and fold** | the old shells gone; every guard strict; the principles in SURFACE | S–M — 1–2 sessions |
 
 ### Stage 0 — Measure and guard (no member-visible change)
