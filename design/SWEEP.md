@@ -68,7 +68,7 @@ Every sweep begins the same way — the fill runs rightward from x to full — a
 
 | Document | Edit | When |
 |---|---|---|
-| `SPEC.md` §3.5 | a row: *a seat whose rail holds a live race is told when a vote lands on it, never how many nor how* — **Ed's ruling (1571.1), sign-off, version bump**, `→ why: R-nnn` | before the build |
+| `SPEC.md` §3.5 | a row: *a seat whose rail holds a live race is told when a vote lands on it, never how many nor how* — ruled 2026-09-30 (1571.1), **Ed's sign-off on the sentence, version bump**; until built, a row of §13's ledger (Q1275), `→ why: R-nnn` | with the build |
 | `design/SPEC-REASONING.md` | the R-nnn: this document's §0 and §1.5 | with the SPEC edit |
 | `SURFACE.md` | a new M rule: the rail's motion vocabulary — *arrive* (F14), *sweep* (§1.1's table), *stamp* (§1.2), whose entries (§1.3), reduced motion | at the build |
 | `CLAUDE.md` | glossary: `wash-sweep` [concept] and `mark-stamp` [concept] under `needs-you-queue`; the guard named once `sweep-walk` runs in a workflow | at the build |
@@ -77,7 +77,7 @@ Every sweep begins the same way — the fill runs rightward from x to full — a
 
 ## 4. The calls, recommendation first
 
-- **1571.1 — telling the page a vote landed.** In plain words: the bar only moves for some votes (§1.4), so to sweep on *every* vote the page needs one more fact from the host per live race — that a vote just landed. Recommended: a per-race tick that moves once per judgment, served to every seat whose rail holds the race, printed nowhere; a clock rather than a count, so no total is disclosed even in the payload. The alternative, no new fact, sweeps only when the bar moves and misses the rest. A new fact about a live race is SPEC §3.5's to allow, so it is Ed's ruling.
+- **1571.1 — telling the page a vote landed. Ruled (Ed, 2026-09-30: *let's show it*):** the host tells the page. A per-race tick that moves once per judgment, served to every seat whose rail holds the race, printed nowhere; a clock rather than a count, so no total is disclosed even in the payload. (The plain words: the bar only moves for some votes, §1.4, so sweeping on *every* vote needs this one more fact.)
 - **1571.2 — whose entries sweep on a vote. Ruled (Ed, 2026-09-30):** every vote on every race in your rail, votes landing together on one entry aggregated into one sweep; dialled back to your own proposals' entries if it is too much. The endings and the stamp on every entry.
 
 ## 5. Acceptance (evidence at file:line when built)
@@ -89,4 +89,4 @@ Every sweep begins the same way — the fill runs rightward from x to full — a
 
 ## Status
 
-Planned 2026-09-30. Not built. Waits on redesign stage 9 (PR #132) and on Ed's answer to 1571.1 (1571.2 ruled the same evening); built with PRESENCE.md (Q1570) as one liveness brief, this one first — it is the smaller.
+Planned 2026-09-30, both calls ruled the same evening. Not built. Waits on redesign stage 9 (PR #132); built with PRESENCE.md (Q1570) as one liveness brief, this one first — it is the smaller.
