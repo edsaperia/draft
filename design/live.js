@@ -306,6 +306,12 @@ window.LIVE = (function () {
         let answer = null;
         const card = (opts && opts.card) || env.S.open || null;
         const sentAt = Date.now();
+        // **a confirm pressed shuts the stash at the press** (journey's refused
+        // stash on f69975f): `cs.textConfirmed` turns only when a view after the
+        // confirm lands, so a stash debounce landing inside the confirm's round
+        // trip still posted and the route refused it. Marked here, where ✒️
+        // hands the command over, and let go only if the confirm is refused.
+        if (name === 'confirm-starting-text') this.confirming = true;
         // **one request that never answers must not hold every later one**
         // (issue #37 F3): the command and its refresh are one chain, so a
         // half-open socket held every vote, proposal and OK behind it. The
@@ -325,6 +331,7 @@ window.LIVE = (function () {
           })
           .then(({ status, j }) => {
             answer = j && (j.error || j.ok) ? j : { error: PAGE_COPY.noAnswer(status), status };
+            if (name === 'confirm-starting-text' && answer.error) this.confirming = false;
             // a paused host (Q1345) is not a refusal: the modal says it all
             if (status === 503 && j && j.paused) { noteHost(j); return; }
             // **…unless the caller says it is answering this one itself**
@@ -343,6 +350,7 @@ window.LIVE = (function () {
           })
           .catch((e) => {
             answer = { error: PAGE_COPY.noAnswer(0), status: 0 };
+            if (name === 'confirm-starting-text') this.confirming = false;
             console.warn('[live]', name, e && e.message);
             refusalNoted({ name, args, card, status: 0, error: answer.error, detail: String(e && e.message), at: sentAt });
           })
@@ -1238,13 +1246,15 @@ window.LIVE = (function () {
           if (constituted() || !amFounder()) return;
           syncProseRow();
           clearTimeout(deb);
-          if (env.cs.textConfirmed) return;
+          if (env.cs.textConfirmed || api.confirming) return;
           deb = setTimeout(() => {
             // …and asked again when the debounce lands: a confirm can arrive
             // inside the 800ms (journey's ✒️ follows its typing at once), and
             // the route refuses a stash after it — a refusal CI's walks job
-            // counted red on every push from 2026-09-05 (Ed, 2026-09-06)
-            if (env.cs.textConfirmed || constituted()) return;
+            // counted red on every push from 2026-09-05 (Ed, 2026-09-06).
+            // `api.confirming` closes the rest of it: the confirm pressed and
+            // not yet answered, which no served view says yet
+            if (env.cs.textConfirmed || api.confirming || constituted()) return;
             api.post('/api/d/' + LIVESLUG + '/stash', { text: proseText() }).catch(() => {});
           }, 800);
         });
