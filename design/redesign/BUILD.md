@@ -91,14 +91,14 @@ The two probes (`session-probe.js`, `setup-probe.js`) diff the page against a fr
 
 | # | Stage | What it makes measurable | Size |
 |---|---|---|---|
-| 0 | ☐ **Measure and guard, no member-visible change** | today's counts under the checks as ruled, checked in; the fast strict pass wired | S — 1 session |
-| 1 | ☐ **CardState, the shell and the space above**, two read-only pilots | one shell, one state; a card opens with its label above and nothing on screen moves; the pilots pass P13–P33 strict | L — 3–4 sessions, 1 QA |
-| 2 | ☐ **Read-only and acknowledgement cards** | OK means owed; no close-only OK; *Accept* on the grants and 💡 ⚖️ | M — 2 sessions, 1 QA |
-| 3 | ☐ **The band's settings** (3a settings and the birth; 3b 🪪 🤝 🎩, power cards, the composer) | the standing pill on the first line; bugs 1 and 3; unaccepted powers draw no commit | XL — 5–6 sessions, 2 QA |
-| 4 | ☐ **Motions, 👑 and settled motion records** | outcome labels on records; bugs 7 and 8 | M — 2–3 sessions, 1 QA |
-| 5 | ☐ **Doors and people** | the asks; O9's sentences; ✋ 🖼️ frozen at the close | M — 2 sessions, 1 QA |
-| 6 | ☐ **The charter's judgment cards** | the tab you click does not move, on the charter; the phone's flush tabs | L — 3–4 sessions, 1–2 QA |
-| 7 | ☐ **Records, the backlog and the closed page** (and the one host change) | the closed page offers only 🥂 and carries no powers; bugs 2, 4, 5 | L — 3 sessions, 1 QA |
+| 0 | ☑ **Measure and guard, no member-visible change** | today's counts under the checks as ruled, checked in; the fast strict pass wired | S — 1 session |
+| 1 | ☑ **CardState, the shell and the space above**, two read-only pilots | one shell, one state; a card opens with its label above and nothing on screen moves; the pilots pass P13–P33 strict | L — 3–4 sessions, 1 QA |
+| 2 | ☑ **Read-only and acknowledgement cards** | OK means owed; no close-only OK; *Accept* on the grants and 💡 ⚖️ | M — 2 sessions, 1 QA |
+| 3 | ☑ **The band's settings** (3a settings and the birth; 3b 🪪 🤝 🎩, power cards, the composer) | the standing pill on the first line; bugs 1 and 3; unaccepted powers draw no commit | XL — 5–6 sessions, 2 QA |
+| 4 | ☑ **Motions, 👑 and settled motion records** | outcome labels on records; bugs 7 and 8 | M — 2–3 sessions, 1 QA |
+| 5 | ☑ **Doors and people** | the asks; O9's sentences; ✋ 🖼️ frozen at the close | M — 2 sessions, 1 QA |
+| 6 | ☑ **The charter's judgment cards** | the tab you click does not move, on the charter; the phone's flush tabs | L — 3–4 sessions, 1–2 QA |
+| 7 | ☑ **Records, the backlog and the closed page** (and the one host change) | the closed page offers only 🥂 and carries no powers; bugs 2, 4, 5 | L — 3 sessions, 1 QA |
 | 8 | ☐ **Edit mode, the proposal row, the phone's drawers** | overlays never cover text, the 📝 door excepted; bugs 9, 10 | M — 2 sessions, 1 QA |
 | 9 | ☐ **Keyed re-render** (principle 10) | `render-hold` green | L — 3–4 sessions, 1 QA |
 | 10 | ☐ **Retire and fold** | the old shells gone; every guard strict; the principles in SURFACE | S–M — 1–2 sessions |

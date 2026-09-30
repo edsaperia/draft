@@ -18,11 +18,11 @@
  * What it asserts, on r's own page (Ed's rulings of 2026-09-25 on the builder's calls):
  *   fold      one rail entry and one card for line 2's three records, no entry for any of
  *             them; r's own ✔ and the line-4 ✔ keep their own
- *   tabs (B)  the fold has no tab; its records keep theirs — the clause's pile — and each
- *             tab opens that record's own card wearing the clause's OK, the tab unmoved
+ *   tabs      the fold wears its own tab, the ✔✔✔ (Q1561 (n)), in front of the clause's
+ *             pile; its records keep theirs, and each opens that record's own card
+ *             whose OK acknowledges that record only (Q1561), the tab unmoved
  *   net       the fold's head is the clause now, marked against the text before the
- *             first of them; each record is listed, and opens its own card with the
- *             clause's OK beneath it and the way back
+ *             first of them; every record in it is drawn in full, oldest first (Q1561)
  *   same (A)  a fold of ✖s alone says under its plain head that nothing changed
  *   pin       the one pinned owed text record is the next clause card in document order
  *   walk (C)  Enter on the line-4 ✔ wraps to the top: the Rules' owed news, the keyboard
@@ -205,15 +205,15 @@ check('the line-4 ✔ stands on its own', !!r4, JSON.stringify(loose.map((g) => 
 check('one rail entry for the fold, none for its records',
   at.rail.filter((e) => e.q === fold?.id).length === 1 && !at.rail.some((e) => members.includes(e.q)),
   JSON.stringify(at.rail));
-// **B** (Ed, 2026-09-25: *each keeps its tab — tabs are ok, it's stacks of queue cards
-// that we're trying to fix here*): the fold has no tab, its records keep theirs — the
-// clause's closed pile is its front record's tab with the other three records as edges
+// **Q1561 (n)** (Ed, 2026-09-28, amending 2026-09-25's B): the fold wears its own tab, a
+// stack of three ✔s always, at the front of the clause's closed pile — its three records
+// and r's own ✔ the edges behind it
 const door = await page.evaluate(() => {
   const t = document.querySelector('#charter p[data-key="L2"] .achip[data-anchor]');
-  return t ? { id: t.dataset.anchor, pile: t.dataset.pile || null } : null;
+  return t ? { id: t.dataset.anchor, pile: t.dataset.pile || null, fold: !!t.querySelector('.mk-fold') } : null;
 });
-check('the fold has no tab of its own; its records keep theirs, piled at the clause',
-  !at.tabs.includes(fold?.id) && !!door && members.includes(door.id) && door.pile === '3',
+check('the fold wears its own ✔✔✔ tab, in front of the clause\'s pile',
+  at.tabs.includes(fold?.id) && !!door && door.id === fold?.id && door.fold && door.pile === '4',
   JSON.stringify({ tabs: at.tabs, door }));
 const pinnedOwed = at.rail.filter((e) => e.pinned && e.owed).map((e) => e.q);
 check('the pinned record is the first owed in document order — line 1\'s fold', pinnedOwed.length === 1 && pinnedOwed[0] === same?.id,
@@ -259,9 +259,11 @@ const plain = await page.evaluate((id) => {
   const c = [...document.querySelectorAll('.sugg[data-card]')].find((x) => x.dataset.card === id);
   if (!c) return null;
   const head = c.querySelector('.clausehead .rtext');
-  const s = c.querySelector('.foldsame');
+  // the card's fact line (the one shell's `[data-slot="fact"]`, Q1541 stage 7)
+  const s = c.querySelector('[data-slot="fact"]');
+  const t = s ? s.textContent.trim() : '';
   return { head: head ? head.textContent.trim() : null, ins: c.querySelectorAll('.clausehead ins, .clausehead del').length,
-    same: s ? s.textContent.trim() : null };
+    same: /^Unchanged/.test(t) ? t : null };
 }, same?.id);
 check('line 1\'s fold of ✖s: its head the clause, unmarked, and a line saying it is unchanged',
   plain && plain.head === 'Alpha line stays.' && plain.ins === 0 && !!plain.same, JSON.stringify(plain));
@@ -280,8 +282,10 @@ const card = await page.evaluate((id) => {
     head: head ? head.textContent.trim() : null,
     ins: [...c.querySelectorAll('.clausehead ins')].map((e) => e.textContent).join('|'),
     base: (window.SESSION.SUGGS.find((g) => g.id === id) || {}).replaced,
-    same: !!c.querySelector('.foldsame'),
-    rows: [...c.querySelectorAll('[data-foldopen]')].map((b) => b.dataset.foldopen),
+    same: /^Unchanged/.test(((c.querySelector('[data-slot="fact"]') || {}).textContent || '').trim()),
+    // every record drawn in full, oldest first (Q1561): one block each, its own label
+    parts: [...c.querySelectorAll('.foldpart')].map((b) => ((b.querySelector('.glab') || {}).textContent || '').trim()),
+    fold: ((window.SESSION.SUGGS.find((g) => g.id === id) || {}).fold || []).map((m) => m.id),
     strip: [...c.querySelectorAll('.clausehead .achip[data-anchor]')].map((t) => t.dataset.anchor),
     ok: (c.querySelector('.okbtn[data-seen]') || { dataset: {} }).dataset.seen,
   };
@@ -289,11 +293,11 @@ const card = await page.evaluate((id) => {
 check('the fold\'s head is the clause now', card && card.head === 'Beta by r.', JSON.stringify(card));
 check('…marked against the text before the first of them, and not said to be unchanged',
   card && card.base === 'Beta line one.' && card.ins === 'by r' && !card.same, `ins ${card?.ins} · against ${card?.base}`);
-check('each of its three records is listed', card && JSON.stringify(card.rows) === JSON.stringify(members), JSON.stringify(card?.rows));
-check('…and each has its own tab in the card\'s strip', card && members.every((m) => card.strip.includes(m)), JSON.stringify(card?.strip));
+check('every record in it is drawn in full, oldest first', card && card.parts.length === 3
+  && JSON.stringify(card.fold) === JSON.stringify(members), JSON.stringify({ parts: card?.parts, fold: card?.fold }));
+check('…and the fold and each record have their own tab in the card\'s strip',
+  card && card.strip.includes(fold?.id) && members.every((m) => card.strip.includes(m)), JSON.stringify(card?.strip));
 check('its one OK is the fold\'s', card && card.ok === fold?.id, card?.ok);
-await page.evaluate(() => document.querySelector('[data-foldopen]').click());
-await sleep(1200);
 const cardOf = (id) => page.evaluate((id) => {
   const c = [...document.querySelectorAll('.sugg[data-card]')].find((x) => x.dataset.card === id);
   return c ? { back: !!c.querySelector('[data-foldback]'), ok: (c.querySelector('.okbtn[data-seen]') || { dataset: {} }).dataset.seen,
@@ -302,13 +306,8 @@ const cardOf = (id) => page.evaluate((id) => {
     oks: c.querySelectorAll('.okbtn').length, counts: !!c.querySelector('.reccounts, [data-slot="fact"]'),
     focus: document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.anchor : null } : null;
 }, id);
-let inner = await cardOf(members[0]);
-now = await read();
-check('a listed record opens its own card, the fold\'s OK beneath it and the way back', now.open === members[0] && inner && inner.back
-  && inner.ok === fold?.id && inner.oks === 1 && inner.counts && inner.focus === members[0], JSON.stringify({ open: now.open, inner }));
-check('…its rail entry still the fold\'s one, open', now.rail.filter((e) => e.q === fold?.id && e.current).length === 1
-  && !now.rail.some((e) => members.includes(e.q)), JSON.stringify(now.rail));
-// **B**: a record's own tab opens its own card, wearing the clause's OK — and does not move
+// **Q1561**: a record's own tab opens its own card, whose OK acknowledges that record
+// only — and the tab clicked does not move
 const tabTop = (id) => page.evaluate((id) => {
   const t = [...document.querySelectorAll('.sugg[data-card] .clausehead .achip[data-anchor]')].find((x) => x.dataset.anchor === id);
   return t ? t.getBoundingClientRect().top : null;
@@ -318,16 +317,25 @@ await page.evaluate((id) => [...document.querySelectorAll('.sugg[data-card] .cla
   .find((x) => x.dataset.anchor === id).click(), members[2]);
 await sleep(1500);
 const after = await tabTop(members[2]);
-inner = await cardOf(members[2]);
+let inner = await cardOf(members[2]);
 now = await read();
-check('a record\'s tab opens its own card, the clause\'s OK on it', now.open === members[2] && inner && inner.ok === fold?.id && inner.oks === 1,
-  JSON.stringify({ open: now.open, inner }));
+check('a record\'s tab opens its own card, its own OK on it and no way back', now.open === members[2] && inner
+  && inner.ok === members[2] && inner.oks === 1 && !inner.back && inner.counts, JSON.stringify({ open: now.open, inner }));
 check('…and the tab clicked does not move', before != null && after != null && Math.abs(after - before) <= 0.5, `${before} → ${after}`);
 await page.keyboard.press('Enter');
 await sleep(2800);
 now = await read();
-const seals = await page.evaluate(() => [...window.SESSION.readSeals]);
-check('Enter files all three at once', members.length === 3 && members.every((m) => seals.includes(m)), JSON.stringify(seals));
+let seals = await page.evaluate(() => [...window.SESSION.readSeals]);
+check('Enter there files that record alone', seals.includes(members[2]) && !seals.includes(members[0]) && !seals.includes(members[1]),
+  JSON.stringify(seals));
+const rest = now.sealed.find((g) => g.fold && g.keys[0] === 'L2');
+check('…and the walk goes on to the clause\'s fold of the two left', !!rest && now.open === rest.id
+  && JSON.stringify(rest.fold) === JSON.stringify(members.slice(0, 2)) && await inView(rest.id), `open ${now.open} · ${JSON.stringify(rest)}`);
+await page.keyboard.press('Enter');
+await sleep(2800);
+now = await read();
+seals = await page.evaluate(() => [...window.SESSION.readSeals]);
+check('Enter on the fold files the rest at once', members.length === 3 && members.every((m) => seals.includes(m)), JSON.stringify(seals));
 check('…and the walk opens r\'s own ✔, the next owed in document order', now.open === mine?.id && await inView(mine?.id), `open ${now.open}`);
 check('no fold is left', !now.sealed.some((g) => g.fold));
 const mineOk = await page.evaluate((id) => {

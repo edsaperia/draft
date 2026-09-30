@@ -187,10 +187,9 @@ window.CARD_SHELL = (function () {
       // immediately left of the route's own commit, never spread apart
       right = commits.length > 1 ? '<span class="rightpair">' + commits.join('') + '</span>' : commits.join('');
     }
-    // `st.owed.left` is the one thing today's rows put at the left beside an
-    // OK — the way back to a clause's list of its records (Q1536) — kept as
-    // it was until the records' own stage (BUILD.md stage 7)
-    const left = st.owed && st.owed.left ? st.owed.left : binHtml || '<span></span>';
+    // nothing stands beside an OK but the bin's place: the fold's *Back* went
+    // with its one-line rows (Q1561 (m), stage 7)
+    const left = binHtml || '<span></span>';
     return '<div class="race-mid commitrow" data-slot="row" data-shape="' + shape + '">' + left + noteHtml + right + '</div>';
   }
 

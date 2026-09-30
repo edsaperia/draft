@@ -359,6 +359,12 @@ case "$GROUP" in
     # stage 6): on the ladder's session rung, every live judgment card's
     # strip joins its card, clear of the riding tab, at 1600 and 390
     walk "ridetab-strip" node scripts/repro/ridetab-strip.mjs "$BASE"
+    # **the host refuses nothing a closed page offers** (Q1541 stage 7): the
+    # ladder closes a document; the Founder, an unsigned member and a
+    # stranger open every tab and entry and press every enabled control, 🥂
+    # last; no refusal, no page error, no error-log row, and nothing owed
+    # after the signature (1541.7 (a))
+    walk "closed-press-walk" npm run closed-press-walk -- "$BASE"
     ;;
 
   # the self-starting walks: each serves design/ itself and takes no base URL
@@ -389,6 +395,12 @@ case "$GROUP" in
     # card-audit's timing, at 390, under a 4× CPU throttle, three runs. Serves
     # design/ itself; red before the fix on 🪶 every run
     walk "close-no-room" node scripts/repro/close-no-room.mjs --fast --cpu=4 --runs=3
+    # **The card you are reading travels to its record** (Q1565, Q1541
+    # stage 7): a card open when its race is decided becomes the ✔ or ✖
+    # record in its place, read at the travel — a pass, a fail and your own
+    # proposal alike, nothing owed on it (1565 (b), Ed 2026-09-29 17:27).
+    # Serves design/ itself
+    walk "record-travel" node scripts/repro/record-travel.mjs
     # **The copy golden** (entry 128; Q1546 (c)): every card's strings on
     # every walk, keyed by walk and card key, against
     # design/tools/card-copy.golden.json. A STYLE.md pass is a snapshot and

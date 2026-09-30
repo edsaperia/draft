@@ -184,7 +184,15 @@ Glyph names are stable (tabulated 2026-09-07, Q1208; the founding order's own gl
   the rule has moved on (.4, .5) — *Previous rule* on what a change replaced
   and a failed wording under its live label (.11, .13); the record's old
   *Rejected proposal* and *Refused proposal* boxes go with the dateline
-  eyebrow. **Nor does a heading-over-text card carry a title head** (Ed,
+  eyebrow. **A text record is labelled the same way** (Q1541 stages 1, 7):
+  *Passed*, *Rejected*, *Refused by the Founder* — and ***Ran out of time***
+  where the clock cut it off, **never *Undecided at the close*** (answers.md
+  Part 4 .4, .14): the backlog and a record the close found running say it
+  in the label, and each of their wordings keeps its live label with the
+  outcome joined and no share, *Proposed · Ran out of time*, *Proposed by
+  you · Ran out of time* — nothing was decided, so nothing ranks it. *Refused*
+  is the Founder's 🛡️ alone; a wording the room closed early is *Rejected*
+  (T8). **Nor does a heading-over-text card carry a title head** (Ed,
   2026-09-15, Q1373): the grants ✒️ 🛡️ open as the strip, the paragraph and
   OK, and 🏛️ 💡 ⚖️ head with the Proposals clause, their rule. The card's name
   survives on the rail entry, the tab tooltip and the record.

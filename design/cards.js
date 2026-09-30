@@ -208,6 +208,14 @@ window.CARDS = (function () {
   // those colours as they drained the purple.
   const CHECK = mkSvg('check', '<path fill-rule="evenodd" clip-rule="evenodd" d="M28.9278 10.3004C30.1588 11.6067 30.0977 13.6636 28.7914 14.8946L13.9394 28.8901C12.6481 30.107 10.6193 30.0632 9.38167 28.7917L3.11793 22.3567C1.86596 21.0705 1.89371 19.0129 3.17992 17.7609C4.46612 16.509 6.52372 16.5367 7.77569 17.8229L11.809 21.9665L24.3336 10.164C25.6399 8.93304 27.6968 8.99411 28.9278 10.3004Z" fill="currentColor"/>');
   const MULTIPLY = mkSvg('multiply', '<path d="M7.2225 2.8925C6.0325 1.7025 4.0825 1.7025 2.8925 2.8925C1.7025 4.0925 1.7025 6.0325 2.8925 7.2325L11.6405 15.9765L2.9025 24.7225C1.7125 25.9125 1.7125 27.8625 2.9025 29.0525C4.0925 30.2425 6.0425 30.2425 7.2325 29.0525L15.9735 20.3075L24.7125 29.0425C25.9025 30.2325 27.8525 30.2325 29.0425 29.0425C30.2325 27.8525 30.2325 25.9025 29.0425 24.7125L20.3045 15.9745L29.0525 7.2225C30.2425 6.0325 30.2425 4.0825 29.0525 2.8925C27.8525 1.7025 25.9025 1.7025 24.7125 2.8925L15.9715 11.6415L7.2225 2.8925Z" fill="currentColor"/>');
+  // **A clause's fold: a stack of three ✔s, always** (Q1561 (n), Ed
+  // 2026-09-26) — the tab at the head of a clause's pile when several records
+  // there are owed, whatever they hold, ✖s alone included: the stack says
+  // *several decisions here*, not which way they went, which is each record's
+  // own tab's to say. Fluent's check, three times, stepped down and right
+  const FOLDSTACK = mkSvg('fold', '<g fill="currentColor">' + [[1, 1], [6.5, 6.5], [12, 12]].map(([x, y]) =>
+    '<g transform="translate(' + x + ' ' + y + ') scale(0.6)">' +
+    CHECK.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '') + '</g>').join('') + '</g>');
   // **The two Fluent files this alphabet does not take** are the pause button
   // and the counterclockwise arrows button, and they are the two that are
   // *buttons*: a rounded blue plate with a white shape knocked out. ⏸ keeps the
@@ -288,6 +296,7 @@ window.CARDS = (function () {
     filedYes: CHECK,     // filed, and the charter changed
     filedNo: MULTIPLY,   // filed, and the incumbent held
     filedUndecided: PAUSE, // filed at the close, nothing decided: the incumbent stands, undecided
+    fold: FOLDSTACK,       // several records owed at one clause: one tab, one card, one OK (Q1536, Q1561)
   };
   // Which mark this is, so the palette can reach the three it still paints, the
   // two filed pictures can be drained, and a walk can read a mark's kind off it
@@ -296,7 +305,7 @@ window.CARDS = (function () {
   // picture on every machine* for ten of the thirteen; ⏸ is this file's own two
   // bars and ↻ is a character, and those three the `.mk-*` rules still colour.
   const DRAWN = ['needs', 'urgent', 'stuck', 'weigh', 'deciding', 'propose',
-    'adopted', 'retired', 'filedYes', 'filedNo', 'filedUndecided', 'shifted', 'stranded'];
+    'adopted', 'retired', 'filedYes', 'filedNo', 'filedUndecided', 'shifted', 'stranded', 'fold'];
 
   // The mark, wrapped in its kind — the queue, the contents rail, the gutter tab
   // and a card's head all show the same mark and must show it the same way. The

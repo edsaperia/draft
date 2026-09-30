@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 727
+  "entries": 729
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -308,6 +308,7 @@
   "page.gate.canpropose.title": "Proposals",
   "page.gate.canpropose.waiting": "Waiting on the start.",
   "page.gate.canpropose.why": "A proposal is a change you write to the document, for the membership to vote on.",
+  "page.gate.closing.signTitle": "OK signs the document; your comment goes on the record",
   "page.gate.closing.title": "The Close",
   "page.gate.pen.title": "Founder Actions",
   "page.gate.pen.waiting": "Waiting on the save.",
@@ -602,7 +603,7 @@
   "session.record.amended": "The Founder amended this",
   "session.record.capAdopted": "decided — adopted",
   "session.record.capStood": "decided — the current text stood",
-  "session.record.capUndecided": "undecided at the close — the text stood",
+  "session.record.capUndecided": "ran out of time — the text stood",
   "session.record.capped": "the ranking maths stopped short on this one; the decision stands",
   "session.record.changedSince": "This clause has changed again since.",
   "session.record.counts": "ƒ (judges, roster, floor, yoursLine, approvals, abstained) =>\n        judges + ' of ' + roster + ' weighed in · ' +\n        (approvals === null || approvals === undefined ? '' : approvals + ' preferred it · ') +\n        (abstained ? abstained + ' did not answer in time · ' : '') +\n        'quorum was ' + floor + ' · ' + yoursLine",
@@ -623,7 +624,7 @@
   "session.record.okTitle": "It leaves your margin and stays in the record",
   "session.record.outAdopted": "adopted",
   "session.record.outStood": "retired — the current text stood",
-  "session.record.outUndecided": "undecided",
+  "session.record.outUndecided": "ran out of time",
   "session.record.rankedBelow": "ƒ (n, m) => n + ' of ' + m + ' members preferred the current text to this'",
   "session.record.replaced": "the text it replaced",
   "session.record.undecided": "Proposal ran out of time",
@@ -694,6 +695,7 @@
   "shell.accept.grant-shield": "Accept the Founder Veto",
   "shell.accept.grant-voice": "Accept Constitutional Proposals",
   "shell.acceptChange": "Accept This Change?",
+  "shell.addClosingComment": "Add your closing comment",
   "shell.begin": "Begin",
   "shell.beginInvited": "Waiting for invited members to arrive.",
   "shell.beginOneVoice": "Delegated questions need at least two responses.",

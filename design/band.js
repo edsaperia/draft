@@ -1386,7 +1386,9 @@ window.BAND = (function () {
       const SHELL_KINDS = new Set(['grant', 'gate', 'begin', 'release', 'setting', 'watching', 'answer', 'birth-email',
         'power', 'composer', 'motion', 'crown', 'motion-record', 'failed-motion-news',
         // …and stage 5's: ✋ 🖼️ 📧, the doors, the admissions, the applicant's
-        'identity', 'door', 'admission']);
+        'identity', 'door', 'admission',
+        // …and stage 7's: 🥂
+        'closing']);
       const crownPairRow = () => (amFounder()
         ? binBtn() + '<span class="rightpair">' +
           '<button class="btn glyphbtn emojibtn" data-crownq="reject"' +
@@ -2365,6 +2367,7 @@ window.BAND = (function () {
       // rendered again and the record never arrived.
       const closedNow = !!(env.cs && env.cs.closed);
       SESSION.setDocClosed(closedNow);
+      SESSION.setSigned(closedNow && signedClose());
       renderTitle(); renderRail(); renderBand(); syncCharter(); renderMail(); renderPowerWallets();
       document.getElementById('mebtn').innerHTML = avHtml(
         S.viewer === 'applicant' ? { n: S.app.name || '?', pic: S.app.pic }

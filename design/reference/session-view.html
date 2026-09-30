@@ -2994,8 +2994,16 @@
     // **no blind question is served until it is OK'd** (`visible`, the
     // `ans-*` branch). It replaced Q605's *with the first blind question you
     // are asked* and F20's 🪪/⚖️ hosts.
+    // **a grant leaves a closed document** (Q1541 stage 7, 1541.34, .52): a
+    // power handed over has nothing left to do once the clock has run out, and
+    // the ✒️ 🛡️ grants are the Founder's power tabs by another road
     { k: 'grant-voice', g: '🏛️', t: PAGE_COPY.gate.voice.title, own: 'you', isGate: true, isGrant: true,
       grants: '🏛️', textcard: true,
+      // **the holder's, like the pen and the shield** (E8; #119): a clerk
+      // founder is never a member, so 🏛️ is never theirs — and without this
+      // the card was unseen before 🍾 only by accident (`visible`'s last
+      // clause had nothing true for them) and served to them from the cork
+      hide: () => !viewerIsMember() || !docOpen(),
       open: () => !!cs && viewerIsMember() && !!viewerRow().in,
       early: () => !!cs && viewerIsMember() && !!viewerRow().in,
       // **a body of its own, about 🏛️ alone** (Q1502, Ed 2026-09-22): it
@@ -3016,7 +3024,7 @@
     // by `holderLine` — which is the whole of Ed's argument for retiring them.
     { k: 'grant-pen', g: '✒️', t: PAGE_COPY.gate.pen.title, own: 'you', isGate: true, isGrant: true,
       grants: '✒️', textcard: true,
-      hide: () => !amFounder(),
+      hide: () => !amFounder() || !docOpen(),
       open: () => !!cs && amFounder() && holdsPenAnywhere(),
       // Ed's sentence, card review 2026-09-02
       why: PAGE_COPY.gate.pen.why,
@@ -3040,7 +3048,7 @@
     // which is a thing the journey walk asserts.
     { k: 'grant-shield', g: '🛡️', t: PAGE_COPY.gate.shield.title, own: 'you', isGate: true, isGrant: true,
       grants: '🛡️', textcard: true,
-      hide: () => !amFounder(),   // the holder's, like the pen above
+      hide: () => !amFounder() || !docOpen(),   // the holder's, like the pen above
       open: () => !!cs && amFounder() && holdsShieldAnywhere(),
       // Ed's sentence, card review 2026-09-02
       why: PAGE_COPY.gate.shield.why,
@@ -3168,6 +3176,10 @@
       // answered, so a member's invitation wore the assembly hold and its
       // tooltip while the module raced it at ✏️ — ❌ had this from Q401
       routeOf: () => (admissionPrice() === 'assembly' ? 'constitutional' : 'ordinary'),
+      // **a door leaves a closed document** (Q1541 stage 7; principle 4 —
+      // a card offers only what this reader can do now, and on a closed page
+      // nobody can invite or remove anybody); its filed records keep the pile
+      hide: () => !docOpen(),
       ready: () => true, door: true },
     // the door composes by whatever price the 🥾 setting decides (Q401):
     // `proposal` races at the bar, either consent rung is constitutional
@@ -3177,6 +3189,7 @@
     // was hidden until judging opened.
     { k: 'remove', g: '❌', t: PAGE_COPY.cards.remove.t, kind: 'constitutional',
       routeOf: () => (removalPrice() === 'proposal' ? 'ordinary' : 'constitutional'),
+      hide: () => !docOpen(),
       ready: () => true, door: true },
     { k: 'hat', g: '🎩', t: PAGE_COPY.cards.hat.t, n: PAGE_COPY.cards.hat.n, kind: 'personal', changeable: true },
     // **The register and the door are two decisions** (Ed, 2026-08-18: *We
@@ -3350,8 +3363,13 @@
   // any reader — the 👑 news still arrives, the record still files behind the
   // rule. Before 🍾 the tab stays: a pre-start release is revisable (R-048),
   // and the founding's delegation reads *given* on both tabs until the start.
-  const pwGone = (k, power) => constituted() &&
-    !(power === 'u' ? pwPair(k).u : pwPair(k).a);
+  // **…and on a closed document every power tab leaves** (1541.34, .52;
+  // answers Part 6.6): the powers lines go from every paragraph and card and
+  // the ✒️ 🛡️ tabs from every strip — no past-tense power clauses are built;
+  // 👑 on the Founder's face and 🍾's table of the powers kept at the start
+  // are what survive
+  const pwGone = (k, power) => !docOpen() || (constituted() &&
+    !(power === 'u' ? pwPair(k).u : pwPair(k).a));
   const powerCard = (k) => {
     const mm = /^pw:(u|a):(.+)$/.exec(k);
     if (!mm || !PW_KEYS.includes(mm[2])) return undefined;
@@ -7402,7 +7420,7 @@
   /** at ✒️ the card is news, owed its OK until pressed (E42) */
   const admissionOwed = (c) => (admissionShellKind(c) === 'admission' && admissionPrice() === 'pen' &&
     docOpen() && !!applicantById(c.admit) && !S.okd.has(c.k)
-    ? { kind: 'ok', attrs: ' data-ok="' + esc(c.k) + '"', word: 'OK' } : null);
+    ? { kind: 'ok', attrs: ' data-ok="' + esc(c.k) + '"', word: window.COPY.session.record.ok } : null);
   function admissionPresent(c, hints) {
     const W = W4();
     const kind = admissionShellKind(c);
@@ -7428,6 +7446,16 @@
         body: { html: addr + '<p class="setnote">' + glyphify(esc(asks ? W.crownPerson : window.COPY.session.park.awaiting)) + '</p>' + err },
         blocks: [{ label: W.proposed, html: cpv(C.joins(name)), speaker }],
       };
+    }
+    // **a closed document offers nothing but 🥂** (1541.7 (a), plain bug 2 —
+    // *every seat is served the 🪪 admission card with Prefer this radios*):
+    // an application the clock found still running is cut off, read as a
+    // record is, the applicant's words under *Proposed · Ran out of time*
+    // (answers Part 4 .4, .14)
+    if (!docOpen()) {
+      return { kind, frame, head, label: { text: W.outcome.ranOut },
+        body: addr || err ? { html: addr + err } : null,
+        blocks: [{ label: W.proposed + W.sep + W.outcome.ranOut, html: cpv(C.joins(name)), speaker }] };
     }
     const price = admissionPrice();
     if (price === 'pen') {
@@ -8132,6 +8160,9 @@
     // module yet, and nobody else to hold anything
     // — and the title's is the one that says whose hand that is (backlog 140)
     if (!cs) return ' ' + founderMay([pwPhrase(k, 'u')], k === 'title');
+    // a closed document states no power at all (1541.52; answers Part 6.6):
+    // the Rules paragraph keeps its rule and *this* as its subject
+    if (!docOpen()) return '';
     const st = pwState(k);
     if (!st || st.holder === 'members') return '';
     const p = st.powers;
@@ -10790,12 +10821,20 @@
     // (1541.8 (a)); and nothing on one not yet open, whose commit is not
     // drawn at all (.19)
     owed: (k) => { const c = card(k);
+      // 🥂's OK is owed until this seat signs: it signs the document
+      // (1541.23 (a), 1541.7 (a)) — the one press a closed page offers
+      if (c && c.isClosing) return viewerIsMember() && !signedClose()
+        ? { kind: 'ok', attrs: ' data-sign="1"', title: PAGE_COPY.gate.closing.signTitle, word: window.COPY.session.record.ok } : null;
+      // **a closed card offers nothing but 🥂** (1541.7 (a), plain bug 2): no
+      // news OK and no grant's *Accept* on a closed document — the signature
+      // answers every OK owed, and a power granted has nothing left to do
+      if (!docOpen()) return null;
       if (BND.settingKind(c)) return BND.settingOwed(c);
       if (motionShellKind(c)) return motionShellOwed(c);
       if (identityShellKind(c)) return null;
       if (doorShellKind(c)) return null;
       if (admissionShellKind(c)) return admissionOwed(c);
-      if (shellRelease(c)) return releaseBatch(c.release) ? { kind: 'ok', attrs: ' data-ok="' + esc(k) + '"', word: 'OK' } : null;
+      if (shellRelease(c)) return releaseBatch(c.release) ? { kind: 'ok', attrs: ' data-ok="' + esc(k) + '"', word: window.COPY.session.record.ok } : null;
       if (!ackOwed(c)) return null;
       return { kind: 'accept', cls: 'grantok', attrs: ' data-ok="' + esc(k) + '"',
         word: k === 'grant-voice' ? PAGE_COPY.gate.voice.accept : PAGE_COPY.gate.accept(c.grants || c.g) }; },
@@ -10819,6 +10858,22 @@
         until: can ? null : 'readiness', note: can ? null : beginWaiting(rd) }]; },
     present: (k, st, hints) => {
       const c = card(k);
+      // **🥂 on the one shell** (Q1541 stage 7): the moment, once, as the
+      // first line (1541.23 (a)); *Add your closing comment* above it while
+      // the signature is owed (Part 4 .25), its name after; the batch and the
+      // signatures the body, the comment box the input with no label of its own
+      if (c && c.isClosing) {
+        const p = closingShell(c);
+        return {
+          kind: 'closing',
+          frame: { cls: 'sugg setupcard', attrs: ' role="tabpanel" data-setupcard="' + esc(k) + '"' },
+          label: { text: st.owed ? window.COPY.shell.addClosingComment : c.t },
+          head: { html: window.SETUP.headHtml(c, ctx, hints.siblings || [c],
+            '<div class="headrule" data-fact="place">' + esc(ctx.headFor(c)) + '</div>') },
+          body: { html: p.batch + p.after + doorErrHtml(k) },
+          input: p.input ? { html: p.input } : null,
+        };
+      }
       if (BND.settingKind(c)) return BND.settingPresent(c, hints);
       if (motionShellKind(c)) return motionShellPresent(c, hints);
       if (identityShellKind(c)) return identityPresent(c, hints);
@@ -11330,7 +11385,7 @@
   // with the page bindings it reads — `cs` and `FIX` through accessors, since
   // both are reassigned; every function wrapped, read when called.
   const { readinessOf, oneVoiceRemedy, inviteTask, oneVoiceAsk, beginOffered, beginCollecting, dueMembers, releaseBody, mailGiveUpBody,
-    BEGIN_ROWS, beginStillHeld, beginPos, beginLayDown, beginBody, closingBody } = window.BEGIN.make({
+    BEGIN_ROWS, beginStillHeld, beginPos, beginLayDown, beginBody, closingBody, closingShell } = window.BEGIN.make({
     S, PAGE_COPY, SEC, SESSION,
     get cs() { return cs; },
     get FIX() { return FIX; },

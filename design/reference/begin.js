@@ -471,7 +471,7 @@ window.BEGIN = (function () {
     // what the close did, in one card: final as of when, what adopted, what
     // carried, what the clock found still running, what was left undecided,
     // whose names the record reveals
-    const closingBody = (c) => {
+    const closingBody = (c, wantParts) => {
       const rec = env.cs && env.cs.isRemote ? env.cs.record : null;
       const adopted = rec ? rec.adopted.length : (env.FIX ? SESSION.SUGGS.filter((g) => g.state === 'sealed' && g.won && !g.fold).length : 0);
       const undecided = rec ? rec.undecided.length : SESSION.SUGGS.filter((g) => g.undecided).length;
@@ -519,8 +519,19 @@ window.BEGIN = (function () {
           : sg.name ? esc(sg.name) : '<span class="disc small" aria-hidden="true"></span>a member') +
         (sg.comment ? '<span class="rsub"> · ' + esc(sg.comment) + '</span>' : '') + '</span>').join('') + '</div>' : '';
       const mine = mySignature();
+      const parts = closingParts(c, { n, adopted, carried, unassented, stillOpen, undecided, names, sigs, sigList, mine });
+      if (wantParts) return parts;
       return '<div class="unlocks"><b>The document is final as of' + esc(closedAtWords().replace(/^ at /, ' ')) + '.</b></div>' +
-        '<ul class="batch">' +
+        parts.batch + (parts.input ? '<div class="fieldlab">Your closing comment</div>' + parts.input : '') + parts.after;
+    };
+    // **🥂 on the one shell** (Q1541 stage 7): the moment is its first line
+    // alone (1541.23 (a), plain bug 5 — the *final as of* box goes); the batch
+    // and the signatures are its body; the comment box its input, whose own
+    // label is not drawn, the card's label saying what it is for (Part 4 .25)
+    const closingShell = (c) => closingBody(c, true);
+    function closingParts(c, x) {
+      const { n, adopted, carried, unassented, stillOpen, undecided, names, sigs, sigList, mine } = x;
+      const batch = '<ul class="batch">' +
         '<li>' + n(adopted, 'proposal was adopted', 'proposals were adopted') + ' into the text.</li>' +
         '<li>' + n(carried, 'motion passed', 'motions passed') + (unassented ? '; ' + n(unassented, 'passed change waited', 'passed changes waited') + ' on an assent that never came, and goes to the backlog' : '') + '.</li>' +
         // omitted at zero, unlike the lines around it: it is a line that
@@ -530,18 +541,19 @@ window.BEGIN = (function () {
         '<li>' + n(undecided, 'question was', 'questions were') + ' left undecided — the text stands, and ' +
           (undecided === 1 ? 'it is' : 'they are') + ' filed below the charter as its backlog.</li>' +
         '<li>' + names + '</li>' +
-        '<li>The record is published with the document, at this address.</li></ul>' +
-        (viewerIsMember() && !mine
-          ? '<div class="fieldlab">Your closing comment</div>' +
-            '<div class="speaker"><span class="disc" aria-hidden="true"></span>' +
-            '<div class="said edit-why" contenteditable="plaintext-only" data-signwhy="1" data-placeholder="Dissent is as welcome as praise — or nothing at all."></div></div>' +
-            '<p class="setnote"><b>OK</b> signs the document. Your comment, or its absence, goes on the record beside your name.</p>'
+        '<li>The record is published with the document, at this address.</li></ul>';
+      const input = viewerIsMember() && !mine
+        ? '<div class="speaker"><span class="disc" aria-hidden="true"></span>' +
+          '<div class="said edit-why" contenteditable="plaintext-only" data-signwhy="1" data-placeholder="Dissent is as welcome as praise — or nothing at all."></div></div>'
+        : '';
+      const after = (input ? '<p class="setnote"><b>OK</b> signs the document. Your comment, or its absence, goes on the record beside your name.</p>'
           : mine ? '<p class="setnote">You signed' + (mine.comment ? ': <i>' + esc(mine.comment) + '</i>' : ' without a comment') + '.</p>' : '') +
         (sigs.length ? '<div class="fieldlab">Signed</div>' + sigList : '');
-    };
+      return { batch, input, after };
+    }
 
     return { readinessOf, oneVoiceRemedy, inviteTask, oneVoiceAsk, beginOffered, beginCollecting, dueMembers, releaseBody, mailGiveUpBody,
-      BEGIN_ROWS, beginStillHeld, beginPos, beginLayDown, beginBody, closingBody };
+      BEGIN_ROWS, beginStillHeld, beginPos, beginLayDown, beginBody, closingBody, closingShell };
   }
   return { make };
 })();

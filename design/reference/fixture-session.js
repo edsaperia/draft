@@ -1031,7 +1031,9 @@ window.FIXTURE_SESSION = (function () {
       rationale: 'Eleven keys and nobody knows who has one. The Steward should hold the spare, not a flowerpot.'
     },
     {
-      id: 'quick-lockup-lamp', kind: 'quick', keys: ['lockup'], state: 'sealed',
+      // unread beside `quick-lockup`, so the fixture carries a clause's fold
+      // (Q1536, Q1561): two records owed at one clause, one tab and one card
+      id: 'quick-lockup-lamp', kind: 'quick', keys: ['lockup'], state: 'sealed', unread: true,
       verdict: 'preferred this wording', pick: 'approve',
       qLabel: '§ Locking Up — the lamp',
       urgency: 0,

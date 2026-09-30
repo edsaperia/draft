@@ -959,7 +959,26 @@ function applyPresence(s: FoldState, event: ConstitutionEvent): void {
     }
     case 'close-acknowledged': {
       const m = s.members.get(event.member);
-      if (m) m.closingAck = { t: event.t, comment: event.comment };
+      if (!m) break;
+      m.closingAck = { t: event.t, comment: event.comment };
+      // **🥂's one press answers every OK owed** (1541.7 (a); Ed 2026-09-29:
+      // a fold change, no new event). The signature is the member's last
+      // acknowledgement of the document, so whatever news was still owed to
+      // them is answered by it, each owed set moved to its given set exactly
+      // as its own OK would have moved it. Folded, not emitted: an old log
+      // replays to the same signatures and simply owes nothing after them.
+      for (const id of m.okOwed) m.okGiven.add(id);
+      m.okOwed.clear();
+      for (const id of m.releasesOwed) m.releasesGiven.add(id);
+      m.releasesOwed.clear();
+      for (const id of m.amendmentsOwed) m.amendmentsGiven.add(id);
+      m.amendmentsOwed.clear();
+      for (const id of m.mailGaveUpOwed) m.mailGaveUpGiven.add(id);
+      m.mailGaveUpOwed.clear();
+      for (const id of m.departuresOwed) m.departuresGiven.add(id);
+      m.departuresOwed.clear();
+      for (const id of m.heldOwed) m.heldGiven.add(id);
+      m.heldOwed.clear();
       break;
     }
     case 'application-started': {
