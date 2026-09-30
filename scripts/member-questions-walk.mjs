@@ -149,14 +149,19 @@ if (rateBox) {
    * invitation is that act: it moves the document log, so the next poll is a
    * full view and a render. */
   await page.keyboard.type('1');
-  await page.evaluate(() => { window.__rateBox = document.querySelector('.setupcard [data-ansnum="rate"]'); });
+  // a marker attribute on the open card, which no markup carries: a render
+  // takes it off whether it patches the card (stage 9) or replaces it
+  await page.evaluate(() => { window.__rateBox = document.querySelector('.setupcard [data-ansnum="rate"]');
+    const c = document.querySelector('.setupcard'); if (c) c.setAttribute('data-walk-mark', '1'); });
   await cmd('founder', 'invite', { email: `m2-${run}@example.org` });
   await T(POLL + 1500);
   const kept = await page.evaluate(() => {
     const box = document.querySelector('.setupcard [data-ansnum="rate"]');
     return { value: box ? box.value : null, focused: !!box && document.activeElement === box,
-      // the box being a new node is what proves a render landed at all
-      rendered: !!box && box !== window.__rateBox,
+      // the marker gone is what proves a render landed at all — not the box
+      // being a new node, which since stage 9 it rightly is not (U1)
+      rendered: !((document.querySelector('.setupcard') || { hasAttribute: () => true }).hasAttribute('data-walk-mark')),
+      same: !!box && box === window.__rateBox,
       open: (document.querySelector('.setupcard') || { dataset: {} }).dataset.setupcard || null };
   });
   check('a render lands under the half-typed answer (the step\'s own premise)', kept.rendered, JSON.stringify(kept));
