@@ -890,6 +890,21 @@ window.COMPOSER = (function () {
       const drip = dripNoteHtml({ broke: pt.broke && rs.changed });
       return MAY_PEN() ? btn(true) + drip + btn(false) : drip + btn(false);
     };
+    // **the same commit as acts for the one shell** (Q1541 stage 8): drawn on
+    // the editing card only where no proposal-row stands — a draft opened by
+    // ✏️ *propose edit* in read mode (K24), whose card is the only place the
+    // act can be — never in edit mode, where the row's ✏️ is the one
+    // (1541.22 (a), grammar B9)
+    const cardCommitActs = (d) => {
+      const rs = draftRowState();
+      const pt = proposeCtlTitles(d);
+      const btn = (pen) => '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose"' +
+        (pen ? ' data-pen="1"' : '') + ((pen ? !rs.changed : (!rs.changed || pt.broke)) ? ' disabled' : '') +
+        ' title="' + esc(pen ? pt.penTitle : pt.title) + '">' + glyphHtml(pen ? '✒️' : '✏️') + '</button>';
+      const acts = MAY_PEN() ? [{ kind: 'commit', act: 'draft-propose', html: btn(true) }] : [];
+      acts.push({ kind: 'commit', act: 'draft-propose', html: btn(false) });
+      return { acts, drip: dripNoteHtml({ broke: pt.broke && rs.changed }) };
+    };
     // what the row says about the draft as it stands
     const draftRowState = () => {
       const d = draftOf();
@@ -1062,6 +1077,61 @@ window.COMPOSER = (function () {
       );
     }
 
+    /**
+     * **The editing card, as parts for the one shell** (Q1541 stage 8): the
+     * charter's source builds it from `CardState` as it builds a proposal of
+     * yours (`ownParts`), asking this for what only the composer draws — the
+     * place and its ↑ ↓, the clause at the head (a gap's, a seeded one's, a
+     * stranded one's as it stands), and your draft as one block labelled on
+     * its own first line (`shell.yourDraft`), the lane and the reason behind
+     * the disc, the signature's choice under it. **No commit on the card**
+     * (1541.22 (a), grammar B9): the ✏️ — and the ✒️ beside it — and the
+     * *✏️ hh:mm* countdown are the proposal-row's alone, one act in one
+     * place, the single-site card's pair of 2026-09-16 retired with it; the
+     * card's one control is its own site's 🗑️ (K17, Q1306).
+     */
+    function editParts(d, site) {
+      const n = d.sites.length;
+      const i = Math.max(0, d.sites.indexOf(site));
+      const s = site || d.sites[0];
+      const step = (to, label, glyph) => (to === null
+        ? '<span class="pstep off">' + glyph + '</span>'
+        : '<button class="pstep" data-step="' + d.id + ':' + d.sites[to].keys[0] + '" title="' + esc(label) + '">' + glyph + '</button>');
+      const rival = liveRivalFor(d, s);
+      const gap = !!(s.origin[0] && s.origin[0].gap);
+      const blocks = (s.lost
+        ? s.keys.map((k) => lineOf(k)).filter((l) => l && !l.gap)
+          .map((l) => ({ key: l.key, text: l.x, t: l.t, level: l.level, bullet: l.bullet }))
+        : headBlocksOf(s));
+      // a draft ✏️ started off another lane heads with that wording, not the
+      // clause, and says so in today's words (`seedNote`)
+      const seeded = s.origin.find((o) => o.note);
+      return {
+        i, n, key: s.keys[0], gap, seeded: seeded ? seeded.note : null,
+        steps: n > 1 ? '<span class="psteps">' + step(i > 0 ? i - 1 : null, T.nav.prev, '↑') +
+          step(i < n - 1 ? i + 1 : null, T.nav.next, '↓') + '</span>' : '',
+        // the head is the clause the draft rewrites — its source blocks, so a
+        // heading keeps its rank (Q1406); a gap has no clause and says so
+        // (answers Part 4 .2); a stranded draft's shows what stands now (Q1463)
+        head: (o) => clauseHeadHtml(d, Object.assign(gap
+          ? { text: null, key: s.keys[0] }
+          : { key: s.keys[0], html: blocks.map((b) => '<div class="lp' + (b.t === 'h' ? ' hblock lvl' + (b.level || 1) : b.bullet ? ' bullet' : '') +
+            '" data-key="' + b.key + '">' + blockHtml({ x: b.text, t: b.t, level: b.level, bullet: b.bullet }) + '</div>').join('') }, o || {})),
+        block: '<div class="propblock editblock"><span class="glab">' + esc(window.COPY.shell.yourDraft) + '</span>' +
+          laneBoxHtml(d, s) + signControlHtml(d) + '</div>',
+        // what the card says under the words: a site the text moved out from
+        // under (Q1463), and only the two facts that change what the row's ✏️
+        // *does* (Ed, 2026-08-17) — it joins a race, it goes in as one change
+        body: (s.lost ? '<p class="setnote">' + esc(T.stranded.drafted) + '</p>' : '') +
+          (rival || n > 1
+            ? '<div class="foot">' + (rival ? T.compose.rivalNote : '') + (rival && n > 1 ? ' · ' : '') +
+              (n > 1 ? T.compose.allPlacesNote(n) : '') + '.</div>'
+            : ''),
+        // a live refusal is said on the card, where the draft still is
+        refusal: d.refusal ? '<div class="foot refusal">' + esc(d.refusal) + '</div>' : null,
+      };
+    }
+
     // **What a proposal of yours looks like once it is in** — the place
     // stepper, the clause at the head and your wording under it — shared by
     // the two cards that show one: `mineCardHtml` below, and the stranded
@@ -1227,7 +1297,7 @@ window.COMPOSER = (function () {
       startDraft, startDraftFromTyping, startDraftFromRun,
       laneRemark, syncEditCtl, markSelection,
       commitBtnHtml, proposalRowHtml, proposeCtlTitles, draftRowState, setDraftSigned,
-      editCardHtml, mineCardHtml, strandedCardHtml, ownParts };
+      editCardHtml, mineCardHtml, strandedCardHtml, ownParts, editParts, cardCommitActs };
   }
   return { make };
 })();

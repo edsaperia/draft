@@ -1400,7 +1400,11 @@
      own height, so nothing else about it moves — and fully round. Scoped by
      the floating context, never by re-styling `.btn.glyphbtn`: B6's one glyph
      size is untouched. */
-  .proposalrow { --float-d: 3rem; }
+  /* **4.5rem, the 📝 door's size** (1569.2, Ed 2026-09-30: *They should be
+     larger, like the 📝 circle*): the rows stay where they stand and may
+     overlap, as the door may (1541.17), so they are drawn as the door is
+     drawn — the disc grew, the glyph at B6's one size */
+  .proposalrow { --float-d: 4.5rem; }
   .proposalrow .btn.glyphbtn { width: var(--float-d); height: var(--float-d); border-radius: 50%; }
   /* **A floating control is above the page, and says so by depth** (Ed,
      2026-09-16: *larger, and stand out more from the text … I don't want to
@@ -1523,8 +1527,8 @@
   /* **The door has its own corner** (Q1516 (3), (4), Ed 2026-09-23): it
      stood in the row's ✏️'s own box (Q1335) and covered 🗑️ ✏️ and 🗑️ ❄️ ✓
      from there, so it moves to the window's bottom-right corner, `--s5` off
-     both edges — the gutter the row keeps from the foot — and is about 1.5×
-     the row's circles: 4.5rem against the row's 3rem. The disc grew, not the
+     both edges — the gutter the row keeps from the foot — at 4.5rem, which
+     the row's circles took too (1569.2; they were 3rem). The disc grew, not the
      picture in it (B6's one glyph size, as when the row's circles grew). The
      row's box collapses to the button alone, so nothing of it lies over the
      page; card-audit D1 holds the corner and the size, D4 that it meets none

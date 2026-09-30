@@ -265,9 +265,7 @@ const GRAMMAR_KINDS = [
  * has not come is reported, never held (Q1541 stage 2: the grants and 🍾 are
  * opened on the closed band too, where P29 is stage 7's).
  */
-// stage 8 is building: P30 (`zone-overlap`) turns strict at 8, once the rows
-// make room for themselves (the question on PR #127); until then it reports
-const STAGE = 7;
+const STAGE = 8;
 /** the checks held on every card under `--kinds`, whatever its kind: a
  *  rendering fault no stage converts (P34, issue #121) */
 const EVERY_KIND = new Set(['glyph-space']);
@@ -1312,7 +1310,8 @@ const IN_PAGE = () => {
     };
     const inDrawer = (el) => !!(el && el.closest('[class*="drawer"], [aria-modal="true"], dialog, .modal'));
     const z = [];
-    const add = (name, group, box, el) => { if (box) z.push({ name, group, box, drawer: inDrawer(el), el, door: !!(el && el.closest && el.closest('#editdoor')) }); };
+    const add = (name, group, box, el) => { if (box) z.push({ name, group, box, drawer: inDrawer(el), el, door: !!(el && el.closest && el.closest('#editdoor')),
+      row: !!(el && el.closest && !el.closest('#editdoor') && el.closest('#patchrow, [data-proposalrow]')) }); };
     const nav = document.querySelector('.navbar');
     add('topbar', 'topbar', clip(nav), nav);
     const toc = document.querySelector('nav.toc');
@@ -2756,12 +2755,16 @@ function walkGrammar(zones, tips, switches, restReads) {
     for (const x of z.zones) {
       if (x.group !== 'floating' || !(x.covers || x.controls)) continue;
       // **the floating 📝 door is a named exception** (1541.17, Ed: *the fact
-      // that it sometimes overlaps things is what makes it stand out*)
+      // that it sometimes overlaps things is what makes it stand out*), and
+      // **so are the proposal row and the patch row** beside it (1569.2 (c),
+      // Ed 2026-09-30): they stay where they stand, drawn at the door's size
       const door = x.door || /editdoor/.test(x.name);
+      const row = !door && !!x.row;
       const said = [x.covers ? x.covers + ' line(s) of text' : null, x.controls ? x.controls + ' enabled control(s)' : null].filter(Boolean).join(' and ');
       out.push({ check: 'zone-overlap', walk: z.walk, key: z.when + (z.key ? ':' + z.key : ''), sub: x.covers ? 'covers-text' : 'covers-control',
         ex: x.name + ' covers ' + said + ' (' + z.when + ')',
-        ...(door ? { excepted: 'the floating 📝 door may overlap (1541.17)' } : {}) });
+        ...(door ? { excepted: 'the floating 📝 door may overlap (1541.17)' }
+          : row ? { excepted: 'the proposal row and the patch row may overlap, as the door may (1569.2 (c))' } : {}) });
     }
   }
   for (const t of tips) {
@@ -4136,9 +4139,11 @@ function doorRules(doors) {
   for (const d of doors) {
     // **its own corner, about 1.5× the row's circles** (Q1516 (3), (4), Ed
     // 2026-09-23 — it had stood in the row's ✏️'s own box since Q1335): the
-    // door's right and bottom edges `--s5` off the window's, its diameter 1.5×
-    // the row's ✏️'s, and the same box before and after a round trip
-    const said = 'the floating 📝 straddles the page\'s right edge (Ed, 2026-09-24), `--s5` off the window\'s foot, at 1.5× the proposal-row\'s circles, the same box before and after edit mode (Q1516 (3), (4))';
+    // door's right and bottom edges `--s5` off the window's, its diameter
+    // **the row's ✏️'s since 1569.2** (Ed, 2026-09-30: the row's circles *larger,
+    // like the 📝 circle* — they were 1.5× smaller), and the same box before
+    // and after a round trip
+    const said = 'the floating 📝 straddles the page\'s right edge (Ed, 2026-09-24), `--s5` off the window\'s foot, at the proposal-row\'s circles\' size (1569.2; 1.5× them under Q1516 (4)), the same box before and after edit mode (Q1516 (3), (4))';
     if (!d.editing || !d.commit) {
       out.push({ rule: 'D1', lens: 'positioning', said, saw: 'pressing the door ' + (d.editing ? 'drew no row' : 'did not enter edit mode'), note: d.walk });
       continue;
@@ -4148,8 +4153,8 @@ function doorRules(doors) {
     const wantRight = d.win.edge == null ? d.win.s5 : Math.max(d.win.s5, d.win.w - d.win.edge - d.before.r[2] / 2);
     if (Math.abs(offRight - wantRight) > 0.5 || Math.abs(offBottom - d.win.s5) > 0.5) out.push({ rule: 'D1', lens: 'positioning', said,
       saw: 'the door stands ' + Math.round(offRight * 100) / 100 + 'px off the window\'s right and ' + Math.round(offBottom * 100) / 100 + 'px off its foot, against ' + Math.round(wantRight * 100) / 100 + ' and ' + d.win.s5, note: d.walk });
-    if (Math.abs(d.before.r[2] - 1.5 * d.commit.r[2]) > 1) out.push({ rule: 'D1', lens: 'positioning', said,
-      saw: 'the door ' + d.before.r[2] + 'px across, the row\'s ✏️ ' + d.commit.r[2] + 'px (1.5× is ' + Math.round(1.5 * d.commit.r[2] * 100) / 100 + ')', note: d.walk });
+    if (Math.abs(d.before.r[2] - d.commit.r[2]) > 1) out.push({ rule: 'D1', lens: 'positioning', said,
+      saw: 'the door ' + d.before.r[2] + 'px across, the row\'s ✏️ ' + d.commit.r[2] + 'px (1569.2: the same)', note: d.walk });
     if (!same(d.before, d.after)) out.push({ rule: 'D1', lens: 'positioning', said,
       saw: 'the door at ' + d.before.r.join('×') + ' before, ' + (d.after ? d.after.r.join('×') : 'gone') + ' after leaving', note: d.walk });
     // **D4 — the door never shares the proposal row's place** (Q1516 (3): it

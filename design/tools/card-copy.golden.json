@@ -1,6 +1,6 @@
 {
  "meta": {
-  "cards": 275,
+  "cards": 276,
   "walks": [
    "answers",
    "charter",
@@ -869,6 +869,29 @@
    }
   },
   "charter": {
+   "draft-yours": {
+    "eyebrow": "Current text",
+    "head": "The Club is a society of friends keeping a house together. It is not a business, not a charity, and not a landlord; it exists for the common enjoyment of its members and for nothing else.",
+    "lock": "",
+    "body": "Your proposalThe Club is a society of friends keeping a house together. It is not a business, not a charity, and not a landlord; it exists for the common enjoyment of its members and for nothing else.x",
+    "options": [],
+    "inputs": [],
+    "foot": [
+     {
+      "label": "🗑️",
+      "title": "Discard this change — nothing has been spent on it"
+     }
+    ],
+    "hints": [
+     "We should change this because…",
+     "Close this one",
+     "This is how your reason will reach everybody else: with your name off it, permanently.",
+     "Discard this change — nothing has been spent on it"
+    ],
+    "helpers": [
+     "We should change this because…"
+    ]
+   },
    "fold:quick-lockup-lamp": {
     "eyebrow": "2 decisions",
     "head": "The last member out locks the front door, closes the Workshop, and puts out the lamp in the Common Room.",

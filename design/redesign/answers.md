@@ -197,3 +197,11 @@ The floating 📝 door is not a principle: it is a named exception in `zone-over
 | the merge | When and how stage 7 ships | **A full deploy, not surface-only** (1541.56) — the first stage to touch `packages/`; the merge is Ed's tap as usual; no room is planned (Ed, 2026-09-29). |
 | 1561 (m), (n) | The clause fold redrawn (Ed, 2026-09-26, folded here) | Its tab a stack of three ✔s, always — built as the lifecycle mark `fold`, not a `GLYPH` entry (the coordinator, PR #125: *the brief's "through GLYPH" was my wording, not a ruling*); every record in full, oldest first, a hairline between each; a record's own OK acknowledges that record only. |
 | 1568.2 | The clause fold's label | **Just *‹n› decisions*** (Ed, 2026-09-29 21:57 UTC, on the questions page) — no moment after it; `foldHead(n)` alone above the first line. |
+
+## Part 11 — stage 8's rulings (1569, Ed 2026-09-30)
+
+| # | Call | Ruling |
+|---|---|---|
+| 1569.1 | The block label over your own draft on the editing card, before it is proposed | **(a) *Your proposal*** (Ed, 2026-09-30 16:05 UTC, on the questions page) — `shell.yourDraft`; *Proposed by you* once it goes in (Part 4 .9). |
+| 1569.2 | How the column makes room for the proposal row and the patch row (P30) | **(c) The rows stay where they are, named as P30 exceptions beside the 📝 door** (Ed, 2026-09-30 16:07 UTC) — no move into the margins, no grounded band; K17/K18's *one row that does not move* stands. **And *They should be larger, like the 📝 circle***: the row's circles — 🗑️, ✏️ (✒️ where the Founder holds the pen), the patch row's ❄️ and ✓ — take the door's 4.5rem; still circles, the glyph at B6's one size, the count between them as it was. SURFACE K17, §9's 📝 row; checks.md P30. |
+| 1541.22 (a), as built | The editing card's commit outside edit mode | **Accepted by the coordinator** (PR #127, 2026-09-30) from the ruling as it stands (*one ✏️ in edit mode*): a draft opened by ✏️ *propose edit* in read mode (K24) never enters edit mode, so no row stands and its card keeps its ✏️ and countdown. |
