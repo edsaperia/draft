@@ -1427,6 +1427,11 @@ window.COPY = (function () {
     proposed: 'Proposed',
     proposedBy: (name) => 'Proposed by ' + name,
     proposedByYou: 'Proposed by you',
+    // ---- stage 8: the editing card ----
+    // your draft's block, before it is proposed — Part 4 names none, so this
+    // is the builder's recommendation put to Ed on PR #127 (*Proposed by you*
+    // once it goes in, .9)
+    yourDraft: 'Your proposal',
     // the joint in every label: *Passed · Tuesday, 29 September, 16:05*,
     // *Proposed · 23%*
     sep: ' · ',

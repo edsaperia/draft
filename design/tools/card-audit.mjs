@@ -251,6 +251,12 @@ const GRAMMAR_KINDS = [
   'record-owed',
   'clause-fold',
   'closing',
+  // stage 8 (Q1541): the editing card (`editing`, session.js's
+  // `editPresent`) — your draft in front of the lifted column, its site's
+  // 🗑️ alone. The fast pass meets it on `charter`'s edit pass (`walkEdit`),
+  // at a width with a way into the composer; below 900 there is none
+  // (MOBILE.md, Q1350), so the kind is not asked there
+  'editing',
 ];
 /**
  * **The stage the build has reached, and the stage each check turns strict
@@ -259,6 +265,8 @@ const GRAMMAR_KINDS = [
  * has not come is reported, never held (Q1541 stage 2: the grants and 🍾 are
  * opened on the closed band too, where P29 is stage 7's).
  */
+// stage 8 is building: P30 (`zone-overlap`) turns strict at 8, once the rows
+// make room for themselves (the question on PR #127); until then it reports
 const STAGE = 7;
 /** the checks held on every card under `--kinds`, whatever its kind: a
  *  rendering fault no stage converts (P34, issue #121) */
@@ -1304,7 +1312,7 @@ const IN_PAGE = () => {
     };
     const inDrawer = (el) => !!(el && el.closest('[class*="drawer"], [aria-modal="true"], dialog, .modal'));
     const z = [];
-    const add = (name, group, box, el) => { if (box) z.push({ name, group, box, drawer: inDrawer(el) }); };
+    const add = (name, group, box, el) => { if (box) z.push({ name, group, box, drawer: inDrawer(el), el, door: !!(el && el.closest && el.closest('#editdoor')) }); };
     const nav = document.querySelector('.navbar');
     add('topbar', 'topbar', clip(nav), nav);
     const toc = document.querySelector('nav.toc');
@@ -1318,25 +1326,47 @@ const IN_PAGE = () => {
     document.querySelectorAll('#editdoor > *, #proserow, #patchrow, .proposalrow, [data-proposalrow]').forEach((e) => fl.add(e));
     // a card's own commit row can carry `.proposalrow` too; only what floats counts
     for (const e of fl) if (!e.closest(CARD_ROOTS)) add('floating:' + nameOf(e), 'floating', clip(e), e);
-    // G4 v2: an overlay may cross a zone's edge but never a line of text
+    // G4 v2 (checks.md P30): an overlay may cross a zone's edge but never a
+    // line of text or an enabled control outside it. **The overlay is what it
+    // paints** (Q1541 stage 8): a row with no ground of its own and
+    // click-transparent between its circles (K31) overlays with its circles
+    // and its words, never with the empty box that holds them
+    const FLOAT = '#editdoor, #proserow, #patchrow, .proposalrow';
+    const painted = (el) => {
+      const cs = getComputedStyle(el);
+      const ground = cs.backgroundColor !== 'rgba(0, 0, 0, 0)' && cs.backgroundColor !== 'transparent';
+      const parts = ground ? [el] : [...el.querySelectorAll('button, .rowmid, .gnote, .absnote')]
+        .filter((p) => (p.textContent || '').trim() || p.tagName === 'BUTTON');
+      return parts.map((p) => p.getBoundingClientRect()).filter((q) => q.width > 0.5 && q.height > 0.5);
+    };
+    const hit = (q, boxes) => boxes.some((b) => Math.min(q.right, b.right) - Math.max(q.left, b.left) > 1 &&
+      Math.min(q.bottom, b.bottom) - Math.max(q.top, b.top) > 1);
     for (const x of z) {
       if (x.group !== 'floating') continue;
+      const boxes = painted(x.el);
       let covers = 0;
+      let controls = 0;
       for (const root of document.querySelectorAll('#doc, aside.queue, nav.toc')) {
         const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
         for (let n = w.nextNode(); n; n = w.nextNode()) {
-          if (!n.nodeValue.trim() || !n.parentElement || n.parentElement.closest('#editdoor, #proserow, #patchrow, .proposalrow')) continue;
+          if (!n.nodeValue.trim() || !n.parentElement || n.parentElement.closest(FLOAT)) continue;
           const r = document.createRange(); r.selectNodeContents(n);
           for (const q of r.getClientRects()) {
-            if (!q.width || !q.height) continue;
-            const ow = Math.min(q.right, x.box[2]) - Math.max(q.left, x.box[0]);
-            const oh = Math.min(q.bottom, x.box[3]) - Math.max(q.top, x.box[1]);
-            if (ow > 1 && oh > 1 && isVis(n.parentElement, null)) covers++;
+            if (q.width && q.height && hit(q, boxes) && isVis(n.parentElement, null)) covers++;
           }
+        }
+        for (const c of root.querySelectorAll('button, input, textarea, select, a[href], [role="button"], [contenteditable="true"]')) {
+          if (c.disabled || c.closest(FLOAT) || !isVis(c, null)) continue;
+          const q = c.getBoundingClientRect();
+          // an editable block is text, read above; a control is a thing to press
+          if (c.isContentEditable && c.matches('[contenteditable="true"]') && c.closest('#doc')) continue;
+          if (q.width && q.height && hit(q, boxes)) controls++;
         }
       }
       x.covers = covers;
+      x.controls = controls;
     }
+    for (const x of z) delete x.el;  // the door flag stays: it names the exception
     return z;
   });
   /** the page's tab and rail tooltips, for closed-page's page-wide half */
@@ -2178,7 +2208,10 @@ const UNCHANGED = new Set(['head-registration', 'head-form', 'hairline-gap', 'em
  *  is not among them, since a commit for a power not yet accepted is not
  *  drawn at all (answers Part 4 .19) */
 const UNTIL_OK = /^(choose|type|drip|voice-out|readiness|reconnect|flight|nothing-yours)$/;
-const WITHDRAWS = /withdraw|comes? back/i;
+// the bare 🗑️ row takes back what is yours: a proposal withdrawn, or — on
+// the editing card (stage 8, K17, Q1306) — a draft's site discarded, the
+// same gesture at the draft's earlier moment
+const WITHDRAWS = /withdraw|comes? back|discard/i;
 const CLOSED_WALKS = new Set(['closed', 'closedband']);
 const CLOSED_TIPS = /waiting on you|yours to take|give your answer/i;
 const COMMIT_GLYPHS = new Set(['✓', '✒', '✏', '🏛', '🪶', '🍾', '📧', '📨']);
@@ -2721,12 +2754,13 @@ function walkGrammar(zones, tips, switches, restReads) {
       }
     }
     for (const x of z.zones) {
-      if (x.group !== 'floating' || !x.covers) continue;
+      if (x.group !== 'floating' || !(x.covers || x.controls)) continue;
       // **the floating 📝 door is a named exception** (1541.17, Ed: *the fact
       // that it sometimes overlaps things is what makes it stand out*)
-      const door = /editdoor/.test(x.name);
-      out.push({ check: 'zone-overlap', walk: z.walk, key: z.when + (z.key ? ':' + z.key : ''), sub: 'covers-text',
-        ex: x.name + ' covers ' + x.covers + ' line(s) of text (' + z.when + ')',
+      const door = x.door || /editdoor/.test(x.name);
+      const said = [x.covers ? x.covers + ' line(s) of text' : null, x.controls ? x.controls + ' enabled control(s)' : null].filter(Boolean).join(' and ');
+      out.push({ check: 'zone-overlap', walk: z.walk, key: z.when + (z.key ? ':' + z.key : ''), sub: x.covers ? 'covers-text' : 'covers-control',
+        ex: x.name + ' covers ' + said + ' (' + z.when + ')',
         ...(door ? { excepted: 'the floating 📝 door may overlap (1541.17)' } : {}) });
     }
   }
@@ -3780,6 +3814,64 @@ async function walkSettled(page, base, cards, errors, seat, switches, piles) {
  * glyph at B6's one size. Not a fact about a card, so it files with the
  * cross-card findings; the per-card lenses never see the row.
  */
+async function walkEdit(page, cards, errors, walk) {
+  /**
+   * **The editing card** (Q1541 stage 8): into edit mode by the floating 📝,
+   * a caret at the end of a clause, one character typed — the draft's card
+   * opens in front of the lifted column and is measured like every other;
+   * then its own 🗑️ discards it and 📝 again leaves edit mode, so the walks
+   * after this one meet the page as they always did. Not below 900: the
+   * composer has no way in on a phone (MOBILE.md, Q1350).
+   */
+  // **P30 with the patch row standing** (Q1382, `#patchrow`): a patch race's
+  // site card open, the one bar of acts floating at the window's foot — at
+  // every width, the phone's included, since a patch is judged there too
+  const patch = await page.evaluate(() => {
+    const s = window.SESSION.SUGGS.find((g) => g.kind === 'patch' && g.state !== 'sealed');
+    if (!s) return null;
+    window.SESSION.toggle(s.id, true);
+    return s.id;
+  });
+  if (patch) {
+    await wait(page, 600);
+    await zonesFor(page, walk, 'patch', patch);
+    await page.evaluate((k) => { try { window.SESSION.toggle(k, false); } catch (e) { /* closed */ } }, patch);
+    await wait(page, 300);
+  } else errors.push(walk + ': P30 — the fixture holds no patch race to read the patch row by');
+  if (VIEWPORT.width <= 900) return;
+  const ID = 'draft-yours';
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await wait(page, 150);
+  const door = await page.$('#editdoor [data-act="edit-door"]');
+  if (!door) { errors.push(walk + ': no floating 📝 to enter edit mode by (the editing card)'); return; }
+  await door.click();
+  await wait(page, 400);
+  const typed = await page.evaluate(() => {
+    const p = [...document.querySelectorAll('#charter .editable[data-key]')]
+      .filter((el) => !el.closest('.sugg') && !el.classList.contains('gap') && !el.closest('.hblock'))[5];
+    if (!p) return false;
+    const rg = document.createRange(); rg.selectNodeContents(p); rg.collapse(false);
+    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(rg);
+    return window.SESSION.typeAt('x');
+  });
+  if (!typed) { errors.push(walk + ': the editing card — a keystroke in edit mode opened no draft'); return; }
+  await wait(page, 600);
+  const m = await page.evaluate((a) => window.__CA.measure(a[0], a[1], a[2]), ['.sugg[data-card="' + ID + '"]', ID, null]);
+  if (!m) { errors.push(walk + ': the editing card — a draft was begun and no card opened'); return; }
+  m.walk = walk;
+  m.switchOpen = false;
+  m.p13 = [];
+  // P30 with the proposal-row standing (G4 v2): its own reading, since the
+  // walk's one `open` reading was taken on its first card
+  await zonesFor(page, walk, 'edit', ID);
+  cards.push(m);
+  // put the page back as it was: the site's 🗑️, then 📝 out of edit mode
+  await page.evaluate((k) => document.querySelector('.sugg[data-card="' + k + '"] [data-act="draft-cancel"]')?.click(), ID);
+  await wait(page, 300);
+  await page.evaluate(() => document.querySelector('#ridetab .achip[data-tab="text"]')?.click());
+  await wait(page, 400);
+}
+
 async function walkDoor(page, doors, errors, walk) {
   // **No door on a phone** (MOBILE.md, Q1350): below 900px the composer is
   // not drawn, so there is no D1 to measure — the narrow run (`npm run
@@ -4353,6 +4445,8 @@ async function walkCharter(page, base, cards, errors, { closed, doors, rails, st
     }
     if (m) m.p13 = p13;
   }
+  // the editing card (stage 8): the live charter only, where there is a way in
+  if (!closed && !diag) await walkEdit(page, cards, errors, walk);
   // the floating 📝 (D1): the live session only — a closed document draws no door
   if (!closed && doors) await walkDoor(page, doors, errors, walk);
   // the rail's own pile (R1, Q1462)  the live charter only; a closed page
@@ -4628,7 +4722,7 @@ async function finish(cards, errors, tok, ref, version, switches, piles, doors, 
     noFactRoles: cards.filter((c) => c.grammar && c.grammar.v2 && c.grammar.v2.facts && !Object.keys(c.grammar.v2.facts).length).length,
     // P30's drawer width and P18's standing-line hairline are not measured
     // yet; P19's presence half is read on the shell's cards since stage 1
-    notMeasured: ['P19 presence on a card not yet built on the shell (no predicate to read)', 'P30 the contents drawer\'s width at 390 (no walk opens it)',
+    notMeasured: ['P19 presence on a card not yet built on the shell (no predicate to read)', 'P30 the contents drawer\'s width at 390 (measured by drawer-walk since stage 8, not here)',
       'P18 the hairline under a rule card\'s standing first line (no standing first line until stage 3)'],
   };
 
@@ -4688,7 +4782,11 @@ async function finish(cards, errors, tok, ref, version, switches, piles, doors, 
       // met at least once
       if (WALK_ARG === 'fixture' || WALK_ARG === 'all') {
         const met = new Set(cards.map((c) => c.shellKind || (c.walk === 'closed' ? 'closed-' + kindOf(c.key) : kindOf(c.key))));
-        for (const k of KINDS) if (!met.has(k)) broken.push('the held kind ' + k + ' was measured on no card');
+        for (const k of KINDS) {
+          // no composer on a phone (MOBILE.md, Q1350): the editing card has no way in below 900
+          if (k === 'editing' && VIEWPORT.width <= 900) continue;
+          if (!met.has(k)) broken.push('the held kind ' + k + ' was measured on no card');
+        }
       }
       if (!AS_JSON) {
         console.log('\n--strict --kinds=' + (KINDS_ARG === 'GRAMMAR_KINDS' ? 'GRAMMAR_KINDS (' + (KINDS.join(', ') || 'none') + ')' : KINDS.join(',')) + ': ' +
