@@ -2599,7 +2599,7 @@
     }
     const until = !site ? 'type' : broke ? 'drip' : null;
     out.push({ kind: 'commit', act: 'draft-propose', until,
-      html: '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose"' +
+      html: '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose" data-fact="price"' +
         (until ? ' disabled data-until="' + until + '"' : '') + ' title="' + esc(T.row.holdPropose + T.row.editCost) + '">' + glyphHtml('✏️') + '</button>' });
     return out;
   }
@@ -2642,7 +2642,7 @@
     const out = [{ kind: 'withdraw', act: 'draft-withdraw',
       title: T.row.withdraw + (n > 1 ? T.row.allPlaces(n) : '') + T.row.withdrawCost }];
     if (s.stranded) out.push({ kind: 'commit', act: 'draft-remake',
-      html: '<button class="btn btn-propose glyphbtn" data-act="draft-remake" title="' + esc(T.stranded.remake) + '">' + glyphHtml('✏️') + '</button>' });
+      html: '<button class="btn btn-propose glyphbtn" data-act="draft-remake" data-fact="price" title="' + esc(T.stranded.remake) + '">' + glyphHtml('✏️') + '</button>' });
     return out;
   }
   function ownPresent(s, st, hints, kind) {

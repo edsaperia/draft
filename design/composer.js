@@ -780,7 +780,7 @@ window.COMPOSER = (function () {
      */
     function commitBtnHtml(o) {
       const pen = MAY_PEN();
-      const propose = '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose"' +
+      const propose = '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose" data-fact="price"' +
         (o.disabled ? ' disabled' : '') + ' title="' + esc(o.title) + '">' + glyphHtml('✏️') + '</button>';
       if (!pen) return propose;
       return '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose" data-pen="1"' +

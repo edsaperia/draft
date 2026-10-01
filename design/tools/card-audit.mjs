@@ -1141,7 +1141,10 @@ const IN_PAGE = () => {
     const role = (el) => (el && el.closest('[data-fact]') ? el.closest('[data-fact]').dataset.fact : null);
     const hd = card.querySelector(':scope > .clausehead [data-fact="place"], :scope > [data-slot="head"] [data-fact="place"]');
     const headEl = card.querySelector(':scope > .clausehead .rtext, :scope > .clausehead .headrule, :scope > [data-slot="head"]');
-    if (headEl && vis(headEl) && (txt(headEl) || '').trim() && !hd) gaps33.push('place');
+    // a placeless card's head is its question, not a place (principle 1): the
+    // diagonal, the stranger's two, the applicant's five
+    const placeless = /^(diag|stranger|applicant)$/.test(card.getAttribute('data-kind') || '');
+    if (!placeless && headEl && vis(headEl) && (txt(headEl) || '').trim() && !hd) gaps33.push('place');
     for (const l of card.querySelectorAll('.glab')) {
       // a clause fold holds each record in full (Q1561 (m)), so a label inside
       // one of its parts is that record's, not a second home on the card
