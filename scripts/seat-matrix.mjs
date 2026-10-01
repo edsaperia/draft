@@ -769,16 +769,18 @@ const STEPS = [
   // one run** (Q1534, SPEC §2.4 v0.141): a proposal covering the change stays
   // in its race now (R-141), so to strand one the change must touch its line
   // without the proposal covering it — the proposal's one line sits inside the
-  // pen's two. Two lines for two, the second as it stood, so every other
-  // candidate's offsets are untouched and the Founder's own proposal two rows
-  // down, written against line 1 after this, reads the line it always did.
+  // pen's two. **Both lines really change** (SPEC §2.1, issue #144): a patch
+  // is cut to the lines it changes where it enters, so a second line sent as
+  // it stood would be trimmed away, leaving a change on the proposal's line
+  // alone — which the proposal covers, and re-aims instead of stranding. Two
+  // lines for two, so every other candidate's offsets are untouched; the
+  // Founder's own proposal two rows down reads line 1 off its view (`withWas`).
   { id: 'strand-pen', epoch: 'live', kind: 'cmd', seat: 'founder', cmd: 'pen-text', ifHat: 'member',
     args: async (D) => {
       const v = await viewAs(D, 'founder');
-      const second = String(v.text || '').split('\n')[1];
       return { baseVersion: v.textVersion,
         hunks: withWas(v.text, [{ start: 0, end: 2,
-          lines: ['The clubhouse shall be kept open on weekdays.', second] }]),
+          lines: ['The clubhouse shall be kept open on weekdays.', 'Every member may bring one guest at a time.'] }]),
         why: 'the hours were never the club’s to promise' };
     },
     // the key is the entry the author's own page files for it — `mine:<id>`

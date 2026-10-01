@@ -23,6 +23,7 @@ import type { Hunk, PatchSet, Span } from './text/types.js';
 import type { Comparison, Fit, Outcome } from './ranking/types.js';
 import { applyPatch, footprint, footprintsConflict, validateHunks } from './text/patch.js';
 import { checkAttestation, stripAttestation } from './text/attest.js';
+import { minimalHunks } from './text/minimal.js';
 import { splitLines, joinLines, normalizeLines } from './text/diff.js';
 import { carryHunks } from './text/rebase.js';
 import { fitDavidson } from './ranking/davidson.js';
@@ -1365,6 +1366,18 @@ export class Session {
     return moved ? { ...patch, hunks } : patch;
   }
 
+  /**
+   * **A proposal is the minimum it changes** (SPEC §2.1 → why: R-147): the
+   * patch as sent, its attestation already checked, normalised to the lines
+   * it actually changes (`minimalHunks`). A patch that changes nothing is
+   * refused here, before any ✏️ is staked or any event written.
+   */
+  private minimalPatch(patch: PatchSet): PatchSet {
+    const hunks = minimalHunks(this.currentLines(), patch.hunks);
+    if (hunks.length === 0) throw new Error('nothing has changed');
+    return { ...patch, hunks };
+  }
+
   submitCandidate(
     t: number,
     input: {
@@ -1394,7 +1407,7 @@ export class Session {
         `rationale exceeds ${this.constitutionValue.rationaleMaxChars} chars`,
       );
     }
-    const patch = input.patch ? this.normalizedPatch(input.patch) : undefined;
+    let patch = input.patch ? this.normalizedPatch(input.patch) : undefined;
     if (patch) {
       if (patch.baseVersion !== this.currentVersion()) {
         throw new Error(
@@ -1409,6 +1422,7 @@ export class Session {
       // here it is honoured wherever it is present and never demanded, so
       // the library's own callers and every replay are untouched.
       checkAttestation(this.currentLines(), patch.hunks, { required: false });
+      patch = this.minimalPatch(patch);
     } else if (input.setting) {
       // Q390: values are simpler than prose in exactly one way — equality
       // is decidable — so §5's dedup gate collapses to it (SPEC v0.53).
@@ -1504,7 +1518,7 @@ export class Session {
     if (input.rationale.length > this.constitutionValue.rationaleMaxChars) {
       throw new Error(`rationale exceeds ${this.constitutionValue.rationaleMaxChars} chars`);
     }
-    const given = this.normalizedPatch(input.patch);
+    let given = this.normalizedPatch(input.patch);
     if (given.baseVersion !== this.currentVersion()) {
       throw new Error(
         `patch targets version ${given.baseVersion}; current is ${this.currentVersion()}`,
@@ -1514,6 +1528,7 @@ export class Session {
     validateHunks(this.currentLines().length, given.hunks);
     // the pen's patch attests like anybody's where it carries one (R-136)
     checkAttestation(this.currentLines(), given.hunks, { required: false });
+    given = this.minimalPatch(given);
     // **§4.2's park rule reaching the second door** (R-058, narrowed by
     // R-100). The sweep adopts no text across a parked span, and since R-100
     // `rebaseOthers` does rebase a parked patch — but only where the rebase
@@ -1700,7 +1715,7 @@ export class Session {
     if (c.state !== 'rebase-pending') {
       throw new Error(`candidate ${candidateId} is not awaiting confirmation`);
     }
-    const patch = this.normalizedPatch(given);
+    let patch = this.normalizedPatch(given);
     if (patch.baseVersion !== this.currentVersion()) {
       throw new Error('confirmation must target the current version');
     }
@@ -1708,6 +1723,7 @@ export class Session {
     validateHunks(this.currentLines().length, patch.hunks);
     // a re-made proposal attests like a fresh one where it carries one (R-136)
     checkAttestation(this.currentLines(), patch.hunks, { required: false });
+    patch = this.minimalPatch(patch);
     // **Revising is one of §2.4's three roads**, so the reason may be rewritten
     // with the wording (Q170). Optional and omitted where it is unchanged, so a
     // log written before this existed replays byte for byte.

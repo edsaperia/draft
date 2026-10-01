@@ -158,7 +158,7 @@ The fields:
 | P9 | `@cast` without exactly one founder; fewer than 4 bots; a line with no persona; two members with one name; a name over `LIMITS.name` (80, `commands.ts:45`); a `Proposer:` or `Rival proposer:` who is not in the cast |
 | P9a | a proposal duplicating another's sites and wording exactly (the engine's dedup would refuse it — better told here) |
 | P10 | a `@rules` id not in the catalogue, a retired setting (🤖 🌡️ 🪜, `retiredAnswer`), a personal one, an invariant at another value (§3.1), a value `validateFor` refuses, or a setting named twice |
-| P11 | **the built document disagrees with the file** — `demo-check` then builds the preset in memory and asserts: every `@decided` entry adopted, and the text after them equal to `@text`; every `@proposals` and `@insertions` entry live with the number of hunks its sites say (none adopted by accident, none refused by the engine, none split); every `contested` entry holding a judgment against it; the cast all arrived under their preset names |
+| P11 | **the built document disagrees with the file** — `demo-check` then builds the preset in memory and asserts: every `@decided` entry adopted, and the text after them equal to `@text`; every `@proposals` and `@insertions` entry live with the number of hunks its sites make once cut to the lines they change (SPEC §2.1, issue #144 — a swap of adjacent blocks, J1, keeps the lines between them and makes two; none adopted by accident, none refused by the engine, none otherwise split); every `contested` entry holding a judgment against it; the cast all arrived under their preset names |
 
 P11 is what stops a seeded proposal adopting by accident when Ed changes 👥 or the cast — the floor moves with them, and the only honest test is to build it.
 
@@ -207,7 +207,7 @@ Each stage is independently shippable and leaves the tree green. **A push is a d
 4. With a persisted document holding the slug `demo`, boot leaves it serving and the demo off, `/healthz` `demo.state: 'slug-held'`.
 5. `GET /api/slug/demo` answers `available: false` once the demo is built, so the birth cannot take it (`routes-auth.ts:37`, `slugFree` → `store.slugTaken`).
 6. `dev-ladder.ts` imports `Pen` from `history-pen.ts` and `npm run ladder` is unchanged, green; `build-server.mjs`'s needles still find nothing.
-7. **A seeded swap is one candidate of two hunks**: for every multi-site entry the engine holds one live candidate whose `patch.hunks.length` equals the entry's site count.
+7. **A seeded swap is one candidate of two hunks**: for every multi-site entry the engine holds one live candidate whose `patch.hunks.length` equals the entry's site count — or, since SPEC §2.1's *a patch is the minimum it changes* (issue #144), the count its sites make once cut to the lines they change.
 8. The spectator feed at `/d/demo/feed` serves the demo's decided changes, as for any document (Q1535).
 
 **Guards.** `packages/server/test/demo-store.test.ts` (criteria 1–5, 7, 8); `demo-preset.test.ts` (§3.2); `demo-check` added to `ci.yml`'s `ci` job and to the gates CLAUDE.md names; `boot-guard` re-read, since boot now builds a document (measure, never assume).

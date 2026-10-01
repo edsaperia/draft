@@ -3675,10 +3675,15 @@ const proposeEditOverRun = async () => {
     await T(900);
     sent = null;
     const held = await holdCommit();
+    // **what lands is the minimum it changes** (SPEC §2.1, issue #144): the
+    // page sends the whole run, and the engine keeps only the lines the
+    // proposal changes — both for the rival's seed, the run's last line alone
+    // for the keep lane, whose ` zz` lands at the end of the run's text — so
+    // the proposal is the one of ours keyed inside the run
     const landed = await rp.evaluate(([a, b]) => {
       const S = window.SESSION;
-      const m = (S.SUGGS || []).find((x) => x.mine && x.unproposed !== true &&
-        (x.keys || []).join('+') === 'L' + a + '+L' + b);
+      const inRun = (ks) => ks.length > 0 && ks.every((x) => x === 'L' + a || x === 'L' + b);
+      const m = (S.SUGGS || []).find((x) => x.mine && x.unproposed !== true && inRun(x.keys || []));
       const dr = (S.SUGGS || []).find((x) => x.id === 'draft-yours' && (x.sites || []).length);
       const just = document.querySelector('#rail .qjust');
       const doc0 = document.getElementById('doc');
