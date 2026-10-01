@@ -4697,7 +4697,7 @@ async function drivenPass(page, walk, keys, prepare) {
       const ticks = new Set();
       const idle = new MutationObserver((ms) => { for (const m of ms) ticks.add(m.target.nodeType === 3 ? m.target.parentNode : m.target); });
       idle.observe(document.documentElement, { subtree: true, childList: true, attributes: true, characterData: true });
-      window.__DRV = { idle, ticks, n: 0 };
+      window.__DRV = { idle, ticks, n: 0, el };
       const r = el.getBoundingClientRect();
       return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
     }, [key, target.i, CTL]);
@@ -4712,7 +4712,18 @@ async function drivenPass(page, walk, keys, prepare) {
     const sent = net;
     await page.mouse.click(pos.x, pos.y);
     await wait(page, 400);
-    const n = await page.evaluate(() => { const d = window.__DRV; d.live.disconnect(); window.__DRV = null; return d.n; });
+    // **a block's radio chooses by focusing its field** (A2, Ed's card review
+    // round 3: *typing chooses the block (F6); the radio says so, and pressing
+    // it chooses by focusing the field*): where the field is empty — the ⏰
+    // date before a date is picked — the re-fired input changes nothing, and
+    // the caret landing in the block's own field is the whole of the job. A
+    // focus is not a mutation, so it is read here; a dark radio there would
+    // be P26's *a radio on a block nobody may choose*, which it is not
+    const n = await page.evaluate(() => { const d = window.__DRV; d.live.disconnect(); window.__DRV = null;
+      const blk = d.el.matches('[data-pickinput]') && d.el.closest('.pick');
+      const f = document.activeElement;
+      const focused = !!(blk && f && f !== d.el && blk.contains(f) && f.matches('input, select, [contenteditable]'));
+      return d.n + (focused ? 1 : 0); });
     await page.keyboard.press('Escape').catch(() => {});
     return n > 0 || net !== sent;
   };
