@@ -744,17 +744,6 @@ window.COPY = (function () {
       crowned: 'Some of the rules are reserved: changing them needs the founder’s assent',
       none: 'The Founder reserves nothing — no special part in the document',
     },
-    // **The lockline tells the truth about who set it** (Q510 (a), Ed
-    // 2026-08-21): the line under the value on a settled card. It had said
-    // *Set by the founder when the document was made* on every rule, the ones
-    // the room decided by consent included, and the *when* survives only
-    // where it is true. Three surfaces print the pair — the member's card,
-    // the stranger's door and the shared settled body's own fallback — which
-    // is why it is one entry rather than three spellings (issue #19).
-    lockline: {
-      members: 'Decided by the members.',
-      founder: 'Set by the founder when the document was made.',
-    },
     // 📍's verdict fragments, composed around the bold address
     slugNote: {
       // why the ✒️ is dark on an address that fails the grammar; one

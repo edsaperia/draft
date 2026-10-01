@@ -2054,8 +2054,9 @@ window.CARDS = (function () {
         // member read it as *skip* and it only closed, a judgment's one unsent
         // state being a radio you can move or leave. A choice is undone by
         // choosing another or Indifferent, and the card closes by a click
-        // outside. The slot keeps its place so the commit stays at the right.
-        '<span class="binslot" aria-hidden="true"></span>' +
+        // outside. The commit stays at the right by the row's own rule
+        // (system.css, `[data-patchrow]`), the empty slot that held it there
+        // gone with stage 10
         (extra || '') +
         // The two acts on this card share the right-hand corner, in the order you
         // would reach for them: ❄️ first because it is the one that says *not now*,

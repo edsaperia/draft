@@ -23,8 +23,8 @@ window.DOOR = (function () {
     // the drawn glyphs (Q1401): every glyph this file emits as markup is one
     // picture from the Fluent Flat set, and the sentences take glyphify
     const { glyphHtml, glyphify } = window.CARDS;
-    const { policyNow, admissionPrice, avHtml, esc, csState, card, recordBody, cardHtml,
-      binBtn, departedSentence, textDivs, hydrateFromModule, itemsFromView, closedBlocks, blocksOf, isStranger, E, render,
+    const { policyNow, admissionPrice, avHtml, esc, csState, card,
+      departedSentence, hydrateFromModule, itemsFromView, closedBlocks, blocksOf, isStranger, E, render,
       plainRefusal, setDoorErr, doorErrHtml, showErrLine } = env;
     // There is no login screen. A stranger arrives at the three columns: the
     // rules are public while the text is private, the text's *shape* stands
@@ -156,63 +156,23 @@ window.DOOR = (function () {
       // is the rule's own state — settled grey, or ⏳ while the room decides
       mustAct: { value: () => false },
       news: { value: () => false },
-      // a value the room settled is not "set by the founder": the shared body
-      // takes its sentence from whoever is calling it (STYLE 5)
-      lockline: { value: (c) => {
-        const st = csState(c.k);
-        return st && st.settledBy && st.settledBy !== 'convenor'
-          ? PAGE_COPY.lockline.members
-          : PAGE_COPY.lockline.founder;
-      } },
     });
-    // An undecided rule has no value to print and nobody to attribute it to,
-    // so the card says who is deciding it — the paragraph's own sentence.
-    // **A stranger's tab opens the settled card, read-only** (Ed's card
-    // review round 3, 2026-09-05, 64/65, Q1183): the head — inherited from
-    // `ctx.headFor` — is the standing rule as its block with the provenance
-    // radio, exactly the member's card minus the composer, so the body is
-    // empty. The *Set to / Set by the founder* readBody retires with this.
-    const strangerReadBody = (c) => {
-      const st = csState(c.k);
-      if (st && st.settledBy === null) {
-        return '<p class="why">' + esc(st.holder === 'members'
-          ? 'The members are deciding this.'
-          : 'The Founder is deciding this.') + '</p>';
-      }
-      return '';
-    };
+    // **Every card at the door is on the one shell** (Q1541 stage 10): a
+    // settled rule (stage 1's band pilot, *Current rule* above it, the pill
+    // a fact), a power tab (3b), a motion and a settled motion's record (4);
+    // **a rule still being decided** (Q510) is `readState`'s — its ask above,
+    // the paragraph's sentence saying who is deciding it as its first line —
+    // and so is a card whose subject has left the page. Nothing here asks
+    // anything, so none has a row: its tab, a click outside and Escape close it
+    // (1541.8 (a))
     const strangerReadCard = (g) => {
       const c = card(S.open);
       if (!c || !g.cards.some((x) => x.k === c.k)) return '';
-      // **a settled rule is built on the one shell** (Q1541 stage 1's band
-      // pilot): *Current rule* above its first line, the rule wearing its
-      // standing pill as a fact, and no row — nothing here asks anything, so
-      // its tab, a click outside and Escape close it (1541.8 (a))
-      // …and a power tab (stage 3b), its ask above its own clause
       const st = window.CARD_STATE.stateOf(c.k, { siblings: g.cards });
-      // …and a settled motion's record, and a motion read (stage 4)
-      if (/^(stranger-rule|power|motion|crown|motion-record)$/.test(st.kind || '')) return glyphify(window.CARD_SHELL.cardHtml(st));
-      // `strCtx` inherits `chipsFor`, so a door that lets the constitution be
-      // read carries the record chips too — the rules are public wherever the
-      // rules are, and a rule's history is part of what it is (Q942)
-      const body = c.record ? recordBody(c)
-        : c.k === 'text' ? strangerTextBody() : strangerReadBody(c);
-      // **every card here asks nothing, so none has a row** (Q1541 stage 2,
-      // 1541.8 (a), retiring reading 1190's close-only OK): its tab, a click
-      // outside and Escape close it — a motion record's already had none
-      // (Q1522 (6)). Its own shell comes with its family's stage: the power
-      // tabs came with 3b; the records 4, the Text 7
-      return cardHtml(c, strCtx, body, null, g.cards);
-    };
-    const strangerTextBody = () => {
-      const p = strPayload();
-      // the sentence is plain text in the payload (its other consumer sets it
-      // with textContent, and the founder's name is a member's own string):
-      // it is escaped here, at the one place it becomes markup
-      // a dead seat's door says why, above the holding sentence (E31–E32)
-      return (departedSentence() ? '<p class="why">' + esc(departedSentence()) + '</p>' : '') +
-        '<p class="why">' + esc(p && p.holding.sentence ? p.holding.sentence : 'The text is readable.') + '</p>' +
-        (p && p.canRead ? '<div class="doctext">' + textDivs(p.text || '') + '</div>' : '');
+      if (st.frame) return glyphify(window.CARD_SHELL.cardHtml(st));
+      const deciding = !c.record && (csState(c.k) || {}).settledBy === null;
+      return glyphify(window.CARD_SHELL.cardHtml(env.readState(c, g.cards, strCtx,
+        deciding ? null : PAGE_COPY.noLongerOutstanding)));
     };
     // the charter column: the text where 🌍 permits (read-only — typing opens
     // nothing), else its shape as bars
