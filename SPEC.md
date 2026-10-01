@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.145
+# Group Drafting Engine — Specification v0.146
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -24,6 +24,8 @@ The record is co-equal with the text: it is where outvoted currents remain visib
 **2.1 Patches.** A candidate is a patch: a transformation of the document with a **footprint** (the spans it touches). One type covers everything — clause rewrites, insertions, deletions (patch to empty), restructures, and cross-cutting edits such as a document-wide rename, which is one candidate with a wide footprint, adopted atomically or not at all. Paragraphs exist for display and anchoring only; the mechanism's unit is the edit.
 
 **A patch states what it replaces.** Every hunk carries, beside the span it touches, the exact lines of its base version it means to replace — and a pure insertion, which replaces nothing, carries instead the exact line it means to follow, or nothing at all where it stands at the top of the document. The comparison is exact: blank lines are lines, and no whitespace or marker is normalised away. It is a claim about the base version rather than part of the candidate: it is checked where the act enters (§2.4) and is never recorded. → why: R-136
+
+**A patch is the minimum it changes** (Ed, 2026-10-01: *these trimming side effects sound like good things. Turning a proposal into a patch if it has whole unchanged middle sections also seems good*). Where the act enters, after its statement is checked against the patch as sent, every hunk is cut down to the lines it actually changes: unchanged lines at either end leave the span and the replacement together; an unchanged run inside a hunk splits it, so one hunk may become several sites; a hunk that trims to an insertion is one, and one that trims to a deletion is one; a hunk that trims to nothing is dropped, and a patch left with no hunk is refused — *nothing has changed* — before any stake is taken. The alignment is the engine's own line diff, so the same patch always trims to the same hunks. A trimmed patch races only the patches its changed lines overlap. → why: R-147
 
 **2.2 Overlap: three gates.** When two live patches' footprints overlap, three gates are tried in order.
 

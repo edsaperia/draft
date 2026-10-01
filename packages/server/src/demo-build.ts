@@ -19,6 +19,7 @@
  */
 import { randomBytes } from 'node:crypto';
 import { attest } from '../../engine-core/src/text/attest.js';
+import { minimalHunks } from '../../engine-core/src/text/minimal.js';
 import type { Hunk } from '../../engine-core/src/text/types.js';
 import { CATALOGUE } from '../../constitution/src/index.js';
 import type { PowerKey, Power, SettingId, SettingValue } from '../../constitution/src/index.js';
@@ -331,7 +332,8 @@ function rotaOf(members: readonly string[]): Rota {
 /**
  * **P11: does the built document say what the file says** (§3.2)? Every
  * decided change adopted and the text after them equal to `@text`; every open
- * entry live with as many hunks as it has sites; every contested entry holding
+ * entry live with as many hunks as its sites make, cut to the lines they
+ * change (SPEC §2.1); every contested entry holding
  * a judgment against it; the cast arrived under their names, each bot wearing
  * its line's face (issue #142). Returns the
  * disagreements, each naming the entry's file line.
@@ -358,8 +360,12 @@ export function verifyBuild(preset: DemoPreset, b: DemoBuild): { line: number; r
     if (id === undefined) { bad(e.line, `${e.label} was never submitted`); continue; }
     const c = engine.getCandidate(id);
     if (c.state !== 'live') { bad(e.line, `${e.label} is ${c.state}, not live`); continue; }
+    // as many hunks as its sites make once cut to the lines they change
+    // (SPEC §2.1, issue #144) — a swap of adjacent blocks keeps the lines
+    // between them and arrives as two; nothing else may split or merge it
     const n = c.patch?.hunks.length ?? 0;
-    if (n !== e.sites.length) bad(e.line, `${e.label} stands as ${n} hunks; the file gives ${e.sites.length} sites`);
+    const want = minimalHunks(now, sitesToHunks(e.sites, now)).length;
+    if (n !== want) bad(e.line, `${e.label} stands as ${n} hunks; the file's ${e.sites.length} sites make ${want}`);
     if (e.state === 'contested') {
       const against = engine.judgments().some((j) =>
         (j.aId === id && j.outcome === 'b') || (j.bId === id && j.outcome === 'a'));

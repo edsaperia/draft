@@ -7,7 +7,8 @@
  *  - **P11** — the preset built in memory, exactly as the host builds it at
  *    boot and at every Reset, and read back: every decided change adopted and
  *    the text after them equal to `@text`, every open proposal live with as
- *    many hunks as it has sites, every contested one judged against, the cast
+ *    many hunks as its sites make once cut to the lines they change (SPEC
+ *    §2.1), every contested one judged against, the cast
  *    arrived. It is built twice, at the host's own pacing (no cooldown, the
  *    default since R-086) and at the engine's five-minute cooldown, so a host
  *    that switches pacing on still builds the same document.
