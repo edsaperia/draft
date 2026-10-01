@@ -240,12 +240,18 @@ export const CATALOGUE: readonly CatalogueEntry[] = [
     },
     deps: [], judgeGate: true },
 
+  // **Three rungs since Q996** (Ed, 2026-08-28/29; built 2026-10-01): votes
+  // never revealed, revealed on each decision's sealed record as it seals
+  // (`decision`), or revealed at the end of the document (`after`, R-055 —
+  // *at the end* keeps meaning the end of everything). The new rung sits
+  // between them: by the close it has shown a subset of what *at the end*
+  // shows — a race the clock cut off undecided is never revealed under it.
   { id: 'judgments', glyph: '👁️', kind: 'constitutional',
     delegable: true, valueType: 'ladder',
-    rungs: ['never', 'after'],
+    rungs: ['never', 'decision', 'after'],
     consent: {
       ask: 'the most judgment disclosure you will accept',
-      order: ladderOrder(['never', 'after']),
+      order: ladderOrder(['never', 'decision', 'after']),
     },
     deps: [], judgeGate: true },
 

@@ -83,10 +83,11 @@ type Sig = { name: string | null; erased: boolean; comment: string; t: number };
 type Door = { canRead: boolean; records?: Rec[];
   closed: { at: number; signatures?: Sig[] } | null; amendmentRecords?: Record<string, unknown>[] };
 
-// a member's records with what is theirs alone — whether *they* voted —
+// a member's records with what is theirs alone — whether *they* voted, and
+// the 👁️ reveal, which is the membership's and never the door's (Q996) —
 // taken off, which is exactly what a stranger's must equal
-const unmine = (recs: Rec[]): Rec[] => recs.map((r) => ({ ...r, judgedByMe: false,
-  field: r.field.map((f) => ({ ...f, judgedByMe: false })) }));
+const unmine = (recs: Rec[]): Rec[] => recs.map(({ revealed: _r, ...r }: Rec & { revealed?: unknown }) =>
+  ({ ...r, judgedByMe: false, field: r.field.map((f) => ({ ...f, judgedByMe: false })) }));
 
 describe('a stranger reads a closed document with its ✔s (Q1508)', () => {
   for (const rung of ['link', 'public'] as const) {

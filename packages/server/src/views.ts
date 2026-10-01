@@ -46,7 +46,7 @@ import type { Span } from './record-spans.js';
  * nothing, so the cost is the loop body an open document already pays.
  */
 export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
-  opts: { records?: boolean } = {}): {
+  opts: { records?: boolean; judges?: boolean } = {}): {
   text: string; textVersion: number; clauses: unknown[]; mine: unknown[];
   records: unknown[]; recordsKey: number; raceCards: unknown[]; settingRaces: unknown[];
   wallet: number | null;
@@ -433,6 +433,14 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
      *  silences 💤's period had already taken out of the group when the batch
      *  decided. Absent on a record older than the rule; zero is a number. */
     abstained?: number;
+    /**
+     * **Who judged this decision, and how** (Q996, SPEC §3.5a): present only
+     * where the 👁️ rung the record is read under reveals it — see the reveal
+     * below. Each entry is one standing judgment as its judge was shown it:
+     * the pair (`null` is the text that stood) and which side they preferred.
+     */
+    revealed?: Array<{ judge: { id: string; name: string | null; picture: string | null;
+      erased: boolean }; a: string | null; b: string | null; outcome: string; t: number }>;
     /** How many of its live rivals the winner was measured against (Q1538, §4.6): the
      *  measured-note, where `measured` is below `of` — a wording passed at the close. */
     rivals?: { measured: number; of: number };
@@ -512,6 +520,8 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
   const earlyMine: Array<{ o: ReturnType<typeof api.outcomes>[number]; c: Candidate;
     key: string }> = [];
   const fieldVersions = new Map<string, number>();
+  const sealedIn = new Map<string, string>();
+  const sealT = new Map<string, number>();
   // **One decision, one record — and a race that goes on after its winner
   // files its own** (Q1534 ruling 5, Ed 2026-09-24; SPEC §2.4 → why: R-141).
   // A race is named for its oldest live member, so when a rival that covered
@@ -558,6 +568,10 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
     // the version each member's hunks are expressed against (Q1488): its own
     // base for a candidate closed early, the adoption's for the winner
     fieldVersions.set(o.candidateId, o.version);
+    // the record each candidate sealed into, and when the record last moved
+    // (Q996): a judgment is revealed on the record its sides sealed into
+    sealedIn.set(o.candidateId, key);
+    sealT.set(key, Math.max(sealT.get(key) ?? -Infinity, o.t));
     if (!authorsOf.has(key)) authorsOf.set(key, new Set());
     authorsOf.get(key)!.add(c.author);
     rec.judgedByMe = rec.judgedByMe || mineJ;
@@ -710,6 +724,46 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
   // a signed proposal always — each read against the rung the proposal was
   // **made under** (entry 31), which every field entry states beside the
   // rung that stands now (`rungNow`), so a reader can see the rule moved.
+  // **The 👁️ reveal** (Q996, SPEC §3.5a → why: R-146). A projection of the
+  // sealed records, never a log event. A record is read under the rung
+  // standing when its race sealed, never re-read later: *decision* reveals a
+  // decided record (adopted or retired — not one the close cut off undecided)
+  // as it seals; *after* reveals every record once the document has closed;
+  // *never* reveals nothing. **And the protective side wins**: a judgment is
+  // revealed only where the rung it was cast under allows the same reveal, so
+  // a vote cast under *never* is never shown, whatever the rung becomes.
+  // A judgment is revealed on the record its sides sealed into — the later of
+  // the two where they sealed apart — and only once every wording it compared
+  // has sealed, so nothing about a race still running is ever said (§3.5,
+  // §8.3). Salience diagonals are not votes on a race and never appear.
+  // **Members' views alone**: the door asks with `judges: false`.
+  if (opts.judges !== false && byRace.size) {
+    const allows = (rung: string | null, rec: Rec): boolean =>
+      (rung === 'decision' && rec.field.every((f) => f.outcome !== 'undecided')) || (rung === 'after' && engine.closed);
+    const open = new Map<string, boolean>();
+    for (const rec of byRace.values()) {
+      open.set(rec.raceId, allows(doc.cs.judgmentsRungAt(sealT.get(rec.raceId) ?? rec.when), rec));
+    }
+    if ([...open.values()].some(Boolean)) {
+      for (const j of allJ) {
+        if (j.kind !== 'edge' || j.superseded) continue;
+        const sides = [j.aId, j.bId].filter((id) => !id.startsWith(INC_PREFIX));
+        if (!sides.length || !sides.every((id) => sealedIn.has(id))) continue;
+        const key = sides.map((id) => sealedIn.get(id)!)
+          .reduce((x, y) => ((sealT.get(y) ?? 0) > (sealT.get(x) ?? 0) ? y : x));
+        const rec = byRace.get(key);
+        if (!rec || !open.get(key) || j.t > (sealT.get(key) ?? rec.when)) continue;
+        if (!allows(doc.cs.judgmentsRungAt(j.t), rec)) continue;
+        const r = recordOf(j.participantId);
+        (rec.revealed ??= []).push({
+          judge: { id: j.participantId, name: r?.name ?? null, picture: r?.picture ?? null,
+            erased: r?.erased ?? false },
+          a: j.aId.startsWith(INC_PREFIX) ? null : j.aId,
+          b: j.bId.startsWith(INC_PREFIX) ? null : j.bId,
+          outcome: j.outcome, t: j.t });
+      }
+    }
+  }
   const record = !engine.closed ? null : (() => {
     const r = ed.bridge!.closeRecord();
     // `authorshipBase` is the door's mapper — *what does this rung do by
@@ -821,7 +875,7 @@ export const strangerView = (doc: LoadedDoc, nowMs: number,
   // match, and nothing live (standings, a hand) exists on a closed engine to
   // leak. Never while live: a live race's record is a member's business.
   const records = opts.records !== false && cs.closed && canRead && ed.bridge !== null
-    ? raceView(doc, NOBODY, nowMs).records : null;
+    ? raceView(doc, NOBODY, nowMs, { judges: false }).records : null;
   // **…and the rest of the closed page: the Signatures and the Amendments**
   // (Q1512 (d), Ed 2026-09-23), on the same condition. The signatures are
   // the member view's own (`closingSignatures`, the record's reading — Q769,

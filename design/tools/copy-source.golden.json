@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 730
+  "entries": 732
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -17,6 +17,7 @@
   "RULES.chamber.link": "ƒ () => 'The document can be seen by anyone with the link.'",
   "RULES.chamber.public": "ƒ () => 'The document is public — listed and readable by anyone.'",
   "RULES.judgments.after": "Votes are revealed when the document is finished, and not before.",
+  "RULES.judgments.decision": "Votes on each proposal are revealed once it is passed or rejected, and not before.",
   "RULES.judgments.never": "Votes are never revealed.",
   "RULES.removal.assembly": "To remove a member, all members apart from them must agree 🏛️.",
   "RULES.removal.consent": "To remove a member, all members must agree 🏛️.",
@@ -459,6 +460,7 @@
   "page.railVal.chamber.link": "anyone with the link",
   "page.railVal.chamber.public": "public",
   "page.railVal.judgments.after": "votes shown at the end",
+  "page.railVal.judgments.decision": "votes shown once decided",
   "page.railVal.judgments.never": "votes never shown",
   "page.railVal.lapse": "ƒ (spell) => spell",
   "page.railVal.never": "never",
