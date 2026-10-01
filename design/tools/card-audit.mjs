@@ -80,6 +80,8 @@ const arg = (name, dflt) => {
 const AS_JSON = process.argv.includes('--json');
 /** a verdict instead of a report — see the header. The default exit never moves. */
 const STRICT = process.argv.includes('--strict');
+/** P22's driven pass is on by default; `--no-driven` leaves it out (a quick look) */
+const NO_DRIVEN = process.argv.includes('--no-driven');
 const VIEWPORT = { width: +arg('width', 1600), height: +arg('height', 1000) };
 const OUT = arg('out', join(DESIGN, 'tools', 'card-audit.json'));
 /** every walk opens the one surface */
@@ -257,6 +259,15 @@ const GRAMMAR_KINDS = [
   // at a width with a way into the composer; below 900 there is none
   // (MOBILE.md, Q1350), so the kind is not asked there
   'editing',
+  // stage 10 (Q1541): every card is on the one shell, so `GRAMMAR_KINDS`
+  // holds **every** card whatever its kind (`ALL_KINDS` below), a card not on
+  // the shell is a broken walk, and this list is what it has always also
+  // been — the kinds the fixture walks must each meet at least once. The
+  // live-only kinds are held where they live: the applicant's five by
+  // applicants-walk, 📭 `mail-give-up`, 🥾 `departure`, 👑 `release` and
+  // `amendment-news` by news-walk (on the shell, asserted since stage 10);
+  // `read`, the card whose subject left the page while it stood open, by no
+  // walk, since no fixture holds a card in that state
 ];
 /**
  * **The stage the build has reached, and the stage each check turns strict
@@ -265,14 +276,17 @@ const GRAMMAR_KINDS = [
  * has not come is reported, never held (Q1541 stage 2: the grants and 🍾 are
  * opened on the closed band too, where P29 is stage 7's).
  */
-const STAGE = 8;
+const STAGE = 10;
 /** the checks held on every card under `--kinds`, whatever its kind: a
  *  rendering fault no stage converts (P34, issue #121) */
 const EVERY_KIND = new Set(['glyph-space']);
 const STRICT_FROM = { 'closed-page': 7, 'closed-keeps-content': 7, 'closed-powers': 7, 'zone-overlap': 8, 'place-head': 6 };
 const KINDS_ARG = arg('kinds', null);
 const KINDS = KINDS_ARG == null ? null
-  : KINDS_ARG === 'GRAMMAR_KINDS' ? GRAMMAR_KINDS : KINDS_ARG.split(',').filter(Boolean);
+  : KINDS_ARG === 'GRAMMAR_KINDS' || KINDS_ARG === 'all' ? GRAMMAR_KINDS : KINDS_ARG.split(',').filter(Boolean);
+/** **`GRAMMAR_KINDS` is all** (BUILD.md stage 10): under it every card is
+ *  held, whatever its kind, and a card the shell did not draw is broken */
+const ALL_KINDS = KINDS_ARG === 'GRAMMAR_KINDS' || KINDS_ARG === 'all';
 // a misspelt walk otherwise runs nothing, finds nothing and exits 0 — which is
 // the one outcome this instrument treats as worse than a red run
 const UNKNOWN = WALKS.filter((w) => !ALL_WALKS.includes(w));
@@ -1118,6 +1132,31 @@ const IN_PAGE = () => {
     const facts = {};
     card.querySelectorAll('[data-fact]').forEach((e) => { if (!e.closest('.chipcol')) facts[e.dataset.fact] = (facts[e.dataset.fact] || 0) + 1; });
     out.facts = facts;
+    // **…and every fact wears its role** (stage 10, principle 3 on every
+    // card): a facts' home found by what it says, read against the role it
+    // carries — the first line (`place`), an outcome label (`outcome`), a
+    // signed proposal's label (`author`), *Previous text/rule* (`previous`)
+    // and a commit that spends ✏️ or 🏛️ (`price`)
+    const gaps33 = [];
+    const role = (el) => (el && el.closest('[data-fact]') ? el.closest('[data-fact]').dataset.fact : null);
+    const hd = card.querySelector(':scope > .clausehead [data-fact="place"], :scope > [data-slot="head"] [data-fact="place"]');
+    const headEl = card.querySelector(':scope > .clausehead .rtext, :scope > .clausehead .headrule, :scope > [data-slot="head"]');
+    if (headEl && vis(headEl) && (txt(headEl) || '').trim() && !hd) gaps33.push('place');
+    for (const l of card.querySelectorAll('.glab')) {
+      // a clause fold holds each record in full (Q1561 (m)), so a label inside
+      // one of its parts is that record's, not a second home on the card
+      if (l.closest('.chipcol') || l.closest('.foldpart') || !vis(l)) continue;
+      const t = (txt(l) || '').trim();
+      const inBlock = !l.closest('[data-slot="label"]');
+      if (!inBlock && /^(Passed|Rejected|Refused by the Founder|Changed by the Founder|Ran out of time)\b/.test(t) && !/outcome/.test(l.dataset.fact || '')) gaps33.push('outcome');
+      if (inBlock && /^Proposed by (?!you\b)/.test(t) && l.dataset.fact !== 'author') gaps33.push('author');
+      if (inBlock && /^Previous (text|rule)$/.test(t) && l.dataset.fact !== 'previous') gaps33.push('previous');
+    }
+    for (const b of card.querySelectorAll(':scope > .commitrow button, :scope > [data-slot="row"] button')) {
+      const g = (window.CARDS.glyphTextOf ? window.CARDS.glyphTextOf(b) : b.textContent).replace(/\uFE0F/g, '').trim();
+      if (/^(✏|🏛)$/u.test(g) && role(b) !== 'price') gaps33.push('price');
+    }
+    out.factGaps = gaps33;
     // P34: a drawn glyph beside a word keeps its space (Ed, 2026-09-29; STYLE
     // T50) — the word's last letter to the glyph's left edge, and the glyph's
     // right edge to the next word's first letter, where the copy put a space;
@@ -2719,6 +2758,9 @@ function grammarRules(c, ref) {
   /* P33 one-home — at most one element per data-fact role; a card with no
    * roles cannot be read, and is counted in `unread` rather than here */
   if (v && v.facts) for (const [role, n] of Object.entries(v.facts)) if (n > 1) at('one-home', n + ' elements claim data-fact="' + role + '"', role);
+  // …and every fact wears its role (stage 10): a home found by its words
+  // and drawn without the role is a fact the check could not count
+  if (v && v.factGaps) for (const r of new Set(v.factGaps)) at('one-home', 'a ' + r + ' fact drawn without data-fact="' + r + '"', 'unmarked-' + r);
 
   /* P34 glyph-space — a drawn glyph beside a word keeps the space the copy
    * gave it (Ed, 2026-09-29; STYLE.md T50): at least 0.2em between the word
@@ -4542,18 +4584,157 @@ async function main() {
     }
   });
   await run('stranger', () => walkSettled(page, base, cards, errors, 'stranger', null, piles));
+  // …each fixture walk ends with its driven pass (P22, stage 10): the
+  // presses change the page, so they come after the walk's measurements
+  // the page each walk's cards stand on, made again for a press retried on
+  // a fresh page (`drivenPass`)
+  const FIXTURE_Q = { charter: '?fixture=session', diag: '?fixture=session', closed: '?fixture=session&closed=1&band=1',
+    sessionband: '?fixture=session&band=1', closedband: '?fixture=session&closed=1&band=1' };
+  const prepare = (walk) => async () => {
+    await page.goto(withQuery(pageUrl(base, FIXTURE_Q[walk])));
+    await page.waitForFunction(() => !!(window.SESSION && document.querySelector('#rail .qitem')), null, { timeout: 20_000 });
+    await page.evaluate((diag) => {
+      window.scrollTo(0, 0);
+      window.SESSION.smoothScrollBy = (dy, done) => { window.scrollBy(0, dy); if (done) done(); };
+      if (diag) {
+        const S = window.SESSION;
+        S.setData({ SUGGS: S.SUGGS.map((g) => (g.kind !== 'diagonal' && g.state === 'needs' && !g.mine
+          ? Object.assign({}, g, { state: 'deciding', pick: g.pick || 'keep' }) : g)) });
+      }
+      document.querySelectorAll('#band .sectoggle[aria-expanded="false"]').forEach((t) => t.click());
+      document.querySelectorAll('#rail li[data-q] > button[data-q]').forEach((b) => { if (!b.dataset.card) b.dataset.card = b.dataset.q; });
+    }, walk === 'diag');
+    await wait(page, 400);
+  };
+  const driven = async (walk) => {
+    if (!WALKS.includes(walk) || NO_DRIVEN) return;
+    try { await drivenPass(page, walk, [...new Set(cards.filter((c) => c.walk === walk).map((c) => c.key))], prepare(walk)); }
+    catch (e) { errors.push(walk + ' driven pass threw: ' + (e && e.message)); }
+  };
   await run('charter', () => walkCharter(page, base, cards, errors, { doors, rails, strips }));
+  await driven('charter');
   await run('closed', () => walkCharter(page, base, cards, errors, { closed: true }));
+  await driven('closed');
   await run('diag', () => walkCharter(page, base, cards, errors, { diag: true }));
+  await driven('diag');
   // phase one's inventory walks (Q1541 stage 0): the band's cards on the session and closed
   // fixtures, which the audit's charter walks never open (🥂 among them)
   await run('sessionband', () => walkBand(page, base, cards, errors, '?fixture=session&band=1', 'sessionband'));
+  await driven('sessionband');
   await run('closedband', () => walkBand(page, base, cards, errors, '?fixture=session&closed=1&band=1', 'closedband'));
+  await driven('closedband');
   const tok = await page.evaluate(() => window.__CA.tokens());
   const ref = await page.evaluate(() => window.__CA.labelRef());
   await browser.close();
   server.close();
   return finish(cards, errors, tok, ref, version, switches, piles, doors, rails, strips, t0);
+}
+
+/**
+ * **P22 `no-job`, the driven form** (BUILD.md stage 10; principle 5): every
+ * enabled control on every card, pressed with a real pointer, must do
+ * something — send a command, change the reader's draft, or move the page
+ * (a card that opens or closes, a flight that leaves and comes home). What
+ * counts is the page changing: a MutationObserver reads the document for a
+ * moment before the press, so a clock or a sparkle ticking anyway is
+ * subtracted, then reads it again across the press, and a request on the
+ * wire counts too. A text box, a select and a link are not pressed: their
+ * job is typing, choosing from a list and leaving the page.
+ *
+ * Run once per walk after the walk has measured every card, on the page as
+ * the walk left it — the presses change the state, so they come last — and
+ * each card opened again by its own way in. A card the earlier presses took
+ * off the page is counted as unread, never as clean.
+ */
+const DRIVEN = [];
+const DRIVEN_UNREAD = [];
+async function drivenPass(page, walk, keys, prepare) {
+  let net = 0;
+  const onReq = (r) => { if (r.method() !== 'GET') net++; };
+  page.on('request', onReq);
+  const open = (k) => page.evaluate((key) => {
+    const q = String(key).replace(/["\\]/g, '\\$&');
+    const isOpen = () => !!document.querySelector('.setupcard[data-setupcard="' + q + '"], .sugg[data-card="' + q + '"]');
+    if (isOpen()) return true;
+    const el = document.querySelector('#rail [data-card="' + q + '"], #band [data-tab="' + q + '"], #band [data-card="' + q + '"], ' +
+      '#charter [data-anchor="' + q + '"], [data-tab="' + q + '"], [data-card="' + q + '"]:not(.sugg)');
+    if (el) el.click();
+    else if (window.SESSION && window.SESSION.SUGGS.some((s) => s.id === key)) { try { window.SESSION.toggle(key, false); } catch (e) { return false; } }
+    return isOpen();
+  }, k);
+  // the controls a press can be asked of: enabled buttons and radios inside
+  // the card, never its tabs (they are the way in and out, measured by P13)
+  const CTL = 'button, [role="radio"], input[type="radio"], input[type="checkbox"]';
+  const list = (key) => page.evaluate(([key, CTL]) => {
+    const q = String(key).replace(/["\\]/g, '\\$&');
+    const card = document.querySelector('.setupcard[data-setupcard="' + q + '"], .sugg[data-card="' + q + '"]');
+    if (!card) return null;
+    return [...card.querySelectorAll(CTL)]
+      .filter((b) => !b.disabled && !b.closest('.chipcol') && b.getClientRects().length &&
+        getComputedStyle(b).visibility !== 'hidden' && getComputedStyle(b).pointerEvents !== 'none')
+      .map((b, i) => ({ i, what: (window.CARDS.glyphTextOf ? window.CARDS.glyphTextOf(b) : b.textContent).replace(/\s+/g, ' ').trim().slice(0, 40) ||
+        b.title || b.getAttribute('aria-label') || b.className }));
+  }, [key, CTL]);
+  // one press of the n-th control saying `what`, read for a change
+  const press = async (key, what, nth) => {
+    if (!(await open(key))) return null;
+    await wait(page, 150);
+    const now = await list(key);
+    const target = now && now.filter((c) => c.what === what)[nth];
+    if (!target) return null;
+    const pos = await page.evaluate(([key, i, CTL]) => {
+      const q = String(key).replace(/["\\]/g, '\\$&');
+      const card = document.querySelector('.setupcard[data-setupcard="' + q + '"], .sugg[data-card="' + q + '"]');
+      const el = [...card.querySelectorAll(CTL)]
+        .filter((b) => !b.disabled && !b.closest('.chipcol') && b.getClientRects().length &&
+          getComputedStyle(b).visibility !== 'hidden' && getComputedStyle(b).pointerEvents !== 'none')[i];
+      if (!el) return null;
+      el.scrollIntoView({ block: 'center' });
+      // what ticks by itself, read before the press and left out after it
+      const ticks = new Set();
+      const idle = new MutationObserver((ms) => { for (const m of ms) ticks.add(m.target.nodeType === 3 ? m.target.parentNode : m.target); });
+      idle.observe(document.documentElement, { subtree: true, childList: true, attributes: true, characterData: true });
+      window.__DRV = { idle, ticks, n: 0 };
+      const r = el.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    }, [key, target.i, CTL]);
+    if (!pos) return null;
+    await wait(page, 250);
+    await page.evaluate(() => {
+      const d = window.__DRV;
+      d.idle.disconnect();
+      d.live = new MutationObserver((ms) => { for (const m of ms) { const t = m.target.nodeType === 3 ? m.target.parentNode : m.target; if (!d.ticks.has(t)) d.n++; } });
+      d.live.observe(document.documentElement, { subtree: true, childList: true, attributes: true, characterData: true });
+    });
+    const sent = net;
+    await page.mouse.click(pos.x, pos.y);
+    await wait(page, 400);
+    const n = await page.evaluate(() => { const d = window.__DRV; d.live.disconnect(); window.__DRV = null; return d.n; });
+    await page.keyboard.press('Escape').catch(() => {});
+    return n > 0 || net !== sent;
+  };
+  for (const key of keys) {
+    if (!(await open(key))) { await wait(page, 300); if (!(await open(key))) { DRIVEN_UNREAD.push(walk + '·' + key); continue; } }
+    await wait(page, 250);
+    const first = await list(key);
+    if (!first) { DRIVEN_UNREAD.push(walk + '·' + key); continue; }
+    for (let j = 0; j < first.length; j++) {
+      const what = first[j].what;
+      const nth = first.slice(0, j).filter((c) => c.what === what).length;
+      let did = await press(key, what, nth);
+      // **a press that did nothing is tried again on a fresh page** before it
+      // is a finding: the presses before it changed the state (a draft
+      // opened by ✏️ *propose edit* leaves its twin nothing to do), and the
+      // question is whether the control can ever have a job, not whether it
+      // has one after its neighbours
+      if (did === false && prepare) {
+        await prepare();
+        did = await press(key, what, nth);
+      }
+      if (did === false) DRIVEN.push({ walk, key, what });
+    }
+  }
+  page.off('request', onReq);
 }
 
 async function walkBand(page, base, cards, errors, query, walk) {
@@ -4693,6 +4874,9 @@ async function finish(cards, errors, tok, ref, version, switches, piles, doors, 
     grammar.push(...fs);
   }
   grammar.push(...walkGrammar(zoneReads, tipReads, switches, restReads));
+  // P22's driven form: an enabled control that did nothing when pressed
+  for (const d of DRIVEN) grammar.push({ check: 'no-job', walk: d.walk, key: d.key, sub: 'driven',
+    ex: clip('an enabled control that does nothing when pressed: “' + d.what + '”', 160), kind: kindFor(d.walk, d.key) });
   grammar.push(...widthRules(cards, baseline));
   for (const f of grammar) {
     if (!f.kind) {
@@ -4777,9 +4961,12 @@ async function finish(cards, errors, tok, ref, version, switches, piles, doors, 
       // stage 7 and report until then, so a kind the closed band also opens
       // — the grants, the gates, 🍾 — is not held to rules its stage cannot
       // yet meet there; `zone-overlap` waits for stage 8, `place-head` for 6
-      const held = grammar.filter((f) => !f.excepted && (want.has(f.kind) || EVERY_KIND.has(String(f.check).replace(/^P\d+ /, '')) ||
+      const held = grammar.filter((f) => !f.excepted && (ALL_KINDS || want.has(f.kind) || EVERY_KIND.has(String(f.check).replace(/^P\d+ /, '')) ||
         CLOSED_WALKS.has(f.walk)) && (STRICT_FROM[String(f.check).replace(/^P\d+ /, '')] || 0) <= STAGE);
-      const broken = errors.filter((e) => /walk threw|measured no cards|page error|offered no cards/.test(e));
+      const broken = errors.filter((e) => /walk threw|measured no cards|page error|offered no cards|driven pass threw/.test(e));
+      // **every card on the one shell** (stage 10): a card that declares no
+      // shell kind was drawn by something else, and nothing else is left
+      if (ALL_KINDS) for (const c of cards) if (!c.shellKind) broken.push(c.walk + '·' + c.key + ' is not on the one shell');
       // **a held kind no card was measured as is a broken walk** (Q1541
       // stage 1): the kind is declared by the card's own shell, so a card
       // that slid back onto an old builder would drop out of the list rather

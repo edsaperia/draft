@@ -755,120 +755,16 @@ window.SETUP = (function () {
       '</button></li>');
   }
 
-  /* ---- the card shell -----------------------------------------------------
-     The `decision card`'s own shape, down to the markup: a `clausehead` whose
-     `headclause` carries the tab strip in the gutter, then the field, then the
-     commit row. The head holds the card's title where a clause would be —
-     because a setting has no clause, and what it is *about* is the document it
-     has opened at the top of. Everything else is the same object, so the strip
-     lands in the same gutter column the pile stood in and the tab you clicked
-     does not move. */
-  function cardHtml(c, ctx, body, foot, siblings, o) {
-    // **The kind line left the card heads** (Ed, 2026-08-18: *this
-    // information is conveyed through the controls on the card*): a
-    // constitutional change commits with the 🏛️ hold, and a reserved
-    // change the membership passes ends at the founder's 👑 question —
-    // so an eyebrow restating either was chrome.
-    // **The head is session-view's own clauseHeadHtml** (Phase 4 of the
-    // cards.js extraction, 2026-08-18): the strip crosses through the
-    // o.marks seam already wrapped, no eyebrow, no wash. The rule-or-title
-    // and the clause-thing (ctx.clauseFor — the membership card keeps the
-    // membership list at its head, because the list IS the clause) ride
-    // inside the head's own rtext. A motion card may put the keep-lane on
-    // the head (o.v, o.s) — the quick card's grammar: the head has a lane
-    // exactly when keeping the clause is one of the answers.
-    const oo = o || {};
-    const rule = ctx.headFor && ctx.headFor(c);
-    // **An option-block settings card carries no title head** (Ed's card
-    // review, 2026-09-02, Q1151; SURFACE F15): since CP1 its blocks state the
-    // rule completely, so the question the head restated is gone — the name
-    // survives on the rail entry, the tab tooltip and the record. The head
-    // element itself stays: it is what carries the tab strip. **And neither
-    // does a heading-over-text card** (Q1373, Ed 2026-09-15): the `textcard`s
-    // — the grants and the gates — are the strip, the paragraph and OK.
-    const noTitle = !rule && ctx.noTitleHead && ctx.noTitleHead(c);
-    // **A settled setting's rule reads as the first block** (Q1167 a): the
-    // rule keeps the head's slot — the strip hangs there and the open/close
-    // geometry is measured against it — and wears the option block's own
-    // treatment, so the card reads status quo first, alternatives beneath.
-    const asBlock = rule && ctx.blockHead && ctx.blockHead(c);
-    // **A hairline earns its place** (Q1173): the head↔field rule draws only
-    // under a head with content over real controls. `nohead` — nothing in the
-    // head but the strip; `rulehead` — the settled rule as the first block,
-    // whose .asblock border-bottom is already the separator; `textcard` — a
-    // head over plain text (the grants), flagged on the card literal.
-    const clauseHtml = ctx.clauseFor ? (ctx.clauseFor(c) || '') : '';
-    // …and `bareHead` (ctx's) names a head that is the field's own value
-    // rather than a rule over a control — 🪶 at the birth — which takes no
-    // hairline either (Ed's card review round 3, 2026-09-05, 01)
-    const bare = ctx.bareHead && ctx.bareHead(c);
-    const shellCls = 'sugg setupcard' +
-      (asBlock ? ' rulehead' : (!rule && noTitle && !clauseHtml) || bare ? ' nohead' : '') +
-      (c.textcard ? ' textcard' : '');
-    // **The glyphs inside the card's own sentences are drawn too** (Q1401 (a),
-    // Ed 2026-09-16: *draw them in prose too*). A clause reading *all members
-    // must agree 🏛️* names the same object the commit row holds, so it is the
-    // same picture. The whole card goes through `glyphify` in one piece rather
-    // than each sentence being hunted: the pass is tag-safe (a glyph in a
-    // `title=` stays the character a tooltip needs) and it refuses to enter a
-    // `contenteditable`, so the title lane, the rationale and the
-    // application's words — all of them somebody's own text — are untouched.
-    return glyphify('<div class="' + shellCls + '" role="tabpanel" data-setupcard="' + c.k + '">' +
-      CB.clauseHeadHtml(oo.s || c, {
-        label: null, wash: false,
-        marks: stripHtml(siblings || [c], ctx),
-        html: (rule ? '<div class="headrule' + (asBlock ? ' asblock' : '') + '">' + rule + '</div>'
-            : noTitle ? ''
-            : '<div class="headtitle">' + esc(labelOf(c, ctx)) + '</div>') +
-          clauseHtml,
-        v: oo.v, edit: false,
-      }) +
-      '<div class="field">' + body + '</div>' +
-      // a `null` foot is a card that commits nothing and closes by its tab —
-      // a filed motion record (Q1522 (6)) — so it has no row and no hairline
-      (foot === null ? '' : '<div class="race-mid commitrow">' + foot + '</div>') + '</div>');
-  }
-
   /* **The band's first line for a card on the one shell** (Q1541 stage 1):
-     the same head `cardHtml` draws — the strip wrapped as the band wraps it,
-     no eyebrow, no wash — around the words the card state hands over, so the
-     shell (card-shell.js) never draws a head of its own (grammar S2). */
+     the clause head, the strip wrapped as the band wraps it, no eyebrow, no
+     wash, around the words the card state hands over, so the shell
+     (card-shell.js) never draws a head of its own (grammar S2). It was the
+     old band shell's head (`cardHtml` here, retired at stage 10). */
   function headHtml(c, ctx, siblings, html) {
     return CB.clauseHeadHtml(c, { label: null, wash: false, marks: stripHtml(siblings || [c], ctx), html, edit: false });
   }
 
   /* ---- the bodies that are the same on both surfaces ----------------------- */
-
-  /* What a **member** sees when they open one of the founder's cards, and what
-     anybody sees once a setting is closed: the value, and who it came from.
-     Read-only is not the same as hidden — the whole point of the tab group is
-     that the constitution is legible to everyone it binds. */
-  function readBody(c, ctx) {
-    // No heading of its own, for the reason `watchBody` gives below: the card
-    // head has already said what this is about, and a second copy of the title
-    // three lines under the first is the surest sign a body is not reading as
-    // part of its own card. Caught 2026-08-18, on the one card whose title is a
-    // question — which asked itself twice.
-    // What changing it takes is the constitution's to say — the preamble
-    // states the routes once, the clause states its deviations — so the
-    // lockline says only where the value came from (Ed's copy pass,
-    // 2026-08-19, which also removed the dead setBy/readNote branches:
-    // no card ever set either).
-    // value first, provenance beneath (Ed's QA, 2026-09-02 pm — the same
-    // order the settled card's chosen-radio grammar reads in; it also keeps
-    // H3's one-place rule true now that stripped heads leave the lockline
-    // leading otherwise)
-    // **a card with no value of its own says none** (plain bug 1, 1541.29):
-    // ❌'s door, read by a member before the start, has no setting value, and
-    // the line printed *Set to undefined*. The settings cards left this body
-    // in Q1541 stage 3a; the doors keep it until stage 5
-    const v = ctx.value(c);
-    return (v == null || v === '' ? '' : '<div class="statline"><span class="k">Set to</span><span class="v">' +
-      v + '</span></div>') +
-      '<div class="lockline">' + TICK + '<span>' +
-      esc(ctx.lockline ? ctx.lockline(c) : window.COPY.page.lockline.founder) +
-      '</span></div>';
-  }
 
   /* **The watch-half is retired** (Q1176, Ed 2026-09-02 pm). `watchBody`,
      `distHtml` and `rungStripHtml` — *What the membership said*, the
@@ -1164,7 +1060,7 @@ window.SETUP = (function () {
     // sentence for 🏛️ in use (.21). Nothing is said for a choice not yet made.
     return constitutional
       ? (heldOut ? '<span class="gnote pvoice">' + esc(window.COPY.shell.voiceOut) + '</span>' : '') +
-        '<button class="btn btn-approve glyphbtn emojibtn holdmotion"' +
+        '<button class="btn btn-approve glyphbtn emojibtn holdmotion" data-fact="price"' +
         (heldOut ? ' disabled data-until="voice-out"' : !dto ? ' disabled data-until="choose"' : '') +
         ' title="' + (heldOut ? esc(window.COPY.shell.voiceOut)
           : clickGesture ? 'Ask all members — a full one-second assembly'
@@ -1181,7 +1077,7 @@ window.SETUP = (function () {
       : (() => {
         const broke = walletBroke();
         return (broke ? window.CARDS.abstainNoteHtml(dripAt(), 'drip') : '') +
-          '<button class="btn btn-approve glyphbtn emojibtn"' +
+          '<button class="btn btn-approve glyphbtn emojibtn" data-fact="price"' +
           (broke ? ' disabled data-until="drip"' : !dto ? ' disabled data-until="choose"' : '') +
           ' data-putmotion="1" title="' + esc(broke ? window.COPY.session.row.broke : 'Propose it') + '">' +
           glyphHtml('✏️') + '</button>';
@@ -1879,7 +1775,7 @@ window.SETUP = (function () {
     esc(p.n) + (p.n === meName ? ' (you)' : '') + '</span>').join('') + '</div>';
 
   return { esc, TICK, ARROW_OUT, initials, avHtml, hueOf, washOf, stateOf, labelOf, nounOf, markOf, railEntry,
-    bandHtml, fitBand, pileHtml, stripHtml, cardHtml, headHtml, readBody,
+    bandHtml, fitBand, pileHtml, stripHtml, headHtml,
     nameBody, pictureBody, opt, setPickWords, num, numIn, ctlWord, faces, someIn, FACE_EMOJI,
     SHARE, shareCount, shareTail, shareWords, shareSlot, quorumAsk, quorumNote, quorumSlot,
     LAPSE_UNITS, LAPSE_BOUNDS, lapseParts, unitSel,

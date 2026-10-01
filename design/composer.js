@@ -884,8 +884,9 @@ window.COMPOSER = (function () {
     const cardCommitActs = (d) => {
       const rs = draftRowState();
       const pt = proposeCtlTitles(d);
+      // the ✏️ is the price's home (principle 3); the ✒️ beside it spends nothing
       const btn = (pen) => '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose"' +
-        (pen ? ' data-pen="1"' : '') + ((pen ? !rs.changed : (!rs.changed || pt.broke)) ? ' disabled' : '') +
+        (pen ? ' data-pen="1"' : ' data-fact="price"') + ((pen ? !rs.changed : (!rs.changed || pt.broke)) ? ' disabled' : '') +
         ' title="' + esc(pen ? pt.penTitle : pt.title) + '">' + glyphHtml(pen ? '✒️' : '✏️') + '</button>';
       const acts = MAY_PEN() ? [{ kind: 'commit', act: 'draft-propose', html: btn(true) }] : [];
       acts.push({ kind: 'commit', act: 'draft-propose', html: btn(false) });
