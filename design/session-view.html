@@ -803,7 +803,7 @@
   const { esc, avHtml, bandHtml, fitBand, railEntry, cardHtml: cardHtml0,
     nameBody, pictureBody, opt, num, numIn, ctlWord, someIn, ANSWER, stateOf, labelOf, nounOf,
     MAILS, renderMailModal, gateBody, wirePicDrop, pileHtml, stripHtml, readBody,
-    routeFor, motionCommitHtml, listOf, syncSlider,
+    routeFor, motionCommitHtml, listOf,
     // 👥's share bounds and its (x of y), and 💤's units (Q1439): one control
     // each, drawn by setup.js, so the founder's card, the member's answer card
     // and this script's composer cannot state three different ranges
@@ -1960,9 +1960,6 @@
     // standing one — the standing value is never the card's to change here
     if (ks.has('myname')) ks.add('mynameDraft');
     if (ks.has('mypic')) ks.add('mypicDraft');
-    if (el.querySelector('[data-slide]')) {
-      el.querySelectorAll('[data-slide]').forEach((b) => ks.add('ans:' + b.dataset.slide));
-    }
     return ks.size ? [...ks] : [];
   };
   // A card that names no field puts nothing back — it simply closes. The old
@@ -10427,25 +10424,6 @@
       ev.preventDefault(); ev.target.closest('[data-tab]').click();
     }
   });
-  // **A drag is a press held down, and the poll has to know about it too.**
-  // Taking `render()` out of the `input` handler fixes the page's own rebuild,
-  // but the live path re-renders every 4s of its own accord — and a drag runs
-  // for a second or two, so a tick landing inside one destroys the very range
-  // input the pointer is capturing and the thumb freezes exactly as before.
-  // The two polls already defer for `penHold` and `SESSION.holding`; a slider
-  // drag is the third press on this surface and joins them. Released on
-  // `pointerup`/`pointercancel` only, never on `change` — a press that ends
-  // where it began fires no `change` at all and would leave the flag stuck.
-  // A lost `pointerup` (released off the window) must never park the live
-  // surface for good, so the flag carries the time it was set and goes stale
-  // by itself — the same belt-and-braces the wallet's restoration keeps.
-  let sliderHold = 0;
-  const endSliderHold = () => { sliderHold = 0; };
-  document.addEventListener('pointerdown', (ev) => {
-    if (ev.target && ev.target.closest && ev.target.closest('[data-slide]')) sliderHold = Date.now();
-  }, true);
-  document.addEventListener('pointerup', endSliderHold, true);
-  document.addEventListener('pointercancel', endSliderHold, true);
   // **A half-typed date is no longer a press** (Q1513; redesign stage 9): a
   // datetime-local holds no value until every field in it is filled, so a
   // render that replaced the box took the month and day with it, and the poll
@@ -10467,8 +10445,9 @@
   // (`SESSION.holding`, the ✏️ propose hold, left it too: the row is patched
   // and its button keeps `.holding` through a render — `render-hold-walk`'s
   // *held ✏️ on the row* and `journey`'s *propose* are the proof)
+  // (`sliderHold` left it at stage 10: no surface has drawn a track since
+  // Q1162, and the slider's builder went with it)
   const pressInFlight = () => SESSION.travelling || assembly ||
-    (sliderHold && Date.now() - sliderHold < 30_000) ||
     document.documentElement.hasAttribute('data-sheetdrag');
   // **A press in the air is still unsent to the reload** (issue #12): the
   // poll no longer waits for a ✒️ flight, but a deploy's reload must — it
@@ -10479,19 +10458,6 @@
   // the bar and the rail and leaves the card alone — only the commit control,
   // which is about what you have just typed, is set directly.
   document.addEventListener('input', (ev) => {
-    // **A slider is the same case as a lane, and was the one control that
-    // ignored it** (Q779, Ed on docs.vote: *clicking on the slider doesn't
-    // appear to do anything, so I can't set my quorum answer*). This called
-    // `render()` on every `input`, which rebuilds the card — and a drag is a
-    // press held down, so the range input holding the pointer capture was
-    // destroyed on the first step and the thumb froze under the finger.
-    // Re-focusing the replacement does not put the drag back. So the gesture
-    // repaints the readout in place and the rail and the commit around it,
-    // exactly as typing does; the full render waits for `change`, which fires
-    // when the pointer comes up.
-    const sl = ev.target.closest && ev.target.closest('[data-slide]');
-    if (sl) { S.myAns[sl.dataset.slide] = +sl.value;
-      syncSlider(sl); renderRail(); SESSION.refreshRail(); refreshCommit(); return; }
     const t = ev.target;
     // **Typing into a rung's field is choosing that rung.** The field only
     // exists inside its own option — the days inside *They lapse*, the date
@@ -10676,19 +10642,6 @@
     // wakes the moment the box holds a whole date
     if (t.dataset.ansdate) { S.myAns[t.dataset.ansdate] = t.value || null;
       renderRail(); SESSION.refreshRail(); refreshCommit(); }
-  });
-  // …and the render the drag deferred. `change` on a range is the release —
-  // the gesture is over, so the card may be rebuilt, which is what brings the
-  // rest of the surface (the card's own tab mark, its head) up to the answer.
-  // A click on the track is an `input` and a `change` a moment apart, so the
-  // one-press case loses nothing.
-  document.addEventListener('change', (ev) => {
-    const sl = ev.target.closest && ev.target.closest('[data-slide]');
-    if (!sl) return;
-    S.myAns[sl.dataset.slide] = +sl.value;
-    render();
-    const again = document.querySelector('[data-slide="' + sl.dataset.slide + '"]');
-    if (again) again.focus();
   });
   document.getElementById('devwho').addEventListener('change', (ev) => {
     const v = ev.target.value;

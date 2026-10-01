@@ -252,6 +252,9 @@ window.DOOR = (function () {
         SUGGS: recs ? itemsFromView(env.cs.v) : [] });
         const shape = p && !p.canRead ? p.textShape.filter((b) => b.chars > 0) : [];
         red.classList.toggle('black', new URLSearchParams(location.search).get('bars') === 'black');
+        // **wholesale, by design** (stage 10, 1572's deferral): the bars are
+        // drawn only when the document's shape changes (`charterKey`), never
+        // on a poll, and hold nothing a reader could be in the middle of
         red.innerHTML = shape.length ? barsHtml(shape, red) : '';
         red.hidden = !shape.length;
       } else {

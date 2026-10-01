@@ -1348,9 +1348,11 @@ window.BAND = (function () {
         tp0.classList.remove('open');
         tp0.querySelectorAll('.setupcard').forEach((el) => el.remove());
         const own = STRCARDS().some((c) => c.k === S.open);
-        band.innerHTML = (own
+        // patched as the member's band is (stage 10): the door's own card
+        // holds a typed address, and a poll under it keeps the box
+        window.PATCH.set(band, (own
           ? '<div class="setrow constsec"><div class="csec"><div class="cpara open">' + strangerCardHtml() + '</div></div></div>' : '') +
-          (env.cs ? bandHtml(groups(), env.strCtx, strangerReadCard) : '');
+          (env.cs ? bandHtml(groups(), env.strCtx, strangerReadCard) : ''));
         fitBand(band);
         return;
       }
@@ -1363,9 +1365,11 @@ window.BAND = (function () {
         // applicant is a stranger who has knocked (Q1281). This used to wrap an
         // empty open paragraph around any settings tab an applicant pressed.
         const own = APPCARDS().some((c) => c.k === S.open);
-        band.innerHTML = (own
+        // patched (stage 10): the applicant's five hold their name, their
+        // words and their picture as they type them
+        window.PATCH.set(band, (own
           ? '<div class="setrow constsec"><div class="csec"><div class="cpara open">' + applicantCardHtml() + '</div></div></div>' : '') +
-          (settled(card('myemail')) ? bandHtml(groups(), env.strCtx, strangerReadCard) : '');
+          (settled(card('myemail')) ? bandHtml(groups(), env.strCtx, strangerReadCard) : ''));
         fitBand(band);
         return;
       }

@@ -88,13 +88,15 @@ window.EDIT_MODE = (function () {
       if (!ed) return;
       const show = !!env.cs && constituted() && !env.S.editMode && canEditText();
       const sparkle = !env.S.okd.has(env.DOOR_PRESSED);
-      ed.innerHTML = show
+      // patched (stage 10): the door is redrawn on every render, and a press
+      // landing on it must find the button it went down on
+      window.PATCH.set(ed, show
         ? '<div class="race-mid commitrow proposalrow" data-editdoor="1"><span class="rowmid"></span>' +
           '<button class="btn btn-propose glyphbtn emojibtn" data-act="edit-door" title="' +
           esc(PAGE_COPY.ride.textDash + PAGE_COPY.ride.pressToWrite) + '">' +
           (sparkle ? '<span class="sparkle" aria-hidden="true" style="animation-delay: -' + (Date.now() % SPARKLE_MS) + 'ms"></span>' : '') +
           glyphHtml('📝') + '</button></div>'
-        : '';
+        : '');
       syncEditDoor();
     }
     // **The floating 📝 never rises above the 📝 tab** (Q1380, Ed 2026-09-15:
@@ -177,7 +179,7 @@ window.EDIT_MODE = (function () {
     function renderRideTab() {
       const rt = document.getElementById('ridetab');
       if (!rt) return;
-      if (!env.cs || /^pw:[ua]:text$/.test(env.S.open || '')) { rt.innerHTML = ''; return; }
+      if (!env.cs || /^pw:[ua]:text$/.test(env.S.open || '')) { window.PATCH.set(rt, ''); return; }
       const chips = isStranger() ? [card('text')] : env.ctx.chipsFor(card('text'));
       // **In edit mode the pile is the strip** (Ed's QA, 2026-08-30): the text
       // is the open card, and an open card's tabs are lined up down its side
@@ -186,14 +188,19 @@ window.EDIT_MODE = (function () {
       // the positioned box the pile measures from (system.css: its gutter is
       // the constitution's).
       const fanned = env.S.editMode && !isStranger();
-      rt.innerHTML = '<div class="ridein">' +
+      // patched (stage 10, 1572's deferral): the tabs a reader presses are
+      // the tabs they pressed. The pile is drawn off-page first so the 📝
+      // tab's title and count go into the markup, not onto the kept node after
+      const tmp = document.createElement('div');
+      tmp.innerHTML = '<div class="ridein">' +
         (fanned ? stripHtml(chips, Object.assign({}, env.ctx, { open: 'text' })) : pileHtml(chips, env.ctx)) + '</div>';
-      const front = rt.querySelector('.achip[data-tab="text"]');
+      const front = tmp.querySelector('.achip[data-tab="text"]');
       if (front) {
         front.title = PAGE_COPY.ride.textDash + (env.S.editMode ? PAGE_COPY.ride.writing : canEditText() ? PAGE_COPY.ride.pressToWrite : PAGE_COPY.ride.readOnly);
         const rs = constituted() ? SESSION.draftRowState() : { count: 0 };
         if (rs.count) front.insertAdjacentHTML('beforeend', '<span class="ridecount" aria-hidden="true">' + rs.count + '</span>');
       }
+      window.PATCH.set(rt, tmp.innerHTML);
       rt.classList.toggle('editing', !!env.S.editMode);
       // **the rest position is a measurement, not a constant** (the band's
       // gotcha about `fitBand`): the pile is lifted from the sticky box's
@@ -265,12 +272,14 @@ window.EDIT_MODE = (function () {
       const pr = document.getElementById('proserow');
       if (!pr) return;
       const show = !!env.cs && !constituted() && env.S.editMode && amFounder();
-      pr.innerHTML = show ? SESSION.proposalRowHtml({
+      // patched (stage 10): the Founder's ✒️ here is a hold, and a render
+      // under it keeps the button the pointer went down on
+      window.PATCH.set(pr, show ? SESSION.proposalRowHtml({
         count: 0, pen: true, disabled: !proseDirty(),
         discardDisabled: !proseDirty(),
         discardTitle: PAGE_COPY.proseRow.discard,
         title: proseDirty() ? PAGE_COPY.proseRow.save : PAGE_COPY.proseRow.saved,
-      }) : '';
+      }) : '');
     }
     function syncProseRow() {
       const pr = document.getElementById('proserow');
@@ -303,6 +312,9 @@ window.EDIT_MODE = (function () {
       const show = proseStripShown();
       pc.className = show ? 'editctl' : '';
       // rewritten only when its state changed: `render` follows every keystroke
+      // — so it stays wholesale (stage 10, 1572's deferral): it is written on
+      // the show and the hide and never while it stands, B and I being
+      // synced in place (`syncProseCtl`)
       if (!show) pc.innerHTML = '';
       else if (!pc.firstChild) pc.innerHTML = window.CARDS.laneCtlHtml();
       syncProseView();
@@ -388,6 +400,9 @@ window.EDIT_MODE = (function () {
       const at = proseCaret();
       const text = proseText();
       env.prose.classList.toggle('mdsrc', raw);
+      // **wholesale, by design** (stage 10, 1572's deferral): the two views
+      // are different markup over one text, so nothing in one is a node of
+      // the other; the caret crosses as a source offset (`placeProseCaret`)
       env.prose.innerHTML = raw ? srcDivs(text) : textDivs(text);
       env.prose.classList.toggle('empty', env.prose.innerHTML === '');
       if (at) placeProseCaret(at);
