@@ -87,6 +87,18 @@ describe("minimalHunks (issue #144)", () => {
     expect(out).toEqual([{ start: 2, end: 2, lines: ["Inserted A.", "Inserted B."] }]);
   });
 
+  it("an adjacent swap whose second block keeps its body is a replacement and an insertion, the text the same", () => {
+    // the demo's J1: two sessions swap slots, each heading keeping its time,
+    // and the second session's two body lines are the same either side
+    const b = ["## 09:30 · Keynote", "Kwame.", "Long dough.", "## 10:30 · Plants", "Leila.", "Vegetables."];
+    const out = same(b, [{ start: 0, end: 6, lines: [
+      "## 09:30 · Plants", "Leila.", "Vegetables.", "## 10:30 · Keynote", "Kwame.", "Long dough."] }]);
+    expect(out).toEqual([
+      { start: 0, end: 4, lines: ["## 09:30 · Plants"] },
+      { start: 6, end: 6, lines: ["## 10:30 · Keynote", "Kwame.", "Long dough."] },
+    ]);
+  });
+
   it("attests what it returns against the base, and mutates nothing", () => {
     const h: Hunk[] = [{ start: 1, end: 4, lines: ["Ada:", "First, rewritten.", "Second paragraph."] }];
     const before = JSON.stringify(h);
