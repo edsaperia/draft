@@ -2466,23 +2466,37 @@
     const W = window.COPY.shell;
     const marked = (base, c) => (c.mark && c.mark.against != null ? wordingHtml(c.mark.against, c.text) || mdBlocksHtml(null, c.text)
       : c.mark ? wordingHtml(base, c.text) : mdBlocksHtml(null, c.text));
-    const blocks = s.fold.map((m) => {
-      const rec = window.CARD_STATE.outcomeOf(m.id);
-      if (!rec) return null;
-      const base = recordBaseOf(m, rec.outcome === 'passed');
-      const h = rec.head;
-      const headWords = h && h.text != null && String(h.text).trim() ? marked(base, h) : '';
-      return {
-        cls: 'ranked foldpart' + (h && h.passed ? ' passed' : ''),
-        label: rec.label, tone: rec.green ? 'ok' : null, fact: null,
-        html: headWords,
-        speaker: (h ? recSpeaker(h.speaker) : '') +
-          (rec.fact ? '<div class="rsub">' + esc(rec.fact) + '</div>' : '') +
-          rec.field.map((c) => '<div class="ranked' + (c.role === 'previous' ? ' wasthere' : '') + (c.passed ? ' passed' : '') + '">' +
-            '<span class="glab">' + esc(c.label) + '</span>' +
-            '<div class="rtext">' + marked(base, c) + '</div>' + recSpeaker(c.speaker) + '</div>').join(''),
-      };
-    }).filter(Boolean);
+    // **each version once, not each change** (Ed, 2026-10-01: *not [(v0->v1),
+    // (v1->v2), (v2->v3)] but instead [v0, v1, v2, v3]*): the original once,
+    // as the first block, plain — the text before the fold's first ✔
+    // (`foldItem`'s `replaced`), which no ✖ before it changed — then every
+    // record oldest first, a ✔'s wording marked against the version just
+    // above it and none of them drawing its own *Previous text*. A ✖ makes
+    // no version: its head is the kept text, the version above drawn again,
+    // so its block is its label, its fact and the wordings it weighed, and
+    // the next ✔ is marked against the last text that passed
+    let prev = moved ? (s.replaced ?? '') : null;
+    const blocks = (moved ? [{ cls: 'ranked wasthere', label: W.previousText, fact: 'previous', html: mdBlocksHtml(null, prev) }] : [])
+      .concat(s.fold.map((m) => {
+        const rec = window.CARD_STATE.outcomeOf(m.id);
+        if (!rec) return null;
+        const base = recordBaseOf(m, rec.outcome === 'passed');
+        const h = rec.head;
+        const won = rec.outcome === 'passed' && h && !h.incumbent;
+        const said = h && h.text != null && String(h.text).trim();
+        const headWords = won && said ? (prev != null ? wordingHtml(prev, h.text) || mdBlocksHtml(null, h.text) : marked(base, h)) : '';
+        if (won && h.text != null) prev = h.text;
+        return {
+          cls: 'ranked foldpart' + (won && h.passed ? ' passed' : ''),
+          label: rec.label, tone: rec.green ? 'ok' : null, fact: null,
+          html: headWords,
+          speaker: (won ? recSpeaker(h.speaker) : '') +
+            (rec.fact ? '<div class="rsub">' + esc(rec.fact) + '</div>' : '') +
+            rec.field.filter((c) => c.role !== 'previous').map((c) => '<div class="ranked' + (c.passed ? ' passed' : '') + '">' +
+              '<span class="glab">' + esc(c.label) + '</span>' +
+              '<div class="rtext">' + marked(base, c) + '</div>' + recSpeaker(c.speaker) + '</div>').join(''),
+        };
+      })).filter(Boolean);
     return {
       kind: 'clause-fold',
       frame: { cls: 'sugg sealed-open foldcard' + (moved ? ' recpass' : ''),
