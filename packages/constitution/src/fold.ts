@@ -123,9 +123,31 @@ export class FoldState {
    *  never needs the old one, so this rides alongside rather than bending the
    *  payload every other amendment shares. */
   readonly penFrom = new Map<MotionId, SettingValue>();
+
+  /**
+   * **The 👁️ rung over time** (Q996): one entry each time the standing
+   * judgments rung changes, in log order, so a sealed record can be read
+   * under the rung that stood when its race sealed and a judgment under the
+   * rung it was cast under (SPEC §3.5a). Derived from the settings map after
+   * every event, never written to the log: replay rebuilds it bit-identically.
+   */
+  readonly judgmentsRungs: Array<{ t: number; rung: string | null }> = [];
 }
 
-export function apply(s: FoldState, event: ConstitutionEvent, _seq: number): void {
+export function apply(s: FoldState, event: ConstitutionEvent, seq: number): void {
+  applyEvent(s, event, seq);
+  noteJudgmentsRung(s, event.t);
+}
+
+/** Q996: append to `judgmentsRungs` when the standing 👁️ rung has moved. */
+function noteJudgmentsRung(s: FoldState, t: number): void {
+  const st = s.settings.get('judgments');
+  const rung = (st?.value as { rung?: string } | null | undefined)?.rung ?? null;
+  const last = s.judgmentsRungs[s.judgmentsRungs.length - 1];
+  if (last === undefined ? rung !== null : last.rung !== rung) s.judgmentsRungs.push({ t, rung });
+}
+
+function applyEvent(s: FoldState, event: ConstitutionEvent, _seq: number): void {
   if (event.t < s.lastT) throw new Error('timestamps must be non-decreasing');
   s.lastT = event.t;
   switch (event.type) {

@@ -52,8 +52,12 @@ window.COPY = (function () {
       sealed: 'All proposals are made anonymously, and all names are revealed at the end.',
       sealedElective: 'Proposals may be made anonymously, and all names are revealed at the end.',
       public: 'Proposals may not be made anonymously.' },
+    // the middle rung (Q996, built 2026-10-01): a proposal's votes on its
+    // sealed record once it is passed or rejected — never while it runs, and never
+    // for one the clock cut off (*Ran out of time* is neither)
     judgments: {
       never: 'Votes are never revealed.',
+      decision: 'Votes on each proposal are revealed once it is passed or rejected, and not before.',
       after: 'Votes are revealed when the document is finished, and not before.' },
     // **Foundership carries a read, whatever 🌍 says** (Ed, 2026-08-22), said
     // only where it is a deviation: a founder who is a member is covered by
@@ -616,7 +620,8 @@ window.COPY = (function () {
       authorship: { anonymous: 'never named', anonymousElective: 'named by choice',
         sealed: 'named at the close', sealedElective: 'at the close, or by choice',
         public: 'named from the start' },
-      judgments: { never: 'votes never shown', after: 'votes shown at the end' },
+      judgments: { never: 'votes never shown', decision: 'votes shown once decided',
+        after: 'votes shown at the end' },
       chamber: { closed: 'members only', link: 'anyone with the link', public: 'public' },
       rate: (n, unit) => n + ' ' + (n === 1 ? { days: 'day', hours: 'hour', minutes: 'minute' }[unit] : unit),
       lapse: (spell) => spell,

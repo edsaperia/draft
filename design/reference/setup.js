@@ -1347,6 +1347,7 @@ window.SETUP = (function () {
     judgments: (A) =>
       ladder(A, 'judgments', [
         { v: 'never', t: RULE('judgments', 'never'), e: '' },
+        { v: 'decision', t: RULE('judgments', 'decision'), e: '' },
         { v: 'after', t: RULE('judgments', 'after'), e: '' }]),
     applications: (A, E, _form, _room, _typed, x) =>
       ladder(A, 'applications', [

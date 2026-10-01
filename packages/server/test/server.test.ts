@@ -2210,7 +2210,12 @@ describe('👤 authorship on the wire (SPEC §3.5a)', () => {
     for (const r of [...rec.adopted, ...rec.undecided]) {
       for (const f of r.field) expect(f).not.toHaveProperty('author');
     }
-    expect(JSON.stringify(rec)).not.toMatch(/Marlowe/);
+    // **an author, that is** (Q996): this room's 👁️ is *at the end*, so the
+    // closed record names who voted, and a judge's name is not an author's —
+    // the reveal is 👁️'s, read apart from 👤 (`judgments-reveal.test.ts`)
+    const unrevealed = (rs: Array<Record<string, unknown>>) => rs.map(({ revealed: _r, ...r }) => r);
+    expect(JSON.stringify({ ...rec, adopted: unrevealed(rec.adopted as never),
+      undecided: unrevealed(rec.undecided as never) })).not.toMatch(/Marlowe/);
     // and the live `records` never named anybody either, closed or not
     expect(JSON.stringify((await anon.viewOf(anon.cy)).records)).not.toMatch(/author/);
   });

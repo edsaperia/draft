@@ -2,7 +2,7 @@
 
 **[docs.vote](https://docs.vote)** is a place for a group to write a document together. Anybody may propose a change; rival wordings of the same passage race each other; the membership votes on them in blind pairs (*which of these two wordings?*, no names attached, no scores shown), and the wording that comes out on top is adopted once enough of the membership has voted. The document's own rules are decided the same way, inside the document.
 
-docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first, back to the project's first commit on 2026-08-13. The mechanism's full rules are in [`SPEC.md`](SPEC.md) (v0.144 today), and what the page shows a member is in [`SURFACE.md`](SURFACE.md).
+docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first, back to the project's first commit on 2026-08-13. The mechanism's full rules are in [`SPEC.md`](SPEC.md) (v0.145 today), and what the page shows a member is in [`SURFACE.md`](SURFACE.md).
 
 ---
 
@@ -17,6 +17,19 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 ### For contributors
 - **Surface-only.** The old card builders are gone: every card is on the one shell (`design/card-shell.js`), and a card whose subject leaves the page while it is open becomes the shell's read-only card.
 - **card-audit is strict on every kind**, in the push tier and the sprint tier: its driven pass presses every live control on every card, and every fact on a card carries its role.
+
+## 2026-10-01, evening: votes on the record
+
+### New
+- **A document can show how each member voted as soon as each proposal is decided.** 👁️ *Judgments* has a new choice between *never* and *at the end*: once a proposal is passed or rejected, its record shows who voted on it, between which two wordings and which they preferred. Nothing is shown about a proposal still being voted on, and a vote cast while the document showed none stays hidden.
+- **Whoever wrote a proposal counts as having voted for it** on that record, listed like any other vote.
+
+### Changed
+- **Where a document shows votes at the end, they now appear on its records when it closes.** Until now that choice showed nothing.
+
+### For contributors
+- **A server change, so a full deploy.** Sealed records carry `revealed` for members only, read under the 👁️ choice that stood when the record sealed; never in the stranger's or the applicant's view, never logged. The page draws it after redesign stage 10 (SPEC §13's ledger).
+- **SPEC v0.145** (§3.5a, R-146); QUESTIONS.md claims 1574; one setup-probe freeze, read.
 
 ## 2026-10-01, later: the room moves
 
