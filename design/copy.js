@@ -733,6 +733,8 @@ window.COPY = (function () {
     // the wire did not answer, or answered with a status and no sentence
     noAnswer: (status) => (status ? 'the server answered ' + status : 'the server could not be reached'),
     binPutBack: 'Put it back as it stands',
+    // a news card whose news has gone from the view while it stood open
+    noLongerOutstanding: 'This is no longer outstanding.',
     // the composer's 🗑️ and a settings ✒️'s tooltip, where the one shell
     // draws them (Q1541 stage 3b) — the words the old rows carried
     discardMotion: 'Discard this motion',

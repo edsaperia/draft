@@ -1392,7 +1392,9 @@ window.BAND = (function () {
         // …and stage 5's: ✋ 🖼️ 📧, the doors, the admissions, the applicant's
         'identity', 'door', 'admission',
         // …and stage 7's: 🥂
-        'closing']);
+        'closing',
+        // …and stage 10's: 📭 and 🥾
+        'mail-give-up', 'departure']);
       const crownPairRow = () => (amFounder()
         ? binBtn() + '<span class="rightpair">' +
           '<button class="btn glyphbtn emojibtn" data-crownq="reject"' +

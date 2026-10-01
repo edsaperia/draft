@@ -5109,6 +5109,9 @@
         // head with exactly these lines (Q1541 stage 5, `doorRowsNow`)
         const emptyRow = (k) => '<div class="memrow nobody">' + esc(PAGE_COPY.memEmpty[k]) + '</div>';
         doorRowsNow = {
+          // 📭 stands in *Members*' pile beside 🎩 (E34), so its first line is
+          // the Members list as written there, without your own row and its tabs
+          members: nobody + here.map((p) => memRow(p)).join('') + invited.map((p) => memRow(p)).join(''),
           invite: (applying.map((p) => memRow(p)).join('') + (memApplicantRows() || '')) || emptyRow('applications'),
           remove: proposedOut.length ? proposedOut.map((p) => memRow(p, true)).join('') : emptyRow('removal'),
           leave: alumni || emptyRow('alumni'),
@@ -10730,6 +10733,14 @@
   // clause is its first line, its title the label above it, its batch the
   // body and OK its row while it is owed (Q1541 stage 2)
   const shellRelease = (c) => !!c && !!c.release && !atTheDoor();
+  // **📭 and 🥾, the people's news** (Q1541 stage 10, the last of 1556's
+  // deferrals): a mail the outbox gave up on and a departure, each one OK
+  // while owed and no 🗑️ (Q1527 (a)), their first line the list they stand
+  // in — *Members* for 📭 (E34), *Alumni* for 🥾 (Q1557 (e))
+  const PEOPLE_NEWS = { mailgiveup: { kind: 'mail-give-up', rows: 'members' }, departure: { kind: 'departure', rows: 'leave' } };
+  const peopleNewsOf = (c) => (!c || atTheDoor() ? null
+    : c.mailgiveup ? PEOPLE_NEWS.mailgiveup : c.departure ? PEOPLE_NEWS.departure : null);
+  const peopleNewsLive = (c) => (c.mailgiveup ? !!mailGiveUpBatch(c.mailgiveup) : !!owedDeparture(c.departure));
   // 🍾's dark commit says what it waits on, beside the button and never in
   // the body (answers Part 4 .22; Q1556 (3), Ed 2026-09-26). `one-voice`
   // first: no answer can end it, so *waiting for x members* would promise a
@@ -10781,6 +10792,7 @@
         return { kind: 'para', key: k, html: c.isGrant ? foundedClause() : ctx.headFor(c) };
       }
       if (shellRelease(c)) return { kind: 'para', key: k, html: ctx.headFor(card('begin')) };
+      if (peopleNewsOf(c)) return { kind: 'para', key: k, html: '<div class="memlist">' + (doorRowsNow[peopleNewsOf(c).rows] || '') + '</div>' };
       // stage 3a's settings cards: the paragraph's own sentence, settled or
       // not, without its powers line — an answer card's is its setting's
       if (BND.settingKind(c)) { const l = BND.lineOf(c); return l == null ? null : { kind: 'rule', key: k, html: l }; }
@@ -10805,6 +10817,7 @@
       if (doorShellKind(c)) return null;
       if (admissionShellKind(c)) return admissionOwed(c);
       if (shellRelease(c)) return releaseBatch(c.release) ? { kind: 'ok', attrs: ' data-ok="' + esc(k) + '"', word: window.COPY.session.record.ok } : null;
+      if (peopleNewsOf(c)) return peopleNewsLive(c) ? { kind: 'ok', attrs: ' data-ok="' + esc(k) + '"', word: window.COPY.session.record.ok } : null;
       if (!ackOwed(c)) return null;
       return { kind: 'accept', cls: 'grantok', attrs: ' data-ok="' + esc(k) + '"',
         word: k === 'grant-voice' ? PAGE_COPY.gate.voice.accept : PAGE_COPY.gate.accept(c.grants || c.g) }; },
@@ -10858,6 +10871,19 @@
           head: { html: window.SETUP.headHtml(c, ctx, hints.siblings || [c],
             '<div class="headrule" data-fact="place">' + st.place.html + '</div>') },
           body: { html: (b ? releaseBody(b) : '<p class="why">This is no longer outstanding.</p>') + doorErrHtml(k) },
+        };
+      }
+      if (peopleNewsOf(c) && st.place) {
+        const b = c.mailgiveup ? mailGiveUpBatch(c.mailgiveup) : null;
+        const d = c.departure ? owedDeparture(c.departure) : null;
+        const body = c.mailgiveup ? (b ? mailGiveUpBody(b) : '') : d ? '<p class="why">' + departureLine(d) + '</p>' : '';
+        return {
+          kind: peopleNewsOf(c).kind,
+          frame: { cls: 'sugg setupcard', attrs: ' role="tabpanel" data-setupcard="' + esc(k) + '"' },
+          label: { text: window.SETUP.labelOf(c, ctx) },
+          head: { html: window.SETUP.headHtml(c, ctx, hints.siblings || [c],
+            '<div class="headrule asblock" data-fact="place">' + st.place.html + '</div>') },
+          body: { html: (body || '<p class="why">' + esc(PAGE_COPY.noLongerOutstanding) + '</p>') + doorErrHtml(k) },
         };
       }
       if (shellAck(c) && st.place) {

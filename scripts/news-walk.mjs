@@ -162,10 +162,10 @@ for (const fam of FAMILIES) {
   check(fam.name + ' opens', !!r, JSON.stringify(r));
   if (!r) continue;
   check(fam.name + ' asks only for its OK', r.row.length === 1 && /^OK$/.test(r.row[0]), 'row ' + JSON.stringify(r.row));
-  if (r.shell) {
-    check(fam.name + ' carries one label above its first line', r.labels.length === 1, JSON.stringify(r.labels));
-    check(fam.name + ' has a first line', !!r.head, r.head);
-  }
+  // every family is on the one shell since stage 10 (📭 and 🥾 the last)
+  check(fam.name + ' is on the one shell', r.shell && !!r.kind, JSON.stringify({ shell: r.shell, kind: r.kind }));
+  check(fam.name + ' carries one label above its first line', r.labels.length === 1, JSON.stringify(r.labels));
+  check(fam.name + ' has a first line', !!r.head, r.head);
   if (SHOTS) {
     const c = await page.$('.setupcard[data-setupcard="' + key + '"], .sugg[data-card="' + key + '"]');
     if (c) await c.screenshot({ path: join(SHOTS, 'news-' + fam.prefix.replace(':', '') + '-' + VIEW.width + '.png') });
