@@ -294,6 +294,7 @@ window.CARD_STATE = (function () {
       alternatives: alternativesOf(key),
       owed: src && typeof src.owed === 'function' ? (src.owed(key) || null) : null,
       record: outcomeOf(key),
+      lineage: lineageOf(key),
       draft: null,
       notes: null,
     };

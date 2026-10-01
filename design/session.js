@@ -1248,6 +1248,11 @@
   }
 
   let railCtl = null;
+  // **the open entry carries its card's lineage** (issue #143), so the entry
+  // whose item becomes another — a race its record — is the same node; only
+  // the open one, so no two entries in the rail can share the key
+  const liLineage = (g) => (openId && (openId === g.id || railIdOf(openId) === g.id)
+    ? ' data-lineage="' + esc(window.CARD_STATE.lineageOf(openId)) + '"' : '');
   function renderQueue() {
     const entries = queueEntries();
     let seenTop = false;
@@ -1268,7 +1273,7 @@
       // not fit, so it was paying for a saving it no longer needs.
       if (st === 'sealed') {
         const d = g.decided || {};
-        html += '<li class="qitem" data-q="' + g.id + '" data-site="' + (e.site ?? '') + '">' +
+        html += '<li class="qitem" data-q="' + g.id + '" data-site="' + (e.site ?? '') + '"' + liLineage(g) + '>' +
           '<button class="unread' + (isUnread(g) ? '' : ' filed') + '" data-q="' + g.id +
           '" aria-current="' + (railIdOf(openId) === g.id) + '"' +
           washAttrs(qKey(g, e), wash(g, anchHue(g) || 'closed').col, wash(g, anchHue(g) || 'closed').fill) +
@@ -1302,7 +1307,7 @@
         const where = e.of > 1
           ? '<span class="qs"><span class="sibn">' + T.rail.placesOf(e.n, e.of) + '</span></span>' : '';
         html +=
-          '<li class="qitem" data-q="' + g.id + '" data-site="' + (e.site ?? '') + '">' +
+          '<li class="qitem" data-q="' + g.id + '" data-site="' + (e.site ?? '') + '"' + liLineage(g) + '>' +
           '<button class="yours' + (drafting ? ' drafting' : '') + '" data-q="' + g.id + '"' +
           ' aria-current="' + (openId === g.id) + '"' +
           // a draft has no fill: there is nothing yet to be close to
@@ -1386,7 +1391,7 @@
       const pile = (!oneLine && st !== 'sealed') ? Math.min(5, Math.max(0, g.beneath | 0)) : 0;
       const pileHue = pile ? (anchHue(g) || 'open') : null;
       html +=
-        '<li class="qitem' + (top ? ' mosturgent' : '') + '" data-q="' + g.id + '" data-site="' + (e.site ?? '') + '"' +
+        '<li class="qitem' + (top ? ' mosturgent' : '') + '" data-q="' + g.id + '" data-site="' + (e.site ?? '') + '"' + liLineage(g) +
         (pile ? ' data-pile="' + pile + '" style="--pilecol: ' + tint(pileHue, 1) + '"' : '') + '>' +
         '<button class="' + [stateCls, sib.trim(), top ? 'mosturgent' : '',
           oneLine && g.shifted ? 'shifted' : '', justArrived === frontKeyOf(g) ? 'arriving' : '']
