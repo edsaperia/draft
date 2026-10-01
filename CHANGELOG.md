@@ -6,6 +6,22 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-10-01: nothing in your hand is taken by the page updating
+
+### Changed
+- **What you are in the middle of stays where it is when the page updates.** A half-typed date or number, an open list of choices, a reason you are writing and a button you are holding are the same control after an update, holding what you put in them.
+- **Opening a card at the top of the page on a phone no longer nudges the page a moment later.**
+
+### Fixed
+- **Writing the reason for a proposed rule change no longer loses your place** when somebody else acts in the room.
+- **The emoji list on your picture card keeps its place** when the page updates.
+
+### For contributors
+- **Surface-only.** The page renders by patching (`design/patch.js`): what an update draws is walked onto the nodes already there by key, and a node holding something of the reader's in flight is never replaced. `?render=replace` restores the old wholesale replacement for comparison.
+- **`render-hold-walk` joins the push tier's `repros-b`**, with `focus-steal --gap` beside it: every in-flight kind on an open card under a forced poll and a room event, the node the same node.
+- **The deferral flags are retired** where the walk proves the patch covers them: `dateInFlight` and the caret keeper go; the ✒️ flight and the ✏️ hold no longer make the poll wait (a deploy's reload still does). The poll still waits for the assembly, a travel and the task sheet's drag.
+- **`html { overflow-anchor: none }`**: the page makes every scroll it makes by measurement, and kept nodes gave the browser's scroll anchoring something to move a frame later. The setup-probe was re-frozen twice, each diff read.
+
 ## 2026-09-30, night: two plans for a livelier document
 
 ### For contributors

@@ -281,7 +281,7 @@ window.FLIGHTS = (function () {
       if (!walletHeld || env.closedMode) {
         env.walletEl.className = 'wallet notheld';
         const nh = '<span class="pencils"><i>' + glyphHtml('✏️') + '</i></span>';
-        if (env.walletEl.innerHTML !== nh) env.walletEl.innerHTML = nh;
+        window.PATCH.set(env.walletEl, nh);
         env.walletEl.title = env.closedMode ? '' : (walletTitle || '');
         applyLean();
         return;
@@ -301,7 +301,7 @@ window.FLIGHTS = (function () {
       if (NARROW()) {
         const nh = '<span class="pencils"><i' + (walletGhost ? ' class="gone"' : '') + '>' + glyphHtml('✏️') + '</i>' +
           '<span class="pmore">' + held + '</span></span>';
-        if (env.walletEl.innerHTML !== nh) env.walletEl.innerHTML = nh;
+        window.PATCH.set(env.walletEl, nh);
         applyLean();
         return;
       }

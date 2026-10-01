@@ -1140,6 +1140,7 @@
       : null;
   }
 
+  let railCtl = null;
   function renderQueue() {
     const entries = queueEntries();
     let seenTop = false;
@@ -1381,12 +1382,17 @@
     if (extra && extra.entries) {
       for (const x of extra.entries()) { extraMeta.set(x.id, x); html += x.html; }
     }
-    queueEl.innerHTML = html;
+    // patched, not replaced (redesign stage 9): an entry that stands from one
+    // render to the next is the same node, and its one listener is this
+    // render's (`railCtl`, as the column's passes do it)
+    if (railCtl) railCtl.abort();
+    railCtl = new AbortController();
+    window.PATCH.set(queueEl, html);
     justArrived = null;
     // Everything in the rail opens, sealed dots included (Ed, 112): a locked
     // judgment can't be changed, but it can always be read.
     queueEl.querySelectorAll('button[data-q]').forEach((b) =>
-      b.addEventListener('click', () => { toggle(b.dataset.q, true); })
+      b.addEventListener('click', () => { toggle(b.dataset.q, true); }, { signal: railCtl.signal })
     );
     layoutQueue();
   }
@@ -4042,7 +4048,17 @@ document.addEventListener('paste', (ev) => {
   // below ever read one. The wiring divides where it does because that is
   // where it already divided — the three groups are contiguous runs of the
   // old body, so no listener is registered in a different order than before.
+  // **A kept node carries one listener, not one per render** (redesign stage
+  // 9): the column is patched in place (`PATCH.set`), so a control can live
+  // through many renders — and the passes below bind on every one. Each
+  // render's listeners go on under that render's signal, and the next render
+  // aborts it before it binds its own: what a pass binds is exactly what the
+  // current render drew, whether the node is new or kept.
+  let passCtl = null;
+  const on = (el, type, fn) => el.addEventListener(type, fn, { signal: passCtl.signal });
   function renderDoc() {
+    if (passCtl) passCtl.abort();
+    passCtl = new AbortController();
     placementPass(clausePass());
     columnPass();
     gutterPass();
@@ -4554,7 +4570,8 @@ document.addEventListener('paste', (ev) => {
   // fits run after the swap and in this order — a stack is fitted to the
   // gutter it has (`fitStacks`), and a card to the stack beside it.
   function placementPass(html) {
-    doc.innerHTML = html;
+    // patched, not replaced (U1): a node the reader holds keeps what it holds
+    window.PATCH.set(doc, html);
     fitStacks();
     fitCards();
   }
@@ -4564,13 +4581,13 @@ document.addEventListener('paste', (ev) => {
   // strip's three buttons with the sync that says which of them are live.
   function columnPass() {
     doc.querySelectorAll('[data-sec-toggle]').forEach((b) =>
-      b.addEventListener('click', (ev) => { ev.stopPropagation(); toggleSection(+b.dataset.secToggle); })
+      on(b, 'click', (ev) => { ev.stopPropagation(); toggleSection(+b.dataset.secToggle); })
     );
     // the proposal-row's two ends: the bin drops the whole draft (leaving is
     // not discarding, but this is the one control that is), the commit opens
     // the editing card on the draft's first site
     doc.querySelectorAll('[data-proposalrow] [data-act="row-discard"]').forEach((b) =>
-      b.addEventListener('click', (ev) => {
+      on(b, 'click', (ev) => {
         ev.stopPropagation();
         dropDraft();
         renderAll(); drawWires();
@@ -4585,7 +4602,7 @@ document.addEventListener('paste', (ev) => {
     // since the diff and the site's text are the lane's to keep. With no lane
     // focused the two are disabled (`syncEditCtl`) and no press arrives.
     doc.querySelectorAll('[data-editctl] .lfmt').forEach((b) =>
-      b.addEventListener('mousedown', (ev) => {
+      on(b, 'mousedown', (ev) => {
         ev.preventDefault(); ev.stopPropagation();  // keep the selection in the lane
         const ae = document.activeElement;
         const lane = ae && ae.closest ? ae.closest('[data-lane]') : null;
@@ -4610,7 +4627,7 @@ document.addEventListener('paste', (ev) => {
     // gesture — the document's `pointerdown` listener below starts the hold
     // on this button as it does on any `draft-propose` control.
     doc.querySelectorAll('[data-proposalrow] [data-act="row-commit"]').forEach((b) =>
-      b.addEventListener('click', (ev) => {
+      on(b, 'click', (ev) => {
         ev.stopPropagation();
         const d = draftOf();
         if (!d) return;
@@ -4644,13 +4661,13 @@ document.addEventListener('paste', (ev) => {
     // That is also half of why closing felt abrupt: the gesture that should
     // have run the collapse was not reaching it.
     doc.querySelectorAll('.achip[data-anchor], .insert-anchor[data-anchor]').forEach((el) =>
-      el.addEventListener('click', (ev) => {
+      on(el, 'click', (ev) => {
         ev.stopPropagation();
         toggle(el.dataset.anchor, false);
       })
     );
     doc.querySelectorAll('.achip[data-anchor]').forEach((el) =>
-      el.addEventListener('keydown', (ev) => {
+      on(el, 'keydown', (ev) => {
         if (ev.key !== 'Enter' && ev.key !== ' ') return;
         ev.preventDefault(); ev.stopPropagation();
         toggle(el.dataset.anchor, false);
@@ -4666,8 +4683,8 @@ document.addEventListener('paste', (ev) => {
         if (filedOpen.has(k)) filedOpen.delete(k); else filedOpen.add(k);
         renderAll(); drawWires();
       };
-      el.addEventListener('click', (ev) => { if (ev.target === el || !el.classList.contains('open')) flip(ev); });
-      el.addEventListener('keydown', (ev) => {
+      on(el, 'click', (ev) => { if (ev.target === el || !el.classList.contains('open')) flip(ev); });
+      on(el, 'keydown', (ev) => {
         if (ev.key !== 'Enter' && ev.key !== ' ') return;
         ev.preventDefault(); flip(ev);
       });
@@ -4680,7 +4697,7 @@ document.addEventListener('paste', (ev) => {
   function cardPass() {
     // ✏️ on a lane: start writing from that wording (Ed, 228).
     doc.querySelectorAll('[data-propose-from]').forEach((b) =>
-      b.addEventListener('click', (ev) => {
+      on(b, 'click', (ev) => {
         ev.stopPropagation();
         const [id, lane, key] = b.dataset.proposeFrom.split('|');
         const s = SUGGS.find((x) => x.id === id);
@@ -4705,7 +4722,7 @@ document.addEventListener('paste', (ev) => {
     // does — which is the tell that this is `always-on-typing` and not a second
     // mechanism that resembles it.
     doc.querySelectorAll('[data-deadlane]').forEach((el) =>
-      el.addEventListener('beforeinput', (ev) => {
+      on(el, 'beforeinput', (ev) => {
         ev.preventDefault();
         startDraftFromTyping(el, ev);
       })
@@ -4714,7 +4731,7 @@ document.addEventListener('paste', (ev) => {
     // opened on the clause as it stands — you have changed nothing yet — and the
     // character is applied to the rationale once it exists.
     doc.querySelectorAll('[data-deadwhy]').forEach((el) =>
-      el.addEventListener('beforeinput', (ev) => {
+      on(el, 'beforeinput', (ev) => {
         if (ev.inputType !== 'insertText' && ev.inputType !== 'insertFromPaste') return;
         ev.preventDefault();
         const ch = ev.inputType === 'insertText'
@@ -4731,7 +4748,7 @@ document.addEventListener('paste', (ev) => {
     );
     const echo = () => { renderQueue(); drawWires(); };
     doc.querySelectorAll('.edit-why').forEach((el) => {
-      el.addEventListener('input', () => {
+      on(el, 'input', () => {
         const d = draftOf();
         if (!d) return;
         d.rationale = el.innerText.replace(/\n+/g, ' ').trim();
@@ -4753,7 +4770,7 @@ document.addEventListener('paste', (ev) => {
       if (said) said.remove();
     };
     doc.querySelectorAll('[data-lane], .edit-why').forEach((el) =>
-      el.addEventListener('input', () => retireRefusal(el)));
+      on(el, 'input', () => retireRefusal(el)));
     doc.querySelectorAll('[data-lane]').forEach((el) => {
       // Re-marking as you type means rewriting the lane's own markup under the
       // caret, so the caret is taken out by character offset and put back after
@@ -4779,8 +4796,8 @@ document.addEventListener('paste', (ev) => {
         syncProposeCtls();
         layoutQueue(); drawWires();
       };
-      el.addEventListener('input', (ev) => { if (!ev.isComposing) remark(); });
-      el.addEventListener('compositionend', remark);
+      on(el, 'input', (ev) => { if (!ev.isComposing) remark(); });
+      on(el, 'compositionend', remark);
       // The lane has no controls of its own since Q1294 (b): B and I are the
       // column's strip, wired above, and reach this lane's re-mark
       // through `laneRemark` when the caret is here.
@@ -4789,7 +4806,7 @@ document.addEventListener('paste', (ev) => {
       // (Ed, 231) and `plaintext-only` gives a line break instead. The one cost
       // of that is paste, which would otherwise arrive carrying somebody else's
       // markup into the charter.
-      el.addEventListener('paste', (ev) => {
+      on(el, 'paste', (ev) => {
         ev.preventDefault();
         const t = (ev.clipboardData && ev.clipboardData.getData('text/plain')) || '';
         // …and without the escapes docs.vote does not need (Ed, 2026-09-24,
@@ -4843,9 +4860,9 @@ document.addEventListener('paste', (ev) => {
       syncSubmit(document.querySelector('#patchrow [data-patchrow="' + s.id + '"] [data-act="submit"]'));
     };
     doc.querySelectorAll('.sugg [data-v]').forEach((b) => {
-      b.addEventListener('click', (ev) => { ev.stopPropagation(); choose(b); });
+      on(b, 'click', (ev) => { ev.stopPropagation(); choose(b); });
       if (b.getAttribute('role') === 'button') {
-        b.addEventListener('keydown', (ev) => {
+        on(b, 'keydown', (ev) => {
           if (ev.key !== 'Enter' && ev.key !== ' ') return;
           ev.preventDefault(); ev.stopPropagation(); choose(b);
         });
@@ -4854,7 +4871,7 @@ document.addEventListener('paste', (ev) => {
     // stepping between a patch's places: the cards are all open already, so
     // this is pure navigation — bring the next one to the reading line
     doc.querySelectorAll('[data-step]').forEach((b) =>
-      b.addEventListener('click', (ev) => {
+      on(b, 'click', (ev) => {
         ev.stopPropagation();
         const [id, key] = b.dataset.step.split(':');
         const target = doc.querySelector('.sugg[data-card="' + id + '"][data-site="' + key + '"]');
@@ -4863,7 +4880,7 @@ document.addEventListener('paste', (ev) => {
       })
     );
     doc.querySelectorAll('.sugg [data-act]').forEach((b) =>
-      b.addEventListener('click', (ev) => {
+      on(b, 'click', (ev) => {
         ev.stopPropagation();
         if (b.dataset.act === 'draft-propose') {
           if (GESTURE === 'hold') return;                // held, not clicked
@@ -4892,7 +4909,7 @@ document.addEventListener('paste', (ev) => {
     // acknowledging a sealed decision: the only thing that marks it read, and
     // the card closes behind it so the entry visibly settles into its dot
     doc.querySelectorAll('[data-seen]').forEach((el) =>
-      el.addEventListener('click', (ev) => {
+      on(el, 'click', (ev) => {
         ev.stopPropagation();
         seeRecord(el.dataset.seen);
       })
@@ -5929,18 +5946,23 @@ document.addEventListener('paste', (ev) => {
       '</span></span>';
   }
 
+  let tocCtl = null;
   function renderToc() {
     const heads = DOC.filter((l) => l.t === 'h');
-    tocEl.innerHTML = (extra && extra.tocLead ? extra.tocLead() : '') + heads
+    // patched, its listeners this render's (redesign stage 9, as the rail's)
+    if (tocCtl) tocCtl.abort();
+    tocCtl = new AbortController();
+    const tocOn = (el, type, fn) => el.addEventListener(type, fn, { signal: tocCtl.signal });
+    window.PATCH.set(tocEl, (extra && extra.tocLead ? extra.tocLead() : '') + heads
       .map((h, i) => buriedBy(i) ? '' :        // a folded part closes its branch of the rail too
         '<li class="lvl' + (h.level ?? 1) + '">' + toggleHtml(i) +
         // a heading's words, read (Ed, 2026-09-24, ruling 13): its escapes
         // hidden and its marks taken off, as the founder's rail reads `data-h`
         '<a href="#sec-' + i + '" data-toc="' + i + '">' + esc(mdPlain(h.x)) + '</a>' + tocMarksHtml(i) + '</li>')
-      .join('');
+      .join(''));
     tocEl.querySelectorAll('[data-sec-toggle]').forEach((b) => {
       if (!/^\d+$/.test(b.dataset.secToggle)) return;   // the host's own fold keys are its business
-      b.addEventListener('click', (ev) => { ev.preventDefault(); toggleSection(+b.dataset.secToggle); });
+      tocOn(b, 'click', (ev) => { ev.preventDefault(); toggleSection(+b.dataset.secToggle); });
     });
     const toHeading = (n) => {
       // A heading with exactly one question in it *is* that question, so
@@ -5953,16 +5975,16 @@ document.addEventListener('paste', (ev) => {
       travelToHeading('sec-' + n);
     };
     tocEl.querySelectorAll('[data-toc]').forEach((a) =>
-      a.addEventListener('click', (ev) => { ev.preventDefault(); toHeading(+a.dataset.toc); })
+      tocOn(a, 'click', (ev) => { ev.preventDefault(); toHeading(+a.dataset.toc); })
     );
     // **a mark opens its card, a tally goes to its section** (Q1520): the mark
     // is the rail entry's own act — `toggle(id, true)`, which travels through
     // `bringIntoView` — and the tally is the heading's
     tocEl.querySelectorAll('[data-tocq]').forEach((b) =>
-      b.addEventListener('click', (ev) => { ev.preventDefault(); toggle(b.dataset.tocq, true); })
+      tocOn(b, 'click', (ev) => { ev.preventDefault(); toggle(b.dataset.tocq, true); })
     );
     tocEl.querySelectorAll('[data-tocmore]').forEach((b) =>
-      b.addEventListener('click', (ev) => { ev.preventDefault(); toHeading(+b.dataset.tocmore); })
+      tocOn(b, 'click', (ev) => { ev.preventDefault(); toHeading(+b.dataset.tocmore); })
     );
     // Everything the host contributed above the charter's own headings — the
     // Constitution pile head, one entry per live constitution section, the
@@ -5980,7 +6002,7 @@ document.addEventListener('paste', (ev) => {
     // the entry — one handler is what stops the two halves drifting apart
     // again.
     tocEl.querySelectorAll('a[href^="#"]:not([data-toc])').forEach((a) =>
-      a.addEventListener('click', (ev) => {
+      tocOn(a, 'click', (ev) => {
         ev.preventDefault();
         // the id off the anchor's own href, never a guessed prefix: the lead
         // emits four kinds (#cs-constitution, #cs-<key>, #dochead, #h<i>)
@@ -6168,6 +6190,7 @@ document.addEventListener('paste', (ev) => {
   // button. Read mode only: opening any card leaves edit mode. The door steps
   // aside for it (`.doc.patchrow`, system.css) and is back when the card
   // closes. The acts are the card's own, dispatched by the race's id.
+  let patchRowCtl = null;
   function renderPatchRow() {
     const mount = document.getElementById('patchrow');
     if (!mount) return;
@@ -6175,7 +6198,9 @@ document.addEventListener('paste', (ev) => {
     const on = !!s && !EDITING() && !closedMode;
     const host = document.getElementById('doc');
     if (host) host.classList.toggle('patchrow', on);
-    mount.innerHTML = on ? commitBarHtml(s, '', 'proposalrow') : '';
+    if (patchRowCtl) patchRowCtl.abort();
+    patchRowCtl = new AbortController();
+    window.PATCH.set(mount, on ? commitBarHtml(s, '', 'proposalrow') : '');
     if (!on) return;
     mount.querySelectorAll('[data-act]').forEach((b) =>
       b.addEventListener('click', (ev) => {
@@ -6183,7 +6208,7 @@ document.addEventListener('paste', (ev) => {
         const what = b.dataset.act === 'submit' ? pickOf(s) : b.dataset.act;
         if (!what) return;
         act(s.id, what);
-      })
+      }, { signal: patchRowCtl.signal })
     );
   }
 

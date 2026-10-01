@@ -100,7 +100,7 @@ The two probes (`session-probe.js`, `setup-probe.js`) diff the page against a fr
 | 6 | ☑ **The charter's judgment cards** | the tab you click does not move, on the charter; the phone's flush tabs | L — 3–4 sessions, 1–2 QA |
 | 7 | ☑ **Records, the backlog and the closed page** (and the one host change) | the closed page offers only 🥂 and carries no powers; bugs 2, 4, 5 | L — 3 sessions, 1 QA |
 | 8 | ☑ **Edit mode, the proposal row, the phone's drawers** | overlays never cover text, the 📝 door excepted; bugs 9, 10 | M — 2 sessions, 1 QA |
-| 9 | ☐ **Keyed re-render** (principle 10) | `render-hold` green | L — 3–4 sessions, 1 QA |
+| 9 | ☑ **Keyed re-render** (principle 10) | `render-hold` green | L — 3–4 sessions, 1 QA |
 | 10 | ☐ **Retire and fold** | the old shells gone; every guard strict; the principles in SURFACE | S–M — 1–2 sessions |
 
 ### Stage 0 — Measure and guard (no member-visible change)
@@ -246,7 +246,7 @@ Where each stage lands. The rule for all of them: **while a stage is open, no ot
 | `design/fixture-session.js` | the closed page | 0 |
 | `packages/constitution/src/owed.ts` (and its close) | 1541.7 | 7 |
 | `design/tools/card-audit.mjs`, `scripts/copy-check.mjs`, `scripts/spec-check.mjs`, `scripts/clock-check.mjs` | the guards | 0, 1, 9, 10 |
-| `.github/workflows/ci.yml` | the fast strict pass in `probe`; `render-hold-walk` in `repros-b` | 0, 9 |
+| `.github/workflows/ci.yml`, `scripts/ci-walks.sh` | the fast strict pass in `probe`; `render-hold-walk` in `repros-b`, `focus-steal --gap` beside it (the group is `ci-walks.sh`'s, run by `ci.yml`'s `walks` matrix) | 0, 9 |
 | `SURFACE.md`, `design/STYLE.md`, `design/MOBILE.md`, `CLAUDE.md` | as each stage's *Docs* line says | every stage |
 
 ## 6. What this plan does not decide

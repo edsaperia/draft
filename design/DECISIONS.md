@@ -7644,3 +7644,14 @@ Ed walked the builder's calls (a)–(l), numbered 1–12, the same evening. **As
 | # | Title | Raised | State | Pointers |
 |---|---|---|---|---|
 | 1558 | A record tab jumps 24–112px at phone width when another card is open | 2026-09-26 | **filed by Ed for redesign stage 6** — condition to act: stage 6 merged | `card-audit` P11 at 390; `design/redesign/BUILD.md` stage 6 |
+
+## CLAUDE.md's render-lifecycle gotchas, lifted at redesign stage 9 (2026-09-30)
+
+The keyed re-render (`design/patch.js`, principle 10) retired the deferral flags these post-mortems described, and `render-hold-walk` holds what they guarded (the eviction rule, Q736): each gotcha stays in CLAUDE.md as one line naming the guard, and its text as it stood is here, verbatim.
+
+- Under *Nothing rebuilds under a press* (`WAL.penHold` and `SESSION.holding` left `pressInFlight`; the reload keeps them in `gestureInFlight`):
+    - **Both polls defer while a hold is in flight** (`penHold || SESSION.holding`), the flag being module-level because the propose hold's own state is re-created by every render. Guard: `npm run journey`.
+- `dateInFlight` retired:
+  - **A half-typed date has no value, so no render keeper can carry it** (Q1513): a poll after the day and month gave back an empty box and the rest of the keys made a year 0001; a focused answer or motion date box holds off the poll, 30 s from its last key (`dateInFlight`). Guard: `member-questions-walk`'s Q1513 step.
+- `heldCaret`/`restoreCaret` retired:
+  - **A data swap under a caret takes it** (the residency room, 2026-09-18): the typing guard spares the column only while its key stands, and an adoption anywhere moves the key — seven rebuilds a minute under a rationale in a fast room, the words kept and the caret gone. `setData` holds the caret by position. Measured by `node scripts/repro/focus-steal.mjs` (`--lane`); no CI guard.
