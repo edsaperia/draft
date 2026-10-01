@@ -2809,6 +2809,17 @@
 
   window.CARD_STATE.register('charter', {
     owns: (id) => !!SUGGS && SUGGS.some((g) => g.id === id),
+    // **a race's cards are one card across its decision** (issue #143): a
+    // pair, the bare race and the record it seals into share `race:<race>`.
+    // Only the family Q1565 already travels; the others wait on the
+    // inventory's answers (PR comments) before they are named here
+    lineage: (id) => {
+      const s = SUGGS.find((g) => g.id === id);
+      if (!s || s.fold) return null;
+      if (s.raceId) return 'race:' + s.raceId;
+      const m = /^rec:(?!early:)([^/]+)(?:\/\d+)?$/.exec(id);
+      return m ? 'race:' + m[1] : null;
+    },
     card: (id) => {
       const s = SUGGS.find((g) => g.id === id);
       return { kind: stateOf(s) === 'sealed' ? 'record' : s.kind, id, anchor: (s.keys ?? [])[0] || null };
