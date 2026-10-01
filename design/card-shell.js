@@ -340,6 +340,39 @@ window.CARD_SHELL = (function () {
     return out;
   }
 
+  /**
+   * **A card that changes while you have it open morphs in place** (issue
+   * #143, Ed 2026-10-01: *the decision card will remain open but change
+   * smoothly into the record card*). `el` is the open card's frame, the node
+   * it was before the change (kept by its lineage), and `h0` its height
+   * then: the box glides from the old height to the new over the
+   * card-morph's 190 ms, the same glide a switch within one strip makes, and
+   * everything below the head crossfades in over `--wash-ms`. The head — the
+   * clause and its strip — never fades, so the tab pressed never blinks.
+   * Under reduced motion the content has already swapped, and nothing glides.
+   */
+  const MORPH_MS = 190;
+  function morph(el, h0) {
+    if (!el || !el.isConnected || h0 == null) return;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const h1 = el.offsetHeight;
+    const parts = window.CARDS.cardBody(el);
+    const washMs = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--wash-ms')) || 700;
+    el.style.clipPath = 'inset(-60px -100px 0 -100px)';
+    el.style.height = h0 + 'px';
+    parts.forEach((c) => { c.style.opacity = '0'; });
+    void el.offsetHeight;
+    el.style.transition = 'height ' + MORPH_MS + 'ms cubic-bezier(.22, .61, .36, 1)';
+    el.style.height = h1 + 'px';
+    parts.forEach((c) => { c.style.transition = 'opacity ' + washMs + 'ms ease-out'; c.style.opacity = '1'; });
+    el.dataset.morphing = '1';
+    setTimeout(() => { el.style.height = ''; el.style.clipPath = ''; el.style.transition = ''; }, MORPH_MS + 10);
+    setTimeout(() => {
+      parts.forEach((c) => { c.style.opacity = ''; c.style.transition = ''; });
+      delete el.dataset.morphing;
+    }, washMs + 10);
+  }
+
   return { cardHtml, pillHtml, pickPillHtml, rowShape, PRESENT, esc,
-    fit, roomOf, clearTop, takeRoomBack, holdLine, lineTop, isShell, glassTop };
+    fit, roomOf, clearTop, takeRoomBack, holdLine, lineTop, isShell, glassTop, morph, MORPH_MS };
 })();

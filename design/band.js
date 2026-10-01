@@ -56,7 +56,7 @@ window.BAND = (function () {
       renderPowerWallets, renderRail, renderTitle, resolveCounts, sentenceFor,
       serverNow, settled, signedClose, slugNoteHtml, slugRefused, standsTyped,
       strangerCardHtml, strangerReadCard, syncCharter, syncFromCs, syncGrantAcks,
-      syncOwedDepartures, syncOwedHeld, syncOwedMailGiveUps, syncOwedOks, syncOwedReleases,
+      syncOwedDepartures, syncOwedHeld, syncOwedMailGiveUps, syncOwedOks, syncOwedReleases, bandFollow,
       takeSnap, takingBack, textDivs, titlePending, titleStands, viewerIsClerk, viewerIsMember,
       wantsDelegate, whyLane, wordsFor } = env;
     // the shared module, the same names the page destructures from it
@@ -1392,7 +1392,10 @@ window.BAND = (function () {
         // from; a card the source draws no frame for — its subject left the
         // page while it stood open — is `readState`'s, never an old body
         const st = window.CARD_STATE.stateOf(c.k, { siblings: g.cards });
-        return glyphify(window.CARD_SHELL.cardHtml(st.frame ? st : readState(c, g.cards, ctx, PAGE_COPY.noLongerOutstanding)));
+        // …and a card whose subject has left while it was open (issue #143,
+        // call E) is §9's `read` card, wearing the lineage it opened with
+        return glyphify(window.CARD_SHELL.cardHtml(st.frame && !c.gone ? st
+          : Object.assign(readState(c, g.cards, ctx, PAGE_COPY.noLongerOutstanding), { lineage: window.CARD_STATE.lineageOf(c.k) })));
       };
       // the title card opens in the title's own paragraph, whatever else
       // the band is doing — the clause, opened, with its tab in its strip
@@ -1702,6 +1705,9 @@ window.BAND = (function () {
       syncOwedMailGiveUps();
       syncOwedDepartures();
       syncOwedHeld();
+      // **the open card follows what its item became** (issue #143): after
+      // the module has had its say, before anything is drawn
+      bandFollow();
       // the address is checked because it is the address (see `checkSlug`): a
       // pre-filled 📍 nobody edited would otherwise reach the send unasked.
       // Idempotent — a repeat ask about an address already answered is a
@@ -1729,7 +1735,16 @@ window.BAND = (function () {
       const closedNow = !!(env.cs && env.cs.closed);
       SESSION.setDocClosed(closedNow);
       SESSION.setSigned(closedNow && signedClose());
+      // **a card that changed while open morphs where it stands** (issue
+      // #143): the frame is the node it was (its lineage), so its height
+      // glides and its body crossfades — on a follow, or where the card's
+      // shell kind changed under it (a motion awaiting 👑, a rule settled)
+      const wasEl = document.querySelector('#band .setupcard.gshell[data-lineage]');
+      const was = wasEl ? { el: wasEl, h: wasEl.offsetHeight, kind: wasEl.dataset.kind } : null;
       renderTitle(); renderRail(); renderBand(); syncCharter(); renderMail(); renderPowerWallets();
+      if (was && was.el.isConnected && (env.bandTravelled || was.el.dataset.kind !== was.kind)) {
+        window.CARD_SHELL.morph(was.el, was.h);
+      }
       window.PATCH.set(document.getElementById('mebtn'), avHtml(
         S.viewer === 'applicant' ? { n: S.app.name || '?', pic: S.app.pic }
         : isStranger() ? { n: '?', pic: '' } : me(), 'face'));

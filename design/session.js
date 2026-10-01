@@ -666,7 +666,7 @@
   // members file as they always did.
   const FOLD_PREFIX = 'fold:';
   const FOLD_OF = new Map();       // a folded record's id → its fold's id
-  const foldable = (g) => stateOf(g) === 'sealed' && isUnread(g) && !g.fold && !g.amendment &&
+  const foldable = (g) => stateOf(g) === 'sealed' && isUnread(g) && !g.fold && !g.amendment && g.id !== openId &&
     !g.early && !g.undecided && !(g.mineIn || []).length && !g.isInsert && !g.gapKey &&
     (g.keys || []).length > 0 && !(g.keys || []).some(isGapKey);
   // the rail's id for a card: a folded record's is its fold's (one entry)
@@ -2814,17 +2814,11 @@
 
   window.CARD_STATE.register('charter', {
     owns: (id) => !!SUGGS && SUGGS.some((g) => g.id === id),
-    // **a race's cards are one card across its decision** (issue #143): a
-    // pair, the bare race and the record it seals into share `race:<race>`.
-    // Only the family Q1565 already travels; the others wait on the
-    // inventory's answers (PR comments) before they are named here
-    lineage: (id) => {
-      const s = SUGGS.find((g) => g.id === id);
-      if (!s || s.fold) return null;
-      if (s.raceId) return 'race:' + s.raceId;
-      const m = /^rec:(?!early:)([^/]+)(?:\/\d+)?$/.exec(id);
-      return m ? 'race:' + m[1] : null;
-    },
+    // **one card across a change** (issue #143): the open card keeps the
+    // lineage it opened with for as long as it stays open, whatever item it
+    // travels to (`openLin`), so its frame and its rail entry keep their
+    // nodes; any other card's lineage is its natural one
+    lineage: (id) => (id === openId ? openLineage() : naturalLineage(id)),
     card: (id) => {
       const s = SUGGS.find((g) => g.id === id);
       return { kind: stateOf(s) === 'sealed' ? 'record' : s.kind, id, anchor: (s.keys ?? [])[0] || null };
@@ -3236,7 +3230,7 @@
       ? { siteKey: ((siteKey && siteFor(s, siteKey)) || s.sites[0]).keys[0] }
       : siteKey ? { siteKey } : undefined;
     const st = window.CARD_STATE.stateOf(s.id, hints);
-    return window.CARD_SHELL.cardHtml(st.frame ? st : Object.assign(st, readPresent(s)));
+    return window.CARD_SHELL.cardHtml(st.frame && !s.gone ? st : Object.assign(st, readPresent(s)));
   }
 
   // committing
@@ -5166,6 +5160,8 @@ document.addEventListener('paste', (ev) => {
   // its clause is settled and the document should look settled — while an
   // unacknowledged one keeps a tint, because it still owes you something.
   const anchHue = (g) => {
+    // a card whose subject has left (issue #143, call E) is greyed in its slot
+    if (g && g.gone) return 'closed';
     const st = stateOf(g);
     // Green is for what **changed**, not for what pinned itself: a retired
     // decision you judged holds a slot in the margin because you are owed an
@@ -6067,6 +6063,7 @@ document.addEventListener('paste', (ev) => {
   function bindData(d, s, prev) {
     // the card being read, and every id this column held, before the swap:
     // what the open card travels from where its race is decided (Q1565)
+    if (ghost && openId !== ghost.id) ghost = null;
     const before = openId != null && SUGGS ? SUGGS.find((g) => g.id === openId) || null : null;
     const had = new Set((SUGGS || []).map((g) => g.id));
     // a fold handed back in (a `setData` with no fresh items) is its members
@@ -6123,7 +6120,21 @@ document.addEventListener('paste', (ev) => {
     // it; asked after the fold, so a fold open across a poll keeps its card
     if (openId != null && !SUGGS.some((g) => g.id === openId)) {
       const to = before ? successorOf(before, had) : null;
-      openId = to ? to.id : null;
+      // **the card you are reading stays open and becomes what its item
+      // became** (issue #143, Ed 2026-10-01: *the decision card will remain
+      // open but change smoothly into the record card*): the travel keeps the
+      // card's lineage, so its frame and its entry are the nodes they were;
+      // where nothing follows, the item is kept `gone` and reads as §9's
+      // `read` card (call E) — except on a closed document, whose close is
+      // one page-wide re-lay (call H)
+      if (to) { travelTo(to.id); ghost = null; }
+      else if (before && !closedMode && !before.fold) {
+        ghost = Object.assign({}, before, { gone: true, unread: false });
+        SUGGS.push(ghost);
+      } else { openId = null; ghost = null; }
+      // **no fold forms around the record you are reading** (call F): the
+      // travel lands after `refold`, so a record it lands on is unfolded here
+      if (to && FOLD_OF.has(to.id)) refold();
       // …and **a record you watched decide is read at the travel** (1565 (b),
       // Ed 2026-09-29 17:27 UTC, ruling (a)): every travelled-to record files
       // as read the moment the card becomes it, nothing owed on it, so the
@@ -6135,18 +6146,63 @@ document.addEventListener('paste', (ev) => {
       }
     }
   }
+  // **what a card is about** (issue #143): a race's pair, its bare item and
+  // its record share `race:<race>`; a fold, the clause it gathers
+  function naturalLineage(id) {
+    const s = SUGGS.find((g) => g.id === id);
+    if (!s) return null;
+    if (s.fold) return 'clause:' + ((s.keys ?? [])[0] || id);
+    if (s.raceId) return 'race:' + s.raceId;
+    const m = /^(?:rec|park):(?!early:)([^/]+)(?:\/\d+)?$/.exec(id);
+    return m ? 'race:' + m[1] : null;
+  }
+  // the lineage the open card opened with, kept across its travels until it
+  // closes: set afresh whenever `openId` names an item it did not travel to
+  let openLin = { id: null, lin: null };
+  function openLineage() {
+    if (openLin.id !== openId) openLin = { id: openId, lin: openId == null ? null : naturalLineage(openId) || openId };
+    return openLin.lin;
+  }
+  // a travel carries the lineage across: the item changes, the card does not
+  const travelTo = (id) => { const lin = openLineage(); openId = id; openLin = { id, lin }; };
+  // **a card whose subject leaves with nothing to follow it** (issue #143,
+  // call E): the item is kept, `gone`, while it stays open, and draws as §9's
+  // `read` card — *This is no longer outstanding.* — its entry greyed in its
+  // slot; it goes when the card closes
+  let ghost = null;
   // the record a live item became: its race's record (`rec:<race>`, or
   // `rec:<race>/<n>` after an adoption split it — Q1534), or for a proposal
   // of your own the record holding your wording (`mineIn`) or its early ✖;
   // one that has just arrived before one already here
   function successorOf(item, had) {
-    const race = item.raceId || null;
+    // a park's race is its key's (`park:<race>`): the record it lifts into
+    const race = item.raceId || (/^park:(.+)$/.exec(item.id || '') || [])[1] || null;
     const cand = item.candidate || null;
     const ofIt = (g) => stateOf(g) === 'sealed' && !g.fold && (
       (race && (g.id === 'rec:' + race || g.id.startsWith('rec:' + race + '/'))) ||
       (cand && (g.id === 'rec:early:' + cand || (g.mineIn || []).includes(cand))));
     const found = SUGGS.filter(ofIt);
-    return found.filter((g) => !had.has(g.id)).pop() || found.pop() || null;
+    const rec = found.filter((g) => !had.has(g.id)).pop() || found.pop() || null;
+    if (rec) return rec;
+    // **the pair under you changed with no decision** (issue #143, call B):
+    // re-dealt on the same race, or the race renamed by a withdrawal, a
+    // retirement or a merge — the race's next card, found by a wording the
+    // old pair held (a renamed race keeps its candidates, not its id)
+    const sides = (g) => [g.card && g.card.a, g.card && g.card.b, g.candId].filter(Boolean)
+      .filter((c) => !(g.card && g.card.inc && g.card[g.card.inc] === c));
+    const mine = new Set(sides(item));
+    const live = (g) => stateOf(g) !== 'sealed' && !g.fold && g.kind !== 'draft' && g.kind !== 'park' && g.kind !== 'crown';
+    const sameRace = race && SUGGS.find((g) => live(g) && g.raceId === race && !had.has(g.id));
+    if (sameRace) return sameRace;
+    const shared = mine.size && SUGGS.find((g) => live(g) && g.raceId && !had.has(g.id) && sides(g).some((c) => mine.has(c)));
+    if (shared) return shared;
+    // **an open fold that drops to one record** (call F): that record
+    if (item.fold) {
+      const k = (item.keys ?? [])[0];
+      const one = SUGGS.find((g) => stateOf(g) === 'sealed' && !g.fold && (g.keys ?? [])[0] === k && (item.fold || []).some((m) => m.id === g.id));
+      if (one) return one;
+    }
+    return null;
   }
 
   // A host that derives the document and its items from a server view hands
@@ -6187,9 +6243,32 @@ document.addEventListener('paste', (ev) => {
     // and the lane or reason box holding the caret is the node it was, its
     // words and its caret untouched — `render-hold-walk`'s two carets and
     // focus-steal `--lane` are the proof; `heldCaret` retired at stage 9)
+    // **the open card, as it stood before the swap** (issue #143): its frame
+    // node, its height and what it was showing, so a card the swap changes
+    // morphs where it stands rather than being replaced
+    const was = openFrameNow();
     bindData((next && next.DOC) || DOC, suggs, prevDoc);
     renderAll();
+    morphIfChanged(was);
     if (textChanged && hooks.textChanged) hooks.textChanged();
+  }
+  // the open card's frame on the page now: the one wearing the open card's
+  // lineage (a patch's first site, where it stands at several)
+  function openFrameNow() {
+    if (openId == null || !doc) return null;
+    const lin = openLineage();
+    const el = lin ? [...doc.querySelectorAll('.sugg.gshell[data-lineage]')].find((x) => x.dataset.lineage === lin) : null;
+    return el ? { el, h: el.offsetHeight, sig: frameSig(el) } : null;
+  }
+  // what a frame is showing, for telling a change from a re-render: the
+  // item, the shell kind and the label
+  const frameSig = (el) => [el.dataset.card, el.dataset.kind,
+    ((el.querySelector('[data-slot="label"]') || {}).textContent || '').trim()].join('|');
+  function morphIfChanged(was) {
+    if (!was) return;
+    const now = openFrameNow();
+    if (!now || now.el !== was.el || now.sig === was.sig) return;
+    window.CARD_SHELL.morph(now.el, was.h);
   }
 
   // everything renderAll does except the charter itself — a host whose band
