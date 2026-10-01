@@ -22,7 +22,8 @@
  *             pile; its records keep theirs, and each opens that record's own card
  *             whose OK acknowledges that record only (Q1561), the tab unmoved
  *   net       the fold's head is the clause now, marked against the text before the
- *             first of them; every record in it is drawn in full, oldest first (Q1561)
+ *             first of them; every record in it is drawn in full, newest first, the
+ *             original once at the bottom (Q1561; Ed, 2026-10-01)
  *   same (A)  a fold of ✖s alone says under its plain head that nothing changed
  *   pin       the one pinned owed text record is the next clause card in document order
  *   walk (C)  Enter on the line-4 ✔ wraps to the top: the Rules' owed news, the keyboard
@@ -295,38 +296,39 @@ const card = await page.evaluate((id) => {
 check('the fold\'s head is the clause now', card && card.head === 'Beta by r.', JSON.stringify(card));
 check('…marked against the text before the first of them, and not said to be unchanged',
   card && card.base === 'Beta line one.' && card.ins === 'by r' && !card.same, `ins ${card?.ins} · against ${card?.base}`);
-check('every record in it is drawn in full, oldest first', card && card.parts.length === 3
+check('every record in it is drawn in full', card && card.parts.length === 3
   && JSON.stringify(card.fold) === JSON.stringify(members), JSON.stringify({ parts: card?.parts, fold: card?.fold }));
 // **each version once, not each change** (Ed, 2026-10-01: *not [(v0->v1), (v1->v2),
-// (v2->v3)] but instead [v0, v1, v2, v3]*): one *Previous text* in the fold, the
-// original, before every record and inside none; each ✔ marked against the version
-// above it (result-only, K25: what it inserted), and X's ✖ draws no head of its own,
-// making no version
+// (v2->v3)] but instead [v0, v1, v2, v3]*), **newest first** (Ed, the same day: *each
+// change getting older as you go down, with the oldest at the bottom*): the records R2,
+// X, R1 top to bottom, one *Previous text* in the fold, the original, after every record
+// and inside none; each ✔ marked against the text it replaced (result-only, K25: what
+// it inserted), and X's ✖ draws no head of its own, making no version
 const versions = await page.evaluate((id) => {
   const c = [...document.querySelectorAll('.sugg[data-card]')].find((x) => x.dataset.card === id);
   if (!c) return null;
   const isPrev = (el) => ((el.querySelector('.glab') || {}).textContent || '').trim() === 'Previous text';
   const prevs = [...c.querySelectorAll('.ranked')].filter((b) => !b.classList.contains('foldpart') && isPrev(b));
   const parts = [...c.querySelectorAll('.foldpart')];
-  const first = c.querySelector('.ranked');
+  const tops = [...c.querySelectorAll('.ranked')].filter((b) => !(b.parentElement && b.parentElement.closest('.ranked')));
   // a block's head is its own `.rtext`; the wordings it weighed are nested blocks
   const head = (b) => { const t = b.querySelector(':scope > .rtext'); return t && t.textContent.trim() ? t : null; };
   return {
     prevs: prevs.length,
-    prevFirst: !!first && prevs[0] === first,
+    prevLast: tops.length > 0 && prevs[0] === tops[tops.length - 1],
     prevText: prevs[0] ? (prevs[0].querySelector('.rtext') || prevs[0]).textContent.replace(/^Previous text/, '').trim() : null,
     inside: parts.filter((b) => [...b.querySelectorAll('.ranked')].some(isPrev)).length,
     heads: parts.map((b) => { const t = head(b); return t ? { ins: [...t.querySelectorAll('ins')].map((e) => e.textContent).join('|'),
       del: [...t.querySelectorAll('del')].map((e) => e.textContent).join('|'), text: t.textContent.trim() } : null; }),
   };
 }, fold?.id);
-check('the fold draws one Previous text, first, the text before them all, and no record draws its own',
-  versions && versions.prevs === 1 && versions.prevFirst && /Beta line one\./.test(versions.prevText || '') && versions.inside === 0,
+check('the fold draws one Previous text, last, the text before them all, and no record draws its own',
+  versions && versions.prevs === 1 && versions.prevLast && /Beta line one\./.test(versions.prevText || '') && versions.inside === 0,
   JSON.stringify(versions));
-check('…R1 marked against it, X\'s ✖ no head, R2 marked against the version above',
-  versions && versions.heads.length === 3 && !!versions.heads[0] && versions.heads[0].ins === 'two'
+check('…newest first: R2 marked against the text it replaced, X\'s ✖ no head, R1 marked against the original',
+  versions && versions.heads.length === 3 && !!versions.heads[0] && versions.heads[0].ins === 'three' && versions.heads[0].text === 'Beta line three.'
     && versions.heads[1] === null
-    && !!versions.heads[2] && versions.heads[2].ins === 'three' && versions.heads[2].text === 'Beta line three.',
+    && !!versions.heads[2] && versions.heads[2].ins === 'two' && versions.heads[2].text === 'Beta line two.',
   JSON.stringify(versions && versions.heads));
 check('…and the fold and each record have their own tab in the card\'s strip',
   card && card.strip.includes(fold?.id) && members.every((m) => card.strip.includes(m)), JSON.stringify(card?.strip));
