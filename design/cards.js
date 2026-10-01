@@ -212,8 +212,12 @@ window.CARDS = (function () {
   // 2026-09-26) — the tab at the head of a clause's pile when several records
   // there are owed, whatever they hold, ✖s alone included: the stack says
   // *several decisions here*, not which way they went, which is each record's
-  // own tab's to say. Fluent's check, three times, stepped down and right
-  const FOLDSTACK = mkSvg('fold', '<g fill="currentColor">' + [[1, 1], [6.5, 6.5], [12, 12]].map(([x, y]) =>
+  // own tab's to say. Fluent's check, three times, **one above another in a
+  // single column** (Ed, 2026-10-01: *the ✔️s should sit in one column
+  // vertically*): one x, the ink centred in the 32-unit box (the check's ink
+  // at scale(0.6) is x 1.32–17.89, y 5.57–17.86, measured by getBBox), stepped
+  // down only and still overlapping, top and foot 0.25 inside the box
+  const FOLDSTACK = mkSvg('fold', '<g fill="currentColor">' + [[6.4, -5.3], [6.4, 4.3], [6.4, 13.9]].map(([x, y]) =>
     '<g transform="translate(' + x + ' ' + y + ') scale(0.6)">' +
     CHECK.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '') + '</g>').join('') + '</g>');
   // **The two Fluent files this alphabet does not take** are the pause button
