@@ -205,12 +205,16 @@ const bt1 = await blockTop(pb, K1);
 check('2 · inside the dwell A stays at ' + K1 + ' on B\'s page', !!aMark() && Math.abs(aMark().top - bt1.top) <= 1.5,
   `mark ${JSON.stringify(aMark())} · ${K1} at ${bt1 && bt1.top}`);
 check('2 · …and in B\'s view', (await viewAs(B)).reading.some((r) => r.id === ME.A && r.at === K1), 'the view moved before the dwell');
+// the glide's length is the page's own token (--reading-ms), never a literal here
+const READING_MS = await pb.page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--reading-ms')));
+check('2 · the move has its own token', READING_MS > 0, '--reading-ms ' + READING_MS);
 await sleep(DWELL + 300);
 await relay([pa], pb);
-await sleep(100);
+// relay's own 500 ms after B's poll are already in the glide
+await sleep(Math.max(0, READING_MS / 2 - 500));
 // mid-glide: the same node, between the two lines
 const midTop = (await margin(pb) || []).find((x) => x.k === 'm:' + ME.A);
-await sleep(900);
+await sleep(READING_MS / 2 + 300);
 m = await margin(pb);
 const bt3 = await blockTop(pb, K3);
 const same = await pb.page.evaluate((me) => { const el = document.querySelector('#reading [data-k="m:' + me + '"]'); return el ? el.__walkTag : null; }, ME.A);

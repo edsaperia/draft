@@ -1853,7 +1853,8 @@ function checkClaudeMd() {
  * *Measured by*, *Walked by* or *reproduces it* anywhere in the Glossary —
  * both its files, `design/GLOSSARY.md` since Q1548 — or Gotchas. It resolves
  * when the workflows (and `scripts/ci-walks.sh`, which the walks job calls)
- * run that npm script or that file — comments do not count — and a
+ * run that npm script (by name or by its own command line) or that file —
+ * comments do not count — and a
  * `*.test.ts` resolves to `npm test`.
  *
  * **A warning, not a finding** (the builder's brief, 2026-09-23: *don't make
@@ -1916,7 +1917,10 @@ function checkGuardsRun() {
   const base = (p) => p.split('/').pop();
   const unrun = [];
   for (const [g, head] of guards) {
-    const ok = g.startsWith('npm run ') ? ranScripts.has(g.slice(8))
+    // an npm script resolves by name or by its own command line: ci-walks.sh
+    // runs `node scripts/render-hold-walk.mjs`, which is the same guard as
+    // `npm run render-hold-walk` (Q1541 stage 10)
+    const ok = g.startsWith('npm run ') ? ranScripts.has(g.slice(8)) || (!!pkg[g.slice(8)] && ran.includes(pkg[g.slice(8)]))
       : g.endsWith('.test.ts') ? ranScripts.has('test')
       : RUN_BY[base(g)] ? ranScripts.has(RUN_BY[base(g)])
       : ranText.includes(g) || ranText.includes(base(g));

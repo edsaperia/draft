@@ -738,6 +738,8 @@ window.COPY = (function () {
     // the wire did not answer, or answered with a status and no sentence
     noAnswer: (status) => (status ? 'the server answered ' + status : 'the server could not be reached'),
     binPutBack: 'Put it back as it stands',
+    // a news card whose news has gone from the view while it stood open
+    noLongerOutstanding: 'This is no longer outstanding.',
     // the composer's 🗑️ and a settings ✒️'s tooltip, where the one shell
     // draws them (Q1541 stage 3b) — the words the old rows carried
     discardMotion: 'Discard this motion',
@@ -746,17 +748,6 @@ window.COPY = (function () {
     founderMark: {
       crowned: 'Some of the rules are reserved: changing them needs the founder’s assent',
       none: 'The Founder reserves nothing — no special part in the document',
-    },
-    // **The lockline tells the truth about who set it** (Q510 (a), Ed
-    // 2026-08-21): the line under the value on a settled card. It had said
-    // *Set by the founder when the document was made* on every rule, the ones
-    // the room decided by consent included, and the *when* survives only
-    // where it is true. Three surfaces print the pair — the member's card,
-    // the stranger's door and the shared settled body's own fallback — which
-    // is why it is one entry rather than three spellings (issue #19).
-    lockline: {
-      members: 'Decided by the members.',
-      founder: 'Set by the founder when the document was made.',
     },
     // 📍's verdict fragments, composed around the bold address
     slugNote: {

@@ -4808,7 +4808,8 @@ packages/engine-core/src at commit `2f24490`.*
 
     **Where it stands (docs pass, 2026-09-07):** half done — SPEC's Appendix A is *Engine tuning* and §9.7.1 holds the settings (Q562); `packages/engine-core/src/types.ts` still declares one `Constitution` interface with `hotSetSize` beside the threshold (lines 16–19).
 
-    (raised 2026-08-18, PLAN.md §2.2; expanded after Ed asked why it matters). engine-core has one object holding both — the threshold, the grant, the drip, the stake and the window on one side, and `hotSetSize`, `explorationEvery`, `boutGapMs`, `deadlockEpsilon`, `cooldownMs`, `redraftLimit` on the other. Three things go wrong while they share a name. The **record** published at the close would list a tuning constant beside the threshold as though the room had agreed it. The **motion** machinery routes on whether a setting is constitutional, and with one object there is nothing stopping somebody moving to amend `boutGapMs`. And the **ceremony** has no definable output: what the founding questions produce *is* the room’s half of this object, and it cannot produce half of a thing. The cost is a rename across engine-core and sim-harness today, against a data migration once real documents exist with saved settings. Recommendation: **now**. The only reason it is a question at all is that it touches a package that should not change without Ed’s word. **Status 2026-08-18:** the in-depth review Ed asked for is delivered as REVIEW-creation-session.md; its §7 is the definitive field-by-field mapping, and the split is one commit once he has read it (338’s answer decides one field’s home). *The document-level half landed 2026-08-22 (spec pass 1, Q562): Appendix A is now* Engine tuning *and holds only what nobody is asked; the settings are §9.7.1. The engine-core object is still one.*
+    (raised 2026-08-18, PLAN.md §2.2; expanded after Ed asked why it matters). engine-core has one object holding both — the threshold, the grant, the drip, the stake and the window on one side, and `hotSetSize`, `explorationEvery`, `boutGapMs`, `deadlockEpsilon`, `cooldownMs`, `redraftLimit` on the other. Three things go wrong while they share a name. The **record** published at the close would list a tuning constant beside the threshold as though the room had agreed it. The **motion** machinery routes on whether a setting is constitutional, and with one object there is nothing stopping somebody moving to amend `boutGapMs`. And the **ceremony** has no definable output: what the founding questions produce *is* the room’s half of this object, and it cannot produce half of a thing. The cost is a rename across engine-core and sim-harness today, against a data migration once real documents exist with saved settings. Recommendation: **now**. The only reason it is a question at all is that it touches a package that should not change without Ed’s word. **Status 2026-08-18:** the in-depth review Ed asked for is delivered as REVIEW-creation-session.md; its §7 is the definitive field-by-field mapping, and the split is one commit once he has read it (338’s answer decides one field’s home).
+ *The document-level half landed 2026-08-22 (spec pass 1, Q562): Appendix A is now* Engine tuning *and holds only what nobody is asked; the settings are §9.7.1. The engine-core object is still one.*
 
 1267. **§7's table is the 2026-08-18 mapping and Q335 has moved under it.** (Raised by the documents pass of 2026-09-07, REVIEW-creation-session.md log §6 item 1.) Two of its three tables are now wrong in detail (the *missing from the engine* table names settings the constitution package has held since 2026-08-19; the field table names cards by retired glyphs), and its recommendation (*implement the split as its own commit once Ed has read this — it is still a rename today*) predates the constitution package, which took the room-agreed half out of engine-core's reach without splitting the engine's own object. The brief said keep §7 whole, so I did and added the state note. Readings for Ed: (a) leave until Q335 lands (as committed); (b) rewrite §7 as the current mapping — engine-core `Constitution` fields × where each is decided today (catalogue setting / operator env / config field) — which is most of Q335's remaining work and would make this file that work's plan; (c) close Q335 as *done by the constitution package* if the one-bag engine object is acceptable, and delete the file. **Ruled by Ed, 2026-09-07: (c).** Q335 closes as done by the constitution package; the file is deleted, §7 lifted verbatim into DECISIONS; CLAUDE.md's Documents row goes.
 
@@ -7681,3 +7682,372 @@ Ed, 2026-09-30, in the coordinator's session: *When you make a proposal it's pin
 - **A log event per report.** The gotcha Q681 earned: a read that writes pins the clock. The host's memory holds the table and a restart forgets it.
 - **The matrix step.** `seat-matrix` seats never scroll, so a step producing a dwell would be a design of its own; E43's audience cell is read by the static half and the row's guard is `presence-walk`.
 - **A closed document's margin.** Nobody is deciding anything there; the host serves no `reading` on a closed document and the page draws none.
+
+## The surface redesign's phase one: grammar §0, §7 and §10 (2026-09-25, lifted at redesign stage 10, 2026-10-01)
+
+The reasoning behind the one shell and the ten principles (Q1541), from `design/redesign/grammar.md`, which stays in `design/redesign/` as the design reference: §0 is what v2 changed from v1 and why, §7 the breaks the grammar was written against, §10 what the prototype proved and what the programme would cost. Verbatim as they stood at stage 10; headings demoted two levels.
+
+#### 0. Changes from v1
+
+Two independent reviews of v1 — the adversarial critique (`critique.md`, findings 1–19 and notes A–H) and the stage-4 mockups' amber notes (`mockups.html`, 39 of them) — found the same weaknesses. v1 was right about the frame (the band's settled cards read better at once) and wrong in four places: it read *a closed document offers nothing* as *shows nothing*, it let the head carry no label, it treated every card as a place when some cards are acts or questions, and it stated its geometry without exceptions it could not keep. v2's answers:
+
+| # | v1 said | v2 says | why (the finding) |
+|---|---|---|---|
+| 1 | P4: a closed document *offers nothing but 🥂* | **P4 v2**: it offers **no act** but 🥂's signature and keeps everything it recorded readable; **B7 v2** is narrowed to settings ladders — proposals, rivals and cut-off races stay as labelled blocks with no controls | critique 1, 2, D; amber 6, 7, 8, 17, 23 — a cut-off race opened to its clause alone, the deadlock lost its eight proposals, the locked 🎩 printed a fact and its opposite |
+| 2 | B2/B3: every card heads with its place, and no card has a title | **P9 v2 and the label slot (§2.3a)**: a place card's head stays the line, but a card that is an act or a question (✋ 🖼️ 📧, 🌂, 🥂, 🍾, the grants, the power cards, 🎩 while asked, 👑) carries its ask as the **head label**; **B3 is withdrawn** in favour of **O6 (b)** | critique 10, amber 16, 36 — 🌂 named no act, the personal cards asked nothing |
+| 3 | O1 (a): a block's label in its lane, beside its radio | **one label slot**: every block's label is its **first line**, the head's label sits in the card's top inset, drawn one way, and present wherever two similar paragraphs could be confused (Q207). A block with no live control cannot be built without a label | critique 4, 5, G; amber 2, 3, 9, 12, 21, 26 — four label placements; Q207's reader lost wherever the head had no radio |
+| 4 | B4: the eyebrow and the dateline move below the head | **B4 v2**: the eyebrow's job moves into the head label, which does not displace the head; **a record's outcome comes first again** — it *is* the record's head label, in the outcome's colour (Q1522 kept); a superseded record says it is history | critique 3; amber 3 |
+| 5 | P5/P8: a dark control *says* what will wake it | **P5 v2, P8 v2**: it says so **in words on the card**, in the row's note slot — a tooltip is not a note, since a phone has no hover; two dark commits with two reasons show both | critique 8, E |
+| 6 | P1/P2 without exceptions | **P1 v2, P2 v2**: four stated exceptions to *word for word* (record, multi-place patch, gap, the birth's 🪶) and two to *moves 0 px* (a patch's other places, a filed tab's peek); a **top-edge budget** (**G5**): a card rises above its head only into the space above the head, never over ink | critique 6, 15, A, B — 📍 covered 🪶's descenders |
+| 7 | the head is *the line*, power line and all, with no view on phase | **P3 v2**: a settings card's head is the rule's line **without its power line** — Ed's own ruling of 2026-09-03 (*the document keeps the powers; the card drops them*, session-view.html's `clauseText`), which v1 overrode unannounced; the power line is the subject of the ✒️ 🛡️ tabs' cards. **P4 v2**: a head is **true in the card's phase** — no *may amend this at will* on a closed document | critique C; amber 1, 13, 15, 19 |
+| 8 | power cards head with the rule | **B8 v2**: a power card heads with **the power's own clause**; its fact line says who holds the power | critique 7; amber 18, 19 |
+| 9 | P7: the solid accent is the acknowledgement alone | **P7 v2** made true: a chosen radio is a filled dot, not a filled pill; a vote on a text that has since changed is a fact, not a pressed *Preferred*; no green on ✓, recorded or armed | critique 9, F |
+| 10 | 🗑️ alone withdraws | **J2 v2**: a withdraw carries its word | critique 11 |
+| 11 | the 📝 door inside the sheet (G4) | **Ed's 2026-09-24 ruling restored** — the door straddles the page's edge; **G4 v2** makes the floating layer a sanctioned overlay that may cross a zone's edge but never covers a line of text | checks.md doubt 2; amber 39 |
+| 12 | cards emptied by the grammar keep the strip's height | **G6 (new)**: the card ends where its content ends; a strip longer than the card hangs on down the gutter, and only the content below is pushed | amber 13, 20, 23, 31, 38 |
+| 13 | (not stated) | **§10**: the prototype is a sorter over today's markup; the checks pass against a sorter; converting the 40 card bodies to read one `CardState` (**O7**) is the programme's main cost; **P10 is not built** | critique 13, H |
+
+Smaller v2 changes, each marked where it lands: 👑's current rule appears once and its reason sits under the proposal (amber 24, 25); a rejected motion's news labels the rejected proposal, never the rule that stands (amber 27); news of a change keeps its sentence (amber 30); provenance takes one time form (critique 5); empty people lists speak as the document does (critique 14, amber 5, 34, 35); B1 says a record's outcome word stands in for T48's label (critique 16); records owed at the close are acknowledged by 🥂's signature (critique 12); the patch's navigator lives in its head label (amber 9); the deadlock keeps *— and it is still standing* (amber 10).
+
+#### 7. Breaks
+
+Every place the grammar replaces or drops a ruling in SURFACE, STYLE or CLAUDE.md. Each: the ruling quoted with its label, why it existed, what the change buys, what it costs, and the recommendation. Stage 6 makes each a numbered question.
+
+**B1 — Provenance is a line of text, not a pressed radio.**
+*Ruling* (SURFACE CP2): *“Provenance is a sanctioned third form, and the standing block always wears it (Q1167 (a), Q1176, Q1188 — Ed 2026-09-05): every standing rule's block names who chose it, whoever that was — the only two labels are Chosen by the membership and Chosen by the Founder ✒️.”* Also §9's setting, composer, stranger's-card and settled-record rows, and STYLE T48's second half.
+*Why it existed*: Q1188 — a founder-set rule had a bare block, *“the reader had to infer who set it from the absence of a label”*; Q1167 (a) made the standing rule the first block and put the label where its radio would be; Q1176 retired the watch half, leaving provenance on the radio.
+*Buys*: D5's 490 records go — a fact about the past stops being drawn in the same pressed pill as the option you just chose and in the same fill as OK; the two labels and Q1188's *every standing rule says who chose it* are kept word for word; the fact gains its moment.
+*Costs*: a ruling Ed has confirmed three times (Q1167, Q1176, Q1188) is re-drawn; T48's labels survive, their drawing does not. **v2**: on a record the outcome word stands in for the label (*Passed* is the membership's choice, *Changed by the Founder* the Founder's), so a settled motion record no longer prints *Chosen by the membership* under *Passed* — said here rather than left for a reviewer to find (critique 16).
+*Recommendation*: take it.
+
+**B2 — Every card heads with the line it opens in place of.**
+*Rulings*: SURFACE F15, *“an option-block settings card carries no head, founding or settled, its first block being the rule (Q1151), and a heading-over-text card — the grants and the gates — no title head (Q1373); a founder's power tab carries no head at the founding only”*; STYLE T3's *“A settings card whose option blocks state the rule carries no head at all”*; §9's blind-answer row (*none*, Q1175), the settled motion record's (*no head*, Q1186, Q1522), and Q1170's striking of the Founded line from the grant cards.
+*Why they existed*: each removed a head that **restated** the card — Q1151's four-word title over blocks that said the rule, Q1373's *Founder Actions* printed twice, Q1430's *one sentence twice*, Q1186's short-label head. Ed's reading (Q1373): *no card carries a title*.
+*Buys*: nothing is restated — the head is not a title and not a restatement but the line itself, kept in place, and **what stands leaves the block list** (it is the head), which is what the standing block was trying to be. The head lands where the paragraph stood (P1), the empty head box goes (D1's 322 records), four head forms become one (D4), the place-head faults go (D10), and the *Set to undefined* class cannot be built, because the head is the document's own rendering (S2).
+*Costs*: every band card changes its first line; the founder's 🪶 heads with the title at `--h-title` at the birth, a large head for a card; the grants and gates head with the line their tab hangs on (the Founded line, the Proposals preamble), which Q1170 took out of the grants' bodies — here it is not in the body but is the line the card opens under. **v2**: *the line* has four stated exceptions (P1 v2: record, multi-place patch, gap, the birth's 🪶), and on the settled document 🪶's head is the Rules paragraph word for word (*The document is titled “…”.*), not the title alone; a card that is an act or a question also wears its ask as a head label (§2.3a), which answers the costs Q1373 and T3 were protecting without putting a title above the place; and a power card heads with its power's own clause (B8 v2).
+*Recommendation*: take it, with its exceptions; it is the grammar's central move and fixes more classes than any other.
+
+**B3 — Titled cards head with their place too.**
+*Rulings*: STYLE T3, *“open questions, 🪪, 📝, personal cards and answers keep the title (`headFor`)”*; F15's *“📝, personal cards and the blind answers keep their title”*; §9's identity, 🌂 and 👑 rows (*the title*).
+*Why*: a personal card had nothing else to head with; the title said what was asked.
+*Buys*: ✋ 🖼️ 📧 and 🌂 head with **your row as it stands** — your face and name — so the card replaces its row exactly as §9's identity row already describes it (*“the row gives way to the card inside the list”*); 👑 heads with its setting's paragraph or its person's row. One head rule with three placeless exceptions instead of a list.
+*Costs*: the ask (*Choose Your Name*) is read on the rail entry and the tab's tooltip only; a member who opened the card from the rail has read it, one who pressed the tab has its tooltip.
+*Recommendation* (v1): take it.
+**v2 — withdrawn; take O6 (b).** The critique (finding 10) and the mockups (amber 36: 🌂, *the one card whose act is irreversible*, named no act; amber 16) showed the cost is not a tooltip but a card that asks nothing. The personal cards, 🌂 and 👑 **keep their title**, drawn as the **head label** (§2.3a) above your row — T3 and F15's *personal cards keep their title* are therefore **kept**, and P1 still holds because the label sits in the card's top inset. What survives of B3 is only that the head *under* the label is your row (the place the card opens in), which §9's identity row already describes; that is a restatement, not a break.
+
+**B4 — Nothing stands above a card's head: the eyebrow and the dateline move.**
+*Rulings*: CLAUDE.md glossary `clause-head`, *“the clause at document size and colour under an eyebrow”*; SURFACE M19, *“its head is the eyebrow The gap as it stands over the one line (no text here)”*; Q1522 (1), *“the dateline and the outcome as the eyebrow”* first; M12's *“though a record's head stands a dateline row lower in its card (Q1524 (a))”*.
+*Why*: Q207 — nothing said which lane was the current text, and the first-time reader needed telling; Q1522 — *“a reader opening a record wants what it did first”*.
+*Buys*: the tab drops 0 px instead of 33–99 px on every charter card (D6), C1's *the tab you click does not move* becomes true, and card-audit P2 stops looking away; the record's what-it-did-first order is kept (the head is what it did; the fact line is directly under it).
+*Costs*: Q207's label has to live somewhere that does not displace the clause — O1 puts it in the head's lane; the record's dateline moves from above the head to below it.
+*Recommendation* (v1): take it, with O1 (a).
+**v2 — narrowed.** v1's costs were larger than it said: Q207's label vanished wherever the head had no radio (critique 4), and the record's outcome came sixth, against Q1522 (critique 3). v2 keeps both rulings' *content* and changes only where the words stand: the eyebrow's job is the **head label**, drawn in the card's top inset, so it is still read first and still over the clause — and still moves nothing. **For records B4 is rejected**: the outcome and its date are the head label, first, as Q1522 ruled. What remains a break: *The clause as it stands* and *The gap as it stands* become *Current text* (one word for the head's role on every live card — critique 14 counted three names), and Q1524 (a)'s *a record's head stands a dateline row lower* goes, since the dateline no longer takes a row.
+*Recommendation*: take B4 v2.
+
+**B5 — 🗑️ only where there is something of yours to remove.**
+*Rulings*: SURFACE C4, *“🗑️ at the left, always live, on every card but those Y20 lists and the judgment cards”*; CP7; §9.1's 🗑️ row, *“one bin, always live, puts back un-actioned input only, closes”*; CP5, *“🗑️ at the left closes the card, the question kept pending”* (👑); §9's park row (*🗑️ once acknowledged*), the consent card's non-mover bin.
+*Why*: one bin everywhere was consistency — a reader always knows where the way out is; C3's *closing is not discarding* needs a way to discard.
+*Buys*: D3's 388 *Put it back as it stands* bins with nothing to put back and the 196 🗑️-alone rows CP9 forbids go; 🗑️ has one meaning (remove what is yours — discard or withdraw) instead of four; Q1500's finding (*a member read it as skip*) is applied by rule to every card whose only unsent state is a radio beside Indifferent, not by a list of kinds.
+*Costs*: the bin appears and disappears as a draft starts and ends — the row's right-hand commits do not move, but the left end is sometimes empty; the way out of a card is no longer a button (O2).
+*Recommendation*: take it. **v2 — with its fix**: the one bin that is irreversible, *withdraw*, carries its word (*🗑️ Withdraw*), since on your own proposal it is the only control and Q1500 found a bare bin read as *skip* (critique 11).
+
+**B6 — A card with no job has no row: the close-only OK goes, and so does the lone-🗑️ closed row.**
+*Rulings*: SURFACE CP9, *“a row that would be 🗑️ alone carries a close-only OK … but the row is never 🗑️ by itself, the OK being the reader's way to say they are done with a card that asks nothing”* (reading 1190); §9.1's OK row (*an acked grant and the settled 🎩 keep a close-only OK … as does every card whose row would otherwise be 🗑️ alone*); K2, *“by CP9 nothing on it shows a commit either, the row being 🗑️ alone”*.
+*Why*: reading 1190 — a reader needs a way to say they are done; a lone 🗑️ read as a control with no job. K2 and CP9 contradict each other (diagnosis D11 (1)); the build follows K2 on 80 records.
+*Buys*: settles D11 (1) in favour of neither, by removing the row both were arguing about; OK means *owed* and only that (D4's six acknowledgement faces become one form); Q1522 (6) already did this for the record card, and Q1500 for the judgment cards, so the surface is half-way there.
+*Costs*: a read-only card has no button at all; closing is the tab, a click outside or Escape (O2). **v2**: on a closed document the OKs a card still owed are discharged by 🥂's signature (§2.6), which needs the module to accept the one press for all of them — today it refuses an OK after the close (SURFACE §9's settled-record row) — so this half is **O10**, not settled; and at 390 the way out is a 34 px tab at the glass's edge, to be measured before B6 is built.
+*Recommendation*: take it.
+
+**B7 — A block nobody may press has no radio; on a read-only card, no alternatives are drawn.** **v2 — narrowed to settings ladders.**
+*Rulings*: SURFACE CP11, *“A block nobody may press keeps its words and greys its radio alone (reading 1193, 2026-09-05): a locked or unavailable option is read as often as a live one”*; §8's exception row, *“the hat's radios stay visible but disabled post-start”*.
+*Why*: a locked decision still has to be readable.
+*Buys*: the 100 closed-document records with *Choose this / Prefer this* radios and CP11's greyed ones become impossible (a radio exists only on a live lane, R1); what was decided stays readable — in the head and the fact line, which is where a decided thing lives.
+*Costs*: a locked 🎩 no longer shows the answer that was *not* chosen.
+*Recommendation* (v1): take it.
+**v2.** v1 was built half-way and read too widely. Half-way: on the locked 🎩 the radio went and the unchosen sentence stayed, bare, so the card stated a fact and its opposite (critique 1, amber 17). Too widely: on the closed page every proposal counted as an *alternative*, so a race the clock cut off opened to its clause alone and the deadlock lost its eight proposals (critique 2, amber 6, 7, 8, 23). v2 draws the line at **what a block is**: a **settings rung** is a control (it exists to be chosen), so on a card whose reader cannot choose, the unchosen rungs are not drawn and what stands is the head; a **proposal, a rival, a record's field or what the close cut off** is content, so it stays, labelled (*Proposed*, *Undecided when the document closed*), with no radio. A block with no control and no label cannot be built (§2.3a). Reading 1193's worry — *a locked option is read as often as a live one* — is met differently for the two: a locked rung was never a thing anybody could do, and a proposal stays readable.
+*Recommendation*: take B7 v2.
+
+**B8 — A power card offers only the other half.**
+*Rulings*: SURFACE K4, *“on a power card it stays, marked Chosen, because a two-state toggle needs its other half”*; §9's power-cards row, *“before 🍾 two proposal blocks”*.
+*Why*: two blocks make the choice's shape visible; Q1430 then removed the head because *the head and the held block were one sentence twice*.
+*Buys*: the power card is built like every other rule card — the paragraph's power line as it stands is the head (B2), the other state is the one block — so K4 needs no exception and Q1430's duplicate cannot recur.
+*Costs*: before 🍾, the pair is read as head + one block rather than two peer blocks.
+*Recommendation*: take it. **v2 — with its fix**: v1 headed the power card with the whole rule paragraph, so 🪶, ✒️ and 🛡️ opened three cards with one head and the rule's provenance (critique 7, amber 18). A power card's head is **the power's own clause** (*The Founder may amend this at will.* / *The Founder may refuse proposals that the membership pass.*), its head label the card's question (*Can the Founder Make Amendments at Will?*), its fact line **who holds the power** (*Kept by the Founder at the start · ‹when›*), and its one block the other state. On a closed document the clause is in the past (*Until the close, the Founder could amend this at will.*) — P4 v2's tense rule.
+
+**B9 — One ✏️ in edit mode: the single-site card carries none.**
+*Rulings*: SURFACE §9.1's ✏️ hh:mm row, *“the same ✏️ drawn on a single-site card”* (Q1486 (E)), against §9's editing row, *“none on the card — the ✏️ hold is the proposal-row's (Q1382)”* — diagnosis D11 (2).
+*Why*: Q1486 (E) wanted the countdown wherever a member would press; Q1382 wanted one floating commit for the draft.
+*Buys*: the one-act-twice fault (diagnosis bug 9) goes; the countdown stays on the proposal row's ✏️.
+*Costs*: none found — §9's row already says this.
+*Recommendation*: take it (resolve D11 (2) for Q1382).
+
+**B10 — ✓ is not solid green.**
+*Ruling*: SURFACE §9.1's ✓ row, *“the one solid green on a card”*, against the same section's *“✓ … greys while nothing is chosen and lights on `--primary` when armed”* — a contradiction inside §9.1.
+*Why*: green means *decided* (C7), and a judgment decides.
+*Buys*: every glyph commit takes one drawing (flat inert, lifted armed); green is left to marks and the record's passed highlight, where it always means *decided*; the 👑 ✒️ drawn solid green (diagnosis bug 8) has nothing to imitate.
+*Costs*: the judgment's commit is less emphatic than today (if the build draws it green; the section is ambiguous).
+*Recommendation*: take it. **v2**: the recorded ✓ (a ⏳ card's pressed commit) takes the same flat drawing; v1 left it green-tinted (critique 9).
+
+**B11 — The *Set to … / Set by …* lines go from every card.**
+*Rulings*: §9's watching row, *“the lockline and the value line only (Q1176)”*; STYLE T21's example, *“the lockline says what changing a setting actually takes, by kind”* (`ctx.lockline`).
+*Why*: a read-only reader needed the value and the rule for changing it stated; T21 corrected a lockline that had gone stale.
+*Buys*: D2's 142 doubled-value records and the provenance contradictions (14) go: the value is the head, who chose it is the fact line, and what changing it takes is the paragraph's own power line, which the head already carries.
+*Costs*: none beyond the wording T21 protected, which the paragraph states.
+*Recommendation*: take it.
+
+**B12 — 🥂 states the closing moment once.**
+*Ruling*: §9's 🥂 row, *“final as of · the batch · your closing comment”*.
+*Why*: the card said what the close was; the head was added later.
+*Buys*: diagnosis bug 5 (*closed at 00:51* and *final as of 00:51*) goes; the moment is the head's (🥂's paragraph) or the fact line's, not both.
+*Costs*: none.
+*Recommendation*: take it.
+
+**B13 — The rationale lane appears with the change.**
+*Ruling*: §9's composer row lists *the rationale lane* among its standing parts (the setting row already says *a change only*).
+*Why*: CP3 — a reason rides every act that changes.
+*Buys*: an empty reason box before anything is changed (every settled composer card, ✉️) goes; CP3 is kept exactly — the reason still rides every change.
+*Costs*: the card grows by one lane at the first keystroke or pick (below the head, so nothing above moves).
+*Recommendation*: take it. **v2**: the deadlock's desk too — its *We should change this because…* lane waits for the desk's first keystroke (amber 10).
+
+**v2 — not a break any more: the 📝 door.** v1 moved the door inside the sheet to satisfy its own G4, which silently overruled Ed's 2026-09-24 ruling (*the door straddles the page's right edge*, design/edit-mode.js) — checks.md doubt 2, amber 39. v2 restores the ruling and amends the zone rule instead (G4 v2: the floating layer is a sanctioned overlay that covers no text).
+
+**Not breaks, recorded so nobody reads them as one:** one shell (§9's *“Two implementations of one shell”* describes the code, it rules nothing); the ordinary motion row's *Keep this* (Q1377 changed *Keep* to *Prefer* on the consent card with the argument that the standing text is a peer, and T48 says so; the ordinary row is stale — a finding); the re-render rule (W9 generalised).
+
+#### 10. What the prototype proves, and what the programme costs (v2)
+
+Written because the critique found the prototype argued for an architecture it does not have (finding 13, note H), and a reviewer who took the checks table on trust would take that too.
+
+**The prototype is a sorter, not the grammar.** `proto/grammar.js` takes the markup today's 40 card builders already write and sorts it into the six slots: it recognises provenance by matching label strings, finds the bin by its glyph and a withdraw by its tooltip, reads *closed* from one flag, and draws labels from what the old markup happened to carry. Everything v2 adds — the label slot, the visible note, the closed page that keeps its content, the power card's own clause — is built the same way, as a rule inside the sorter. So:
+
+- **The checks pass against a sorter.** A card that passes `head-registration`, `label-slot` or `closed-keeps-content` here passes because the sorter recognised its parts. The faults the critique found in v1 (the locked 🎩's bare alternative, the cut-off race's missing proposal) had exactly the shape of a sorter's mis-sort. A build on `CardState` must pass the same checks again, from nothing.
+- **S1 is not met, and cannot be by sorting.** *A slot reads `CardState` only* is the grammar's central claim, and the prototype has no `CardState`: J2 is decided by comparing the DOM with a baseline because *sent* and *unsent* are not in the markup (checks.md doubt 3).
+- **P10 is not built.** U1/U2 (keyed patching, nothing replaced under the reader's hand) are not in the prototype and `render-hold` is not measured. It is the principle live rooms have taught hardest (focus steals, half-typed dates, holds taken by a poll), and the proposal has demonstrated it least.
+
+**The programme's main cost is the conversion.** Phase two is not a restyle: it is **converting the 40 card bodies — every `BODY` in band.js, every per-kind builder in session.js, setup.js and session-view.html — to read one `CardState` and emit slots**, instead of each re-deriving its own state and writing a whole card. That is the work O7 (where `acts` is computed) and O8 (keyed re-render) presuppose, and it is most of the programme: the shell, the tokens and the checks are small beside it. It should be staged one card family at a time (BUILD.md), each family's checks turned into guards as it lands, and each family re-frozen in the probes' references once. The sorter is a way to see the grammar, and should be thrown away, not grown.
+
+## Ed's answers to the surface redesign (Q1541.1–.56, 2026-09-25 to 2026-10-01; lifted at redesign stage 10, 2026-10-01)
+
+`design/redesign/answers.md` as it stood when the last stage landed — the rulings the programme was built to, first in its precedence (BUILD.md). Its ten principles are SURFACE's opening now, each naming its check; the whole is here, verbatim, headings demoted two levels. The file stays in `design/redesign/` beside `grammar.md`, `BUILD.md` and `checks.md`, since the page's comments, SURFACE and STYLE cite its parts by number (*answers Part 4 .19*); this copy is the dated record of what it said when the build ended.
+
+### Ed's answers — the surface redesign (Q1541)
+
+Answered 2026-09-25 in the session, from the review artifact (https://claude.ai/artifact/KLrKp3iRZ9m841zjEdZVgU) and a follow-up discussion (1541.44–1541.56, questions raised in chat where his answers pulled against each other or the grammar). **This file overrides `grammar.md`, `BUILD.md` and the prototype wherever they disagree**; they were written before these answers. Ed's notes are quoted verbatim.
+
+#### The headline ruling
+
+**An opened card makes space above its first line as well as below** (Ed: *when a decision card opens, it should be able to create space above as well as below - this creates room for titles that go above the current text (which remains in place), and solves a lot of issues*). Mechanism, 1541.44: **everything above the card slides up by the label's height, and the scroll is adjusted in the same frame, so the clause and its tab stay still on screen** (0 px on both axes). At the page's top, where nothing is left to scroll into, the clause moves down there alone. This replaces the grammar's G5 (a card rises only into its own padding), the 4 px under band subsection headings (1541.15) and the top-edge rule (1541.35): a card never covers the line above it, because the line above moves. Examples: https://claude.ai/artifact/A6cFqL1wS5KzQfFpDB13da
+
+#### Part 1 — questions
+
+| # | answer | Ed's note, and what it means for the build |
+|---|---|---|
+| 1541.1 | (a) the staged build | — |
+| 1541.2 | (a) adopt all ten, with their checks | The ten must first be **redrafted to match these answers** (1541.51): the pill, the dark bin, the reason box always shown, the card floor and the 📝 overlap all break the v2 wording. |
+| 1541.3 | (a) every card starts with its line, four exceptions | — |
+| 1541.4 | (c) today's placements | Read with the headline ruling: the card's own label stays **above the first line**, in the new space, so it no longer drops the tab. Block labels: 1541.45. |
+| 1541.5 | (b) keep the pill | *The pill gives the current state; it is a fact about the past, which is why it's the one that's selected when you open the card, and switching the state to another radio is proposing a change. If you take it away, they stop working like radio buttons normally work, and also there's no obvious way to unselect a proposal.* How it sits with 1541.3: 1541.47. |
+| 1541.6 | (a) unchosen settings options not drawn where nobody can choose; proposals stay | — |
+| 1541.7 | (a) 🥂 discharges every owed OK | Module change; full deploy. |
+| 1541.8 | (a) no row; tab, outside click or Escape | — |
+| 1541.9 | (b) bin only with a job; withdraw a bare glyph | *The bin shouldn't appear from nothing. If there is a card on which it will become active, it should be there in an unclickable state until e.g. a draft is started.* So: **🗑️ is drawn dark on every card where it can ever have a job, and lights once there is something to remove**; withdraw is the glyph alone. The dark bin's reason is not written out (1541.49). |
+| 1541.10 | (a) drop the powers line from the settings card; amend STYLE §3 | *If you see the power lines without the rule, they should reference what they are referring to, e.g. "The Founder may amend the title at will, and refuse proposals that the membership pass to change it".* Applied to the power cards: 1541.48. |
+| 1541.11 | (b) two equal blocks | Shape settled by 1541.48. |
+| 1541.12 | (c) no ask label | **Superseded by 1541.46 (a)**, after the examples artifact. |
+| 1541.13 | (c) keep today's drawings | ✓ settled by 1541.50. *You preferred this before it changed* is not adopted: a vote on changed wording keeps today's drawing. |
+| 1541.14 | (a) *Set to / Set by* removed | — |
+| 1541.15 | no choice | *Is it possible to create more space above a card when it's opened? that feels like it would love a lot of these problems - then we can see the text above, have a heading/label on the card, and still keep the current text in the same place.* → the headline ruling; the 4 px is not built. |
+| 1541.16 | (c) keep the floor | The card stays at least as tall as its strip. |
+| 1541.17 | no choice | *I think how it is currently is fine. The fact that it sometimes overlaps things is what makes it stand out.* The 📝 door keeps today's placement and may overlap; the zone-overlap check names it as an exception. Plain bug 6 is not a bug. |
+| 1541.18 | (a) keyed re-render, its own stage after the families | — |
+| 1541.19 | (a) in the page, one function | — |
+| 1541.20 | (a) narrowed margin | *I think you could narrow it even more - the tabs can touch the left edge on mobile, and highlight instead of move when they're active.* Tabs flush with the glass at 390; active tab drawing: 1541.53. |
+| 1541.21 | (b) the reason box always shown | — |
+| 1541.22 | (a) the row's ✏️ only | — |
+| 1541.23 | (a) 🥂 states the moment once | — |
+| 1541.24 | (a) *Accept 🏛️* | — |
+| 1541.25 | (a) the sentences, both places | — |
+| 1541.26 | (a) no *last changed* line | — |
+| 1541.27 | no choice | *Yours are good but let's go through each one multiple choice before STYLE is changed.* → 1541.55. |
+| 1541.28 | (a) ✋ 🖼️ frozen after the close | — |
+
+#### Part 2 — findings
+
+All (a), fix in the build, with these notes:
+
+| # | Ed's note |
+|---|---|
+| 1541.33 | *I'd like to review the explanation text; For example, "One 🏛️ each" is meaningless, it should say "Each member can only make one constitutional proposal 🏛️ at a time."* → every dark-commit reason goes through the 1541.55 walk. |
+| 1541.34 | *Rather than change them to past tense, after the document closes we can remove the power rules entirely - founder actions are shown in the history anyway.* Scope: 1541.52. No past-tense power clauses are built. |
+| 1541.35 | *We can create more space above a card so that it does not overlap preceding text, this will give room for headings.* → the headline ruling. |
+| 1541.40 | *It might make sense to make the table of contents take up the whole width on mobile, so the lifecycle marks can be seen.* → the contents drawer is full width at 390 (1541.54). |
+
+1541.29–.32, .36–.39, .41–.43: (a), no note.
+
+#### Part 3 — the follow-up (2026-09-25, in the session)
+
+| # | question | answer |
+|---|---|---|
+| 1541.44 | Where the space above comes from | **The content above slides up; the clause stays still on screen**; at the page top the clause moves down there alone. |
+| 1541.45 | Labels inside a card | **On each block's first line**, left, in the eyebrow treatment; nowhere else (*What you proposed* moves from the foot; the rival's share reads *Rival · 23%*). |
+| 1541.46 | What the space above holds | **(a) One label on every card**: on a place card what its first line is (*The clause as it stands*, a record's outcome in its colour), on an act or question card its ask (✋ 🖼️ 📧, 🌂, the grants, 🍾, 🥂, the power cards, 🎩 while asked, 👑). Replaces 1541.12 (c). |
+| 1541.47 | The pill and the head | **The first line is the standing option and wears the pill**; the other options follow below a hairline; choosing the first line's radio again cancels a proposed change. The rule is said once. |
+| 1541.48 | A power card's first line | **This power's own clause, naming its subject** (*The Founder may amend the proposal rate at will.*), wearing the pill; the other state below with *Choose this*. Label above: the card's ask. **The clauses, ruled 2026-09-26** (stage 3b's list, PR #104): Q1429's nouns stand, but one changes — Ed: *"Admissions Rule" not "Admission Price"; good otherwise.* So 🪪's pair reads *The Founder may amend the admissions rule at will.* · *…refuse changes to the admissions rule that the membership pass.* |
+| 1541.49 | Does the dark bin state its reason? | **No — exempt.** The visible-reason rule (1541.33) covers commits only. |
+| 1541.50 | ✓'s colour | **Accent blue when armed, as the page draws it**; SURFACE §9.1's *the one solid green on a card* is corrected. 👑's green ✒️ (1541.38) is fixed as a plain bug. |
+| 1541.51 | The ten principles | Open: redrafted to match these answers (including *a control that can wake on this card is drawn from the start, dark*) and brought back to Ed before they enter SURFACE. |
+| 1541.52 | What goes at the close | **The powers lines and the ✒️ 🛡️ tabs go; 👑 stays on the Founder's face, and 🍾 keeps its table of the powers kept at the start.** |
+| 1541.53 | The active tab | **Grows 8 px on desktop, highlights on the phone** — two drawings, split at the 900 px line. |
+| 1541.54 | The contents drawer at 390 | Full width (from 1541.40's note); no question needed. |
+| 1541.55 | The STYLE walk | Open: one word at a time, multiple choice, after 1541.51 — over the words these answers keep (label vocabulary, dark-commit reasons, *Undecided when the document closed*). |
+| 1541.56 | 🥂 discharging owed OKs | Noted: a module change, so a full deploy, not surface-only. |
+
+#### Part 4 — the STYLE walk (1541.55, 2026-09-25)
+
+Ed's words, one at a time. They go into `design/copy.js` and STYLE (T3, §3's last sentence, T18's grant exception) at the fold, together with 1541.51. Examples of the drawing: https://claude.ai/artifact/LwRbgMYj1eQLt8s2qp45wP
+
+**Labels above a card**
+
+| # | where | the words |
+|---|---|---|
+| .1 | a live clause | **Current text** |
+| .2 | a gap | **Current text** (first line *(no text here)*) |
+| .3 | a rule (setting, motion, 👑) | **Current rule** |
+| .4 | a record | **Passed** · **Rejected** · **Refused by the Founder** · **Changed by the Founder** · **Ran out of time** (.15), each `· ‹longWhen›`; *Passed* and *Changed by the Founder* in `--ok` |
+| .5 | a record whose wording has since been changed | the outcome label + **· since replaced** |
+| .6 | the deadlock | **Current text** (the *still standing* clause goes) |
+| .7 | a multi-place proposal | **Current text · 2 of 3** with ↑ ↓ |
+| .15 | a text card on a closed document | ~~**Final text**~~ — **retired by 1569.4 (c)** (Ed, 2026-09-30): on a closed document 📝 opens no card, and none is built; the text is the document itself |
+| .16 | a rule card on a closed document | **Rule at the close** (Ed: *the rules do not stand after the end of the document since it is now over*) |
+
+**Labels on blocks**
+
+| # | block | the words |
+|---|---|---|
+| .8 | somebody else's proposal, rival or motion | **Proposed** — and where signed, **Proposed by ‹name›** (.10, Ed's own suggestion: *Perhaps other proposals could be "Proposed by [name]", if it's not anonymous*); the face stays on the rationale's disc; after a reveal the label follows |
+| .9 | your own | **Proposed by you** |
+| .11 | what a change replaced | **Previous text** · **Previous rule** |
+| .12 | a losing wording on a record | the live label + share: **Proposed · 23%**, **Proposed by Ada Kline · 23%**, **Proposed by you · 23%** |
+| .13 | a failed motion's wording | the live label (**Proposed** / **Proposed by ‹name›**); the outcome is said once, above the card |
+| .14 | a proposal the close cut off | **Proposed by ‹name› · Ran out of time** (Ed's words) |
+| .11a | a shifted vote's ground — the wording a vote was cast on before the clause changed | **The text you voted on** (Ed, 2026-09-27, 1563.1 (b): the voter's word, a stated exception to .11's *Previous text*; the sub-line *the clause changed after you voted* stays dropped, the card's sentence saying it) |
+
+**Why a commit is dark** — the visible note (1541.33) is narrower than the grammar had it:
+
+| # | reason | ruling |
+|---|---|---|
+| .17 | nothing chosen yet | **No note** (Ed: *it's the most obvious action on the card*) |
+| .18 | nothing typed yet | **No note** |
+| .19 | the grant not yet accepted | **The commit is not drawn at all** (Ed: *before an action is accepted we shouldn't show the button at all*) — overrides Y19's dark ✒️ and the grammar's `accept:<power>` |
+| .20 | no ✏️ left | **✏️ 12:04**, today's countdown, kept |
+| .21 | your 🏛️ is out on another motion | **You can only make one constitutional proposal 🏛️ at a time.** |
+| .22 | 🍾 waiting on answers | **Waiting for x members to answer questions.** — and Ed wants 🍾 reworked so the Founder can begin before everyone has answered: filed as **Q1542** |
+| — | the dark 🗑️ | no note (1541.49) |
+
+**Labels that ask**
+
+| # | card | the words |
+|---|---|---|
+| .23 | the grants | the act: **Accept Founder Actions** · **Accept the Founder Veto** · **Accept Constitutional Proposals** |
+| .24 | 💡 ⚖️ | **like grants**: **Accept Proposals** · **Accept Voting**, the button **Accept ✏️** / **Accept ⚖️** in place of OK — they already gate the power (`mayPropose`/`mayJudge` require the acknowledgement, session-view.html:5373–5374) |
+| .25 | 🥂 | **Add your closing comment** (so the input's own *Your closing comment* label is not drawn) |
+| .26 | 👑 | **Accept This Change?** |
+| — | ✋ 🖼️ 📧 🌂 🎩 power cards | today's titles, unchanged (*Choose Your Name*, *Leave the Membership*, *Is the Founder a Member?*, *Can the Founder Make Amendments at Will?*) |
+| — | 🍾 | held with Q1542 |
+
+**How labels are drawn** (.27): **all capitals, one drawing, a step larger than the eyebrow** — `--t-cap` (0.79rem) rather than `--t-micro`, 700, upper case, `--muted`; a record's outcome in its colour. The label slot's height grows with it.
+
+#### Part 5 — the ten principles, as ruled (1541.51, Ed 2026-09-25: *take all ten as drafted*)
+
+These replace grammar.md §1. They enter SURFACE's opening as each build stage makes them true (a rule the tree does not hold is not written as held), each naming its check.
+
+1. **A card opens in place of the line it is about**; that line is its first line, word for word, still where it was — except a record (the wording it recorded), a multi-place proposal (the place it is showing), a gap (*(no text here)*) and 🪶 at the birth (the title box). On a rule card the first line is the standing rule and wears the pill; on a power card it is that power's own clause, naming its subject.
+2. **Opening a card moves nothing you are looking at.** The card makes room for its label by sliding the content above it upward; the first line and the pressed tab stay put on screen at both widths; what lies below is pushed down; only at the page's top does the first line move down.
+3. **Every fact has one home**: what stands is the first line; who chose it, the pill on it; how a record ended, the label above; who wrote a signed proposal, its label; the price, on the commit.
+4. **A card offers only what this reader can do now.** Closed: nothing but 🥂, whose signature also answers every OK owed; what the close cut off stays readable (*Ran out of time*); the powers lines and ✒️ 🛡️ tabs go (👑 and 🍾's table stay); ✋ 🖼️ frozen. A commit for a power not yet accepted is not drawn.
+5. **A control that can come alive on this card is there from the start, dark, and lights when it has a job**; one that can never have a job here is not drawn. A dark commit explains itself in words only where the reason is not on the card (the ✏️ countdown, 🏛️ in use, 🍾 waiting); no note for *choose*, *type* or the bin.
+6. **No empty frames**: an empty part is not drawn and takes its hairline with it; never two hairlines facing. Stated exceptions: the reason box always shows on a card that can take a change; a card is never shorter than its tab strip.
+7. **Each drawing means one thing**: the pill marks what stands; a radio is a choice you can make now; a button is an act; ✓ lights accent blue when armed; green means *decided* (marks, the *Passed* and *Changed by the Founder* labels, the passed highlight, a recorded ✓). A block nobody may choose has no radio.
+8. **One commit row**: 🗑️ at the left, dark until there is something of yours to remove (a withdraw is the bare glyph); a note in the middle when there is one; at most two commits at the right. A card that asks nothing has no row — tab, outside click or Escape closes it; OK only while owed; *Accept* for a power (grants, 💡, ⚖️).
+9. **The same thing is drawn the same way everywhere** — band and charter, live and record, both widths. Every card has one label above its first line, all capitals at `--t-cap`: what the line is, or what the card asks; every block's label is its first line. Stated exception: the active tab grows 8 px at 1600 and highlights at 390.
+10. **Nothing you are in the middle of is taken by the page updating** — caret, press, drag, half-typed value. *Not built* until the re-render stage.
+
+The floating 📝 door is not a principle: it is a named exception in `zone-overlap` (1541.17, *the fact that it sometimes overlaps things is what makes it stand out*).
+
+#### Part 6 — BUILD.md §6's ten points, ruled (Ed 2026-09-25, one at a time)
+
+| # | Point | Ruling |
+|---|---|---|
+| 6.1 | 👑's label | **Ask while owed, then the rule**: *Accept This Change?* while the seat's OK is owed; *Current rule* once pressed or never owed — `labelOf`'s ask-then-noun pattern. |
+| 6.2 | Label size | **Every label at `--t-cap`**, the card's and each block's alike (principle 9 read literally; 1541.45's *eyebrow treatment* means the drawing, not the step). |
+| 6.3 | The two homeless lines | **Keep the record's participation line** (*7 of 20 weighed in · quorum was 7*) as its one fact line; **the power card's holder line goes** — the pill on its clause says it. |
+| 6.4 | *At the page's top* | **Wherever room runs out**: the page scrolls as far as it can and the first line moves down only by the shortfall, wherever the label would land above the visible area or under the topbar. |
+| 6.5 | Close and switch | **The same rule both ways**: closing and switching take the room back above, the clause still on screen. |
+| 6.6 | Closed document's powers | **Both go**: the powers sentence leaves the Rules paragraphs as well as the cards and tabs. |
+| 6.7 | The subject-naming clause | **Card only**: the Rules paragraph keeps *this*. |
+| 6.8 | 🍾 while Q1542 is open | **Convert 🍾 in stage 2** with today's title as its label; the Q1542 session reworks it again. (Reverses BUILD.md's assumption.) |
+| 6.9 | Stage 1's second pilot | **A filed sealed record on a clause**, as proposed. |
+| 6.10 | A cut-off proposal's label | **The live label plus *· Ran out of time***: *Proposed by ‹name› · Ran out of time* signed, *Proposed · Ran out of time* anonymous. |
+
+#### Part 7 — stage 3b's calls, ruled (1564, Ed 2026-09-27, one at a time)
+
+| # | Call | Ruling |
+|---|---|---|
+| 1564.1 | 🎩's first line | **(a) its own sentence** — *The Founder is (not) part of the membership.*, the Members list writing none (F13); a stated exception to P14/P16. |
+| 1564.2 | 🎩 before an answer | **(a)** *The Founder is deciding whether to be part of the membership.* |
+| 1564.3 | A composer before its grants are accepted | **(a) the rule and one sentence** — *You can propose a change to this rule once you accept …*, naming the grants its own route needs. |
+| 1564.5 | The change line (*has changed … from … to …*) | **(b) retired everywhere**: a change's history lives only in its record behind the rule's tab; SURFACE §2's L7 amended. |
+| 1564.6 | A power card's reason box | **(a) none** — laying a power down takes no reason. |
+| 1564.8 | The pill on a power nobody has touched | **(a)** *Chosen by the Founder ✒️*, `provenanceOf`'s rule. |
+
+#### Part 8 — stage 4's calls, ruled (1566, Ed 2026-09-28, one at a time)
+
+| # | Call | Ruling |
+|---|---|---|
+| 1566.2 | 👑's sentence for the Founder, on a rule | **Keep** — *The membership passed this. Until you answer, the rule above stands.* (`design/copy.js`, `shell.crownRule`), where the pressed *Chosen by the membership* radio stood. |
+| 1566.3 | The standing rule on a motion card | **The lane, as built**: the standing rule's pill is a fact, and the rule's own *Prefer this* lane is the vote to keep it, as on a text race. 1541.47's pill-as-radio stays the rule where the reader's own change is what the pill would cancel. |
+| 1566.7 | card-audit's fast pass walking `settled` and `outsiders` | **Keep**, at every push — Ed's word under Q1547, so the push set grows by it. |
+
+#### Part 9 — stage 5's calls, ruled (1567, Ed 2026-09-28, one at a time)
+
+| # | Call | Ruling |
+|---|---|---|
+| 1567.2 | The empty-list sentences | **Keep** — *There are no applications at the moment.* · *Nobody is proposed for removal.* · *Nobody has left.*, in the Members section and on the door's card alike (1541.25 (a)); O9 (a)'s *Nobody has been invited yet.* is retired. |
+| 1567.3 | The label over a door motion and an `adm:` application | **The door's ask** — *Invite a Member* over an invitation proposal and an application, *Remove a Member* over a removal proposal; not the subsection's heading. |
+| 1567.4 | 👑's sentence on a person | **Keep** — *The membership passed this. Until you answer, the membership stays as it is.* |
+| 1567.5 | A door's failed-motion news | **The door's own pile**, with a tab: the mover's news card stands there (SURFACE E41 as amended). |
+| 1567.11 | Withdrawing a submitted application | **No** — a submitted application is not withdrawn; its card has no row, and 1541.9 (b)'s bare 🗑️ does not apply to applications. No command is built. |
+
+#### Part 10 — stage 7's rulings (Ed, 2026-09-28 and 2026-09-29)
+
+| # | Call | Ruling |
+|---|---|---|
+| 1565 | The card you are looking at when its race is decided | **It travels to its record** (Ed, 2026-09-28): the record opens in the card's place, the clause and the tab pressed still, its OK owed as ever. SURFACE C18; `successorOf` (session.js); guard `scripts/repro/record-travel.mjs`. |
+| 1565 (a) | A proposal that **fails** while you look at it | **The same** (Ed, 2026-09-29, 13:58 UTC) — the card travels to its ✖ record. |
+| 1565 (b) | **Your own** proposal passing while you look at it, and what the OK does on a travelled-to record | **The same travel** (Ed, 2026-09-29, 13:58 UTC) — the ✔ record opens in place. That answer was given on the premise that a record of your own proposal is owed nothing, which C18 does not say (it is *never folded in*, keeping its own entry and OK); re-put with the premise corrected, **Ed ruled (a), 2026-09-29 17:27 UTC**, against the recommended (b): **every record the open card travelled to — a pass or a fail you judged, your own proposal passing — is filed as read at the travel**; nothing is owed on it and the walk does not go on from it. A record you did not watch decide is owed as before. |
+| the close fold | What the 🥂 signature does to the OKs still owed | **A fold change, no new event** (Ed, 2026-09-29; 1541.7 (a)): `close-acknowledged`'s case moves the signer's `okOwed`, `releasesOwed`, `amendmentsOwed`, `mailGaveUpOwed`, `departuresOwed` and `heldOwed` to their given sets beside setting `closingAck`; the golden log replays unedited; no SPEC change. On the page the signature files every record (`setSigned`). Guards `close-owed.test.ts`, `closed-press-walk`. |
+| the merge | When and how stage 7 ships | **A full deploy, not surface-only** (1541.56) — the first stage to touch `packages/`; the merge is Ed's tap as usual; no room is planned (Ed, 2026-09-29). |
+| 1561 (m), (n) | The clause fold redrawn (Ed, 2026-09-26, folded here) | Its tab a stack of three ✔s, always — built as the lifecycle mark `fold`, not a `GLYPH` entry (the coordinator, PR #125: *the brief's "through GLYPH" was my wording, not a ruling*); every record in full, oldest first, a hairline between each; a record's own OK acknowledges that record only. |
+| 1568.2 | The clause fold's label | **Just *‹n› decisions*** (Ed, 2026-09-29 21:57 UTC, on the questions page) — no moment after it; `foldHead(n)` alone above the first line. |
+
+#### Part 11 — stage 8's rulings (1569, Ed 2026-09-30)
+
+| # | Call | Ruling |
+|---|---|---|
+| 1569.1 | The block label over your own draft on the editing card, before it is proposed | **(a) *Your proposal*** (Ed, 2026-09-30 16:05 UTC, on the questions page) — `shell.yourDraft`; *Proposed by you* once it goes in (Part 4 .9). |
+| 1569.2 | How the column makes room for the proposal row and the patch row (P30) | **(c) The rows stay where they are, named as P30 exceptions beside the 📝 door** (Ed, 2026-09-30 16:07 UTC) — no move into the margins, no grounded band; K17/K18's *one row that does not move* stands. **And *They should be larger, like the 📝 circle***: the row's circles — 🗑️, ✏️ (✒️ where the Founder holds the pen), the patch row's ❄️ and ✓ — take the door's 4.5rem; still circles, the glyph at B6's one size, the count between them as it was. SURFACE K17, §9's 📝 row; checks.md P30. |
+| 1541.22 (a), as built | The editing card's commit outside edit mode | **Accepted by the coordinator** (PR #127, 2026-09-30) from the ruling as it stands (*one ✏️ in edit mode*): a draft opened by ✏️ *propose edit* in read mode (K24) never enters edit mode, so no row stands and its card keeps its ✏️ and countdown. |
+| 1569.3 | The label over a draft started by ✏️ *propose edit* off another wording | **(a) Keep *the proposal you are editing*** (Ed, 2026-09-30 17:15 UTC, on the questions page) rather than *Current text*, the card's head being that wording. |
+| 1569.4 | The *Final text* label (Part 4 .15), deferred by stage 7 to a closed 📝 card that stage 8 did not build | **(c) Dropped** (Ed, 2026-09-30 17:31 UTC, on the questions page): Part 4 .15 is retired; on a closed document the text is the document itself, 📝 opens no card and none is built. 1568's deferral (7) closes. |
+
+#### Part 12 — stage 9's calls (the keyed re-render, PR #132)
+
+| # | Call | Ruling |
+|---|---|---|
+| render-hold, the two switch positions | How `render-hold-walk` is judged under `?render=replace`, and when it joins CI (the brief's step 1 assumed flags covered every kind; five band kinds had none) | **(a) Accepted by the coordinator** (PR #132, 2026-09-30 19:22 UTC; the question on Ed's page, OK'd 18:56 UTC): under the patch renderer the walk asserts U1 in full — the same node, its state intact, the page still; under `?render=replace` it asserts what the old page promised and prints the node's identity without requiring it. It joined CI's `repros-b` once the band kinds were green (`f69975f`). |
+| the page's scroll | Scroll anchoring under a patched page (P13 at 390) | **As built, put to the coordinator** (PR #132 REPORT, 2026-09-30): `html { overflow-anchor: none }` — the page makes every scroll it makes by measurement, and a patched page's kept nodes gave the browser's anchoring something to move a frame later; the setup-probe re-frozen for 15 rail readings 1 px higher (a second freeze, read in `5287211`'s message). |
+
+## CLAUDE.md's slider gotcha, lifted at redesign stage 10 (2026-10-01)
+
+The slider left the page whole at stage 10 (`slider`, `syncSlider`, `SLIDERS` and `sliderHold` deleted with setup.css's consent-slider rules, 1572's deferral): no surface had drawn a track since Q1162, so the gotcha below described code that no longer exists, and `slider-walk` had long since stopped dragging (its own header: *readSlider and dragTo retired with the last slider*). Its first sibling, *a blind slider's unset test was `v === null`*, stays in CLAUDE.md: `slider-walk` still asserts 👥 born untouched. Verbatim:
+
+- **A drag is a press held down, so `render()` under one kills it** (Q779): the `input` handler rebuilt the card mid-drag, destroying the range input holding the pointer capture. It repaints in place now, the full render waits for `change`, and the 4s poll defers for the drag as it does for the two holds (`pressInFlight`). `npm run slider-walk` drags to both ends of the track.

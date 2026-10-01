@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 732
+  "entries": 731
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -333,8 +333,6 @@
   "page.host.reconnecting": "Reconnecting…",
   "page.host.stalled": "This document cannot save changes at the moment. Nothing you do here will be kept.",
   "page.lapseReturned": "ƒ (names, n) => names + (n === 1 ? ' is' : ' are') +\n      ' active again — ' + (n === 1 ? 'their membership had' : 'their memberships had') +\n      ' lapsed under the old rule.'",
-  "page.lockline.founder": "Set by the founder when the document was made.",
-  "page.lockline.members": "Decided by the members.",
   "page.memEmpty.alumni": "Nobody has left.",
   "page.memEmpty.applications": "There are no applications at the moment.",
   "page.memEmpty.removal": "Nobody is proposed for removal.",
@@ -368,6 +366,7 @@
   "page.motionRec.ruleNoun": "this rule",
   "page.motionRec.titleNoun": "the document’s title",
   "page.noAnswer": "ƒ (status) => (status ? 'the server answered ' + status : 'the server could not be reached')",
+  "page.noLongerOutstanding": "This is no longer outstanding.",
   "page.noPencil": "you have no ✏️ left to spend on this",
   "page.nothingToPut": "That could not be proposed: nothing is chosen on this card.",
   "page.outOfRange": "ƒ (lo, hi) => 'That has to be a whole number between ' + lo + ' and ' + hi + '.'",

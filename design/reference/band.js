@@ -44,33 +44,24 @@ window.BAND = (function () {
       CHOSEN, TYPED, ANSTYPED, PROPOSE, snaps, ADM_RULE, AUTH_RULE, CHAMBER_RULE, JUDG_RULE,
       REMOVAL_RULE, ENDING_NEVER, WHAT, OPTHEADLESS, EMAIL_OK, SLUG_OK, penWaitTitle, MANAGED_KEYS } = env;
     // the page's own functions, wrappers read when called
-    const { APPL_RULE, E, LAPSE_RULE, STRCARDS, acked, admissionPrice, admitCardOf, amFounder,
-      appPicPickNow, applicantById, applicantName, atTheDoor, beginBody, binBtn, card, cardHtml,
-      changedFrom, checkSlug, chosenRadio, clauseCtx, closingBody, commitFor, commitReady,
-      composerOn, consentBody, constituted, csState, cs_titleNow, decidingOf, decisionLine,
-      departureLine, directInvite, directRemove, docAddr, docOpen, doorDirect, doorErrHtml, doorErrOn,
+    const { APPL_RULE, E, LAPSE_RULE, STRCARDS, acked, admissionPrice, amFounder,
+      appPicPickNow, atTheDoor, card, changedFrom, checkSlug, chosenRadio, clauseCtx, commitFor, commitReady,
+      composerOn, constituted, csState, cs_titleNow, decidingOf, decisionLine,
+      directInvite, directRemove, docAddr, docOpen, doorDirect, doorErrHtml, doorErrOn,
       dripParts, endsAtMsOf, fieldsOf, focusOpened, founderCommit, founderDirect,
-      founderHandOff, founderInfo, founderMark, founderPairNote, founderPairOn, founderSpeaker,
-      founderSpeakerLane, founderFace, grantProv, groups, powerParts, powerOtherHtml, iDraft, isChange, isNum, isRoom, isStranger,
-      heldBody, hostKeyOf, judgedOn, launchFarewell, launchGrant, liveMotionRec,
-      mailGiveUpBatch, mailGiveUpBody,
-      mayPen, mayPenOn, me, membersHold, openCardDirty, midOf, motionAbstainAt, motionBlocks, motionOn, motionPicked,
-      motionTargets, nameOfMember, namePickNow, oneVoiceAsk, ordinaryBody, owedDeparture,
-      pairWords, penOkFor, penTabsArrive,
-      perpetual, picPickNow, policyNow, powerBody,
-      proseCounts, pwPair, readinessOf, ready,
-      recordBody, releaseBatch, releaseBody, removalPrice, removeSubjectPicker, renderDev,
-      renderPowerWallets, renderRail, renderTitle, resolveCounts, routeOfM, sentenceFor,
+      founderHandOff, founderInfo, founderMark, founderPairNote, founderPairOn, founderSpeakerLane, founderFace, groups, powerParts, powerOtherHtml, iDraft, isChange, isNum, isRoom, isStranger,
+      judgedOn, launchFarewell, launchGrant, mayPen, mayPenOn, me, membersHold, openCardDirty, midOf, motionOn, motionTargets, nameOfMember, namePickNow, oneVoiceAsk, penTabsArrive,
+      perpetual, picPickNow, policyNow, proseCounts, ready,
+      removalPrice, removeSubjectPicker, renderDev,
+      renderPowerWallets, renderRail, renderTitle, resolveCounts, sentenceFor,
       serverNow, settled, signedClose, slugNoteHtml, slugRefused, standsTyped,
       strangerCardHtml, strangerReadCard, syncCharter, syncFromCs, syncGrantAcks,
       syncOwedDepartures, syncOwedHeld, syncOwedMailGiveUps, syncOwedOks, syncOwedReleases,
-      takeSnap, takenOf, takenValOf,
-      takingBack, textDivs, titlePending, titleStands, viewerId, viewerIsClerk, viewerIsMember,
+      takeSnap, takingBack, textDivs, titlePending, titleStands, viewerIsClerk, viewerIsMember,
       wantsDelegate, whyLane, wordsFor } = env;
     // the shared module, the same names the page destructures from it
-    const { esc, TICK, ARROW_OUT, avHtml, bandHtml, fitBand, nameBody, pictureBody, opt, num, numIn,
-      ctlWord, ANSWER, stateOf, nounOf, MAILS, renderMailModal, gateBody, pileHtml, readBody,
-      routeFor, listOf,
+    const { esc, TICK, avHtml, bandHtml, fitBand, nameBody, pictureBody, opt, num, numIn,
+      ANSWER, stateOf, MAILS, renderMailModal, pileHtml, routeFor, listOf,
       // 👥's share and 💤's unit picker (Q1439): the bounds, the (x of y) slot
       // and the select are setup.js's, so the founder's card, the member's
       // answer card and the composer draw one control between them
@@ -1064,12 +1055,32 @@ window.BAND = (function () {
       return [['ordinary', 'canpropose', 'proposals'], ['constitutional', 'grant-voice', 'constitutional']]
         .filter(([r, k]) => routes.includes(r) && !acked(k)).map(([, , w]) => w);
     };
+    /**
+     * **A card that only reads, on the one shell** (Q1541 stage 10): its
+     * label, the paragraph's own sentence as its first line — which says who
+     * is deciding a rule nothing stands on yet — and, where the caller has
+     * one, a sentence beneath; no row. What the door shows of a rule still
+     * being decided (Q510), and the card whose subject left the page while it
+     * stood open (`kind: 'read'`), which the old bodies drew one way each.
+     */
+    function readState(c, sibs, cx, note) {
+      const line = decisionLine(c, false);
+      return {
+        kind: 'read', acts: [], owed: null,
+        frame: { cls: 'sugg setupcard', attrs: ' role="tabpanel" data-setupcard="' + esc(c.k) + '"' },
+        label: { text: window.SETUP.labelOf(c, cx) },
+        head: line ? { html: window.SETUP.headHtml(c, cx, sibs || [c],
+          '<div class="headrule" data-fact="place">' + window.CARDS.linkify(esc(line)).replace(/\n/g, '<br>') + '</div>') } : null,
+        body: note ? { html: '<p class="why">' + esc(note) + '</p>' } : null,
+      };
+    }
     function settingKind(c) {
       if (!c || atTheDoor() || isStranger() || S.viewer === 'applicant') return null;
       if (c.ansFor) return MANAGED_KEYS.includes(c.ansFor) ? 'answer' : null;
       if (c.k === 'myemail') return !env.cs ? 'birth-email' : null;
-      // a power tab (stage 3b): a return in flight on it is a motion, stage 4's
-      if (c.power) return motionOn(c) ? null : 'power';
+      // a power tab (stage 3b)
+      // (a motion running on it is its own `mo:` tab since Q1367)
+      if (c.power) return 'power';
       // 🎩 (stage 3b): the Founder's until 🍾, read after it and from any
       // other seat (Q1503)
       if (c.k === 'hat') {
@@ -1349,9 +1360,11 @@ window.BAND = (function () {
         tp0.classList.remove('open');
         tp0.querySelectorAll('.setupcard').forEach((el) => el.remove());
         const own = STRCARDS().some((c) => c.k === S.open);
-        band.innerHTML = (own
+        // patched as the member's band is (stage 10): the door's own card
+        // holds a typed address, and a poll under it keeps the box
+        window.PATCH.set(band, (own
           ? '<div class="setrow constsec"><div class="csec"><div class="cpara open">' + strangerCardHtml() + '</div></div></div>' : '') +
-          (env.cs ? bandHtml(groups(), env.strCtx, strangerReadCard) : '');
+          (env.cs ? bandHtml(groups(), env.strCtx, strangerReadCard) : ''));
         fitBand(band);
         return;
       }
@@ -1364,677 +1377,22 @@ window.BAND = (function () {
         // applicant is a stranger who has knocked (Q1281). This used to wrap an
         // empty open paragraph around any settings tab an applicant pressed.
         const own = APPCARDS().some((c) => c.k === S.open);
-        band.innerHTML = (own
+        // patched (stage 10): the applicant's five hold their name, their
+        // words and their picture as they type them
+        window.PATCH.set(band, (own
           ? '<div class="setrow constsec"><div class="csec"><div class="cpara open">' + applicantCardHtml() + '</div></div></div>' : '') +
-          (settled(card('myemail')) ? bandHtml(groups(), env.strCtx, strangerReadCard) : '');
+          (settled(card('myemail')) ? bandHtml(groups(), env.strCtx, strangerReadCard) : ''));
         fitBand(band);
         return;
       }
-      // **The 👑 takes the pattern whole** (CP5, Q1100, Ed's refinement):
-      // 🗑️ closes the card with the question kept pending, and the two
-      // reserved powers are the two answers — a Founder Action passes it, the
-      // Founder Veto holds it. The word-buttons retired 2026-08-31. Both wear
-      // their power's glyph and both exercise it, which is what T44 asks of a
-      // glyphed commit. One implementation since Q1475, the admission card
-      // having needed the same row: the pair groups at the far right, the
-      // veto immediately left of the pen (Ed, 2026-09-02, Q1154).
-      // the band's kinds built on the one shell, stage by stage (BUILD.md §4)
-      // …and stage 3a's settings (Q1541): the Founder's own card, the rule read,
-      // a blind answer and 📧 at the birth
-      // …and stage 3b's: 🪪 🤝 🎩 among them, the power cards and the composer
-      // …and stage 4's: the motion cards, 👑, and the settled motion records
-      // with a failed motion's news
-      const SHELL_KINDS = new Set(['grant', 'gate', 'begin', 'release', 'setting', 'watching', 'answer', 'birth-email',
-        'power', 'composer', 'motion', 'crown', 'motion-record', 'failed-motion-news',
-        // …and stage 5's: ✋ 🖼️ 📧, the doors, the admissions, the applicant's
-        'identity', 'door', 'admission',
-        // …and stage 7's: 🥂
-        'closing']);
-      const crownPairRow = () => (amFounder()
-        ? binBtn() + '<span class="rightpair">' +
-          '<button class="btn glyphbtn emojibtn" data-crownq="reject"' +
-          ' title="Refuse — the Founder Veto holds it, and what stands stands">' + glyphHtml('🛡️') + '</button>' +
-          '<button class="btn btn-approve glyphbtn emojibtn" data-crownq="accept"' +
-          ' title="Accept — a Founder Action passes it now">' + glyphHtml('✒️') + '</button></span>'
-        : binBtn());
       const cardFor = (g) => {
         const c = card(S.open);
-        // **A card on the one shell** (Q1541 stage 2): the kinds a stage has
-        // converted — the grants, the gates and 🍾 — are built from their
-        // `CardState` by card-shell.js, the strip handed over as the pile this
-        // card opened from; every other kind falls through to its own body
-        const shelled = window.CARD_STATE.stateOf(c.k, { siblings: g.cards });
-        if (SHELL_KINDS.has(shelled.kind)) return glyphify(window.CARD_SHELL.cardHtml(shelled));
-        // A card the room owns keeps its own body — choosing to hand it over is
-        // the founder's decision and stays editable — and grows a **watching**
-        // half underneath, which is the whole of what anybody may see of a blind
-        // question while it runs.
-        if (c.isBegin) {
-          const rd = readinessOf();
-          const can = !constituted() && amFounder() && (!rd || rd.ready);
-          // a begun document's 🍾 asks nothing and takes the close-only OK
-          // (Ed's card review round 3, 2026-09-05, 45; reading 1190)
-          return cardHtml(c, ctx, beginBody(c, rd),
-            constituted() ? binBtn() + '<button class="btn btn-approve okbtn" data-close="1">OK</button>'
-              : binBtn() +
-                '<button class="btn btn-approve glyphbtn emojibtn btn-pen" data-confirm="1" data-begin="1"' + (can ? '' : ' disabled') +
-                ' title="' + (can ? 'Begin the document — a full one-second hold' : 'The document cannot begin yet') + '">' + glyphHtml('🍾') + '</button>',
-            g.cards);
-        }
-        // **The admit judgment, on its own card** (entry 96): the applicant at
-        // the head in their own words, then the judgment 🪪's price asks for.
-        // The lanes and `liveJudgeAdmit` are the ones the 🪪 clause used to
-        // carry; what is new is that anything reaches them at all (Q900).
-        if (c.admit) {
-          const ap = applicantById(c.admit);
-          if (!ap) return cardHtml(c, ctx, '<p class="why">This application is no longer open.</p>',
-            binBtn(), g.cards);
-          const price = admissionPrice();
-          const words = (ap.words || '').trim();
-          const said = '<div class="memrow">' + avHtml({ n: ap.name, pic: ap.picture }) +
-            '<span class="mn">' + esc(applicantName(ap)) + '</span></div>' +
-            '<p class="why">' + esc(ap.email) + (words ? ' · <i>' + esc(words) + '</i>' : '') + '</p>';
-          // **✒️ — news.** They are already in; the card says so and asks only to
-          // have been seen, like every other thing that happened rather than
-          // being decided.
-          if (price === 'pen') {
-            return cardHtml(c, ctx, said +
-              '<p class="why">Anybody may join on their own word here, so ' +
-              esc(applicantName(ap)) + ' is a member from the moment they asked.</p>',
-              binBtn() + '<button class="btn btn-approve okbtn" data-ok="' + esc(c.k) + '">OK</button>',
-              g.cards);
-          }
-          // **The membership has agreed and the Founder has not answered**
-          // (Q1475, Ed 2026-09-19, the Founder of a live room: *I did have
-          // founder veto but I wasn't served a queue card for it*). ✉️'s 🛡️
-          // is held, so a carried admission parks on the Founder's assent
-          // (§9.7 rule 9) and the module opens the 👑 question — and this
-          // card had no branch for it at either price: it went on drawing the
-          // vote, so the Founder was shown a question they had answered and
-          // a member pressing an answer was refused *the motion is not
-          // running*. It reads as the passed card it is now, in the settled
-          // motion's own grammar (CP5, Q1100, the `awaiting-crown` branch
-          // below): the two blocks with the membership's choice marked
-          // chosen, the pair of powers for the Founder, and for everybody
-          // else the park's own sentence and nothing to press.
-          const parked = liveMotionRec(c);
-          if (parked && parked.status === 'awaiting-crown') {
-            return cardHtml(c, ctx, said +
-              '<div class="pick"><span class="opttext">' + esc(PAGE_COPY.consent.staysAsIs) + '</span></div>' +
-              '<div class="pick on"><span class="opttext">' +
-              esc(PAGE_COPY.consent.joins(applicantName(ap))) + '</span>' +
-              chosenRadio('Chosen by the membership') + '</div>' +
-              (amFounder() ? '' : '<p class="setnote">' +
-                esc(window.COPY.session.park.awaiting) + '</p>'),
-              crownPairRow(), g.cards);
-          }
-          // **🏛️ — everybody's consent**, which is the constitutional motion the
-          // room already knows: the shared picks, and the generic commit path,
-          // reached because `motionTargets` points this motion at this card.
-          if (price === 'assembly') {
-            // the consent card's own three blocks (Q1182): the applicant's
-            // words are the reason under the proposed block, 🏛️ commits.
-            // Drawn by the motion grammar on its constitutional row since
-            // Q1331 — this was the one caller the rename missed, and the card
-            // threw on open until the assembly-priced applicants-walk caught it.
-            return cardHtml(c, ctx, said +
-              motionBlocks(c.k, PAGE_COPY.consent.staysAsIs, PAGE_COPY.consent.joins(applicantName(ap)), null, 'constitutional'),
-              binBtn() + '<button class="btn btn-approve glyphbtn emojibtn"' +
-              (motionPicked(c) ? '' : ' disabled') + ' data-confirm="1" title="Give your answer">' + glyphHtml('🏛️') + '</button>',
-              g.cards);
-          }
-          // **✏️ — the membership decides**, its own one-candidate race against
-          // the membership as it stands
-          const rc = admitCardOf(c.admit);
-          const pick = S['adm:' + c.admit] || null;
-          // **An admission at ✏️ price is an ordinary motion, so it wears the
-          // clock** (Q1460 (c)): the applicant's own race is this card's
-          // alone, so the deadline on it is exactly this seat's silence here.
-          // On the textless block, which is this card's Indifferent row.
-          const absAt = motionAbstainAt(c);
-          // option blocks (CP1); Indifferent is a textless block whose radio
-          // names the act instead of *Prefer this* (CP4, Q1099)
-          const lane = (v, label) => {
-            const note = (v === 'either' && absAt != null) ? window.CARDS.abstainNoteHtml(absAt) : '';
-            return '<div class="pick' + (pick === v ? ' on' : '') + (note ? ' absrow' : '') + '">' +
-            // `ctl` (T46): *Admit them* is the lane's own act, not the clause
-            (label ? '<span class="opttext ctl">' + label + '</span>' : '') +
-            '<button class="lanepick" aria-pressed="' + (pick === v) +
-            '" data-admitpick="' + esc(c.admit) + '" data-v="' + v + '">' +
-            '<span class="dot"></span>' + (v === 'either' ? '<span>Indifferent</span>'
-              : '<span class="off">Prefer this</span><span class="on">Preferred</span>') +
-            '</button>' + note + '</div>';
-          };
-          return cardHtml(c, ctx, said +
-            '<p class="why">The membership decides this.</p>' +
-            (rc ? '<div class="choice" role="radiogroup" aria-label="Admit them?">' +
-              lane('admit', 'Admit them') +
-              lane('stands', 'Keep the membership as it is') +
-              lane('either', '') + '</div>'
-              : '<p class="setnote">Before the members — you have voted on it.</p>'),
-            binBtn() + '<button class="btn btn-approve glyphbtn" data-admitgo="' +
-            esc(c.admit) + '"' + (rc && pick ? '' : ' disabled') + '>' + TICK + '</button>',
-            g.cards);
-        }
-        // **What one act laid down, in one card** (entry 162, Q1013): the whole
-        // batch stated, grouped by the constitution's own sections, taking one
-        // OK. The commit row is the ✒️-price admit card's — 🗑️ and an OK — a
-        // release having happened rather than been decided.
-        if (c.release) {
-          const b = releaseBatch(c.release);
-          if (!b) return cardHtml(c, ctx, '<p class="why">This is no longer outstanding.</p>',
-            binBtn(), g.cards);
-          return cardHtml(c, ctx, releaseBody(b),
-            binBtn() + '<button class="btn btn-approve okbtn" data-ok="' + esc(c.k) + '">OK</button>',
-            g.cards);
-        }
-        // **A mail that gave up, in one card** (SURFACE E34): the addresses the
-        // pass could not reach, stated once, taking one OK — a give-up having
-        // happened rather than been decided. **The OK alone, no 🗑️** (Q1541
-        // stage 2, 1541.9): nothing on it can ever be put back, so the bin
-        // never has a job here, and once nothing is owed there is no row
-        // (1541.8 (a)). Its own shell waits on the Members list's anchor,
-        // stage 5's question, as the departure card's does.
-        if (c.mailgiveup) {
-          const b = mailGiveUpBatch(c.mailgiveup);
-          if (!b) return cardHtml(c, ctx, '<p class="why">This is no longer outstanding.</p>',
-            null, g.cards);
-          return cardHtml(c, ctx, mailGiveUpBody(b),
-            '<button class="btn btn-approve okbtn" data-ok="' + esc(c.k) + '">OK</button>',
-            g.cards);
-        }
-        // **A departure, in one card** (SURFACE E31, E32, E40; Q901): the
-        // register's own sentence about who left and by whose act, stated
-        // once, taking one OK. The commit row is the OK alone — **no 🗑️**,
-        // there being nothing on it to put back (Q1527 (a), Ed 2026-09-24;
-        // Y20, as Q1522 ruled for the records) — a departure having happened
-        // rather than been decided, and
-        // the body is `departureLine`'s, the one sentence saying by whose act —
-        // the *Alumni* row under which it stands says only the day (Q1557 (e)).
-        if (c.departure) {
-          const d = owedDeparture(c.departure);
-          if (!d) return cardHtml(c, ctx, '<p class="why">This is no longer outstanding.</p>',
-            null, g.cards);
-          return cardHtml(c, ctx, '<p class="why">' + departureLine(d) + '</p>',
-            '<button class="btn btn-approve okbtn" data-ok="' + esc(c.k) + '">OK</button>',
-            g.cards);
-        }
-        // **A motion of yours that failed** (SURFACE E41; Q1447), and the one
-        // card in the family whose body is another card's: where the motion
-        // filed a record this **is** that record, so it draws `recordBody` —
-        // the dateline, *Rejected*, the rule that stands marked as standing
-        // and the wording that did not, with the reason — and the only thing
-        // that differs from the grey chip's own card is that its OK is owed
-        // rather than a close. A door's motion files no record, so there the
-        // body is the one sentence saying what happened, `departureLine`'s
-        // shape and for its reason.
-        // **No 🗑️ on a record, and OK only while it is owed** (Q1522 (6), Ed
-        // 2026-09-24; Y20): this card exists only while the mover owes the
-        // OK (`heldKeys`), so the OK is the whole row — until the document
-        // closes, when the module refuses the acknowledgement and nothing on
-        // the closed page is pressable, so the row goes with it.
-        if (c.held) {
-          return cardHtml(c, ctx, heldBody(c),
-            docOpen() ? '<button class="btn btn-approve okbtn" data-ok="' + esc(c.k) + '">OK</button>' : null,
-            g.cards);
-        }
-        // 🥂 carries **no 🗑️** (Q1527 (a), Ed 2026-09-24; Y20): nothing on it
-        // can be put back, so the row is the signing OK alone while it is
-        // owed, and nothing once signed or for a reader who signs nothing
-        if (c.isClosing) {
-          const signed = signedClose();
-          return cardHtml(c, ctx, closingBody(c),
-            signed || !viewerIsMember()
-              ? null
-              : '<button class="btn btn-approve okbtn" data-sign="1" title="OK signs the document; your comment goes on the record">OK</button>',
-            g.cards);
-        }
-        if (c.isGate) {
-          // **A grant's commit is OK, like every other acknowledgment** (Ed,
-          // 2026-09-01, backlog 263, Q1121: *you should only click a button with
-          // 🛡️ on it when you're actually doing a veto*). Entry 180 had it wear
-          // the power's glyph and a verb — **✒️ Take the pen** — on 🍾 Begin's
-          // accent-subtle ground, because the press is the one act after which you
-          // hold something you did not hold before. That is still true, and the
-          // **mark** still says it (`grants`, in the tab and the rail entry); the
-          // commit may not, because a glyphed commit is a promise that pressing it
-          // exercises that power, and this one only acknowledges. So every gate
-          // and grant commits with the plain OK on the solid accent (T18, T44),
-          // and the object still flies from the press — the flight reads `grants`,
-          // never the commit's words. It stays a **click**: nothing here is
-          // destructive, and the hold question is entry 184's. `data-ok` and the
-          // key are deliberately unchanged — the handler, `pendingGrant`,
-          // `saveGrants` and every walk press this selector.
-          //
-          // **And an acknowledged gate takes the bin alone**, exactly as 🥂
-          // does once it is signed: the tab stays in the band and opens, so
-          // without this the founder — for whom `acked` is true from 🍾 and
-          // never becomes false (Y27) — is offered an OK for ever on a power
-          // they already hold, and the press re-fires `pendingGrant`'s pencil
-          // storm into a full wallet. A card that asks nothing commits nothing
-          // (SURFACE §9.1, CP9).
-          // …and an acked gate keeps an OK that only closes (Ed's QA,
-          // 2026-09-02 pm, 1167 b's grammar): no ACK_KEYS entry, nothing
-          // tracked — the friendlier way out beside the bin.
-          // **An open gate is its head and its OK** (Ed's card review round 3,
-          // 2026-09-05, 46 💡 / 47 ⚖️): the provenance line, the explainer, the
-          // *Open —* line and the wallet count all go once the gate is open —
-          // the head's clause says what members may do. A gate still waiting
-          // keeps its blockers list, which is what the card is for until 🍾;
-          // the three grants (✒️ 🛡️ 🏛️) keep their sentence, being news of a
-          // power rather than a gate.
-          const gateOpenBare = c.isGate && !c.isGrant && c.open();
-          return cardHtml(c, ctx, gateOpenBare ? '' : grantProv(c) + gateBody(c),
-            acked(c.k) ? binBtn() + '<button class="btn btn-approve okbtn" data-close="1">OK</button>'
-              // **…until it is accepted** (Q1501, Ed 2026-09-22; T44 amended for
-              // the grants): *Accept* and the power it hands you — ✏️ on 💡, ⚖️,
-              // ✒️, 🛡️ — and 🏛️'s *Activate 🏛️* (Q1502); `data-ok` unchanged
-              : binBtn() +
-                '<button class="btn btn-approve okbtn grantok"' +
-                (c.open() ? '' : ' disabled') +
-                ' data-ok="' + c.k + '">' + esc(c.k === 'grant-voice' ? PAGE_COPY.gate.voice.accept
-                  : PAGE_COPY.gate.accept(c.grants || c.g)) + '</button>', g.cards);
-        }
-        // **A record, opened** (Q942, Q1186): no head, the dateline and the
-        // outcome leading the field, the rules and the reason beneath.
-        // (Q1167 b's close-only OK and the bin both retired with Q1522.)
-        // **…and since Q1522 (6)** (Ed 2026-09-24) it has no row at all: a
-        // filed record is owed nobody's OK (the mover's owed one is the
-        // `c.held` card above), so neither the bin nor a close-only OK is
-        // drawn — the tab and a click elsewhere close it. `null` tells
-        // `cardHtml` to leave the commit row out, hairline and all.
-        if (c.record) return cardHtml(c, ctx, recordBody(c), null, g.cards);
-        // 403/405 (Ed, 2026-08-19): a power tab, opened — the ✒️ or 🛡️
-        // half of a setting's governance, its head the rule as it stands
-        if (c.power) {
-          /* A return still in flight — a `reserve` a log made before Q1404
-             carries, or the ladder's stagehand put — is answered on its own
-             motion card exactly as a constitutional motion is answered
-             anywhere: the same blocks, the same 🏛️, the mover's 🗑️
-             withdrawing. The member's offer to put one (Q386) left with
-             Q1404: the road back is closed, and a laid-down power's tab is
-             not drawn, so the founder's own card below is the only tab a
-             power has. */
-          const pm = motionOn(c);
-          if (pm) {
-            return cardHtml(c, ctx, consentBody(c, pm),
-              (pm.by === viewerId()
-                ? '<button class="btn glyphbtn" data-withdrawmotion="' + c.k + '" title="Withdraw it — your 🏛️ comes back whole">' + glyphHtml('🗑️') + '</button>'
-                : binBtn()) +
-              // the mover gives no answer on their own motion (issue #88, K8)
-              (pm.by === viewerId() ? '' : '<button class="btn btn-approve glyphbtn emojibtn"' + (motionPicked(c) ? '' : ' disabled') +
-              ' data-confirm="1" title="Give your answer">' + glyphHtml('🏛️') + '</button>'), g.cards);
-          }
-          const pHeld = c.power === 'u' ? pwPair(c.base).u : pwPair(c.base).a;
-          // …and never on a closed document (entry 62): `relinquish` and
-          // `reclaim` both `requireOpen`, so this ✒️ posted a command the server
-          // answers 400. It is not pen-gated (SURFACE Y7) and stays so.
-          const editable = amFounder() && docOpen() && !(env.cs && env.cs.constitutedAtT !== null && !pHeld);
-          // ✒️, not ✓: giving up a power is the founder's unilateral set,
-          // and ✒️ is the pen every unilateral set on this surface commits
-          // with — the ✓ is reserved for answering a shared question
-          // …and a tab with nothing to set takes the close-only OK (Ed's card
-          // review round 3, 2026-09-05, 52/53; reading 1190 — every card whose
-          // row was 🗑️ alone): a word, no ACK_KEYS entry, nobody owes a press
-          return cardHtml(c, ctx, powerBody(c),
-            (editable ? binBtn() +
-              '<button class="btn btn-approve glyphbtn emojibtn" data-confirm="1"' +
-              ' title="Set it">' + glyphHtml('✒️') + '</button>'
-              : binBtn() + '<button class="btn btn-approve okbtn" data-close="1">OK</button>'),
-            g.cards);
-        }
-        const m = motionOn(c);
-        // **Reserved is assent, not silence** (§9.7): the room passed it, and
-        // it now sits with the founder — Accept applies it, Reject files it.
-        if (m && m.status === 'awaiting-crown') {
-          // **the two-block pair** (Q1167 a as refined, Ed 2026-09-02): the
-          // standing rule, then the change the membership has already chosen.
-          // Both blocks carry the full clause sentence and the provenance is a
-          // chosen radio — *Chosen by the membership* — rather than a note
-          // (Ed's QA, 2026-09-02 pm): the pair reads as the option card it is,
-          // the vote being over and the card waiting on the founder's own act.
-          const rec0 = liveMotionRec(c);
-          const rawV = rec0 && rec0.payload && rec0.payload.kind === 'set' ? rec0.payload.value : null;
-          // the full clause sentence, never the short label (Ed's card review
-          // round 3, 2026-09-05, 31 🌍: *"Members only" => "The document can
-          // only be seen by members."*)
-          const toClause = (rawV !== null && sentenceFor(hostKeyOf(c), rawV)) || m.to;
-          return cardHtml(c, ctx,
-            '<div class="pick"><span class="opttext">' + esc(decisionLine(c)) + '</span></div>' +
-            '<div class="pick on"><span class="opttext">' + esc(toClause) + '</span>' +
-            chosenRadio('Chosen by the membership') + '</div>' +
-            (m.why ? window.CARDS.speakerHtml(m.why) : ''),
-            crownPairRow(), g.cards);
-        }
-        // a live motion takes the route its own value asks for (329a)
-        if (m && routeOfM(m, c) === 'ordinary') {
-          // **The ordinary motion card is the consent card's shape** (Q1331,
-          // Ed 2026-09-11: *all of it*): no head, the standing rule as block
-          // one with *Keep this*, the proposed rule beneath with the
-          // proposer's sealed reason and *Prefer this*, *Indifferent* as its
-          // own textless block; no explainer, no eyebrow, no count. The
-          // commit is ✓ — a judgment, binding nobody but you (§9.1) — and the
-          // pick still feeds `liveJudge` / the dev seam as stands · proposed ·
-          // either.
-          return cardHtml(c, ctx, ordinaryBody(c, m),
-            // one bin on every card, always live (Q613 (a), 2026-08-22): for the
-            // mover it withdraws, for anybody else it simply closes the card
-            (m.by === viewerId()
-              // …glyph alone since 2026-09-05 (Ed, closing T47's one exception
-              // for the word *Withdraw*: both motion cards' 🗑️ match)
-              ? '<button class="btn glyphbtn" data-withdrawmotion="' + c.k + '" title="Withdraw it — the ✏️ comes back in full">' + glyphHtml('🗑️') + '</button>'
-              : binBtn()) +
-            // **the mover is not asked to judge their own motion** (K8, Q1370):
-            // their preference is derived, never cast (§3.3), so their card
-            // offers withdraw and no ✓ — the entry is theirs (M3), not an ask
-            (m.by === viewerId() ? ''
-              : '<button class="btn btn-approve glyphbtn"' + (motionPicked(c) ? '' : ' disabled') +
-                ' data-confirm="1">' + TICK + '</button>'),
-            g.cards);
-        }
-        if (m) {
-          // **The consent card takes the settled shape** (Ed's card review
-          // round 3, 2026-09-05, 58, Q1182): the standing rule as block one
-          // with *Keep this*, the proposed rule beneath with the proposer's
-          // sealed reason and *Prefer this*, *Abstain* on its own row like
-          // Indifferent — full clause text on every block, no *Re-opened*
-          // paragraph, no count, no privacy sentence, no explainers, no blind
-          // note. **The mover's 🗑️ still withdraws** — Ed, 2026-09-05, correcting
-          // the build's first reading: the note was about the word *Withdraw*
-          // on the button, not the act — so it wears the glyph alone (T47), at
-          // the very left where 🗑️ always is, and hands the 🏛️ back whole.
-          // The commit is 🏛️ — your consent, given (C4).
-          return cardHtml(c, ctx, consentBody(c, m),
-            (m.by === viewerId()
-              ? '<button class="btn glyphbtn" data-withdrawmotion="' + c.k + '" title="Withdraw it — your 🏛️ comes back whole">' + glyphHtml('🗑️') + '</button>'
-              : binBtn()) +
-            // …and gives no answer on it (issue #88, K8): their accept is on
-            // the record from the put, and 🗑️ is the road for a changed mind
-            (m.by === viewerId() ? '' : '<button class="btn btn-approve glyphbtn emojibtn"' + (motionPicked(c) ? '' : ' disabled') +
-            ' data-confirm="1" title="Give your answer">' + glyphHtml('🏛️') + '</button>'), g.cards);
-        }
-        // — unless it is a decision you are owed: the OK comes before the
-        // motion, since an unacknowledged rule sits in the rail until it is
-        // pressed (the composer returns the moment it is).
-        // **…but news never takes a composer out from under a draft** (the P1
-        // sweep, 2026-09-23, after issue #80 made a Founder's ✒️ change to an
-        // ordinary rule news again): a composer already on screen for this
-        // card, holding a motion the member has typed and not sent, stays
-        // the composer when the news lands — the value and the caret are
-        // kept (Q1486, *nothing rebuilds under a caret*), and the news waits
-        // in the rail, its OK served the next time the card opens. Read off
-        // the card in the document, so a card closed and reopened meets the
-        // OK first, as it always did; the draft itself is never discarded.
-        const composing = S.open === c.k && !!S.draft && S.draft.k === c.k &&
-          !!(S.draft.to || S.draft.why) &&
-          !!document.querySelector('.setupcard[data-setupcard="' + c.k + '"] [data-dropmotion]');
-        if (composerOn(c) && (stateOf(c, ctx) !== 'news' || composing)) {
-          // **The settled card is the composer** (Ed, 2026-08-18): the rule as
-          // it stands at the head, the alternatives as the setting's own
-          // controls, session-view's rationale lane, 🗑️ and the route's commit.
-          const d = (S.draft && S.draft.k === c.k) ? S.draft : { k: c.k, to: '', why: '' };
-          const route = routeFor(c, d.to);
-          const body2 = (PROPOSE[c.k] ? PROPOSE[c.k](d)
-              : '<div class="lanebox"><div class="lp editlane" contenteditable="plaintext-only" spellcheck="false"' +
-                ' data-motionlane="to" data-ph="' + esc(PAGE_COPY.composeNote.valueLane) + '">' + esc(d.to) + '</div></div>') +
-            whyLane(d) +
-            // the price is not said in words (Ed, 2026-08-19): the pencil
-            // flying out of the wallet is what teaches it, and a sentence
-            // beside the flight is the surface explaining its own animation.
-            // The *goes to the Founder, who may assent or refuse* note went the
-            // same way with Ed's card review round 3 (2026-09-05, reading
-            // 1189): the 🛡️ tab beside the card already says the veto stands.
-            doorErrHtml(c.k);
-          return cardHtml(c, ctx, body2 + changeHalf(c),
-            '<button class="btn glyphbtn" data-dropmotion="1"' +
-            ' title="Discard this motion">' + glyphHtml('🗑️') + '</button>' +
-            commitFor(c), g.cards);
-        }
-        // the room reaches the answer bodies as a fourth argument (entry 167):
-        // `setup.js` writes the controls but must not learn where a room comes
-        // from, so the caller hands it one built by `roomNow`
-        // …and the clause context as a sixth (Q1112 (b)), for the same reason:
-        // two of the clause sentences name a fact outside their own setting —
-        // 🌍's clerk deviation and 🤝's price — and a ladder that omitted it
-        // would say the rung a second way, which is the T5 finding this ends
-        // **The Founder's own answer card says which hat is answering** (Q1300,
-        // Ed 2026-09-10): a founder who is a member answers what they delegated
-        // on a separate card (§9.0b) that otherwise wears the setting's own
-        // title, so the note is the one thing telling the two apart. `.unlocks`
-        // is the surface's blue box; a clerk-founder owes no answer and sees none.
-        const body = c.ansFor ? (amFounder() && viewerIsMember()
-              ? '<p class="unlocks">' + esc(PAGE_COPY.asMember) + '</p>' : '') +
-            ANSWER[c.ansFor](S.myAns, E(),
-            c.ansFor === 'quorum' ? S.quorumForm : undefined, roomNow(), ANSTYPED,
-            clauseCtx())
-          // a card that is not yours to answer reads as the rule it is —
-          // the founder's settings are read-only from any other chair
-          // **…and from the founder's own, once the pen on it is down** (entry
-          // 62). The seat was the whole test, so a founder who had laid a pen
-          // down still met the lane and the radios that pen paid for — live,
-          // pressable, and refused by the server with a console warning nobody
-          // reads. `founderHandOff` is the same question the composer swap has
-          // always asked, put to the body.
-          // **🎩 from any other seat is the founder's own card, locked** (Q1503):
-          // `readBody`'s *Set to* line has no `VALUE.hat` to print and read
-          // *Set to* and nothing on every member's seat, where the two
-          // sentences with the standing one marked say the answer in full —
-          // the settled grammar every other option-block card reads by
-          : c.k === 'hat' && !amFounder()
-          ? BODY.hat(true)
-          : ((!amFounder() || founderHandOff(c)) && c.own !== 'you' && !doorDirect(c))
-          // **The watch-half is retired** (Q1176, Ed 2026-09-02 pm): *What the
-          // membership said*, the distribution strip, the taken line and the
-          // running count all leave the delegated cards; provenance is the
-          // standing block's own chosen radio, and the per-question counts move
-          // to 🍾 (design finished with Q1169).
-          // **🪶's standing block is the whole of its read** (Ed, 2026-09-24:
-          // *the "Set to … Set by the founder when the document was made." part
-          // of the card isn't necessary*): the clause quotes the title
-          // verbatim and the standing block's radio says who chose it, so
-          // `readBody`'s *Set to* and its lockline said both again. The card
-          // is the head and its row.
-          ? (c.k === 'title' ? '' : readBody(c, ctx))
-          : BODY[c.k]() + delegateRung(c);
-        // **The route left the card bodies** (Ed's copy pass, 2026-08-19,
-        // finishing what the kind-eyebrow removal started): every card carried
-        // a kind line restating the preamble, and the preamble is where the
-        // routes are stated once — the clause states its deviations, and the
-        // controls convey the rest (a 🏛️ hold, a 👑 note). What survives is
-        // the one sentence only its own card can say: the ⏰ card's
-        // whether/when split, where the constitutional line falls inside a
-        // single setting.
-        const kindLine = c.knote ? '<p class="setnote">' + c.knote + '</p>' : '';
-        const newsKey = isRoom(c) ? 'res-' + c.k : 'set-' + c.k;
-        // **The ground belongs to the glyph, never to the card's kind** (Ed's
-        // QA, 2026-08-21: *the buttons during the birth are many different
-        // colours*). Two rules chose the commit's look and they were keyed on
-        // different things: the *glyph* on whether the document exists yet (at
-        // the birth every commit is the 🪶, whoever the card is about), the
-        // *quiet ground* on the card's kind. On 📧 — a personal card, so ✓ by
-        // kind — they disagreed, and the third feather of the birth stood on
-        // the solid green the drawn ✓ owns, between two on the accent-subtle.
-        // One expression now decides both: an emoji needs a quiet ground
-        // wherever it sits, and the ✓ stays the one solid green thing.
-        // **…and an answer to a constitutional question commits with 🏛️**
-        // (Ed, 2026-09-05, Q1182 — SURFACE C4 amended): the founding answer
-        // cards and the consent card are the same act, your consent given, and
-        // §7's *the founding answers are a kind of 🏛️* is now literal. ✓ is
-        // left to ordinary judgments and the cards about yourself.
-        const commitGlyph = !env.cs ? '🪶' : c.ansFor ? '🏛️' : c.kind === 'personal' ? TICK : '✒️';
-        // **A door whose act is in the body has nothing left to commit** (Ed,
-        // entry 37: *the main action in the bottom right is just ✔️, closing the
-        // card*). ✉️ in its direct form sends from the field — so the row's ✒️
-        // was a pen over a card with no value to set: its press walked the
-        // `[data-confirm]` keys, found `invite` in `DOOR_KEYS` and not in
-        // `MANAGED_KEYS`, and closed the card having done nothing — after
-        // running the one-second hold and flying the pen out of `#penwallet`,
-        // a flight for an act that does not happen. What is left is the drawn ✓
-        // on `data-close`, which is the applicant's cards' own foot: the bin
-        // puts back what is typed, the ✓ closes and **keeps** it (the boxes keep
-        // what is in them across a close, Ed 2026-08-21).
-        // The test is `c.k === 'invite' && doorDirect(c)`, and it stands ahead of
-        // the non-founder branch below — a member inviting at 🪪 *pen* is not the
-        // founder, and would otherwise get the bin alone. ❌'s direct form keeps
-        // its ✒️ for now: its act is a dropdown plus *❌ Remove*, and that is a
-        // change of its own.
-        const foot = c.leaveDoor
-          // 🌂 (Q1400): the warning is the body, the ✓ is the act — the same
-          // `resign` press *Leave* was, free and nobody's to refuse (E32)
-          ? binBtn() + '<button class="btn btn-approve glyphbtn" data-act="resign" title="' + PAGE_COPY.cards.leave.t + '">' + ARROW_OUT + '</button>'
-          : (c.k === 'invite' && doorDirect(c))
-          // **the send is the row's commit** (Q1166): ✒️ where the viewer's
-          // word sends, beside the route's commit where the founder holds both
-          // (the pair at the right, ✒️ immediately left — Q1154). A click, not
-          // a hold: a direct invitation spends nothing, and it is never
-          // disabled on an empty box, the refusal sentence (Y25) being what an
-          // empty box is owed.
-          ? binBtn() + '<span class="rightpair">' +
-            '<button class="btn btn-approve glyphbtn emojibtn" data-act="invite"' +
-            ' title="Send the invitations — your word sends">' + glyphHtml('✒️') + '</button>' +
-            founderCommit(card('invite')) + '</span>'
-          // …and the same for a founder whose hand is off this setting (entry
-          // 62): the body above is already the settled card, and a settled card
-          // commits nothing. 🗑️ is the band's always-live close (Q613 (a)).
-          : (c.k === 'remove' && directRemove())
-          // **the acts are the row's** (Ed's QA, 2026-09-02 pm): choose the
-          // person in the body, then press the act — ✒️ removes on your word
-          // (the old ❌ Remove button, now the pen it always was), the route's
-          // commit beside it proposes instead. Q1154's order: the power
-          // immediately left of the route's commit.
-          ? binBtn() + '<span class="rightpair">' +
-            '<button class="btn btn-approve glyphbtn emojibtn" data-exile="1"' +
-            (S.removeWho ? '' : ' disabled') +
-            ' title="Remove them — your word removes">' + glyphHtml('✒️') + '</button>' +
-            founderCommit(card('remove')) + '</span>'
-        : ((!amFounder() || founderHandOff(c)) && c.own !== 'you' && !c.ansFor)
-          ? (stateOf(c, ctx) === 'news'
-            ? binBtn() +
-              '<button class="btn btn-approve okbtn" data-ok="' + newsKey + '">OK</button>'
-            : binBtn())
-          : (c.k === 'myname' || c.k === 'mypic')
-          // **The bin clears un-actioned input and never touches what is set**
-          // (Q520, Ed 2026-08-21). ✋ and 🖼️ were the two bins whose act was to
-          // *delete* the value rather than put the card back, which was
-          // survivable while a bin greyed out unless there was something to
-          // throw away — and a trap once the bin became always live and also
-          // the way out of a card. They take the shared bin: it restores what
-          // stands, so a name that has been saved is safe from it. Emptying a
-          // saved name is still a thing you can do — by emptying the field, the
-          // way you set it — and a picture is removed by choosing initials.
-          ? binBtn() +
-            // Q449 (Ed, 2026-08-20): a name or a picture binds nobody (§9.0c),
-            // so it commits with ✓ — the pen is for sets that bind the document
-            '<button class="btn btn-approve glyphbtn"' + (ready(c) ? '' : ' disabled') +
-            ' data-confirm="1" title="Save">' + TICK + '</button>'
-          : c.k === 'title'
-          // the title's lane rides the snapshot like every other provisional
-          // value now, so this card keeps the shared bin (2026-08-21); the pen
-          // and the route's commit group at the far right (Q1154)
-          ? binBtn() + '<span class="rightpair">' +
-            '<button class="btn btn-approve glyphbtn emojibtn"' +
-            // the lock, not the wallet (entry 62): 🪶 at the birth, and after it
-            // the pen **on the title**. The tooltip still asks the wallet, since
-            // *your pen is waiting in your tasks* is only ever the right
-            // explanation when the wallet is what is missing.
-            (commitReady(c) && (!env.cs || mayPenOn('title')) ? '' : ' disabled') +
-            ' data-confirm="1" title="' + (!env.cs || mayPen() ? commitTitle(c) : penWaitTitle) + '">' +
-            glyphHtml(env.cs ? '✒️' : '🪶') + '</button>' +
-            // …and the room's route beside it, where the pen is still held
-            // (entry 161): the Founder's own act stays where their eye already
-            // goes and putting it to the membership is the deliberate second
-            // reach, so this is **after** the pen and never in front of it.
-            founderCommit(c) + '</span>'
-          // 📧 in flight: the act is resending, and it spends nothing, so it is
-          // a click rather than a hold (the ladder is for what comes out of a
-          // wallet). The first send is still the 🪶 commit below.
-          // 📨 says it by itself (Ed, 2026-08-21) — the word was doing nothing
-          // the glyph and the tooltip were not already doing, and it is the
-          // same 52px glyph button every other commit row uses
-          // …and its 🗑️ is the ordinary one (Ed, 2026-08-21). It had been
-          // hard-wired off, on the reading that a sent address has nothing to
-          // put back — but the field is live here on purpose (typing in it is
-          // how a wrong address is corrected), so the bin has exactly the job
-          // it has everywhere else: put back the address the link went to.
-          : c.k === 'myemail' && S.emailSent && !S.emailVerified
-          ? binBtn() +
-            '<button class="btn btn-approve glyphbtn emojibtn" data-resend="1"' +
-            (EMAIL_OK.test(S.myemail) ? '' : ' disabled') +
-            ' title="' + resendTitle() + '">' + glyphHtml('📨') + '</button>'
-          : c.k === 'hat'
-          ? (() => {
-              // **CP9 (Q1106): locked at 🍾 for ever, so no commit at all** —
-              // a permanently dark ✒️ promised a thaw that never comes; dark
-              // means *not yet* (Y19), and 🎩 after the start is *never*.
-              // 🗑️ stays as the close, with 1167 b's close-only OK beside it
-              // (Ed's QA, 2026-09-02 pm).
-              // …and from any seat but the founder's the card is locked in
-              // every era (Q1503), so the same close-only row
-              if ((env.cs && env.cs.constitutedAtT !== null) || !amFounder()) return binBtn() +
-                '<button class="btn btn-approve okbtn" data-close="1">OK</button>';
-              const cur = hatCurrent();   // the module's answer, not `S.seen`'s (Q1503)
-              const dirty = !!S.hatPick && S.hatPick !== cur;
-              return binBtn() +
-                '<button class="btn btn-approve glyphbtn emojibtn"' +
-                // 🎩 has no power pair, so it keeps the wallet question — plus
-                // `docOpen()`, since `set-convenor-membership` is refused after
-                // the close like everything else (entry 62, Ed B25 (a)).
-                (dirty && mayPen() && docOpen() ? '' : ' disabled') +
-                ' data-confirm="1" title="' + (mayPen() ? 'Set it' : penWaitTitle) + '">' + glyphHtml('✒️') + '</button>'; })()
-          : stateOf(c, ctx) === 'news'
-          ? binBtn() +
-            '<button class="btn btn-approve okbtn" data-ok="' + newsKey + '">OK</button>'
-          // **CP9 (Q1106): once the document is closed there is no commit left
-          // to draw.** What reaches here on a closed page is what
-          // `founderHandOff` does not cover — the power tabs and the two doors,
-          // which it excludes by name — and every one of them would draw the
-          // fall-through's ✒️ permanently dark, since `mayPenOn` carries
-          // `docOpen()`. Dark means *not yet* (Y19); after the close it is
-          // *never*, and a bin that closes is the whole row. The news branch
-          // stands above this deliberately: 🥂's OK is the signature, and
-          // `acknowledgeClose` is the one command the close does not refuse.
-          : env.cs && !docOpen()
-          ? binBtn()
-          // …and one bin under all of them (Q521(a), Ed 2026-08-21). An answer
-          // is a provisional value like any other — it rides the snapshot as
-          // its own `ans:` key — and a card whose value lives elsewhere (the
-          // register, the text) simply has nothing to put back, so the bin
-          // there is the close it always was under another name.
-          //
-          // (📄's OK stood here until backlog 204 — Q744's no-bin and Q798's OK;
-          // the text is no card body now and its commit is the proposal-row's,
-          // so nothing special-cases it)
-          : (binBtn() + '<span class="rightpair">' +
-          // ✒️ is the founder's pen (Ed, 360): a set of a setting binds the
-          // document. Q449 (Ed, 2026-08-20): an answer to a shared question
-          // and a setting about yourself — your name, picture, email — bind
-          // nobody (§9.0c), so they commit with ✓, never the pen. The pen and
-          // the route's commit group at the far right (Q1154).
-          '<button class="btn btn-approve glyphbtn' + (commitGlyph === TICK ? '' : ' emojibtn') + '"' +
-          // the card decides the ✒️, the wallet decides the sentence (entry 62)
-          // — and a card equal to what stands is dark (Q1293, `commitReady`);
-          // a delegated card with a value chosen is the take-back, which the
-          // per-setting lock cannot see (Q1318, `takingBack`)
-          (commitReady(c) && (penOkFor(commitGlyph, c) ||
-            (commitGlyph === '✒️' && mayPen() && docOpen() && takingBack(c.k))) ? '' : ' disabled') +
-          ' data-confirm="1" title="' +
-          // the drawn glyph, unless the commit is the ✓ — cards.js's stroked
-          // `TICK`, already markup and deliberately not a picture (Q1360: a
-          // commit greys and lights on `currentColor`, which no picture can do)
-          (penOkFor(commitGlyph) ? commitTitle(c) : penWaitTitle) + '">' +
-          (commitGlyph === TICK ? TICK : glyphHtml(commitGlyph)) + '</button>' +
-          // the route's own commit, after the pen (entry 161) — see the title
-          // branch above for why it stands second. **Never a door here**: ❌
-          // reaches this branch (its row keeps an inert ✒️), and a door's second
-          // act belongs beside the door's own, in the body (Q1024, §9.1) — which
-          // `BODY.remove` draws. Without this it was drawn twice.
-          (c.door ? '' : founderCommit(c)) + '</span>');
-        // the refusal line, under the body and beside the commit row that tried
-        // (entry 62). The two doors draw it inside their own bodies already, so
-        // they are excluded here rather than carrying it twice.
-        return cardHtml(c, ctx,
-          body + changeHalf(c) + founderPairNote(c) + kindLine +
-          (c.door ? '' : doorErrHtml(c.k)), foot, g.cards);
+        // **every card on the one shell** (Q1541 stage 10): the card state
+        // the band source hands over, the strip the pile this card opened
+        // from; a card the source draws no frame for — its subject left the
+        // page while it stood open — is `readState`'s, never an old body
+        const st = window.CARD_STATE.stateOf(c.k, { siblings: g.cards });
+        return glyphify(window.CARD_SHELL.cardHtml(st.frame ? st : readState(c, g.cards, ctx, PAGE_COPY.noLongerOutstanding)));
       };
       // the title card opens in the title's own paragraph, whatever else
       // the band is doing — the clause, opened, with its tab in its strip
@@ -2403,7 +1761,7 @@ window.BAND = (function () {
     return {
       render, refreshCommit, roomNow, syncShare, standingBlock, unchangedCard,
       // stage 3a's settings cards, for the band's card-state source (Q1541)
-      settingKind, settingActs, settingOwed, settingPresent, lineOf,
+      settingKind, settingActs, settingOwed, settingPresent, lineOf, readState,
       // stage 5: the doors' bodies, for their cards on the one shell
       BODY,
       // stage 4: a motion's card heads with its host's rule and pill (Q1541)

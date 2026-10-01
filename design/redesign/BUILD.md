@@ -101,7 +101,7 @@ The two probes (`session-probe.js`, `setup-probe.js`) diff the page against a fr
 | 7 | ☑ **Records, the backlog and the closed page** (and the one host change) | the closed page offers only 🥂 and carries no powers; bugs 2, 4, 5 | L — 3 sessions, 1 QA |
 | 8 | ☑ **Edit mode, the proposal row, the phone's drawers** | overlays never cover text, the 📝 door excepted; bugs 9, 10 | M — 2 sessions, 1 QA |
 | 9 | ☑ **Keyed re-render** (principle 10) | `render-hold` green | L — 3–4 sessions, 1 QA |
-| 10 | ☐ **Retire and fold** | the old shells gone; every guard strict; the principles in SURFACE | S–M — 1–2 sessions |
+| 10 | ☑ **Retire and fold** | the old shells gone; every guard strict; the principles in SURFACE | S–M — 1–2 sessions |
 
 ### Stage 0 — Measure and guard (no member-visible change)
 
@@ -207,6 +207,7 @@ The largest stage and the centre of the breaks, split in two so a QA round sits 
 - **Acceptance:** card-audit strict on every kind in the sprint tier and the fast pass; the full walks job green; `state-only` over every slot builder.
 - **Re-freeze:** both probes, copy goldens (a last, empty-diff freeze proves the deletions changed nothing a member sees).
 - **Docs:** SURFACE §9 read end to end against the page (each row now one line of what is particular to its card); the principles not yet in SURFACE enter its opening, each naming its check (table below); CLAUDE.md glossary pruned (the retired names into *Retired names*); `design/DECISIONS.md` gets phase one's reasoning (grammar §0, §7, §10) and the answers' (answers.md, verbatim) as dated sections; `design/redesign/` keeps grammar.md as the reference.
+- **As built** (PR #140, issue #137): every card the walks open was already on the one shell at the stage's start (card-audit `--walk=all`, 343 cards, none without a shell kind) save 📭 and 🥾, converted here; the old builders were dead code and went. **`VALUE` stays**: it is not a card shell's but the Rules paragraphs' value phrases (`value`, `standsOf`), which the list above took for the read-only body's alone. A card the source draws no frame for — its subject gone while it stood open — is the shell's `read` card.
 
 ### When each principle enters SURFACE
 
