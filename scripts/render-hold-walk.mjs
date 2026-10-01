@@ -297,11 +297,24 @@ if (want('lane') || want('why') || want('row')) {
 
 // the Founder's rule cards, in read mode: the reason lane, an open select, a
 // number typed and not sent, and the two commits a card holds (✒️ and 🏛️)
+// **…and it waits on the card's own arrival** (stage 10; the coordinator on
+// PR #140: one red in two runs of the same code at ⏱️'s select). Opened
+// straight after the 🏛️ press, whose assembly plays for a second, the tab's
+// click could land before the card it asked for: so the open is pressed
+// again until the card stands, its controls enabled — never a wider wait
 const openTab = async (page, k) => {
-  await page.evaluate((kk) => { if ([...document.querySelectorAll('.setupcard[data-setupcard]')].some((c) => c.dataset.setupcard === kk)) return;
+  const press = () => page.evaluate((kk) => { if ([...document.querySelectorAll('.setupcard[data-setupcard]')].some((c) => c.dataset.setupcard === kk)) return;
     const el = document.querySelector('#rail [data-card="' + kk + '"]') || document.querySelector('#band [data-tab="' + kk + '"]');
     if (el) { el.scrollIntoView({ block: 'center' }); el.click(); } }, k);
-  await sleep(700);
+  const landed = (kk) => {
+    const c = [...document.querySelectorAll('.setupcard[data-setupcard]')].find((x) => x.dataset.setupcard === kk);
+    return !!c && [...c.querySelectorAll('select, input, button.lanepick')].some((x) => !x.disabled);
+  };
+  for (let i = 0; i < 5; i++) {
+    await press();
+    if (await page.waitForFunction(landed, k, { timeout: 3_000 }).then(() => true, () => false)) break;
+  }
+  await sleep(300);
 };
 if (want('setwhy') || want('motion')) {
   await openTab(F, 'chamber');

@@ -596,13 +596,13 @@ jobs:
         run: npx playwright install-deps chromium
       - run: npm run copy-check -- --walk --raw-only
 
-  # **The redesign's checks, held for the kinds converted** (Q1541,
-  # design/redesign/BUILD.md §2): card-audit's P13–P33 over the fixture walks
-  # alone (the charter, the closed page and the band on both), strict for the
-  # kinds in card-audit.mjs's `GRAMMAR_KINDS` — empty in stage 0, so only a
-  # walk that throws or measures nothing reddens it; each stage of the redesign
-  # adds the kinds it converts, and from then on a converted card cannot slide
-  # back. One runner per width, beside `probe` rather than inside it: each pass
+  # **The redesign's checks, held on every card** (Q1541,
+  # design/redesign/BUILD.md §2): card-audit's P13–P34 over the fixture walks
+  # alone (the charter, the closed page and the band on both), strict under
+  # `--kinds=GRAMMAR_KINDS` — which since stage 10 holds every card whatever
+  # its kind, reddens on a card not on the one shell, and still requires each
+  # kind in the list to be met; P22's driven pass presses every enabled
+  # control on every card it opens. One runner per width, beside `probe` rather than inside it: each pass
   # is ~5–9 minutes, and inside `probe` the two would have tripled that job
   # (stage 0 had raised its limit to 40; the push's verdict stays near ten
   # minutes this way). The full audit, every walk, stays in the sprint tier.

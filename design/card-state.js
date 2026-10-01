@@ -3,7 +3,8 @@
  * The redesign's first cause (design/redesign/grammar.md §2.1, BUILD.md §1):
  * every card body re-derived the state it needed — the founder's page state
  * for a member's card (plain bug 1, *Set to undefined*), the provenance in
- * three places (`provOf`, the stranger's `lockline`, a record's eyebrow) —
+ * three places (the page's `provOf`, the stranger's `lockline`, a record's
+ * eyebrow, all three retired by stage 10) —
  * so the same fact could read differently on two cards, or undefined on one.
  * Here each fact has **one reader**, and a card is built from one value,
  * `CardState`, made by `stateOf(key)`:
@@ -33,9 +34,9 @@
  * renderer's words, the gutter's strip), the source's `present` hands it
  * over already drawn, so `card-shell.js` reads nothing but the state.
  *
- * Only the kinds a stage has converted are built from `stateOf` (BUILD.md §4;
- * stage 1: the stranger's settled rule card and a sealed record on a clause).
- * The readers answer for every key all the same — `design/tools/card-state-
+ * Every card on the page is built from `stateOf` since BUILD.md §4's stage
+ * 10 (stage 1's pilots were the stranger's settled rule card and a sealed
+ * record on a clause). The readers answer for every key — `design/tools/card-state-
  * check.mjs` and `packages/server/test/card-state.test.ts` hold them against
  * what today's builders derive, epoch by epoch.
  *
@@ -87,8 +88,9 @@ window.CARD_STATE = (function () {
    * post-start pen and for a membership motion the Founder assented to, and
    * the latest carried set on the setting tells them apart. Nothing set yet
    * reads as the Founder's, which is what the page has always said of it.
-   * The one reader: the page's `provOf` asks this, the stranger's card asks
-   * this, and so will every rule card as its stage converts it.
+   * The one reader: every rule card's pill asks it, at the door and inside
+   * (the page's `provOf`, which asked it for the old shell's radio, went
+   * with that shell at stage 10).
    */
   function provenanceOf(key) {
     const src = sourceOf(key);

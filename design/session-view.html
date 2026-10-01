@@ -800,23 +800,15 @@
 <script src="band.js"></script>
 <script>
 (function () {
-  const { esc, avHtml, bandHtml, fitBand, railEntry, cardHtml: cardHtml0,
+  const { esc, avHtml, bandHtml, fitBand, railEntry,
     nameBody, pictureBody, opt, num, numIn, ctlWord, someIn, ANSWER, stateOf, labelOf, nounOf,
-    MAILS, renderMailModal, gateBody, wirePicDrop, pileHtml, stripHtml, readBody,
-    routeFor, motionCommitHtml, listOf, syncSlider,
+    MAILS, renderMailModal, gateBody, wirePicDrop, pileHtml, stripHtml,
+    routeFor, motionCommitHtml, listOf,
     // 👥's share bounds and its (x of y), and 💤's units (Q1439): one control
     // each, drawn by setup.js, so the founder's card, the member's answer card
     // and this script's composer cannot state three different ranges
     SHARE, shareCount, shareTail, shareWords, shareSlot, quorumNote, quorumSlot,
     LAPSE_UNITS, LAPSE_BOUNDS, lapseParts, unitSel } = window.SETUP;
-  // **Every card can carry a refusal** (Q1330, SURFACE Y25): the settings,
-  // motion and door bodies draw `doorErrHtml` where the control that tried
-  // stands, and every other kind — a gate, a grant, an answer, news — drew
-  // nothing, so a refusal against one of those keys was set and never seen.
-  // The one wrapper every card passes through adds the line under the body
-  // where the body has not already drawn it.
-  const cardHtml = (c, ctx, body, ...rest) => cardHtml0(c, ctx,
-    String(body || '') + (String(body || '').includes('why refusal') ? '' : doorErrHtml(c.k)), ...rest);
   // every member-readable string this script renders lives in copy.js (Ed's
   // brief, 2026-09-05, Part 3: copy edits touch that file only)
   const PAGE_COPY = window.COPY.page;
@@ -1728,11 +1720,6 @@
     } catch (e) { return null; }
     return best ? best.route : null;
   };
-  // **the one reader** is card-state.js's `provenanceOf` (Q1541 stage 1,
-  // 1541.5 (b)); this page's source below hands it `settledBy` and the last
-  // carried route, and every card that prints who chose a rule asks it
-  const provOf = (k) => { const p = window.CARD_STATE.provenanceOf(k);
-    return p ? p.label : PAGE_COPY.motionRec.provPen; };
   const chosenRadio = (label) => '<button class="lanepick" aria-pressed="true" disabled>' +
     '<span class="dot"></span><span>' + esc(label) + '</span></button>';
   const clauseOf = (k, v) => window.CARDS.clauseOf(k, v, clauseCtx());
@@ -1804,16 +1791,6 @@
       if (/lvl\d/.test(b.className) || (src && src.t === 'h')) heads++; else paras++;
     }
     return { paras, heads, blocks: paras + heads };
-  };
-  // 📄's value slot: what stands in the column, said in the fewest words that
-  // are still a count. An empty column is a real answer (§9.0b), so it gets a
-  // statement of its own rather than a zero.
-  const proseLine = () => {
-    const c = proseCounts();
-    if (!c.blocks) return PAGE_COPY.prose.nothingYet;
-    const n = (x, w) => x + ' ' + w + (x === 1 ? '' : 's');
-    return listOf([c.paras ? n(c.paras, PAGE_COPY.prose.paragraph) : '',
-      c.heads ? n(c.heads, PAGE_COPY.prose.heading) : '']) + PAGE_COPY.prose.below;
   };
   // which page field carries a setting's delegation radio ('roster' = the members')
   const DKEY = { ending: 'ending', quorum: 'quorumBy',
@@ -1960,9 +1937,6 @@
     // standing one — the standing value is never the card's to change here
     if (ks.has('myname')) ks.add('mynameDraft');
     if (ks.has('mypic')) ks.add('mypicDraft');
-    if (el.querySelector('[data-slide]')) {
-      el.querySelectorAll('[data-slide]').forEach((b) => ks.add('ans:' + b.dataset.slide));
-    }
     return ks.size ? [...ks] : [];
   };
   // A card that names no field puts nothing back — it simply closes. The old
@@ -2005,16 +1979,6 @@
       return k in s && S[k] !== s[k];
     });
   };
-  // **🗑️ is always live** (Ed, 2026-08-21: *the bin should still close the
-  // card even if the fields are empty*). It used to grey out when there was
-  // nothing to put back, which made the one control that leaves a card
-  // unpressable exactly when a reader most wanted out of it — and left them
-  // pressing a dead button. So the act is *put it back as it stands, and
-  // close*, and with nothing to put back it is simply the close. That also
-  // retires the dirty predicates the row was keeping in three places.
-  const binBtn = () => '<button class="btn glyphbtn" data-revert="1"' +
-    ' title="' + PAGE_COPY.binPutBack + '">' + glyphHtml('🗑️') + '</button>';
-
   const S = {
     // **Nothing in the document changes until ✒️** (Ed's QA, 2026-08-19: the
     // title card was rewriting the heading, the topbar and its own head as
@@ -3800,103 +3764,6 @@
   // its setting (Q1429) — `named` is not a parameter here, it is the site
   const pwOptText = (k, power, held) => (held ? pwLine(k, power, true, false, true)
     : PAGE_COPY.pw.mayNot(pwPhrase(k, power, true)).replace(/\bmay not\b/, 'may <b>not</b>'));
-  // **A power option is a proposal block, not a radio label** (Ed,
-  // 2026-08-22: *these are too long for radio button text; we should put
-  // them above the radios as document text, and then have radio buttons
-  // that say something like "choose this", the same way we have with
-  // amendment alternatives*). The veto sentences named their setting and
-  // stopped fitting on a pill — but the fix is not shorter copy, it is the
-  // shape the surface already uses for exactly this: `laneBlock`, which is
-  // how a motion's alternatives are drawn. So a power option becomes a
-  // `.propblock` — the rule as it would stand in `.rtext` at document size,
-  // its consequence as a note beneath, and a `.lanebar` radio under that
-  // reading **Choose this / Chosen** (CP2 as re-ruled). The 2026-08-27
-  // register split — *choose* a rule, *prefer* a proposal — fell to Q1097's
-  // uniformity ruling on the morning of 2026-08-31 and was reinstated by Ed
-  // that evening: a power card is the founder's alone to decide, so its
-  // radio takes the sole-decider register.
-  //
-  // Two things fall out of it beyond the fit. The hairline `.propblock +
-  // .propblock` draws is the same separator the field of a decision card
-  // uses, so a power card now reads as one of the family rather than as a
-  // form. And a rule you are being offered is stated **in the words it will
-  // stand in** — which is what every other decision card on this surface
-  // does, and what a radio label never could.
-  const powerLane = (key, val, text, note, on, off) =>
-    '<div class="propblock' + (off ? ' off' : '') + '">' +
-    '<div class="rtext">' + text + '</div>' +
-    (note ? '<p class="setnote">' + note + '</p>' : '') +
-    '<div class="lanebar"><button class="lanepick" type="button"' +
-    ' aria-pressed="' + (on ? 'true' : 'false') + '"' +
-    (off ? ' disabled' : ' data-set="' + key + '" data-val="' + val + '"') + '>' +
-    '<i class="dot" aria-hidden="true"></i>' +
-    '<span class="off">' + PAGE_COPY.pw.chooseThis + '</span><span class="on">' + PAGE_COPY.pw.chosen + '</span>' +
-    '</button></div></div>';
-  const powerBody = (c) => {
-    const k = c.base;
-    const p = pwPair(k);
-    const live = cs && cs.constitutedAtT !== null;
-    const pend = c.power === 'u' ? pwPend(k).u : pwPend(k).a;
-    const held = (c.power === 'u' ? p.u : p.a) && !pend;
-    const key = 'pw:' + c.power + ':' + k;
-    // **On a closed document this is the read-only sentence too** (entry 62).
-    // The radios below post `relinquish`/`reclaim`, which `requireOpen`
-    // refuses, so on a closed page they were a control for an act that cannot
-    // happen. No new copy: what an inert card says is what stands, and that is
-    // the sentence this branch already draws.
-    // **A read-only power tab is its head sentence and nothing else** (Ed's
-    // card review round 3, 2026-09-05, 52/53 — *remove "Given up — one way…"
-    // and the hairline above it*): the head already states the rule, and the
-    // road back is the members' to know from SPEC, not the card's to explain.
-    // The same for the tab seen by a non-founder or on a closed document, and
-    // for a release recorded before the start (R-048) — the clause beside the
-    // card says *from the start* in the same breath.
-    if (!amFounder() || !docOpen() || (live && !held)) return '';
-    // 🛡️-held is unreachable pre-start while ✒️ is given (the
-    // assent-only state is inert before the start, §9.7 v0.54)
-    const blockAHeld = c.power === 'a' && !live && !p.u && !held;
-    // **Nothing to hand over until the setting has a value** (R-048), and it
-    // is the same bar on both tabs now: the old one asked about the *text*
-    // being confirmed, which is one setting's value among nineteen. The
-    // delegation escape hatch the old test carried is gone with it — pre-start
-    // a power is only ever actually false through delegation, and a delegated
-    // setting is not drawn held at all.
-    const blockGive = !live && held && !pwHasValue(k);
-    // **The second power going is a delegation, and that lands at once**
-    // (R-048): a lone pre-start release waits for 🍾, but the act that leaves
-    // neither power held on a delegable setting opens the founding question
-    // immediately — and clears the value with it — so this lane must not
-    // promise a deferral it is not going to take.
-    const otherHeldNow = c.power === 'u' ? (p.a && !pwPend(k).a) : (p.u && !pwPend(k).u);
-    const givingDelegates = !live && held && !otherHeldNow && isDelegable(k);
-    const cur = S[key] || (held ? 'held' : 'given');
-    // the founder chooses between the two states, so both blocks stand here
-    // (a member never meets these blocks: a held tab reads its head sentence
-    // to them, and a laid-down one is not drawn at all — Q1404);
-    // each is the clause sentence and nothing beneath it, except the *given*
-    // block's one consequence — one way, delegates, or at the start (Q1378)
-    // **…except past the start, where the head has already said it** (Q1430,
-    // Ed 2026-09-17, on his screenshot of a doubled sentence): live, the only
-    // state this branch is reached in is *held*, so the held block is word for
-    // word the rule the head states — and a head is not offered back. It is
-    // the omission `rungOpt` already makes on a value card's standing rung,
-    // filtered by **what the block would set** rather than by its words
-    // (Q620). What is left is the one act the card is for, and 🗑️ puts the
-    // pick back here as it does on every other card.
-    return '<div class="choice" role="radiogroup">' +
-      (live ? ''
-        : powerLane(key, 'held', pwOptText(k, c.power, true), '', cur === 'held', blockAHeld)) +
-      powerLane(key, 'given', pwOptText(k, c.power, false),
-        (live ? PAGE_COPY.pw.notes.oneWayTail
-          : givingDelegates
-            ? PAGE_COPY.pw.notes.delegatesTail
-            : PAGE_COPY.pw.notes.atBeginTail),
-        cur === 'given', blockGive) +
-      '</div>' +
-      (blockAHeld ? '<p class="setnote">' + PAGE_COPY.pw.notes.vetoNeedsPen + '</p>' : '') +
-      (blockGive ? '<p class="setnote">' + PAGE_COPY.pw.notes.opensWithValue + '</p>' : '') +
-      (!live ? '<p class="setnote">' + PAGE_COPY.pw.notes.revisable + '</p>' : '');
-  };
   /**
    * **A power card on the one shell** (Q1541 stage 3b, answers.md 1541.48):
    * the facts `powerBody` drew its two blocks from, handed to band.js as data.
@@ -3965,100 +3832,6 @@
   const powerHeadless = (c) => !!c.power && !(cs && cs.constitutedAtT !== null) &&
     amFounder() && docOpen() && !motionOn(c);
   /**
-   * **What a settled motion says about itself** (Q942; the shape is Q1522,
-   * Ed 2026-09-24): how it ended and when, what changed, and the reason. The
-   * office by route, never the mover — a raised motion's author is sealed
-   * (§3.4) and stays sealed in the record, so the reason wears the featureless
-   * disc and a ✒️ amendment wears the founder's own face, exactly the rule
-   * `changeHalf` and `amendmentBlocks` already apply.
-   *
-   * **The date carries its year, and leads.** `changeHalf`'s *Last amended*
-   * line sits on a clause somebody is reading now; a record is read long
-   * after, so it dates itself absolutely. It leads for the instrument's sake:
-   * `copy-check` normalises `D Month YYYY` out of the golden, and its pattern
-   * needs a word boundary after the year — which a date at the *end* of an
-   * eyebrow does not get, the audit's text walk running one block straight
-   * into the next with no separator. A dateline is the right reading of the
-   * label anyway.
-   */
-  const recordBody = (c) => {
-    const rec = recOf(c);
-    if (!rec) return '<p class="why">' + PAGE_COPY.motionRec.gone + '</p>';
-    const carried = rec.status === 'carried';
-    const at = recAt(rec);
-    // the dateline in full, 24-hour, in the page's words (Q1523 (a), STYLE T16)
-    const when = at ? esc(window.CARDS.longWhen(at)) + ' · ' : '';
-    // **The outcome is the route's** (Q1522 (1), Ed 2026-09-24; Q1514): a ✒️
-    // change was put to nobody, so it did not *pass* — it was changed by the
-    // Founder. A carried motion passed; a failed one was rejected — or, where
-    // the Founder's 🛡️ held it, refused (Q1526 (a), Ed 2026-09-24; STYLE T8:
-    // *refuse* is the Founder's word), which `heldBy` tells apart.
-    const R = PAGE_COPY.motionRec;
-    const outcome = !carried ? (heldByOf(rec) === 'crown' ? R.refusedByFounder : R.rejected)
-      : rec.route === 'pen' ? R.changedByFounder : R.passed;
-    const eyebrow = '<p class="eyebrow fieldlab">' + when + outcome + '</p>';
-    // a labelled box for the rule the record sets beside the headline one —
-    // *Previous rule* on a passed record, *Rejected proposal* on a failed one
-    const recBox = (label, inner) => '<div class="recbox"><p class="eyebrow fieldlab">' +
-      label + '</p>' + inner + '</div>';
-    const speaker = rec.route === 'pen' ? founderSpeaker(rec.why)
-      : window.CARDS.speakerHtml(rec.why);
-    let said;
-    if (rec.payload.kind === 'reserve') {
-      const rc = card(pkeyOf(rec.payload.setting));
-      const what = rc ? LD + nounOf(rc) + RD : rec.payload.setting;
-      said = '<p class="cpv">' + (carried
-        ? PAGE_COPY.motionRec.reserveReturned(esc(what))
-        : PAGE_COPY.motionRec.reserveKept(esc(what))) + '</p>';
-    } else {
-      const k = pkeyOf(rec.payload.setting);
-      // **The two-block record, passed or rejected** (Ed's card review,
-      // 2026-09-02, Q1167; round 3, 2026-09-05, Q1186): both blocks are full
-      // clause sentences (A3), the proposer's reason sits inside the proposed
-      // block under its sentence, and the provenance radio marks whichever
-      // rule stands — the new one on a passed record (*Chosen by the
-      // membership* for a raised motion, *Chosen by the Founder ✒️* for an
-      // amendment), the old one on a rejected record, which changed nothing.
-      // The narrated *kept … as it stood* sentence retires with it, and the
-      // head went too: the eyebrow dates the record and the blocks say what
-      // it did.
-      // **A moot record has one block and a sentence** (Q1348 (b), Ed
-      // 2026-09-14): it passed, but the rule it asked for was already the
-      // rule, so there is no *was* to set against the *now* — the two blocks
-      // would print the same sentence twice — and the provenance follows the
-      // hand that actually set it rather than the route this motion took.
-      const moot = carried && rec.moot ? rec.moot : null;
-      const was = moot ? null : sentenceFor(k, stoodBefore(rec));
-      const now2 = sentenceFor(k, rec.payload.value);
-      const prov = (moot ? moot === 'pen' : rec.route === 'pen')
-        ? PAGE_COPY.motionRec.provPen : PAGE_COPY.motionRec.provMembers;
-      const mootNote = moot
-        ? '<p class="setnote">' + (moot === 'pen'
-          ? PAGE_COPY.motionRec.mootPen : PAGE_COPY.motionRec.mootMembers) + '</p>'
-        : '';
-      // **The headline rule first, the other in a labelled box** (Q1522 (3),
-      // (4), Ed 2026-09-24): a passed record leads with the rule it made —
-      // its speaker and provenance beneath — and keeps the rule it replaced
-      // in a *Previous rule* box; a rejected one leads with the rule that
-      // still stands, its provenance beneath, and keeps the proposal that
-      // failed, with its mover's reason, in a *Rejected proposal* box.
-      if (carried) {
-        said = '<div class="pick on"><span class="opttext">' + esc(now2 || '') + '</span>' +
-          speaker + chosenRadio(prov) + '</div>' + mootNote +
-          (was ? recBox(R.previousRule,
-            '<div class="pick"><span class="opttext">' + esc(was) + '</span></div>') : '');
-      } else {
-        said = (was ? '<div class="pick on"><span class="opttext">' + esc(was) + '</span>' +
-            chosenRadio(provOf(k)) + '</div>' : '') +
-          // *Refused proposal* where the Founder's 🛡️ held it (Q1526 amended)
-          recBox(heldByOf(rec) === 'crown' ? R.refusedProposal : R.rejectedProposal,
-            '<div class="pick"><span class="opttext">' + esc(now2 || '') + '</span>' + speaker + '</div>');
-      }
-      return '<div class="body changed recbody">' + eyebrow + said + '</div>';
-    }
-    return '<div class="body changed recbody">' + eyebrow + said + speaker + '</div>';
-  };
-  /**
    * **What a failed motion's news card says** (SURFACE E41; Q1447). Where the
    * motion filed a record — a `set` or a `reserve` — the card *is* that
    * record, so the body is `recordBody`'s and the mover reads exactly what
@@ -4085,17 +3858,6 @@
     if (!c || !c.held) return false;
     const rec = recOf(c);
     return !!(rec && rec.payload && (rec.payload.kind === 'set' || rec.payload.kind === 'reserve'));
-  };
-  const heldBody = (c) => {
-    const rec = recOf(c);
-    if (!rec) return '<p class="why">' + PAGE_COPY.motionRec.gone + '</p>';
-    if (heldIsRecord(c)) return recordBody(c);
-    const what = motionDisplay(rec);
-    const R = PAGE_COPY.heldNews;
-    const by = heldByOf(rec);
-    const said = by === 'system' ? R.couldNotBePut
-      : by === 'crown' ? R.founderRefused(what) : R.membershipRejected(what);
-    return '<p class="why">' + esc(said) + '</p>';
   };
   /** Who failed it: the view's own answer live, the questions themselves on
    *  the fixture, where the records are the module's and carry no `heldBy`. */
@@ -4310,10 +4072,6 @@
     if (c.door) { const p = pwPair(c.k); return !(p.u || p.a); }
     const st = csState(c.k);
     return st ? st.holder === 'members' : isRoom(c); };
-  // the watch-half only where a blind question actually ran (or is running):
-  // a post-start hand-over asks the room nothing, so there is nothing to watch
-  const wasAsked = (c) => { const st = csState(c.k);
-    return st ? (!!st.collecting || st.distribution !== null) : isRoom(c); };
   // **Your own answer is a separate card in the membership pile** (Ed,
   // 2026-08-18, revising the both-halves-on-one-card build of the same
   // morning): delegating is one act and answering is another, done later and
@@ -5112,6 +4870,9 @@
         // head with exactly these lines (Q1541 stage 5, `doorRowsNow`)
         const emptyRow = (k) => '<div class="memrow nobody">' + esc(PAGE_COPY.memEmpty[k]) + '</div>';
         doorRowsNow = {
+          // 📭 stands in *Members*' pile beside 🎩 (E34), so its first line is
+          // the Members list as written there, without your own row and its tabs
+          members: nobody + here.map((p) => memRow(p)).join('') + invited.map((p) => memRow(p)).join(''),
           invite: (applying.map((p) => memRow(p)).join('') + (memApplicantRows() || '')) || emptyRow('applications'),
           remove: proposedOut.length ? proposedOut.map((p) => memRow(p, true)).join('') : emptyRow('removal'),
           leave: alumni || emptyRow('alumni'),
@@ -5500,24 +5261,17 @@
     admission: PAGE_COPY.ask.cheapest,
     removal: PAGE_COPY.ask.easiest,
     rate: PAGE_COPY.ask.mostGenerous };
-  // **A power tab has no VALUE of its own — its value *is* its rule.**
-  // `chipsFor` hands every viewer the ✒️/🛡️ tabs of a settled setting, and on
-  // any chair but the founder's the card body is `readBody`, which asks for
-  // `ctx.value(c)` — so `VALUE['pw:u:title']` was read as a function and the
-  // TypeError took the whole `render()` with it: a member or a stranger
-  // clicking a power tab got a page frozen at its last good frame. Found by
-  // the card-audit's power walk, 2026-08-23. The missing-key guard beside it
-  // is the one `holderLine`'s own lookup already keeps.
+  // **The value as words**, for the paragraphs that state one and the rail's
+  // summaries: a member's answer read back, a power's own clause (a power has
+  // no VALUE of its own — its value *is* its rule), a record's title, else
+  // the setting's VALUE phrase. Its old reader, the read-only card's *Set to*
+  // line (`readBody`), went with the old shell at stage 10.
+  // **A value not yet there is empty, never the word** (plain bug 1,
+  // 1541.29): ❌'s door before 🥾 is decided reads `REMOVAL_RULE[undefined]`.
   const value = (c) => (c.ansFor
     ? esc(filled(c) ? ANSVALUE[c.ansFor](S.myAns[c.ansFor]) : ANSASK[c.ansFor])
-    // `readBody`'s *Set to* line is inside the open card (Q1429), so the rule
-    // it prints names its setting
     : c.power ? esc(powerHeadLine(c, true))
-    // a record has no VALUE of its own either — its title *is* what it says
     : c.record ? esc(c.t)
-    // **a value not yet there is empty, never the word** (plain bug 1,
-    // 1541.29): ❌'s door before 🥾 is decided reads `REMOVAL_RULE[undefined]`,
-    // and `esc` printed it *undefined*, so `readBody`'s guard never fired
     : esc((VALUE[c.k] && VALUE[c.k]()) || ''));
   // **A task you have to do needs no subtitle** (Ed, 2026-08-19: *subtitles
   // are there to help me make choices — if I have to do them, they don't need
@@ -5698,19 +5452,6 @@
   // who has pressed OK on one card saying "your powers" has learned one thing
   // where there were two.
   const mayShield = () => !!cs && amFounder() && holdsShieldAnywhere() && acked('grant-shield');
-  // A commit that spends out of a wallet needs that wallet to have arrived.
-  // The pen is the one this bites for: `holdWallet` reads ✒️ as a **hold**
-  // only while the glyph is in the topbar, so before the grant was
-  // acknowledged a pen commit quietly degraded into a plain click — the hold
-  // discipline disappearing exactly where the founder is being taught it.
-  // Gates hold a position in the founding order without blocking it, so a
-  // settings card really can arrive before ✒️ has been accepted.
-  // **With a card it asks the lock; without one it asks the wallet.** The
-  // disabled test passes the card, so a pen laid down on *this* setting greys
-  // its commit; the tooltip does not, because `penWaitTitle` explains the
-  // wallet and there is nothing to explain where the setting's own pen is
-  // down — that card has already stopped being the founder's to edit (step 3).
-  const penOkFor = (glyph, c) => glyph !== '✒️' || (c ? mayPenOn(c.k) : mayPen());
   const penWaitTitle = PAGE_COPY.penWait;
 
   // ---- motions (stage D of the merge, Ed 361) ---------------------------
@@ -6185,11 +5926,6 @@
   const judgedOn = (rec, k) => (rec.route === 'constitutional'
     ? rec.answers.size
     : S.roster.filter((r) => r.mAnsOk && r.mAnsOk.has(k)).length);
-  const motionJudged = (k) => {
-    const rec = liveMotionRec(card(k));
-    if (!rec) return 0;
-    return judgedOn(rec, k);
-  };
   // one 🏛️ out per member at a time (Ed, Q327): withdrawn, it comes back whole
   const myHeldOut = () => {
     if (!cs) return null;
@@ -6363,26 +6099,8 @@
   // what this setting held before the founder last set it — null on a first
   // decision, which is the whole test
   const changedFrom = (k) => { const st = csState(k); return st ? (st.previousValue || null) : null; };
-  const setWhyOf = (k) => { const st = csState(k); return st ? (st.setWhy || null) : null; };
   // a setting that already holds a value: committing the pen here is a change
   const isChange = (k) => { const st = csState(k); return !!(st && st.value !== null); };
-  // **The founder's rationale is not sealed** (Ed, 2026-08-22: *the rationale
-  // should have the founder's name and avatar on it, and 👑 so people know it
-  // was a founder action, even if they have no name or avatar*). Every other
-  // rationale on this surface wears the featureless disc because authorship
-  // is sealed until the record (§3.4). A ✒️ act is attributed **by
-  // construction** — only the founder can perform it — so the disc would be a
-  // lie the first time it was drawn. The 👑 carries the whole sentence on its
-  // own: an anonymous founder has no name and no picture, and the mark still
-  // says *this was the founder's own hand*.
-  const founderSpeaker = (why) => {
-    const f = founderInfo();
-    return '<div class="speaker founderspoke">' + avHtml(f) +
-      '<div class="spksaid"><span class="who">' + esc((f.n || '').trim() || PAGE_COPY.theFounder) +
-      ' <span title="' + PAGE_COPY.crownHand + '">' + glyphHtml('👑') + '</span></span>' +
-      (why ? '<div class="said">' + window.CARDS.reasonHtml(why) + '</div>'
-        : '<div class="said none">' + window.COPY.grammar.speaker.noReason + '</div>') + '</div></div>';
-  };
   // the same speaker, with the reason still being written. It is the
   // editing-card's own arrangement — you write the sentence in the place and
   // at the weight everybody else will read it in — with the founder's face
@@ -6431,11 +6149,6 @@
     if (c.door) return pwPair(c.k).u;
     const st = csState(c.k);
     return !st || st.powers.unilateral; };
-  // the 👑 question exists exactly where the assent power is held
-  const crownWaits = (c) => {
-    if (c.door) return pwPair(c.k).a;
-    const st = csState(c.k);
-    return st ? st.holder === 'convenor' && st.powers.assent : !membersHold(c); };
   // The register counts as settled here (Ed's QA, 2026-08-19: *I can't seem
   // to suggest removing a member*): it has no value to settle, and what it
   // is, it always is — without this the membership card never composed, and
@@ -7012,93 +6725,13 @@
   // the pressed lane is the motion shown's (`effMAns`, Q1348): a card the
   // page can name reads its own, everything else reads the key's press
   const pressedOn = (key) => { const c = card(key); return c ? effMAns(c) : S.mAns[key]; };
-  // `absAt` is the abstention clock (Q1460 (c)), drawn on the textless block —
-  // which is the motion card's Indifferent row, and so the same place on it
-  // as `vinBlockHtml`'s on a judgment. The block takes `absrow` only where
-  // there is a note to put in it, so a card without one is byte-identical to
-  // what it was.
-  const consentPicks = (key, opts, absAt) => '<div class="choice" role="radiogroup">' +
-    opts.map(([v, html, kind]) => {
-      const on = pressedOn(key) === v;
-      const ruled = kind === 'keep' || kind === 'prefer';   // a rule, either way (Q1377)
-      const off = ruled ? window.COPY.grammar.lane.prefer : window.COPY.grammar.commit.indifferent;
-      const onW = ruled ? window.COPY.grammar.lane.preferred : window.COPY.grammar.commit.indifferent;
-      const note = (!ruled && absAt != null) ? window.CARDS.abstainNoteHtml(absAt) : '';
-      return '<div class="pick' + (on ? ' on' : '') + (note ? ' absrow' : '') + '">' +
-        (html ? '<span class="opttext">' + html + '</span>' : '') +
-        '<button class="lanepick" aria-pressed="' + on + '" data-motion="' + v + '"><span class="dot"></span>' +
-        '<span class="off">' + off + '</span><span class="on">' + onW + '</span></button>' +
-        note + '</div>';
-    }).join('') + '</div>';
   const MOTION_PICKS = { constitutional: ['no', 'yes', 'abstain'], ordinary: ['stands', 'proposed', 'either'] };
-  const motionBlocks = (key, stands, proposed, why, route, mover, absAt) => {
-    // **The mover's own card asks nothing** (K8, Q1370): the two blocks with
-    // the proposed one marked as theirs — the radio the composer's *Proposed*,
-    // inert, the ledger's own mark — and no third block, since there is
-    // nothing to be indifferent about in a thing you put yourself
-    if (mover) {
-      const block = (html, on) => '<div class="pick' + (on ? ' on' : '') + '">' +
-        '<span class="opttext">' + html + '</span>' +
-        '<span class="lanepick lmark" aria-pressed="' + on + '"><i class="dot" aria-hidden="true"></i>' +
-        (on ? '<span class="on">' + esc(window.COPY.grammar.lane.proposed) + '</span>' : '') + '</span></div>';
-      return '<div class="choice">' + block(esc(stands), false) +
-        block(esc(proposed) + (why ? window.CARDS.speakerHtml(why) : ''), true) + '</div>';
-    }
-    const [k, p, t] = MOTION_PICKS[route] || MOTION_PICKS.constitutional;
-    return consentPicks(key, [
-      [k, esc(stands), 'keep'],
-      [p, esc(proposed) + (why ? window.CARDS.speakerHtml(why) : ''), 'prefer'],
-      [t, '', t],
-    ], absAt);
-  };
-  const inviteBody = (c, m, route, mover, absAt) =>
-    motionBlocks(c.k, PAGE_COPY.consent.staysAsIs, PAGE_COPY.consent.joins(m.invite), m.why, route, mover, absAt);
-  const removeBody = (c, m, route, mover, absAt) => {
-    const nm = nameOfMember(m.removee);
-    // 🏛️ without [avatar] (Q401a): under 'others' the subject sees the
-    // motion running against them — ruled, Ed 2026-08-19 — and is asked
-    // nothing; it settles without them.
-    if (removalPrice() === 'assembly' && m.removee && m.removee === viewerId()) {
-      return '<p class="why">' + PAGE_COPY.consent.removeSelfWhy + '</p>' +
-        '<p class="setnote">' + PAGE_COPY.consent.removeSelfCount(m.judged || 0, Math.max(E() - 1, 0)) + '</p>';
-    }
-    return motionBlocks(c.k, PAGE_COPY.consent.staysIn(nm), PAGE_COPY.consent.leaves(nm), m.why, route, mover, absAt);
-  };
-  // a set motion: the standing clause against the proposed one — the
-  // paragraph's own sentence (`decisionLine`) against the full sentence for
-  // the motion's own value (A3), never its short label
-  // the picks are keyed by the motion card (`c.k`), the sentences by the
-  // setting it is about (`hostKeyOf`) — one motion, one card (Q1367)
-  const motionPairBody = (c, m, route, mover) => {
-    // **Every ordinary motion wears the abstention clock** (Q1460 (c)): the
-    // ordinary route alone is a race in the engine, so a 🏛️ motion has no
-    // deadline to read; and the mover's own card has no Indifferent block to
-    // put one on, there being nothing to be indifferent about in a thing you
-    // put yourself (K8).
-    const absAt = (route === 'ordinary' && !mover) ? motionAbstainAt(c) : undefined;
-    return (m.invite ? inviteBody(c, m, route, mover, absAt)
-    : m.removee !== undefined ? removeBody(c, m, route, mover, absAt)
-    // a return still in flight from a log made before Q1404 closed the road
-    // (or the ladder's stagehand): the power's rule as it stands against the
-    // rule it would put back — `m.to` is `pwSaid`'s sentence
-    // the motion's own card, so the standing rule names its setting (Q1429)
-    : c.power ? motionBlocks(c.k, powerHeadLine(c, true), m.to, m.why, route, mover, absAt)
-    : (() => { const rec = liveMotionRec(c);
-      const v = rec && rec.payload && rec.payload.kind === 'set' ? rec.payload.value : null;
-      return motionBlocks(c.k, decisionLine(c), (v !== null && sentenceFor(hostKeyOf(c), v)) || m.to, m.why, route, mover, absAt); })());
-  };
   // …and the mover's constitutional card the same (issue #88; K8): the mover's
   // accept is on the record from the put (§9.6), so a live *Keep this* lane
   // was a revision of their own consent into a kill (Q1473) and served them
   // E41's *your motion failed* about their own press. The inert two blocks,
   // and 🗑️ — withdrawing — as their one act.
   const moverOf = (m) => m.by !== null && m.by !== undefined && m.by === viewerId();
-  const consentBody = (c, m) => motionPairBody(c, m, 'constitutional', moverOf(m));
-  // the mover's ordinary card is theirs, not an ask (K8, Q1370): the blocks
-  // inert with the proposed one marked, and the commit row withdraw alone
-  const ordinaryBody = (c, m) => motionPairBody(c, m, 'ordinary',
-    m.by !== null && m.by !== undefined && m.by === viewerId());
-
   // ---- stage 4: motions, 👑 and settled motion records on the one shell ----
   // (Q1541 stage 4, BUILD.md §4.) **A motion's card is its rule, opened**, in
   // stage 3's form: *Current rule* above the first line (answers Part 4 .3),
@@ -8335,10 +7968,11 @@
     // the title card's head is the document title itself — the clause,
     // opened — never the word “Title” (Ed, 2026-08-18)
     inDocOpenSlot: false,
-    // `bare` asks for the rule's words alone, without the provenance radio a
-    // standing block wears — the first line of a card on the one shell,
-    // whose standing pill is the shell's to draw (Q1541 stage 1)
-    headFor: (c, bare) => {
+    // the rule's words alone: a card's first line on the one shell, whose
+    // standing pill is the shell's to draw (Q1541 stage 1; the second
+    // argument, which asked for the old shell's provenance radio beside
+    // them, went with that shell at stage 10)
+    headFor: (c) => {
       // the card head, which has replaced the paragraph that gave *this* its
       // referent — so the sentence names its setting (Q1429)
       // …and at the birth there is no head at all, the two blocks being the
@@ -8375,8 +8009,7 @@
       // 2026-09-06: the name with *Chosen by the Founder* underneath)
       if (c.k === 'title') return (cs ? 'The document is titled ' + LD : '') +
         '<span class="headdoct' + (S.title ? '' : ' ph') + '">' +
-        esc(S.title) + '</span>' + (cs ? RD + '.' : '') +
-        (titleStands() && !bare ? chosenRadio(provOf('title')) : '');
+        esc(S.title) + '</span>' + (cs ? RD + '.' : '');
       const m = motionOn(c);
       // a motion card on either route is the settled card's own shape — no
       // head, what stands as block one (Q1182 for the consent card, Q1331
@@ -8411,7 +8044,6 @@
         // radio is on every standing rule drawn as a block, reading *Chosen
         // by the membership* or *Chosen by the Founder ✒️* — one wording for
         // a founding choice and a later amendment alike.
-        const asBlock = OPTHEADLESS.has(c.k) || c.k === 'title' || c.k === 'slug';
         // **The standing block states what stands, never the founder's
         // provisional pick** (Q1293): `decisionLine` reads the founder's own
         // fields, which under an open card are the draft — so block one used
@@ -8422,8 +8054,7 @@
         const stV = standingBlock(c.k) ? (csState(c.k) || {}).value : null;
         const sent = stV !== null && stV !== undefined ? sentenceFor(c.k, stV) : null;
         const line = sent ? clauseText(sent, c.k, false) : decisionLine(c);
-        return breakLines(linkify(esc(line))) +
-          (asBlock && !bare ? chosenRadio(provOf(c.k)) : '');
+        return breakLines(linkify(esc(line)));
       }
       if (composerOn(c)) return esc(standsOf(c.k));
       return null;
@@ -8581,16 +8212,6 @@
         .map((rec, i) => card(owedHeld.has(rec.id) && !S.okd.has('held:' + rec.id)
           ? 'held:' + rec.id : 'rec:' + k + ':' + i)).filter(Boolean));
     },
-    // **The lockline tells the truth about who set it** (Q510(a), Ed
-    // 2026-08-21). It had said *Set by the founder when the document was
-    // made* on every rule, including the ones the room decided by consent —
-    // half-corrected on this surface by the watching half underneath, and
-    // not corrected at all at the stranger's door, which is what forced it
-    // there first. The *when* survives where it is true.
-    lockline: (c) => { const st = csState(c.k);
-      return st && st.settledBy && st.settledBy !== 'convenor'
-        ? PAGE_COPY.lockline.members
-        : PAGE_COPY.lockline.founder; },
     summary, value, isRoom,
     // a rule change's own words on its rail entry (Q1523)
     railTitle: (c) => railRuleTitle(c),
@@ -9055,31 +8676,22 @@
     STRCARDS: (...a) => STRCARDS(...a),
     acked: (...a) => acked(...a),
     admissionPrice: (...a) => admissionPrice(...a),
-    admitCardOf: (...a) => admitCardOf(...a),
     amFounder: (...a) => amFounder(...a),
     appPicPickNow: (...a) => appPicPickNow(...a),
-    applicantById: (...a) => applicantById(...a),
-    applicantName: (...a) => applicantName(...a),
     atTheDoor: (...a) => atTheDoor(...a),
-    beginBody: (...a) => beginBody(...a),
-    binBtn: (...a) => binBtn(...a),
     card: (...a) => card(...a),
-    cardHtml: (...a) => cardHtml(...a),
     changedFrom: (...a) => changedFrom(...a),
     checkSlug: (...a) => checkSlug(...a),
     chosenRadio: (...a) => chosenRadio(...a),
     clauseCtx: (...a) => clauseCtx(...a),
-    closingBody: (...a) => closingBody(...a),
     commitFor: (...a) => commitFor(...a),
     commitReady: (...a) => commitReady(...a),
     composerOn: (...a) => composerOn(...a),
-    consentBody: (...a) => consentBody(...a),
     constituted: (...a) => constituted(...a),
     csState: (...a) => csState(...a),
     cs_titleNow: (...a) => cs_titleNow(...a),
     decidingOf: (...a) => decidingOf(...a),
     decisionLine: (...a) => decisionLine(...a),
-    departureLine: (...a) => departureLine(...a),
     directInvite: (...a) => directInvite(...a),
     directRemove: (...a) => directRemove(...a),
     docAddr: (...a) => docAddr(...a),
@@ -9098,11 +8710,9 @@
     founderMark: (...a) => founderMark(...a),
     founderPairNote: (...a) => founderPairNote(...a),
     founderPairOn: (...a) => founderPairOn(...a),
-    founderSpeaker: (...a) => founderSpeaker(...a),
     penTabsArrive: () => penTabsArrive,
     founderSpeakerLane: (...a) => founderSpeakerLane(...a),
     founderFace: (...a) => founderFace(...a),
-    grantProv: (...a) => grantProv(...a),
     groups: (...a) => groups(...a),
     iDraft: (...a) => iDraft(...a),
     isChange: (...a) => isChange(...a),
@@ -9112,41 +8722,23 @@
     judgedOn: (...a) => judgedOn(...a),
     launchFarewell: (...a) => launchFarewell(...a),
     launchGrant: (...a) => launchGrant(...a),
-    liveMotionRec: (...a) => liveMotionRec(...a),
-    heldBody: (...a) => heldBody(...a),
-    hostKeyOf: (...a) => hostKeyOf(...a),
-    mailGiveUpBatch: (...a) => mailGiveUpBatch(...a),
-    mailGiveUpBody: (...a) => mailGiveUpBody(...a),
     mayPen: (...a) => mayPen(...a),
     mayPenOn: (...a) => mayPenOn(...a),
     me: (...a) => me(...a),
     membersHold: (...a) => membersHold(...a),
     midOf: (...a) => midOf(...a),
-    motionAbstainAt: (...a) => motionAbstainAt(...a),
-    motionBlocks: (...a) => motionBlocks(...a),
     motionOn: (...a) => motionOn(...a),
-    motionPicked: (...a) => motionPicked(...a),
     motionTargets: (...a) => motionTargets(...a),
     nameOfMember: (...a) => nameOfMember(...a),
     namePickNow: (...a) => namePickNow(...a),
     oneVoiceAsk: (...a) => oneVoiceAsk(...a),
-    ordinaryBody: (...a) => ordinaryBody(...a),
-    owedDeparture: (...a) => owedDeparture(...a),
-    pairWords: (...a) => pairWords(...a),
-    penOkFor: (...a) => penOkFor(...a),
     perpetual: (...a) => perpetual(...a),
     picPickNow: (...a) => picPickNow(...a),
     policyNow: (...a) => policyNow(...a),
-    powerBody: (...a) => powerBody(...a),
     powerParts: (...a) => powerParts(...a),
     powerOtherHtml: (...a) => powerOtherHtml(...a),
     proseCounts: (...a) => proseCounts(...a),
-    pwPair: (...a) => pwPair(...a),
-    readinessOf: (...a) => readinessOf(...a),
     ready: (...a) => ready(...a),
-    recordBody: (...a) => recordBody(...a),
-    releaseBatch: (...a) => releaseBatch(...a),
-    releaseBody: (...a) => releaseBody(...a),
     removalPrice: (...a) => removalPrice(...a),
     removeSubjectPicker: (...a) => removeSubjectPicker(...a),
     renderDev: (...a) => renderDev(...a),
@@ -9154,7 +8746,6 @@
     renderRail: (...a) => renderRail(...a),
     renderTitle: (...a) => renderTitle(...a),
     resolveCounts: (...a) => resolveCounts(...a),
-    routeOfM: (...a) => routeOfM(...a),
     sentenceFor: (...a) => sentenceFor(...a),
     serverNow: (...a) => serverNow(...a),
     settled: (...a) => settled(...a),
@@ -9173,13 +8764,10 @@
     syncOwedOks: (...a) => syncOwedOks(...a),
     syncOwedReleases: (...a) => syncOwedReleases(...a),
     takeSnap: (...a) => takeSnap(...a),
-    takenOf: (...a) => takenOf(...a),
-    takenValOf: (...a) => takenValOf(...a),
     takingBack: (...a) => takingBack(...a),
     textDivs: (...a) => textDivs(...a),
     titlePending: (...a) => titlePending(...a),
     titleStands: (...a) => titleStands(...a),
-    viewerId: (...a) => viewerId(...a),
     viewerIsClerk: (...a) => viewerIsClerk(...a),
     viewerIsMember: (...a) => viewerIsMember(...a),
     wantsDelegate: (...a) => wantsDelegate(...a),
@@ -10427,25 +10015,6 @@
       ev.preventDefault(); ev.target.closest('[data-tab]').click();
     }
   });
-  // **A drag is a press held down, and the poll has to know about it too.**
-  // Taking `render()` out of the `input` handler fixes the page's own rebuild,
-  // but the live path re-renders every 4s of its own accord — and a drag runs
-  // for a second or two, so a tick landing inside one destroys the very range
-  // input the pointer is capturing and the thumb freezes exactly as before.
-  // The two polls already defer for `penHold` and `SESSION.holding`; a slider
-  // drag is the third press on this surface and joins them. Released on
-  // `pointerup`/`pointercancel` only, never on `change` — a press that ends
-  // where it began fires no `change` at all and would leave the flag stuck.
-  // A lost `pointerup` (released off the window) must never park the live
-  // surface for good, so the flag carries the time it was set and goes stale
-  // by itself — the same belt-and-braces the wallet's restoration keeps.
-  let sliderHold = 0;
-  const endSliderHold = () => { sliderHold = 0; };
-  document.addEventListener('pointerdown', (ev) => {
-    if (ev.target && ev.target.closest && ev.target.closest('[data-slide]')) sliderHold = Date.now();
-  }, true);
-  document.addEventListener('pointerup', endSliderHold, true);
-  document.addEventListener('pointercancel', endSliderHold, true);
   // **A half-typed date is no longer a press** (Q1513; redesign stage 9): a
   // datetime-local holds no value until every field in it is filled, so a
   // render that replaced the box took the month and day with it, and the poll
@@ -10467,8 +10036,9 @@
   // (`SESSION.holding`, the ✏️ propose hold, left it too: the row is patched
   // and its button keeps `.holding` through a render — `render-hold-walk`'s
   // *held ✏️ on the row* and `journey`'s *propose* are the proof)
+  // (`sliderHold` left it at stage 10: no surface has drawn a track since
+  // Q1162, and the slider's builder went with it)
   const pressInFlight = () => SESSION.travelling || assembly ||
-    (sliderHold && Date.now() - sliderHold < 30_000) ||
     document.documentElement.hasAttribute('data-sheetdrag');
   // **A press in the air is still unsent to the reload** (issue #12): the
   // poll no longer waits for a ✒️ flight, but a deploy's reload must — it
@@ -10479,19 +10049,6 @@
   // the bar and the rail and leaves the card alone — only the commit control,
   // which is about what you have just typed, is set directly.
   document.addEventListener('input', (ev) => {
-    // **A slider is the same case as a lane, and was the one control that
-    // ignored it** (Q779, Ed on docs.vote: *clicking on the slider doesn't
-    // appear to do anything, so I can't set my quorum answer*). This called
-    // `render()` on every `input`, which rebuilds the card — and a drag is a
-    // press held down, so the range input holding the pointer capture was
-    // destroyed on the first step and the thumb froze under the finger.
-    // Re-focusing the replacement does not put the drag back. So the gesture
-    // repaints the readout in place and the rail and the commit around it,
-    // exactly as typing does; the full render waits for `change`, which fires
-    // when the pointer comes up.
-    const sl = ev.target.closest && ev.target.closest('[data-slide]');
-    if (sl) { S.myAns[sl.dataset.slide] = +sl.value;
-      syncSlider(sl); renderRail(); SESSION.refreshRail(); refreshCommit(); return; }
     const t = ev.target;
     // **Typing into a rung's field is choosing that rung.** The field only
     // exists inside its own option — the days inside *They lapse*, the date
@@ -10677,19 +10234,6 @@
     if (t.dataset.ansdate) { S.myAns[t.dataset.ansdate] = t.value || null;
       renderRail(); SESSION.refreshRail(); refreshCommit(); }
   });
-  // …and the render the drag deferred. `change` on a range is the release —
-  // the gesture is over, so the card may be rebuilt, which is what brings the
-  // rest of the surface (the card's own tab mark, its head) up to the answer.
-  // A click on the track is an `input` and a `change` a moment apart, so the
-  // one-press case loses nothing.
-  document.addEventListener('change', (ev) => {
-    const sl = ev.target.closest && ev.target.closest('[data-slide]');
-    if (!sl) return;
-    S.myAns[sl.dataset.slide] = +sl.value;
-    render();
-    const again = document.querySelector('[data-slide="' + sl.dataset.slide + '"]');
-    if (again) again.focus();
-  });
   document.getElementById('devwho').addEventListener('change', (ev) => {
     const v = ev.target.value;
     S.viewer = v === 'applicant' ? 'applicant' : v === 'stranger' ? 'stranger' : +v;
@@ -10729,11 +10273,9 @@
     esc: (...a) => esc(...a),
     csState: (...a) => csState(...a),
     card: (...a) => card(...a),
-    recordBody: (...a) => recordBody(...a),
-    cardHtml: (...a) => cardHtml(...a),
-    binBtn: (...a) => binBtn(...a),
+    // the one shell's read-only card (Q1541 stage 10), band.js's
+    readState: (...a) => BND.readState(...a),
     departedSentence: (...a) => departedSentence(...a),
-    textDivs: (...a) => textDivs(...a),
     hydrateFromModule: (...a) => hydrateFromModule(...a),
     // the member path's record drawing, for a closed document's ✔s (Q1508)
     itemsFromView: (...a) => itemsFromView(...a),
@@ -10777,6 +10319,14 @@
   // clause is its first line, its title the label above it, its batch the
   // body and OK its row while it is owed (Q1541 stage 2)
   const shellRelease = (c) => !!c && !!c.release && !atTheDoor();
+  // **📭 and 🥾, the people's news** (Q1541 stage 10, the last of 1556's
+  // deferrals): a mail the outbox gave up on and a departure, each one OK
+  // while owed and no 🗑️ (Q1527 (a)), their first line the list they stand
+  // in — *Members* for 📭 (E34), *Alumni* for 🥾 (Q1557 (e))
+  const PEOPLE_NEWS = { mailgiveup: { kind: 'mail-give-up', rows: 'members' }, departure: { kind: 'departure', rows: 'leave' } };
+  const peopleNewsOf = (c) => (!c || atTheDoor() ? null
+    : c.mailgiveup ? PEOPLE_NEWS.mailgiveup : c.departure ? PEOPLE_NEWS.departure : null);
+  const peopleNewsLive = (c) => (c.mailgiveup ? !!mailGiveUpBatch(c.mailgiveup) : !!owedDeparture(c.departure));
   // 🍾's dark commit says what it waits on, beside the button and never in
   // the body (answers Part 4 .22; Q1556 (3), Ed 2026-09-26). `one-voice`
   // first: no answer can end it, so *waiting for x members* would promise a
@@ -10828,6 +10378,7 @@
         return { kind: 'para', key: k, html: c.isGrant ? foundedClause() : ctx.headFor(c) };
       }
       if (shellRelease(c)) return { kind: 'para', key: k, html: ctx.headFor(card('begin')) };
+      if (peopleNewsOf(c)) return { kind: 'para', key: k, html: '<div class="memlist">' + (doorRowsNow[peopleNewsOf(c).rows] || '') + '</div>' };
       // stage 3a's settings cards: the paragraph's own sentence, settled or
       // not, without its powers line — an answer card's is its setting's
       if (BND.settingKind(c)) { const l = BND.lineOf(c); return l == null ? null : { kind: 'rule', key: k, html: l }; }
@@ -10852,6 +10403,7 @@
       if (doorShellKind(c)) return null;
       if (admissionShellKind(c)) return admissionOwed(c);
       if (shellRelease(c)) return releaseBatch(c.release) ? { kind: 'ok', attrs: ' data-ok="' + esc(k) + '"', word: window.COPY.session.record.ok } : null;
+      if (peopleNewsOf(c)) return peopleNewsLive(c) ? { kind: 'ok', attrs: ' data-ok="' + esc(k) + '"', word: window.COPY.session.record.ok } : null;
       if (!ackOwed(c)) return null;
       return { kind: 'accept', cls: 'grantok', attrs: ' data-ok="' + esc(k) + '"',
         word: k === 'grant-voice' ? PAGE_COPY.gate.voice.accept : PAGE_COPY.gate.accept(c.grants || c.g) }; },
@@ -10905,6 +10457,19 @@
           head: { html: window.SETUP.headHtml(c, ctx, hints.siblings || [c],
             '<div class="headrule" data-fact="place">' + st.place.html + '</div>') },
           body: { html: (b ? releaseBody(b) : '<p class="why">This is no longer outstanding.</p>') + doorErrHtml(k) },
+        };
+      }
+      if (peopleNewsOf(c) && st.place) {
+        const b = c.mailgiveup ? mailGiveUpBatch(c.mailgiveup) : null;
+        const d = c.departure ? owedDeparture(c.departure) : null;
+        const body = c.mailgiveup ? (b ? mailGiveUpBody(b) : '') : d ? '<p class="why">' + departureLine(d) + '</p>' : '';
+        return {
+          kind: peopleNewsOf(c).kind,
+          frame: { cls: 'sugg setupcard', attrs: ' role="tabpanel" data-setupcard="' + esc(k) + '"' },
+          label: { text: window.SETUP.labelOf(c, ctx) },
+          head: { html: window.SETUP.headHtml(c, ctx, hints.siblings || [c],
+            '<div class="headrule asblock" data-fact="place">' + st.place.html + '</div>') },
+          body: { html: (body || '<p class="why">' + esc(PAGE_COPY.noLongerOutstanding) + '</p>') + doorErrHtml(k) },
         };
       }
       if (shellAck(c) && st.place) {

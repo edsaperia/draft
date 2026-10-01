@@ -15,6 +15,18 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 - **An engine change, so a full deploy.** `minimalHunks` (engine-core `text/minimal.ts`) normalises every text patch at the three doors — proposing, the ✒️ decree, the re-make of a stranded patch — after the attestation is checked as sent; replay is untouched. The demo's J1 swap now arrives as two sites.
 - **SPEC v0.146** (§2.1, R-147).
 
+## 2026-10-01, late: one card shell
+
+### Changed
+- **The ✔✔✔ mark stands in one column**, the three ticks one above another.
+- **A stack of decisions on one clause reads from the current text down**: the clause as it stands, then each change, newest first, then the text it started from at the bottom, each wording shown once.
+- **Other members' reading marks move more slowly**, easing in and out as they go.
+- **The 📭 and 🥾 news cards are drawn like every other card.**
+
+### For contributors
+- **Surface-only.** The old card builders are gone: every card is on the one shell (`design/card-shell.js`), and a card whose subject leaves the page while it is open becomes the shell's read-only card.
+- **card-audit is strict on every kind**, in the push tier and the sprint tier: its driven pass presses every live control on every card, and every fact on a card carries its role.
+
 ## 2026-10-01, evening: votes on the record
 
 ### New

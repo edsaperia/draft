@@ -127,6 +127,9 @@ window.CARD_SHELL = (function () {
    * that asks nothing has no row: its tab, a click outside and Escape close
    * it (1541.8 (a)).
    */
+  /** the glyphs a commit spends: ✏️ and 🏛️ (SURFACE §7) */
+  const PRICED = /^(✏|🏛)/u;
+
   function rowShape(st) {
     const acts = st.acts || [];
     if (st.owed && st.owed.kind === 'ok') return 'acknowledge';
@@ -178,8 +181,11 @@ window.CARD_SHELL = (function () {
       // `data-confirm`, 🍾's hold) beside the shell's `data-act`; a commit
       // whose drawing the page already owns — the route's own ✏️ / 🏛️, which
       // swaps in place as a value is typed (329a) — is handed over drawn
+      // **the price is on the commit** (principle 3): a commit that spends
+      // ✏️ or 🏛️ is that fact's home, and says so (`data-fact="price"`)
       const commits = acts.filter((a) => a.kind === 'commit').slice(0, 2).map((a) => (a.html != null ? a.html
         : '<button class="btn ' + (a.cls ? esc(a.cls) + ' ' : '') + 'glyphbtn"' +
+        (PRICED.test(a.glyph || '') ? ' data-fact="price"' : '') +
         (a.act ? ' data-act="' + esc(a.act) + '"' : '') + (a.attrs || '') +
         (a.until ? ' disabled data-until="' + esc(a.until) + '"' : '') +
         ' title="' + esc(a.title || '') + '">' + (a.glyphHtml || esc(a.glyph || '')) + '</button>'));

@@ -88,6 +88,8 @@ window.FLIGHTS = (function () {
       const land = () => { walletShow = null; renderWallet(); };
       const pencil = document.createElement('div');
       pencil.className = 'flypencil';
+      // (a new traveller's own glyph, made once and never re-rendered: no
+      // site for the patcher — stage 10, 1572's deferral)
       pencil.innerHTML = glyphHtml('✏️');
       pencil.style.left = (from.left + from.width / 2) + 'px';
       pencil.style.top = (from.top + from.height / 2) + 'px';
@@ -111,7 +113,7 @@ window.FLIGHTS = (function () {
       const o = opts || {};
       const el = document.createElement('div');
       el.className = 'flypencil' + (o.cls ? ' ' + o.cls : '');
-      el.innerHTML = glyphHtml(glyph);
+      el.innerHTML = glyphHtml(glyph);   // a new traveller, as above
       const start = REDUCED() ? to : from;
       el.style.left = (start.left + start.width / 2) + 'px';
       el.style.top = (start.top + start.height / 2) + 'px';
@@ -319,7 +321,9 @@ window.FLIGHTS = (function () {
       // No label (Ed, 2026-08-17). A row of pencils next to a clock is not
       // ambiguous enough to need naming, and the words were the widest thing in
       // it; the title still says what it is for anybody who hovers.
-      env.walletEl.innerHTML =
+      // patched like the narrow wallet above (stage 10, 1572's deferral): a
+      // flight finds its token by `#wallet i`, and the token it found stays
+      window.PATCH.set(env.walletEl,
         '<span class="pencils">' +
         Array.from({ length: drawn }, (_, i) => '<i' + gh(i) + '>' + glyphHtml('✏️') + '</i>').join('') +
         (rest > 0 ? '<span class="pmore' + (walletGhost && !drawn ? ' gone' : '') +
@@ -335,7 +339,7 @@ window.FLIGHTS = (function () {
         // (1541.30, plain bug 4)
         (env.docClosed ? '' : '<span class="pwhen" style="--fill: ' +
           (Math.max(0, Math.min(1, env.editsToNext)) * 100).toFixed(1) + '%">' + dripIn() + '</span>') +
-        '</span>';
+        '</span>');
       applyLean();
     }
 

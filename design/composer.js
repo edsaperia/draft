@@ -780,7 +780,7 @@ window.COMPOSER = (function () {
      */
     function commitBtnHtml(o) {
       const pen = MAY_PEN();
-      const propose = '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose"' +
+      const propose = '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose" data-fact="price"' +
         (o.disabled ? ' disabled' : '') + ' title="' + esc(o.title) + '">' + glyphHtml('✏️') + '</button>';
       if (!pen) return propose;
       return '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose" data-pen="1"' +
@@ -876,20 +876,6 @@ window.COMPOSER = (function () {
         penTitle: T.row.amend + (n > 1 ? T.row.inAllPlaces(n) : '') + T.row.penCost,
       };
     }
-    // the single-site card's own commit (Ed, 2026-09-16): the row's ✏️ / ✒️
-    // pair, drawn on the card under the card's act names, so the hold and
-    // the click handlers that always answered `draft-propose` serve it
-    const singleSiteCommitHtml = (d) => {
-      const rs = draftRowState();
-      const pt = proposeCtlTitles(d);
-      const btn = (pen) => '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose"' +
-        (pen ? ' data-pen="1"' : '') + ((pen ? !rs.changed : (!rs.changed || pt.broke)) ? ' disabled' : '') +
-        ' title="' + esc(pen ? pt.penTitle : pt.title) + '">' + glyphHtml(pen ? '✒️' : '✏️') + '</button>';
-      // the same countdown beside the same dark button (Q1486 (E)): this is
-      // the row's ✏️ drawn on the card, so it says what the row says
-      const drip = dripNoteHtml({ broke: pt.broke && rs.changed });
-      return MAY_PEN() ? btn(true) + drip + btn(false) : drip + btn(false);
-    };
     // **the same commit as acts for the one shell** (Q1541 stage 8): drawn on
     // the editing card only where no proposal-row stands — a draft opened by
     // ✏️ *propose edit* in read mode (K24), whose card is the only place the
@@ -898,8 +884,9 @@ window.COMPOSER = (function () {
     const cardCommitActs = (d) => {
       const rs = draftRowState();
       const pt = proposeCtlTitles(d);
+      // the ✏️ is the price's home (principle 3); the ✒️ beside it spends nothing
       const btn = (pen) => '<button class="btn btn-propose glyphbtn emojibtn" data-act="draft-propose"' +
-        (pen ? ' data-pen="1"' : '') + ((pen ? !rs.changed : (!rs.changed || pt.broke)) ? ' disabled' : '') +
+        (pen ? ' data-pen="1"' : ' data-fact="price"') + ((pen ? !rs.changed : (!rs.changed || pt.broke)) ? ' disabled' : '') +
         ' title="' + esc(pen ? pt.penTitle : pt.title) + '">' + glyphHtml(pen ? '✒️' : '✏️') + '</button>';
       const acts = MAY_PEN() ? [{ kind: 'commit', act: 'draft-propose', html: btn(true) }] : [];
       acts.push({ kind: 'commit', act: 'draft-propose', html: btn(false) });
@@ -976,106 +963,6 @@ window.COMPOSER = (function () {
       });
     }
 
-    function editCardHtml(d, site) {
-      const n = d.sites.length;
-      const i = d.sites.indexOf(site);
-      // (the price and the stranded re-make's free pass are the row's tooltips
-      // now — `proposeCtlTitles` — since the card commits nothing, Q1382)
-      const rival = liveRivalFor(d, site);
-      const seeded = site.origin.find((o) => o.note);
-      const step = (to, label, glyph) => (to === null
-        ? '<span class="pstep off">' + glyph + '</span>'
-        : '<button class="pstep" data-step="' + d.id + ':' + d.sites[to].keys[0] + '" title="' + esc(label) + '">' + glyph + '</button>');
-      return (
-        '<div class="sugg editcard" data-card="' + d.id + '" data-anchor="' + d.id + '" data-site="' + site.keys[0] + '">' +
-        (n > 1
-          ? '<div class="pnav"><span class="pwhere">' + esc(site.label) + T.nav.placeOf(i + 1, n) + '</span>' +
-            '<span class="psteps">' + step(i > 0 ? i - 1 : null, T.nav.prev, '↑') +
-            step(i < n - 1 ? i + 1 : null, T.nav.next, '↓') + '</span></div>'
-          : '') +
-        // The clause at the head, like every other card (Ed, 2026-08-16, closing
-        // Q275). It had stayed paired on the argument that while you are writing
-        // you want the original beside you rather than above you — which does not
-        // survive contact: the original is one line up, your own additions are
-        // marked green as you type (263), and a full-width lane is a far better
-        // place to write a paragraph of prose than a 300px column.
-        clauseHeadHtml(d, {
-          // a gap's head names the gap, there being no clause to show
-          label: seeded ? seeded.note : site.origin[0] && site.origin[0].gap ? gapLabel(site.keys[0]) : undefined,
-          // **A stranded draft's head shows what stands now** (Q1463, Ed
-          // 2026-09-19, his pick of three): the paragraph it was written against
-          // is gone, the sentence below tells the member to write against the
-          // clause as it now stands, and the head's label says *as it stands* —
-          // so the head reads the document's lines at the place the site is
-          // held, as E38 has a stranded proposal's do. The wording it was
-          // written against is still there to work from: it is what the lane
-          // was seeded with. Everywhere else the head is the origin, which for
-          // a draft that has followed its paragraph is the same words.
-          html: (site.lost
-            ? site.keys.map((k) => lineOf(k)).filter((l) => l && !l.gap)
-              .map((l) => ({ key: l.key, text: l.x, t: l.t, level: l.level, bullet: l.bullet }))
-            : headBlocksOf(site)).map((o) => '<div class="lp' + (o.t === 'h' ? ' hblock lvl' + (o.level || 1) : o.bullet ? ' bullet' : '') +
-            '" data-key="' + o.key + '">' + blockHtml({ x: o.text, t: o.t, level: o.level, bullet: o.bullet }) + '</div>').join(''),
-        }) +
-        // and your draft as the one reply, in the reply's own order: the wording,
-        // then the argument for it behind the same blank disc everybody else's
-        // sits behind — which is what the rest of the roster will see (§3.4).
-        '<div class="field"><div class="fieldlab">' + T.compose.fieldLab + '</div>' +
-        '<div class="propblock">' + laneBoxHtml(d, site) + '</div>' +
-        // …and, under an elective 👤 rung, whether your name goes on it (Q770):
-        // part of the rationale composer area, above the row that commits it
-        signControlHtml(d) + '</div>' +
-        // **A site the text moved out from under says so where the words are**
-        // (Q1463, Ed 2026-09-18). The follow carries a site to its paragraph's
-        // new line; where the paragraph itself was replaced there is nothing
-        // to follow, and what is left is the member's own wording with no
-        // place to stand. The same slot a stranded proposal's sentence takes
-        // (Q170) — above the row, under the words it is about — and nothing
-        // typed is discarded: the lane keeps it, to be re-aimed.
-        (site.lost ? '<p class="setnote">' + esc(T.stranded.drafted) + '</p>' : '') +
-        // **The proposal's lifecycle is one row** (Ed, 2026-08-17). Discard on the
-        // very left, commit on the very right, and the row does not move when the
-        // draft becomes a proposal — only the right-hand control changes from the
-        // act to the fact of it, exactly as the judgment row's ✓ goes from
-        // available to pressed. Cancel was a word on the right, which put *leave
-        // this* where every other card puts *finish this*.
-        '<div class="race-mid commitrow">' +
-        // …and 🗑️ here is *this* site's (Q1306): on a patch each place's card
-        // puts its own place back, and the row at the foot is the bin for all.
-        // **And it is the card's only control** (Q1382, Ed 2026-09-15: *each
-        // patch should have a 🗑️ to discard only it, but there should be a
-        // floating ✏️ to submit all of them and a floating 🗑️ to discard all
-        // of them*). The ✏️ hold — and the ✒️ beside it where the Founder holds
-        // the pen — lived here too, one per site, so a two-place draft offered
-        // two commits for one act; they are the proposal-row's now, at the foot
-        // of the window (`proposeCtlTitles`), and a site card commits nothing.
-        '<button class="btn btn-withdraw glyphbtn" data-act="draft-cancel"' +
-        ' title="' + T.row.discardThis + '">' + glyphHtml('🗑️') + '</button>' +
-        // **…except on a single-site draft, whose card carries the commit
-        // too** (Ed, 2026-09-16: *proposal cards don't have ✏️ any more — we
-        // removed them from multi-site patches to make it clearer that
-        // they're multi-site, but they should be there for single-site
-        // edits*). One place, one card, so the ✏️ — and the ✒️ beside it
-        // where the Founder holds the pen — stands where the act is read,
-        // the same hold as the row's and disabled by the same rule; a patch
-        // keeps only the row's *submit all*.
-        (n === 1 ? singleSiteCommitHtml(d) : '') +
-        '</div>' +
-        // Only the two facts that change what pressing ✏️ *does* (Ed, 2026-08-17).
-        // What it costs is now shown rather than said — the pencil crosses the
-        // screen — and the rest was the design explaining itself.
-        (rival || n > 1
-          ? '<div class="foot">' +
-            (rival ? T.compose.rivalNote : '') +
-            (rival && n > 1 ? ' · ' : '') +
-            (n > 1 ? T.compose.allPlacesNote(n) : '') + '.</div>'
-          : '') +
-        // a live refusal (the text moved under the draft) is said on the card,
-        // where the draft still is — never lost to a console
-        (d.refusal ? '<div class="foot refusal">' + esc(d.refusal) + '</div>' : '') +
-        '</div>'
-      );
-    }
 
     /**
      * **The editing card, as parts for the one shell** (Q1541 stage 8): the
@@ -1132,66 +1019,6 @@ window.COMPOSER = (function () {
       };
     }
 
-    // **What a proposal of yours looks like once it is in** — the place
-    // stepper, the clause at the head and your wording under it — shared by
-    // the two cards that show one: `mineCardHtml` below, and the stranded
-    // card beside it (Q170), which is the same reading of the same object
-    // with a different pair of acts under it.
-    function proposedBodyHtml(d, site) {
-      const n = d.sites.length;
-      const i = Math.max(0, d.sites.indexOf(site));
-      const s = site || d.sites[0];
-      // (`liveRivalFor` went with the `yoursnote`: the note was its only reader.)
-      const step = (to, label, glyph) => (to === null
-        ? '<span class="pstep off">' + glyph + '</span>'
-        : '<button class="pstep" data-step="' + d.id + ':' + d.sites[to].keys[0] + '" title="' + esc(label) + '">' + glyph + '</button>');
-      return (
-        (n > 1
-          ? '<div class="pnav"><span class="pwhere">' + esc(s.label) + T.nav.placeOf(i + 1, n) + '</span>' +
-            '<span class="psteps">' + step(i > 0 ? i - 1 : null, T.nav.prev, '↑') +
-            step(i < n - 1 ? i + 1 : null, T.nav.next, '↓') + '</span></div>'
-          : '') +
-        // The `yoursnote` is gone (Ed, 2026-08-17). It opened every card of your
-        // own with three sentences of mechanism — that nothing is asked of you,
-        // that standing behind a proposal counts as preferring it, that you will
-        // still be served the rest of the race against it — and every one of them
-        // is a fact about *all* your proposals, so it appeared on every one. A
-        // footnote that appears on every card is a design note, not information.
-        // The card already says the two things that matter here: there is no
-        // radio, and the one control is a withdrawal.
-        // Your own proposal is a proposal like any other, so it is drawn like
-        // any other: the clause it rewrites at the head, your wording under it
-        // stating its own change, your argument behind the same disc everybody
-        // else's sits behind. What differs is only what you can do — nothing is
-        // asked of you, and the one act is withdrawal.
-        // **And the disc is what the room sees, not what you know** (K30): your
-        // own face where the name is attached — you signed it, or the rung is
-        // `public` — and the blank disc where it is sealed, which is the point.
-        // The line is your only reading of your own proposal, so it has to be
-        // the room's reading of it.
-        // the run's source lines, one per block (Q1406): the head renders
-        // blocks, so a heading among them keeps its rank rather than its hashes
-        // …and **a gap has no clause to show** (Q1410, the walk's C3, C5 and
-        // C11): a proposal of yours on a gap has an empty origin, so joining
-        // it gave the head a blank box where every other card standing in a
-        // gap says *(no text here)* under *The gap as it stands*. It takes
-        // the insert head too — the same test the editing card makes one
-        // screen up, and `headOpts`' own on the read side.
-        clauseHeadHtml(d, s.origin[0] && s.origin[0].gap
-          ? { text: null, label: T.insert.headLabel, key: s.keys[0],
-              chips: chipsFor(s.keys[0], d.id) }
-          : { text: originText(s), key: s.keys[0],
-              chips: chipsFor(s.keys[0], d.id) }) +
-        // …and **a deletion of yours says so** (Q1412): this lane is read, not
-        // edited, so where the site's text is empty it carries the removal
-        // sentence rather than `laneBlocks`' editable blank — the same reading
-        // the room gets on its pair card.
-        fieldHtml('<div class="propblock"><div class="rtext">' +
-          (String(s.text || '').trim() ? laneBlocks(s.text, originText(s)) : removedHtml()) + '</div>' +
-          speakerHtml(d.rationale, undefined, mineSpeaker(d)) + '</div>',
-          1, T.compose.proposedLab)
-      );
-    }
 
     /**
      * **The same reading, as parts for the one shell** (Q1541 stage 6): a
@@ -1223,73 +1050,7 @@ window.COMPOSER = (function () {
       };
     }
 
-    // Once it is in, the same geometry read-only, and your proposal on the right
-    // (Ed, 229) — the side it will always be on wherever it is shown to you.
-    function mineCardHtml(d, site) {
-      const n = d.sites.length;
-      const s = site || d.sites[0];
-      return (
-        '<div class="sugg minecard" data-card="' + d.id + '" data-site="' + s.keys[0] + '">' +
-        proposedBodyHtml(d, site) +
-        // **The same row the editing card had, one step further on** (Ed,
-        // 2026-08-17). 🗑️ stays exactly where it was — discarding a draft and
-        // withdrawing a proposal are the same gesture at two moments, and the
-        // only difference is that one of them hands an edit back.
-        // **And the right slot is empty** (Q1485 (A), Ed 2026-09-21: *Close,
-        // and say so*). It held the ✏️ that was *Propose*, pressed and dead,
-        // reading **Submitted** — the act become the fact of it — which was
-        // the whole of *one lifecycle, not two screens*. The card closes at
-        // the press now, so nobody ever meets that face at the moment it was
-        // written for, and on a card reopened an hour later a pressed button
-        // is a control that does nothing. What says the proposal is in is the
-        // rail: its sentence at the press, its pinned line thereafter.
-        // **A passed proposal is not its author's to withdraw** (SPEC §9.7 rule
-        // 8, SURFACE E37): once the membership has passed it and it waits on the
-        // Founder, 🗑️ is dead — the room has decided, and the line on the rail
-        // says so. The row otherwise stands exactly as it did.
-        '<div class="race-mid commitrow">' +
-        '<button class="btn btn-withdraw glyphbtn" data-act="draft-withdraw"' + (d.awaiting ? ' disabled' : '') +
-        ' title="' + (d.awaiting ? esc(d.cap || '') : T.row.withdraw +
-        (n > 1 ? T.row.allPlaces(n) : '') + T.row.withdrawCost) + '">' + glyphHtml('🗑️') + '</button>' +
-        '</div>' +
-        '</div>'
-      );
-    }
 
-    // **The text moved under it** (Ed, 2026-09-14, Q170; SURFACE E38). The
-    // clause this proposal rewrote was replaced, and the engine could not
-    // carry the patch across to the new wording (SPEC §2.4): it is out of
-    // every race, nobody is being asked about it, and it waits on its author.
-    //
-    // So it is the same card as `mineCardHtml` — the clause **as it now
-    // reads** at the head, your wording under it, your reason behind the same
-    // disc — with one sentence saying what happened and a different pair of
-    // acts. The right slot is no longer *Submitted*, because it is not in any
-    // more; it is ✏️ again, and pressing it opens the column with this
-    // wording already in the lane, to be fixed against the text that now
-    // stands. That press re-makes **this** proposal rather than opening a
-    // second one, so it keeps its place and the edit it already cost; 🗑️
-    // withdraws it and hands the edit back, exactly as it always did.
-    // `dead` is the closed document: neither act exists there — the engine
-    // refuses a confirmation and a withdrawal alike once the clock has run —
-    // so the row states them and offers neither, as every closed card does.
-    function strandedCardHtml(d, site, dead) {
-      const n = d.sites.length;
-      const s = site || d.sites[0];
-      const off = dead ? ' disabled' : '';
-      return (
-        '<div class="sugg minecard strandedcard" data-card="' + d.id + '" data-site="' + s.keys[0] + '">' +
-        proposedBodyHtml(d, site) +
-        '<p class="setnote">' + esc(T.stranded.note) + '</p>' +
-        '<div class="race-mid commitrow">' +
-        '<button class="btn btn-withdraw glyphbtn" data-act="draft-withdraw"' + off +
-        ' title="' + (T.row.withdraw + (n > 1 ? T.row.allPlaces(n) : '') + T.row.withdrawCost) + '">' + glyphHtml('🗑️') + '</button>' +
-        '<button class="btn btn-propose glyphbtn" data-act="draft-remake"' + off +
-        ' title="' + esc(T.stranded.remake) + '">' + glyphHtml('✏️') + '</button>' +
-        '</div>' +
-        '</div>'
-      );
-    }
 
     return { DRAFT_ID, draftOf, docIndexOfKey, siteFor, syncDraftKeys,
       dropDraft, dropDraftSite,
@@ -1297,7 +1058,7 @@ window.COMPOSER = (function () {
       startDraft, startDraftFromTyping, startDraftFromRun,
       laneRemark, syncEditCtl, markSelection,
       commitBtnHtml, proposalRowHtml, proposeCtlTitles, draftRowState, setDraftSigned,
-      editCardHtml, mineCardHtml, strandedCardHtml, ownParts, editParts, cardCommitActs };
+      ownParts, editParts, cardCommitActs };
   }
   return { make };
 })();
