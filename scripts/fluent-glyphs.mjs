@@ -46,6 +46,7 @@ const SOURCE = {
   bust: ['Bust in silhouette', 'bust_in_silhouette'],
   writing: ['Writing hand', 'writing_hand'],
   eye: ['Eye', 'eye'],
+  eyes: ['Eyes', 'eyes'],
   globe: ['Globe showing europe-africa', 'globe_showing_europe-africa'],
   memo: ['Memo', 'memo'],
   tophat: ['Top hat', 'top_hat'],
@@ -75,6 +76,13 @@ const SOURCE = {
   label: ['Label', 'label'],
   thumbs: ['Thumbs up', 'thumbs_up'],
 };
+
+// **Which pictures face right** (design/PRESENCE.md §1.3; Q1570, Ed
+// 2026-09-30): the reading margin's anonymous mark looks *into* the document,
+// not out of it, and every platform set draws 👀 glancing left. A key here has
+// its paths wrapped in one mirroring transform on the set's own 32-unit box —
+// the file's paths verbatim, flipped, nothing redrawn.
+const MIRROR = new Set(['eyes']);
 
 // ---- the page's own table, read out of cards.js ---------------------------
 // `GLYPH` is written one entry per line, in the rigid shape this regex reads,
@@ -123,6 +131,12 @@ function innerOf(svg, key, notes) {
     const rx = new RegExp(id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
     body = body.replace(rx, 'fl-' + key + '-' + id);
     notes.push(key + ': id "' + id + '" namespaced to "fl-' + key + '-' + id + '"');
+  }
+  if (MIRROR.has(key)) {
+    // flip about the vertical axis of the file's own viewBox
+    const [x, , w] = vb[1].split(/\s+/).map(Number);
+    body = '<g transform="matrix(-1 0 0 1 ' + (2 * x + w) + ' 0)">' + body + '</g>';
+    notes.push(key + ': mirrored to face right (PRESENCE.md §1.3)');
   }
   return { viewBox: vb[1], body };
 }

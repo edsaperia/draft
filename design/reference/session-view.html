@@ -697,6 +697,10 @@
              sticky in the gutter from the charter heading down, a direct child
              of .doc so it rides the whole column rather than the band's box -->
         <div class="ridetab" id="ridetab"></div>
+        <!-- the reading margin (design/PRESENCE.md; Q1570): where every other
+             member is reading, a column of marks on the desk beside each block,
+             positioned by session.js on the rail's own passes -->
+        <div class="reading" id="reading"></div>
         <p id="holding" hidden></p>
         <div id="charter"></div>
         <div class="redacted" id="redacted" hidden></div>
@@ -11526,7 +11530,12 @@
       railNow: () => fix.NOW } : {}),
     mounts: { doc: document.getElementById('charter'), queue: rail,
       toc: document.getElementById('toc'), wires: document.getElementById('wires'),
-      wallet: document.getElementById('wallet'), pulse: document.getElementById('pulse') },
+      wallet: document.getElementById('wallet'), pulse: document.getElementById('pulse'),
+      reading: document.getElementById('reading') },
+    // the reading margin's faces (PRESENCE.md §1.3): a member id to the
+    // register's row for them — the founder's is seeded `mid: 'founder'`, the
+    // id the server mints for them; an erased row draws the anonymous disc
+    personOf: (id) => { const r = S.roster.find((p) => p.mid === id); return r ? { n: r.n, pic: r.pic, erased: !!r.erased } : null; },
     // the two capabilities the charter half needs to know about: read at
     // call time, so pressing OK on a grant takes effect on the next render
     // with no remount (**a power is not held until it is acknowledged**)
@@ -11631,6 +11640,8 @@
       if (new URLSearchParams(location.search).get('closed')) closeFixture();
       S.open = null; lastOpen = null; BND.birthsMuted = true;
       render();
+      // two readers in the margin (1570.4): the fixture's own, with their persons inline
+      if (FIX.READERS) SESSION.setReading(FIX.READERS);
     };
     document.head.appendChild(sc);
   } else {

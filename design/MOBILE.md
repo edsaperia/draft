@@ -68,6 +68,10 @@ Ed's ruling: the task drawer that slid in from the right becomes a **bottom shee
 - **The contents drawer is full width** (redesign stage 8; 1541.40, .54): it took `min(86vw, 360px)` and its marks rode rightwards out over an edge it no longer has; now it is the glass's width and each heading's marks take their own room at the heading's end, inside it. `drawer-walk` asserts both.
 - **Guard: `npm run drawer-walk`** (rewritten for the sheet; `--shots=<dir>` saves the peek and the raised sheet): the peek's place and words, the raise, the spacing and ↻ from before, the ground and the empty space, the drag (under the finger, a rebuild under it, both detents, a flick each way, a real touch drag), an entry's card and the peek following it, the scroll hiding, the door, overflow, errors, reduced motion, and no sheet at 1600.
 
+### Open: the reading margin on a phone (Q1570, 2026-10-01)
+
+The `reading-margin` (design/PRESENCE.md; SURFACE M25) is desktop only: at 390 the left gutter is gone and the task sheet is the wrong home, so a narrow page **reports** where it is reading (one field on the poll) and **draws nothing**. What a phone should show of where the others are — a mark in the 28px gutter, a count on the sheet's bar, nothing — is open, and is Ed's to call; `presence-walk`'s step 6 asserts the current nothing.
+
 ## 1. Layout and touch (read + judge)
 
 ### 1.0 The architectural consequence

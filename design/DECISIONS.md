@@ -7655,3 +7655,29 @@ The keyed re-render (`design/patch.js`, principle 10) retired the deferral flags
   - **A half-typed date has no value, so no render keeper can carry it** (Q1513): a poll after the day and month gave back an empty box and the rest of the keys made a year 0001; a focused answer or motion date box holds off the poll, 30 s from its last key (`dateInFlight`). Guard: `member-questions-walk`'s Q1513 step.
 - `heldCaret`/`restoreCaret` retired:
   - **A data swap under a caret takes it** (the residency room, 2026-09-18): the typing guard spares the column only while its key stands, and an adoption anywhere moves the key — seven rebuilds a minute under a rationale in a fast room, the words kept and the caret gone. `setData` holds the caret by position. Measured by `node scripts/repro/focus-steal.mjs` (`--lane`); no CI guard.
+
+## Q1571: the queue card wash sweep transition — what was rejected (2026-09-30, built 2026-10-01)
+
+Ed, 2026-09-30, in the coordinator's session: *When you make a proposal it's pinned to the sidebar and likely you're keen to know its progress. I'd like more "juice" on your proposals to indicate when they're voted on. At the moment you just see the bar advance, which doesn't mark the change very effectively.* The plan is `design/SWEEP.md`; the rule is SURFACE M24; the host's half is SPEC §3.5's clock (R-144). What was weighed and set aside:
+
+- **The shake.** Ed's first picture of the entry registering a vote was a shake. Set aside by Ed himself: the shake is the surface's refusal idiom (a commit that could not go, a field that would not take a value), and an entry that shook on good news would say the opposite of what had happened.
+- **The beat and the pulse's ring.** The coordinator offered the `room-pulse`'s own gesture — a beat, a ring growing from the entry — as the one motion the surface already had for *something happened*. Ed: *they don't feel very natural for rectangular cards.* The pulse stays as it is, a grey dot that beats once per action by anybody and says nothing else.
+- **The sweep that drains.** A fill that ran to full and then drained back down to the new value reads as progress lost. Ed's shape is always rightward (decision 3): the reset from full to empty is an instant cut, and the climb that follows is the only other motion.
+- **Sweeping on the fill alone.** The fill is `closeness`, which since R-142 counts only the answers on the pairs the leader is waiting on, so a vote on a rival pair, or a revision of a vote already cast, moves nothing a page could see. The host tells the page instead (1571.1, R-144): a per-race clock, moved once per judgment. A count of judgments was the other candidate for the tick and was rejected for saying how many.
+- **Your own proposals' entries only.** The first dial. Ed chose the wider rule — every vote on every race in your rail — to be dialled back if it proves too much (1571.2).
+- **A stagger between entries sweeping in one poll.** A second dial, not built until wanted; sweeps on different entries in one poll play together.
+- **The wash greening on a pass.** SWEEP.md §1.1 says the wash turns green; M21's palette has no green wash — a closed slip paints white, and `--ok` belongs to the ✔ alone. The pass ending as built crossfades from the live entry's colour to the record's, and the ✔ carries the green. Reported to the coordinator as a call at the build.
+
+
+## Q1570: where each member is reading — the ruling against the recommendation, and what the build rejected (2026-09-30, built 2026-10-01)
+
+**The elective rungs show faces** (1570.1). The coordinator recommended 👀 under `anonymousElective` and `sealedElective` as well as under the two fixed anonymous rungs: under an elective rung the choice to sign is made per proposal, and after the reading, so a face in the margin names a reader who has not yet chosen to be named for anything. Ed ruled the other way — *I can live with faces being shown on any setting that allows signed proposals* — and the line is the one SPEC §3.5a now states: named wherever a proposal may be signed, unnamed under `anonymous` and `sealed`. The reasoning is kept here because the recommendation was the stricter reading of §3.5a and may be worth re-asking if a room objects.
+
+**Rejected in the build:**
+- **The patch for the layer's own nodes.** PRESENCE.md §1.3 asked for the marks to ride `PATCH.set` so a mark is the node it was. The patch strips a kept node's inline `top` (its markup carries none) and mutes the transition of a node whose class changed (`landStill`), which are exactly the two things a glide and a fade need — so `renderReading` reconciles its own nodes by key, one per member id or token, added `landing`, kept across renders, removed after one wash. The identity rule holds; the mechanism is the layer's own.
+- **The place as a pixel.** A scroll offset shared between a phone at 390 and a desktop at 1600 means nothing; the block key is the same clause on every screen (decision 2).
+- **Reporting on scroll.** A member scrolling past forty clauses would have forty marks chase them down the margin; the dwell (2 s) reports where they stopped (decision 3).
+- **Member ids under the anonymous rungs** with the page drawing 👀. The view is the blind projection (SPEC §3.5): the bytes have to be anonymous, not only the picture (1570.3).
+- **A log event per report.** The gotcha Q681 earned: a read that writes pins the clock. The host's memory holds the table and a restart forgets it.
+- **The matrix step.** `seat-matrix` seats never scroll, so a step producing a dwell would be a design of its own; E43's audience cell is read by the static half and the row's guard is `presence-walk`.
+- **A closed document's margin.** Nobody is deciding anything there; the host serves no `reading` on a closed document and the page draws none.

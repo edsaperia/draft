@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.142
+# Group Drafting Engine — Specification v0.144
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -79,6 +79,8 @@ One preference is counted without being asked for, and it is **derived rather th
 
 **3.5 Disclosure.** **Judgment is blind; composition is briefed.** Standings, splits, and camps are visible in exactly one place — the composer's briefing (§6.1) — and only where there is no live judgment left to contaminate: a race that has left the judgment stream as deadlocked, for that participant (§8.3, §8.3b), or an invitation about the participant's own candidate (§6.2). Drafting against a race that is **still being judged** shows the text and nothing else. No feed, card, sort, or notification shows direction on a race the participant hasn't judged. Resolved outcomes are public in the gazette immediately. → why: R-061
 
+**A seat whose rail holds a live race is told when a vote lands on it, never how many nor how** (Ed, 2026-09-30, Q1571): the view carries, per live race, a clock that moves once per judgment — a time, not a count — served to every member whose rail holds the race and printed nowhere; the surface may move on it (the wash sweeps) and may say nothing by it. → why: R-144
+
 **3.5a Disclosure is constitutional.** Who may be seen, and when, is not one setting but a small family of them, and it is settled the same way quorum is: **either by the convenor at creation, or by the roster at the founding ceremony** (§9.0a). The convenor chooses which, and may delegate the numbers and the disclosure independently — a convenor may fix the quorum and still hand the room its own privacy, or the reverse. → why: R-065
 
 **Candidate authorship** runs on a ladder from most private to least: **anonymous** (never revealed) · **sealed** (hidden during the session, revealed at close) · **public** (visible live). Rationales are always visible whatever the setting — what varies is only whether a name is attached to one.
@@ -102,6 +104,8 @@ One preference is counted without being asked for, and it is **derived rather th
 **The rule is asymmetric, and the protective side wins**: a reveal happens only where the rung at submission **and** the rung standing at the moment of the reveal both allow it, so a cell reads *named* only while the standing rung allows it too. → why: R-050, R-054
 
 **A signature is always named.** Acknowledging the close signs the final document (§4.6), and the signature carries the signer's own name whatever this setting says. → why: R-047
+
+**Where a member is reading is shown to the membership** (Ed, 2026-09-30, Q1570): each member's page reports the block its reading line has rested on, and every other member is shown it beside that block — **named under every rung of this ladder that allows a signed proposal** (*public* and the two elective rungs), **unnamed under *anonymous* and *sealed***, where the view carries a token minted per member per host and never an id; never a stranger's or an applicant's to see; never written to any log, and gone from the host once it stops being reported. Where, never what: the mark is the same by a race as by any clause. → why: R-145
 
 **Judgments** have their own ladder, one rung shorter: **never revealed** (the default and the assumption everywhere else in this spec) or **revealed at the end of the document**. *End* is the word for this moment on both ladders, and means the end of everything rather than the close of each decision. Live disclosure is not on it — §8.3's no-standings rule keeps judgment blind while it is still being collected. → why: R-067
 

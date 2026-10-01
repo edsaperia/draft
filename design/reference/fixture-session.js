@@ -1157,5 +1157,14 @@ window.FIXTURE_SESSION = (function () {
       why: 'A third of three is one person. Two is the least that is still a decision.' },
   ];
 
-  return { DOC, SUGGS, ROSTER, FLOOR, EDIT_RULES, SESSION_MINUTES, editsHeld, editsToNext, NOW, MOTIONS };
+  // **Two readers in the margin** (design/PRESENCE.md, 1570.4): where two of
+  // the fourteen are reading, both at the Kitchen clause so the column shows
+  // its shape — a face and an initials disc, lined up, 2px apart. Their
+  // persons ride the rows because the fixture's register carries no member
+  // ids; the live page reads them off the register instead.
+  const READERS = [
+    { id: 'fx-reader-1', at: 'kitchen', person: { n: 'Rosa Quint', pic: 'e👩‍🦰' } },
+    { id: 'fx-reader-2', at: 'kitchen', person: { n: 'Tomasz Bielak', pic: '' } },
+  ];
+  return { DOC, SUGGS, ROSTER, FLOOR, EDIT_RULES, SESSION_MINUTES, editsHeld, editsToNext, NOW, MOTIONS, READERS };
 })();

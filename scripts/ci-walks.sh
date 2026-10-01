@@ -52,7 +52,8 @@ case "$GROUP" in
   repros-b)    PORT_MAIN=8173; PORT_DESIGN=8166 ;;
   sprint-doors)   PORT_MAIN=8175; PORT_DEMO=8168 ;;
   sprint-motions) PORT_MAIN=8177 ;;
-  sprint-pages)   ;;
+  # a server since the liveness walks (Q1570, Q1571): the rest of the group serves design/ itself
+  sprint-pages)   PORT_MAIN=8179 ;;
   *) echo "usage: ci-walks.sh seat-member|seat-clerk|journey|motions|doors|repros|repros-b|sprint-doors|sprint-motions|sprint-pages"; exit 2 ;;
 esac
 
@@ -419,6 +420,26 @@ case "$GROUP" in
     # its raw-value rule stays at the push, in ci.yml's `raw-values` job, as
     # `copy-check --walk --raw-only`. About eight and a half minutes
     walk "copy-check --walk" npm run copy-check -- --walk
+    # the two liveness walks attach to a dev server of their own, booted here
+    # so the walks above, which serve design/ themselves, are not waiting on it
+    boot sprint-pages "$PORT_MAIN"; BASE=$BOOTED
+    # **The queue card wash sweep transition** (SWEEP.md §2, Q1571, Ed
+    # 2026-09-30): three seats on a begun document; a vote landing on a race
+    # sweeps its entry on every rail that holds it — the keyframes read off
+    # the Web Animations the rail ran, x → 100 → 0 → x′, rightward only — a
+    # revision that moves no bar sweeps on the tick alone (1571.1), two votes
+    # in one poll are one sweep, a pass stamps ✔ on the glyph with the fill
+    # run to full, a dominated proposal's ✖ with it run to full and back to
+    # empty, and reduced motion plays no width keyframe. Sprint tier from its
+    # first day (Q1547). About a minute and a half
+    walk "sweep-walk" npm run sweep-walk -- "$BASE"
+    # **Where each member is reading** (PRESENCE.md §2, Q1570, Ed 2026-09-30):
+    # a member's dwell on a block is reported by its poll and drawn on every
+    # other member's desk as a mark beside that block — faces under a rung
+    # that allows a signed proposal, 👀 under `anonymous` and `sealed`, never
+    # your own, never on a phone, gone within the TTL once the page closes.
+    # Sprint tier from its first day (Q1547). About two minutes
+    walk "presence-walk" npm run presence-walk -- "$BASE"
     ;;
 esac
 

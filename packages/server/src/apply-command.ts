@@ -26,6 +26,7 @@ import type { Persistence } from './persistence.js';
 import type { DocStore, LoadedDoc } from './store.js';
 import { PauseState } from './write-path.js';
 import type { WritePath } from './write-path.js';
+import { notePlace } from './presence.js';
 
 /** Who is acting: the cookie's seat as the route parsed it. */
 export interface CommandSeat {
@@ -61,6 +62,14 @@ export interface ApplyOptions {
    * by line and a busy bot room meets refusals by the dozen.
    */
   logRefusals?: boolean;
+  /**
+   * The block the act is about, as the page keys its blocks (`L<i>`), for
+   * the demo's bots (design/PRESENCE.md §1.2): a bot has no page to poll, so
+   * its place in the reading margin is set here, through the same table a
+   * member's poll writes. The route never passes one — a member's own page
+   * reports where they are reading, and acting on a clause is not reading it.
+   */
+  place?: string;
 }
 
 export type Applied =
@@ -107,6 +116,9 @@ export async function applyCommand(host: CommandHost, doc: LoadedDoc, seat: Comm
   // a demo visitor's act restarts their seat's 30 minutes (DEMO.md D8) — on
   // the demo's current generation alone, since member ids repeat across documents
   if (host.demo !== undefined && host.demo.doc() === doc) host.demo.touch(memberId, nowMs);
+  // a bot's place in the reading margin (PRESENCE.md §1.2), set through the
+  // table a member's poll writes; the route passes none
+  if (opts.place !== undefined) notePlace(doc, memberId, opts.place, nowMs);
   const me = doc.cs.memberRecords().get(memberId);
   if (me?.lapsed) doc.cs.memberReturn(t, memberId); // any act revives
   let result: unknown;

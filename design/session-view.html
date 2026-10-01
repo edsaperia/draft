@@ -697,6 +697,10 @@
              sticky in the gutter from the charter heading down, a direct child
              of .doc so it rides the whole column rather than the band's box -->
         <div class="ridetab" id="ridetab"></div>
+        <!-- the reading margin (design/PRESENCE.md; Q1570): where every other
+             member is reading, a column of marks on the desk beside each block,
+             positioned by session.js on the rail's own passes -->
+        <div class="reading" id="reading"></div>
         <p id="holding" hidden></p>
         <div id="charter"></div>
         <div class="redacted" id="redacted" hidden></div>
@@ -5979,6 +5983,12 @@
     // whose race it would have to share with its rivals (`soleCandidateRaceOf`).
     const msr = rec.route === 'ordinary' ? soleCandidateRaceOf(rec) : null;
     if (msr) mc.racePct = Math.round((msr.closeness || 0) * 100); else delete mc.racePct;
+    // …and the race's clock (SWEEP.md §1.4, 1573.5): the entry sweeps on it —
+    // from the setting's own race whether or not the meter is shown, since a
+    // set motion shares that race with its rivals (Q1348) and a vote on any
+    // of them is a vote on the race in your rail (1571.2)
+    const tsr = rec.route === 'ordinary' ? settingRaceOf(motionRaceSettingOf(rec) || '') : null;
+    if (tsr && tsr.voteTick != null) mc.tick = tsr.voteTick; else delete mc.tick;
     // …and its entry carries this seat's abstention clock in the last day
     // (Q1460 (e)), from the same race the card's own line reads — a set
     // motion's included, whose clock is its setting's leading pair's
@@ -8653,7 +8663,10 @@
     // and an applicant has no gutter to find it in. The state chain stays a
     // literal in front — `spec-check` reads it against SURFACE §6's alphabet.
     return { id: c.k, html, pinned: st !== 'wait' && st !== 'done' || !!cx.pinAll, rank: RAIL_RANK[st],
-      u: RAIL_U[st], mine: st === 'yours', news: st === 'news', anchor: () => anchorOf(c.k) };
+      u: RAIL_U[st], mine: st === 'yours', news: st === 'news', anchor: () => anchorOf(c.k),
+      // what the sweep reads off a band entry (SWEEP.md §1.4; 1573.5): a
+      // race's meter and clock where the card is one, and the mark as drawn
+      pct: c.racePct, tick: c.tick, mark: (/<span class="subj"[^>]*>([\s\S]*?)<\/span>/.exec(html) || [, ''])[1] };
   }
   // **The birth-pass sees the whole rail** (Q1338, Ed 2026-09-11). It used to
   // be scoped to the setup tasks, on the ground that a charter entry arrives
@@ -11526,7 +11539,12 @@
       railNow: () => fix.NOW } : {}),
     mounts: { doc: document.getElementById('charter'), queue: rail,
       toc: document.getElementById('toc'), wires: document.getElementById('wires'),
-      wallet: document.getElementById('wallet'), pulse: document.getElementById('pulse') },
+      wallet: document.getElementById('wallet'), pulse: document.getElementById('pulse'),
+      reading: document.getElementById('reading') },
+    // the reading margin's faces (PRESENCE.md §1.3): a member id to the
+    // register's row for them — the founder's is seeded `mid: 'founder'`, the
+    // id the server mints for them; an erased row draws the anonymous disc
+    personOf: (id) => { const r = S.roster.find((p) => p.mid === id); return r ? { n: r.n, pic: r.pic, erased: !!r.erased } : null; },
     // the two capabilities the charter half needs to know about: read at
     // call time, so pressing OK on a grant takes effect on the next render
     // with no remount (**a power is not held until it is acknowledged**)
@@ -11631,6 +11649,8 @@
       if (new URLSearchParams(location.search).get('closed')) closeFixture();
       S.open = null; lastOpen = null; BND.birthsMuted = true;
       render();
+      // two readers in the margin (1570.4): the fixture's own, with their persons inline
+      if (FIX.READERS) SESSION.setReading(FIX.READERS);
     };
     document.head.appendChild(sc);
   } else {

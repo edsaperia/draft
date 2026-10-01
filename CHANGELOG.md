@@ -2,9 +2,24 @@
 
 **[docs.vote](https://docs.vote)** is a place for a group to write a document together. Anybody may propose a change; rival wordings of the same passage race each other; the membership votes on them in blind pairs (*which of these two wordings?*, no names attached, no scores shown), and the wording that comes out on top is adopted once enough of the membership has voted. The document's own rules are decided the same way, inside the document.
 
-docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first, back to the project's first commit on 2026-08-13. The mechanism's full rules are in [`SPEC.md`](SPEC.md) (v0.142 today), and what the page shows a member is in [`SURFACE.md`](SURFACE.md).
+docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first, back to the project's first commit on 2026-08-13. The mechanism's full rules are in [`SPEC.md`](SPEC.md) (v0.144 today), and what the page shows a member is in [`SURFACE.md`](SURFACE.md).
 
 ---
+
+## 2026-10-01, later: the room moves
+
+### New
+- **You can see where the other members are reading.** Beside the clause each of them is reading, a small face, moving down the page as they read and lined up with any others reading the same clause. Hold the pointer on one to see whose it is. Where the document keeps proposals anonymous, a pair of eyes stands in for each face, and nobody's name is attached. Your own face is never there, and the faces show on a computer's screen, not yet on a phone.
+
+### Changed
+- **When somebody votes on a proposal in your list, its bar sweeps to show it**: it runs to the end, starts again from empty and climbs to where it now stands. Several votes landing together make one sweep.
+- **The mark beside an entry lands with a small stamp when it changes**: a ✔ when a proposal passes, a ✖ when it fails. A rule change's entry sweeps and stamps the same way.
+
+### For contributors
+- **A server change, so a full deploy.** The member view carries `voteTick` on every live race, the time of the latest vote on it and never a count, and `reading`, where every other member is reading, from a table the host keeps in memory alone (`packages/server/src/presence.ts`): one query field on the poll, a 30-second lifetime, a per-boot token in place of a member's id under 👤's anonymous rungs. Neither reaches the stranger's or the applicant's view, and neither is logged.
+- **`sweep-walk` and `presence-walk` join the sprint tier's `sprint-pages`**, on its own dev server.
+- **👀 joins the drawn glyphs**, mirrored to face into the document, and so is no longer offered as a face. The session fixture gains two readers; one session-probe freeze, read.
+- **SPEC v0.144**: §3.5 says a member is told when a vote lands on a race in their list, never how many or how (R-144); §3.5a says where a member is reading is shown to the membership (R-145). SURFACE gains M24, M25 and the event row E43.
 
 ## 2026-10-01: nothing in your hand is taken by the page updating
 

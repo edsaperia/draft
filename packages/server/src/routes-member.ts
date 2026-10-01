@@ -30,6 +30,7 @@ import { cookieSession, expectString, ipOf, json, pathOf, rateLimited, readJson 
 import type { Route } from './routes.js';
 import { hasDemoKey, isDemoDoc } from './demo-access.js';
 import { VISITOR_PRE_ACKED } from './demo.js';
+import { facesNamed, notePlace, readingOf } from './presence.js';
 
 export const memberTable: Route[] = [
   {
@@ -128,6 +129,25 @@ export const memberTable: Route[] = [
         // without touching the document log — freshness is both lengths
         const engineDoc = asEngineDoc(doc);
         const eseq = engineDoc.bridge === null ? 0 : engineDoc.bridge.engine.log.length;
+        // **where this member is reading** (design/PRESENCE.md §1.1–1.2;
+        // Q1570): the poll carries the block the reading line has rested on,
+        // `?at=L7`, and the host keeps it in memory beside the document —
+        // never in either log, so a poll stays a read (Q681). Members only:
+        // an applicant reports nothing, and a closed document keeps no table.
+        const closed = engineDoc.bridge !== null && engineDoc.bridge.engine.closed;
+        const at = url.searchParams.get('at');
+        if (applicantId === null && at !== null && !closed) notePlace(doc, memberId, at, nowMs);
+        // …and what every *other* member is reading, named exactly where a
+        // proposal may be signed (1570.1: 👤's `public` and the two elective
+        // rungs) and as a per-boot token otherwise (1570.3), so the bytes are
+        // as anonymous as the picture (SPEC §3.5). It rides the short answer
+        // too: a place moves while both logs stand still.
+        // An applicant's answer carries no `reading` at all (the audience is
+        // the membership, SURFACE §2 E43), and neither does a closed document's.
+        const reading = applicantId !== null || closed ? {} : { reading: readingOf(doc, memberId, nowMs, {
+          named: facesNamed((doc.cs.settingState('authorship').value as { rung?: string } | null)?.rung),
+          alive: (id) => seatAlive(doc.cs, id, null),
+        }) };
         // the page polls (4s): when it says what it has seen and nothing
         // moved in either log, answer with the seqs alone and build no view
         const since = url.searchParams.get('since');
@@ -135,7 +155,7 @@ export const memberTable: Route[] = [
           // the two host flags ride the short answer too (Q1345, Q1346): a
           // page that has seen everything is exactly the page that must
           // still hear a pause or a stall
-          json(res, 200, { seq, eseq, short: true, paused: pause.payload(nowMs), stalled: !!doc.stalled });
+          json(res, 200, { seq, eseq, short: true, paused: pause.payload(nowMs), stalled: !!doc.stalled, ...reading });
           return true;
         }
         // **The slim view** (the moon room, 2026-09-11): in a busy room
@@ -217,6 +237,8 @@ export const memberTable: Route[] = [
           serverNowMs: nowMs,
           paused: pause.payload(nowMs),
           stalled: !!doc.stalled,
+          // where every other member is reading (PRESENCE.md §1.2), as above
+          ...reading,
           textConfirmed: doc.cs.textConfirmed,
           quorumForm: doc.cs.quorumForm,
           electorateSize: doc.cs.motionElectorate().length,

@@ -315,6 +315,39 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     expect((await viewOf(ada)).isFounder).toBe(true);
     expect((await viewOf(bo)).isFounder).toBe(false);
 
+    // -- where each member is reading (design/PRESENCE.md §1.1–1.2, Q1570):
+    // a member's poll says which block its reading line rests on, the host
+    // keeps it in memory, and every *other* member is told — here under 👤
+    // unset, which reads as `sealed`, so as a token and never an id (1570.3)
+    const viewAt = async (cookie: string, q: string) =>
+      (await (await fetch(`${base}/api/d/${created.slug}/view${q}`,
+        { headers: { cookie } })).json()) as MemberViewPayload & {
+          reading?: Array<{ id?: string; k?: string; at: string }>; short?: boolean };
+    const doc_seq = (v: { seq?: number; eseq?: number }) => `${v.seq}.${v.eseq ?? 0}`;
+    const seqAtRead = doc_seq(await viewAt(ada, ''));
+    await viewAt(ada, '?at=L0');
+    const boSees = await viewAt(bo, '');
+    expect(boSees.reading).toHaveLength(1);
+    expect(boSees.reading![0]!.at).toBe('L0');
+    expect(boSees.reading![0]!.id).toBeUndefined();
+    expect(boSees.reading![0]!.k).toBeTruthy();
+    expect(JSON.stringify(boSees.reading)).not.toContain(boSees.me);
+    expect(JSON.stringify(boSees.reading)).not.toContain('founder');
+    // never your own place
+    const adaSees = await viewAt(ada, '');
+    expect(adaSees.reading).toEqual([]);
+    // the short answer carries it too: a place moves while both logs stand still
+    const short = await viewAt(bo, `?since=${encodeURIComponent(seqAtRead)}`);
+    expect(short.short).toBe(true);
+    expect(short.reading).toHaveLength(1);
+    expect(short.reading![0]!.k).toBe(boSees.reading![0]!.k);
+    // the token holds from poll to poll (decision 10), and no log moved
+    await viewAt(ada, '?at=L0');
+    expect(doc_seq(await viewAt(bo, ''))).toBe(seqAtRead);
+    // a key the page would never send is dropped on the floor
+    await viewAt(bo, '?at=<b>x</b>');
+    expect((await viewAt(ada, '')).reading).toEqual([]);
+
     // -- settle the constitution: reclaim+set the founder's, answer the rest
     await cmd(ada, 'set-setting',
       { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });
@@ -490,7 +523,7 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     type RichView = TextView & {
       floor: number;
       walletInfo: { balance: number; nextDripInMs: number | null; dripIntervalMs: number | null; cap: number } | null;
-      clauses: Array<{ closeness: number; judges: number; floor: number; candidates: Array<{ id: string }> }>;
+      clauses: Array<{ closeness: number; voteTick: number | null; judges: number; floor: number; candidates: Array<{ id: string }> }>;
       raceCards: Array<{ raceId: string; urgency: number; a: { id: string; incumbent?: boolean }; b: { id: string; incumbent?: boolean } }>;
       records: Array<{ raceId: string; candidateId: string; outcome: string; judges: number;
         displaced: string[]; field: Array<{ candidateId: string; outcome: string }> }>;
@@ -512,6 +545,13 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     expect(adaV.clauses[0]!.candidates).toHaveLength(2);
     expect(adaV.clauses[0]!.closeness).toBeGreaterThanOrEqual(0);
     expect(adaV.clauses[0]!.closeness).toBeLessThanOrEqual(1);
+    // **when a vote last landed** (SWEEP.md §1.4, 1571.1): a clock on every
+    // live race, never a count — null until somebody has judged (an author's
+    // own voice is a preference, not a judgment cast), a time from the first
+    // vote on, never going backwards; nothing in the row counts the votes
+    expect(adaV.clauses[0]!.voteTick).toBeNull();
+    let tick0 = -Infinity;
+    expect(JSON.stringify(adaV.clauses)).not.toMatch(/judgmentCount|"votes"|"count"/);
     // the leader's judges (Q1337): its author's own voice — the rival's
     // author is a voice for their own draft, not a judge of this one
     expect(adaV.clauses[0]!.judges).toBe(1);
@@ -538,6 +578,14 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
         const outcome = card.a.id === r1.id ? 'a' : card.b.id === r1.id ? 'b'
           : card.a.incumbent ? 'b' : 'a';
         await cmd(who, 'judge-race', { a: card.a.id, b: card.b.id, outcome });
+        // the clock is a time from the first vote on, and moves with each
+        // vote or stands where one landed in the same millisecond — never back
+        const after = await rich(who);
+        if (after.clauses.length) {
+          expect(typeof after.clauses[0]!.voteTick).toBe('number');
+          expect(after.clauses[0]!.voteTick!).toBeGreaterThanOrEqual(tick0);
+          tick0 = after.clauses[0]!.voteTick!;
+        }
       }
     }
     const done = await rich(ada);
@@ -814,7 +862,11 @@ describe('auth discipline', () => {
     // payload, never a seat — and a command still needs one
     const bare = await fetch(`${base}/api/d/${created.slug}/view`);
     expect(bare.status).toBe(200);
-    expect(await bare.json()).toMatchObject({ stranger: true });
+    const bareBody = await bare.json();
+    expect(bareBody).toMatchObject({ stranger: true });
+    // the door carries no live race's clock and nobody's place (SWEEP.md
+    // §1.4, PRESENCE.md §1.2): both are the membership's
+    expect(JSON.stringify(bareBody)).not.toMatch(/voteTick|"reading"/);
     const forged = await fetch(`${base}/api/d/${created.slug}/view`,
       { headers: { cookie: 'draft_session=ZG9j.Zm91bmRlcg.99999999999999.bad' } });
     expect(await forged.json()).toMatchObject({ stranger: true });

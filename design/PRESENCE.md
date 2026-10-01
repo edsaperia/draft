@@ -98,4 +98,4 @@ Presence today is one bit per member: an authenticated read stamps the member's 
 
 ## Status
 
-Planned 2026-09-30, every call ruled the same evening. Not built. Waits on redesign stage 9 (PR #132); then the liveness brief, SWEEP.md first.
+Planned 2026-09-30, every call ruled the same evening. **Built 2026-10-01 on PR #136** (`9bbd581`): the host's table (`packages/server/src/presence.ts`, `reading` on every member answer), the margin (`#reading`, `design/session.js`'s `setReading` · `renderReading` · `layoutReading`), 👀 in the sprite facing right, two readers in the session fixture and the one session-probe freeze (1570.4), `npm run presence-walk` in `sprint-pages`; SPEC §3.5a → R-145, SURFACE C16, M25, E43; the build's calls are 1573.9–1573.15 (QUESTIONS.md, DECISIONS); the narrow form stays MOBILE.md's open item.

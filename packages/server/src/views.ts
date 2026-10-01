@@ -125,6 +125,35 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
     }
     return m;
   });
+  // **When a vote last landed on a race** (SWEEP.md §1.4; 1571.1, Ed
+  // 2026-09-30: *let's show it*): the time of the latest edge judgment on
+  // each candidate, memoised per state like `judgedBy`; a race's tick is the
+  // latest over its members and never its incumbent, whose id every gap race
+  // shares (Q1202). **A clock, not a count**: it says a vote landed and
+  // nothing else — never how many, never which way — served to every seat
+  // whose rail holds the race and printed nowhere; the page sweeps the
+  // entry's wash on its change (SPEC §3.5). A diagonal is a salience
+  // judgment, not a vote on the race, and does not move it.
+  const lastVote = engine.derived('host:lastVote', () => {
+    const m = new Map<string, number>();
+    for (const j of allJ) {
+      if (j.kind !== 'edge') continue;
+      const ids = j.carried ? [j.aId, j.bId, j.carried.aId, j.carried.bId] : [j.aId, j.bId];
+      for (const id of ids) {
+        if (id.startsWith(INC_PREFIX)) continue;
+        if ((m.get(id) ?? -Infinity) < j.t) m.set(id, j.t);
+      }
+    }
+    return m;
+  });
+  const voteTickOf = (r: { members: string[] }): number | null => {
+    let t: number | null = null;
+    for (const id of r.members) {
+      const v = lastVote.get(id);
+      if (v !== undefined && (t === null || v > t)) t = v;
+    }
+    return t;
+  };
   // **Who is named, live and at the record, is one rule** (§3.5a, Q770,
   // entry 31): `authorVisible` — signed, or made under `public`, or closed
   // and made under `sealed`. Read here for every author the view carries,
@@ -213,6 +242,8 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
       // two numbers as the pair below: the rail's fill is how far the room
       // has got toward the quorum, and this is the wire it rides on.
       closeness: r.closeness,
+      // when a vote last landed here (1571.1): a clock the sweep fires on
+      voteTick: voteTickOf(r),
       // the meter's own number (Q1337): who has judged the leader, its
       // author's voice among them — never the race's traffic. It stays
       // judgments and not approvals (Q1439, Ed's ruling (b): *it's just a
@@ -297,8 +328,8 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
     // still running (Q1348), so what it carries is **the leading pair's**,
     // which is the pair the seat's silence is actually counted on and the
     // honest number about the race either way.
-    return { id: r.id, settingId: r.settingId, closeness: r.closeness, judges: r.leaderJudges,
-      floor: r.floor, ...abstainAt(r.id),
+    return { id: r.id, settingId: r.settingId, closeness: r.closeness, voteTick: voteTickOf(r),
+      judges: r.leaderJudges, floor: r.floor, ...abstainAt(r.id),
       judged: here.some((j) => !j.superseded && !j.locked), askable: dealt || ask !== null, ask };
   });
   const mine = api.myCandidates().flatMap((m) => {
@@ -317,8 +348,14 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
       ? c.patch.hunks.map((h) => spanNow({ start: h.start, end: h.end }, c.patch!.baseVersion,
           engine.derived('host:versionSteps', () => versionSteps(engine))))
       : undefined;
+    // **your own proposal's entry carries its race's meter** (SWEEP.md §0):
+    // the same magnitude the race's own entry shows — the leader's judges
+    // over the floor, signless (Q1362 (c)) — and the race's tick, so a vote
+    // landing on your wording sweeps the entry pinned for it (1571.2)
+    const race = m.state === 'live' ? engine.races(nowMs).find((r) => r.members.includes(m.id)) : undefined;
     return [{ id: m.id, state: m.state, rationale: m.rationale,
       patch: c.patch, footprint: c.footprint, signed: !!c.signed,
+      ...(race ? { closeness: race.closeness, voteTick: voteTickOf(race) } : {}),
       ...(at ? { at } : {}) }];
   });
   // 🛡️ on the Text (R-056): what the room passed and nobody has applied.
