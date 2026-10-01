@@ -4732,8 +4732,13 @@
     "eyebrow": "Current rule",
     "head": "Votes are never revealed.Chosen by the membership",
     "lock": "",
-    "body": "Votes are revealed when the document is finished, and not before.Propose this",
+    "body": "Votes on each proposal are revealed once it is passed or rejected, and not before.Propose thisVotes are revealed when the document is finished, and not before.Propose this",
     "options": [
+     {
+      "set": "judgments",
+      "val": "decision",
+      "label": "Votes on each proposal are revealed once it is passed or rejected, and not before."
+     },
      {
       "set": "judgments",
       "val": "after",
@@ -6297,8 +6302,13 @@
     "eyebrow": "Current rule",
     "head": "Votes are never revealed.Chosen by the membership",
     "lock": "",
-    "body": "Votes are revealed when the document is finished, and not before.Propose this",
+    "body": "Votes on each proposal are revealed once it is passed or rejected, and not before.Propose thisVotes are revealed when the document is finished, and not before.Propose this",
     "options": [
+     {
+      "set": "judgments",
+      "val": "decision",
+      "label": "Votes on each proposal are revealed once it is passed or rejected, and not before."
+     },
      {
       "set": "judgments",
       "val": "after",
