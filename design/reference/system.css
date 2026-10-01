@@ -1409,6 +1409,9 @@
     margin-top: calc(-1 * (var(--float-d) + var(--s2) + var(--row-foot)));
   }
   .proposalrow .btn { pointer-events: auto; }
+  /* the patch row's ❄️ · ✓ stand at the right with no 🗑️ beside them (Q1500):
+     the row says so itself, where a spacer span once held the place */
+  .race-mid.commitrow.proposalrow[data-patchrow] { justify-content: flex-end; }
   /* **A floating control is a circle** (Q1380, Ed 2026-09-15: *floating edit
      buttons (📝✏️🗑️) should be in circles, not rectangles*). The row's 🗑️ and
      ✏️ (and ✒️ beside it), the door's 📝 and the patch row's ❄️ ✓ are
