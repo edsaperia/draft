@@ -962,7 +962,7 @@
     } catch (e) { btn.classList.remove('sweeping'); return null; }
   }
   function stampMark(btn) {
-    const mk = btn.querySelector('.qmark .mk') || btn.querySelector('.qmark > *');
+    const mk = btn.querySelector('.qmark .mk') || btn.querySelector('.qmark > *') || btn.querySelector('.subj');
     if (!mk) return null;
     try {
       return mk.animate([{ transform: 'scale(1.6)' }, { transform: 'scale(0.94)', offset: 0.7 }, { transform: 'scale(1)' }],
@@ -982,13 +982,28 @@
         tick: g.tick == null ? null : g.tick, kind: markKindOf(g),
         raceId: g.raceId || null, cand: g.candId || g.candidate || null, el: railButton(g, e) });
     }
+    // **the band's own entries** (1573.5; 1571.2 is *every vote on every race
+    // in your rail*): a settings motion's entry carries its race's meter and
+    // clock (`entryOf`, session-view.html), so it sweeps as a text race's does;
+    // a band entry with no race is flat, and stamps alone when its mark changes
+    for (const x of extraMeta.values()) {
+      if (!x || !x.html) continue;
+      const el = queueEl && queueEl.querySelector('li[data-q="' + CSS.escape(x.id) + '"] > button');
+      // a set motion's entry wears no meter (Q1348) but its race has a clock:
+      // flat only where it has neither, and a full bar sweeps full → empty → full
+      const flat = x.pct == null && x.tick == null;
+      cur.set(qKey(x, {}), { g: x, sealed: false, flat, fill: x.pct == null ? 100 : Math.max(0, Math.min(100, x.pct | 0)),
+        tick: x.tick == null ? null : x.tick, kind: x.mark || '', raceId: null, cand: null, el });
+    }
     const first = prevRail.size === 0;
     const reduced = REDUCED();
     for (const [key, c] of cur) {
       const p = prevRail.get(key);
       if (!c.el) continue;
       if (p) {
-        if (!c.flat && !p.flat && (p.tick !== c.tick || p.fill !== c.fill)) {
+        // a clock moving is a vote, from its first tick on (a band entry is flat
+        // until its race has one); a fill moving counts only between two meters
+        if (!c.flat && (p.tick !== c.tick || (!p.flat && p.fill !== c.fill))) {
           noteSweep({ key, kind: 'vote', from: p.fill, to: c.fill, tick: c.tick });
           if (reduced) stepFill(c.el); else sweepFill(c.el, 'vote', p.fill, c.fill);
         }

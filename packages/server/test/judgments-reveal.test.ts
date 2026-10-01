@@ -115,8 +115,8 @@ describe('👁️ reveals judgments by its rung (Q996)', () => {
       const v = rv(doc, seat);
       const r1 = recOf(v, c1)!;
       expect(r1.revealed, `seat ${seat}`).toBeDefined();
-      // Ada and Cy voted; Bo's voice as author is a preference, not a vote
-      expect(r1.revealed!.map((j) => j.judge.id).sort()).toEqual(['ada', cy].sort());
+      // Ada and Cy voted, and Bo, who wrote it, counts as having voted for it
+      expect(r1.revealed!.map((j) => j.judge.id).sort()).toEqual(['ada', bo, cy].sort());
       expect(r1.revealed!.find((j) => j.judge.id === cy)!.judge.name).toBe('Cy Marsh');
       expect(r1.revealed!.every((j) => j.a === c1 && j.b === null && j.outcome === 'a')).toBe(true);
       // nothing anywhere says how race 2 is going
@@ -133,14 +133,15 @@ describe('👁️ reveals judgments by its rung (Q996)', () => {
     expect(bridge.engine.getCandidate(c2).state).toBe('retired');
     const r2 = recOf(rv(doc, 'ada'), c2)!;
     expect(r2.outcome).toBe('retired');
-    expect(r2.revealed!.map((j) => [j.judge.id, j.outcome]).sort()).toEqual([['ada', 'a'], ['m-1', 'b']]);
+    // Cy wrote it and counts as having voted for it; Bo (m-1) voted against
+    expect(r2.revealed!.map((j) => [j.judge.id, j.outcome]).sort()).toEqual([['ada', 'a'], ['m-1', 'b'], ['m-2', 'a']]);
   });
 
   it('per decision at the close: a race the clock cut off undecided stays unrevealed', () => {
     const { doc, bridge, c1, c2 } = room('decision');
     bridge.close(ENDS);
     const v = rv(doc, 'ada', ENDS);
-    expect(recOf(v, c1)!.revealed).toHaveLength(2);
+    expect(recOf(v, c1)!.revealed).toHaveLength(3);
     const r2 = recOf(v, c2)!;
     expect(r2.field.some((f) => f.outcome === 'undecided')).toBe(true);
     expect(r2.revealed).toBeUndefined();
@@ -151,12 +152,13 @@ describe('👁️ reveals judgments by its rung (Q996)', () => {
     expect(JSON.stringify(rv(doc, 'ada'))).not.toContain('"revealed"');
     bridge.close(ENDS);
     const v = rv(doc, 'ada', ENDS);
-    expect(recOf(v, c1)!.revealed).toHaveLength(2);
-    // the undecided race too: *at the end* is the end of everything (R-055)
-    expect(recOf(v, c2)!.revealed!.map((j) => [j.judge.id, j.outcome])).toEqual([['ada', 'a']]);
+    expect(recOf(v, c1)!.revealed).toHaveLength(3);
+    // the undecided race too: *at the end* is the end of everything (R-055),
+    // Cy counted for the wording Cy wrote, oldest first
+    expect(recOf(v, c2)!.revealed!.map((j) => [j.judge.id, j.outcome])).toEqual([['m-2', 'a'], ['ada', 'a']]);
     // …and the close's own record carries the same rows
     const closed = (raceView(doc, 'ada', ENDS) as unknown as { record: { adopted: Rec[] } }).record;
-    expect(closed.adopted[0]!.revealed).toHaveLength(2);
+    expect(closed.adopted[0]!.revealed).toHaveLength(3);
   });
 
   it('the stranger and the applicant carry no judge under any rung', () => {
@@ -175,15 +177,33 @@ describe('👁️ reveals judgments by its rung (Q996)', () => {
     // sealed under *per decision*, then moved to *never*: still revealed
     const { doc, c1 } = room('decision', { rung: 'never', at: 3 * STEP + STEP });
     expect(doc.cs.judgmentsRungAt(NOW)).toBe('never');
-    expect(recOf(rv(doc, 'ada'), c1)!.revealed).toHaveLength(2);
+    expect(recOf(rv(doc, 'ada'), c1)!.revealed).toHaveLength(3);
   });
 
   it('the protective side wins: a vote cast under never is never shown', () => {
-    // Ada voted under *never*; the rung moved to *per decision* before Cy's
-    // vote sealed the race — only Cy's vote, cast under the new rung, shows
+    // Ada voted, and Bo proposed, under *never*; the rung moved to *per
+    // decision* before Cy's vote sealed the race — only Cy's vote, cast under
+    // the new rung, shows: an author's counted vote is cast when they propose
     const { doc, c1, cy } = room('never', { rung: 'decision', at: STEP + (3 * STEP) / 4 });
     const r1 = recOf(rv(doc, 'ada'), c1)!;
     expect(r1.revealed!.map((j) => j.judge.id)).toEqual([cy]);
+  });
+
+  it('if you wrote a proposal, you count as having voted for it (Ed, 2026-10-01)', () => {
+    // a three-member room: Bo's proposal, Ada and Cy judging — the record
+    // names Bo with a vote for it, shaped as any vote, so the judges' names
+    // never single out the author by elimination
+    const { doc, c1, bo, cy } = room('decision');
+    const r1 = recOf(rv(doc, cy), c1)!;
+    const boVote = r1.revealed!.find((j) => j.judge.id === bo)!;
+    expect(boVote).toMatchObject({ a: c1, b: null, outcome: 'a' });
+    expect(Object.keys(boVote).sort()).toEqual(Object.keys(r1.revealed!.find((j) => j.judge.id === 'ada')!).sort());
+    expect(JSON.stringify(boVote)).not.toMatch(/author/);
+    // listed in time order, Bo's at the proposal, before either judgment
+    expect(r1.revealed!.map((j) => j.judge.id)).toEqual([bo, 'ada', cy]);
+    // only the record: the race's own count of judges is the engine's, unchanged
+    const unrevealed = recOf(rv(room('never').doc, cy), c1);
+    expect(unrevealed!.revealed).toBeUndefined();
   });
 
   it('the rung history replays bit-identically, and the log carries no reveal', () => {

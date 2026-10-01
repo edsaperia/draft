@@ -762,6 +762,31 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
           b: j.bId.startsWith(INC_PREFIX) ? null : j.bId,
           outcome: j.outcome, t: j.t });
       }
+      // **If you wrote a proposal, you count as having voted for it** (Ed,
+      // 2026-10-01, PR #141 Q2): on a revealed record each wording's author
+      // is listed among those who voted for it, against the text that stood,
+      // at the moment they proposed it — so the judges' names never leave the
+      // author out by elimination (an author is never asked their own race).
+      // The entry is shaped exactly as a vote, with no mark saying it is the
+      // author's: anything else would name authors 👤 keeps sealed. The rung
+      // it is read under is the one standing when the proposal was made, by
+      // the same protective rule as any vote. Only what the record shows:
+      // the engine already counts the author's voice (§3.5a, *derived rather
+      // than asked*), and nothing here touches that count.
+      for (const rec of byRace.values()) {
+        if (!open.get(rec.raceId)) continue;
+        const sealedAt = sealT.get(rec.raceId) ?? rec.when;
+        for (const f of rec.field) {
+          const c = engine.getCandidate(f.candidateId);
+          if (c.submittedT > sealedAt || !allows(doc.cs.judgmentsRungAt(c.submittedT), rec)) continue;
+          const r = recordOf(c.author);
+          (rec.revealed ??= []).push({
+            judge: { id: c.author, name: r?.name ?? null, picture: r?.picture ?? null,
+              erased: r?.erased ?? false },
+            a: c.id, b: null, outcome: 'a', t: c.submittedT });
+        }
+        if (rec.revealed) rec.revealed.sort((x, y) => x.t - y.t);
+      }
     }
   }
   const record = !engine.closed ? null : (() => {

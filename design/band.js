@@ -632,6 +632,7 @@ window.BAND = (function () {
         return '<div class="choice" role="radiogroup">' +
         theyDecide('judgments') +
         rungOpt(V, 'judgments', 'never', JUDG_RULE.never) +
+        rungOpt(V, 'judgments', 'decision', JUDG_RULE.decision) +
         rungOpt(V, 'judgments', 'after', JUDG_RULE.after) +
         '</div>'; })(),
       rate: () =>
