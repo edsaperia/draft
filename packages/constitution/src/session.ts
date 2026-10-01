@@ -1849,6 +1849,21 @@ export class ConstitutionSession {
   departures(): ReadonlyArray<{ member: MemberId; t: number; by: DepartureBy }> {
     return this.departed;
   }
+  /**
+   * **The 👁️ rung that stood at `t`** (Q996, SPEC §3.5a): the last rung the
+   * setting held at or before that moment, null where it was unset. Read by
+   * the host's record reveal — a sealed record under the rung standing when
+   * its race sealed, a judgment under the rung it was cast under.
+   */
+  judgmentsRungAt(t: number): string | null {
+    let rung: string | null = null;
+    for (const e of this.fold.judgmentsRungs) {
+      if (e.t > t) break;
+      rung = e.rung;
+    }
+    return rung;
+  }
+
   settingState(id: PowerKey): Readonly<SettingState> {
     const st = this.settings.get(id);
     if (!st) throw new Error(`'${id}' has no setting state`);

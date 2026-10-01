@@ -6,7 +6,8 @@
  * in the table below and filed in the session's report.
  *
  * `judgments` (👁️, `catalogue.ts`) is constitutional, delegable, judge-gated,
- * `rungs: ['never', 'after']` most-protective-first, consent ask *the most
+ * `rungs: ['never', 'decision', 'after']` most-protective-first since Q996
+ * (the per-decision rung, built 2026-10-01), consent ask *the most
  * judgment disclosure you will accept* — so a delegated room resolves to the
  * most private answer anybody gave. SPEC §3.5a gives the promise in the room's
  * words: judgments are **never revealed**, or **revealed after the decision
@@ -34,7 +35,7 @@
  * | 1 | *while a question is live nobody sees how anybody answered — the count only* | **holds** — `view.ts` builds `QuestionView` from `st.answers` by **counting** and copies only `myAnswer`; §9.0a, not 👁️ | **holds** — `MotionView` carries `answeredCount`, `electorateSize`, `myAnswer`; the map itself never leaves `session.ts` | no question is live |
  * | 2 | *a resolved founding question publishes the shape, never the names* | **holds** — `ResolutionView.distribution` is `SettingValue[]`, ids dropped at the copy | as before | as before |
  * | 3 | *`never`: how you judged is never shown, to anybody, ever — not in the record either* | **holds** | **holds** — `raceView` serves `judges` (a count), `closeness` (a magnitude, Q836) and `judgedByMe`/`judged`/`shifted` from `myJudgments()` alone | **holds** — `closeRecord()` returns `{ closedAt, text, undecided, carriedButUnassented, signatures }`; the record's `field` carries `p`, `threshold`, `judgedByMe` and (as 👤 says, never 👁️) an author |
- * | 4 | *`after`: how you judged is published with the record, and never before* | as row 1 | as row 3 | **gap (fold)** — **nothing reads 👁️ anywhere.** `closeRecord()` and `raceView`'s `record` are byte-identical under both rungs, so *published with the record* is a claim the document does not honour. The headline finding |
+ * | 4 | *`after`: how you judged is published with the record, and never before* | as row 1 | as row 3 | **holds since Q996** — the host's `raceView` reads 👁️ through `judgmentsRungAt` and puts `revealed` on each sealed record (`packages/server/src/views.ts`; `packages/server/test/judgments-reveal.test.ts`); this module's `view()` and `closeRecord()` still carry none, which is what the cases below lock |
  * | 5 | *a stranger is told nothing of anybody's judgments* | **holds** — `strangerView` serves the holding sentence, `textShape` and the rules; no `answers`, no `myAnswer`, no `participantId` | **holds** | **holds** |
  * | 6 | *what you preferred stays yours, permanently* | **holds** | **gap (arithmetic, not code)** — in an electorate of two a 🏛️ motion that has not carried once both have answered names the other member's keep on the count alone. SPEC is silent; no setting can make a unanimity rule non-identifying at n = 2. A question for Ed, not a defect | as live |
  * | 7 | *`after` on a perpetual document* | — | — | **gap (copy)** — `ending.endsAtMs === null` has no close, so `after` is `never`, and no card says so. Filed with entry 55's copy work |
@@ -55,8 +56,8 @@ import type { MemberView } from '../src/view.js';
 // `judgments: { rung: 'after' }`, and every case here needs the rung as a
 // parameter. `built` below is that helper's recipe with the one value moved.
 
-type Rung = 'never' | 'after';
-const RUNGS: Rung[] = ['never', 'after'];
+type Rung = 'never' | 'decision' | 'after';
+const RUNGS: Rung[] = ['never', 'decision', 'after'];
 /** The other rung — what a motion on 👁️ can propose without proposing what stands. */
 const other = (r: Rung): Rung => (r === 'never' ? 'after' : 'never');
 
@@ -106,13 +107,15 @@ const exceptJudgments = (v: MemberView): string => JSON.stringify({
 });
 
 describe('👁️ the setting nothing reads · the catalogue and the fold', () => {
-  it('is a two-rung constitutional judge-gate, most protective first', () => {
+  it('is a three-rung constitutional judge-gate, most protective first (Q996)', () => {
     const e = CATALOGUE.find((x) => x.id === 'judgments')!;
     expect(e.glyph).toBe('👁️');
     expect(e.kind).toBe('constitutional');
     expect(e.delegable).toBe(true);
     expect(e.judgeGate).toBe(true);
-    expect(e.rungs).toEqual(['never', 'after']);
+    expect(e.rungs).toEqual(['never', 'decision', 'after']);
+    expect(e.consent!.order({ rung: 'never' }, { rung: 'decision' })).toBeGreaterThan(0);
+    expect(e.consent!.order({ rung: 'decision' }, { rung: 'after' })).toBeGreaterThan(0);
     expect(e.consent!.ask).toBe('the most judgment disclosure you will accept');
     // most protective first: what the order does to a room's answers is
     // asserted where it happens — *the resolution publishes the shape*, below,

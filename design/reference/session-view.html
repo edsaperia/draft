@@ -5983,6 +5983,12 @@
     // whose race it would have to share with its rivals (`soleCandidateRaceOf`).
     const msr = rec.route === 'ordinary' ? soleCandidateRaceOf(rec) : null;
     if (msr) mc.racePct = Math.round((msr.closeness || 0) * 100); else delete mc.racePct;
+    // …and the race's clock (SWEEP.md §1.4, 1573.5): the entry sweeps on it —
+    // from the setting's own race whether or not the meter is shown, since a
+    // set motion shares that race with its rivals (Q1348) and a vote on any
+    // of them is a vote on the race in your rail (1571.2)
+    const tsr = rec.route === 'ordinary' ? settingRaceOf(motionRaceSettingOf(rec) || '') : null;
+    if (tsr && tsr.voteTick != null) mc.tick = tsr.voteTick; else delete mc.tick;
     // …and its entry carries this seat's abstention clock in the last day
     // (Q1460 (e)), from the same race the card's own line reads — a set
     // motion's included, whose clock is its setting's leading pair's
@@ -7999,7 +8005,7 @@
     ending: 'The membership will decide whether changes end on a set date or may be made perpetually',
     quorum: 'The membership will decide how many members must prefer a proposal ✏️ before it can pass',
     authorship: 'The membership will decide if anonymous proposals are allowed',
-    judgments: 'The membership will decide whether votes are revealed at the end or never',
+    judgments: 'The membership will decide when votes are revealed',
   };
   const decidingOf = (k) => DECIDING[k] || 'The membership will decide this rule';
   // every option-block card loses its title head (Q1151, widened by Ed's QA
@@ -8657,7 +8663,10 @@
     // and an applicant has no gutter to find it in. The state chain stays a
     // literal in front — `spec-check` reads it against SURFACE §6's alphabet.
     return { id: c.k, html, pinned: st !== 'wait' && st !== 'done' || !!cx.pinAll, rank: RAIL_RANK[st],
-      u: RAIL_U[st], mine: st === 'yours', news: st === 'news', anchor: () => anchorOf(c.k) };
+      u: RAIL_U[st], mine: st === 'yours', news: st === 'news', anchor: () => anchorOf(c.k),
+      // what the sweep reads off a band entry (SWEEP.md §1.4; 1573.5): a
+      // race's meter and clock where the card is one, and the mark as drawn
+      pct: c.racePct, tick: c.tick, mark: (/<span class="subj"[^>]*>([\s\S]*?)<\/span>/.exec(html) || [, ''])[1] };
   }
   // **The birth-pass sees the whole rail** (Q1338, Ed 2026-09-11). It used to
   // be scoped to the setup tasks, on the ground that a charter entry arrives

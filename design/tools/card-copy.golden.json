@@ -464,12 +464,17 @@
     "eyebrow": "Current rule",
     "head": "The Founder is deciding whether votes are revealed with the record.",
     "lock": "",
-    "body": "Votes are never revealed.Choose thisVotes are revealed when the document is finished, and not before.Choose thisThe membership will decide whether votes are revealed at the end or never.Choose this",
+    "body": "Votes are never revealed.Choose thisVotes on each proposal are revealed once it is passed or rejected, and not before.Choose thisVotes are revealed when the document is finished, and not before.Choose thisThe membership will decide when votes are revealed.Choose this",
     "options": [
      {
       "set": "judgments",
       "val": "never",
       "label": "Votes are never revealed."
+     },
+     {
+      "set": "judgments",
+      "val": "decision",
+      "label": "Votes on each proposal are revealed once it is passed or rejected, and not before."
      },
      {
       "set": "judgments",
@@ -479,7 +484,7 @@
      {
       "set": "judgments",
       "val": "roster",
-      "label": "The membership will decide whether votes are revealed at the end or never."
+      "label": "The membership will decide when votes are revealed."
      }
     ],
     "inputs": [],
@@ -3283,12 +3288,17 @@
     "eyebrow": "Current rule",
     "head": "The Founder is deciding whether votes are revealed with the record.",
     "lock": "",
-    "body": "Votes are never revealed.Choose thisVotes are revealed when the document is finished, and not before.Choose thisThe membership will decide whether votes are revealed at the end or never.Chosen",
+    "body": "Votes are never revealed.Choose thisVotes on each proposal are revealed once it is passed or rejected, and not before.Choose thisVotes are revealed when the document is finished, and not before.Choose thisThe membership will decide when votes are revealed.Chosen",
     "options": [
      {
       "set": "judgments",
       "val": "never",
       "label": "Votes are never revealed."
+     },
+     {
+      "set": "judgments",
+      "val": "decision",
+      "label": "Votes on each proposal are revealed once it is passed or rejected, and not before."
      },
      {
       "set": "judgments",
@@ -3298,7 +3308,7 @@
      {
       "set": "judgments",
       "val": "roster",
-      "label": "The membership will decide whether votes are revealed at the end or never."
+      "label": "The membership will decide when votes are revealed."
      }
     ],
     "inputs": [],
@@ -3999,12 +4009,17 @@
     "eyebrow": "Current rule",
     "head": "The Founder is deciding whether votes are revealed with the record.",
     "lock": "",
-    "body": "Votes are never revealed.Choose thisVotes are revealed when the document is finished, and not before.Choose thisThe membership will decide whether votes are revealed at the end or never.Choose this",
+    "body": "Votes are never revealed.Choose thisVotes on each proposal are revealed once it is passed or rejected, and not before.Choose thisVotes are revealed when the document is finished, and not before.Choose thisThe membership will decide when votes are revealed.Choose this",
     "options": [
      {
       "set": "judgments",
       "val": "never",
       "label": "Votes are never revealed."
+     },
+     {
+      "set": "judgments",
+      "val": "decision",
+      "label": "Votes on each proposal are revealed once it is passed or rejected, and not before."
      },
      {
       "set": "judgments",
@@ -4014,7 +4029,7 @@
      {
       "set": "judgments",
       "val": "roster",
-      "label": "The membership will decide whether votes are revealed at the end or never."
+      "label": "The membership will decide when votes are revealed."
      }
     ],
     "inputs": [],
@@ -4732,8 +4747,13 @@
     "eyebrow": "Current rule",
     "head": "Votes are never revealed.Chosen by the membership",
     "lock": "",
-    "body": "Votes are revealed when the document is finished, and not before.Propose this",
+    "body": "Votes on each proposal are revealed once it is passed or rejected, and not before.Propose thisVotes are revealed when the document is finished, and not before.Propose this",
     "options": [
+     {
+      "set": "judgments",
+      "val": "decision",
+      "label": "Votes on each proposal are revealed once it is passed or rejected, and not before."
+     },
      {
       "set": "judgments",
       "val": "after",
@@ -6297,8 +6317,13 @@
     "eyebrow": "Current rule",
     "head": "Votes are never revealed.Chosen by the membership",
     "lock": "",
-    "body": "Votes are revealed when the document is finished, and not before.Propose this",
+    "body": "Votes on each proposal are revealed once it is passed or rejected, and not before.Propose thisVotes are revealed when the document is finished, and not before.Propose this",
     "options": [
+     {
+      "set": "judgments",
+      "val": "decision",
+      "label": "Votes on each proposal are revealed once it is passed or rejected, and not before."
+     },
      {
       "set": "judgments",
       "val": "after",

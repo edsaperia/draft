@@ -499,16 +499,22 @@ var CONSTITUTION = (() => {
       deps: [],
       judgeGate: true
     },
+    // **Three rungs since Q996** (Ed, 2026-08-28/29; built 2026-10-01): votes
+    // never revealed, revealed on each decision's sealed record as it seals
+    // (`decision`), or revealed at the end of the document (`after`, R-055 —
+    // *at the end* keeps meaning the end of everything). The new rung sits
+    // between them: by the close it has shown a subset of what *at the end*
+    // shows — a race the clock cut off undecided is never revealed under it.
     {
       id: "judgments",
       glyph: "👁️",
       kind: "constitutional",
       delegable: true,
       valueType: "ladder",
-      rungs: ["never", "after"],
+      rungs: ["never", "decision", "after"],
       consent: {
         ask: "the most judgment disclosure you will accept",
-        order: ladderOrder(["never", "after"])
+        order: ladderOrder(["never", "decision", "after"])
       },
       deps: [],
       judgeGate: true
@@ -1410,9 +1416,27 @@ var CONSTITUTION = (() => {
        *  never needs the old one, so this rides alongside rather than bending the
        *  payload every other amendment shares. */
       __publicField(this, "penFrom", /* @__PURE__ */ new Map());
+      /**
+       * **The 👁️ rung over time** (Q996): one entry each time the standing
+       * judgments rung changes, in log order, so a sealed record can be read
+       * under the rung that stood when its race sealed and a judgment under the
+       * rung it was cast under (SPEC §3.5a). Derived from the settings map after
+       * every event, never written to the log: replay rebuilds it bit-identically.
+       */
+      __publicField(this, "judgmentsRungs", []);
     }
   };
-  function apply(s, event, _seq) {
+  function apply(s, event, seq) {
+    applyEvent(s, event, seq);
+    noteJudgmentsRung(s, event.t);
+  }
+  function noteJudgmentsRung(s, t) {
+    const st = s.settings.get("judgments");
+    const rung = st?.value?.rung ?? null;
+    const last = s.judgmentsRungs[s.judgmentsRungs.length - 1];
+    if (last === void 0 ? rung !== null : last.rung !== rung) s.judgmentsRungs.push({ t, rung });
+  }
+  function applyEvent(s, event, _seq) {
     if (event.t < s.lastT) throw new Error("timestamps must be non-decreasing");
     s.lastT = event.t;
     switch (event.type) {
@@ -3949,6 +3973,20 @@ var CONSTITUTION = (() => {
      */
     departures() {
       return this.departed;
+    }
+    /**
+     * **The 👁️ rung that stood at `t`** (Q996, SPEC §3.5a): the last rung the
+     * setting held at or before that moment, null where it was unset. Read by
+     * the host's record reveal — a sealed record under the rung standing when
+     * its race sealed, a judgment under the rung it was cast under.
+     */
+    judgmentsRungAt(t) {
+      let rung = null;
+      for (const e of this.fold.judgmentsRungs) {
+        if (e.t > t) break;
+        rung = e.rung;
+      }
+      return rung;
     }
     settingState(id) {
       const st = this.settings.get(id);

@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.144
+# Group Drafting Engine — Specification v0.145
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -107,7 +107,9 @@ One preference is counted without being asked for, and it is **derived rather th
 
 **Where a member is reading is shown to the membership** (Ed, 2026-09-30, Q1570): each member's page reports the block its reading line has rested on, and every other member is shown it beside that block — **named under every rung of this ladder that allows a signed proposal** (*public* and the two elective rungs), **unnamed under *anonymous* and *sealed***, where the view carries a token minted per member per host and never an id; never a stranger's or an applicant's to see; never written to any log, and gone from the host once it stops being reported. Where, never what: the mark is the same by a race as by any clause. → why: R-145
 
-**Judgments** have their own ladder, one rung shorter: **never revealed** (the default and the assumption everywhere else in this spec) or **revealed at the end of the document**. *End* is the word for this moment on both ladders, and means the end of everything rather than the close of each decision. Live disclosure is not on it — §8.3's no-standings rule keeps judgment blind while it is still being collected. → why: R-067
+**Judgments** have their own ladder, of three rungs: **never revealed** (the default and the assumption everywhere else in this spec) · **revealed as each decision is made** · **revealed at the end of the document**. *End* is the word for the last moment on both ladders, and means the end of everything rather than the close of each decision. → why: R-067 The middle rung reveals, on a race's sealed record, each standing vote cast on it — who voted, between which two wordings, and which they preferred — once the race passes or fails; a race the close cuts off undecided is never revealed under it, while *at the end* reveals every race's votes at the close. Live disclosure is on no rung — §8.3's no-standings rule keeps judgment blind while it is still being collected, and nothing about a race still running is revealed under any rung. → why: R-146
+
+**A record is read under the rung that stood when its race sealed**, and a motion moving 👁️ afterwards neither reveals nor withdraws it. **And the protective side wins**: a vote is revealed only where the rung it was cast under allows the same reveal, so a vote cast under *never* is never shown. The reveal is to the membership alone — never to a stranger or an applicant — and is a reading of the record, never an event in the log. **If you wrote a proposal, you count as having voted for it** (Ed, 2026-10-01): on a revealed record each wording's author is listed among those who voted for it against the text that stood, as of the moment they proposed it and under the rung standing then, shaped as any other vote — so the voters' names never leave the author out by elimination, an author never being asked their own race. It is what the record shows and nothing more: the author's preference is already counted, derived rather than recorded (§3.3), and the count does not change. → why: R-146
 
 **Anonymous is the strong default.** Where the roster decides, anonymity is structural rather than preselected: it sits at the top of the privacy lattice, so it holds unless *every* member is content with more, and a single person keeps the whole document unnamed. Where the **convenor** decides, that guarantee is not available. → why: R-065
 
@@ -152,6 +154,7 @@ Judgments are living while their question is: while a race is open and its groun
 | a proposal stranded by a text change (*rebase-pending*) | files like a race caught running — the same stake waiver — carrying its last wording and reason into the backlog, beside the clause its patch now descends to | *undecided* | §2.4, §2.6, → why: R-113 |
 | an invitation outstanding | expires: there is nothing left to join, only to read | — | X14 |
 | sealed authorship | reveals | the record | §3.5a |
+| votes, where 👁️ reveals them at the end | revealed on every race's record | the record | §3.5a |
 | every member and invitee | is mailed that the document has closed, with a link to the record | — | — |
 | each member's acknowledgement | the close is acknowledged per member on their own clock, and acknowledging it **signs the final document** | the **closing comment** — freely blank, dissent as welcome as praise — is the signing rationale | §3.5a, §9.2 |
 
@@ -341,7 +344,7 @@ Out of scope, by ruling: delegating powers to individual members, transferring o
 | pace | 🪜 | ordinary | no | no | ending | pace | — | — | ordinary | text confirmed — surface: none (R-080, R-117) |
 | quorum | 👥 | constitutional | yes | yes | — | quorum | — | lowest quorum accepted, form and number together; strictest against E at the settle; a share to 100%, a count to the whole membership | constitutional | any time |
 | authorship | 👤 | constitutional | yes | yes | — | ladder | anonymous · anonymousElective · sealed · sealedElective · public | most exposure accepted | constitutional | any time |
-| judgments | 👁️ | constitutional | yes | yes | — | ladder | never · after | most reveal accepted | constitutional | any time |
+| judgments | 👁️ | constitutional | yes | yes | — | ladder | never · decision · after | most reveal accepted | constitutional | any time |
 | chamber | 🌍 | constitutional | yes | yes | — | ladder | closed · link · public (Q527) | most visibility accepted | constitutional | any time |
 | rate | ⏱️ | ordinary | yes | no | — | rate | — | least generous drip interval accepted (most generous wins) | ordinary | any time |
 | lapse | 💤 | constitutional | yes | yes | — | lapse | — | shortest quiet spell accepted; never longest | constitutional | any time |
@@ -432,6 +435,7 @@ Steps 1, 2 and 4 are built; of step 3 only the dedup gate's equivalence oracle a
 | 2.2 | Gate 2, semantic composition — both authors confirm a joint realization | nothing; the oracle (`packages/engine-core/src/oracle.ts`) has `checkEquivalence` and `describeRace` only |
 | 2.5 | Surgery — carving a contested instance into its own race, and normalising partial-overlap rivals | comments only (`text/patch.ts`, `text/rebase.ts`) |
 | 3.3a | Withdrawal reopens the race — the comparisons frozen as a record, fresh pairs served on the smaller field | nothing; the remaining standings stand and the leader may change unasked (issue #14, R-122) |
+| 3.5a | The revealed votes drawn on the sealed record — who voted, between which two wordings, which they preferred | the host serves them on each record a rung reveals (`revealed`, `packages/server/src/views.ts`); the page draws nothing yet — owed after redesign stage 10 (issue #138) |
 | 4.2, 9.2 | The chime and the gazette — adoptions land with a chime; the chamber view is ambient | nothing (SURFACE.md E28–E30, Q465) |
 | 5.1 | Embeddings in the submission gate, and the *differentiate* choice | `dedup-gate.ts` has edit distance plus the oracle's equivalence, co-sign and insist |
 | 5.2 | Behavioural probes of flagged-similar pairs, and the auto-merge | nothing |
