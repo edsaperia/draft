@@ -25,7 +25,10 @@
  *   5. A proposes again; B and C refuse → the proposal is dominated (Q1440)
  *      and A's early ✖ arrives with the fail ending, x → full → empty;
  *   6. under `prefers-reduced-motion` (a fourth seat) no width keyframe is
- *      played: the fill steps and the leading edge brightens.
+ *      played: the fill steps and the leading edge brightens;
+ *   7. B puts an ordinary settings motion (⏱️) and C votes on it → the
+ *      motion's entry in A's rail — the band's own — sweeps on the vote
+ *      (1573.5: every vote on every race in your rail).
  *
  * Under `--render=replace` the node is replaced on every render, so the
  * animations are printed and not asserted (stage 9's comparison switch).
@@ -251,7 +254,8 @@ await cmdAs(B, 'judge-race', { a: Y, b: rowY.incumbentId, outcome: 'b' });   // 
 await cmdAs(C, 'judge-race', { a: Y, b: rowY.incumbentId, outcome: 'a' });   // C prefers Y: a + w = 3 against o = 1, still live
 await sleep(300);
 for (const p of Object.values(PAGES)) await p.evaluate(() => { window.__pollPaused = false; });
-await poll(pa); await sleep(600);
+// the page's own tick fetches both votes in one answer; wait for it
+await grew(pa, c3.A.s); await poll(pa); await sleep(600);
 const sa3 = (await sweepsOf(pa)).slice(c3.A.s).filter((s) => s.kind === 'vote' && s.key.includes(Y));
 const aa3 = barAnimsFor((await animsOf(pa)).slice(c3.A.a), (q) => q && q.includes(Y));
 assertOrPrint('3 · B and C vote inside one poll: one sweep on A\'s entry, not two', sa3.length === 1 && aa3.length === 1,
@@ -314,6 +318,32 @@ const dMarks = ad.filter((a) => a.mark);
 const dSweeps = await sweepsOf(pd);
 assertOrPrint('6 · under prefers-reduced-motion the fill steps: no width keyframe and no stamp, the edge brightens', dWidths.length === 0 && dMarks.length === 0 && dSweeps.length > 0 && ad.some((a) => a.pseudo === '::before' && a.kf.some((k) => k.s)),
   `width animations ${dWidths.length} · mark animations ${dMarks.length} · sweeps noted ${dSweeps.length} · edge animations ${ad.filter((a) => a.kf.some((k) => k.s)).length}`);
+
+/* ---- 7. a settings motion's entry sweeps too (1573.5) -------------------- */
+const c7 = await counts();
+const moId = await cmdAs(B, 'open-motion', { payload: { kind: 'set', setting: 'rate', value: { grant: 6, cap: 8, dripMinutes: 60 } },
+  why: 'one more to start with' });
+if (!moId) die(`B could not put a settings motion: ${refused.join(' / ')}`);
+await sleep(4_600); await pollAll();
+const moCard = ((await viewAs(C)).raceCards || []).find((c) => c.kind === 'edge' &&
+  /rate/.test(String(((c.a && c.a.setting) || (c.b && c.b.setting) || {}).settingId || '')));
+if (!moCard) fail('7 · setting card', '7 · C was served no card on the ⏱️ motion');
+else {
+  await cmdAs(C, 'judge-race', { a: moCard.a.id, b: moCard.b.id, outcome: moCard.a.incumbent ? 'b' : 'a' });
+  await sleep(4_600); await pollAll();
+  await grew(pa, c7.A.s);
+  const sa7 = (await sweepsOf(pa)).slice(c7.A.s);
+  const aa7 = (await animsOf(pa)).slice(c7.A.a);
+  const moKey = (q) => q === 'mo:' + moId;
+  const moBar = barAnimsFor(aa7, moKey);
+  const railA = await pa.evaluate((id) => {
+    const li = document.querySelector('#rail li[data-q="mo:' + id + '"]');
+    return { entries: [...document.querySelectorAll('#rail li')].map((l) => l.dataset.q), mo: li ? (li.querySelector('button') || {}).getAttribute('style') : null };
+  }, moId);
+  assertOrPrint('7 · a settings motion\'s entry in A\'s rail sweeps on C\'s vote (the band\'s own entry)',
+    sa7.some((s) => s.key === 'q:mo:' + moId + ':' && (s.kind === 'vote' || s.kind === 'pass')) && moBar.length >= 1 && moBar.every((a) => rightward(widths(a))),
+    `sweeps ${JSON.stringify(sa7)} · bar ${JSON.stringify(moBar.map(widths))} · A's rail ${JSON.stringify(railA)}`);
+}
 
 /* ---- the verdict ---------------------------------------------------------- */
 say('every sweep A\'s rail played: ' + JSON.stringify((await sweepsOf(pa)).map((s) => s.kind + (s.from != null ? ' ' + s.from + '→' + (s.to ?? '') : ''))));
