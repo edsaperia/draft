@@ -30,7 +30,7 @@
   let hooks = {};
   // the closed page (Q470): typing opens nothing and the wallet is gone
   let closedMode = false;
-  const setClosed = (on) => { closedMode = !!on; renderWallet(); };
+  const setClosed = (on) => { closedMode = !!on; renderWallet(); renderReading(); };
   // **The document's own close is a second fact, and it is not this one**
   // (CP9, Q1106). `closedMode` says *the wallets are gone* — the farewell has
   // flown, or the reader is a stranger — and the host also sets it for the
@@ -40,7 +40,7 @@
   // Two facts under one name is the mistake this file already has a
   // post-mortem for, so the second one gets its own.
   let docClosed = false;
-  const setDocClosed = (on) => { docClosed = !!on; };
+  const setDocClosed = (on) => { docClosed = !!on; renderReading(); };
   // **🥂's signature answers every OK owed** (1541.7 (a), Q1541 stage 7): the
   // host moves the signer's news to answered in the fold, and the records'
   // OKs, which are the page's (`readSeals`), are answered here the same way —
@@ -898,6 +898,132 @@
       prevWash.set(el.dataset.washkey, { col: el.dataset.wash, fill: el.dataset.fill });
     }
   }
+
+  // ---- the queue card wash sweep transition (`wash-sweep`, `mark-stamp`;
+  // SWEEP.md, Q1571, Ed 2026-09-30) ------------------------------------------
+  // **A landed vote sweeps the wash** (decisions 2–4): the fill runs rightward
+  // from where it stands to full, resets in an instant cut, and climbs to the
+  // new value — one motion eased out, its duration proportional to the
+  // distance, one bar width per SWEEP_MS, never a drain. A pass runs to full
+  // and stays; a failure runs to full, resets to empty and stays; the wash's
+  // own crossfade (`settleWashes`) colours the ending, seeded here from the
+  // live entry's colour. **The mark stamps** wherever an entry's mark changes
+  // (decision 5): the new glyph lands at 1.6× and settles over STAMP_MS, on
+  // its transform alone, so no box moves (P13). Played on the **kept node**
+  // after the patch through the Web Animations API — never a CSS transition,
+  // which `landStill` switches off for the flush and which would run under
+  // the sweep — so a poll landing mid-sweep re-patches the node and the
+  // animation goes on (`render-hold-walk`). The rail's delta is read here:
+  // an entry kept from the last render whose tick (`voteTick`, 1571.1) or
+  // fill moved sweeps once (votes landing together in one poll are one
+  // sweep, 1571.2); whose mark changed stamps; a record arriving for a race
+  // whose entries were here plays the ending from their fill. An entry
+  // arriving keeps `birth-pass`'s arrival and does not stamp. Under reduced
+  // motion the fill steps and the bar's leading edge brightens for
+  // `--wash-ms`; the mark swaps with the crossfade alone. The band's own
+  // entries draw themselves and are not read.
+  const SWEEP_MS = 500;   // one bar width
+  const STAMP_MS = 250;
+  const prevRail = new Map();   // entry key → what the last render drew
+  const sweeps = [];            // the recent ones, for the walks: an instrument
+  const noteSweep = (x) => { sweeps.push({ ...x, at: Date.now() }); if (sweeps.length > 60) sweeps.shift(); };
+  const railButton = (g, e) => queueEl && queueEl.querySelector(
+    'li[data-q="' + CSS.escape(g.id) + '"][data-site="' + CSS.escape(String(e.site ?? '')) + '"] > button');
+  // `.sweeping` takes the width transition off the bar for the sweep's length
+  // (system.css), so the fill `settleWashes` sets lands under the animation
+  // and never plays a second, slower motion after it
+  const unsweep = (btn) => () => btn.classList.remove('sweeping');
+  function sweepFill(btn, kind, from, to) {
+    const up = Math.max(0, 100 - from);
+    const dist = kind === 'vote' ? up + to : up;
+    if (dist <= 0) return null;
+    // offsets proportional to the distance, so the speed is constant between
+    // the eased ends; the reset is two frames at one offset — a cut
+    const frames = kind === 'pass' ? [{ width: from + '%' }, { width: '100%' }]
+      : kind === 'fail' ? [{ width: from + '%', offset: 0 }, { width: '100%', offset: 1 }, { width: '0%', offset: 1 }]
+      : [{ width: from + '%', offset: 0 }, { width: '100%', offset: up / dist },
+         { width: '0%', offset: up / dist }, { width: to + '%', offset: 1 }];
+    btn.classList.add('sweeping');
+    try {
+      const a = btn.animate(frames, { duration: dist / 100 * SWEEP_MS, easing: 'ease-out', pseudoElement: '::before' });
+      a.addEventListener('finish', unsweep(btn)); a.addEventListener('cancel', unsweep(btn));
+      return a;
+    } catch (e) { btn.classList.remove('sweeping'); return null; }
+  }
+  // reduced motion: the fill steps, and the leading edge brightens
+  function stepFill(btn) {
+    btn.classList.add('sweeping');
+    try {
+      const col = getComputedStyle(btn).getPropertyValue('--washcol').trim() || 'transparent';
+      const a = btn.animate([{ boxShadow: 'inset -4px 0 0 ' + col }, { boxShadow: 'inset -1px 0 0 ' + col }],
+        { duration: WASH_MS, easing: 'ease-out', pseudoElement: '::before' });
+      a.addEventListener('finish', unsweep(btn)); a.addEventListener('cancel', unsweep(btn));
+      return a;
+    } catch (e) { btn.classList.remove('sweeping'); return null; }
+  }
+  function stampMark(btn) {
+    const mk = btn.querySelector('.qmark .mk') || btn.querySelector('.qmark > *');
+    if (!mk) return null;
+    try {
+      return mk.animate([{ transform: 'scale(1.6)' }, { transform: 'scale(0.94)', offset: 0.7 }, { transform: 'scale(1)' }],
+        { duration: STAMP_MS, easing: 'ease-out' });
+    } catch (e) { return null; }
+  }
+  function playSweeps(entries) {
+    const cur = new Map();
+    for (const e of entries) {
+      const g = e.g;
+      if (!g || g.html) continue;
+      const st = stateOf(g);
+      const sealed = st === 'sealed';
+      // a flat wash is not a meter: a draft, a diagonal, a record
+      const flat = sealed || isDiagonal(g) || (st === 'yours' && !!g.unproposed);
+      cur.set(qKey(g, e), { g, sealed, flat, fill: flat ? 100 : Math.max(0, Math.min(100, g.pct | 0)),
+        tick: g.tick == null ? null : g.tick, kind: markKindOf(g),
+        raceId: g.raceId || null, cand: g.candId || g.candidate || null, el: railButton(g, e) });
+    }
+    const first = prevRail.size === 0;
+    const reduced = REDUCED();
+    for (const [key, c] of cur) {
+      const p = prevRail.get(key);
+      if (!c.el) continue;
+      if (p) {
+        if (!c.flat && !p.flat && (p.tick !== c.tick || p.fill !== c.fill)) {
+          noteSweep({ key, kind: 'vote', from: p.fill, to: c.fill, tick: c.tick });
+          if (reduced) stepFill(c.el); else sweepFill(c.el, 'vote', p.fill, c.fill);
+        }
+        if (p.kind !== c.kind) {
+          noteSweep({ key, kind: 'stamp', from: p.kind, to: c.kind });
+          if (!reduced) stampMark(c.el);
+        }
+        continue;
+      }
+      if (first || !c.sealed) continue;
+      // **a record arriving for a race whose entries were here**: its ending,
+      // played from the fill they showed — the race's record (`rec:<race>`,
+      // or `rec:<race>/<n>` after a split, Q1534), or for a proposal of your
+      // own the record holding your wording (`mineIn`) or its early ✖
+      const m = /^rec:(early:)?([^/]+)/.exec(c.g.id);
+      if (!m) continue;
+      const mineIn = c.g.mineIn || [];
+      const live = [...prevRail.entries()].filter(([, q]) => !q.sealed && !q.flat && (
+        (!m[1] && q.raceId === m[2]) || (q.cand && (mineIn.includes(q.cand) || (m[1] && q.cand === m[2])))));
+      if (!live.length) continue;
+      const from = Math.max(...live.map(([, q]) => q.fill));
+      const pass = carried(c.g) && !c.g.undecided;
+      const fail = !carried(c.g) && !c.g.undecided;
+      // the live colour as the from of the record's own crossfade: the slip
+      // was drawn in the record's colour, and `settleWashes` fades from here
+      const was = prevWash.get(live[0][0]);
+      if (was) { c.el.style.setProperty('--washcol', was.col); c.el.style.setProperty('--washbg', groundOf(was.col, key)); }
+      noteSweep({ key, kind: pass ? 'pass' : fail ? 'fail' : 'stamp', from, race: m[2] });
+      if (reduced) { stepFill(c.el); continue; }
+      if (pass || fail) sweepFill(c.el, pass ? 'pass' : 'fail', from, 100);
+      stampMark(c.el);
+    }
+    prevRail.clear();
+    for (const [k, v] of cur) prevRail.set(k, { ...v, el: null });
+  }
   let topUrgentId = null;   // the one card that is never dropped
 
   // Where in the charter an entry stands. A patch has one per site (Ed, 108);
@@ -1389,6 +1515,10 @@
     railCtl = new AbortController();
     window.PATCH.set(queueEl, html);
     justArrived = null;
+    // the sweep and the stamp, on the nodes the patch kept (SWEEP.md §1.4):
+    // before `settleWashes` sets the new fill, so the bar's own transition
+    // never runs under the sweep
+    playSweeps(entries);
     // Everything in the rail opens, sealed dots included (Ed, 112): a locked
     // judgment can't be changed, but it can always be read.
     queueEl.querySelectorAll('button[data-q]').forEach((b) =>
@@ -1499,6 +1629,10 @@
     : (g.urgency ?? 0));
 
   function layoutQueue() {
+    // the reading margin is laid on every pass the rail is (PRESENCE.md §1.3),
+    // and the block under the reading line is noted on each — a reader who
+    // lands and sits still is somewhere too
+    noteReadingKey(); layoutReading();
     // **Narrow is a mode, not a stylesheet** (design/MOBILE.md §1.0, §1.3;
     // the first cut, 2026-09-12): below `NARROW_Q` the rail is a drawer, and
     // *beside its clause* has no meaning there — so nothing is positioned.
@@ -6107,8 +6241,9 @@ document.addEventListener('paste', (ev) => {
   // every card, tab and entry wholesale, so the element holding focus stopped
   // existing on every render and a keyboard was dropped back to the top of the
   // page. The focused control is named by what it is — a card's lane or act,
-  // a clause tab — and found again after the rebuild. A caret has keepers of
-  // its own (`heldCaret`, the lane's `remark`), so editables are left alone.
+  // a clause tab — and found again after the rebuild. A caret is the patch's
+  // to keep (its block is never replaced, stage 9) and the lane's `remark`,
+  // so editables are left alone.
   const focusKeep = () => {
     const a = document.activeElement;
     if (!a || a === document.body || !doc.contains(a) || a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return null;
@@ -6301,7 +6436,7 @@ document.addEventListener('paste', (ev) => {
     ticking = true;
     // Pinned entries are measured against the viewport, so the margin has to be
     // re-laid on every scroll, not only on structural change (Ed, 110).
-    requestAnimationFrame(() => { layoutQueue(); markCurrentSection(); drawWires(); syncEditCtl(); ticking = false; });
+    requestAnimationFrame(() => { noteReadingKey(); layoutQueue(); markCurrentSection(); drawWires(); syncEditCtl(); ticking = false; });
   };
 
   // ---- room-pulse (Ed, 2026-08-17) -------------------------------------
@@ -6340,6 +6475,8 @@ document.addEventListener('paste', (ev) => {
     queueEl = m.queue || document.getElementById('queue');
     tocEl = m.toc || document.getElementById('toc');
     wiresEl = m.wires || document.getElementById('wires');
+    readingEl = m.reading || document.getElementById('reading');
+    personOf = env.personOf || null;
     walletEl = m.wallet || document.getElementById('wallet');
     pulseEl = m.pulse || document.getElementById('pulse');
     // Enter presses an owed record's OK (Q1536)
@@ -6766,64 +6903,13 @@ document.addEventListener('paste', (ev) => {
       const mine = SUGGS.find((x) => x.id === DRAFT_ID && x.unproposed);
       if (mine && !suggs.some((x) => x.id === DRAFT_ID)) suggs = suggs.concat([mine]);
     }
-    const held = heldCaret();
+    // (no caret is taken out and put back any more: the column is patched,
+    // and the lane or reason box holding the caret is the node it was, its
+    // words and its caret untouched — `render-hold-walk`'s two carets and
+    // focus-steal `--lane` are the proof; `heldCaret` retired at stage 9)
     bindData((next && next.DOC) || DOC, suggs, prevDoc);
     renderAll();
-    if (held) restoreCaret(held);
     if (textChanged && hooks.textChanged) hooks.textChanged();
-  }
-
-  // **A data swap keeps the caret** (Ed, from the residency room, 2026-09-18:
-  // *when typing in a rationale … my focus is pulled away from the box by some
-  // other common event (perhaps someone voting?)*). The host's typing guard
-  // spares the column a rebuild while the draft card is open — but only where
-  // the charter's key has not moved, and an adoption anywhere moves it: the
-  // text changed, so the whole column is rebuilt under the hand, and the box
-  // being typed in is replaced by a new one holding the same words and no
-  // caret (measured: seven times in a minute in a fast room, each 24–88 ms
-  // after a full `setData`, the draft card open throughout). The words were
-  // never lost — the draft model has them — so what is owed is the caret: it
-  // is taken out by position before the rebuild and put back after, the same
-  // hold-by-position rule the lane's own re-marking works by. A box is found
-  // again by its place among its kind, which an adoption elsewhere does not
-  // change. **And the rationale's raw text comes back with it**: the model
-  // keeps it trimmed, so a space typed just before the swap would be dropped
-  // and the next word run into the last.
-  function heldCaret() {
-    const sel = getSelection();
-    if (!doc || !sel || !sel.rangeCount) return null;
-    const node = sel.getRangeAt(0).endContainer;
-    const at = node && (node.nodeType === 1 ? node : node.parentElement);
-    const box = at && (at.closest('.edit-why') || at.closest('[data-lane]'));
-    const el = document.activeElement;
-    if (!box || !doc.contains(box) || !el || !(el === box || box.contains(el) || el.contains(box))) return null;
-    const why = box.classList.contains('edit-why');
-    const kind = why ? '.edit-why' : '[data-lane]';
-    let off = null;
-    if (why) {
-      const r = document.createRange();
-      r.selectNodeContents(box);
-      r.setEnd(sel.getRangeAt(0).endContainer, sel.getRangeAt(0).endOffset);
-      off = r.toString().length;
-    } else off = laneCaret(box);
-    return { kind, why, i: [...doc.querySelectorAll(kind)].indexOf(box), off, raw: why ? box.textContent : null };
-  }
-  function restoreCaret(held) {
-    const box = [...doc.querySelectorAll(held.kind)][held.i];
-    if (!box) return;
-    if (!held.why) { box.focus({ preventScroll: true }); placeCaret(box, held.off); return; }
-    if (held.raw !== null && held.raw.replace(/\n+/g, ' ').trim() === box.textContent) {
-      box.textContent = held.raw;
-      box.classList.toggle('blank', !held.raw.trim());
-    }
-    box.focus({ preventScroll: true });
-    const r = document.createRange();
-    const text = box.firstChild && box.firstChild.nodeType === 3 ? box.firstChild : null;
-    if (text) r.setStart(text, Math.min(held.off == null ? text.length : held.off, text.length));
-    else r.selectNodeContents(box);
-    r.collapse(!!text);
-    const s = getSelection();
-    s.removeAllRanges(); s.addRange(r);
   }
 
   // everything renderAll does except the charter itself — a host whose band
@@ -6913,6 +6999,169 @@ document.addEventListener('paste', (ev) => {
     return m >= 10 ? T.clock.minutesLeft(m) : T.clock.underTen;
   }
 
+
+  // ---- the reading margin (design/PRESENCE.md; Q1570, Ed 2026-09-30) -------
+  // **Where each member is reading**, as a column of 20px marks on the desk
+  // beside each block, outside the sheet's trim: a member's face where 👤
+  // names proposals, 👀 where it does not (the host decides which, and sends
+  // ids or tokens accordingly — 1570.1, 1570.3). Where, never what (§1.4):
+  // the mark is the same by a race as by any clause, the same while they
+  // draft. Pressing one does nothing; hover shows the name alone.
+  //
+  // **Dwell, not scroll** (decision 3): the block under the reading line is
+  // noted on every viewport change, and reported on the poll only once it has
+  // stood for `READING_DWELL_MS`; scrolling past moves nobody. **Anchored to
+  // text, never to pixels** (decision 2): the key is the block's engine line.
+  // **Desktop only** (§1.3): narrow has no left gutter and draws none; it still
+  // reports, since a phone's reader is somewhere too. The closed page draws
+  // none. You are never in it — the host leaves you out (§1.2).
+  //
+  // **Keyed, so a mark glides** (§1.3; stage 9): marks are patched by
+  // `data-k`, the member id or the token, and positioned *after* the patch by
+  // writing `top` straight onto the kept node — the patch's `landStill`
+  // would mute a transition carried in the markup — so a move transitions
+  // over `--wash-ms`; a mark that arrives is born `landing` (opacity 0, no
+  // transition) and let go a frame later; one that leaves stays `leaving` for
+  // one wash before its node goes.
+  const READING_DWELL_MS = 2000;
+  // a block key as the page keys its blocks — `L<i>` live, the fixture's own
+  // names in the fixture; the host's `AT_OK` is the real gate on the wire
+  const READING_KEY_RX = /^[\w-]{1,16}$/;
+  let readingEl = null;
+  let personOf = null;          // env.personOf: a member id → { n, pic, erased } or null
+  let READING = [];             // the host's rows, as last served: [{ id|k, at, person? }]
+  let readingSeen = null;       // the block the reading line last stood on
+  let readingSince = 0;         // …and when it arrived there
+  const readingOrder = new Map(); // key → arrival number, so a column never reshuffles
+  let readingNext = 1;
+  const readingLeaving = new Map(); // key → the row kept while it fades out
+  let readingReported = null;   // the last key the poll was handed (an instrument)
+
+  // the block under the reading line: the nearest `[data-key]` block whose
+  // box spans it, else the last one above it (a heading is a block like any)
+  const readingClosed = () => closedMode || docClosed;
+  function readingKey() {
+    if (!doc || readingClosed()) return null;
+    // the last block whose top is on or above the line: a block spanning it,
+    // else the last above it; two blocks meeting at the line (a heading's
+    // foot on a paragraph's head) resolve to the lower, whose top is the line
+    let at = null;
+    for (const el of doc.querySelectorAll('[data-key]')) {
+      const k = el.dataset.key;
+      if (!READING_KEY_RX.test(k) || !el.getClientRects().length) continue;
+      const r = el.getBoundingClientRect();
+      if (r.top > READ_LINE + 0.5) break;
+      at = k;
+    }
+    return at;
+  }
+  function noteReadingKey() {
+    const k = readingKey();
+    if (k !== readingSeen) { readingSeen = k; readingSince = Date.now(); }
+  }
+  /** What the poll reports (PRESENCE.md §1.1): the settled key, or null while moving. */
+  function readingAt() {
+    if (readingClosed()) return null;
+    if (readingSeen === null) noteReadingKey();
+    const settled = readingSeen !== null && Date.now() - readingSince >= READING_DWELL_MS ? readingSeen : null;
+    readingReported = settled;
+    return settled;
+  }
+  const readingKeyOf = (r) => ('id' in r && r.id != null) ? 'm:' + r.id : 'k:' + r.k;
+  /** The host's rows arrive (every poll, the short answer included). */
+  function setReading(rows) {
+    const next = Array.isArray(rows) ? rows.filter((r) => r && typeof r.at === 'string' && READING_KEY_RX.test(r.at)) : [];
+    const have = new Set(next.map(readingKeyOf));
+    // a row that left fades for one wash, then its node goes
+    for (const r of READING) {
+      const key = readingKeyOf(r);
+      if (!have.has(key) && !readingLeaving.has(key)) {
+        readingLeaving.set(key, r);
+        setTimeout(() => { readingLeaving.delete(key); renderReading(); }, WASH_MS);
+      }
+    }
+    for (const r of next) { const key = readingKeyOf(r); readingLeaving.delete(key); if (!readingOrder.has(key)) readingOrder.set(key, readingNext++); }
+    READING = next;
+    renderReading();
+  }
+  function readingMarkHtml(r, key, leaving) {
+    const cls = 'rd' + (leaving ? ' leaving' : '');
+    if (!('id' in r) || r.id == null) {
+      // the anonymous mark: 👀, drawn, facing into the document; no name
+      return '<span class="' + cls + ' eyes" data-k="' + esc(key) + '">' + glyphHtml('👀') + '</span>';
+    }
+    const p = (personOf && personOf(r.id)) || r.person || null;
+    const name = p && !p.erased ? String(p.n || '').trim() : '';
+    return '<span class="' + cls + '" data-k="' + esc(key) + '"' + (name ? ' title="' + esc(name) + '"' : '') + '>' +
+      window.CARDS.avHtml(p ? { n: p.n, pic: p.pic, erased: p.erased } : null, 'rdface') + '</span>';
+  }
+  // **Reconciled by key, by hand** (§1.3): the patch would strip a kept
+  // mark's inline `top` (its markup carries none) and mute the transition of
+  // a mark whose class changed, which is exactly the two things a glide and a
+  // fade need — so this layer keeps its own nodes: one per key, added
+  // `landing`, kept across renders, removed once its wash is done.
+  function renderReading() {
+    if (!readingEl) return;
+    const rows = readingClosed() || NARROW() ? []
+      : [...READING.map((r) => [r, false]), ...[...readingLeaving.values()].map((r) => [r, true])];
+    const keep = new Set();
+    const t = document.createElement('template');
+    for (const [r, leaving] of rows) {
+      const key = readingKeyOf(r);
+      keep.add(key);
+      t.innerHTML = readingMarkHtml(r, key, leaving);
+      const fresh = t.content.firstElementChild;
+      let el = [...readingEl.children].find((c) => c.dataset.k === key);
+      if (!el) { el = fresh; el.classList.add('landing'); readingEl.appendChild(el); continue; }
+      el.classList.toggle('leaving', leaving);
+      if (fresh.innerHTML !== el.innerHTML) el.innerHTML = fresh.innerHTML;
+      const title = fresh.getAttribute('title');
+      if ((title || '') !== (el.getAttribute('title') || '')) { if (title) el.setAttribute('title', title); else el.removeAttribute('title'); }
+    }
+    for (const el of [...readingEl.children]) if (!keep.has(el.dataset.k)) el.remove();
+    layoutReading();
+  }
+  /** Positions every mark: one column per block, arrival order, 2px gaps; on the desk left of the sheet. */
+  function layoutReading() {
+    if (!readingEl || !doc) return;
+    if (readingClosed() || NARROW()) { if (readingEl.firstChild) readingEl.textContent = ''; return; }
+    if (!readingEl.children.length) return;
+    const base = readingEl.getBoundingClientRect();
+    const docR = doc.getBoundingClientRect();
+    // the sheet's drawn left edge (paper.js): the mark's right edge stands 8px
+    // left of it; where no sheet is drawn, the column's edge less the trim
+    const sheet = document.querySelector('.desksheets .sheet');
+    const sheetLeft = sheet && sheet.offsetWidth ? sheet.getBoundingClientRect().left
+      : docR.left + (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sheet-trim')) || 0);
+    const size = 20, gap = 2, inset = 8;
+    const left = sheetLeft - inset - size - base.left;
+    // a tab's em is the page's own (the gutter is chrome, not text)
+    const tabEm = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    const byKey = [...readingEl.children].map((el) => {
+      const row = READING.find((r) => readingKeyOf(r) === el.dataset.k) || readingLeaving.get(el.dataset.k);
+      return { el, row, order: readingOrder.get(el.dataset.k) || 0 };
+    }).filter((x) => x.row).sort((a, b) => a.order - b.order);
+    const depth = new Map();
+    for (const { el, row } of byKey) {
+      const block = doc.querySelector('[data-key="' + row.at + '"]');
+      if (!block || !block.getClientRects().length) { el.style.display = 'none'; continue; }
+      // the line the block's own tab stands on — its `.chipcol` where one is
+      // drawn (`top: 0.15em` in the tab's own size, M12), else that much of
+      // the block's own size under its top
+      const tab = block.querySelector('.chipcol');
+      const line = tab && tab.getClientRects().length ? tab.getBoundingClientRect().top
+        : block.getBoundingClientRect().top + 0.15 * tabEm;
+      const n = depth.get(row.at) || 0;
+      depth.set(row.at, n + 1);
+      el.style.display = '';
+      el.style.left = left + 'px';
+      el.style.top = (line - base.top + n * (size + gap)) + 'px';
+    }
+    // a newborn mark takes its place with no transition, then is let go
+    const born = [...readingEl.querySelectorAll('.rd.landing')];
+    if (born.length) requestAnimationFrame(() => { void readingEl.offsetWidth; born.forEach((el) => el.classList.remove('landing')); });
+  }
+
   function setRoom(r) {
     if (r && r.E != null) ROSTER = r.E;
     if (r && r.floor != null) FLOOR = r.floor;
@@ -6973,6 +7222,13 @@ document.addEventListener('paste', (ev) => {
     arcFrames, flyGlyph, pencilStorm, renderWallet, beat, act, narrow: NARROW,
     // the breakpoint itself, for paper.js's sheets (Q1516 (6)): one literal
     NARROW_Q,
+    // the wash sweep's instrument and its two constants (SWEEP.md §2): what
+    // the rail played, for `sweep-walk` to read beside `getAnimations()`
+    sweeps, SWEEP_MS, STAMP_MS,
+    // the reading margin (PRESENCE.md): the host's rows in, the poll's place
+    // out, and the dwell the walk reads
+    setReading, readingAt, READING_DWELL_MS,
+    get readingReported() { return readingReported; },
     // the hold vocabulary, shared with the founder's own wallets in the page:
     // `nudgeHome` brings a released flight back (never travelling less than a
     // quarter), `startLean`/`stopLean` are the spend-preview, and `applyLean`

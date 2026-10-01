@@ -166,6 +166,11 @@ window.LIVE = (function () {
     // answered, and its modal says it all), and the stalled flag is the
     // store's, not the line's: both keep their own treatment. SURFACE C17.
     const POLL_TIMEOUT_MS = (typeof window !== 'undefined' && window.__pollTimeoutMs) || 4000;
+    // the poll's place field (PRESENCE.md §1.1): session.js owns the dwell
+    const readingAt = () => {
+      const k = window.SESSION && window.SESSION.readingAt ? window.SESSION.readingAt() : null;
+      return k ? '&at=' + encodeURIComponent(k) : '';
+    };
     const CONN = { fails: 0, cause: null, down: false, observer: null };
     // what a press can send: every commit wears `.btn-approve` or
     // `.btn-propose` (✓ ✏️ ✒️ 🏛️ 🍾, OK, the grants' *Accept*, the
@@ -376,7 +381,11 @@ window.LIVE = (function () {
         const since = env.cs && env.cs.isRemote
           ? '?since=' + encodeURIComponent(env.cs.v.seq + '.' + (env.cs.v.eseq || 0)) +
             (!askFull && typeof env.cs.v.textVersion === 'number' ? '&tv=' + env.cs.v.textVersion : '') +
-            (!askFull && typeof env.cs.v.recordsKey === 'number' ? '&rk=' + env.cs.v.recordsKey : '') : '';
+            (!askFull && typeof env.cs.v.recordsKey === 'number' ? '&rk=' + env.cs.v.recordsKey : '') +
+            // **where this reader is** (design/PRESENCE.md §1.1): the block the
+            // reading line has rested on for `DWELL_MS`, or nothing while
+            // moving — one query field, no command, no log event
+            readingAt() : '';
         // **the poll has a time limit** (Q1505): a view that has not answered
         // in `POLL_TIMEOUT_MS` is a poll gone unanswered, and two in a row
         // put the bar up — without one, a half-open line was a poll that
@@ -418,6 +427,9 @@ window.LIVE = (function () {
             // the host's two flags ride every answer, the short one included
             // (Q1345, Q1346): heard before anything else is read
             noteHost(data);
+            // where every other member is reading rides every answer too
+            // (PRESENCE.md §1.2): a place moves while both logs stand still
+            if (Array.isArray(data.reading) && window.SESSION && window.SESSION.setReading) window.SESSION.setReading(data.reading);
             if (data.short || data.hostOnly) return; // unchanged — the short answer carries the seqs alone
             // a body with no view in it (an error sentence with a 200 would be
             // a server bug, but the page must not die of it) — **unless the

@@ -30,7 +30,7 @@
   let hooks = {};
   // the closed page (Q470): typing opens nothing and the wallet is gone
   let closedMode = false;
-  const setClosed = (on) => { closedMode = !!on; renderWallet(); };
+  const setClosed = (on) => { closedMode = !!on; renderWallet(); renderReading(); };
   // **The document's own close is a second fact, and it is not this one**
   // (CP9, Q1106). `closedMode` says *the wallets are gone* — the farewell has
   // flown, or the reader is a stranger — and the host also sets it for the
@@ -40,7 +40,7 @@
   // Two facts under one name is the mistake this file already has a
   // post-mortem for, so the second one gets its own.
   let docClosed = false;
-  const setDocClosed = (on) => { docClosed = !!on; };
+  const setDocClosed = (on) => { docClosed = !!on; renderReading(); };
   // **🥂's signature answers every OK owed** (1541.7 (a), Q1541 stage 7): the
   // host moves the signer's news to answered in the fold, and the records'
   // OKs, which are the page's (`readSeals`), are answered here the same way —
@@ -1629,6 +1629,10 @@
     : (g.urgency ?? 0));
 
   function layoutQueue() {
+    // the reading margin is laid on every pass the rail is (PRESENCE.md §1.3),
+    // and the block under the reading line is noted on each — a reader who
+    // lands and sits still is somewhere too
+    noteReadingKey(); layoutReading();
     // **Narrow is a mode, not a stylesheet** (design/MOBILE.md §1.0, §1.3;
     // the first cut, 2026-09-12): below `NARROW_Q` the rail is a drawer, and
     // *beside its clause* has no meaning there — so nothing is positioned.
@@ -6432,7 +6436,7 @@ document.addEventListener('paste', (ev) => {
     ticking = true;
     // Pinned entries are measured against the viewport, so the margin has to be
     // re-laid on every scroll, not only on structural change (Ed, 110).
-    requestAnimationFrame(() => { layoutQueue(); markCurrentSection(); drawWires(); syncEditCtl(); ticking = false; });
+    requestAnimationFrame(() => { noteReadingKey(); layoutQueue(); markCurrentSection(); drawWires(); syncEditCtl(); ticking = false; });
   };
 
   // ---- room-pulse (Ed, 2026-08-17) -------------------------------------
@@ -6471,6 +6475,8 @@ document.addEventListener('paste', (ev) => {
     queueEl = m.queue || document.getElementById('queue');
     tocEl = m.toc || document.getElementById('toc');
     wiresEl = m.wires || document.getElementById('wires');
+    readingEl = m.reading || document.getElementById('reading');
+    personOf = env.personOf || null;
     walletEl = m.wallet || document.getElementById('wallet');
     pulseEl = m.pulse || document.getElementById('pulse');
     // Enter presses an owed record's OK (Q1536)
@@ -6993,6 +6999,169 @@ document.addEventListener('paste', (ev) => {
     return m >= 10 ? T.clock.minutesLeft(m) : T.clock.underTen;
   }
 
+
+  // ---- the reading margin (design/PRESENCE.md; Q1570, Ed 2026-09-30) -------
+  // **Where each member is reading**, as a column of 20px marks on the desk
+  // beside each block, outside the sheet's trim: a member's face where 👤
+  // names proposals, 👀 where it does not (the host decides which, and sends
+  // ids or tokens accordingly — 1570.1, 1570.3). Where, never what (§1.4):
+  // the mark is the same by a race as by any clause, the same while they
+  // draft. Pressing one does nothing; hover shows the name alone.
+  //
+  // **Dwell, not scroll** (decision 3): the block under the reading line is
+  // noted on every viewport change, and reported on the poll only once it has
+  // stood for `READING_DWELL_MS`; scrolling past moves nobody. **Anchored to
+  // text, never to pixels** (decision 2): the key is the block's engine line.
+  // **Desktop only** (§1.3): narrow has no left gutter and draws none; it still
+  // reports, since a phone's reader is somewhere too. The closed page draws
+  // none. You are never in it — the host leaves you out (§1.2).
+  //
+  // **Keyed, so a mark glides** (§1.3; stage 9): marks are patched by
+  // `data-k`, the member id or the token, and positioned *after* the patch by
+  // writing `top` straight onto the kept node — the patch's `landStill`
+  // would mute a transition carried in the markup — so a move transitions
+  // over `--wash-ms`; a mark that arrives is born `landing` (opacity 0, no
+  // transition) and let go a frame later; one that leaves stays `leaving` for
+  // one wash before its node goes.
+  const READING_DWELL_MS = 2000;
+  // a block key as the page keys its blocks — `L<i>` live, the fixture's own
+  // names in the fixture; the host's `AT_OK` is the real gate on the wire
+  const READING_KEY_RX = /^[\w-]{1,16}$/;
+  let readingEl = null;
+  let personOf = null;          // env.personOf: a member id → { n, pic, erased } or null
+  let READING = [];             // the host's rows, as last served: [{ id|k, at, person? }]
+  let readingSeen = null;       // the block the reading line last stood on
+  let readingSince = 0;         // …and when it arrived there
+  const readingOrder = new Map(); // key → arrival number, so a column never reshuffles
+  let readingNext = 1;
+  const readingLeaving = new Map(); // key → the row kept while it fades out
+  let readingReported = null;   // the last key the poll was handed (an instrument)
+
+  // the block under the reading line: the nearest `[data-key]` block whose
+  // box spans it, else the last one above it (a heading is a block like any)
+  const readingClosed = () => closedMode || docClosed;
+  function readingKey() {
+    if (!doc || readingClosed()) return null;
+    // the last block whose top is on or above the line: a block spanning it,
+    // else the last above it; two blocks meeting at the line (a heading's
+    // foot on a paragraph's head) resolve to the lower, whose top is the line
+    let at = null;
+    for (const el of doc.querySelectorAll('[data-key]')) {
+      const k = el.dataset.key;
+      if (!READING_KEY_RX.test(k) || !el.getClientRects().length) continue;
+      const r = el.getBoundingClientRect();
+      if (r.top > READ_LINE + 0.5) break;
+      at = k;
+    }
+    return at;
+  }
+  function noteReadingKey() {
+    const k = readingKey();
+    if (k !== readingSeen) { readingSeen = k; readingSince = Date.now(); }
+  }
+  /** What the poll reports (PRESENCE.md §1.1): the settled key, or null while moving. */
+  function readingAt() {
+    if (readingClosed()) return null;
+    if (readingSeen === null) noteReadingKey();
+    const settled = readingSeen !== null && Date.now() - readingSince >= READING_DWELL_MS ? readingSeen : null;
+    readingReported = settled;
+    return settled;
+  }
+  const readingKeyOf = (r) => ('id' in r && r.id != null) ? 'm:' + r.id : 'k:' + r.k;
+  /** The host's rows arrive (every poll, the short answer included). */
+  function setReading(rows) {
+    const next = Array.isArray(rows) ? rows.filter((r) => r && typeof r.at === 'string' && READING_KEY_RX.test(r.at)) : [];
+    const have = new Set(next.map(readingKeyOf));
+    // a row that left fades for one wash, then its node goes
+    for (const r of READING) {
+      const key = readingKeyOf(r);
+      if (!have.has(key) && !readingLeaving.has(key)) {
+        readingLeaving.set(key, r);
+        setTimeout(() => { readingLeaving.delete(key); renderReading(); }, WASH_MS);
+      }
+    }
+    for (const r of next) { const key = readingKeyOf(r); readingLeaving.delete(key); if (!readingOrder.has(key)) readingOrder.set(key, readingNext++); }
+    READING = next;
+    renderReading();
+  }
+  function readingMarkHtml(r, key, leaving) {
+    const cls = 'rd' + (leaving ? ' leaving' : '');
+    if (!('id' in r) || r.id == null) {
+      // the anonymous mark: 👀, drawn, facing into the document; no name
+      return '<span class="' + cls + ' eyes" data-k="' + esc(key) + '">' + glyphHtml('👀') + '</span>';
+    }
+    const p = (personOf && personOf(r.id)) || r.person || null;
+    const name = p && !p.erased ? String(p.n || '').trim() : '';
+    return '<span class="' + cls + '" data-k="' + esc(key) + '"' + (name ? ' title="' + esc(name) + '"' : '') + '>' +
+      window.CARDS.avHtml(p ? { n: p.n, pic: p.pic, erased: p.erased } : null, 'rdface') + '</span>';
+  }
+  // **Reconciled by key, by hand** (§1.3): the patch would strip a kept
+  // mark's inline `top` (its markup carries none) and mute the transition of
+  // a mark whose class changed, which is exactly the two things a glide and a
+  // fade need — so this layer keeps its own nodes: one per key, added
+  // `landing`, kept across renders, removed once its wash is done.
+  function renderReading() {
+    if (!readingEl) return;
+    const rows = readingClosed() || NARROW() ? []
+      : [...READING.map((r) => [r, false]), ...[...readingLeaving.values()].map((r) => [r, true])];
+    const keep = new Set();
+    const t = document.createElement('template');
+    for (const [r, leaving] of rows) {
+      const key = readingKeyOf(r);
+      keep.add(key);
+      t.innerHTML = readingMarkHtml(r, key, leaving);
+      const fresh = t.content.firstElementChild;
+      let el = [...readingEl.children].find((c) => c.dataset.k === key);
+      if (!el) { el = fresh; el.classList.add('landing'); readingEl.appendChild(el); continue; }
+      el.classList.toggle('leaving', leaving);
+      if (fresh.innerHTML !== el.innerHTML) el.innerHTML = fresh.innerHTML;
+      const title = fresh.getAttribute('title');
+      if ((title || '') !== (el.getAttribute('title') || '')) { if (title) el.setAttribute('title', title); else el.removeAttribute('title'); }
+    }
+    for (const el of [...readingEl.children]) if (!keep.has(el.dataset.k)) el.remove();
+    layoutReading();
+  }
+  /** Positions every mark: one column per block, arrival order, 2px gaps; on the desk left of the sheet. */
+  function layoutReading() {
+    if (!readingEl || !doc) return;
+    if (readingClosed() || NARROW()) { if (readingEl.firstChild) readingEl.textContent = ''; return; }
+    if (!readingEl.children.length) return;
+    const base = readingEl.getBoundingClientRect();
+    const docR = doc.getBoundingClientRect();
+    // the sheet's drawn left edge (paper.js): the mark's right edge stands 8px
+    // left of it; where no sheet is drawn, the column's edge less the trim
+    const sheet = document.querySelector('.desksheets .sheet');
+    const sheetLeft = sheet && sheet.offsetWidth ? sheet.getBoundingClientRect().left
+      : docR.left + (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sheet-trim')) || 0);
+    const size = 20, gap = 2, inset = 8;
+    const left = sheetLeft - inset - size - base.left;
+    // a tab's em is the page's own (the gutter is chrome, not text)
+    const tabEm = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    const byKey = [...readingEl.children].map((el) => {
+      const row = READING.find((r) => readingKeyOf(r) === el.dataset.k) || readingLeaving.get(el.dataset.k);
+      return { el, row, order: readingOrder.get(el.dataset.k) || 0 };
+    }).filter((x) => x.row).sort((a, b) => a.order - b.order);
+    const depth = new Map();
+    for (const { el, row } of byKey) {
+      const block = doc.querySelector('[data-key="' + row.at + '"]');
+      if (!block || !block.getClientRects().length) { el.style.display = 'none'; continue; }
+      // the line the block's own tab stands on — its `.chipcol` where one is
+      // drawn (`top: 0.15em` in the tab's own size, M12), else that much of
+      // the block's own size under its top
+      const tab = block.querySelector('.chipcol');
+      const line = tab && tab.getClientRects().length ? tab.getBoundingClientRect().top
+        : block.getBoundingClientRect().top + 0.15 * tabEm;
+      const n = depth.get(row.at) || 0;
+      depth.set(row.at, n + 1);
+      el.style.display = '';
+      el.style.left = left + 'px';
+      el.style.top = (line - base.top + n * (size + gap)) + 'px';
+    }
+    // a newborn mark takes its place with no transition, then is let go
+    const born = [...readingEl.querySelectorAll('.rd.landing')];
+    if (born.length) requestAnimationFrame(() => { void readingEl.offsetWidth; born.forEach((el) => el.classList.remove('landing')); });
+  }
+
   function setRoom(r) {
     if (r && r.E != null) ROSTER = r.E;
     if (r && r.floor != null) FLOOR = r.floor;
@@ -7056,6 +7225,10 @@ document.addEventListener('paste', (ev) => {
     // the wash sweep's instrument and its two constants (SWEEP.md §2): what
     // the rail played, for `sweep-walk` to read beside `getAnimations()`
     sweeps, SWEEP_MS, STAMP_MS,
+    // the reading margin (PRESENCE.md): the host's rows in, the poll's place
+    // out, and the dwell the walk reads
+    setReading, readingAt, READING_DWELL_MS,
+    get readingReported() { return readingReported; },
     // the hold vocabulary, shared with the founder's own wallets in the page:
     // `nudgeHome` brings a released flight back (never travelling less than a
     // quarter), `startLean`/`stopLean` are the spend-preview, and `applyLean`

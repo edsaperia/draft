@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.143
+# Group Drafting Engine — Specification v0.144
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -104,6 +104,8 @@ One preference is counted without being asked for, and it is **derived rather th
 **The rule is asymmetric, and the protective side wins**: a reveal happens only where the rung at submission **and** the rung standing at the moment of the reveal both allow it, so a cell reads *named* only while the standing rung allows it too. → why: R-050, R-054
 
 **A signature is always named.** Acknowledging the close signs the final document (§4.6), and the signature carries the signer's own name whatever this setting says. → why: R-047
+
+**Where a member is reading is shown to the membership** (Ed, 2026-09-30, Q1570): each member's page reports the block its reading line has rested on, and every other member is shown it beside that block — **named under every rung of this ladder that allows a signed proposal** (*public* and the two elective rungs), **unnamed under *anonymous* and *sealed***, where the view carries a token minted per member per host and never an id; never a stranger's or an applicant's to see; never written to any log, and gone from the host once it stops being reported. Where, never what: the mark is the same by a race as by any clause. → why: R-145
 
 **Judgments** have their own ladder, one rung shorter: **never revealed** (the default and the assumption everywhere else in this spec) or **revealed at the end of the document**. *End* is the word for this moment on both ladders, and means the end of everything rather than the close of each decision. Live disclosure is not on it — §8.3's no-standings rule keeps judgment blind while it is still being collected. → why: R-067
 

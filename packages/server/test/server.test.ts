@@ -315,6 +315,39 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     expect((await viewOf(ada)).isFounder).toBe(true);
     expect((await viewOf(bo)).isFounder).toBe(false);
 
+    // -- where each member is reading (design/PRESENCE.md §1.1–1.2, Q1570):
+    // a member's poll says which block its reading line rests on, the host
+    // keeps it in memory, and every *other* member is told — here under 👤
+    // unset, which reads as `sealed`, so as a token and never an id (1570.3)
+    const viewAt = async (cookie: string, q: string) =>
+      (await (await fetch(`${base}/api/d/${created.slug}/view${q}`,
+        { headers: { cookie } })).json()) as MemberViewPayload & {
+          reading?: Array<{ id?: string; k?: string; at: string }>; short?: boolean };
+    const doc_seq = (v: { seq?: number; eseq?: number }) => `${v.seq}.${v.eseq ?? 0}`;
+    const seqAtRead = doc_seq(await viewAt(ada, ''));
+    await viewAt(ada, '?at=L0');
+    const boSees = await viewAt(bo, '');
+    expect(boSees.reading).toHaveLength(1);
+    expect(boSees.reading![0]!.at).toBe('L0');
+    expect(boSees.reading![0]!.id).toBeUndefined();
+    expect(boSees.reading![0]!.k).toBeTruthy();
+    expect(JSON.stringify(boSees.reading)).not.toContain(boSees.me);
+    expect(JSON.stringify(boSees.reading)).not.toContain('founder');
+    // never your own place
+    const adaSees = await viewAt(ada, '');
+    expect(adaSees.reading).toEqual([]);
+    // the short answer carries it too: a place moves while both logs stand still
+    const short = await viewAt(bo, `?since=${encodeURIComponent(seqAtRead)}`);
+    expect(short.short).toBe(true);
+    expect(short.reading).toHaveLength(1);
+    expect(short.reading![0]!.k).toBe(boSees.reading![0]!.k);
+    // the token holds from poll to poll (decision 10), and no log moved
+    await viewAt(ada, '?at=L0');
+    expect(doc_seq(await viewAt(bo, ''))).toBe(seqAtRead);
+    // a key the page would never send is dropped on the floor
+    await viewAt(bo, '?at=<b>x</b>');
+    expect((await viewAt(ada, '')).reading).toEqual([]);
+
     // -- settle the constitution: reclaim+set the founder's, answer the rest
     await cmd(ada, 'set-setting',
       { setting: 'rate', value: { grant: 4, cap: 8, dripMinutes: 240 } });

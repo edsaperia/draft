@@ -3155,6 +3155,27 @@
      underlay and the colour over it casts one shadow — per-path it would be two
      shadows of the same cable stacked, and the white run would cast its own
      under the colour it is there to sit behind. */
+  /* ---- the reading margin (design/PRESENCE.md §1.3; Q1570) ----------------
+     Where each member is reading: a column of 20px marks on the desk beside a
+     block, outside the sheet's trim, each a face or the drawn 👀. The layer is
+     a zero-size positioned child of .doc; session.js writes each mark's `left`
+     and `top` after the patch, so a move glides over --wash-ms; a mark is born
+     `landing` and fades in, and stays `leaving` for one wash on its way out.
+     Nothing here takes a click but the mark itself, for its title. */
+  .reading { position: absolute; width: 0; height: 0; pointer-events: none; z-index: 7; }
+  .reading .rd {
+    position: absolute; width: 20px; height: 20px; display: block; pointer-events: auto;
+    opacity: 1; transition: top var(--wash-ms) ease, opacity var(--wash-ms) ease;
+  }
+  .reading .rd.landing { transition: none; opacity: 0; }
+  .reading .rd.leaving { opacity: 0; pointer-events: none; }
+  .reading .rd .av, .reading .rd .emojiface { width: 20px; height: 20px; font-size: var(--t-micro); }
+  .reading .rd .emojiface { display: block; line-height: 20px; text-align: center; font-size: var(--t-body); }
+  .reading .rd .gl { width: 20px; height: 20px; display: block; vertical-align: 0; }
+  @media (prefers-reduced-motion: reduce) { .reading .rd { transition: none; } }
+  /* NARROW_Q */
+  @media (max-width: 900px) { .reading { display: none; } }
+
   #wires { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 30; }
   #wires path { fill: none; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
   #wires .cap { stroke: none; }

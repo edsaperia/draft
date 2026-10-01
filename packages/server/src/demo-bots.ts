@@ -93,6 +93,21 @@ const tally = () => ({ judgments: 0, proposals: 0, swaps: 0, oks: 0, motionAnswe
 /** Refusals a member meets in the ordinary course of a busy room (room-bots' `ordinary`). */
 const ORDINARY = /not in a live race|no such race|already resolved|not live|already stands|insufficient|version|stale|base|motion is not running|not what this proposal replaces|duplicate/i;
 
+/**
+ * The block a served card is about, as the page keys its blocks (`L<i>`), for
+ * the bot's place in the reading margin (PRESENCE.md §1.2): the clause row
+ * holding either side's candidate, its first hunk's start; undefined on a
+ * setting card, which has no place in the text.
+ */
+function placeOfCard(rv: ReturnType<typeof raceView>, card: Card): string | undefined {
+  const rows = (rv.clauses ?? []) as Array<{ candidates?: Array<{ id: string; hunks?: Array<{ start: number }> }> }>;
+  for (const row of rows) {
+    const c = (row.candidates ?? []).find((x) => x.id === card.a.id || x.id === card.b.id);
+    if (c && c.hunks && c.hunks.length) return `L${c.hunks[0]!.start}`;
+  }
+  return undefined;
+}
+
 export class DemoBots {
   private state: 'idle' | 'running' | 'paused' | 'stopped' = 'idle';
   private pausedBy: PausedBy | null = null;
@@ -344,7 +359,7 @@ export class DemoBots {
   /* -- writing, as the member: `applyCommand` and nothing else ----------- */
 
   /** One command as the bot's member. True on 200; a refusal is counted, never thrown. */
-  private async send(bot: Bot, doc: LoadedDoc, cmd: string, args: Record<string, unknown>): Promise<boolean> {
+  private async send(bot: Bot, doc: LoadedDoc, cmd: string, args: Record<string, unknown>, place?: string): Promise<boolean> {
     // a reset between the read and the write: the old generation is not ours
     if (this.deps.target.doc() !== doc || this.state !== 'running') return false;
     // Ed sat down in this seat between the read and the write
@@ -352,7 +367,10 @@ export class DemoBots {
     try {
       const out = await applyCommand(this.deps.host, doc,
         { memberId: bot.seat.id, applicantId: null, isFounder: false },
-        cmd, args, this.now(), { path: `/api/d/${doc.cs.slug}/cmd (demo bot)`, logRefusals: false });
+        cmd, args, this.now(), { path: `/api/d/${doc.cs.slug}/cmd (demo bot)`, logRefusals: false,
+          // where the bot is in the reading margin (PRESENCE.md §1.2): the
+          // clause it is acting on, where the act has one
+          ...(place !== undefined ? { place } : {}) });
       if (out.status === 503) { this.stop('host-paused'); return false; }
       if (out.status !== 200) { this.acts.refused += 1; this.say(bot.seat.name, `✗ ${cmd}: ${String(out.body.error)}`); return false; }
       return true;
@@ -432,7 +450,7 @@ export class DemoBots {
       const outcome = isSettingCard(card) ? settingVerdict(card)
         : await this.call((md) => md.judge(persona, judgeInput(card, m)));
       if (outcome === null) return;
-      if (await this.send(bot, doc, 'judge-race', { a: card.a.id, b: card.b.id, outcome })) {
+      if (await this.send(bot, doc, 'judge-race', { a: card.a.id, b: card.b.id, outcome }, placeOfCard(rv, card))) {
         this.acts.judgments += 1;
         this.say(bot.seat.name, `judged: ${outcome === 'tie' ? 'indifferent' : outcome.toUpperCase()}`);
       }
@@ -473,7 +491,7 @@ export class DemoBots {
     const rung = (m.settings.find((s) => s.setting === 'authorship')?.value as { rung?: string } | null)?.rung ?? '';
     const signed = /Elective$/.test(rung);
     if (await this.send(bot, doc, 'propose-text', { baseVersion: version, hunks: built.hunks,
-      why: proposal.why, ...(signed ? { signed: true } : {}) })) {
+      why: proposal.why, ...(signed ? { signed: true } : {}) }, `L${built.hunks[0]!.start}`)) {
       this.acts.proposals += 1;
       if (built.swap) this.acts.swaps += 1;
       this.say(bot.seat.name, built.swap ? 'proposed a swap of two sessions'

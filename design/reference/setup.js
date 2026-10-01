@@ -117,7 +117,7 @@ window.SETUP = (function () {
   // is that minus the offered faces.
   // Tones are stripped before the test, so ✋🏽 is as reserved as ✋.
   const SURFACE_EMOJI = ('↔ ⏩ ⏰ ⏱ ⏳ ☑ ⚔ ⚖ ✅ ✉ ✋ ✍ ✏ ✒ ✔ ✖ ❄ ❌ ❎ ❓ ' +
-    '🌍 🌡 🌶 🍾 🎩 🏛 🏷 👁 👋 👍 👑 👤 👥 💡 💤 📌 📍 📝 📧 📨 📬 📯 🔄 🔗 ' +
+    '🌍 🌡 🌶 🍾 🎩 🏛 🏷 👀 👁 👋 👍 👑 👤 👥 💡 💤 📌 📍 📝 📧 📨 📬 📯 🔄 🔗 ' +
     '🔥 🖼 🗑 🗝 🛡 🤖 🤝 🥂 🥾 🪜 🪪 🪶 🌂 ' +
     '👦 👧 👨 👩 👱 👳 👴 👵 👶 🧑 🧒 🧓 🧔').split(' ');
   const normEmoji = (s) => s.replace(/[\u{FE0F}\u{FE0E}\u{1F3FB}-\u{1F3FF}]/gu, '');

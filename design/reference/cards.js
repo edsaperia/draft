@@ -352,6 +352,7 @@ window.CARDS = (function () {
     'bust': ['👤', 'bust in silhouette'],
     'writing': ['✍', 'writing hand'],
     'eye': ['👁', 'eye'],
+    'eyes': ['👀', 'eyes'],
     'globe': ['🌍', 'globe showing europe-africa'],
     'memo': ['📝', 'memo'],
     'tophat': ['🎩', 'top hat'],

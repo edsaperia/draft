@@ -2026,7 +2026,7 @@ async function diffAgainst(file, now) {
  * the step cannot learn, and a row whose audience comes out empty (Q1356).
  * Prints one JSON line and exits 3 on anything unread, 0 otherwise, the
  * matrix's own codes; `spec-check`'s `checkSeatMatrixStatic` runs it. */
-const EVENT_ROWS = 42;
+const EVENT_ROWS = 43;
 if (process.argv.includes('--static')) {
   const unread = [];
   const filedRows = [];
@@ -2080,6 +2080,12 @@ say(`tables     · SURFACE §2 events ${EVENTS.length} rows · seats ${SEATS.len
 // `proposal`, where a refusal is a dominated race (§4.4) and not one vote
 // against, and driving one to that state is a design of its own. The count
 // is 42 and the step is owed — Q1499 asks Ed which road it should take.
+// **E43 joined on 2026-10-01** (Q1570, where each member is reading): its
+// audience cell is *the membership*, read by `AUDIENCE` as it stands; what
+// it has not got is a step either — a seat's place is a query field its own
+// page sends after a dwell, which these seats never scroll to produce, so the
+// row's guard is `presence-walk` (sprint-pages), which drives the dwell and
+// reads the margin and the payload on every seat. The count is 43.
 if (EVENTS.length !== EVENT_ROWS) {
   shape.push(`SURFACE §2 has ${EVENTS.length} event rows, not the ${EVENT_ROWS} this table was written against`);
 }

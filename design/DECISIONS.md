@@ -7668,3 +7668,16 @@ Ed, 2026-09-30, in the coordinator's session: *When you make a proposal it's pin
 - **A stagger between entries sweeping in one poll.** A second dial, not built until wanted; sweeps on different entries in one poll play together.
 - **The wash greening on a pass.** SWEEP.md §1.1 says the wash turns green; M21's palette has no green wash — a closed slip paints white, and `--ok` belongs to the ✔ alone. The pass ending as built crossfades from the live entry's colour to the record's, and the ✔ carries the green. Reported to the coordinator as a call at the build.
 
+
+## Q1570: where each member is reading — the ruling against the recommendation, and what the build rejected (2026-09-30, built 2026-10-01)
+
+**The elective rungs show faces** (1570.1). The coordinator recommended 👀 under `anonymousElective` and `sealedElective` as well as under the two fixed anonymous rungs: under an elective rung the choice to sign is made per proposal, and after the reading, so a face in the margin names a reader who has not yet chosen to be named for anything. Ed ruled the other way — *I can live with faces being shown on any setting that allows signed proposals* — and the line is the one SPEC §3.5a now states: named wherever a proposal may be signed, unnamed under `anonymous` and `sealed`. The reasoning is kept here because the recommendation was the stricter reading of §3.5a and may be worth re-asking if a room objects.
+
+**Rejected in the build:**
+- **The patch for the layer's own nodes.** PRESENCE.md §1.3 asked for the marks to ride `PATCH.set` so a mark is the node it was. The patch strips a kept node's inline `top` (its markup carries none) and mutes the transition of a node whose class changed (`landStill`), which are exactly the two things a glide and a fade need — so `renderReading` reconciles its own nodes by key, one per member id or token, added `landing`, kept across renders, removed after one wash. The identity rule holds; the mechanism is the layer's own.
+- **The place as a pixel.** A scroll offset shared between a phone at 390 and a desktop at 1600 means nothing; the block key is the same clause on every screen (decision 2).
+- **Reporting on scroll.** A member scrolling past forty clauses would have forty marks chase them down the margin; the dwell (2 s) reports where they stopped (decision 3).
+- **Member ids under the anonymous rungs** with the page drawing 👀. The view is the blind projection (SPEC §3.5): the bytes have to be anonymous, not only the picture (1570.3).
+- **A log event per report.** The gotcha Q681 earned: a read that writes pins the clock. The host's memory holds the table and a restart forgets it.
+- **The matrix step.** `seat-matrix` seats never scroll, so a step producing a dwell would be a design of its own; E43's audience cell is read by the static half and the row's guard is `presence-walk`.
+- **A closed document's margin.** Nobody is deciding anything there; the host serves no `reading` on a closed document and the page draws none.

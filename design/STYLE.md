@@ -92,6 +92,10 @@ Glyph names are stable (tabulated 2026-09-07, Q1208; the founding order's own gl
   hold, never the text.
 - **T11 · A paragraph states the document's rule, never your own answer** —
   blindness intact.
+- **The reading margin's hover is the name alone** (Q1570, Ed 2026-09-30;
+  SURFACE M25): a mark's `title` is the member's name as the register has it,
+  no verb and no sentence — never *Ada is reading here* — and nothing at all
+  under the anonymous rungs.
 - T10's first exception: in the members list *you* stand at the **top** on
   your own line (Ed, 2026-08-21), with *(nobody else here yet)* **above** you
   until somebody arrives — a statement about the list, not a caption on you
