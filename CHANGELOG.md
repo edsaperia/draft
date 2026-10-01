@@ -2,9 +2,18 @@
 
 **[docs.vote](https://docs.vote)** is a place for a group to write a document together. Anybody may propose a change; rival wordings of the same passage race each other; the membership votes on them in blind pairs (*which of these two wordings?*, no names attached, no scores shown), and the wording that comes out on top is adopted once enough of the membership has voted. The document's own rules are decided the same way, inside the document.
 
-docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first, back to the project's first commit on 2026-08-13. The mechanism's full rules are in [`SPEC.md`](SPEC.md) (v0.145 today), and what the page shows a member is in [`SURFACE.md`](SURFACE.md).
+docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first, back to the project's first commit on 2026-08-13. The mechanism's full rules are in [`SPEC.md`](SPEC.md) (v0.146 today), and what the page shows a member is in [`SURFACE.md`](SURFACE.md).
 
 ---
+
+## 2026-10-01, night: a proposal is only what it changes
+
+### Changed
+- **A proposal is cut down to the lines it actually changes.** If you rewrite a passage and leave some lines as they were, the proposal no longer covers the lines you left alone, so it only competes with proposals on the lines you changed. Where unchanged lines sit in the middle, it becomes a proposal in two places. A proposal that changes nothing is turned away, and costs you no ✏️.
+
+### For contributors
+- **An engine change, so a full deploy.** `minimalHunks` (engine-core `text/minimal.ts`) normalises every text patch at the three doors — proposing, the ✒️ decree, the re-make of a stranded patch — after the attestation is checked as sent; replay is untouched. The demo's J1 swap now arrives as two sites.
+- **SPEC v0.146** (§2.1, R-147).
 
 ## 2026-10-01, evening: votes on the record
 
