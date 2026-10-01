@@ -4699,30 +4699,49 @@ async function drivenPass(page, walk, keys, prepare) {
     const now = await list(key);
     const target = now && now.filter((c) => c.what === what)[nth];
     if (!target) return null;
-    const pos = await page.evaluate(([key, i, CTL]) => {
-      const q = String(key).replace(/["\\]/g, '\\$&');
-      const card = document.querySelector('.setupcard[data-setupcard="' + q + '"], .sugg[data-card="' + q + '"]');
-      const el = [...card.querySelectorAll(CTL)]
-        .filter((b) => !b.disabled && !b.closest('.chipcol') && b.getClientRects().length &&
-          getComputedStyle(b).visibility !== 'hidden' && getComputedStyle(b).pointerEvents !== 'none')[i];
-      if (!el) return null;
-      el.scrollIntoView({ block: 'center' });
-      // what ticks by itself, read before the press and left out after it
-      const ticks = new Set();
-      const idle = new MutationObserver((ms) => { for (const m of ms) ticks.add(m.target.nodeType === 3 ? m.target.parentNode : m.target); });
-      idle.observe(document.documentElement, { subtree: true, childList: true, attributes: true, characterData: true });
-      window.__DRV = { idle, ticks, n: 0, el };
-      const r = el.getBoundingClientRect();
-      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-    }, [key, target.i, CTL]);
-    if (!pos) return null;
-    await wait(page, 250);
-    await page.evaluate(() => {
-      const d = window.__DRV;
-      d.idle.disconnect();
-      d.live = new MutationObserver((ms) => { for (const m of ms) { const t = m.target.nodeType === 3 ? m.target.parentNode : m.target; if (!d.ticks.has(t)) d.n++; } });
-      d.live.observe(document.documentElement, { subtree: true, childList: true, attributes: true, characterData: true });
-    });
+    // **the click lands on the control it was aimed at** (stage 10): the
+    // point is read in the same step that starts the observer, right before
+    // the press, and the press waits until the control stands under it —
+    // a card still unrolling or a page scrolled by `fitOpened` after the
+    // control was brought into view sent the click to a dead spot, read as
+    // a control with no job (P22 on charter·race-quiet-rivals, CI at
+    // 92f4da7, the page unchanged from a green 40011a4). No timeout moved:
+    // the wait is the control's own position, tried at most three times
+    let pos = null;
+    for (let tries = 0; tries < 3 && !pos; tries++) {
+      const armed = await page.evaluate(([key, i, CTL]) => {
+        const q = String(key).replace(/["\\]/g, '\\$&');
+        const card = document.querySelector('.setupcard[data-setupcard="' + q + '"], .sugg[data-card="' + q + '"]');
+        const el = [...card.querySelectorAll(CTL)]
+          .filter((b) => !b.disabled && !b.closest('.chipcol') && b.getClientRects().length &&
+            getComputedStyle(b).visibility !== 'hidden' && getComputedStyle(b).pointerEvents !== 'none')[i];
+        if (!el) return null;
+        el.scrollIntoView({ block: 'center' });
+        // what ticks by itself, read before the press and left out after it
+        const ticks = new Set();
+        const idle = new MutationObserver((ms) => { for (const m of ms) ticks.add(m.target.nodeType === 3 ? m.target.parentNode : m.target); });
+        idle.observe(document.documentElement, { subtree: true, childList: true, attributes: true, characterData: true });
+        window.__DRV = { idle, ticks, n: 0, el };
+        return true;
+      }, [key, target.i, CTL]);
+      if (!armed) return null;
+      await wait(page, 250);
+      pos = await page.evaluate(() => {
+        const d = window.__DRV;
+        d.idle.disconnect();
+        const r = d.el.getBoundingClientRect();
+        const x = r.left + r.width / 2, y = r.top + r.height / 2;
+        const hit = x >= 0 && y >= 0 && x < innerWidth && y < innerHeight && document.elementFromPoint(x, y);
+        if (!hit || !(hit === d.el || d.el.contains(hit))) { window.__DRV = null; return null; }
+        d.live = new MutationObserver((ms) => { for (const m of ms) { const t = m.target.nodeType === 3 ? m.target.parentNode : m.target; if (!d.ticks.has(t)) d.n++; } });
+        d.live.observe(document.documentElement, { subtree: true, childList: true, attributes: true, characterData: true });
+        return { x, y };
+      });
+    }
+    // never under its own point in three tries: a member could not press it
+    // either, so it counts as a press that did nothing (and is retried on a
+    // fresh page like any other)
+    if (!pos) return false;
     const sent = net;
     await page.mouse.click(pos.x, pos.y);
     await wait(page, 400);
