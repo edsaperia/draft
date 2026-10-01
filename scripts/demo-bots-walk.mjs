@@ -12,7 +12,7 @@
  *
  *   1. ▶️ four stub bots at *frantic*, beating, for 60 s: the logs grow by 20
  *      or more, bots judged and proposed, and **a swap stands as a live
- *      two-hunk candidate** (each slot's time written back is asserted by
+ *      two-hunk candidate** at one of the twelve reads (each slot's time written back is asserted by
  *      `demo-model.test.ts` on the PizzaCon shape; the ladder's charter has
  *      no times);
  *   2. ⏸️ by hand: no bot acts; ▶️ resumes;
@@ -80,15 +80,25 @@ const logs = async () => {
 // -- 1. four frantic bots for sixty seconds
 const before = (await logs()).n;
 await bots({ action: 'start', count: 4, pace: 'frantic', model: 'claude-haiku-4-5', devRunMs: 600_000, devCapUsd: 50, devLapseMs: 10_000 });
-for (let i = 0; i < 12; i++) { await sleep(5_000); await beat(); }
+// **a swap is read live as it stands, every five seconds** (redesign stage
+// 10; sprint 59, `dcd834e`): a bot may withdraw any live proposal of its own
+// and the room may decide one, so the one swap of a minute was sometimes gone
+// by the minute's end (*swaps 1, withdrawals 2*) and a single read there
+// failed a run in which the swap had stood
+const twoHunkIn = (view) => (view.clauses || []).some((c) => (c.candidates || []).some((cand) => (cand.hunks || []).length === 2));
+let twoHunk = false;
+for (let i = 0; i < 12; i++) {
+  await sleep(5_000); await beat();
+  if (!twoHunk) twoHunk = twoHunkIn((await logs()).v);
+}
 let s = await readout();
 const { n: after, v } = await logs();
+twoHunk = twoHunk || twoHunkIn(v);
 say(`acts: ${JSON.stringify(s.acts)} · calls ${s.calls} · $${s.runUsd}`);
 check(after - before >= 15, `the logs grew by ${after - before} (15 or more)`);
 check(s.acts.judgments >= 1, `bots judged (${s.acts.judgments})`);
 check(s.acts.proposals >= 1, `bots proposed (${s.acts.proposals})`);
 check(s.acts.swaps >= 1, `a bot proposed a swap (${s.acts.swaps})`);
-const twoHunk = (v.clauses || []).some((c) => (c.candidates || []).some((cand) => (cand.hunks || []).length === 2));
 check(twoHunk, 'a swap stands as a live two-hunk candidate');
 check(s.acts.refused === 0, `no bot command was refused for anything but an ordinary race (${s.acts.refused})`);
 
