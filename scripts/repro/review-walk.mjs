@@ -263,10 +263,12 @@ const plain = await page.evaluate((id) => {
   const s = c.querySelector('[data-slot="fact"]');
   const t = s ? s.textContent.trim() : '';
   return { head: head ? head.textContent.trim() : null, ins: c.querySelectorAll('.clausehead ins, .clausehead del').length,
-    same: /^Unchanged/.test(t) ? t : null };
+    same: /^Unchanged/.test(t) ? t : null,
+    // nothing passed, so there is no version to draw before them (Ed, 2026-10-01)
+    prevs: [...c.querySelectorAll('.ranked .glab')].filter((g) => g.textContent.trim() === 'Previous text').length };
 }, same?.id);
 check('line 1\'s fold of ✖s: its head the clause, unmarked, and a line saying it is unchanged',
-  plain && plain.head === 'Alpha line stays.' && plain.ins === 0 && !!plain.same, JSON.stringify(plain));
+  plain && plain.head === 'Alpha line stays.' && plain.ins === 0 && !!plain.same && plain.prevs === 0, JSON.stringify(plain));
 await page.keyboard.press('Enter');
 await sleep(3000);
 now = await read();
@@ -295,6 +297,37 @@ check('…marked against the text before the first of them, and not said to be u
   card && card.base === 'Beta line one.' && card.ins === 'by r' && !card.same, `ins ${card?.ins} · against ${card?.base}`);
 check('every record in it is drawn in full, oldest first', card && card.parts.length === 3
   && JSON.stringify(card.fold) === JSON.stringify(members), JSON.stringify({ parts: card?.parts, fold: card?.fold }));
+// **each version once, not each change** (Ed, 2026-10-01: *not [(v0->v1), (v1->v2),
+// (v2->v3)] but instead [v0, v1, v2, v3]*): one *Previous text* in the fold, the
+// original, before every record and inside none; each ✔ marked against the version
+// above it (result-only, K25: what it inserted), and X's ✖ draws no head of its own,
+// making no version
+const versions = await page.evaluate((id) => {
+  const c = [...document.querySelectorAll('.sugg[data-card]')].find((x) => x.dataset.card === id);
+  if (!c) return null;
+  const isPrev = (el) => ((el.querySelector('.glab') || {}).textContent || '').trim() === 'Previous text';
+  const prevs = [...c.querySelectorAll('.ranked')].filter((b) => !b.classList.contains('foldpart') && isPrev(b));
+  const parts = [...c.querySelectorAll('.foldpart')];
+  const first = c.querySelector('.ranked');
+  // a block's head is its own `.rtext`; the wordings it weighed are nested blocks
+  const head = (b) => { const t = b.querySelector(':scope > .rtext'); return t && t.textContent.trim() ? t : null; };
+  return {
+    prevs: prevs.length,
+    prevFirst: !!first && prevs[0] === first,
+    prevText: prevs[0] ? (prevs[0].querySelector('.rtext') || prevs[0]).textContent.replace(/^Previous text/, '').trim() : null,
+    inside: parts.filter((b) => [...b.querySelectorAll('.ranked')].some(isPrev)).length,
+    heads: parts.map((b) => { const t = head(b); return t ? { ins: [...t.querySelectorAll('ins')].map((e) => e.textContent).join('|'),
+      del: [...t.querySelectorAll('del')].map((e) => e.textContent).join('|'), text: t.textContent.trim() } : null; }),
+  };
+}, fold?.id);
+check('the fold draws one Previous text, first, the text before them all, and no record draws its own',
+  versions && versions.prevs === 1 && versions.prevFirst && /Beta line one\./.test(versions.prevText || '') && versions.inside === 0,
+  JSON.stringify(versions));
+check('…R1 marked against it, X\'s ✖ no head, R2 marked against the version above',
+  versions && versions.heads.length === 3 && !!versions.heads[0] && versions.heads[0].ins === 'two'
+    && versions.heads[1] === null
+    && !!versions.heads[2] && versions.heads[2].ins === 'three' && versions.heads[2].text === 'Beta line three.',
+  JSON.stringify(versions && versions.heads));
 check('…and the fold and each record have their own tab in the card\'s strip',
   card && card.strip.includes(fold?.id) && members.every((m) => card.strip.includes(m)), JSON.stringify(card?.strip));
 check('its one OK is the fold\'s', card && card.ok === fold?.id, card?.ok);

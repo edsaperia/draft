@@ -1160,6 +1160,18 @@ const IN_PAGE = () => {
       if (/^(✏|🏛)$/u.test(g) && role(b) !== 'price') gaps33.push('price');
     }
     out.factGaps = gaps33;
+    // …and **a clause fold draws each version once** (Ed, 2026-10-01: *not
+    // [(v0->v1), (v1->v2), (v2->v3)] but instead [v0, v1, v2, v3]*): one
+    // *Previous text*, the original, outside every record's block, and none
+    // inside one — where a record drew its own, every version after the first
+    // stood twice, one record's new text and the next one's previous
+    if (card.classList.contains('foldcard')) {
+      const isPrev = (l) => /^Previous text$/.test((txt(l) || '').trim());
+      out.foldVersions = {
+        top: [...card.querySelectorAll('.glab')].filter((l) => !l.closest('.chipcol') && !l.closest('.foldpart') && isPrev(l)).length,
+        inside: [...card.querySelectorAll('.foldpart')].filter((fp) => [...fp.querySelectorAll('.glab')].some(isPrev)).length,
+      };
+    }
     // P34: a drawn glyph beside a word keeps its space (Ed, 2026-09-29; STYLE
     // T50) — the word's last letter to the glyph's left edge, and the glyph's
     // right edge to the next word's first letter, where the copy put a space;
@@ -2764,6 +2776,8 @@ function grammarRules(c, ref) {
   // …and every fact wears its role (stage 10): a home found by its words
   // and drawn without the role is a fact the check could not count
   if (v && v.factGaps) for (const r of new Set(v.factGaps)) at('one-home', 'a ' + r + ' fact drawn without data-fact="' + r + '"', 'unmarked-' + r);
+  if (v && v.foldVersions && (v.foldVersions.top > 1 || v.foldVersions.inside > 0)) at('one-home', 'a clause fold draws a version twice: ' +
+    v.foldVersions.top + ' Previous text outside its records, ' + v.foldVersions.inside + ' inside one (Ed, 2026-10-01: [v0, v1, v2, v3])', 'fold-version');
 
   /* P34 glyph-space — a drawn glyph beside a word keeps the space the copy
    * gave it (Ed, 2026-09-29; STYLE.md T50): at least 0.2em between the word
