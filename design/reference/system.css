@@ -305,6 +305,7 @@
        (Ed, 2026-08-17). Long enough to be seen as a change, short enough not
        to be a performance. */
     --wash-ms: 700ms;
+    --reading-ms: 1400ms; /* a reading mark's move: twice the wash, eased at both ends (Ed, 2026-10-01) */
     /* …and how long a switch's thumb takes to cross its track. Same family and
        the same easing — a wash is tuned for a colour changing somewhere in the
        margin, where a control is under the pointer and has to answer the press
@@ -3162,13 +3163,14 @@
      Where each member is reading: a column of 20px marks on the desk beside a
      block, outside the sheet's trim, each a face or the drawn 👀. The layer is
      a zero-size positioned child of .doc; session.js writes each mark's `left`
-     and `top` after the patch, so a move glides over --wash-ms; a mark is born
+     and `top` after the patch, so a move glides over --reading-ms (1400 ms),
+     eased at both ends (Ed, 2026-10-01); a mark is born
      `landing` and fades in, and stays `leaving` for one wash on its way out.
      Nothing here takes a click but the mark itself, for its title. */
   .reading { position: absolute; width: 0; height: 0; pointer-events: none; z-index: 7; }
   .reading .rd {
     position: absolute; width: 20px; height: 20px; display: block; pointer-events: auto;
-    opacity: 1; transition: top var(--wash-ms) ease, opacity var(--wash-ms) ease;
+    opacity: 1; transition: top var(--reading-ms) cubic-bezier(0.65, 0, 0.35, 1), opacity var(--wash-ms) ease;
   }
   .reading .rd.landing { transition: none; opacity: 0; }
   .reading .rd.leaving { opacity: 0; pointer-events: none; }
