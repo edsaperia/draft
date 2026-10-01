@@ -490,7 +490,7 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     type RichView = TextView & {
       floor: number;
       walletInfo: { balance: number; nextDripInMs: number | null; dripIntervalMs: number | null; cap: number } | null;
-      clauses: Array<{ closeness: number; judges: number; floor: number; candidates: Array<{ id: string }> }>;
+      clauses: Array<{ closeness: number; voteTick: number | null; judges: number; floor: number; candidates: Array<{ id: string }> }>;
       raceCards: Array<{ raceId: string; urgency: number; a: { id: string; incumbent?: boolean }; b: { id: string; incumbent?: boolean } }>;
       records: Array<{ raceId: string; candidateId: string; outcome: string; judges: number;
         displaced: string[]; field: Array<{ candidateId: string; outcome: string }> }>;
@@ -512,6 +512,13 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
     expect(adaV.clauses[0]!.candidates).toHaveLength(2);
     expect(adaV.clauses[0]!.closeness).toBeGreaterThanOrEqual(0);
     expect(adaV.clauses[0]!.closeness).toBeLessThanOrEqual(1);
+    // **when a vote last landed** (SWEEP.md §1.4, 1571.1): a clock on every
+    // live race, never a count — null until somebody has judged (an author's
+    // own voice is a preference, not a judgment cast), a time from the first
+    // vote on, never going backwards; nothing in the row counts the votes
+    expect(adaV.clauses[0]!.voteTick).toBeNull();
+    let tick0 = -Infinity;
+    expect(JSON.stringify(adaV.clauses)).not.toMatch(/judgmentCount|"votes"|"count"/);
     // the leader's judges (Q1337): its author's own voice — the rival's
     // author is a voice for their own draft, not a judge of this one
     expect(adaV.clauses[0]!.judges).toBe(1);
@@ -538,6 +545,14 @@ describe('the whole road: create, invite, arrive, answer, constitute', () => {
         const outcome = card.a.id === r1.id ? 'a' : card.b.id === r1.id ? 'b'
           : card.a.incumbent ? 'b' : 'a';
         await cmd(who, 'judge-race', { a: card.a.id, b: card.b.id, outcome });
+        // the clock is a time from the first vote on, and moves with each
+        // vote or stands where one landed in the same millisecond — never back
+        const after = await rich(who);
+        if (after.clauses.length) {
+          expect(typeof after.clauses[0]!.voteTick).toBe('number');
+          expect(after.clauses[0]!.voteTick!).toBeGreaterThanOrEqual(tick0);
+          tick0 = after.clauses[0]!.voteTick!;
+        }
       }
     }
     const done = await rich(ada);
@@ -814,7 +829,11 @@ describe('auth discipline', () => {
     // payload, never a seat — and a command still needs one
     const bare = await fetch(`${base}/api/d/${created.slug}/view`);
     expect(bare.status).toBe(200);
-    expect(await bare.json()).toMatchObject({ stranger: true });
+    const bareBody = await bare.json();
+    expect(bareBody).toMatchObject({ stranger: true });
+    // the door carries no live race's clock and nobody's place (SWEEP.md
+    // §1.4, PRESENCE.md §1.2): both are the membership's
+    expect(JSON.stringify(bareBody)).not.toMatch(/voteTick|"reading"/);
     const forged = await fetch(`${base}/api/d/${created.slug}/view`,
       { headers: { cookie: 'draft_session=ZG9j.Zm91bmRlcg.99999999999999.bad' } });
     expect(await forged.json()).toMatchObject({ stranger: true });

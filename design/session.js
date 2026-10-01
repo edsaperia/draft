@@ -898,6 +898,132 @@
       prevWash.set(el.dataset.washkey, { col: el.dataset.wash, fill: el.dataset.fill });
     }
   }
+
+  // ---- the queue card wash sweep transition (`wash-sweep`, `mark-stamp`;
+  // SWEEP.md, Q1571, Ed 2026-09-30) ------------------------------------------
+  // **A landed vote sweeps the wash** (decisions 2–4): the fill runs rightward
+  // from where it stands to full, resets in an instant cut, and climbs to the
+  // new value — one motion eased out, its duration proportional to the
+  // distance, one bar width per SWEEP_MS, never a drain. A pass runs to full
+  // and stays; a failure runs to full, resets to empty and stays; the wash's
+  // own crossfade (`settleWashes`) colours the ending, seeded here from the
+  // live entry's colour. **The mark stamps** wherever an entry's mark changes
+  // (decision 5): the new glyph lands at 1.6× and settles over STAMP_MS, on
+  // its transform alone, so no box moves (P13). Played on the **kept node**
+  // after the patch through the Web Animations API — never a CSS transition,
+  // which `landStill` switches off for the flush and which would run under
+  // the sweep — so a poll landing mid-sweep re-patches the node and the
+  // animation goes on (`render-hold-walk`). The rail's delta is read here:
+  // an entry kept from the last render whose tick (`voteTick`, 1571.1) or
+  // fill moved sweeps once (votes landing together in one poll are one
+  // sweep, 1571.2); whose mark changed stamps; a record arriving for a race
+  // whose entries were here plays the ending from their fill. An entry
+  // arriving keeps `birth-pass`'s arrival and does not stamp. Under reduced
+  // motion the fill steps and the bar's leading edge brightens for
+  // `--wash-ms`; the mark swaps with the crossfade alone. The band's own
+  // entries draw themselves and are not read.
+  const SWEEP_MS = 500;   // one bar width
+  const STAMP_MS = 250;
+  const prevRail = new Map();   // entry key → what the last render drew
+  const sweeps = [];            // the recent ones, for the walks: an instrument
+  const noteSweep = (x) => { sweeps.push({ ...x, at: Date.now() }); if (sweeps.length > 60) sweeps.shift(); };
+  const railButton = (g, e) => queueEl && queueEl.querySelector(
+    'li[data-q="' + CSS.escape(g.id) + '"][data-site="' + CSS.escape(String(e.site ?? '')) + '"] > button');
+  // `.sweeping` takes the width transition off the bar for the sweep's length
+  // (system.css), so the fill `settleWashes` sets lands under the animation
+  // and never plays a second, slower motion after it
+  const unsweep = (btn) => () => btn.classList.remove('sweeping');
+  function sweepFill(btn, kind, from, to) {
+    const up = Math.max(0, 100 - from);
+    const dist = kind === 'vote' ? up + to : up;
+    if (dist <= 0) return null;
+    // offsets proportional to the distance, so the speed is constant between
+    // the eased ends; the reset is two frames at one offset — a cut
+    const frames = kind === 'pass' ? [{ width: from + '%' }, { width: '100%' }]
+      : kind === 'fail' ? [{ width: from + '%', offset: 0 }, { width: '100%', offset: 1 }, { width: '0%', offset: 1 }]
+      : [{ width: from + '%', offset: 0 }, { width: '100%', offset: up / dist },
+         { width: '0%', offset: up / dist }, { width: to + '%', offset: 1 }];
+    btn.classList.add('sweeping');
+    try {
+      const a = btn.animate(frames, { duration: dist / 100 * SWEEP_MS, easing: 'ease-out', pseudoElement: '::before' });
+      a.addEventListener('finish', unsweep(btn)); a.addEventListener('cancel', unsweep(btn));
+      return a;
+    } catch (e) { btn.classList.remove('sweeping'); return null; }
+  }
+  // reduced motion: the fill steps, and the leading edge brightens
+  function stepFill(btn) {
+    btn.classList.add('sweeping');
+    try {
+      const col = getComputedStyle(btn).getPropertyValue('--washcol').trim() || 'transparent';
+      const a = btn.animate([{ boxShadow: 'inset -4px 0 0 ' + col }, { boxShadow: 'inset -1px 0 0 ' + col }],
+        { duration: WASH_MS, easing: 'ease-out', pseudoElement: '::before' });
+      a.addEventListener('finish', unsweep(btn)); a.addEventListener('cancel', unsweep(btn));
+      return a;
+    } catch (e) { btn.classList.remove('sweeping'); return null; }
+  }
+  function stampMark(btn) {
+    const mk = btn.querySelector('.qmark .mk') || btn.querySelector('.qmark > *');
+    if (!mk) return null;
+    try {
+      return mk.animate([{ transform: 'scale(1.6)' }, { transform: 'scale(0.94)', offset: 0.7 }, { transform: 'scale(1)' }],
+        { duration: STAMP_MS, easing: 'ease-out' });
+    } catch (e) { return null; }
+  }
+  function playSweeps(entries) {
+    const cur = new Map();
+    for (const e of entries) {
+      const g = e.g;
+      if (!g || g.html) continue;
+      const st = stateOf(g);
+      const sealed = st === 'sealed';
+      // a flat wash is not a meter: a draft, a diagonal, a record
+      const flat = sealed || isDiagonal(g) || (st === 'yours' && !!g.unproposed);
+      cur.set(qKey(g, e), { g, sealed, flat, fill: flat ? 100 : Math.max(0, Math.min(100, g.pct | 0)),
+        tick: g.tick == null ? null : g.tick, kind: markKindOf(g),
+        raceId: g.raceId || null, cand: g.candId || g.candidate || null, el: railButton(g, e) });
+    }
+    const first = prevRail.size === 0;
+    const reduced = REDUCED();
+    for (const [key, c] of cur) {
+      const p = prevRail.get(key);
+      if (!c.el) continue;
+      if (p) {
+        if (!c.flat && !p.flat && (p.tick !== c.tick || p.fill !== c.fill)) {
+          noteSweep({ key, kind: 'vote', from: p.fill, to: c.fill, tick: c.tick });
+          if (reduced) stepFill(c.el); else sweepFill(c.el, 'vote', p.fill, c.fill);
+        }
+        if (p.kind !== c.kind) {
+          noteSweep({ key, kind: 'stamp', from: p.kind, to: c.kind });
+          if (!reduced) stampMark(c.el);
+        }
+        continue;
+      }
+      if (first || !c.sealed) continue;
+      // **a record arriving for a race whose entries were here**: its ending,
+      // played from the fill they showed — the race's record (`rec:<race>`,
+      // or `rec:<race>/<n>` after a split, Q1534), or for a proposal of your
+      // own the record holding your wording (`mineIn`) or its early ✖
+      const m = /^rec:(early:)?([^/]+)/.exec(c.g.id);
+      if (!m) continue;
+      const mineIn = c.g.mineIn || [];
+      const live = [...prevRail.entries()].filter(([, q]) => !q.sealed && !q.flat && (
+        (!m[1] && q.raceId === m[2]) || (q.cand && (mineIn.includes(q.cand) || (m[1] && q.cand === m[2])))));
+      if (!live.length) continue;
+      const from = Math.max(...live.map(([, q]) => q.fill));
+      const pass = carried(c.g) && !c.g.undecided;
+      const fail = !carried(c.g) && !c.g.undecided;
+      // the live colour as the from of the record's own crossfade: the slip
+      // was drawn in the record's colour, and `settleWashes` fades from here
+      const was = prevWash.get(live[0][0]);
+      if (was) { c.el.style.setProperty('--washcol', was.col); c.el.style.setProperty('--washbg', groundOf(was.col, key)); }
+      noteSweep({ key, kind: pass ? 'pass' : fail ? 'fail' : 'stamp', from, race: m[2] });
+      if (reduced) { stepFill(c.el); continue; }
+      if (pass || fail) sweepFill(c.el, pass ? 'pass' : 'fail', from, 100);
+      stampMark(c.el);
+    }
+    prevRail.clear();
+    for (const [k, v] of cur) prevRail.set(k, { ...v, el: null });
+  }
   let topUrgentId = null;   // the one card that is never dropped
 
   // Where in the charter an entry stands. A patch has one per site (Ed, 108);
@@ -1389,6 +1515,10 @@
     railCtl = new AbortController();
     window.PATCH.set(queueEl, html);
     justArrived = null;
+    // the sweep and the stamp, on the nodes the patch kept (SWEEP.md §1.4):
+    // before `settleWashes` sets the new fill, so the bar's own transition
+    // never runs under the sweep
+    playSweeps(entries);
     // Everything in the rail opens, sealed dots included (Ed, 112): a locked
     // judgment can't be changed, but it can always be read.
     queueEl.querySelectorAll('button[data-q]').forEach((b) =>
@@ -6923,6 +7053,9 @@ document.addEventListener('paste', (ev) => {
     arcFrames, flyGlyph, pencilStorm, renderWallet, beat, act, narrow: NARROW,
     // the breakpoint itself, for paper.js's sheets (Q1516 (6)): one literal
     NARROW_Q,
+    // the wash sweep's instrument and its two constants (SWEEP.md §2): what
+    // the rail played, for `sweep-walk` to read beside `getAnimations()`
+    sweeps, SWEEP_MS, STAMP_MS,
     // the hold vocabulary, shared with the founder's own wallets in the page:
     // `nudgeHome` brings a released flight back (never travelling less than a
     // quarter), `startLean`/`stopLean` are the spend-preview, and `applyLean`

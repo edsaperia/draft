@@ -1035,6 +1035,14 @@
     transition: background-color var(--wash-ms) ease, box-shadow var(--wash-ms) ease,
                 width var(--wash-ms) ease;
   }
+  /* **Under a sweep the bar's width is the animation's** (`wash-sweep`,
+     SWEEP.md §1.4): `playSweeps` puts `sweeping` on the entry for the sweep's
+     length, so the fill `settleWashes` sets lands at once beneath the Web
+     Animations keyframes and no second, slower motion plays after them. The
+     colour crossfade is untouched: it is the ending's own. */
+  .queue button.sweeping::before {
+    transition: background-color var(--wash-ms) ease, box-shadow var(--wash-ms) ease;
+  }
 
   /* Anything already judged is one line. Everything still open is a full card:
      the compression ladder is gone (Ed, 2026-08-16 — see the rail's own note on

@@ -1499,6 +1499,11 @@ window.LIVE = (function () {
           // same two numbers as `judges` and `floor` below; the engine sends
           // the ratio so the page never divides.
           pct: Math.round((r.closeness || 0) * 100),
+          // **when a vote last landed on the race** (SWEEP.md §1.4, 1571.1): a
+          // clock the host moves once per judgment, printed nowhere — the rail
+          // sweeps the entry's wash when it moves (`wash-sweep`), since a vote
+          // on a pair the meter is not waiting on leaves the fill where it was
+          tick: r.voteTick == null ? null : r.voteTick,
           judges: r.judges || 0, floor: r.floor,
           // **waiting behind a park on the same clause** (SURFACE E36, R-100):
           // the batch passes this race over until the Founder answers a park
@@ -1759,7 +1764,11 @@ window.LIVE = (function () {
         // says *signed* and offers no switch
         items.push({ id: localIdOf.get(m.id) || ('mine:' + m.id), kind: 'draft', mine: true, keys,
           state: 'needs', qLabel: sites[0].label, urgency: 0,
-          pct: awaiting ? 100 : 0,
+          // **the pinned entry carries its race's meter** (SWEEP.md §0): the
+          // same signless magnitude the race's own entry shows, and the
+          // race's tick, so a vote on your wording sweeps it (1571.2)
+          pct: awaiting ? 100 : m.closeness != null ? Math.round(m.closeness * 100) : 0,
+          tick: m.voteTick == null ? null : m.voteTick,
           cap: (stranded ? STRANDED.cap : awaiting ? PARK.yours : YOURS.inRace) +
             (m.signed ? YOURS.signedTail : ''),
           signed: !!m.signed, awaiting, stranded,
