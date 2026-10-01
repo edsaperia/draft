@@ -207,7 +207,11 @@ window.CARD_SHELL = (function () {
   function cardHtml(st) {
     const w = WORDS();
     const f = st.frame || {};
+    // **one card across a change** (issue #143): the frame carries its
+    // lineage, the keyed re-render's key, so a card whose item changes under
+    // the reader keeps its node (`CARD_STATE.lineageOf`)
     return '<div class="' + esc((f.cls || 'sugg') + ' gshell') + '"' + (f.attrs || '') +
+      (st.lineage ? ' data-lineage="' + esc(st.lineage) + '"' : '') +
       ' data-kind="' + esc(st.kind || '') + '">' +
       labelSlot(st) + headSlot(st) + factSlot(st) + bodySlot(st) + blocksSlot(st) + inputSlot(st) + rowSlot(st, w) +
       '</div>';
