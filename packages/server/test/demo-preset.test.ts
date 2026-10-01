@@ -179,6 +179,30 @@ describe('the demo preset (DEMO.md §3.2)', () => {
       .toContain('P9');
   });
 
+  it('P9: a face beside the name (issue #142) — one face, one without, and the three refusals', () => {
+    const faced = PARTS.cast.replace('2. **Bea Two**', '2. 📜 **Bea Two**')
+      .replace('3. **Cal Three**', '3. 🧑‍⚖️ **Cal Three**');
+    const { preset, errors } = parsePreset(fixture({ cast: faced }));
+    expect(errors).toEqual([]);
+    expect(preset!.cast.map((c) => [c.name, c.face])).toEqual([
+      ['Al One', null], ['Bea Two', '📜'], ['Cal Three', '🧑‍⚖️'], ['Dee Four', null], ['Eve Five', null]]);
+    // the face is not part of the persona
+    expect(preset!.cast[1]!.persona).toBe('careful.');
+    const refused = (cast: string): string[] =>
+      parsePreset(fixture({ cast })).errors.filter((e) => e.rule === 'P9').map((e) => e.message);
+    // not one emoji: two, or a word
+    expect(refused(PARTS.cast.replace('2. **Bea Two**', '2. 📜📜 **Bea Two**'))[0]).toMatch(/not one emoji/);
+    expect(refused(PARTS.cast.replace('2. **Bea Two**', '2. Dr **Bea Two**'))[0]).toMatch(/not one emoji/);
+    // the page's furniture: ✏️ and 👑 are never a face
+    expect(refused(PARTS.cast.replace('2. **Bea Two**', '2. ✏️ **Bea Two**'))[0]).toMatch(/furniture/);
+    expect(refused(PARTS.cast.replace('2. **Bea Two**', '2. 👑 **Bea Two**'))[0]).toMatch(/furniture/);
+    // one face, one member
+    expect(refused(faced.replace('4. **Dee Four**', '4. 📜 **Dee Four**'))[0])
+      .toMatch(/'Dee Four' and 'Bea Two' both wear 📜/);
+    // and the Founder's line carries none: Ed picks his own
+    expect(refused(PARTS.cast.replace('1. **Al One**', '1. 🍕 **Al One**'))[0]).toMatch(/Founder/);
+  });
+
   it('P9a: an exact duplicate of another entry', () => {
     const dup = PARTS.proposals.replace('<!-- @end -->',
       '**A2**\nReplaces: `### 09:00 · Opening`\nWith: `### 09:00 · Welcome`\nReason: Again.\nProposer: Cal Three\nState: fresh\n<!-- @end -->');
@@ -207,6 +231,11 @@ describe('the demo preset (DEMO.md §3.2)', () => {
     expect(preset!.decided).toHaveLength(4);
     expect(preset!.open).toHaveLength(22);
     expect(preset!.cast.filter((c) => !c.founder)).toHaveLength(13);
+    // every bot wears a face, thirteen different ones, and the Founder none (issue #142)
+    const bots = preset!.cast.filter((c) => !c.founder);
+    expect(bots.every((c) => c.face !== null)).toBe(true);
+    expect(new Set(bots.map((c) => c.face)).size).toBe(13);
+    expect(preset!.cast.find((c) => c.founder)!.face).toBeNull();
     // the three reorderings across two places are two-site entries (Q1535: all kept)
     expect(preset!.open.filter((e) => e.sites.length === 2).map((e) => e.label)).toEqual(['B1', 'J2', 'K1']);
     // the Monday dates are the text as first published, not the text at reset

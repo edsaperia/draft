@@ -104,6 +104,12 @@ describe('the demo document (DEMO.md Stage 1)', () => {
     // criterion 7: every multi-site entry is one candidate of that many hunks
     expect(live.filter((c) => c.patch!.hunks.length === 2)).toHaveLength(3);
     expect(engine.allCandidates().filter((c) => c.state === 'adopted' && c.patch)).toHaveLength(4);
+    // every bot wears its cast line's face, and the Founder's seat none (issue #142)
+    const recs = [...doc.cs.memberRecords().values()];
+    expect(recs.find((m) => m.name === 'Dr Tomasz Wierzbicki')!.picture).toBe('e📜');
+    expect(recs.find((m) => m.name === 'Judge Harriet Osei-Brennan')!.picture).toBe('e🧑‍⚖️');
+    expect(recs.filter((m) => typeof m.picture === 'string' && m.picture.startsWith('e'))).toHaveLength(13);
+    expect(doc.cs.convenorRecord().picture ?? null).toBeNull();
   });
 
   it('holds its address: the birth is told it is taken', async () => {
