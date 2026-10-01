@@ -2413,28 +2413,41 @@ function glassZoneMoves(a, b, dScroll) {
  */
 const OWN_LINE = (key) => key === 'hat';
 
+/**
+ * What the first line may move on the glass across one P13 reading, and the
+ * room it is measured against (answers Part 6.4, 6.5): on close, up by what
+ * the scroll cannot give back; on open or a switch, down by the shortfall.
+ * Both are facts about where the window stands, so P31 compares a travel
+ * net of this allowance, never the raw travel.
+ */
+function p13Allowance(c, e) {
+  const { a, b } = e;
+  let dy = 0; let room = 0;
+  if (e.sub === 'close') {
+    room = a.room || 0;
+    dy = -Math.max(0, room - (a.scrollY || 0));
+  } else {
+    room = b.room || 0;
+    // a blank paragraph — 📧's before the mail (Q1541 stage 3a) — draws no
+    // line to read; its line stands where its tab says, the open card's
+    // own first line keeping the same distance from the pressed tab
+    const aLine = (!OWN_LINE(c.key) && a.line) || (a.glyph && b.glyph && b.line ? [b.line[0], r2(a.glyph[1] + b.line[1] - b.glyph[1])] : null);
+    dy = aLine ? Math.max(0, r2((a.glass || 0) + room - aLine[1])) : 0;
+    // **inside one strip the tab wins over the label's room** (M12, Q1558;
+    // the band's since Q1541 stage 4): a tab low in a long strip on a phone
+    // leaves the new card's label above the glass rather than moving, so a
+    // switch within a strip allows no shortfall — P11's own reading
+    if (e.sub === 'switch' && a.within) dy = 0;
+  }
+  return { dy, room };
+}
+
 function p13Rules(c, at) {
   for (const e of c.p13 || []) {
     if (e.unread) continue;
     const { a, b } = e;
     if (!a || !b || !a.ok || !b.ok) continue;
-    let dy = 0; let room = 0;
-    if (e.sub === 'close') {
-      room = a.room || 0;
-      dy = -Math.max(0, room - (a.scrollY || 0));
-    } else {
-      room = b.room || 0;
-      // a blank paragraph — 📧's before the mail (Q1541 stage 3a) — draws no
-      // line to read; its line stands where its tab says, the open card's
-      // own first line keeping the same distance from the pressed tab
-      const aLine = (!OWN_LINE(c.key) && a.line) || (a.glyph && b.glyph && b.line ? [b.line[0], r2(a.glyph[1] + b.line[1] - b.glyph[1])] : null);
-      dy = aLine ? Math.max(0, r2((a.glass || 0) + room - aLine[1])) : 0;
-      // **inside one strip the tab wins over the label's room** (M12, Q1558;
-      // the band's since Q1541 stage 4): a tab low in a long strip on a phone
-      // leaves the new card's label above the glass rather than moving, so a
-      // switch within a strip allows no shortfall — P11's own reading
-      if (e.sub === 'switch' && a.within) dy = 0;
-    }
+    const { dy, room } = p13Allowance(c, e);
     const sub = e.sub === 'page-top' || (e.sub !== 'close' && dy > GLASS_TOL) ? 'page-top' : e.sub;
     const bits = [];
     const want = (what, p, q) => {
@@ -2870,24 +2883,32 @@ function walkGrammar(zones, tips, switches, restReads) {
  * reading's travel — the first line and the pressed tab, on the glass — must
  * agree across the widths. **Stated exception: the active tab** grows 8 px at
  * 1600 and highlights in place at 390, split at the 900 px line (1541.53), so
- * the tab's sideways travel is not compared.
+ * the tab's sideways travel is not compared. **And the travel compared is
+ * net of what P13 allows at that width** (answers Part 6.4, 6.5): on close
+ * the first line rises by what the scroll cannot give back, `room − scrollY`,
+ * and the label's room and the scroll both differ at the two widths — so
+ * two widths that each move exactly as far as the rule allows agree, and the
+ * width-invariant part is what is left. A reading P13 fails is P13's finding
+ * at its own width, and a difference in what is left is P31's.
  */
 function widthRules(cards, baseline) {
   const out = [];
   if (!baseline || !Array.isArray(baseline.cards)) return out;
-  const travel = (e) => {
+  const travel = (c, e) => {
     if (!e || e.unread || !e.a || !e.b || !e.a.ok || !e.b.ok) return null;
-    return { line: e.a.line && e.b.line ? d2(e.a.line, e.b.line) : null, tab: e.a.glyph && e.b.glyph ? d2(e.a.glyph, e.b.glyph) : null };
+    const { dy } = p13Allowance(c, e);
+    const net = (d) => [d[0], r2(d[1] - dy)];
+    return { line: e.a.line && e.b.line ? net(d2(e.a.line, e.b.line)) : null, tab: e.a.glyph && e.b.glyph ? net(d2(e.a.glyph, e.b.glyph)) : null };
   };
   const base = new Map();
-  for (const c of baseline.cards) for (const e of c.p13 || []) base.set(c.walk + '·' + c.key + '·' + e.sub, travel(e));
+  for (const c of baseline.cards) for (const e of c.p13 || []) base.set(c.walk + '·' + c.key + '·' + e.sub, travel(c, e));
   for (const c of cards) {
     for (const e of c.p13 || []) {
       if (e.sub === 'page-top') continue; // the shortfall is a fact about the window's height, not a travel
-      const x = base.get(c.walk + '·' + c.key + '·' + e.sub); const y = travel(e);
+      const x = base.get(c.walk + '·' + c.key + '·' + e.sub); const y = travel(c, e);
       if (!x || !y) continue;
       const bits = [];
-      if (x.line && y.line && (Math.abs(x.line[0] - y.line[0]) > GLASS_TOL || Math.abs(x.line[1] - y.line[1]) > GLASS_TOL)) bits.push('first line ' + x.line.join(', ') + ' → ' + y.line.join(', '));
+      if (x.line && y.line && (Math.abs(x.line[0] - y.line[0]) > GLASS_TOL || Math.abs(x.line[1] - y.line[1]) > GLASS_TOL)) bits.push('first line, net of P13\'s allowance, ' + x.line.join(', ') + ' → ' + y.line.join(', '));
       if (x.tab && y.tab && Math.abs(x.tab[1] - y.tab[1]) > GLASS_TOL) bits.push('tab ' + x.tab[1] + ' → ' + y.tab[1] + 'px down');
       if (bits.length) out.push({ check: 'width-invariance', walk: c.walk, key: c.key, sub: e.sub, ex: e.sub + ': ' + bits.join(' · ') + ' (1600 → ' + VIEWPORT.width + ')' });
     }
