@@ -227,7 +227,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1582** — claim by writing the block here, then commit it alone.
+**The next free number is 1589** — claim by writing the block here, then commit it alone.
+
+**1588 is the rail-second-press builder's calls** (claimed 2026-10-02 by the cloud coordinator; PR #170, issue #168; Ed 2026-10-02 ~11:05 UTC: *I want to change this second behaviour to be to not close it, but instead bring it back into view*; the scope, queue cards only, OK'd by Ed 12:48). **Settled by the coordinator from the brief, as built** (2026-10-02): (1) the charter's rail binds `railPress`, which on the open card re-runs `bringIntoView` and leaves `openId`, `filedOpen` and the wire untouched, `toggle` unchanged for every other caller; (2) the Rules' rail calls `scrollToCard` when `S.open === k` and the press came from `#rail`, the band tab and the topbar keeping their second press; (3) a card already in view moves nothing; (4) on a phone the task sheet lowers and the card stays open; (5) review-walk's lone-insertion step closes with Escape, the only walk that closed by a second entry press; (6) `scripts/repro/rail-second-press.mjs` joins `sprint-pages`, red on main with 6 defects. **Spent.**
 
 **1581 is the heading-ranks builder's calls** (claimed 2026-10-02 by the cloud coordinator; draft PR #156, issue #152; Ed 2026-10-02 ~00:55 UTC: *headings get larger depending on what the smallest level that's used in the text*; the coordinator's ladder OK'd by Ed 01:21 UTC). **Settled by the coordinator from the brief, as built** (2026-10-02): (1) rung 3 is a new token, `--h-part`, 2.369rem Regular ruled; (2) the title steps to 3.157rem only while three ranks are in use, else 2.369rem; (3) a level the Text does not yet use, typed in a lane, previews at the rank it would land at; (4) the ranks come from the Text's own lines (`CARDS.setHeadLevels`) and reach every site through `rankCls`, the Rules unranked; (5) the PR stands on the builder's one push branch, not the brief's name. **Spent.**
 
