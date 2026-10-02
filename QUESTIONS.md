@@ -246,7 +246,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1587** — claim by writing the block here, then commit it alone.
+**The next free number is 1593** — claim by writing the block here, then commit it alone.
+
+**1588 is the rail-second-press builder's calls** (claimed 2026-10-02 by the cloud coordinator; PR #170, issue #168; Ed 2026-10-02 ~11:05 UTC: *I want to change this second behaviour to be to not close it, but instead bring it back into view*; the scope, queue cards only, OK'd by Ed 12:48). **Settled by the coordinator from the brief, as built** (2026-10-02): (1) the charter's rail binds `railPress`, which on the open card re-runs `bringIntoView` and leaves `openId`, `filedOpen` and the wire untouched, `toggle` unchanged for every other caller; (2) the Rules' rail calls `scrollToCard` when `S.open === k` and the press came from `#rail`, the band tab and the topbar keeping their second press; (3) a card already in view moves nothing; (4) on a phone the task sheet lowers and the card stays open; (5) review-walk's lone-insertion step closes with Escape, the only walk that closed by a second entry press; (6) `scripts/repro/rail-second-press.mjs` joins `sprint-pages`, red on main with 6 defects. **Spent.**
 
 **1585 is the plan for proposing on a phone** (claimed 2026-10-02 by the cloud coordinator; draft PR #166, issue #164; Ed 2026-10-02 ~10:40 UTC: *We should make a plan for making proposals on mobile*). Eight calls, 1585.1–1585.8, put to Ed in the builder's order, each with its recommendation first: the door into a clause, where the typing happens, a confirming tap, Q1350's paired keyboard, the first cut's scope, motions, the founder's text before 🍾, and the yellow while typing. **Answered** (above): all eight ruled (a) by Ed 2026-10-02, .1 after research.
 
