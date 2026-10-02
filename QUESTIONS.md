@@ -227,7 +227,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1582** — claim by writing the block here, then commit it alone.
+**The next free number is 1587** — claim by writing the block here, then commit it alone.
+
+**1586 is the desk-credit builder's calls** (claimed 2026-10-02 by the cloud coordinator; PR #167, issue #165; Ed 2026-10-02 ~10:50 UTC: *a small footer … under the page on the desk … "Created by the London College of Political Technology"*; the long-document reading put to Ed as an OK-means-seen decision at 10:52). **Settled by the coordinator from the brief, as built** (2026-10-02): (1) the credit is set at `--t-cap`, the scale's footer size, in `--desk-muted`; (2) it stands `--desk-gap` below the last sheet, 24px at 1600 and 16px at narrow; (3) it stands inside the read-mode runway, so it is met by scrolling on a long document, and at 390 it has passed above the topbar at the very last pixel, the runway left alone; (4) it is hidden in edit mode, by the same `editing` test paper.js uses for the sheet; (5) the address is `CREDIT_HREF` in paper.js, and the sentence is split into `page.credit.lead` and `page.credit.name` so that no markup rides the copy table; (6) it is not on feed.html, which loads no paper.js. **Spent.**
 
 **1581 is the heading-ranks builder's calls** (claimed 2026-10-02 by the cloud coordinator; draft PR #156, issue #152; Ed 2026-10-02 ~00:55 UTC: *headings get larger depending on what the smallest level that's used in the text*; the coordinator's ladder OK'd by Ed 01:21 UTC). **Settled by the coordinator from the brief, as built** (2026-10-02): (1) rung 3 is a new token, `--h-part`, 2.369rem Regular ruled; (2) the title steps to 3.157rem only while three ranks are in use, else 2.369rem; (3) a level the Text does not yet use, typed in a lane, previews at the rank it would land at; (4) the ranks come from the Text's own lines (`CARDS.setHeadLevels`) and reach every site through `rankCls`, the Rules unranked; (5) the PR stands on the builder's one push branch, not the brief's name. **Spent.**
 
