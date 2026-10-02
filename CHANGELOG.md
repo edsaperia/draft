@@ -6,6 +6,11 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-10-02: live updates measured before they are built
+
+### For contributors
+- **Nothing a member sees changes.** Scaling Stage 4's spike (issue #159) measured a Server-Sent Events stream on a local server and found it fit to build on. A stream stayed open past Node's request timeout. Writes arrived within 5 ms with no buffering. Each stream cost one file descriptor and 10–20 KB, with no event-loop lag at 1,000 streams. Stage 4 has to end its streams at shutdown and spread its reconnects. The spike's route was removed unshipped by Ed's ruling (no Render measurement); `scripts/spike-sse.mjs` stays for measuring Stage 4's real stream. Findings: `design/spec-pass/plan-scaling.md` *Stage notes*.
+
 ## 2026-10-02: the questions page's contract, kept by code
 
 ### For contributors

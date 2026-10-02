@@ -167,3 +167,19 @@ production unless walks force cold loads, evictions and reconnects.
 (One line per stage as it lands: commit, measurement, what was found.)
 
 - **Stage 0**, 2026-09-23, branch `scaling-stage0`: `scale-seed` / `scale-measure` / `boot-guard` in sim-harness; PRODUCTION.md *Measurements*, 2026-09-23. A pool of 1,000 seeded documents measured at N = 30, 100, 300 (1,000 not run: this machine lacked the memory). On the starter at ×7, boot fills the 15-minute window at ~200 documents, RSS passes 512 MB at ~290, 30%-online polling fills the core at ~240 — the plan's order holds in sequence but not in margin, and boot and memory swap places if the big documents weigh what nh2026 does. `tick()` is milliseconds, so Stage 1 is only Stage 2's prerequisite; Stage 2 must not ship without Stage 3 (a convention's lazy load is ~30 s of blocked thread on Render, past the health check's 15 s); Stage 4 matters sooner than its place. Boot guard at `FLEET = 60`, half the window; wiring it into CI is the session's.
+- **Stage 4's spike**, 2026-10-02, issue #159, PR #161: three flagged rows behind `DRAFT_SPIKE_SSE=1` — `GET /api/spike/sse` (a counter every 5 s, a comment heartbeat every 15 s, `retry:` with optional jitter), `POST /api/spike/poke` (one event onto a named stream, at once) and `GET /api/spike/stats` (streams, RSS, heap, fds, event-loop lag), nothing from any document — **measured locally and removed unshipped** (in git at `7c3f8f93`); `node scripts/spike-sse.mjs <base>` measured them (an instrument, not a guard) and stays for Stage 4's `/api/d/:slug/events`. **Local half, measured** (this container, the production flags `--max-old-space-size=384`, Node 24, one client process on the same host — so no proxy between them):
+
+  | question | measured locally |
+  |---|---|
+  | 1. stays open? | 100 streams held 420 s, **0 cuts** — past Node's 300 s `requestTimeout`, which bounds the request and not the response |
+  | 2. buffers? | no: poke write-to-receive p50 1 ms, p99 3–5 ms at 100, 300 and 1,000 streams; counter gaps p5–p95 4 999–5 002 ms against 5 000 |
+  | 3. cost per stream | **one fd** and **~10–20 KB of heap** (1,000 streams: heap 18 → 25–29 MB, RSS 97 → 116 MB, fds 30 → 1,031); event-loop lag p99 ~1 ms at 0, 100, 300 and 1,000 streams alike — an idle stream costs no CPU worth measuring |
+  | 4. after a restart | 300 streams cut by SIGTERM, a new process started: with `retry: 3000` and no jitter **all 300 came back inside one second** (reopen p50 3 090 ms, max 3 122); with 10 s of server-chosen jitter, **22–38 a second over ten seconds** (p50 7.5 s, max 13 s) |
+
+  **Stage 4's build carries two findings:**
+  1. **End every stream at the start of `close()`.** Open streams hold the shutdown: `close()`'s `server.close()` waits on them until its 3 s race gives up, so a deploy's drain took 3.0–4.4 s instead of milliseconds.
+  2. **The herd is the views, not the streams.** A reconnect costs a socket, but the page follows each with `refresh()`, so jitter is what spreads N view requests. It is sent as `retry:` from the server, which `EventSource` obeys: at 300 pages, about 30 views a second over ten seconds rather than 300 at once.
+
+  **Recommendation: build Stage 4 as planned** — taken by Ed as (b), below.
+
+  **No Render measurement — Ed's (b), 2026-10-02 ~10:26 UTC:** *skip the Render measurement, build Stage 4 on the local numbers, the backstop covers a cut.* Render's documented cap (100 minutes the most a request may last; a long-lived connection's zero-downtime routing covers its handshake only, so the old instance's streams break when it stops) is met by `EventSource`'s reconnect plus the 30 s backstop.
