@@ -22,8 +22,11 @@
  *    stream is never nudged by it, so the timing of their events says
  *    nothing their view does not.
  *
- * A heartbeat comment every `HEARTBEAT_MS` keeps proxies from timing the
- * line out, and doubles as **an open member's presence report** (below).
+ * A `ping` every `HEARTBEAT_MS`, with no payload, keeps proxies from timing
+ * the line out and **is how the page hears a line that has gone quiet**: an
+ * `EventSource` on a half-open connection never errors, so the page's
+ * watchdog counts the silence (C17), which a comment line would not let it
+ * see. It doubles as **an open member's presence report** (below).
  *
  * **How a change is found: a scan, not a hook.** Every document with an open
  * stream is visited every `SCAN_MS` and its two lengths compared with what
@@ -55,8 +58,10 @@ import { touchPlace, presenceGen } from './presence.js';
 
 /** How often a streamed document's lengths are compared. */
 export const SCAN_MS = 200;
-/** A comment line this often: inside every proxy's idle timeout we know of. */
-export const HEARTBEAT_MS = 25_000;
+/** A `ping` this often: the plan's floor (15–30 s), inside every proxy's
+ *  idle timeout, and short enough that the page's watchdog (20 s of silence)
+ *  hears a hung line in about the time the old two failed polls did. */
+export const HEARTBEAT_MS = 15_000;
 /** `retry:` floor, and the most added to it at random per stream. */
 export const RETRY_BASE_MS = 1_000;
 export const RETRY_JITTER_MS = 10_000;
@@ -176,7 +181,7 @@ export class EventHub {
         continue;
       }
       if (nowMs - s.lastWriteMs >= heartbeatMs) {
-        this.write(s, `: hb\n\n`, nowMs);
+        this.write(s, 'event: ping\ndata: {}\n\n', nowMs);
         // **an open member page is a page still reading where it last said**
         // (E43): the poll that kept a place inside the TTL is a 30 s backstop
         // now, so the heartbeat keeps it — a page that closes stops being

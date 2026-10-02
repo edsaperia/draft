@@ -449,6 +449,14 @@ case "$GROUP" in
     # your own, never on a phone, gone within the TTL once the page closes.
     # Sprint tier from its first day (Q1547). About two minutes
     walk "presence-walk" npm run presence-walk -- "$BASE"
+    # **Push instead of polling** (Scaling Stage 4, issue #162): two seats on
+    # a begun document, each page holding `/api/d/:slug/events`; a proposal
+    # and a vote on one seat reach the other seat's rail in under a second,
+    # an event under a held press is kept and lands when it is let go, and an
+    # idle page asks for nothing beyond the 30 s backstop while a page with
+    # push off polls at 4 s as before. Sprint tier from its first day
+    # (Q1547). About a minute and a half
+    walk "push-walk" npm run push-walk -- "$BASE"
     # **The open card stays open and morphs into what it became** (issue
     # #143, Ed 2026-10-01: *the decision card will remain open but change
     # smoothly into the record card, and the queue card should stay in the

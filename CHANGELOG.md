@@ -6,6 +6,14 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-10-02: votes and changes arrive at once
+
+### Changed
+- **What others do now reaches your page at once.** A proposal, a vote, a change passing and where others are reading appear on your page within a moment of happening, instead of up to four seconds later. A page left open and idle also asks docs.vote for far less, so a full room weighs less on the service.
+
+### For contributors
+- **Push instead of polling** (Scaling Stage 4, issue #162). `GET /api/d/:slug/events` is a Server-Sent Events stream carrying only the document's two log lengths, plus an empty nudge for the pause, the stall flag, a new build and (to members) a reading place moving. The page asks for its view when an event says something moved. The 4 s poll is now a 30 s backstop while the stream is open, and the old 4 s whenever it is not. `DRAFT_PUSH=off` turns the stream off, and every page then polls as before. `/healthz` counts the streams. New walk `npm run push-walk`, in the sprint tier. Design and measurements: `design/spec-pass/plan-scaling.md` *Stage notes*.
+
 ## 2026-10-02: headings sized by the levels a document uses
 
 ### Changed
