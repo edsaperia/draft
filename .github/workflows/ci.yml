@@ -2,7 +2,8 @@
 # linted, typechecked, tested, built, booted — and, in the `walks` job at the
 # foot of this file, been walked end to end against a server that job starts.
 # `walks` and `probe` are the two jobs that can be red without holding the
-# deploy, which is a step of `ci` and runs in parallel with both.
+# deploy, which is a step of `ci`: on a pull request every job runs side by
+# side, and on a push to main the others wait for `ci` (issue #184, below).
 #
 # The test suite includes the constitution browser bundle's byte-freshness
 # check, so a stale
@@ -17,8 +18,33 @@ on:
     branches: [main]
   pull_request:
 
+# **The deploy never queues behind PR checks** (issue #184; dev-ops
+# CONVENTIONS.md, *Branches and merging*, Ed 2026-10-02: *stop stale PR
+# runs, and deploy first*). GitHub runs only so many of the account's jobs at
+# once, and on two of nine merges that day the deploying `ci` job waited 21
+# and 4 minutes for a machine behind pull-request runs nobody would read —
+# one branch had three runs going at once. So a new push to a pull request
+# cancels that branch's run in flight. A push to main gets a group of its
+# own (its run id), so it is never cancelled and never displaced as a
+# pending run either; the deploy's own serialising is the `deploy-main`
+# group on the `ci` job, unchanged.
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('ci-pr-{0}', github.head_ref) || format('ci-run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
+  # **Two jobs, one check named `ci`** (issue #184). On a push to main the
+  # other ten jobs `needs: ci`, so the deploying job takes the first machine
+  # and they queue behind it rather than beside it; `needs` cannot be
+  # conditional, so on a pull request — where they must still run side by
+  # side — this job is skipped at once, its dependents start with nothing to
+  # wait for (their `!cancelled()` lets a skipped `ci` through), and
+  # `ci-pr` below runs the same gates under the same name. One set of steps,
+  # shared by YAML anchor, so the two can never disagree. Each is named for
+  # what it is on the event it skips, so a skipped one never reads as `ci`.
   ci:
+    name: ${{ github.event_name == 'push' && 'ci' || 'ci (deploys from main; skipped)' }}
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     # **No job stands for ever** (plan-ci-speed.md Stage 1: one run stood for
     # seventy hours with no limit on any job). Fifteen minutes is four times
@@ -52,7 +78,7 @@ jobs:
     # Stage 6: the Postgres backend is tested against the same major the
     # local container pins (17), or the migration is tested only on one
     # machine. The server's whole HTTP walk runs a second time over it.
-    services:
+    services: &ci-services
       postgres:
         image: postgres:17-alpine
         env:
@@ -63,9 +89,9 @@ jobs:
         options: >-
           --health-cmd "pg_isready -U draft"
           --health-interval 5s --health-timeout 5s --health-retries 10
-    env:
+    env: &ci-env
       DRAFT_TEST_DATABASE_URL: postgres://draft:draft@127.0.0.1:5433/draft
-    steps:
+    steps: &ci-steps
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
@@ -456,6 +482,21 @@ jobs:
             && echo "the pause is lifted — the live host is writing again" \
             || echo "the resume was refused: lift it by hand (docs/OPERATING.md §3) or wait out PauseState.MAX_MS"
 
+  # `ci` on a pull request: the same services, environment and steps (the
+  # deploy and the tag are main-only by their own `if:`, so they skip here
+  # as they always have), fifteen minutes, read-only — nothing on this side
+  # writes to GitHub — and no deploy group.
+  ci-pr:
+    name: ${{ github.event_name == 'pull_request' && 'ci' || 'ci (pull requests; skipped)' }}
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    services: *ci-services
+    env: *ci-env
+    steps: *ci-steps
+
   # The design probes, headless (Q504(b), 2026-08-21). A probe nobody runs
   # rots silently — the setup reference had drifted 200 diffs from HEAD
   # before the merge noticed. This job serves design/ and walks both probes
@@ -472,7 +513,8 @@ jobs:
   #
   # What promoting it buys is a red X on the commit and nothing more: the
   # deploy is a *step* of the `ci` job above, which runs in parallel with
-  # this one, so nothing here can gate a deploy. Gating would mean lifting
+  # this one on a pull request and before it on main (issue #184), so
+  # nothing here can gate a deploy. Gating would mean lifting
   # the deploy into its own job with `needs: [ci, probe]`.
   #
   # **Expect red after an intentional page change.** Both probes compare
@@ -483,6 +525,9 @@ jobs:
   # of the signal, and it is now visible rather than swallowed. A scenario
   # change needs no re-freeze — only a page change does (Q914).
   probe:
+    # after `ci` on main, beside it on a pull request (issue #184, above `ci`)
+    needs: ci
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -570,9 +615,12 @@ jobs:
   # push, the same card-audit walk stopping before any golden is read. Its
   # own runner rather than a step of `probe`: the walk is about eight and a
   # half minutes, and inside `probe` it made that job the push's longest.
-  # Same standing as `probe`: in parallel with `ci`, gating nothing.
+  # Same standing as `probe`: beside `ci` (after it on main), gating nothing.
   raw-values:
     name: probe (raw values)
+    # after `ci` on main, beside it on a pull request (issue #184, above `ci`)
+    needs: ci
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -608,6 +656,9 @@ jobs:
   # minutes this way). The full audit, every walk, stays in the sprint tier.
   redesign-checks:
     name: probe (redesign checks ${{ matrix.width }})
+    # after `ci` on main, beside it on a pull request (issue #184, above `ci`)
+    needs: ci
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
@@ -650,6 +701,9 @@ jobs:
   # reading near the line means the runner is slower than assumed and FLEET
   # wants revisiting — and making it hold the deploy is then one `needs:`.
   boot-guard:
+    # after `ci` on main, beside it on a pull request (issue #184, above `ci`)
+    needs: ci
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -703,8 +757,8 @@ jobs:
   # catalogue the process booted with and exits 2 on a server that is not this
   # tree, so a walk here can only ever drive the server this job started.
   #
-  # Like `probe`, this job runs in parallel with `ci` and cannot gate the
-  # deploy — the deploy is a *step* of `ci`. A red here is a red X on the
+  # Like `probe`, this job runs beside `ci` (after it on main, issue #184)
+  # and cannot gate the deploy — the deploy is a *step* of `ci`. A red here is a red X on the
   # commit and nothing more. Gating would mean lifting the deploy into its own
   # job with `needs: [ci, probe, walks]`, which is a separate decision and
   # wants the walks' flake rate measured first; per push, ungated, is that
@@ -734,6 +788,9 @@ jobs:
   # a walk or repro written for one bug joins the sprint tier's groups.
   walks:
     name: walks (${{ matrix.group }})
+    # after `ci` on main, beside it on a pull request (issue #184, above `ci`)
+    needs: ci
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
