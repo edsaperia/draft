@@ -423,6 +423,13 @@ case "$GROUP" in
     # a 💡, an unread ✔ and a judged ⏳ — the rail's order is the strip's.
     # Serves design/ off the file system; red before the fix on the 💡
     walk "rail-stack-order" node scripts/repro/rail-stack-order.mjs
+    # **An open stack lifts as one** (issue #190, SURFACE M20, Ed
+    # 2026-10-02): each piled rail entry opened by a press — the open step's
+    # shadow cast by the whole stack, the edges unchanged under it, the lift
+    # a transition — at the desk's width and the phone's. Serves design/ off
+    # the file system; red before the fix on every piled entry
+    walk "pile-lift 1600" node scripts/repro/pile-lift.mjs --width=1600
+    walk "pile-lift 390" node scripts/repro/pile-lift.mjs --width=390
     # **A second press on the open card's rail entry travels back to it**
     # (issue #168, Ed 2026-10-02: *bring it back into view as with the first
     # click … if users want to deactivate it, they can instead click outside
