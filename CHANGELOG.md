@@ -6,6 +6,11 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-10-02: a measuring spike for live updates
+
+### For contributors
+- **Off unless switched on; nothing a member sees changes.** Scaling Stage 4's spike (issue #159): `DRAFT_SPIKE_SSE=1` turns on three `/api/spike/*` routes (`packages/server/src/routes-spike.ts`), a Server-Sent Events stream carrying a counter and the process's own numbers, never a document. `node scripts/spike-sse.mjs <base>` measures them; the findings are in `design/spec-pass/plan-scaling.md`'s *Stage notes*. Removed by Stage 4's build.
+
 ## 2026-10-02: a clause's decisions read top down from the current text
 
 ### Changed
