@@ -8,7 +8,7 @@ The index, in the section's own order (nothing is pinned — Ed, 2026-09-07, Q12
 
 | # | Title | Raised | State | Pointers |
 |---|---|---|---|---|
-| 1585 | Proposing on a phone: the eight calls of MOBILE.md §6a's plan | 2026-10-02 | **partly answered** — 1585.2, .3 and .4 ruled (a) by Ed 2026-10-02; 1585.1 back for research, restated (MOBILE.md §6a.1a); 1585.5–.8 open (draft PR #166, issue #164) | `design/MOBILE.md` §6a, §6a.9 |
+| 1585 | Proposing on a phone: the eight calls of MOBILE.md §6a's plan | 2026-10-02 | **partly answered** — 1585.2–.8 ruled (a) by Ed 2026-10-02; **1585.1 open**, back for research and restated (MOBILE.md §6a.1a) (draft PR #166, issue #164) | `design/MOBILE.md` §6a, §6a.9 |
 | 1565 | A card whose proposal passes while you are looking at it takes you to its ✔️ record | 2026-09-28 | **folded** — redesign stage 7, PR #125 (SURFACE C18; `record-travel.mjs`), (b) re-ruled by Ed 2026-09-29 17:27 UTC as (a) — every travelled-to record is read at the travel; **ruled by Ed 2026-09-28** (in the coordinator's session, 12:15 UTC): *When a proposal passes while you're looking at the card, you should be taken to the associated ✔️ card* — today the open judgment card closes by itself when its race is decided (SURFACE C-rules; a judgment files as ⏳ since Q576) and the ✔ record stands unread behind its tab; **answered, owed** — Ed on the questions page, 2026-09-28 12:19 UTC: **fold it into stage 7** (*Records, the backlog and the closed page*, BUILD.md); **(a) and (b) ruled by Ed 2026-09-29 (yes and yes); stage 7 begun, brief issue #123** — folded on its branch | SURFACE §9's sealed-record row, C18 (`review-walk`); `toggle`, `setData` (session.js); `itemsFromView` (live.js) |
 | 1556 | What redesign stage 2 deferred: the kinds left on old builders, the close-only OKs, two findings | 2026-09-26 | **deferred, each to its stage** — the fourteen calls and Ed's rulings lifted to DECISIONS 2026-09-26 (`q1556` merged as 9b2bd88f); (7)–(11) and (13) stay, condition to act: the stage each names merged; the two build findings have no condition yet | `design/band.js` `SHELL_KINDS`; `design/card-shell.js`; `design/redesign/BUILD.md` stage 2 |
 | 1535 | The demo document, docs.vote/d/demo (PizzaCon 2027) | 2026-09-24 | **ruled by Ed 2026-09-24**; plan `design/DEMO.md`, stages 1–5 integrated on branch demo-int and **live** (demo-int merged and deployed); Stage 6 not started; DEMO.md §9's 1535 (a)–(i) still open | `design/DEMO.md`; `design/demo/pizzacon-2027.md` |
@@ -49,13 +49,13 @@ The index, in the section's own order (nothing is pinned — Ed, 2026-09-07, Q12
 
     **1585.4 Q1350: a paired keyboard on a phone.** **Ruled (a) by Ed 2026-10-02:** support it as it is, measured working end to end (§6a.0 finding 2). *Was offered:* (b) gate edit mode by pointer.
 
-    **1585.5 First-cut scope.** (a) **Recommended: one site, the reason, signing and insertion by Enter; patches, runs and B · *I* go to stage 6b.** (b) Patches now as well: +1–2 days, with several open site cards and the patch row at 390, which is the likeliest place for a card to look broken.
+    **1585.5 First-cut scope.** **Ruled (a) by Ed 2026-10-02:** one place, the reason, signing and insertion by Enter; patches, runs and B · *I* go to stage 6b. *Was offered:* (b) patches now as well.
 
-    **1585.6 Motions, which already compose at 390.** (a) **Recommended: fold the 16px and 44px sweep into 6a.** Under an hour. (b) Leave them as they are; iOS zooms on the 14px field.
+    **1585.6 Motions, which already compose at 390.** **Ruled (a) by Ed 2026-10-02:** the 16px and 44px sweep goes into 6a. *Was offered:* (b) leave them as they are.
 
-    **1585.7 The founder's text before 🍾 on a phone.** (a) **Recommended: its own later stage, 6c.** (b) Inside 6a, adding ~1 day and the stash path.
+    **1585.7 The founder's text before 🍾 on a phone.** **Ruled (a) by Ed 2026-10-02:** its own later stage, 6c. *Was offered:* (b) inside 6a.
 
-    **1585.8 The yellow highlight while typing on a phone** (K19's re-mark after each composition). (a) **Recommended: keep it, check Gboard and iOS autocorrect on a device, and fall back to re-marking on blur if either doubles text.** (b) Re-mark only on blur on a phone from the start: safer, but no yellow until you leave the lane.
+    **1585.8 The yellow highlight while typing on a phone** (K19's re-mark after each composition). **Ruled (a) by Ed 2026-10-02:** keep it, check Gboard and iOS autocorrect on a device, and fall back to re-marking on blur if either doubles text. *Was offered:* (b) re-mark only on blur from the start.
 
 1395. **The glyph is the name, and a judgment's two options share one.** (Raised 2026-09-16, same pass.) Two halves of one question — *what does a member hear where the surface shows a picture*.
 
@@ -248,7 +248,7 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 **The next free number is 1586** — claim by writing the block here, then commit it alone.
 
-**1585 is the plan for proposing on a phone** (claimed 2026-10-02 by the cloud coordinator; draft PR #166, issue #164; Ed 2026-10-02 ~10:40 UTC: *We should make a plan for making proposals on mobile*). Eight calls, 1585.1–1585.8, put to Ed in the builder's order, each with its recommendation first: the door into a clause, where the typing happens, a confirming tap, Q1350's paired keyboard, the first cut's scope, motions, the founder's text before 🍾, and the yellow while typing. **Partly answered** (above): .2, .3 and .4 ruled (a) by Ed 2026-10-02; .1 restated after research; .5–.8 open.
+**1585 is the plan for proposing on a phone** (claimed 2026-10-02 by the cloud coordinator; draft PR #166, issue #164; Ed 2026-10-02 ~10:40 UTC: *We should make a plan for making proposals on mobile*). Eight calls, 1585.1–1585.8, put to Ed in the builder's order, each with its recommendation first: the door into a clause, where the typing happens, a confirming tap, Q1350's paired keyboard, the first cut's scope, motions, the founder's text before 🍾, and the yellow while typing. **Partly answered** (above): .2–.8 ruled (a) by Ed 2026-10-02; **.1 open**, restated after research.
 
 **1581 is the heading-ranks builder's calls** (claimed 2026-10-02 by the cloud coordinator; draft PR #156, issue #152; Ed 2026-10-02 ~00:55 UTC: *headings get larger depending on what the smallest level that's used in the text*; the coordinator's ladder OK'd by Ed 01:21 UTC). **Settled by the coordinator from the brief, as built** (2026-10-02): (1) rung 3 is a new token, `--h-part`, 2.369rem Regular ruled; (2) the title steps to 3.157rem only while three ranks are in use, else 2.369rem; (3) a level the Text does not yet use, typed in a lane, previews at the rank it would land at; (4) the ranks come from the Text's own lines (`CARDS.setHeadLevels`) and reach every site through `rankCls`, the Rules unranked; (5) the PR stands on the builder's one push branch, not the brief's name. **Spent.**
 
