@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 727
+  "entries": 723
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -155,10 +155,12 @@
   "grammar.sectoggle.fold": "Fold this section away",
   "grammar.sectoggle.unfold": "Unfold this section",
   "grammar.seedNote": "the proposal you are editing",
+  "grammar.speaker.anonymous": "Anonymous",
   "grammar.speaker.noReason": "No reason given.",
   "grammar.speaker.sealed": "A member wrote this. Who, is sealed until the closing record.",
   "grammar.speaker.wroteThis": "ƒ (escName) => escName + ' wrote this.'",
   "grammar.whyPlaceholder": "We should change this because…",
+  "grammar.yourReasoning": "Your reasoning",
   "page.appcards.admitted": "The membership admitted you. The email sent to you is your way in.",
   "page.appcards.admittedTitle": "Your Application Was Accepted",
   "page.appcards.apply": "Apply for Membership",
@@ -650,13 +652,7 @@
   "session.row.withdraw": "Withdraw",
   "session.row.withdrawCost": " — the edit comes back in full",
   "session.shifted": "The wording was changed here after you voted, so your vote was about a wording that no longer exists.",
-  "session.sign.anonExpLead": "Nobody is told who proposed this",
   "session.sign.anonLabel": "Anonymous",
-  "session.sign.anonymousName": "Anonymous",
-  "session.sign.expEver": " — ever.",
-  "session.sign.expUntil": " until the document is finished.",
-  "session.sign.signedAs": "ƒ (escName) => 'Signed — as ' + escName",
-  "session.sign.signedExp": "Your name goes on it from the moment you propose it, and stays there.",
   "session.stranded.cap": "Yours · the text moved under it",
   "session.stranded.drafted": "The document changed here, and your draft could not be carried across to the new wording — write it against the clause as it now stands.",
   "session.stranded.keepsCost": " — it keeps its place and the edit it already cost",
