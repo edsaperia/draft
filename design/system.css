@@ -216,6 +216,15 @@
     --h1: 1.777rem;         /* 1.333² — a part, Regular, ruled           */
     --h2: 1.333rem;         /* 1.333¹ — a chapter, Bold                  */
     --h3: 1.125rem;         /* 1.125¹ — a section, Italic                */
+    /* **The Text ranks its headings by the levels it uses** (issue #152, Ed
+       2026-10-02: *headings are too small … can we have headings get larger
+       depending on what the smallest level that's used in the text?*): the
+       deepest level used is rank 1 at `--h2` Bold, the next up rank 2 at
+       `--h1` Regular and ruled, the next rank 3 at `--h-part`, ruled
+       (`CARDS.rankCls`, `.rank1`–`.rank3` beside `.lvlN`). With three ranks
+       in use the title steps up one more, to keep its lead. The Rules'
+       headings carry no rank: `--h1`–`--h3` by depth are theirs. --------- */
+    --h-part: 2.369rem;     /* 1.333³ — a Text's rank 3, Regular, ruled  */
     /* the text face's line-height: Charis's x-height is large and its
        descenders long, so the body takes a step more air than the sans
        did (1.5). 16px × 1.55 is 24.8px, off the 4px grid by 0.8 — the
@@ -1650,10 +1659,13 @@
     font-family: var(--font-text); font-size: var(--h3); font-weight: 400; font-style: italic;
     line-height: var(--lh-text); color: var(--fg); margin: var(--s4) 0 var(--s1); position: relative;
   }
-  .doc .docline.lvl1 {
+  /* a part's look, ruled: an unranked `#` (the Rules'), and the Text's ranks
+     2 and 3 (issue #152) — the `:is()` outweighs the levels' own rules, so a
+     `##` ranked 2 is a part whatever its depth */
+  .doc .docline:is(.lvl1:not([class*="rank"]), .rank2, .rank3) {
     --head-rule: 14px;
     --line: calc(var(--h1) * var(--lh-head));
-    font-size: var(--h1); font-style: normal; line-height: var(--lh-head);
+    font-size: var(--h1); font-weight: 400; font-style: normal; line-height: var(--lh-head);
     margin: calc(2 * var(--s5)) 0 var(--s3); padding-top: var(--head-rule); border-top: 1px solid var(--border);
   }
   .doc .docline.lvl2 {
@@ -1661,7 +1673,20 @@
     font-size: var(--h2); font-weight: 700; font-style: normal; margin: var(--s5) 0 var(--s2);
   }
   .doc .docline.lvl3 { font-size: var(--h3); font-style: italic; margin: var(--s4) 0 var(--s1); }
-  .doc .prose > .docline.lvl1:first-child { margin-top: var(--s5); }
+  /* the Text's ranks (issue #152, `--h-part` above), after the levels, so a
+     Text heading's look is its rank's whatever its depth — no Text heading
+     under `--h2` — rank 2 and 3 taking the part's rule above, and the rule
+     riding `--head-rule` wherever a tab or a triangle is centred */
+  .doc .docline.rank1 {
+    --head-rule: 0px;
+    --line: calc(var(--h2) * var(--lh-text));
+    font-size: var(--h2); font-weight: 700; font-style: normal; line-height: var(--lh-text);
+    margin: var(--s5) 0 var(--s2); padding-top: 0; border-top: 0;
+  }
+  .doc .docline.docline.rank3 { --line: calc(var(--h-part) * var(--lh-head)); font-size: var(--h-part); }
+  html[data-head-ranks="3"] { --h-title: 3.157rem; }   /* 1.333⁴ */
+  .doc .prose > .docline.lvl1:first-child,
+  .doc .prose > .docline:is(.rank2, .rank3):first-child { margin-top: var(--s5); }
   /* **The 📝 card draws no hairline at its top** (Q1383, Ed 2026-09-15). A
      document whose first block is a `# ` heading opened with the heading's
      own part-rule (`--head-rule`) as the first thing on the card, in read
@@ -1676,15 +1701,16 @@
      the very start of the column (`G0`, its anchor drawn before the first
      block) made the first heading a second child, and the rule came back
      under the title. */
-  #prose > .docline.lvl1:nth-child(1 of .docline, p, .doctitle), #prose > .doctitle + .docline.lvl1,
-  #charter > .prose:first-of-type > .docline.lvl1:nth-child(1 of .docline, p, .doctitle),
-  #charter > .prose:first-of-type > .doctitle + .docline.lvl1 { border-top: 0; padding-top: 0; }
+  #prose > .docline:is(.lvl1, .rank2, .rank3):nth-child(1 of .docline, p, .doctitle),
+  #prose > .doctitle + .docline:is(.lvl1, .rank2, .rank3),
+  #charter > .prose:first-of-type > .docline:is(.lvl1, .rank2, .rank3):nth-child(1 of .docline, p, .doctitle),
+  #charter > .prose:first-of-type > .doctitle + .docline:is(.lvl1, .rank2, .rank3) { border-top: 0; padding-top: 0; --head-rule: 0px; }
   /* the fold triangle sits in the chip-gutter, in line with the anchor marks —
      centred on the heading's first line box (`--line`, Q1402): its own box is
      its glyph at `--t-cap` on a line-height of 1 plus 2px of padding each side */
   .doc h2.docline .sectoggle {
     position: absolute; right: 100%; margin-right: var(--s3);
-    top: calc((var(--line) - var(--t-cap) - 4px) / 2);
+    top: calc(var(--head-rule, 0px) + (var(--line) - var(--t-cap) - 4px) / 2);
   }
   .doc h2.docline.lvl1 .sectoggle { top: calc(var(--head-rule) + (var(--line) - var(--t-cap) - 4px) / 2); }
   .doc h2.docline .sechint {
@@ -1711,7 +1737,7 @@
      offset, when every rank was smaller than the tab). A part heading's rule
      and the air under it sit above its words, so its marks clear both — the
      chipcol is positioned against the padding box. */
-  .doc h2.docline .chipcol { top: calc((var(--line) - 30px) / 2); }
+  .doc h2.docline .chipcol { top: calc(var(--head-rule, 0px) + (var(--line) - 30px) / 2); }
   .doc h2.docline.lvl1 .chipcol { top: calc(var(--head-rule) + (var(--line) - 30px) / 2); }
   /* (the 900px rule that flattened the heading's gutter went with MOBILE.md's
      first cut, 2026-09-12: the gutter stays a column at every width) */
@@ -1809,6 +1835,9 @@
   .lp.hblock.lvl1 { font-size: var(--h1); font-weight: 400; line-height: var(--lh-head); }
   .lp.hblock.lvl2 { font-size: var(--h2); font-weight: 700; }
   .lp.hblock.lvl3 { font-size: var(--h3); font-weight: 400; font-style: italic; }
+  .lp.hblock.rank1 { font-size: var(--h2); font-weight: 700; font-style: normal; line-height: var(--lh-text); }
+  .lp.hblock.rank2 { font-size: var(--h1); font-weight: 400; font-style: normal; line-height: var(--lh-head); }
+  .lp.hblock.rank3 { font-size: var(--h-part); font-weight: 400; font-style: normal; line-height: var(--lh-head); }
   /* **Spaces are preserved** (Ed, 2026-08-17: "I can't write spaces into the
      proposal text"). The lane rewrites its own markup on every keystroke so the
      green marking can follow the caret, which means a space you have just typed
@@ -2971,12 +3000,17 @@
   .gshell .clausehead .headclause.onhead { padding-top: 0; --line: calc(var(--h3) * var(--lh-text)); }
   .gshell .clausehead .headclause.onhead.lvl1 { --line: calc(var(--h1) * var(--lh-head)); }
   .gshell .clausehead .headclause.onhead.lvl2 { --line: calc(var(--h2) * var(--lh-text)); }
+  .gshell .clausehead .headclause.onhead.rank1 { --line: calc(var(--h2) * var(--lh-text)); }
+  .gshell .clausehead .headclause.onhead.rank2 { --line: calc(var(--h1) * var(--lh-head)); }
+  .gshell .clausehead .headclause.onhead.rank3 { --line: calc(var(--h-part) * var(--lh-head)); }
   .gshell .clausehead .headclause.onhead .chipcol { top: calc((var(--line) - 30px) / 2); }
   /* the card keeps the heading's own air above it, so the content above
      moves by the label's room and no more */
   .sugg.gshell.onhead.lvl3 { margin-top: var(--s4); }
   .sugg.gshell.onhead.lvl2 { margin-top: var(--s5); }
   .sugg.gshell.onhead.lvl1 { margin-top: 48px; }
+  .sugg.gshell.onhead.rank1 { margin-top: var(--s5); }
+  .sugg.gshell.onhead:is(.rank2, .rank3) { margin-top: 48px; }
   /* a multi-place proposal's ↑ ↓ ride its label (answers Part 4 .7), at the
      label's right, their feet on its line */
   .gshell > .glabslot.hassteps { display: flex; justify-content: space-between; align-items: flex-end; gap: var(--s2); }

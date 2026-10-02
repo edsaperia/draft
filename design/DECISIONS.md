@@ -8052,6 +8052,16 @@ The slider left the page whole at stage 10 (`slider`, `syncSlider`, `SLIDERS` an
 
 - **A drag is a press held down, so `render()` under one kills it** (Q779): the `input` handler rebuilt the card mid-drag, destroying the range input holding the pointer capture. It repaints in place now, the full render waits for `change`, and the 4s poll defers for the drag as it does for the two holds (`pressInFlight`). `npm run slider-walk` drags to both ends of the track.
 
+## Issue #152: the Text's headings ranked by the levels it uses (2026-10-02)
+
+Ed, 2026-10-02 ~00:55 UTC: *In general I think headings are too small. At the moment an h3 is barely larger than body text. Can we have headings get larger depending on what the smallest level that's used in the text?* The coordinator's design from those words, built as written: the look follows **rank**, not markdown depth. The deepest level the Text uses is rank 1 (a chapter, `--h2` Bold), the next up rank 2 (a part, `--h1` Regular and ruled), the next rank 3 (`--h-part`, 2.369rem, ruled), and with three in use the title steps to 3.157rem (1.333⁴) to keep its lead. A level not used takes no rank, so `##` + `###` read as `#` + `##` did.
+
+**What it replaced.** The heading ladder was fixed by depth (Q1402, stepped up once on 2026-09-24): `#` 1.777, `##` 1.333 Bold, `###` 1.125 Italic. A Text that started at `##` — the demo's, most members' — drew every section at 1.125rem, one step over the body, which is what Ed was reading.
+
+**What was decided against.** Ranking the Rules too: their headings are the surface's furniture (*Rules*, the section heads, *Members*), not the members' text, so they keep `--h1`–`--h3` by depth and carry no rank class. A per-level CSS-variable map on the column instead of a class per heading: the variables would have had to carry size, weight, style, leading, margins and the rule, and a card's head and a lane sit outside the column's own boxes. Today's 1.125 italic section look retires from the Text entirely (no Text heading under 1.333rem).
+
+**How it is held.** `CARDS.setHeadLevels` takes the Text's levels wherever the Text is bound (`bindData` after 🍾, `textDivs`/`srcDivs` and `relabel` before it), and `CARDS.rankCls` is what every site drawing a Text heading adds beside its `lvlN`: the column, a card's head and frame, a lane, edit mode. A level typed in a lane that the Text does not yet use previews at the rank it would land at. Guard `scripts/repro/heading-rank.mjs` (the sprint tier's `sprint-pages`), red on the page before it.
+
 ## The ⏳ rail entry's grey fill (#148, 2026-10-02)
 
 On 2026-09-24 Ed ruled that grey slips on the desk paint white (*a grey slip is a white slip*, closed and deciding alike, the cables with them). `washAttrs` did it by replacing both hues with white through `PLAIN_WASH` — the fill as well as the ground — so on `?fixture=session` at 1600 every `.queue button.deciding` carried `data-fill` (40%, 60%, 80%, 100%) and drew a plain white line: a ⏳ nearly done read the same as one barely begun, and M24's sweep ran on these entries unseen.

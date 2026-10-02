@@ -1002,7 +1002,7 @@ window.COMPOSER = (function () {
         // (answers Part 4 .2); a stranded draft's shows what stands now (Q1463)
         head: (o) => clauseHeadHtml(d, Object.assign(gap
           ? { text: null, key: s.keys[0] }
-          : { key: s.keys[0], html: blocks.map((b) => '<div class="lp' + (b.t === 'h' ? ' hblock lvl' + (b.level || 1) : b.bullet ? ' bullet' : '') +
+          : { key: s.keys[0], html: blocks.map((b) => '<div class="lp' + (b.t === 'h' ? ' hblock lvl' + (b.level || 1) + window.CARDS.rankCls(b.level || 1) : b.bullet ? ' bullet' : '') +
             '" data-key="' + b.key + '">' + blockHtml({ x: b.text, t: b.t, level: b.level, bullet: b.bullet }) + '</div>').join('') }, o || {})),
         block: '<div class="propblock editblock"><span class="glab">' + esc(window.COPY.shell.yourDraft) + '</span>' +
           laneBoxHtml(d, s) + signControlHtml(d) + '</div>',
