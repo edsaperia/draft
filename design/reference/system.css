@@ -3505,6 +3505,17 @@
      border keeping its width so nothing inside moves by a pixel */
   html.desk .doc { background: transparent; border-color: transparent; }
 
+  /* ---- the credit (paper.js; issue #165) ------------------------------------ */
+  /* one quiet line on the desk under the last sheet, the link the line's own
+     colour, underlined: no new accent */
+  html.desk .deskcredit {
+    position: absolute; margin: 0; text-align: center;
+    font-family: var(--font-ui); font-size: var(--t-cap); line-height: var(--lh-text);
+    color: var(--desk-muted);
+  }
+  html.desk .deskcredit a { color: inherit; text-decoration: underline; }
+  html.desk .deskcredit[hidden] { display: none; }
+
   /* ---- the break ------------------------------------------------------------ */
   /* The one hairline in the document (setup.css, `.cpara.docsep`) becomes the
      desk between the sheets: no rule, a block the gap tall, a sheet's margin

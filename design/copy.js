@@ -602,6 +602,11 @@ window.COPY = (function () {
   const quorumTail = (n, e) => (n === null || n === undefined || e === null || e === undefined
     ? '' : ' (' + n + ' of ' + e + ')');
   const page = {
+    // **the credit on the desk under the last sheet** (issue #165, Ed
+    // 2026-10-02 ~10:50 UTC: *Created by the London College of Political
+    // Technology*, the name a link to newspeak.house): a proper-noun credit,
+    // not member voice; paper.js draws it, the address stays there
+    credit: { lead: 'Created by the ', name: 'London College of Political Technology' },
     // **A rule change's rail title is the rule's glyph and its value, old →
     // new** (Q1523, Ed 2026-09-24: *⏱️ 10 → 5 minutes*, *👥 6 → 8*, *⏰ Sun
     // 17:10 → never*), the value alone where nothing stood before it (Q1523

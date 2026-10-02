@@ -6,6 +6,14 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-10-02: a credit under the page
+
+### New
+- **A line under the last page says who made docs.vote**: *Created by the London College of Political Technology*, the name a link to the college's site. On a short document it sits just beneath the page; on a long one it is there when you reach the end of the text. It is not shown while you are editing.
+
+### For contributors
+- **Surface-only.** `design/paper.js` draws `.deskcredit` a desk gap under the last sheet; the words are `page.credit` in `design/copy.js`; SURFACE M21.
+
 ## 2026-10-02: headings sized by the levels a document uses
 
 ### Changed
