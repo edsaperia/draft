@@ -14,6 +14,14 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 ### For contributors
 - **Surface-only.** A ⏳ rail entry keeps its white slip and paints its fill in the deciding grey (`washAttrs`, session.js); its cable stays white. `card-audit` gains P35 `wait-fill`, held on every card.
 
+## 2026-10-02: a card stays open while it changes
+
+### Changed
+- **A card you have open stays open when it changes.** When a proposal you are looking at passes or is rejected, the card becomes its record where it stands, and its entry in the list on the right stays in place and changes its colour and mark. The same goes for a proposal held for the Founder, a rule change that is decided, an application that is decided and any other card that changes while you read it; where nothing takes its place, the card says it is no longer outstanding until you close it.
+
+### For contributors
+- **Surface-only.** An open card is kept by its lineage (`lineageOf` in `design/card-state.js`) and morphs in place (`CARD_SHELL.morph`); `npm run morph-walk` joins the sprint tier.
+
 ## 2026-10-01, night: faces for the demo's speakers
 
 ### Changed

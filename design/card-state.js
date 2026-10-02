@@ -20,6 +20,8 @@
  *   alternatives  what may be chosen (`alternativesOf`)
  *   owed          what this reader owes the card: nothing · OK
  *   record        how a record ended, and its field (`outcomeOf`)
+ *   lineage       what the card is the same card as across a change
+ *                 (`lineageOf`, issue #143) — read beside the value, not in it
  *   draft, notes  unsent choices; the clocks about an act
  *
  * **The readers ask the surfaces for raw facts and decide here.** A surface
@@ -253,6 +255,23 @@ window.CARD_STATE = (function () {
     };
   }
 
+  /**
+   * **What a card is the same card as, across a change** (issue #143, Ed
+   * 2026-10-01: *the decision card will remain open but change smoothly into
+   * the record card, and the queue card should stay in the same place*): the
+   * thing a key's card is about, kept when the key itself changes — a race
+   * and the record it becomes, a motion and its ✔/✖. The card frame and its
+   * rail entry read it, so the keyed re-render walks the old node onto the
+   * new one rather than dropping one and bearing the other. A surface
+   * answers with `lineage(key)`; a key no source names a lineage for is
+   * its own, which is today's behaviour exactly.
+   */
+  function lineageOf(key) {
+    const src = sourceOf(key);
+    const l = src && typeof src.lineage === 'function' ? src.lineage(key) : null;
+    return l || key;
+  }
+
   /* ---- the one value ---------------------------------------------------- */
 
   /**
@@ -275,12 +294,13 @@ window.CARD_STATE = (function () {
       alternatives: alternativesOf(key),
       owed: src && typeof src.owed === 'function' ? (src.owed(key) || null) : null,
       record: outcomeOf(key),
+      lineage: lineageOf(key),
       draft: null,
       notes: null,
     };
     return src && typeof src.present === 'function' ? Object.assign(base, src.present(key, base, hints || {}) || {}) : base;
   }
 
-  return { register, stateOf, readerOf, phaseOf, provenanceOf, placeOf, powersOf, actsOf, alternativesOf, outcomeOf,
+  return { register, stateOf, readerOf, phaseOf, provenanceOf, placeOf, powersOf, actsOf, alternativesOf, outcomeOf, lineageOf,
     get surfaces() { return SURFACES.map((s) => s.name); } };
 })();
