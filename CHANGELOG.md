@@ -14,6 +14,17 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 ### For contributors
 - **A server change, so a full deploy.** `proposalHunks` (`demo-model.ts`) drops an insertion that rewords the line beside it — `wordOverlap`, the Dice coefficient over content words, at `REWRITE_OVERLAP` 0.35, a heading weighed only against a heading of the same time; the bot's log reads *dropped a proposal: a rewrite sent as an insertion*. The propose prompt gains a worked `start: k, end: k+1` example. Tests in `demo-model.test.ts`.
 
+## 2026-10-02: a clause's decisions read top down from the current text
+
+### Changed
+- **A card holding several decisions on one clause now starts with the current text**, labelled *Current text*, shown once. The newest decision is that text, so it is no longer drawn a second time below it, and the line *Marked against the text before them* is gone. No earlier decision in the card says *since replaced* any more: everything below the top is an earlier version.
+
+### Fixed
+- **A decision that added a new clause now says it replaced nothing.** Its *Previous text* reads *(no text here)* instead of *This clause would be removed*, and the added wording is marked as new throughout.
+
+### For contributors
+- **Surface-only.** `foldPresent` and the sealed record (`session.js`); `foldHead` and `foldSince` retired from `copy.js`. Guarded by `scripts/repro/review-walk.mjs`.
+
 ## 2026-10-02: the waiting entries show their progress
 
 ### Changed

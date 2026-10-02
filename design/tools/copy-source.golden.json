@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 731
+  "entries": 729
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -612,12 +612,10 @@
   "session.record.dominated": "Rejected — it could no longer pass",
   "session.record.foldBack": "Back",
   "session.record.foldCap": "ƒ (n) => n + ' new decisions'",
-  "session.record.foldHead": "ƒ (n) => n + ' decisions'",
   "session.record.foldList": "Oldest first",
   "session.record.foldOkTitle": "ƒ (n) => 'All ' + n + ' leave your margin'",
   "session.record.foldOpen": "Open",
   "session.record.foldSame": "Unchanged: none passed",
-  "session.record.foldSince": "Marked against the text before them",
   "session.record.founder": "The Founder",
   "session.record.gone": "This clause has since been removed.",
   "session.record.measuredAtClose": "ƒ (k, m) => 'Passed when the document closed, voted against ' + k +\n        ' of its ' + m + (m === 1 ? ' rival' : ' rivals')",

@@ -227,7 +227,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1580** — claim by writing the block here, then commit it alone.
+**The next free number is 1581** — claim by writing the block here, then commit it alone.
+
+**1580 is the clause-fold builder's calls** (claimed 2026-10-02 by the cloud coordinator; draft PR #157, issue #149; Ed 2026-10-02 ~00:42 and ~00:50 UTC, on the demo's ✔✔✔ card and a lone ✔ record; the coordinator's design OK'd by Ed 01:21 UTC). **Settled by the coordinator from the brief, as built** (2026-10-02): (1) `foldSame` stays, a fold of ✖s alone using it under 2026-09-25 ruling A, and only `foldHead` and `foldSince` retire; (2) the newest ✔ becomes the head only while the clause still reads as it, a later change keeping today's net-change head and the newest its own block; (3) the head's quiet line is `outcomeOf`'s own label without *· since replaced*, in `.rsub` after the speaker; (4) *(no text here)* reuses the deletion line's muted note (`.lp.removed`, a `notext` marker), no CSS changed; (5) a replacement keeps its *Previous text*, and only an empty one reads *(no text here)*; (6) a record open when a second ✔ lands is not folded, as before. **Spent.**
 
 **1579 is the ⏳-fill builder's calls** (claimed 2026-10-02 by the cloud coordinator; draft PR #155, issue #148; Ed 2026-10-02 00:38 UTC chose option (a): *a ⏳ entry keeps its white slip and wears a visible grey fill*). **Settled by the coordinator from the brief and existing rulings, as built** (2026-10-02): (1) the fill's floor is 1.15∶1 against its ground, main reading 1∶1 and the build 1.309∶1; (2) the cable stays white without a second colour variable, `wireColor` reading the entry's `data-waits` (the 2026-09-24 ruling kept); (3) P35 stands among card-audit's redesign checks, so CI's strict fast pass holds it; (4) P35 measures the charter's ⏳, and the band's `wait` ⏳ is held by the setup-probe freeze until a live walk adds it; (5) `sweep-walk` takes no screenshots, so a fixture shot at 1600 stood in. **Spent.**
 

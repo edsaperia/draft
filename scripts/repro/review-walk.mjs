@@ -31,6 +31,10 @@
  *             line 2's, filing all three, then r's own ✔; Enter there files it and,
  *             nothing being owed, closes the card — every opening travelled to
  *   kept      after a reload nothing is owed and nothing folds
+ *   #149      an insertion's lone ✔ reads *(no text here)* below its wording, green whole;
+ *             then, reworded, the fold over the two is labelled *Current text*, draws the
+ *             current text once, says no *since replaced* or *Marked against*, and its
+ *             bottom *Previous text* reads *(no text here)* (Ed, 2026-10-02)
  *
  * Exit 0 when every check passes, 1 on the defect, 2 on a set-up that never got there.
  */
@@ -393,6 +397,61 @@ now = await read();
 check('after a reload nothing is owed and nothing folds', !now.rail.some((e) => e.owed || e.rules) && !now.sealed.some((g) => g.fold),
   JSON.stringify(now.rail.filter((e) => e.owed || e.rules)));
 check('the three records stand filed in the clause\'s pile', members.every((m) => now.sealed.some((g) => g.id === m)));
+
+/* ---- #149 (Ed, 2026-10-02): an insertion's lone ✔, then a fold over it ---- */
+// a's line inserted after the last and passed, r not voting: r is owed its lone ✔,
+// which says it replaced nothing — *(no text here)* — and wears the passed green whole
+const v6 = await view();
+const L6 = String(v6.text).split('\n');
+const INS = (await cmd('propose-text', { baseVersion: v6.textVersion, why: 'walk: insert',
+  hunks: [{ start: L6.length, end: L6.length, lines: ['Zeta line.'], after: L6[L6.length - 1] }] }, cookies.a)).id;
+await decide(INS, ['founder', 'b', 'c'], 'b');
+await sleep(6000);
+const cardText = (id) => page.evaluate((id) => {
+  const c = [...document.querySelectorAll('.sugg[data-card]')].find((x) => x.dataset.card === id);
+  if (!c) return null;
+  const glabs = [...c.querySelectorAll('.glab')].map((g) => g.textContent.trim());
+  const prev = [...c.querySelectorAll('.ranked')].filter((b) => ((b.querySelector('.glab') || {}).textContent || '').trim() === 'Previous text');
+  const head = c.querySelector('.clausehead .rtext');
+  return { glabs, first: glabs[0] || null, text: c.textContent,
+    head: head ? head.textContent.trim() : null, headIns: head ? [...head.querySelectorAll('ins')].map((e) => e.textContent).join('|') : '',
+    prev: prev.map((b) => b.textContent.replace(/^\s*Previous text/, '').trim()),
+    lastPrev: prev.length ? prev[prev.length - 1].textContent.replace(/^\s*Previous text/, '').trim() : null };
+}, id);
+const sealedAt = async (key) => (await read()).sealed.filter((g) => (g.keys || [])[0] === key);
+const KEY = 'L' + L6.length;
+const lone = (await sealedAt(KEY)).find((g) => !g.fold);
+if (!lone) bail(`no record for the insertion at ${KEY}`);
+await page.evaluate((id) => { const b = document.querySelector('#rail li[data-q="' + id + '"] button'); if (b) b.click(); }, lone.id);
+await sleep(2200);
+const one = await cardText(lone.id);
+check('#149 · the lone ✔ of an insertion draws its Previous text, reading (no text here)',
+  !!one && one.prev.length === 1 && one.prev[0] === '(no text here)', JSON.stringify(one && { prev: one.prev }));
+check('#149 · …and its passed wording is green whole, what passed against nothing',
+  !!one && one.head === 'Zeta line.' && one.headIns === 'Zeta line.', JSON.stringify(one && { head: one.head, ins: one.headIns }));
+// closed again by its own entry, never by its OK: an open record is never folded in
+await page.evaluate((id) => { const b = document.querySelector('#rail li[data-q="' + id + '"] button'); if (b) b.click(); }, lone.id);
+await sleep(1500);
+if ((await read()).open === lone.id) bail('the insertion\'s lone card would not close from its entry');
+// b's rewording of that line, passed: r is owed two ✔ on one clause, which fold
+const RW = await propose('b', L6.length, 'Zeta line two.');
+await decide(RW, ['founder', 'a', 'c'], 'b');
+await sleep(6000);
+const zfold = (await sealedAt(KEY)).find((g) => g.fold);
+check('#149 · the insertion and its rewording fold into one card', !!zfold && zfold.fold.length === 2,
+  JSON.stringify(await sealedAt(KEY)));
+if (zfold) {
+  await page.evaluate((id) => { const b = document.querySelector('#rail li[data-q="' + id + '"] button'); if (b) b.click(); }, zfold.id);
+  await sleep(2200);
+  const z = await cardText(zfold.id);
+  const times = z ? z.text.split('Zeta line two.').length - 1 : -1;
+  check('#149 · the fold is labelled Current text', !!z && z.first === 'Current text', JSON.stringify(z && z.glabs));
+  check('#149 · …the current text drawn once, at the top', !!z && times === 1 && z.head === 'Zeta line two.', `${times} times · head ${z && z.head}`);
+  check('#149 · …no since replaced and no Marked against inside it', !!z && !/since replaced/.test(z.text) && !/Marked against/.test(z.text),
+    JSON.stringify(z && z.glabs));
+  check('#149 · …and its bottom Previous text reads (no text here), never a deletion', !!z && z.lastPrev === '(no text here)'
+    && !/This clause would be removed/.test(z.text), JSON.stringify(z && z.prev));
+}
 
 check('the page threw nothing', errors.length === 0, errors.join(' · '));
 await browser.close();
