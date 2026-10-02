@@ -19,6 +19,7 @@ import { join } from 'node:path';
 import { CATALOGUE_BY_ID, validateFor } from '../../constitution/src/index.js';
 import type { SettingId, SettingValue } from '../../constitution/src/index.js';
 import { LIMITS } from './commands.js';
+import { emojiFaceOf } from './faces.js';
 
 /** Where the preset lives under the design directory (§2.2: read at every reset). */
 export const presetPath = (designDir: string): string =>
@@ -59,6 +60,12 @@ export interface PresetCastMember {
   name: string;
   persona: string;
   founder: boolean;
+  /**
+   * The face the line opens with, one emoji before the bold name (issue
+   * #142), or null: a bot wears it as `'e' + face`; the Founder's line
+   * carries none, Ed picking his own.
+   */
+  face: string | null;
 }
 
 export interface DemoPreset {
@@ -149,7 +156,7 @@ type FieldName = 'replaces' | 'after' | 'with' | 'as it was' | 'adopted' | 'reas
 
 const FIELD_RX = /^(place\s+\d+\s+replaces|replaces|after|with|as it was|adopted|reason|proposer|state|losing rival|rival reason|rival proposer):(.*)$/i;
 const OPENER_RX = /^\*\*([^*]+)\*\*(?:\s+—\s+.*)?$/;
-const CAST_RX = /^\d+\.\s+\*\*([^*]+)\*\*(\s+\(founder\))?\s+—\s+(.+)$/;
+const CAST_RX = /^\d+\.\s+(?:(\S+)\s+)?\*\*([^*]+)\*\*(\s+\(founder\))?\s+—\s+(.+)$/;
 const MARKER_RX = /^<!--\s*@([a-z]+)\s*-->$/;
 
 const ALLOWED: Record<'proposals' | 'decided' | 'insertions', ReadonlySet<FieldName>> = {
@@ -217,15 +224,30 @@ export function parsePreset(src: string): { preset: DemoPreset | null; errors: P
     if (t === '' || t.startsWith('>') || t.startsWith('#')) continue;
     const m = CAST_RX.exec(t);
     if (!m) {
-      err(n, 'P3', 'a @cast line reads `N. **Name** — how they behave`, with ` (founder)` after the one founder\'s name');
+      err(n, 'P3', 'a @cast line reads `N. 🙂 **Name** — how they behave`, the face optional, with ` (founder)` after the one founder\'s name');
       continue;
     }
-    const name = m[1]!.trim();
-    const persona = m[3]!.trim();
+    const name = m[2]!.trim();
+    const persona = m[4]!.trim();
+    const founder = m[3] !== undefined;
     if (name.length > LIMITS.name) err(n, 'P9', `the name is over ${LIMITS.name} characters`);
     if (cast.some((c) => c.name === name)) err(n, 'P9', `'${name}' is in the cast twice`);
     if (persona === '') err(n, 'P9', `'${name}' has no persona`);
-    cast.push({ line: n, name, persona, founder: m[2] !== undefined });
+    // **the face, beside the name** (issue #142): the page's own rule —
+    // one emoji, never furniture, one member to a face (`faceTakenBy`)
+    let face: string | null = null;
+    if (m[1] !== undefined) {
+      const f = emojiFaceOf(m[1]);
+      if (founder) err(n, 'P9', `'${name}' is the Founder, whose face is Ed's to pick — the line carries none`);
+      else if (f === null) err(n, 'P9', `'${name}': '${m[1]}' is not one emoji`);
+      else if (f === 'reserved') err(n, 'P9', `'${name}': '${m[1]}' is part of the page's furniture, never a face`);
+      else {
+        const twin = cast.find((c) => c.face === f);
+        if (twin) err(n, 'P9', `'${name}' and '${twin.name}' both wear ${f}; a face is one member's`);
+        else face = f;
+      }
+    }
+    cast.push({ line: n, name, persona, founder, face });
   }
   if (bodies.has('cast')) {
     const founders = cast.filter((c) => c.founder);
