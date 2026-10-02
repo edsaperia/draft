@@ -1966,7 +1966,8 @@
   // F3): both are written in place into objects the plain keys below would
   // hold by identity, so they are copied, and kept under `__` names so
   // `openCardDirty` never compares them by identity
-  const takeSnap = (k) => { const s = { __ans: Object.assign({}, S.myAns),
+  const takeSnap = (k) => { const s = { emailSent: S.emailSent, emailVerified: S.emailVerified,
+    __ans: Object.assign({}, S.myAns),
     __begin: Object.assign({}, S.beginRows), __why: Object.assign({}, S.setWhy || {}) };
     REVERTKEYS().forEach((kk) => { s[kk] = S[kk]; }); snaps[k] = s; };
   const dropSnap = (k) => { delete snaps[k]; };
@@ -2045,6 +2046,11 @@
       // typed on another card (issue #34 F3, SURFACE C3)
       if (k === 'setWhy') { const w = s.__why || {}; S.setWhy = S.setWhy || {};
         if (S.open in w) S.setWhy[S.open] = w[S.open]; else delete S.setWhy[S.open]; return; }
+      // an address puts back whether it was sent and verified with it (#169):
+      // typing un-verifies, so the bin that put the text back alone left the
+      // standing address reading as unverified
+      if (k === 'myemail') { S.myemail = s.myemail; S.emailSent = s.emailSent; S.emailVerified = s.emailVerified;
+        if (S.emailVerified) S.seen.add('myemail'); return; }
       if (k in s) S[k] = s[k];
     }); };
   // **What the bin would put back, asked as a question** (issue #12): the one
@@ -2514,6 +2520,15 @@
     get: () => { const r = viewerRow();
       return r.eVerified !== undefined ? r.eVerified : !!(cs && r.in); },
     set: (v) => { viewerRow().eVerified = v; } });
+  // **the address that stands** (issue #169): the verified one, kept apart
+  // from `myemail` — which is the field, and moves with the typing — so the
+  // 📧 card can draw it as its first line, wearing the chosen radio, under
+  // a new address being typed or sent. Per seat; until anything is typed it
+  // is simply the verified address, and before one there is none.
+  Object.defineProperty(S, 'emailStands', {
+    get: () => { const r = viewerRow();
+      return r.eStands !== undefined ? r.eStands : (S.emailVerified ? r.e || '' : ''); },
+    set: (v) => { viewerRow().eStands = v; } });
   Object.defineProperty(S, 'draft', { get: () => viewerRow().draft || null,
     set: (v) => { viewerRow().draft = v; } });
   const me = () => ({ n: S.myname, pic: S.mypic });
@@ -7306,8 +7321,10 @@
       // …and a clerk's, who has no row in Members, stand on the Founded line
       // (Q759), so it is their first line, as it is the grants' (principle 1)
       head: { html: window.SETUP.headHtml(c, ctx, sibs, idOnFounded().length
-        ? '<div class="headrule" data-fact="place">' + foundedClause() + '</div>'
-        : '<div class="headrule asblock" data-fact="place"><div class="memrow meRow">' + meRowInner() + '</div></div>') },
+        ? '<div class="headrule" data-fact="place">' + foundedClause() +
+          (c.k === 'myemail' && !locked ? emailStandsHtml() : '') + '</div>'
+        : '<div class="headrule asblock" data-fact="place"><div class="memrow meRow">' + meRowInner() + '</div>' +
+          (c.k === 'myemail' && !locked ? emailStandsHtml() : '') + '</div>') },
       // frozen after the close (1541.28 (a)): the row, and no choice beneath it
       options: locked ? null : { html: body },
       body: doorErrHtml(c.k) ? { html: doorErrHtml(c.k) } : null,
@@ -7320,6 +7337,15 @@
     if (!row) return;
     const dirty = identityDirty(c);
     sh.toggleAttribute('data-draft', dirty);
+    // 📧's two radios follow the typing in place (#169): the new block is
+    // chosen while it holds a new address, what stands otherwise
+    if (c.k === 'myemail' && S.emailStands) {
+      const ch = emailChanged();
+      const sp = sh.querySelector('[data-standpick]');
+      if (sp) { sp.setAttribute('aria-pressed', String(!ch)); sp.closest('.pick').classList.toggle('on', !ch); }
+      const pi = sh.querySelector('[data-pickinput]');
+      if (pi) { pi.setAttribute('aria-pressed', String(ch)); pi.closest('.pick').classList.toggle('on', ch); }
+    }
     const bin = row.querySelector('[data-revert], [data-act="bin"]');
     if (bin) {
       bin.disabled = !dirty;
@@ -7333,14 +7359,28 @@
       if (own.until) cb.setAttribute('data-until', own.until); else cb.removeAttribute('data-until');
     }
   }
-  /** 📧 after the save: the address that stands as a fact, a new one as the
-   *  one choice beneath it (what stands is never a radio here, 1541.37) */
-  const BODY_EMAIL = () => (S.emailVerified
-    ? '<p class="cpv">' + esc(S.myemail) + '</p>' +
-      '<div class="choice"><div class="pick"><span class="opttext"><input type="email" data-txt="myemail" value="" placeholder="you@example.com"></span>' +
-      '<button class="lanepick" type="button" aria-pressed="false" data-pickinput="1">' +
+  /** a new address typed or sent over the one that stands (#169) */
+  const emailChanged = () => !!S.emailStands && !(S.emailVerified && S.myemail === S.emailStands);
+  /** 📧's first line, under your row (#169, 1541.47): the address that
+   *  stands, wearing the chosen radio of the card's group — pressed while
+   *  nothing new is chosen, and choosing it again cancels the change
+   *  (`data-standpick`). Nothing stands before an address is verified */
+  const emailStandsHtml = () => (S.emailStands
+    ? '<div class="pick emailstands' + (emailChanged() ? '' : ' on') + '"><span class="opttext">' + esc(S.emailStands) + '</span>' +
+      '<button class="lanepick standpick" type="button" data-standpick="1" aria-pressed="' + !emailChanged() + '">' +
       '<span class="dot"></span><span class="off">' + PAGE_COPY.pw.chooseThis + '</span>' +
-      '<span class="on">' + PAGE_COPY.pw.chosen + '</span></button></div></div>'
+      '<span class="on">' + PAGE_COPY.pw.chosen + '</span></button></div>'
+    : '');
+  /** 📧 after the save: with an address standing, the one choice beneath the
+   *  first line is a new one — its field and its own *Choose this*, pressed
+   *  by typing (A2), the sent one waiting in it until it is verified (#169) */
+  const BODY_EMAIL = () => (S.emailStands
+    ? '<div class="choice"><div class="pick' + (emailChanged() ? ' on' : '') + '"><span class="opttext">' +
+      '<input type="email" data-txt="myemail" value="' + (emailChanged() ? esc(S.myemail) : '') + '" placeholder="you@example.com"></span>' +
+      '<button class="lanepick" type="button" aria-pressed="' + emailChanged() + '" data-pickinput="1">' +
+      '<span class="dot"></span><span class="off">' + PAGE_COPY.pw.chooseThis + '</span>' +
+      '<span class="on">' + PAGE_COPY.pw.chosen + '</span></button></div></div>' +
+      (S.emailSent && !S.emailVerified ? '<p class="setnote">' + esc(W5().emailSentWhy) + '</p>' : '')
     : '<p class="why">' + esc(S.emailSent ? W5().emailSentWhy : W5().emailWhy) + '</p>' +
       '<span class="fld"><input type="email" data-txt="myemail" value="' + esc(S.myemail) + '" placeholder="you@example.com"></span>');
 
@@ -9605,6 +9645,12 @@
     // back to what stands — the bin's act, with the card left open (Q1541
     // stage 3a)
     if (ev.target.closest('[data-standpick]')) {
+      // 📧's is the verified address (#169): choosing it again drops the new
+      // one, typed or sent, and the card stands as it did
+      if (S.open === 'myemail' && S.emailStands) {
+        S.myemail = S.emailStands; S.emailSent = false; S.emailVerified = true; S.seen.add('myemail');
+        return render();
+      }
       // …and on a member's composer it drops the motion being typed, the
       // composer's own bin with the card left open (Q1541 stage 3b)
       if (S.draft && S.draft.k === S.open) S.draft = null;
@@ -9633,7 +9679,7 @@
     // 2026-08-19): arriving is arriving. What is waiting for you is a task in
     // the rail, which is where every other thing that wants you stands, and
     // opening it is your click rather than the page's.
-    if (cm) { S.emailVerified = true; S.mailOpen = false; S.seen.add('myemail');
+    if (cm) { S.emailVerified = true; S.mailOpen = false; S.seen.add('myemail'); S.emailStands = S.myemail;
       // **the save** (§9.7a, Q460): following the mail is the act of creation
       // — the document comes into being at the address promised, and the
       // founder arrives in it (live: /auth/create does exactly this)
@@ -10300,8 +10346,13 @@
     // the field is the draft, never the standing name (Q1327)
     if (t.dataset.txt === 'myname') { S.mynameDraft = t.value; S.namePick = 'name';
       renderRail(); SESSION.refreshRail(); refreshCommit(); syncIdentityRow(card('myname')); return; }
-    if (t.dataset.txt === 'myemail') { S.myemail = t.value.trim();
+    if (t.dataset.txt === 'myemail') {
+      // what stands is remembered before the field moves off it (#169)
+      if (S.emailVerified) S.emailStands = S.myemail;
+      S.myemail = t.value.trim();
       S.emailSent = false; S.emailVerified = false; S.seen.delete('myemail');
+      // typing the standing address back is choosing what stands
+      if (S.emailStands && S.myemail === S.emailStands) { S.emailVerified = true; S.seen.add('myemail'); }
       // **Your address is yours** (Q755). A line here wrote `S.myemail` onto
       // `meRow()` — the *founder's* row — so a member typing into 📧 changed
       // the founder's address. It is not replaced with the viewer's row but
