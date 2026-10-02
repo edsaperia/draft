@@ -1,25 +1,28 @@
 #!/usr/bin/env node
 /**
- * email-card-standing — **📧 on a live seat follows the standing pattern** (issue #169; Ed,
+ * email-card-standing — **your 📧 ✋ 🖼️ follow the standing pattern** (issue #169; Ed,
  * 2026-10-02, a demo visitor's 📧 card: *Your current email should be in the top half (it can
  * be under your avatar and name), where there should also be a radio button that shows that the
- * current email is selected. The second half gives the new option and the "Choose this" radio.*)
+ * current email is selected. The second half gives the new option and the "Choose this" radio.*;
+ * and #176, Ed 15:18 UTC: *Yes, give ✋ and 🖼️ the same pattern*).
  *
  *   PORT=8291 DRAFT_BASE_URL=http://127.0.0.1:8291 DRAFT_DATA_DIR=<fresh> npm run server
  *   node scripts/repro/email-card-standing.mjs http://127.0.0.1:8291 [--demo=<base>] [--shots=<dir>]
  *
- * Seats a ladder member (and, with `--demo=<base>` naming a server whose demo is built, a demo
- * visitor by 👋 Try It), opens their 📧 from their own row, and asserts at 1600 and at 390:
+ * Seats a ladder member and the ladder's Founder (and, with `--demo=<base>` naming a server whose
+ * demo is built, a demo visitor by 👋 Try It), opens each of 📧 ✋ 🖼️ from their own row, and
+ * asserts at 1600 and at 390:
  *
- *   standing  the first line holds the address that stands, under the member's row, and a
- *             pressed *Chosen* radio (`data-standpick`, 1541.47);
- *   new       below it, one block: an empty address field and its own unpressed *Choose this*;
- *             the ✓ dark (P22) and the 🗑️ dark;
- *   typed     typing a new address presses the second radio, releases the first, arms the ✓;
- *   restore   pressing the first radio again puts the card back exactly — the address, the
- *             pressed radio, the empty field, the dark ✓ — and so does 🗑️ after a second typing.
+ *   standing  the first line, under the row, wears a pressed *Chosen* radio (`data-standpick`,
+ *             1541.47) — 📧's names the address that stands; below it nothing is chosen, what
+ *             stands is not drawn again (no *keep* block, no *Anonymous* where that stands), and
+ *             the ✓ and the 🗑️ are dark. An unanswered ✋ / 🖼️ has no radio and every block
+ *             (F6); the walk answers Anonymous and goes on from there;
+ *   change    a new address, a new name, another picture block chooses its own block and
+ *             releases the first line;
+ *   restore   pressing *Chosen* again puts the card back exactly, and so does 🗑️.
  *
- * Screenshots (with `--shots`): `email-<seat>-<width>.png`. Exit 0 only if all pass; 1 on a
+ * Screenshots (with `--shots`): `<card>-<seat>-<width>.png`. Exit 0 only if all pass; 1 on a
  * failure, 2 on a broken set-up.
  */
 import { join } from 'node:path';
