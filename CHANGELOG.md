@@ -14,6 +14,14 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 ### For contributors
 - **Surface-only.** `CARDS.setHeadLevels` and `CARDS.rankCls` (`design/cards.js`) give every Text heading a `rank1`–`rank3` class beside its `lvlN`, in the column, a card's head, a lane and edit mode; `--h-part` joins the heading ladder in `design/system.css`. Guard: `scripts/repro/heading-rank.mjs`, in the sprint tier.
 
+## 2026-10-02: a card stays open while it changes
+
+### Changed
+- **A card you have open stays open when it changes.** When a proposal you are looking at passes or is rejected, the card becomes its record where it stands, and its entry in the list on the right stays in place and changes its colour and mark. The same goes for a proposal held for the Founder, a rule change that is decided, an application that is decided and any other card that changes while you read it; where nothing takes its place, the card says it is no longer outstanding until you close it.
+
+### For contributors
+- **Surface-only.** An open card is kept by its lineage (`lineageOf` in `design/card-state.js`) and morphs in place (`CARD_SHELL.morph`); `npm run morph-walk` joins the sprint tier.
+
 ## 2026-10-01, night: faces for the demo's speakers
 
 ### Changed

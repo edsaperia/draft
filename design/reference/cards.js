@@ -1469,7 +1469,11 @@ window.CARDS = (function () {
   /** what a card carrying lanes wears, so its options are one group rather than three loose radios */
   const laneGroupAttrs = (s, key) =>
     ' role="radiogroup" aria-labelledby="' + laneHeadId(s, key) + '"';
-  const laneProposeHtml = (s, lane, key) =>
+  // drawn only where it can start a draft: a lane with no site to write on
+  // — an insertion the fixture names by `insertAfterKey` alone, where a live
+  // gap carries `G<n>` — would be a control with no job (principle 5; P22 on
+  // charter·race-quiet-rivals, whose press `startDraft` returned at once)
+  const laneProposeHtml = (s, lane, key) => !(key || ((s && s.keys) || [])[0]) ? '' :
     '<button class="lanepropose" data-propose-from="' + s.id + '|' + lane + '|' + (key || '') +
     '" title="' + G.proposeEdit.title + '">' +
     // "propose edit" rather than "edit this" (Ed, 2026-08-17): what the button

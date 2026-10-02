@@ -449,6 +449,17 @@ case "$GROUP" in
     # your own, never on a phone, gone within the TTL once the page closes.
     # Sprint tier from its first day (Q1547). About two minutes
     walk "presence-walk" npm run presence-walk -- "$BASE"
+    # **The open card stays open and morphs into what it became** (issue
+    # #143, Ed 2026-10-01: *the decision card will remain open but change
+    # smoothly into the record card, and the queue card should stay in the
+    # same place, just change colour and icon*): a member holds a card open
+    # while the others' votes decide it — a pass through the Founder's park to
+    # its record, a fail, a settings motion in the band, an application with
+    # nothing to follow it — and the frame and the rail entry are the Elements
+    # they were, the entry, the head and the pressed tab 0px, the mark
+    # changed, the morph noted (stepped under reduced motion). Sprint tier
+    # from its first day (Q1547). About three minutes
+    walk "morph-walk" npm run morph-walk -- "$BASE"
     ;;
 esac
 

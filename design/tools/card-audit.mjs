@@ -4754,7 +4754,10 @@ async function drivenPass(page, walk, keys, prepare) {
         const x = r.left + r.width / 2, y = r.top + r.height / 2;
         const hit = x >= 0 && y >= 0 && x < innerWidth && y < innerHeight && document.elementFromPoint(x, y);
         if (!hit || !(hit === d.el || d.el.contains(hit))) { window.__DRV = null; return null; }
-        d.live = new MutationObserver((ms) => { for (const m of ms) { const t = m.target.nodeType === 3 ? m.target.parentNode : m.target; if (!d.ticks.has(t)) d.n++; } });
+        // what the page looked like at the press, for a dead press's finding
+        d.before = { open: window.SESSION && window.SESSION.openId, suggs: window.SESSION ? window.SESSION.SUGGS.length : null };
+        d.all = 0;
+        d.live = new MutationObserver((ms) => { for (const m of ms) { d.all++; const t = m.target.nodeType === 3 ? m.target.parentNode : m.target; if (!d.ticks.has(t)) d.n++; } });
         d.live.observe(document.documentElement, { subtree: true, childList: true, attributes: true, characterData: true });
         return { x, y };
       });
@@ -4777,6 +4780,12 @@ async function drivenPass(page, walk, keys, prepare) {
       const blk = d.el.matches('[data-pickinput]') && d.el.closest('.pick');
       const f = document.activeElement;
       const focused = !!(blk && f && f !== d.el && blk.contains(f) && f.matches('input, select, [contenteditable]'));
+      // **what the page did, for a dead press** (P22's intermittent on
+      // charter·race-quiet-rivals): the open card before and after, whether
+      // the control is still in the document, every mutation (ticks too)
+      const S = window.SESSION;
+      window.__DRV_LAST = { before: d.before, open: S && S.openId, suggs: S ? S.SUGGS.length : null,
+        connected: d.el.isConnected, all: d.all, ticks: d.ticks.size, editMode: document.documentElement.classList.contains('editmode') || !!document.querySelector('.doc.editing, .editmode') };
       return d.n + (focused ? 1 : 0); });
     await page.keyboard.press('Escape').catch(() => {});
     return n > 0 || net !== sent;
@@ -4799,7 +4808,7 @@ async function drivenPass(page, walk, keys, prepare) {
         await prepare();
         did = await press(key, what, nth);
       }
-      if (did === false) DRIVEN.push({ walk, key, what });
+      if (did === false) DRIVEN.push({ walk, key, what, diag: await page.evaluate(() => window.__DRV_LAST || null).catch(() => null) });
     }
   }
   page.off('request', onReq);
@@ -4944,7 +4953,7 @@ async function finish(cards, errors, tok, ref, version, switches, piles, doors, 
   grammar.push(...walkGrammar(zoneReads, tipReads, switches, restReads));
   // P22's driven form: an enabled control that did nothing when pressed
   for (const d of DRIVEN) grammar.push({ check: 'no-job', walk: d.walk, key: d.key, sub: 'driven',
-    ex: clip('an enabled control that does nothing when pressed: “' + d.what + '”', 160), kind: kindFor(d.walk, d.key) });
+    ex: clip('an enabled control that does nothing when pressed: “' + d.what + '”', 160) + (d.diag ? ' — ' + JSON.stringify(d.diag) : ''), kind: kindFor(d.walk, d.key) });
   grammar.push(...widthRules(cards, baseline));
   for (const f of grammar) {
     if (!f.kind) {
