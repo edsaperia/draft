@@ -13,7 +13,7 @@ import type Anthropic from '@anthropic-ai/sdk';
 import { afterAll, describe, expect, it } from 'vitest';
 import { applyPatch } from '../../engine-core/src/index.js';
 import {
-  ClaudeDemoModel, DEMO_MODELS, blocksOf, claudeModelsMade, modelInfo, priceOf, proposalHunks,
+  ClaudeDemoModel, DEMO_MODELS, REWRITE_OVERLAP, blocksOf, claudeModelsMade, modelInfo, priceOf, proposalHunks, wordOverlap,
 } from '../src/demo-model.js';
 import type { DemoPersona, MessagesTransport } from '../src/demo-model.js';
 import { FilePersistence } from '../src/persistence.js';
@@ -71,6 +71,66 @@ describe('the host builds a proposal (proposalHunks)', () => {
     expect(drop({ kind: 'rewrite', why: '', sites: Array.from({ length: 5 }, (_, i) => ({ start: i, end: i + 1, lines: ['x'] })) })).toMatch(/places/);
     expect(drop({ kind: 'rewrite', why: '', sites: [] })).toMatch(/place/);
     expect(drop({ kind: 'rewrite', why: '', sites: [{ start: 6, end: 6, lines: ['### 10:30 · A short break'] }] })).toBe('kept');
+  });
+
+  // #150: two rewrites on /demo (2026-10-02) arrived as insertions above the
+  // paragraph they reworded, and both wordings stood. Ed's screenshots cut the
+  // new wordings off; these are completed in their voice, from the words shown.
+  describe('a rewrite sent as an insertion (#150)', () => {
+    const DEMO = [
+      '## Day 2 · Craft',
+      '### 10:30 · Plant-Based Pizza: Beyond the Substitute',
+      '**Leila Farahani** — chef and product developer who has written plant-based menus for restaurant groups in Tehran, Toronto and Berlin.',
+      'The first plant-based pizzas imitated cheese and sausage. The second generation starts from vegetables and asks what a pizza is for.',
+      '### 13:30 · Stretching Clinic (optional, in the courtyard)',
+      '**Marco Villani** — who prosecutes pineapple on Wednesday and teaches dough by hand on Thursday.',
+      'Half an hour for delegates who want to stretch a dough by hand under instruction before the afternoon begins; aprons are provided.',
+    ];
+    const insert = (at: number, line: string): string => {
+      const out = proposalHunks({ kind: 'rewrite', why: '', sites: [{ start: at, end: at, lines: [line] }] }, DEMO);
+      return 'dropped' in out ? out.dropped : 'kept';
+    };
+    const STRETCH = 'An optional thirty-minute hands-on session: delegates stretch a dough under instruction in the courtyard.';
+    const PLANT = 'How do we build a pizza around plants instead of imitating cheese and sausage?';
+
+    it('refuses both, as they reached the host: inserted above the paragraph they reword', () => {
+      expect(insert(6, STRETCH)).toBe('a rewrite sent as an insertion');
+      expect(insert(3, PLANT)).toBe('a rewrite sent as an insertion');
+    });
+
+    it('refuses one inserted below the paragraph it rewords', () => {
+      expect(insert(7, STRETCH)).toBe('a rewrite sent as an insertion');
+      expect(insert(4, PLANT)).toBe('a rewrite sent as an insertion');
+    });
+
+    it('keeps the same words sent as the replacement they are', () => {
+      const out = proposalHunks({ kind: 'rewrite', why: '', sites: [{ start: 6, end: 7, lines: [STRETCH] }] }, DEMO);
+      expect('dropped' in out).toBe(false);
+    });
+
+    it('accepts a new sentence under a session', () => {
+      expect(insert(7, 'Sign up at the registration desk by noon; places are limited to twenty.')).toBe('kept');
+      expect(insert(4, 'Tasting plates from three plant-based kitchens follow the talk.')).toBe('kept');
+    });
+
+    it('accepts a new session between two others, a heading weighed only against a heading', () => {
+      const out = proposalHunks({ kind: 'rewrite', why: '', sites: [{ start: 4, end: 4, lines: [
+        '### 12:30 · Lunch in the courtyard',
+        'Plant-based and classic pizzas from the conference ovens.',
+      ] }] }, DEMO);
+      expect('dropped' in out).toBe(false);
+    });
+
+    it('weighs a heading against a heading only in the same slot', () => {
+      expect(insert(4, '### 13:30 · Stretching Clinic: hands-on, in the courtyard')).toBe('a rewrite sent as an insertion');
+      expect(insert(4, '### 12:45 · Stretching Clinic warm-up')).toBe('kept');
+    });
+
+    it('the threshold sits between the two kinds', () => {
+      expect(wordOverlap(STRETCH, DEMO[6]!)).toBeGreaterThanOrEqual(REWRITE_OVERLAP);
+      expect(wordOverlap(PLANT, DEMO[3]!)).toBeGreaterThanOrEqual(REWRITE_OVERLAP);
+      expect(wordOverlap('Tasting plates from three plant-based kitchens follow the talk.', DEMO[3]!)).toBeLessThan(REWRITE_OVERLAP);
+    });
   });
 
   it("a speaker's own sessions are read off the text", () => {
