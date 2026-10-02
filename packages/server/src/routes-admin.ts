@@ -109,6 +109,9 @@ export const healthTable: Route[] = [
         documentsStalled: [...ctx.store.all()].filter((d) => d.stalled).length,
         // the announced pause (Q1345), or null
         paused: ctx.pause.payload(nowMs),
+        // the push streams (Scaling Stage 4): open now, opened and refused
+        // since boot — counts, never a document or a seat
+        streams: ctx.events.stats(),
         uptimeSeconds: Math.floor((nowMs - ctx.bootedAtMs) / 1000),
         mail: ctx.cfg.mailOff ? 'off' : 'on',
         // dev-mail mode, so the birth page — which has no view to read it

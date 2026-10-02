@@ -34,6 +34,12 @@ export type ReadingRow = { id: string; at: string } | { k: string; at: string };
 
 const tables = new WeakMap<object, Map<string, Place>>();
 const tokens = new WeakMap<object, Map<string, string>>();
+/** A per-document counter that moves when a place does (Stage 4's push: a member's stream is nudged by it). */
+const gens = new WeakMap<object, number>();
+const bump = (doc: object): void => { gens.set(doc, (gens.get(doc) ?? 0) + 1); };
+
+/** How many times a place on this document has moved, since boot. Nothing else: never who, never where. */
+export function presenceGen(doc: object): number { return gens.get(doc) ?? 0; }
 
 function tableOf(doc: object): Map<string, Place> {
   let m = tables.get(doc);
@@ -44,13 +50,26 @@ function tableOf(doc: object): Map<string, Place> {
 /** Record where `memberId` is reading. False, and nothing kept, on a key the page would never send. */
 export function notePlace(doc: object, memberId: string, at: string, nowMs: number): boolean {
   if (!AT_OK.test(at)) return false;
+  const was = tableOf(doc).get(memberId);
   tableOf(doc).set(memberId, { at, t: nowMs });
+  if (was === undefined || was.at !== at || nowMs - was.t > PRESENCE_TTL_MS) bump(doc);
   return true;
+}
+
+/**
+ * Keep a member's place standing without moving it (Stage 4): an open member
+ * stream's heartbeat is a page still open where it last reported, now that
+ * the poll that used to refresh the place is a 30 s backstop. Nothing if the
+ * place has gone already — a place is only ever *made* by the page's report.
+ */
+export function touchPlace(doc: object, memberId: string, nowMs: number): void {
+  const p = tables.get(doc)?.get(memberId);
+  if (p !== undefined && nowMs - p.t <= PRESENCE_TTL_MS) p.t = nowMs;
 }
 
 /** Forget a member's place — on their removal, or when they leave the page. */
 export function dropPlace(doc: object, memberId: string): void {
-  tables.get(doc)?.delete(memberId);
+  if (tables.get(doc)?.delete(memberId)) bump(doc);
 }
 
 /** The place a member last reported, if still inside the TTL. */

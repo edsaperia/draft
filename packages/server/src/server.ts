@@ -44,6 +44,9 @@ import { surfaceTable } from './routes-surface.js';
 import { Demo } from './demo.js';
 import { demoTable } from './routes-demo.js';
 import { demoBotsTable } from './routes-demo-bots.js';
+import { eventsTable, lengthsOf } from './routes-events.js';
+import { EventHub } from './events.js';
+import { seatAlive } from './routes-member.js';
 import { DemoBots } from './demo-bots.js';
 import type { DemoBotsDeps } from './demo-bots.js';
 import { ClaudeDemoModel, modelInfo } from './demo-model.js';
@@ -83,6 +86,9 @@ const ROUTES: Route[] = [
   // the demo panel's bot controls (design/DEMO.md Stage 4): `/api/demo/*`
   // and one dev row, claimed by no row above or below
   ...demoBotsTable,
+  // the push stream (Scaling Stage 4): `/api/d/:slug/events`, a segment the
+  // member row declines (it matches `view` and `cmd` alone)
+  ...eventsTable,
   ...surfaceTable,
 ];
 
@@ -97,6 +103,8 @@ export interface DraftServer {
   demo: Demo;
   /** The demo's bots (design/DEMO.md Stage 4): idle until the panel's ▶️. */
   demoBots: DemoBots;
+  /** The open push streams (Scaling Stage 4). */
+  events: EventHub;
   /** Drive the clocks (§9.5/§9.5a): call periodically; safe to call any time. */
   tick(nowMs?: number): Promise<void>;
   /**
@@ -293,9 +301,20 @@ export async function createDraftServer(cfg: ServerConfig,
    * files come from and which commit answers in `x-build`, and both the
    * static family and `/healthz` must see the move.
    */
+  // the push streams (Scaling Stage 4): what the short answer carries,
+  // compared on a scan — the two lengths per document, and host-wide the
+  // pause and the build (a surface upload moves `ctx.buildSha`, read live)
+  const events: EventHub = new EventHub({
+    lengths: lengthsOf,
+    hostKey: (nowMs) => JSON.stringify([pause.now(nowMs), ctx.buildSha]),
+    build: () => ctx.buildSha,
+    alive: (doc, seat, audience) => audience === 'stranger' || seat === null
+      ? true
+      : seatAlive(doc.cs, seat, audience === 'applicant' ? seat.slice('app:'.length) : null),
+  });
   const ctx: RouteContext = {
     cfg, store, persistence, auth, mailer, outbox, stash, commits, writes, pause,
-    errors, races, demoBots, bootedAtMs, httpsOn, demo,
+    errors, races, demoBots, bootedAtMs, httpsOn, demo, events,
     designDir: cfg.designDir,
     buildSha: cfg.buildSha,
     surfaceSha: null,
@@ -437,6 +456,10 @@ export async function createDraftServer(cfg: ServerConfig,
     closing ??= (async () => {
       // the bots first: nothing of theirs may start a commit behind the drain
       demoBots.stop('closing');
+      // …and every push stream (Scaling Stage 4, the spike's finding 1): an
+      // open stream is never idle, so `server.close()` below would wait on it
+      // until its race gave up — 3.0–4.4 s of every deploy's drain, measured
+      events.closeAll();
       // stop accepting, drop idle keep-alives, and give requests in flight
       // a moment to finish — but never wait on them indefinitely (review
       // #2, finding 5): one stalled POST must not stop the drain, the store
@@ -456,5 +479,5 @@ export async function createDraftServer(cfg: ServerConfig,
     return closing;
   };
 
-  return { server, store, auth, mailer, outbox, demo, demoBots, tick, close };
+  return { server, store, auth, mailer, outbox, demo, demoBots, events, tick, close };
 }
