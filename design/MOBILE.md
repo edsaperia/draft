@@ -291,7 +291,7 @@ No queued judgment, ever: a judgment against a pair the room has moved past is a
 | 3 | ☐ **Keyboard, safe area, dvh, fixed chrome** (§1.8). | Focusing the 🥂 lane sets `html[data-kbd]` and hides the dock, restored on blur; the dock's `bottom` rule names the safe-area term; `.toc`'s rule names `dvh`. |
 | 4 | ☐ **Live walk, freeze and fold** — the full §2.1 mobile-walk on the live path; the `walks` CI job; narrow baseline recorded; `design/reference/` re-frozen under a new tag; QUESTIONS.md closes 419/420/421/425/427; SURFACE.md gains the narrow rules (an M-rule: *on one column the rail is the dock — the pinned population, nothing else*; the holds table's touch column; §6's note that the teaser is in the card on narrow); CLAUDE.md glossary lines for `narrow`/`coarse`/`press`/`say`/`dock`; the device checklist run on a real iPhone and Pixel and logged. | CI green with `walks`; device log rows for both devices. |
 | 5 | ☐ **PWA · push · offline** (§3, in its own order a–d). | `verify-deploy` caching checks; `spec-check` budget; push end to end on a real device, logged. |
-| 6 | ☐ **Composer, founding and motions on touch** (Q424) — doors and IME handling on the §1.7 seams; no layout. | A `hasTouch` journey walking propose → judge → motion. |
+| 6 | ☐ **Proposing on a phone**: planned in §6a (2026-10-02, issue #164), in three stages: 6a doors and the lane, 6b patches and runs, 6c the founding. | §6a.6's acceptance per stage. |
 
 ### 6.1 Critical files
 
@@ -313,6 +313,112 @@ Where each stage lands. Lines checked 2026-08-23 and re-checked 2026-09-07; the 
 | `SURFACE.md` | the narrow M-rule, §7.2's **on touch** column and its §3 exception, the `push` channel and C17, the 🔔 card | 2, 4, 5 |
 | `.github/workflows/ci.yml` | the `walks` job beside `ci` and `probe` (Q665) | 4 |
 
+## 6a. Stage 6: proposing on a phone (the plan, 2026-10-02)
+
+Ed, 2026-10-02 (issue #164): *We should make a plan for making proposals on mobile.* This section replaces §6's one-line Stage 6 row. **Where they disagree, SURFACE wins over this section, and this section wins over §1.6 and §1.7**, which were written for the hold gesture and before edit mode existed (K13, K31). **Nothing here is built until Ed has answered §6a.9.** Citations point at the rule and are not restated. The edits this plan implies for other documents are listed in §6a.8, to be made when each stage lands.
+
+### 6a.0 What was measured
+
+**Method.** Playwright Chromium with `devices['iPhone 13']` (390×664 layout viewport, DPR 3) and `devices['Pixel 7']` (412×839), `hasTouch`, every press a `touchscreen.tap`. The target was a live dev server running the phase ladder's `--to=session --seed=42` document (20 members, 11 live races, 👤 `sealedElective`), seated as members `m-2` and `m-3` through `/api/dev/seat`, with every grant accepted by tap. Where a row says *hide lifted*, the narrow rule hiding the composer (`system.css:3293`) was deleted in the page through the CSSOM. Nothing in the repository was changed to measure. Results were the same on both devices unless a row says otherwise. There were no page errors and no refused `/api/` calls in any pass.
+
+| # | What | Measured | Where |
+|---|---|---|---|
+| 1 | Today's narrow page | No door: `#ridetab`, `#editdoor`, `#prosectl` and `.lanepropose` are `display: none`. The column is `contenteditable="false"` in read mode. **The ✏️ wallet is drawn** in the topbar's first row (14×14), so Q656's hidden sockets have already gone, with Q1351's two-row bar. | `system.css:3293`; *Status* above |
+| 2 | Today, with a **paired keyboard** (Q1350) | Tapping a clause and pressing `Q` opens the editing card on that clause, with no edit mode. **One tap** on the card's ✏️ sent `propose-text` (2xx), and the rail read *Proposed — the members are deciding*. **A phone with a keyboard can already propose, end to end.** | `edit-mode.js:440–452` → `typeAt`, `session.js:5705` |
+| 3 | The commit gesture | `COMMIT_GESTURE = 'click'`: one tap commits and the flight is the announcement (SURFACE §7.2). §1.6's two-tap was designed to replace a timed hold, and no timed hold remains. | `session.js:4724` |
+| 4 | ✏️ *propose edit* on a pair card's lane (hide lifted) | A tap opens the editing card with its lane focused (`isContentEditable`, which is what raises a virtual keyboard), and does not enter edit mode. Its target is **85×23**. | `cards.js:1476`, `:1929` |
+| 5 | IME **in the lane** | Composing `q` → `qu` → `quo`, then committing `quorum `, left the text right and the focus kept. The lane's `input` handler skips while `isComposing` and re-marks at `compositionend`. **§1.7's Q424 seam is already built on the lane's side.** | `session.js:4280–4281` |
+| 6 | IME **in the column**, in edit mode (hide lifted, 📝 tab tapped: `editing`, `contenteditable="true"`) | The events were `compositionstart`, then three `beforeinput insertCompositionText` with **`cancelable: false`**, then `compositionend`. The page's `preventDefault` cannot hold them, and `startDraftFromTyping` returns at `default`. **The browser wrote the word into the charter's clause in place** (*Should t**word**he Club…*): no draft opened and nothing was sent. This is the phantom-edit class from CLAUDE.md's Gotchas (*a caret on the column itself … the browser edited the host in place*). An iOS-shaped `insertText` into the column works correctly: the card opens and the lane takes focus. | `session.js:5876–5905`; `composer.js:563–589` |
+| 7 | The card under a keyboard (Android's `resizes-content` simulated by shortening the viewport 300 / 280 px) | iPhone, 364 tall: the editing card spans 237–919 and **the lane being typed in sits at 432–580, below the glass**. The floating row's ✏️ is at 268–340 and visible. The sign control is at 659–798 and the card's 🗑️ at 865–905. Pixel, 559 tall: the lane is at 519–642 and the row at 463–535. **The page's viewport meta has no `interactive-widget`**, so on real Android Chrome (whose default is `resizes-visual`) and on iOS the layout viewport stays full height, and a row fixed to the window's foot sits *behind* the keyboard. Headless cannot show that. | `session-view.html:3`; §1.8 (unbuilt) |
+| 8 | Edit mode at 390 | No horizontal overflow (`scrollWidth` 390 / 412). The B · *I* strip `#prosectl` draws **0px tall**. | `edit-mode.js:309` |
+| 9 | Editable font sizes | Lane 16px, column 16px, **reason `.edit-why` 12.64px**: iOS zooms on focus below 16px (§1.8). | `system.css:2777` |
+| 10 | Targets on the editing card | Sign 139×32 and 259×32, 🗑️ 52×40, ✏️ 52×40, lane ✏️ 85×23. The floating circles are 72×72. | — |
+| 11 | **Motions** at 390 (nothing hides them) | 💤's card draws two option blocks, a field, 🗑️ and 🏛️ (52×40), with no overflow. **Motions already compose on a phone.** The field is **14px**, so iOS zooms on it. | — |
+| 12 | The floating 📝 (hide lifted) | 72×72 at 568–640, shown only once the riding tab has risen past it (Q1380). The task sheet's peek bar takes the window's last 65px (599–664 on the iPhone), so **the door and the peek overlap by 41px** whenever both stand. This is derived from the two rules and was not seen in one frame. | `edit-mode.js:114`; *The task sheet* |
+
+**What headless cannot see** (for the device checklist, §7): the real keyboard's height and whether it covers a fixed row; iOS scrolling the caret into view on its own; autocorrect and predictive text replacing a word (`insertReplacementText`); Gboard keeping a composition region open after a commit, so that the lane's re-mark at `compositionend` could meet a second composition; swipe typing; dictation; the selection handles and callout on a long press.
+
+### 6a.1 The door in
+
+Four candidates, measured against findings 1–6:
+
+- **✏️ *propose edit* on a decision card's lane** (K24): built, and it reaches the lane, which is a real editor where IME works (findings 4 and 5). It only exists where a card exists, so it cannot reach a clause nobody has proposed on.
+- **The 📝 door and a tap on a clause** (recommended, §6a.9 question 1). On a coarse pointer, edit mode never gives the column a caret. Instead, **a tap on a clause opens that clause's editing card** with its lane focused and the caret placed at the tap point (`caretRangeFromPoint`, mapped through `sourceOffsetIn`). This is the door §1.7 named, made from a tap where §1.7 had a long press, and kept inside edit mode so that K13's *📝 is the door* holds. Because the column is never `contenteditable` on coarse, finding 6 is ruled out by construction rather than worked around.
+- **A long press on a clause** (§1.7's plan): it competes with the browser's own text selection and callout on the prose, which §1.5 keeps, and nothing on the page announces it.
+- **An insertion at a gap**: on a phone this needs no door of its own. Enter at the end of a lane already makes a new paragraph (Ed, 231; `composer.js:563`), and the engine cuts the restated line away (K14's *what is sent is not always what lands*), so an insertion is typed from the clause above it. The column's own gap door (Enter at a clause edge, Q261) needs a caret in the column and stays desktop only.
+
+### 6a.2 Where the typing happens
+
+**Recommended: in place, in the editing card**, which replaces its paragraph exactly as it does on the desktop (K31, C2), with the keyboard handled around it:
+
+- The viewport meta gains `interactive-widget=resizes-content`, as §1.8 planned (`session-view.html:3`). On Android Chrome this makes the layout viewport shrink, so a fixed row rises above the keyboard with no script.
+- iOS ignores that key, so while a lane has focus on narrow the root carries `data-kbd` (§1.8), and the proposal row is placed from `visualViewport` (`resize` and `scroll`): bottom = `visualViewport.offsetTop + visualViewport.height`.
+- `data-kbd` also hides the task sheet and the floating 📝 (finding 12).
+- Focusing a lane scrolls it to `readLine()`, so the line being typed stays above the keyboard (finding 7).
+
+**The alternative is a focused editor sheet**: the lane, the reason and the row in a bottom sheet over the document, in the task sheet's grammar. It takes the keyboard more simply, but it is a new frame with its own SURFACE rules. It also breaks *the clause and the tab pressed never move* (`space-above`), because the clause would leave the glass.
+
+Both options keep *nothing rebuilds under a press or a caret*: the lane is patched in place (`render-hold-walk`), and the docking writes one style property and never renders.
+
+### 6a.3 Composition and IME
+
+- **The lane: keep it as built** (finding 5), and add a guard (§6a.6).
+- **The column: never an IME target on coarse.** `PROSE()` (`session.js:251`) keys `contenteditable` on `coarse()` as well as `editing`, which is §1.5's rule, so on a phone the column is never editable in either mode, and finding 6 cannot happen. The `beforeinput` refusal stays as the second lock it already is.
+- **The re-mark after `compositionend`** rewrites the lane's `innerHTML` (K19's yellow). Gboard and iOS autocorrect may keep a composition region open across it. This is a device question (§7 row 17) with a fallback ready: on coarse, re-mark only on `blur` (§6a.9 question 8).
+
+### 6a.4 The commit row and the ✏️
+
+- **One tap commits, as on the desktop** (finding 3). §1.6's two-tap is not built for the click gesture, and if Ed flips `COMMIT_GESTURE` back to `hold`, a hold on touch already works through `touch-action: none` (*Status*). The cost is that a stray tap spends a ✏️ (§6a.9 question 3).
+- **The row stands above the keyboard** (§6a.2). The ✏️ wallet is already visible (finding 1), so Q656 closes as superseded by Q1351.
+- **Hit areas, not boxes**: `.lanepropose`, the sign control and the card's 🗑️ take §1.4's coarse `::before` pseudo-element so that each reaches 44px, and no drawn geometry changes.
+
+### 6a.5 What the first cut holds
+
+| In stage 6a | Deferred |
+|---|---|
+| One site: lane ✏️, and in edit mode a tap on a clause | **Patches** (K15–K16, Q1306): several site cards and the patch row at 390, which is stage 6b |
+| An insertion, by Enter at a lane's end | **Runs** (K14, Q424's original question): a drag-select across blocks fights the scroll, which is stage 6b |
+| The reason (16px on coarse) | **B · *I*** (K22): edit mode is the source (Q1467), so typing `**` already marks; the strip stays hidden |
+| Signing (K28), drawn already | The column's Enter-at-edge gap door (Q261): desktop only (§6a.1) |
+| 🗑️ on the card and on the row; the empty-wallet countdown (Q1486 (E)) as built | **The founder's text before 🍾** (`#prose`, K31): stage 6c, §6a.7 |
+| The misaim guard (`standDown`, `session.js:4965`): unchanged, nothing touch-specific | |
+| Motions: the 16px and 44px sweep only (finding 11) | |
+
+### 6a.6 Stages and acceptance
+
+| # | Stage | Done when |
+|---|---|---|
+| 6a | ☐ **Doors and the lane.** Lift `#ridetab`, `#editdoor` and `.lanepropose` out of the narrow hide (`system.css:3293`), keeping `#prosectl` hidden. `coarse()` in `PROSE()`. On coarse in edit mode, a tap on a clause opens its card (a new opening beside the four in `composer.js`, `startDraftFromTyping`'s sibling). The viewport key, `data-kbd`, the `visualViewport` row and the lane scroll (§6a.2). 16px on coarse for `.edit-why` and the motion fields (`system.css:2777`). The 44px hit areas (§6a.4). | **A new walk, `scripts/repro/phone-propose.mjs`**, in the sprint tier from its first day (CLAUDE.md, Q1547), on iPhone 13 and Pixel 7 contexts against a ladder document: (1) lane ✏️ → card, lane focused → one tap → `propose-text` 2xx, and the entry reads *Proposed*; (2) 📝 → a tap on an unraced clause → its card, with the caret at the tap point; (3) CDP `imeSetComposition` into the lane commits the text; (4) **the same composition aimed at the column changes no clause's text**, the guard for finding 6; (5) with the viewport shortened by 300px and a lane focused, the lane sits within `[navH, innerHeight]` and the row's ✏️ is on the glass; (6) every focused editable is ≥ 16px; (7) no overflow, no `pageerror`, no refused call. Then *propose → judge → see it pass*: a second, desktop context judges the race until it carries, and the phone's entry reads ✔. Desktop: both probes IDENTICAL at 1600 (every rule sits under `NARROW_Q` or `coarse`), `journey` green, and `card-audit:narrow`'s D1 skip (`card-audit.mjs:3964`) removed so that D1–D4 measure the door at 390. |
+| 6b | ☐ **Patches and runs** on touch, after Ed has used 6a on a phone. | Planned then. |
+| 6c | ☐ **The founding on touch**: the founder's text before 🍾 through the same *tap a block → lane* door. | Planned then. |
+
+`mobile-walk` (§2.1) is still unbuilt. When it is, it gains steps (1) to (5) of 6a.
+
+### 6a.7 Motions and the founding
+
+**Motions share nothing with the text composer's door.** They compose on the rule's own card with its own controls (K1, K3), and they already work at 390 (finding 11). Their share of stage 6 is the font and hit-area sweep inside 6a. **The founding gets its own stage, 6c**: before 🍾 the text is `#prose`, the column itself, which is exactly the editor finding 6 rules out on a phone. It should go through 6a's door, but it touches 🪶 → 📍 → 📧's column and the stash (*saving is not discarding*), which 6a does not.
+
+### 6a.8 Documents to change when built (scheduled, not performed)
+
+- **SURFACE**: K13 and K31 gain the coarse door (*on a coarse pointer, edit mode puts no caret in the column; a tap on a clause opens its editing card*), as a numbered exception in §3. §7.2 notes that touch takes the same click. §9's 📝 row covers the narrow door.
+- **QUESTIONS.md**: Q424 and Q1350 close.
+- **This file**: §1.6 is marked superseded by §6a.4, §1.7's composer bullet points here, Q656 in §5 is marked superseded, and *Status* is updated.
+- **CLAUDE.md**: a glossary line for the new opening and one for `phone-propose`.
+- **`scripts/ci-walks.sh`**: the walk joins a sprint group.
+
+### 6a.9 Questions for Ed
+
+Numbered here for the PR. The coordinator claims QUESTIONS.md numbers when putting them to Ed. Each has its recommendation first. *Time* is build time. *Looks broken* is CLAUDE.md's guiding light: the risk that a member sees a card that seems wrong.
+
+1. **The door into a clause nobody has proposed on.** (a) **On a phone, edit mode means *tap a clause to open its card***: no caret in the column. Time ~1 day. Looks broken: low, since the card is the existing editing card. (b) A long press on a clause: ~1 day, it fights native text selection, and nothing says it is there. (c) Make the column a touch editor that reconciles each composition after it lands: 3–5 days, and high risk, because typed text appears in the clause and then vanishes at the next render (finding 6).
+2. **Where the typing happens.** (a) **In place, in the card, with the row docked above the keyboard**: ~1 day; medium iOS risk (a fixed row with the keyboard up), which the device checklist covers. (b) A focused editor sheet over the document: 2–3 days, a new frame and new SURFACE rules, with lower keyboard risk but the clause leaving the glass.
+3. **Does a phone's ✏️ need a confirming tap?** (a) **No: one tap, as the desktop's click.** No cost, and the fastest; a stray tap spends a ✏️. (b) §1.6's two-tap (*Tap again to propose*) on touch commits: ~1 day, with one extra tap per proposal.
+4. **Q1350: a paired keyboard on a phone.** (a) **Support it as it is**: no cost, and measured working end to end (finding 2). (b) Gate edit mode by pointer, which closes a road that works.
+5. **First-cut scope.** (a) **One site, the reason, signing and insertion by Enter. Patches, runs and B · *I* go to 6b.** (b) Patches now as well: +1–2 days, with several open site cards and the patch row at 390, which is the likeliest place for a card to look broken.
+6. **Motions.** (a) **Fold the 16px and 44px sweep into 6a**: under an hour, since they already work. (b) Leave them as they are; iOS zooms on the field.
+7. **The founder's text before 🍾 on a phone.** (a) **Its own later stage, 6c.** (b) Inside 6a, adding ~1 day and the stash path.
+8. **The yellow while typing on a phone** (K19's re-mark after each composition). (a) **Keep it, and check Gboard and iOS autocorrect on a device**, with re-mark-on-blur as the fallback. (b) Re-mark only on blur on coarse from the start: safer, but the card shows no yellow until you leave the lane.
+
 ## 7. Device checklist
 
 Run on a real device, against a build named by its `x-build` from `/healthz`; one log row per item per device.
@@ -331,6 +437,12 @@ Run on a real device, against a build named by its `x-build` from `/healthz`; on
 12. Tap on a clause puts no caret and opens nothing (v1); selection of prose still works.
 13. Rotation: the layout re-fits; `.walletsay` does not vanish on the keyboard.
 14. Add to Home Screen (stage 5): the entry is named for the document; it opens at `/d/:slug`.
+15. Stage 6a: ✏️ *propose edit* on a lane raises the keyboard, and the lane stays above it as you type.
+16. Stage 6a: in edit mode, a tap on a clause opens its card, the caret lands where you tapped, and the clause itself never takes the letters.
+17. Stage 6a: typing with autocorrect and predictive text (iOS) and with Gboard (Android), swipe typing included: the lane holds exactly what was typed, the yellow follows, and nothing is doubled (§6a.3).
+18. Stage 6a: the proposal row stands above the keyboard, ✏️ proposes in one tap, and the rail reads *Proposed*.
+19. Stage 6a: the reason field does not zoom the page on focus, on iOS.
+20. Stage 6a: a paired Bluetooth keyboard proposes from a tapped clause (Q1350).
 
 ## 8. Device log
 
