@@ -6674,6 +6674,9 @@ document.addEventListener('paste', (ev) => {
     bandOwes, walkFromBand,
     setDocClosed,
     clockText, dateWords,
+    // a rail entry's title from the entry alone (Q1523, #186): clock-check
+    // reads which builder each kind of entry goes through
+    railTitleOf,
     // a block as the engine's source line — marker and words (Q1403): the
     // live layer builds a proposal's origins with it
     sourceTextFor, markerFor,

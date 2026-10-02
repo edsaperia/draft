@@ -282,6 +282,32 @@ const titles = [
   // only punctuation between two changes: one change
   [railPair('It is said once and not more.', 'It is said once. No further reminder is given.', G),
     '‘and not more’ or ‘No further…’'],
+  // **every kind of entry through the page's own router** (#186, the
+  // coordinator's rows): a change leads with what it puts in whatever entry
+  // shows it, a pure cut is struck, two proposals keep *‘a’ or ‘b’*
+  ...(() => {
+    const T = (g) => railTitleText(ctx.window.SESSION.railTitleOf(g, { label: G }));
+    const OLD = 'Subscriptions are reviewed monthly by the house.', NEW = 'Subscriptions are reviewed quarterly by the house.';
+    const FULL = 'The Club has no head, and has managed without one.', CUT = 'The Club has no head.';
+    return [
+      // a replacement — as a pair against the current text, a patch's site,
+      // your own proposal, and a ✔ record
+      [T({ id: 'q1', kind: 'quick', was: OLD, now: NEW }), '‘quarterly’'],
+      [T({ id: 'p1', kind: 'patch', sites: [{ was: OLD, now: NEW }] }), '‘quarterly’'],
+      [T({ id: 'd1', kind: 'draft', mine: true, sites: [{ seed: OLD, text: NEW }] }), '‘quarterly’'],
+      [T({ id: 'r1', state: 'sealed', replaced: OLD, slate: [{ text: NEW, won: true }] }), '‘quarterly’'],
+      // a pure cut — as a pair and as a record — keeps its strike
+      [T({ id: 'q2', kind: 'quick', was: FULL, now: CUT }), 'without ‘and has managed without one’'],
+      // (a record's line keeps room for its moment, so its quote is cut)
+      [T({ id: 'r2', state: 'sealed', replaced: FULL, slate: [{ text: CUT, won: true }] }), 'without ‘and has managed without…’'],
+      // *not*: the proposal's side decides — added plain, removed struck
+      [T({ id: 'q3', kind: 'quick', was: 'Members may vote.', now: 'Members may not vote.' }), '‘not’'],
+      [T({ id: 'q4', kind: 'quick', was: 'Members may not vote.', now: 'Members may vote.' }), 'without ‘not’'],
+      // two proposals against each other: each side's own words, plain
+      [T({ id: 'x1', kind: 'race', race: { a: { text: 'A quorum is six members.' }, b: { text: 'A quorum is seven members.' } } }), '‘six’ or ‘seven’'],
+      [T({ id: 'x2', kind: 'race', race: { a: { text: FULL }, b: { text: CUT } } }), '‘and has managed without one’'],
+    ];
+  })(),
   // a rule's value, old → new, a shared tail said once
   [railArrow('10 minutes', '5 minutes'), '10 → 5 minutes'],
   [railArrow('6', '8'), '6 → 8'],                           // a count alone (Q1523 (e))
