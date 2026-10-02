@@ -6,14 +6,23 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
-## 2026-10-02: reasons read as comments
-
-### Changed
-- **A proposal's reason now reads as a comment on it.** Under each proposal's wording, the reason sits in a soft grey panel the wording's full width, with a line at its top saying who gave it — their picture and name, or *Anonymous* where names are kept back — and the reason beneath in plainer, slightly larger type, so it no longer looks like more of the document. The card's own label still says *Proposed by* and the name. Records, the founder's amendments and the closed page show reasons the same way.
-- **Writing a proposal is a short form of two parts.** *Your proposal* holds your wording; *Your reasoning*, below it, is a box of its own, two lines tall and growing as you write. Where the document lets you choose, an *Anonymous* switch sits beside *Your proposal*: **off, your name goes on the proposal — now the default** — and on, it goes out without your name. Proposing a change to a rule asks for your reasoning the same way.
+## 2026-10-02: live updates measured before they are built
 
 ### For contributors
-- **Surface-only.** `CARDS.speakerHtml` draws `.speaker.comment` (a `.by` byline over `.said`); `founderFace` takes the same form; new tokens `--comment-bg`, `--comment-ink`, `--comment-muted`, `--r-xl`, `--shadow-edge`, `--switch-off`. The editing card and the settings reason box draw *Your reasoning* through `CARDS.whyBoxHtml`; the sign choice is one switch (`anonSwitchHtml`), a draft starting signed (`draftSigned`). The rail's one-line quote is unchanged. SURFACE K28, K30, §9.
+- **Nothing a member sees changes.** Scaling Stage 4's spike (issue #159) measured a Server-Sent Events stream on a local server and found it fit to build on. A stream stayed open past Node's request timeout. Writes arrived within 5 ms with no buffering. Each stream cost one file descriptor and 10–20 KB, with no event-loop lag at 1,000 streams. Stage 4 has to end its streams at shutdown and spread its reconnects. The spike's route was removed unshipped by Ed's ruling (no Render measurement); `scripts/spike-sse.mjs` stays for measuring Stage 4's real stream. Findings: `design/spec-pass/plan-scaling.md` *Stage notes*.
+
+## 2026-10-02: the questions page's contract, kept by code
+
+### For contributors
+- **Nothing a member sees changes; a full deploy of the same build.** Sessions on this repo can load the `page-contract` mod (`.claude/skills/page-contract/`, a copy of dev-ops' kept identical to it; loaded where the cloud environment's `CLAUDE_CODE_PLUGIN_DIRS` names it): a write to Ed's questions page that breaks its contract is refused with the reasons, the coordinator's `lastActive` is stamped after working turns, and answers left without `handledAt` are named. `eslint.config.mjs` skips the type files Claude Code writes beside the mod when it loads it.
+
+## 2026-10-02: the task list keeps a clause's order
+
+### Fixed
+- **Your task list now lists one clause's entries in the same order as the tabs beside that clause.** With a card open, a decision you had not yet acknowledged could sit above the open entry in the list while its tab sat below it in the margin; both now read the same way.
+
+### For contributors
+- **Surface-only.** `layoutQueue` ranks a clause's entries by the gutter's own `stackKey`, and a flow entry at a pinned entry's clause steps to the side the strip puts it on (`freeFor`, session.js); SURFACE M6 names the open entry's case. Guarded by `scripts/repro/rail-stack-order.mjs`, in the sprint tier's `sprint-pages`.
 
 ## 2026-10-02: the demo's speakers reword rather than repeat
 
