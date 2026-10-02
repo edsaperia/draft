@@ -229,7 +229,7 @@ One glyph per entry, the same alphabet in all three columns (contents rail · gu
 - **M3 Three things are exempt from the fit cap: 🔥, the open entry, anything of your own.**
 - **M4 The open entry's claim on its clause's line is absolute**; entries that cannot fit around it are dropped, never displace it.
 - **M5 Pinned entries sit at their clause while it is visible and pile against the band edge in document order.** The flow population steps around pinned blocks rather than hiding under them.
-- **M6 Ties at one clause break by the tab stack's order, then leverage — one comparator for both columns.**
+- **M6 Ties at one clause break by the tab stack's order, then leverage — one comparator for both columns.** **Around the open entry too** (issue #154, Ed 2026-10-02: *Why do the queue cards and tabs come in a different order?*): M4 holds the open entry on its clause's line, and the clause's other entries stand above it where the strip puts them ahead of it and below it where the strip puts them after, pinned or in the flow alike (guard `scripts/repro/rail-stack-order.mjs`).
 - **M7 Leverage is judgment leverage, with three floors for what a judgment cannot measure**: an unread decision 0.5 (the middle), a deadlocked race `0.9 + 0.1·bounty` (the top), a diagonal `max(urgency, 0.75)`.
 - **M8 🔥 is the most urgent `needs` entry that is not ⚔️, not 🌶️ and not chilled**; ❄️ toggles chilled.
 - **M9 A teaser is always in the markup and hidden in one case — the flame with its clause off screen — tested on the anchor's position, never the entry's.**

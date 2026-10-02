@@ -13,6 +13,8 @@ export default tseslint.config(
       '**/dist/**',
       'coverage/**',
       'node_modules/**',
+      // The type files Claude Code writes beside a mod when it loads it (dev-ops page-contract).
+      '.claude/skills/*/.claude-plugin/types/**',
     ],
   },
   ...tseslint.configs.recommended,

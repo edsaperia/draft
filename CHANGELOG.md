@@ -14,6 +14,32 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 ### For contributors
 - **Surface-only.** `railPress` in `design/session.js` for the text's rail, and the band's click handler in `design/session-view.html` for the Rules'; `toggle` and the tabs are unchanged. Guard: `scripts/repro/rail-second-press.mjs`, in the sprint tier.
 
+## 2026-10-02: live updates measured before they are built
+
+### For contributors
+- **Nothing a member sees changes.** Scaling Stage 4's spike (issue #159) measured a Server-Sent Events stream on a local server and found it fit to build on. A stream stayed open past Node's request timeout. Writes arrived within 5 ms with no buffering. Each stream cost one file descriptor and 10–20 KB, with no event-loop lag at 1,000 streams. Stage 4 has to end its streams at shutdown and spread its reconnects. The spike's route was removed unshipped by Ed's ruling (no Render measurement); `scripts/spike-sse.mjs` stays for measuring Stage 4's real stream. Findings: `design/spec-pass/plan-scaling.md` *Stage notes*.
+
+## 2026-10-02: the questions page's contract, kept by code
+
+### For contributors
+- **Nothing a member sees changes; a full deploy of the same build.** Sessions on this repo can load the `page-contract` mod (`.claude/skills/page-contract/`, a copy of dev-ops' kept identical to it; loaded where the cloud environment's `CLAUDE_CODE_PLUGIN_DIRS` names it): a write to Ed's questions page that breaks its contract is refused with the reasons, the coordinator's `lastActive` is stamped after working turns, and answers left without `handledAt` are named. `eslint.config.mjs` skips the type files Claude Code writes beside the mod when it loads it.
+
+## 2026-10-02: the task list keeps a clause's order
+
+### Fixed
+- **Your task list now lists one clause's entries in the same order as the tabs beside that clause.** With a card open, a decision you had not yet acknowledged could sit above the open entry in the list while its tab sat below it in the margin; both now read the same way.
+
+### For contributors
+- **Surface-only.** `layoutQueue` ranks a clause's entries by the gutter's own `stackKey`, and a flow entry at a pinned entry's clause steps to the side the strip puts it on (`freeFor`, session.js); SURFACE M6 names the open entry's case. Guarded by `scripts/repro/rail-stack-order.mjs`, in the sprint tier's `sprint-pages`.
+
+## 2026-10-02: the demo's speakers reword rather than repeat
+
+### Fixed
+- **A speaker in the demo document can no longer add a second wording of a paragraph beside the first.** When one of the demo's speakers meant to reword an abstract, it sometimes sent the new wording as an extra paragraph, and once that passed the session read twice, old and new together. Such a proposal is now set aside before it is sent, and the speakers are shown plainly how to reword a line in place.
+
+### For contributors
+- **A server change, so a full deploy.** `proposalHunks` (`demo-model.ts`) drops an insertion that rewords the line beside it — `wordOverlap`, the Dice coefficient over content words, at `REWRITE_OVERLAP` 0.35, a heading weighed only against a heading of the same time; the bot's log reads *dropped a proposal: a rewrite sent as an insertion*. The propose prompt gains a worked `start: k, end: k+1` example. Tests in `demo-model.test.ts`.
+
 ## 2026-10-02: headings sized by the levels a document uses
 
 ### Changed
