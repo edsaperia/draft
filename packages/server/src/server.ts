@@ -44,7 +44,6 @@ import { surfaceTable } from './routes-surface.js';
 import { Demo } from './demo.js';
 import { demoTable } from './routes-demo.js';
 import { demoBotsTable } from './routes-demo-bots.js';
-import { spikeTable } from './routes-spike.js';
 import { DemoBots } from './demo-bots.js';
 import type { DemoBotsDeps } from './demo-bots.js';
 import { ClaudeDemoModel, modelInfo } from './demo-model.js';
@@ -84,9 +83,6 @@ const ROUTES: Route[] = [
   // the demo panel's bot controls (design/DEMO.md Stage 4): `/api/demo/*`
   // and one dev row, claimed by no row above or below
   ...demoBotsTable,
-  // the SSE spike (issue #159): `/api/spike/*`, 404 unless DRAFT_SPIKE_SSE=1,
-  // claimed by no other row; removed by Scaling Stage 4's build
-  ...spikeTable,
   ...surfaceTable,
 ];
 
