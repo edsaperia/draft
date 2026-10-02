@@ -3,6 +3,10 @@
  * **The SSE spike's measuring client** (issue #159; plan-scaling.md Stage 4).
  * An instrument, not a guard: it measures and prints, and asserts nothing.
  *
+ * **It measured the spike's `/api/spike/*` rows, removed unshipped** after
+ * Ed's (b) of 2026-10-02 (git history at `7c3f8f93` holds them); Stage 4's
+ * build points it at `/api/d/:slug/events` to measure the real stream.
+ *
  *   node scripts/spike-sse.mjs <base> [--n=100] [--every=5000] [--hb=15000]
  *     [--duration=120] [--pokes=20] [--retry=3000] [--jitter=0]
  *     [--stats=5000] [--json=<file>]
