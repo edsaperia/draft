@@ -38,6 +38,7 @@
     "poll-race": "node scripts/repro/poll-race.mjs",
     "render-hold-walk": "node scripts/render-hold-walk.mjs",
     "sweep-walk": "node scripts/sweep-walk.mjs",
+    "morph-walk": "node scripts/morph-walk.mjs",
     "presence-walk": "node scripts/presence-walk.mjs",
     "overlapping-sites": "node scripts/repro/overlapping-sites.mjs",
     "rate-motion": "node scripts/repro/member-rate-motion.mjs",

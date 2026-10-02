@@ -35,8 +35,10 @@
   const q = (() => { try { return new URLSearchParams(location.search).get('render'); } catch (e) { return null; } })();
   const MODE = q === 'replace' ? 'replace' : 'patch';
   // the attributes that name what an element is *about* (U2): the first one an
-  // element carries is its key among its siblings
-  const KEY_ATTRS = ['id', 'data-setupcard', 'data-card', 'data-tab', 'data-slot', 'data-q',
+  // element carries is its key among its siblings. `data-lineage` (issue #143)
+  // stands before the item keys: an open card and its rail entry carry it, so
+  // a race that becomes its record is the same node, morphed, not a new one
+  const KEY_ATTRS = ['id', 'data-lineage', 'data-setupcard', 'data-card', 'data-tab', 'data-slot', 'data-q',
     'data-para', 'data-key', 'data-k', 'data-site', 'data-anchor'];
   // classes the page puts on a pressed control at runtime, never in its markup:
   // a render landing mid-press must not take them off (the press is in flight)
