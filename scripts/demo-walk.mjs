@@ -173,10 +173,19 @@ const timeOf = (l) => (/^###\s+(\d\d:\d\d)\b/.exec(l || '') || [])[1] || null;
 const swaps = (v.clauses || []).flatMap((c) => c.candidates || [])
   .filter((cand) => (cand.hunks || []).length === 2 && cand.hunks.every((h) => timeOf(h.lines && h.lines[0])));
 check(swaps.length >= 1, `a swap stands as a live two-hunk candidate (${swaps.length})`);
-const timesKept = swaps.every((cand) => cand.hunks.every((h) => {
-  const was = timeOf(lines[h.start]);
-  return was === null || was === timeOf(h.lines[0]);
-}));
+// **read off the text the swap would make, never off a hunk's edges**: a
+// proposal is the minimum it changes (SPEC §2.1, issue #144), so a swap whose
+// blocks share lines arrives trimmed — the preset's J1 as a replacement and a
+// pure insertion, whose `start` names the line after it and no slot of its
+// own. Applied, every slot's heading still reads the times the text did, in
+// the same order.
+const applied = (cand) => {
+  const out = lines.slice();
+  for (const h of [...cand.hunks].sort((a, b) => b.start - a.start)) out.splice(h.start, h.end - h.start, ...h.lines);
+  return out;
+};
+const timesIn = (ls) => ls.map(timeOf).filter((t) => t !== null).join(' ');
+const timesKept = swaps.every((cand) => timesIn(applied(cand)) === timesIn(lines));
 check(timesKept, 'each swapped slot keeps its time in its heading');
 
 // -- 4. a visitor votes, mid-run ---------------------------------------------

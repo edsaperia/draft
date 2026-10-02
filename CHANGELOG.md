@@ -2,17 +2,26 @@
 
 **[docs.vote](https://docs.vote)** is a place for a group to write a document together. Anybody may propose a change; rival wordings of the same passage race each other; the membership votes on them in blind pairs (*which of these two wordings?*, no names attached, no scores shown), and the wording that comes out on top is adopted once enough of the membership has voted. The document's own rules are decided the same way, inside the document.
 
-docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first, back to the project's first commit on 2026-08-13. The mechanism's full rules are in [`SPEC.md`](SPEC.md) (v0.145 today), and what the page shows a member is in [`SURFACE.md`](SURFACE.md).
+docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first, back to the project's first commit on 2026-08-13. The mechanism's full rules are in [`SPEC.md`](SPEC.md) (v0.146 today), and what the page shows a member is in [`SURFACE.md`](SURFACE.md).
 
 ---
 
-## 2026-10-01, night: a card stays open while it changes
+## 2026-10-02: a card stays open while it changes
 
 ### Changed
 - **A card you have open stays open when it changes.** When a proposal you are looking at passes or is rejected, the card becomes its record where it stands, and its entry in the list on the right stays in place and changes its colour and mark. The same goes for a proposal held for the Founder, a rule change that is decided, an application that is decided and any other card that changes while you read it; where nothing takes its place, the card says it is no longer outstanding until you close it.
 
 ### For contributors
 - **Surface-only.** An open card is kept by its lineage (`lineageOf` in `design/card-state.js`) and morphs in place (`CARD_SHELL.morph`); `npm run morph-walk` joins the sprint tier.
+
+## 2026-10-01, night: a proposal is only what it changes
+
+### Changed
+- **A proposal is cut down to the lines it actually changes.** If you rewrite a passage and leave some lines as they were, the proposal no longer covers the lines you left alone, so it only competes with proposals on the lines you changed. Where unchanged lines sit in the middle, it becomes a proposal in two places. A proposal that changes nothing is turned away, and costs you no ✏️.
+
+### For contributors
+- **An engine change, so a full deploy.** `minimalHunks` (engine-core `text/minimal.ts`) normalises every text patch at the three doors — proposing, the ✒️ decree, the re-make of a stranded patch — after the attestation is checked as sent; replay is untouched. The demo's J1 swap now arrives as two sites.
+- **SPEC v0.146** (§2.1, R-147).
 
 ## 2026-10-01, late: one card shell
 

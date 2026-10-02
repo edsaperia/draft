@@ -102,7 +102,13 @@ describe('the demo document (DEMO.md Stage 1)', () => {
     const live = engine.allCandidates().filter((c) => c.state === 'live' && c.patch);
     expect(live).toHaveLength(22);
     // criterion 7: every multi-site entry is one candidate of that many hunks
-    expect(live.filter((c) => c.patch!.hunks.length === 2)).toHaveLength(3);
+    // — at least that many, since a proposal is the minimum it changes (SPEC
+    // §2.1, issue #144): J1, one site swapping two adjacent sessions, keeps
+    // Leila's two unchanged lines and so arrives as two sites of its own
+    const twoSite = live.filter((c) => c.patch!.hunks.length === 2);
+    expect(twoSite).toHaveLength(4);
+    const j1 = twoSite.find((c) => c.rationale.startsWith('The conference dinner ends late'))!;
+    expect(j1.patch!.hunks.map((h) => [h.end - h.start, h.lines.length])).toEqual([[4, 1], [0, 3]]);
     expect(engine.allCandidates().filter((c) => c.state === 'adopted' && c.patch)).toHaveLength(4);
   });
 
