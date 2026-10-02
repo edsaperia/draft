@@ -33,7 +33,7 @@ Without `RESEND_API_KEY` the server runs a **dev inbox**: every mail, magic link
 
 ## Packages
 
-TypeScript end to end; `pg` and `@anthropic-ai/sdk` (for the demo document's bots) are the only runtime dependencies. Tests measured 2026-10-01 with `npm test`: **1,731 passing** (9 todo, 19 skipped without Postgres). What has changed, deploy by deploy: [`CHANGELOG.md`](CHANGELOG.md).
+TypeScript end to end; `pg` and `@anthropic-ai/sdk` (for the demo document's bots) are the only runtime dependencies. Tests measured 2026-10-01 with `npm test`: **1,732 passing** (9 todo, 19 skipped without Postgres). What has changed, deploy by deploy: [`CHANGELOG.md`](CHANGELOG.md).
 
 | Package | What it is | Tests |
 |---|---|---|

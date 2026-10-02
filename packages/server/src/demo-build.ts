@@ -26,6 +26,7 @@ import type { PowerKey, Power, SettingId, SettingValue } from '../../constitutio
 import { HELD } from '../../constitution/src/fold.js';
 import type { EngineBridge } from '../../constitution/src/engine-bridge.js';
 import { asEngineDoc } from './engine-host.js';
+import { validPicture } from './commands.js';
 import { Pen, lastTOf } from './history-pen.js';
 import type { DocStore, LoadedDoc } from './store.js';
 import { DEMO_INVARIANTS, locate, undoDecided } from './demo-preset.js';
@@ -146,7 +147,9 @@ export async function buildDemo(host: DemoHost, preset: DemoPreset,
     if (c.founder) continue;
     const member = cs.invite(pen.next(), addressOf(c.name, emails));
     cs.arrive(pen.next(), member);
-    cs.setIdentity(pen.next(), member, { name: c.name, picture: null });
+    // a bot wears its line's face (issue #142), through the page's own rule
+    cs.setIdentity(pen.next(), member,
+      { name: c.name, picture: c.face === null ? null : validPicture('e' + c.face) });
     seatOf.set(c.name, member);
   }
   await host.commit(doc, pen.now);
@@ -331,7 +334,8 @@ function rotaOf(members: readonly string[]): Rota {
  * decided change adopted and the text after them equal to `@text`; every open
  * entry live with as many hunks as its sites make, cut to the lines they
  * change (SPEC §2.1); every contested entry holding
- * a judgment against it; the cast arrived under their names. Returns the
+ * a judgment against it; the cast arrived under their names, each bot wearing
+ * its line's face (issue #142). Returns the
  * disagreements, each naming the entry's file line.
  */
 export function verifyBuild(preset: DemoPreset, b: DemoBuild): { line: number; rule: string; message: string }[] {
@@ -371,5 +375,12 @@ export function verifyBuild(preset: DemoPreset, b: DemoBuild): { line: number; r
   const names = new Set([...b.doc.cs.memberRecords().values()]
     .filter((m) => m.arrivedAtT !== null && !m.removed).map((m) => m.name));
   for (const c of preset.cast) if (!names.has(c.name)) bad(c.line, `${c.name} did not arrive under that name`);
+  // every bot wears its line's face, or none where the line gives none (issue #142)
+  for (const m of b.doc.cs.memberRecords().values()) {
+    const c = preset.cast.find((x) => !x.founder && x.name === m.name);
+    if (c === undefined) continue;
+    const want = c.face === null ? null : 'e' + c.face;
+    if ((m.picture ?? null) !== want) bad(c.line, `${c.name} wears ${JSON.stringify(m.picture ?? null)}; the file gives ${JSON.stringify(want)}`);
+  }
   return out;
 }

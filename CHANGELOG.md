@@ -14,6 +14,14 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 ### For contributors
 - **Surface-only.** A ⏳ rail entry keeps its white slip and paints its fill in the deciding grey (`washAttrs`, session.js); its cable stays white. `card-audit` gains P35 `wait-fill`, held on every card.
 
+## 2026-10-01, night: faces for the demo's speakers
+
+### Changed
+- **The speakers in the demo document wear faces.** Each of the conference's speakers on the demo's committee now has an emoji beside their name, chosen to suit them: a scroll for the archivist, a microphone for the broadcaster, a pineapple for pineapple's defender. If you try the demo yourself, you still start without one, and you can pick your own.
+
+### For contributors
+- **A server and preset change, so a full deploy.** A `@cast` line may open with one emoji before the bold name (`design/DEMO.md` §3.1); `buildDemo` sets it as the bot's picture, P9 refuses a face that is not one emoji, the page's furniture, already worn, or on the founder's line, and `demo-check`'s P11 checks every bot wears its own.
+
 ## 2026-10-01, night: a proposal is only what it changes
 
 ### Changed

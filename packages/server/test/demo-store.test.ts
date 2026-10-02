@@ -110,6 +110,12 @@ describe('the demo document (DEMO.md Stage 1)', () => {
     const j1 = twoSite.find((c) => c.rationale.startsWith('The conference dinner ends late'))!;
     expect(j1.patch!.hunks.map((h) => [h.end - h.start, h.lines.length])).toEqual([[4, 1], [0, 3]]);
     expect(engine.allCandidates().filter((c) => c.state === 'adopted' && c.patch)).toHaveLength(4);
+    // every bot wears its cast line's face, and the Founder's seat none (issue #142)
+    const recs = [...doc.cs.memberRecords().values()];
+    expect(recs.find((m) => m.name === 'Dr Tomasz Wierzbicki')!.picture).toBe('e📜');
+    expect(recs.find((m) => m.name === 'Judge Harriet Osei-Brennan')!.picture).toBe('e🧑‍⚖️');
+    expect(recs.filter((m) => typeof m.picture === 'string' && m.picture.startsWith('e'))).toHaveLength(13);
+    expect(doc.cs.convenorRecord().picture ?? null).toBeNull();
   });
 
   it('holds its address: the birth is told it is taken', async () => {
