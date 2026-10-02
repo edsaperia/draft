@@ -8368,7 +8368,10 @@
       .replace('<li class="qitem"', c.k === S.open ? '<li class="qitem" data-lineage="' + esc(bandOpenLineage()) + '"' : '<li class="qitem"')
       .replace(/ data-washkey="[^"]*"/, '')
       .replace(/ style="--washcol: ([^;]+); --washbg: [^;]+; --fill: ([^"]+)"/,
-        (m, col, fill) => SESSION.washAttrs('set:' + c.k, col, fill));
+        // a `wait` wearing ⏳ — answered, the room not finished — shows its
+        // fill in grey on the white slip, as a race's ⏳ does (#148)
+        (m, col, fill) => SESSION.washAttrs('set:' + c.k, col, fill,
+          st === 'wait' && !!(cx.voted && cx.voted(c))));
     // `news` is what the rail's `BAND_PIN_CAP` counts (Q113, Ed 2026-09-14;
     // Q1532 as amended, Ed 2026-09-24): a setting owing you an OK is the
     // Rules' own queue, oldest first, the oldest three pinning, apart from the
