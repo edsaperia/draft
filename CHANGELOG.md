@@ -6,13 +6,23 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
-## 2026-10-02: votes and changes arrive at once
-
-### Changed
-- **What others do now reaches your page at once.** A proposal, a vote, a change passing and where others are reading appear on your page within a moment of happening, instead of up to four seconds later. A page left open and idle also asks docs.vote for far less, so a full room weighs less on the service.
+## 2026-10-02: live updates measured before they are built
 
 ### For contributors
-- **Push instead of polling** (Scaling Stage 4, issue #162). `GET /api/d/:slug/events` is a Server-Sent Events stream carrying only the document's two log lengths, plus an empty nudge for the pause, the stall flag, a new build and (to members) a reading place moving. The page asks for its view when an event says something moved. The 4 s poll is now a 30 s backstop while the stream is open, and the old 4 s whenever it is not. `DRAFT_PUSH=off` turns the stream off, and every page then polls as before. `/healthz` counts the streams. New walk `npm run push-walk`, in the sprint tier. Design and measurements: `design/spec-pass/plan-scaling.md` *Stage notes*.
+- **Nothing a member sees changes.** Scaling Stage 4's spike (issue #159) measured a Server-Sent Events stream on a local server and found it fit to build on. A stream stayed open past Node's request timeout. Writes arrived within 5 ms with no buffering. Each stream cost one file descriptor and 10–20 KB, with no event-loop lag at 1,000 streams. Stage 4 has to end its streams at shutdown and spread its reconnects. The spike's route was removed unshipped by Ed's ruling (no Render measurement); `scripts/spike-sse.mjs` stays for measuring Stage 4's real stream. Findings: `design/spec-pass/plan-scaling.md` *Stage notes*.
+
+## 2026-10-02: the questions page's contract, kept by code
+
+### For contributors
+- **Nothing a member sees changes; a full deploy of the same build.** Sessions on this repo can load the `page-contract` mod (`.claude/skills/page-contract/`, a copy of dev-ops' kept identical to it; loaded where the cloud environment's `CLAUDE_CODE_PLUGIN_DIRS` names it): a write to Ed's questions page that breaks its contract is refused with the reasons, the coordinator's `lastActive` is stamped after working turns, and answers left without `handledAt` are named. `eslint.config.mjs` skips the type files Claude Code writes beside the mod when it loads it.
+
+## 2026-10-02: the task list keeps a clause's order
+
+### Fixed
+- **Your task list now lists one clause's entries in the same order as the tabs beside that clause.** With a card open, a decision you had not yet acknowledged could sit above the open entry in the list while its tab sat below it in the margin; both now read the same way.
+
+### For contributors
+- **Surface-only.** `layoutQueue` ranks a clause's entries by the gutter's own `stackKey`, and a flow entry at a pinned entry's clause steps to the side the strip puts it on (`freeFor`, session.js); SURFACE M6 names the open entry's case. Guarded by `scripts/repro/rail-stack-order.mjs`, in the sprint tier's `sprint-pages`.
 
 ## 2026-10-02: the demo's speakers reword rather than repeat
 
