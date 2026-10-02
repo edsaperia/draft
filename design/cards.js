@@ -1106,16 +1106,15 @@ window.CARDS = (function () {
   const RAIL_ROOM = 34;
   const sideOf = (room) => Math.max(8, Math.floor((room - 7) / 2));   // two quotes each, and ' → '
   // **Words taken out are struck through** (Q1523 (c), Ed 2026-09-24), where
-  // the title said *without ‘…’* and *with or without ‘…’*. A title stays
+  // the title said *without ‘…’*. A title stays
   // plain text: the struck quote is fenced by two private-use characters
   // (clear of `MD_SENT` and the escapes' U+E121–U+E17E), which `railTitleHtml`
   // turns into `<del>` after escaping and `railTitleText` back into the words.
   // `railPlain` takes them out of member text, so nobody can type one.
-  const STRUCK = '', STRUCK_PAIR = '', STRUCK_END = '';
-  const STRUCK_ANY = /[]/g;
-  const STRUCK_RX = /([])([^]*)/g;
+  const STRUCK = '', STRUCK_END = '';
+  const STRUCK_ANY = /[]/g;
+  const STRUCK_RX = /([^]*)/g;
   const struck = (q) => STRUCK + q + STRUCK_END;
-  const struckPair = (q) => STRUCK_PAIR + q + STRUCK_END;
   /** The words a reader sees: markers, a heading's `# `, a bullet's `- `
    *  and backslash escapes off, whitespace folded to one space. */
   // — `mdPlain` per line (the escapes' own reader, Q1530), then the fold
@@ -1237,8 +1236,10 @@ window.CARDS = (function () {
   /**
    * **A pair's title** — two wordings put to you, `a` first as the card
    * presents it: the words where they differ, *‘six’ or ‘seven’*; those
-   * words struck through where one side simply has words the other lacks
-   * (`struckPair`, read *with or without ‘…’*, Q1523 (c)). Two
+   * words **plain** where one side simply has words the other lacks, *‘senior’*
+   * (Ed 2026-10-02, #186: a strike reads as *removed*, and an addition
+   * looked like a deletion; a screen reader hears what a sighted reader
+   * sees, there being no strike left to explain). Two
    * rewrites of one sentence are read from where they stop agreeing, so the
    * words shown are the ones that tell them apart.
    */
@@ -1247,7 +1248,7 @@ window.CARDS = (function () {
     const a = railPlain(aText), b = railPlain(bText);
     if (a === b) return name;
     if (onlyPunct(a, b)) return RT.punctuation(name);
-    if (!a || !b) return struckPair(railQ(a || b, one));
+    if (!a || !b) return railQ(a || b, one);
     const runs = changeRuns(a, b);
     if (rewrite(runs)) {
       const [x, y] = afterCommon(a, b);
@@ -1256,24 +1257,22 @@ window.CARDS = (function () {
     if (!runs.length) return RT.punctuation(name);
     const r = mainRun(runs);
     const t = r.del && r.ins ? RT.or(railQ(r.del, side), railQ(r.ins, side))
-      : struckPair(railQ(r.del || r.ins, one));
+      : railQ(r.del || r.ins, one);
     return moreThan(runs, r) ? t + ' ' + RT.more : t;
   }
   /**
    * **A title printed** — the one renderer of a title the builders above
    * made: the `§` off and the escapes read (`plainLabel`), **escaped**, and
    * only then each struck quote drawn as `<del>` with its meaning said to a
-   * screen reader in a visually hidden span (*without*, *with or without*),
+   * screen reader in a visually hidden span (*without*),
    * since a strike alone says nothing to one. The words inside were escaped
    * with the rest, so the markup is the page's and nothing of the member's.
    */
-  const railTitleHtml = (t) => esc(plainLabel(t)).replace(STRUCK_RX, (m, kind, q) =>
-    '<del class="struck"><span class="sr-only">' + esc(kind === STRUCK_PAIR ? RT.struckPair : RT.struck) +
-    '</span>' + q + '</del>');
+  const railTitleHtml = (t) => esc(plainLabel(t)).replace(STRUCK_RX, (m, q) =>
+    '<del class="struck"><span class="sr-only">' + esc(RT.struck) + '</span>' + q + '</del>');
   /** …and as words, for a tooltip or anything else that is not markup:
-   *  *without ‘…’*, *with or without ‘…’* — unescaped, the caller escapes. */
-  const railTitleText = (t) => plainLabel(t).replace(STRUCK_RX, (m, kind, q) =>
-    (kind === STRUCK_PAIR ? RT.withOrWithout(q) : RT.without(q)));
+   *  *without ‘…’* — unescaped, the caller escapes. */
+  const railTitleText = (t) => plainLabel(t).replace(STRUCK_RX, (m, q) => RT.without(q));
   /**
    * **A rail entry's moment** (Q1523): 24-hour, shortest by distance from
    * `nowMs` — *15:25* the same day, *Sun 15:25* within the last seven days,

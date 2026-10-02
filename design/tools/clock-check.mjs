@@ -228,7 +228,7 @@ const titles = [
   // a pair: the two sides as the card presents them
   [railPair('A quorum is six members.', 'A quorum is seven members.', G), '‘six’ or ‘seven’'],
   [railPair('Guests are welcome.', 'Guests are welcome, and until the quiet hours begin.', G),
-    'with or without ‘and until the quiet hours begin’'],   // struck: the words *with or without* no longer take room
+    '‘and until the quiet hours begin’'],   // one side's words alone: plain, never struck (Ed 2026-10-02, #186)
   [railPair('Guests come whenever a member is in, up to three at a time without telling anybody.',
     'Guests come whenever a member is in, and until the quiet hours begin.', G),
     '‘up to three…’ or ‘and until the…’'],
@@ -264,7 +264,9 @@ const titles = [
   [railChange('It is open in May or June, daily.', 'It is shut in May and June, daily.', G), '‘open’ → ‘shut’'],
   [railChange('Knives are not used on bone or frozen food.', 'Knives are not used on bone, frozen food, or the garden.', G), '‘or the garden’'],
   // *not* is never a scrap
-  [railPair('Members may vote.', 'Members may not vote.', G), 'with or without ‘not’'],
+  [railPair('Members may vote.', 'Members may not vote.', G), '‘not’'],
+  // Ed's own case (#186): a proposal that only adds a word reads it plain
+  [railPair('Dr Henrik Aalto, lecturer since 2023.', 'Dr Henrik Aalto, senior lecturer since 2023.', G), '‘senior’'],
   // only punctuation between two changes: one change
   [railPair('It is said once and not more.', 'It is said once. No further reminder is given.', G),
     '‘and not more’ or ‘No further…’'],
@@ -303,8 +305,12 @@ titles.push(
   // everything a member wrote is escaped before the markup goes round it
   [railTitleHtml(ctx.window.CARDS.railChange('Keep <b>it</b> & more.', 'Keep.', G)),
     '<del class="struck"><span class="sr-only">without </span>‘&lt;b&gt;it&lt;/b&gt; &amp; more’</del>'],
-  [railTitleHtml(ctx.window.CARDS.railPair('Members may vote.', 'Members may not vote.', G)),
-    '<del class="struck"><span class="sr-only">with or without </span>‘not’</del>'],
+  // a pair's one-sided words are plain, no `<del>` (Ed 2026-10-02, #186); a
+  // decided removal keeps its strike
+  [railTitleHtml(ctx.window.CARDS.railPair('Members may vote.', 'Members may not vote.', G)), '‘not’'],
+  [railTitleHtml(ctx.window.CARDS.railPair('Dr Henrik Aalto, lecturer.', 'Dr Henrik Aalto, senior lecturer.', G)), '‘senior’'],
+  [railTitleHtml(ctx.window.CARDS.railChange('Dr Henrik Aalto, senior lecturer.', 'Dr Henrik Aalto, lecturer.', G)),
+    '<del class="struck"><span class="sr-only">without </span>‘senior’</del>'],
   [railTitleHtml('§ A <script>‘x’'), 'A &lt;script&gt;<del class="struck"><span class="sr-only">without </span>‘x’</del>'],
   // …and a member cannot type the fence: it is taken out of the text
   [railPlain('a b c'), 'a b c'],
