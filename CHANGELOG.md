@@ -6,6 +6,14 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-10-02: pressing an open card's task takes you back to it
+
+### Changed
+- **Pressing the task of a card you already have open takes you back to the card instead of closing it.** If you have scrolled away from it, the second press brings it into view exactly as the first did; if it is already in front of you, nothing moves. To close a card, click anywhere outside it, press Escape, or press its tab beside the text, as before. This is the same for the text's cards and the Rules'.
+
+### For contributors
+- **Surface-only.** `railPress` in `design/session.js` for the text's rail, and the band's click handler in `design/session-view.html` for the Rules'; `toggle` and the tabs are unchanged. Guard: `scripts/repro/rail-second-press.mjs`, in the sprint tier.
+
 ## 2026-10-02: headings sized by the levels a document uses
 
 ### Changed

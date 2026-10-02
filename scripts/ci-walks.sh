@@ -418,6 +418,14 @@ case "$GROUP" in
     # column's size in its place, and the Rules' own headings unranked.
     # Serves design/ itself; red on the page before #152
     walk "heading-rank" node scripts/repro/heading-rank.mjs
+    # **A second press on the open card's rail entry travels back to it**
+    # (issue #168, Ed 2026-10-02: *bring it back into view as with the first
+    # click … if users want to deactivate it, they can instead click outside
+    # of it*): a text card and a Rules card, each opened from its entry,
+    # scrolled out of view, pressed again — still open, its first line back
+    # in the reading band — then closed by a click on nothing. Serves design/
+    # itself; red on the page before #168
+    walk "rail-second-press" node scripts/repro/rail-second-press.mjs
     # **The copy golden** (entry 128; Q1546 (c)): every card's strings on
     # every walk, keyed by walk and card key, against
     # design/tools/card-copy.golden.json. A STYLE.md pass is a snapshot and

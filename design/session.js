@@ -1536,7 +1536,7 @@
     // Everything in the rail opens, sealed dots included (Ed, 112): a locked
     // judgment can't be changed, but it can always be read.
     queueEl.querySelectorAll('button[data-q]').forEach((b) =>
-      b.addEventListener('click', () => { toggle(b.dataset.q, true); }, { signal: railCtl.signal })
+      b.addEventListener('click', () => { railPress(b.dataset.q); }, { signal: railCtl.signal })
     );
     layoutQueue();
   }
@@ -4744,6 +4744,16 @@ document.addEventListener('paste', (ev) => {
       (g.sites ?? []).flatMap((s) => s.keys ?? (s.key ? [s.key] : [])),
       (g.pair ?? []).map((c) => c.key)).filter(Boolean);
   };
+
+  // **A press on the open card's own rail entry travels to it and never
+  // closes it** (Ed, 2026-10-02, #168: *you may have scrolled away from it*);
+  // a click outside the card closes it (SURFACE C2). The rail's route alone:
+  // `toggle`'s other callers — the tabs, the review walk, edit mode — keep
+  // their second press.
+  function railPress(id) {
+    if (openId !== id) return toggle(id, true);
+    bringIntoView(id, () => {});
+  }
 
   function toggle(id, scroll, after) {
     const closing = openId;
