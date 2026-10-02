@@ -343,13 +343,55 @@ Ed, 2026-10-02 (issue #164): *We should make a plan for making proposals on mobi
 Four candidates, measured against findings 1–6:
 
 - **✏️ *propose edit* on a decision card's lane** (K24): built, and it reaches the lane, which is a real editor where IME works (findings 4 and 5). It only exists where a card exists, so it cannot reach a clause nobody has proposed on.
-- **The 📝 door and a tap on a clause** (recommended, §6a.9 question 1). On a coarse pointer, edit mode never gives the column a caret. Instead, **a tap on a clause opens that clause's editing card** with its lane focused and the caret placed at the tap point (`caretRangeFromPoint`, mapped through `sourceOffsetIn`). This is the door §1.7 named, made from a tap where §1.7 had a long press, and kept inside edit mode so that K13's *📝 is the door* holds. Because the column is never `contenteditable` on coarse, finding 6 is ruled out by construction rather than worked around.
+- **The 📝 door and a tap on a clause** (recommended, §6a.9 question 1, restated in §6a.1a after research). On a coarse pointer, edit mode never gives the column a caret. Instead, **a tap on a clause opens that clause's editing card** with its lane focused and the caret placed at the tap point (`caretRangeFromPoint`, mapped through `sourceOffsetIn`). This is the door §1.7 named, made from a tap where §1.7 had a long press, and kept inside edit mode so that K13's *📝 is the door* holds. Because the column is never `contenteditable` on coarse, finding 6 is ruled out by construction rather than worked around.
 - **A long press on a clause** (§1.7's plan): it competes with the browser's own text selection and callout on the prose, which §1.5 keeps, and nothing on the page announces it.
 - **An insertion at a gap**: on a phone this needs no door of its own. Enter at the end of a lane already makes a new paragraph (Ed, 231; `composer.js:563`), and the engine cuts the restated line away (K14's *what is sent is not always what lands*), so an insertion is typed from the clause above it. The column's own gap door (Enter at a clause edge, Q261) needs a caret in the column and stays desktop only.
 
+### 6a.1a What others do (research, 2026-10-02)
+
+Ed, on 1585.1: *Do some more research online and see if anyone has come up with innovative ways to approach this.*
+
+The problem everyone meets is the one finding 6 measured. Android's soft keyboards send even plain Latin typing through composition, and a composition's `beforeinput` is not cancellable, so an editor cannot stop the browser from changing its DOM; it can only find out afterwards. Every approach below is a way of living with that.
+
+These sources were read through search results only, because the session's network proxy blocked fetching the pages themselves. A claim here is what those results state, with the link to check it against.
+
+| Approach | How it works | Would a phone type straight into the clause, yellow in place, with no phantom edit? | Cost here · looks broken |
+|---|---|---|---|
+| **Observe, then reconcile** (ProseMirror's `DOMObserver`, CodeMirror 6, Lexical, Slate's Android rewrite) | Let the browser edit the `contenteditable`, watch it with a `MutationObserver` between `compositionstart` and `compositionend`, read the change back into the model, and never touch the DOM or the selection mid-composition, because doing so aborts the composition. ProseMirror fires a transaction at each composition update. Slate stopped restoring the DOM for text mutations on Android, because rewriting a text node ends the composition. | **Yes**, in principle: it is what those editors exist to do. But each lists years of Android-specific fixes (keyboard flicker, duplicated characters, SwiftKey swipe crashes), and our column re-renders and re-keys blocks under the 4 s poll, which is exactly what they forbid mid-composition. | 1–2 weeks to do the column well, or adopting ProseMirror under the composer, which is a rewrite. **High**: text appears in the clause and then jumps or doubles. |
+| **`EditContext`** (Chromium; Monaco ≥ 0.53 and VS Code web, CodeMirror 6 on Chrome 126+) | Input is decoupled from the DOM: the element gets `textupdate` events and the page draws the text itself, so the browser never edits the column. | **On Android only**: Chrome for Android ships it from 141. **Safari and iOS do not**, and their position is unknown. Live bugs are reported on Android: VS Code (*tapping a keyboard suggestion on Android corrupts the line*) and CodeMirror (Samsung keyboard and autocompletion, inverted selections). iOS would still need another door. | 2–3 days as an Android-only enhancement over another option. **Medium–high**: a new API with open keyboard bugs, on half the phones. |
+| **Hidden textarea as a proxy** (CodeMirror 5, Ace; Monaco's fallback) | A small, invisible, focused `<textarea>` near the caret takes the keystrokes, and the page draws the result in the document. | **No, in practice.** The keyboard's autocorrect and predictions see only the textarea's contents, not the sentence. CodeMirror 5's manual makes `contenteditable` its input style on mobile for that reason. | 2–3 days. **Medium–high**: corrections misfire, and the caret is drawn by the page, not the platform. |
+| **One editor per block, entered by tap** (Notion: each text block its own `contenteditable`; on a phone, tap a block and type, with the toolbar above the keyboard) | The document is not one editor. The tapped block alone becomes editable, and the page owns that element while it is being typed in. | **Yes, and this is the innovative one for us.** Our editing card's lane is already exactly such a per-block editor, and composition already works in it (finding 5). The only question is presentation: whether the lane stands **in the clause's own place**, or below a *Current text* head that repeats the clause. | ~2 days for the in-place form (option (a) below), ~1 day for the card as it stands (b). **Low–medium** |
+| **Suggestion editors on a phone** (Google Docs, CKEditor track changes, Fidus Writer) | Google Docs never used `contenteditable`: it draws its own layout, on canvas since 2021, over hidden input elements. Its phone app has **no Suggesting mode**. CKEditor's track changes claims Android and iOS support, on its own engine (its tracker carries Android composition issues). Fidus Writer is built on ProseMirror. | Docs: not on a phone at all. CKEditor and Fidus: yes, through the first row's machinery. | — The nearest product to ours does not offer suggesting on a phone. |
+
+**What this changes.** Nobody has a trick that makes a single shared `contenteditable` column safe under Android's composition without either a full reconciliation layer or `EditContext`, and `EditContext` covers only Android. The workable idea is Notion's: **make the tapped block its own editor**. We already have that editor in the lane. So the restated question is about where the lane stands, not how input is read. Option (a) puts it in the clause's own place, which gives what Ed asked for, typing straight into the clause with the yellow appearing there, and it inherits the lane's composition handling as measured.
+
+**Sources** (via search results):
+- ProseMirror on Android: https://discuss.prosemirror.net/t/contenteditable-on-android-is-the-absolute-worst/3810, https://discuss.prosemirror.net/t/composition-overhaul/1923, https://github.com/ProseMirror/prosemirror/issues/784
+- Slate's Android rewrite: https://github.com/ianstormtaylor/slate/pull/4988
+- Lexical: https://lexical.dev/docs/api/modules/lexical
+- CodeMirror's changelog and EditContext thread: https://codemirror.net/docs/changelog/, https://discuss.codemirror.net/t/experimental-support-for-editcontext/8144
+- CodeMirror 5 internals and manual: https://codemirror.net/5/doc/internals.html, https://codemirror.net/5/doc/manual.html
+- Faking an editable control: https://marijnhaverbeke.nl/blog/browser-input-reading.html
+- EditContext support: https://caniuse.com/mdn-api_editcontext, https://developer.chrome.com/blog/introducing-editcontext-api
+- VS Code's Android EditContext bug: https://github.com/microsoft/vscode/issues/338890
+- Monaco's EditContext note: https://github.com/polywock/globalSpeed/issues/953
+- Google Docs on canvas: https://news.ycombinator.com/item?id=27129858
+- Google Docs app features: https://en.wikipedia.org/wiki/Google_Docs
+- Notion on a phone: https://www.notion.com/help/writing-and-editing-basics
+- CKEditor track changes: https://ckeditor.com/docs/ckeditor5/latest/features/collaboration/track-changes/track-changes.html
+- CKEditor's Android composition issue: https://github.com/ckeditor/ckeditor5/issues/12456
+
+**1585.1, restated.** Recommendation first.
+- **(a) New, recommended. The clause becomes its lane.** On a phone in edit mode, a tap on a clause turns that block into the draft's lane in its own box, with the caret where the finger landed, so the words and their yellow appear in the clause's place. The card's other parts (the reason, signing and 🗑️) arrive beneath the lane. The *Current text* head is not drawn above it on narrow; the clause as it stood is one tap away on its tab. The column stays non-editable, so finding 6 cannot happen, and the lane's composition handling is the measured one. This is a narrow exception to the editing card's layout (§9's 📝 row). ~2 days. Looks broken: low–medium, a new card form at 390 with the clause and tab kept still.
+- **(b) The card as it stands.** The tap opens the full editing card, *Current text* over the lane. ~1 day. Low risk, but the clause reads twice and the typing is not in its place.
+- **(c) `EditContext` on Android**, on top of (a) or (b) for iOS. 2–3 days more. Medium–high risk (finding: open Android keyboard bugs in VS Code and CodeMirror).
+- **(d) Observe and reconcile the column**, the ProseMirror model. 1–2 weeks, or a rewrite onto ProseMirror. High risk.
+- **(e) A long press on a clause.** ~1 day; it fights native selection, and nothing says it is there.
+- **(f) A hidden textarea proxy.** 2–3 days; autocorrect works blind.
+
 ### 6a.2 Where the typing happens
 
-**Recommended: in place, in the editing card**, which replaces its paragraph exactly as it does on the desktop (K31, C2), with the keyboard handled around it:
+**Ruled (a) by Ed, 2026-10-02 (1585.2): in place, in the editing card**, which replaces its paragraph exactly as it does on the desktop (K31, C2), with the keyboard handled around it:
 
 - The viewport meta gains `interactive-widget=resizes-content`, as §1.8 planned (`session-view.html:3`). On Android Chrome this makes the layout viewport shrink, so a fixed row rises above the keyboard with no script.
 - iOS ignores that key, so while a lane has focus on narrow the root carries `data-kbd` (§1.8), and the proposal row is placed from `visualViewport` (`resize` and `scroll`): bottom = `visualViewport.offsetTop + visualViewport.height`.
@@ -368,7 +410,7 @@ Both options keep *nothing rebuilds under a press or a caret*: the lane is patch
 
 ### 6a.4 The commit row and the ✏️
 
-- **One tap commits, as on the desktop** (finding 3). §1.6's two-tap is not built for the click gesture, and if Ed flips `COMMIT_GESTURE` back to `hold`, a hold on touch already works through `touch-action: none` (*Status*). The cost is that a stray tap spends a ✏️ (§6a.9 question 3).
+- **One tap commits, as on the desktop** (finding 3; **ruled (a) by Ed, 2026-10-02, 1585.3**). §1.6's two-tap is not built for the click gesture, and if Ed flips `COMMIT_GESTURE` back to `hold`, a hold on touch already works through `touch-action: none` (*Status*). The cost is that a stray tap spends a ✏️ (§6a.9 question 3).
 - **The row stands above the keyboard** (§6a.2). The ✏️ wallet is already visible (finding 1), so Q656 closes as superseded by Q1351.
 - **Hit areas, not boxes**: `.lanepropose`, the sign control and the card's 🗑️ take §1.4's coarse `::before` pseudo-element so that each reaches 44px, and no drawn geometry changes.
 
@@ -408,12 +450,12 @@ Both options keep *nothing rebuilds under a press or a caret*: the lane is patch
 
 ### 6a.9 Questions for Ed
 
-Numbered here for the PR. The coordinator claims QUESTIONS.md numbers when putting them to Ed. Each has its recommendation first. *Time* is build time. *Looks broken* is CLAUDE.md's guiding light: the risk that a member sees a card that seems wrong.
+Put to Ed as **1585.1–1585.8** (QUESTIONS.md). **1585.2, 1585.3 and 1585.4 were ruled (a) by Ed on 2026-10-02**, relayed by the coordinator. 1585.1 went back for research and is restated in §6a.1a. 1585.5–1585.8 are open. Each open question has its recommendation first. *Time* is build time. *Looks broken* is CLAUDE.md's guiding light: the risk that a member sees a card that seems wrong.
 
-1. **The door into a clause nobody has proposed on.** (a) **On a phone, edit mode means *tap a clause to open its card***: no caret in the column. Time ~1 day. Looks broken: low, since the card is the existing editing card. (b) A long press on a clause: ~1 day, it fights native text selection, and nothing says it is there. (c) Make the column a touch editor that reconciles each composition after it lands: 3–5 days, and high risk, because typed text appears in the clause and then vanishes at the next render (finding 6).
-2. **Where the typing happens.** (a) **In place, in the card, with the row docked above the keyboard**: ~1 day; medium iOS risk (a fixed row with the keyboard up), which the device checklist covers. (b) A focused editor sheet over the document: 2–3 days, a new frame and new SURFACE rules, with lower keyboard risk but the clause leaving the glass.
-3. **Does a phone's ✏️ need a confirming tap?** (a) **No: one tap, as the desktop's click.** No cost, and the fastest; a stray tap spends a ✏️. (b) §1.6's two-tap (*Tap again to propose*) on touch commits: ~1 day, with one extra tap per proposal.
-4. **Q1350: a paired keyboard on a phone.** (a) **Support it as it is**: no cost, and measured working end to end (finding 2). (b) Gate edit mode by pointer, which closes a road that works.
+1. **The door into a clause nobody has proposed on.** *Open, and restated after research in §6a.1a:* (a) **the clause becomes its lane** (new, recommended), (b) the card as it stands, (c) `EditContext` on Android, (d) observe and reconcile, (e) a long press, (f) a hidden textarea.
+2. **Where the typing happens.** **Ruled (a), Ed 2026-10-02:** in place, in the card, with the row docked above the keyboard.
+3. **Does a phone's ✏️ need a confirming tap?** **Ruled (a), Ed 2026-10-02:** no, one tap, as the desktop's click.
+4. **Q1350: a paired keyboard on a phone.** **Ruled (a), Ed 2026-10-02:** support it as it is.
 5. **First-cut scope.** (a) **One site, the reason, signing and insertion by Enter. Patches, runs and B · *I* go to 6b.** (b) Patches now as well: +1–2 days, with several open site cards and the patch row at 390, which is the likeliest place for a card to look broken.
 6. **Motions.** (a) **Fold the 16px and 44px sweep into 6a**: under an hour, since they already work. (b) Leave them as they are; iOS zooms on the field.
 7. **The founder's text before 🍾 on a phone.** (a) **Its own later stage, 6c.** (b) Inside 6a, adding ~1 day and the stash path.
