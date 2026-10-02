@@ -4971,7 +4971,7 @@
    },
    "myname": {
     "eyebrow": "Choose Your Name",
-    "head": "🦉Ivy Fen you",
+    "head": "🦉Ivy Fen youChosen",
     "lock": "",
     "body": "Choose thisAnonymousChoose this",
     "options": [
@@ -5014,7 +5014,7 @@
    },
    "mypic": {
     "eyebrow": "Choose Your Picture",
-    "head": "🦉Ivy Fen you",
+    "head": "🦉Ivy Fen youChosen",
     "lock": "",
     "body": "IFChoose thisUpload an imageChoose thisPick an emojiChoose this",
     "options": [
@@ -6565,7 +6565,7 @@
    },
    "myname": {
     "eyebrow": "Choose Your Name",
-    "head": "ABAsh Bellamy 👑 you",
+    "head": "ABAsh Bellamy 👑 youChosen",
     "lock": "",
     "body": "Choose thisAnonymousChoose this",
     "options": [
@@ -6609,15 +6609,10 @@
    },
    "mypic": {
     "eyebrow": "Choose Your Picture",
-    "head": "ABAsh Bellamy 👑 you",
+    "head": "ABAsh Bellamy 👑 youChosen",
     "lock": "",
-    "body": "ABChosenUpload an imageChoose thisPick an emojiChoose this",
+    "body": "Upload an imageChoose thisPick an emojiChoose this",
     "options": [
-     {
-      "set": "picPick",
-      "val": "anon",
-      "label": "AB"
-     },
      {
       "set": "picPick",
       "val": "upload",
