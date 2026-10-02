@@ -177,7 +177,7 @@ window.LIVE = (function () {
     // `GET /api/d/:slug/events`, below `api`. `open` the stream is live,
     // `last` when the page last asked for a view, `lastAt` the reading block
     // it last reported, `inflight`/`pending` the one refresh an event asks for
-    const PUSH = { es: null, open: false, seen: 0, last: 0, lastAt: null, inflight: null, pending: false, wait: null, again: null, timers: false };
+    const PUSH = { es: null, open: false, seen: 0, last: 0, lastAt: null, inflight: null, pending: false, wait: null, again: null, timers: false, slug: null, since: 0 };
     // what a press can send: every commit wears `.btn-approve` or
     // `.btn-propose` (✓ ✏️ ✒️ 🏛️ 🍾, OK, the grants' *Accept*, the
     // composers' commits), the holds start on `[data-confirm]` /
@@ -597,7 +597,7 @@ window.LIVE = (function () {
       if (typeof EventSource !== 'function' || PUSH.es ||
         (typeof window !== 'undefined' && window.__noPush)) return;
       const es = new EventSource('/api/d/' + slug + '/events');
-      PUSH.es = es;
+      PUSH.es = es; PUSH.slug = slug; PUSH.since = Date.now();
       const data = (e) => { try { return JSON.parse(e.data); } catch (_) { return null; } };
       // a stream the page has let go of says nothing more
       const mine = () => PUSH.es === es;
@@ -619,6 +619,7 @@ window.LIVE = (function () {
         if (!mine()) return;
         const was = PUSH.open;
         PUSH.open = false;
+        PUSH.since = Date.now();
         // refused (a cap, the switch, a 404): the browser will not retry, so
         // the page polls at 4 s and tries the stream again in a minute
         if (es.readyState === 2) {
@@ -630,16 +631,14 @@ window.LIVE = (function () {
       // **a line gone quiet is a line lost** (C17): the host pings every
       // 15 s, and an `EventSource` on a half-open connection never errors, so
       // 20 s of silence closes it, asks a view at once and polls at 4 s — the
-      // bar's own two misses then decide — while a fresh stream is opened
+      // bar's own two misses then decide — while a fresh stream is opened.
+      // A stream still connecting after as long is let go the same way
       if (PUSH.timers) return;
       PUSH.timers = true;
       setInterval(() => {
-        if (!PUSH.open || !PUSH.es || Date.now() - PUSH.seen < PUSH_SILENT_MS) return;
-        const quiet = PUSH.es;
-        PUSH.open = false; PUSH.es = null;
-        quiet.close();
-        pushWant();
-        pushOpen(slug);
+        if (!PUSH.es) return;
+        const quiet = Date.now() - (PUSH.open ? PUSH.seen : PUSH.since);
+        if (quiet >= PUSH_SILENT_MS) pushDrop();
       }, 1000);
       // **where this reader is** (PRESENCE.md §1.1) used to ride every 4 s
       // poll; a member's page now asks once when its settled block changes,
@@ -649,6 +648,16 @@ window.LIVE = (function () {
         const k = window.SESSION && window.SESSION.readingAt ? window.SESSION.readingAt() : null;
         if (k && k !== PUSH.lastAt) pushWant();
       }, 1000);
+    }
+    /** Let the stream go and open another: what a lost line does, on purpose. */
+    function pushDrop() {
+      const es = PUSH.es;
+      if (!es) return;
+      const was = PUSH.open;
+      PUSH.open = false; PUSH.es = null;
+      es.close();
+      if (was) pushWant();
+      pushOpen(PUSH.slug);
     }
     /** The poll's tick: the backstop's cadence, the press's deferral. */
     function pollTick() {
@@ -662,6 +671,9 @@ window.LIVE = (function () {
       // the walks' reading of the line: is the stream open, and when did the
       // page last ask for a view (`push-walk`)
       window.__push = () => ({ open: PUSH.open, last: PUSH.last });
+      // …and a walk's lost line (`reconnecting`): the host failing takes the
+      // stream down with the view, which routing the view alone cannot do
+      window.__pushDrop = pushDrop;
     }
     // **A walk's poll** (`render-hold-walk`, redesign stage 9): the 4s tick's
     // own body, deferral included, on demand — `window.__pollPaused` stops the
