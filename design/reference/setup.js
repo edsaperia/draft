@@ -816,8 +816,10 @@ window.SETUP = (function () {
       opt(pk, 'namePick', 'name',
         '<input id="myname" class="namein" data-txt="myname" value="' + esc(draft) +
         '" placeholder="Your name"' + (o.locked ? ' disabled' : '') + '>', '', '', o.locked) +
-      opt(pk, 'namePick', 'anon', ctlWord('Anonymous'),
-        (o.optional ? 'The Founded by line shows no name.' : ''), '', o.locked) +
+      // an answered blank stands as the card's first line (#176), so its
+      // *Anonymous* block is not drawn a second time (`noAnon`)
+      (o.noAnon ? '' : opt(pk, 'namePick', 'anon', ctlWord('Anonymous'),
+        (o.optional ? 'The Founded by line shows no name.' : ''), '', o.locked)) +
       '</div>';
   };
 
@@ -929,7 +931,8 @@ window.SETUP = (function () {
       // 2026-09-05, 06/41): the block shows what anonymous looks like for
       // this member — initials where they have a name, the anonymous mark
       // otherwise (Q1165) — which is `avHtml` with no picture
-      opt(pickState, pk, 'anon', avHtml({ n: me.n }, 'big'), '', '', oo.locked) +
+      // …and where Anonymous is what stands, the first line is it (#176)
+      (oo.noAnon ? '' : opt(pickState, pk, 'anon', avHtml({ n: me.n }, 'big'), '', '', oo.locked)) +
       opt(pickState, pk, 'upload', ctlWord('Upload an image'), '',
         oo.pick === 'upload' && !oo.locked
           ? '<div class="picdrop" data-picinto="' + into + '"><div class="picact">' +

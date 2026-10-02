@@ -2073,7 +2073,9 @@
       // the two copied keys compare by content (issue #34)
       if (k === 'beginRows') return JSON.stringify(S.beginRows || {}) !== JSON.stringify(s.__begin || {});
       if (k === 'setWhy') return ((S.setWhy || {})[S.open] || '') !== ((s.__why || {})[S.open] || '');
-      return k in s && S[k] !== s[k];
+      // a pick never touched is `undefined` and one let go is `null`: both
+      // are *nothing chosen* (#176, the standing radio letting go)
+      return k in s && (S[k] == null ? s[k] != null : S[k] !== s[k]);
     });
   };
   const S = {
@@ -7291,17 +7293,23 @@
     // a name, a picture and an address bind nobody (§9.0c): ✓, never the pen
     // 📧's ✓ sends a new address, so it is dark over the empty box a verified
     // address leaves beneath it (P22) — typing un-verifies and arms it
-    const ok = c.k === 'myemail' ? !S.emailVerified && EMAIL_OK.test(S.myemail || '') : ready(c) && commitReady(c);
+    // …and ✋ 🖼️'s is dark over an answer that stands, which it would only
+    // re-send (#176); a card still asking keeps it, *keep* being its answer
+    const ok = c.k === 'myemail' ? !S.emailVerified && EMAIL_OK.test(S.myemail || '')
+      : ready(c) && commitReady(c) && !(identityAnswered(c.k) && !identityChanged(c.k));
     return [bin, { kind: 'commit', glyph: '✓', glyphHtml: window.CARDS.TICK, cls: 'btn-approve',
       attrs: ' data-confirm="1"', title: W5().save, until: ok ? null : (c.k === 'myemail' ? 'type' : 'choose') }];
   }
   function identityPresent(c, hints) {
     const sibs = (hints && hints.siblings) || [c];
     const locked = !docOpen();
+    // what stands is the first line (#176), so neither its *keep* block nor,
+    // where an answered blank stands, its *Anonymous* block is drawn again
+    const noAnon = identityStandsPick(c.k) === 'anon';
     const body = c.k === 'myname'
-      ? nameBody(me(), { optional: viewerIsClerk(), pick: namePickNow(), draft: S.mynameDraft, locked, noKeep: true })
+      ? nameBody(me(), { optional: viewerIsClerk(), pick: namePickNow(), draft: S.mynameDraft, locked, noKeep: true, noAnon })
       : c.k === 'mypic'
-      ? pictureBody(me(), { pick: picPickNow(), draft: S.mypicDraft, locked, noKeep: true })
+      ? pictureBody(me(), { pick: picPickNow(), draft: S.mypicDraft, locked, noKeep: true, noAnon })
       : BODY_EMAIL();
     return {
       kind: 'identity',
@@ -7312,9 +7320,9 @@
       // (Q759), so it is their first line, as it is the grants' (principle 1)
       head: { html: window.SETUP.headHtml(c, ctx, sibs, idOnFounded().length
         ? '<div class="headrule" data-fact="place">' + foundedClause() +
-          (c.k === 'myemail' && !locked ? emailStandsHtml() : '') + '</div>'
+          (!locked ? identityStandsHtml(c.k) : '') + '</div>'
         : '<div class="headrule asblock" data-fact="place"><div class="memrow meRow">' + meRowInner() + '</div>' +
-          (c.k === 'myemail' && !locked ? emailStandsHtml() : '') + '</div>') },
+          (!locked ? identityStandsHtml(c.k) : '') + '</div>') },
       // frozen after the close (1541.28 (a)): the row, and no choice beneath it
       options: locked ? null : { html: body },
       body: doorErrHtml(c.k) ? { html: doorErrHtml(c.k) } : null,
@@ -7327,14 +7335,15 @@
     if (!row) return;
     const dirty = identityDirty(c);
     sh.toggleAttribute('data-draft', dirty);
-    // 📧's two radios follow the typing in place (#169): the new block is
-    // chosen while it holds a new address, what stands otherwise
-    if (c.k === 'myemail' && S.emailStands) {
-      const ch = emailChanged();
-      const sp = sh.querySelector('[data-standpick]');
-      if (sp) { sp.setAttribute('aria-pressed', String(!ch)); sp.closest('.pick').classList.toggle('on', !ch); }
-      const pi = sh.querySelector('[data-pickinput]');
-      if (pi) { pi.setAttribute('aria-pressed', String(ch)); pi.closest('.pick').classList.toggle('on', ch); }
+    // the radios follow the typing in place (#169, #176): a new value's block
+    // is chosen while it holds one, what stands otherwise
+    const press = (b, on) => { if (b) { b.setAttribute('aria-pressed', String(on)); b.closest('.pick').classList.toggle('on', on); } };
+    press(sh.querySelector('[data-standpick]'), !identityChanged(c.k));
+    if (c.k === 'myemail') press(sh.querySelector('[data-pickinput]'), emailChanged());
+    else {
+      const pick = c.k === 'myname' ? namePickNow() : picPickNow();
+      sh.querySelectorAll('[data-set="' + (c.k === 'myname' ? 'namePick' : 'picPick') + '"]')
+        .forEach((b) => press(b, b.dataset.val === pick));
     }
     const bin = row.querySelector('[data-revert], [data-act="bin"]');
     if (bin) {
@@ -7351,16 +7360,30 @@
   }
   /** a new address typed or sent over the one that stands (#169) */
   const emailChanged = () => !!S.emailStands && !(S.emailVerified && S.myemail === S.emailStands);
-  /** 📧's first line, under your row (#169, 1541.47): the address that
-   *  stands, wearing the chosen radio of the card's group — pressed while
-   *  nothing new is chosen, and choosing it again cancels the change
-   *  (`data-standpick`). Nothing stands before an address is verified */
-  const emailStandsHtml = () => (S.emailStands
-    ? '<div class="pick emailstands' + (emailChanged() ? '' : ' on') + '"><span class="opttext">' + esc(S.emailStands) + '</span>' +
-      '<button class="lanepick standpick" type="button" data-standpick="1" aria-pressed="' + !emailChanged() + '">' +
+  /** what stands on ✋ / 🖼️, as the pick that names it (#176): a value is
+   *  *keep*, an answered blank *anon*; an unanswered card has nothing */
+  const identityStandsPick = (k) => (k === 'myname'
+    ? ((S.myname || '').trim() ? 'keep' : (S.nameSet ? 'anon' : null))
+    : k === 'mypic' ? (S.mypic ? 'keep' : (S.picSet ? 'anon' : null)) : null);
+  /** something other than what stands is chosen on an identity card */
+  const identityChanged = (k) => (k === 'myemail' ? emailChanged()
+    : !!identityStandsPick(k) && (k === 'myname' ? namePickNow() : picPickNow()) !== identityStandsPick(k));
+  /** an identity card's first line, under your row (#169, #176; 1541.47):
+   *  what stands, wearing the chosen radio of the card's group — pressed
+   *  while nothing new is chosen, and choosing it again cancels the change
+   *  (`data-standpick`). 📧 names the address, which the row does not; ✋ and
+   *  🖼️ stand as the row itself, so the radio alone. Nothing stands on a card
+   *  never answered, nor before an address is verified */
+  const identityStandsHtml = (k) => {
+    const on = k === 'myemail' ? !!S.emailStands : !!identityStandsPick(k);
+    if (!on) return '';
+    const ch = identityChanged(k);
+    return '<div class="pick idstands' + (ch ? '' : ' on') + '">' +
+      (k === 'myemail' ? '<span class="opttext">' + esc(S.emailStands) + '</span>' : '') +
+      '<button class="lanepick standpick" type="button" data-standpick="1" aria-pressed="' + !ch + '">' +
       '<span class="dot"></span><span class="off">' + PAGE_COPY.pw.chooseThis + '</span>' +
-      '<span class="on">' + PAGE_COPY.pw.chosen + '</span></button></div>'
-    : '');
+      '<span class="on">' + PAGE_COPY.pw.chosen + '</span></button></div>';
+  };
   /** 📧 after the save: with an address standing, the one choice beneath the
    *  first line is a new one — its field and its own *Choose this*, pressed
    *  by typing (A2), the sent one waiting in it until it is verified (#169) */
@@ -9643,6 +9666,13 @@
       // one, typed or sent, and the card stands as it did
       if (S.open === 'myemail' && S.emailStands) {
         S.myemail = S.emailStands; S.emailSent = false; S.emailVerified = true; S.seen.add('myemail');
+        return render();
+      }
+      // ✋ 🖼️'s is the name or picture that stands (#176): the pick and the
+      // draft let go, so the card falls back on what stands
+      if ((S.open === 'myname' || S.open === 'mypic') && identityStandsPick(S.open)) {
+        if (S.open === 'myname') { S.namePick = null; S.mynameDraft = ''; }
+        else { S.picPick = null; S.mypicDraft = ''; }
         return render();
       }
       // …and on a member's composer it drops the motion being typed, the
