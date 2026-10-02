@@ -1717,6 +1717,19 @@ window.CARDS = (function () {
       p && name ? esc(name) : G.speaker.anonymous) +
       saidHtml(why) + '</div>';
   };
+  // **The reasoning's label and box**, one helper for every rationale being
+  // written — the draft's, the ⚔️ desk's, and the page's settings reason
+  // boxes (`whyLane`), so the forms cannot drift. `attrs` is the field's own
+  // hook (`data-why`, `data-deadwhy`, `data-motionlane="why"`, …); the
+  // placeholder states the act (Ed, 2026-08-17: an opening clause invites
+  // the sentence the field is for).
+  function whyBoxHtml(text, attrs, placeholder, cls) {
+    return '<span class="glab whylab">' + G.yourReasoning + '</span>' +
+      '<div class="lanebox whybox"><div class="said edit-why' + (cls ? ' ' + cls : '') +
+      '" contenteditable="plaintext-only"' + attrs + ' spellcheck="false"' +
+      ' data-placeholder="' + (placeholder || G.whyPlaceholder) + '">' + esc(text || '') + '</div></div>';
+  }
+
   // **A rail entry's body is its speaker** (Ed, 2026-09-12: *[user avatar]
   // Rationale text; if no rationale, no body text*): the teaser under a
   // proposal's title and under a motion's is the rationale behind the same
@@ -2240,25 +2253,15 @@ window.CARDS = (function () {
           : '<div class="editlane" contenteditable="true" data-lane="' +
             site.keys[0] + '" spellcheck="false">' +
             laneBlocks(site.text, originText(site)) + '</div>') +
-        // …and the face on it is **what everybody else will see**, not what you
-        // know (K30, backlog 255). One place decides it, because `setDraftSigned`
-        // patches the same element in place when the sign choice flips.
-        // The rationale is **inside** the same surface (Ed, 2026-08-17): you are
-        // expected to fill in both, so they are one editing surface at one
-        // height rather than two boxes at different ones — and the speaker's
-        // disc comes with it, because it belongs to the words beside it. A
-        // hairline separates them without dividing them, which is the card's own
-        // band grammar applied one level down.
-        '<div class="speaker">' + draftFaceHtml(d) +
-        '<div class="said edit-why" contenteditable="plaintext-only"' +
-        (blank ? ' data-deadwhy="' + blank + '"' : ' data-why') + ' spellcheck="false"' +
-        // Ed, 2026-08-17. A question invited an answer to a different question —
-        // "because it's clearer" — where an opening clause invites the sentence
-        // the field is actually for. It also states the act: what you are writing
-        // is the case for a change, not a note about one.
-        ' data-placeholder="' + G.whyPlaceholder + '">' +
-        esc((d && d.rationale) || '') + '</div></div>' +
-        '</div>';
+        '</div>' +
+        // **The reasoning is the form's second part** (issue #173, Ed
+        // 2026-10-02, his D4: *your reasoning*): its own label and a box drawn
+        // like the draft box, two lines at the least, in the chrome's face —
+        // no face, no name and no hairline while writing (his K3: *we don't
+        // need to show the username*). What it was, one surface with a
+        // hairline and the disc beside the field (Ed, 2026-08-17), and why it
+        // went: `design/DECISIONS.md`.
+        whyBoxHtml((d && d.rationale) || '', blank ? ' data-deadwhy="' + blank + '"' : ' data-why');
     }
 
     // ---- open/close geometry ----------------------------------------------
@@ -2479,7 +2482,7 @@ window.CARDS = (function () {
     mdUnescape, mdPlain, pasteClean,
     MD_ONE, mdLead, mdInner, mdParts, sourceToRich, readLane, sentText,
     abstainHhmm, abstainLeft, abstainNoteHtml, tickAbstain,
-    laneSeed, laneProposeHtml, laneCtlHtml, laneNameId, laneGroupAttrs, speakerHtml, commentByHtml, railSpeakerHtml, secToggleHtml, fieldHtml, fieldOf, groundNote,
+    laneSeed, laneProposeHtml, laneCtlHtml, laneNameId, laneGroupAttrs, speakerHtml, commentByHtml, whyBoxHtml, railSpeakerHtml, secToggleHtml, fieldHtml, fieldOf, groundNote,
     initials, PERSON, avHtml,
     headOnlyHeight, cardBody, COLLAPSE_MS, EXPAND_MS,
     make,

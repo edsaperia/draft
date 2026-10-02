@@ -253,6 +253,9 @@ window.COPY = (function () {
       italic: 'Italic (the markdown is *like this*)',
     },
     whyPlaceholder: 'We should change this because…',
+    // the editing card's second part, over the reasoning box (issue #173, Ed
+    // 2026-10-02: *It should say 'your reasoning' instead of 'your reason'*)
+    yourReasoning: 'Your reasoning',
   };
 
   // ---- the session surface (session.js) ------------------------------------
@@ -465,15 +468,11 @@ window.COPY = (function () {
       withdrawCost: ' — the edit comes back in full',
       idle: 'Nothing has changed yet — type in the document to start a draft',
     },
-    // the sign control (Q770): whether your name goes on the draft
+    // the sign control (Q770): whether your name goes on the draft — since
+    // issue #173 one switch and its word, no helper line (Ed, 2026-10-02:
+    // *Remove the … helper text*)
     sign: {
-      anonymousName: 'Anonymous',
       anonLabel: 'Anonymous',
-      anonExpLead: 'Nobody is told who proposed this',
-      expEver: ' — ever.',
-      expUntil: ' until the document is finished.',
-      signedAs: (escName) => 'Signed — as ' + escName,
-      signedExp: 'Your name goes on it from the moment you propose it, and stays there.',
     },
     // the place-stepper a patch and a multi-site draft share
     nav: {

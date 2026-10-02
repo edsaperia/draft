@@ -2299,7 +2299,8 @@ window.LIVE = (function () {
         const opts = again ? { landed: named } : { landed: named, quiet: versionMoved };
         return (remake
           ? api.cmd('rebase-text', { candidate: remake, baseVersion: env.cs.v.textVersion, hunks, why: d.rationale || '' }, opts)
-          : api.cmd('propose-text', { baseVersion: env.cs.v.textVersion, hunks, why: d.rationale || '', signed: !!d.signed }, opts))
+          : api.cmd('propose-text', { baseVersion: env.cs.v.textVersion, hunks, why: d.rationale || '',
+              signed: window.SESSION && window.SESSION.draftSigned ? window.SESSION.draftSigned(d) : !!d.signed }, opts))
           .then((res) => {
             if (remake) remakeSent.delete(remake);
             if (res && res.ok && res.result && res.result.id) {

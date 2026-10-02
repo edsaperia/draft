@@ -6,6 +6,15 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-10-02: reasons read as comments
+
+### Changed
+- **A proposal's reason now reads as a comment on it.** Under each proposal's wording, the reason sits in a soft grey panel the wording's full width, with a line at its top saying who gave it — their picture and name, or *Anonymous* where names are kept back — and the reason beneath in plainer, slightly larger type, so it no longer looks like more of the document. The card's own label still says *Proposed by* and the name. Records, the founder's amendments and the closed page show reasons the same way.
+- **Writing a proposal is a short form of two parts.** *Your proposal* holds your wording; *Your reasoning*, below it, is a box of its own, two lines tall and growing as you write. Where the document lets you choose, an *Anonymous* switch sits beside *Your proposal*: **off, your name goes on the proposal — now the default** — and on, it goes out without your name. Proposing a change to a rule asks for your reasoning the same way.
+
+### For contributors
+- **Surface-only.** `CARDS.speakerHtml` draws `.speaker.comment` (a `.by` byline over `.said`); `founderFace` takes the same form; new tokens `--comment-bg`, `--comment-ink`, `--comment-muted`, `--r-xl`, `--shadow-edge`, `--switch-off`. The editing card and the settings reason box draw *Your reasoning* through `CARDS.whyBoxHtml`; the sign choice is one switch (`anonSwitchHtml`), a draft starting signed (`draftSigned`). The rail's one-line quote is unchanged. SURFACE K28, K30, §9.
+
 ## 2026-10-02: headings sized by the levels a document uses
 
 ### Changed
