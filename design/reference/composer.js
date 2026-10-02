@@ -48,9 +48,9 @@ window.COMPOSER = (function () {
     const { blockBeforeGap, blockHtml, chipsFor, currentTextFor, sourceTextFor, markerFor, drawWires,
       gapAfter, gapBefore, gapFields, gapLabel, headingForKey, isGapKey,
       layoutQueue, lineOf, renderAll, stuck, toggle,
-      clauseHeadHtml, draftFaceHtml, keepStill, laneBoxHtml } = env;
+      clauseHeadHtml, keepStill, laneBoxHtml } = env;
     // and these are calls, not values: see the note above
-    const { MAY_PEN, SIGNING, SIGNER, AUTHOR_RUNG, SIGNER_PERSON, caretPulse } = env;
+    const { MAY_PEN, SIGNING, AUTHOR_RUNG, SIGNER_PERSON, caretPulse } = env;
     /* ===================================================================
        The composer (Ed, 2026-08-16; decisions 224–241).
 
@@ -92,8 +92,10 @@ window.COMPOSER = (function () {
           id: DRAFT_ID, kind: 'draft', mine: true, unproposed: true, state: 'needs',
           keys: [], sites: [], rationale: '', qLabel: T.compose.draftLabel,
           urgency: 0, pct: 0, cap: '',
-          // the sign choice (Q770): the base is the default, signing the opt-in
-          signed: false,
+          // the sign choice (Q770): **signed by default** since issue #173 (Ed,
+          // 2026-10-02: *name first and selected by default*; the switch's off
+          // is signed); it counts only under an elective rung (`draftSigned`)
+          signed: true,
         };
         env.SUGGS.push(d);
       }
@@ -871,7 +873,7 @@ window.COMPOSER = (function () {
         title: broke ? T.row.broke
           : T.row.holdPropose + (n > 1 ? T.row.inAllPlaces(n) : '') +
             // the hold's tooltip says what leaves: a signed one leaves with your name
-            (d && d.signed ? T.row.signedSuffix : '') +
+            (draftSigned(d) ? T.row.signedSuffix : '') +
             (remake ? T.stranded.keepsCost : T.row.editCost),
         penTitle: T.row.amend + (n > 1 ? T.row.inAllPlaces(n) : '') + T.row.penCost,
       };
@@ -905,21 +907,24 @@ window.COMPOSER = (function () {
       const dirty = sites.filter((s) => window.CARDS.sentText(s) !== s.origin.map((x) => x.text).join('\n'));
       return { count: sites.length, changedCount: dirty.length, changed: dirty.length > 0 };
     };
-    function signControlHtml(d) {
+    // **Whether the draft goes out signed**: the author's choice, which counts
+    // only under an elective rung — a fixed rung offers none and the door
+    // accepts none (R-050), so a signed default never reaches it there.
+    const draftSigned = (d) => !!(d && d.signed && SIGNING());
+    // **The sign choice is one switch on the *Your proposal* line** (issue
+    // #173, Ed 2026-10-02: *we don't need to show the username, just the
+    // switch and "Anonymous". I think it is the entire proposal that is
+    // anonymous, not just the rationale*): on is anonymous, off — the default
+    // — signed; no name or face while writing. The press sets the value its
+    // `data-signed` names, so the click handler is the radios' own.
+    function anonSwitchHtml(d) {
       const base = SIGNING();
       if (!base) return '';
-      const name = (SIGNER() || '').trim() || T.sign.anonymousName;
-      const pick = (on, val, ttl, exp) =>
-        '<div class="pick' + (on ? ' on' : '') + '">' +
-        '<button class="lanepick" type="button" aria-pressed="' + on + '" data-act="draft-sign" data-signed="' + val + '">' +
-        '<span class="dot"></span><span>' + ttl + '</span></button>' +
-        '<span class="exp">' + exp + '</span></div>';
-      return '<div class="choice signctl" role="radiogroup" data-signbase="' + base + '">' +
-        pick(!d.signed, '0', T.sign.anonLabel, T.sign.anonExpLead +
-          (base === 'anonymous' ? T.sign.expEver : T.sign.expUntil)) +
-        pick(!!d.signed, '1', T.sign.signedAs(esc(name)),
-          T.sign.signedExp) +
-        '</div>';
+      const anon = !draftSigned(d);
+      return '<span class="anonsw' + (anon ? ' on' : '') + '" data-signbase="' + base + '">' +
+        '<button class="sw" type="button" role="switch" aria-checked="' + anon + '" aria-label="' +
+        T.sign.anonLabel + '" data-act="draft-sign" data-signed="' + (anon ? '1' : '0') + '">' +
+        '<span class="knob"></span></button><span class="tlab">' + T.sign.anonLabel + '</span></span>';
     }
     // **What the room will see on a proposal of yours that is already out** (K30):
     // your own person where the name went with it — you signed it, or the rung is
@@ -936,30 +941,19 @@ window.COMPOSER = (function () {
       const d = draftOf();
       if (!d || !SIGNING()) return;
       d.signed = !!on;
-      env.doc.querySelectorAll('.sugg[data-card="' + DRAFT_ID + '"]').forEach((card) => {
-        card.querySelectorAll('.signctl .pick').forEach((p) => {
-          const b = p.querySelector('[data-signed]');
-          const here = b && b.dataset.signed === (d.signed ? '1' : '0');
-          p.classList.toggle('on', !!here);
-          if (b) b.setAttribute('aria-pressed', String(!!here));
-        });
-        // **The face follows the choice** (K30): signing is the moment the room
-        // stops being told nothing about you, so the disc gives way to your own
-        // picture as the radio moves. One element is swapped — never the `.said`
-        // beside it, which is the lane holding the caret.
-        const sp = card.querySelector('.lanebox .speaker');
-        const face = sp && sp.firstElementChild;
-        if (face) {
-          const tmp = document.createElement('div');
-          tmp.innerHTML = draftFaceHtml(d);
-          if (tmp.firstElementChild) sp.replaceChild(tmp.firstElementChild, face);
-        }
+      // every site card's *Your proposal* line wears the one choice: the
+      // switch is patched in place, never a render under a lane's caret
+      const anon = !d.signed;
+      env.doc.querySelectorAll('.sugg[data-card="' + DRAFT_ID + '"] .anonsw').forEach((w) => {
+        w.classList.toggle('on', anon);
+        const b = w.querySelector('[data-act="draft-sign"]');
+        if (b) { b.setAttribute('aria-checked', String(anon)); b.dataset.signed = anon ? '1' : '0'; }
       });
       // the row's ✏️ — never the ✒️ beside it, a decree leaving with no
       // signature to name — says so in its tooltip, patched in place like the
       // card (Q1382: the hold is the row's)
       env.doc.querySelectorAll('[data-proposalrow] [data-act="row-commit"]:not([data-pen]), .sugg [data-act="draft-propose"]:not([data-pen])').forEach((pb) => {
-        pb.title = pb.title.replace(/( — signed)?( — one edit)/, (d.signed ? ' — signed' : '') + '$2');
+        pb.title = pb.title.replace(/( — signed)?( — one edit)/, (draftSigned(d) ? ' — signed' : '') + '$2');
       });
     }
 
@@ -1004,8 +998,12 @@ window.COMPOSER = (function () {
           ? { text: null, key: s.keys[0] }
           : { key: s.keys[0], html: blocks.map((b) => '<div class="lp' + (b.t === 'h' ? ' hblock lvl' + (b.level || 1) + window.CARDS.rankCls(b.level || 1) : b.bullet ? ' bullet' : '') +
             '" data-key="' + b.key + '">' + blockHtml({ x: b.text, t: b.t, level: b.level, bullet: b.bullet }) + '</div>').join('') }, o || {})),
-        block: '<div class="propblock editblock"><span class="glab">' + esc(window.COPY.shell.yourDraft) + '</span>' +
-          laneBoxHtml(d, s) + signControlHtml(d) + '</div>',
+        // two parts, a form (issue #173, Ed's D4 and K3): *Your proposal*, the
+        // Anonymous switch at its right, over the draft box; *Your reasoning*
+        // over a box drawn like it (`laneBoxHtml`)
+        block: '<div class="propblock editblock"><div class="glabline"><span class="glab">' +
+          esc(window.COPY.shell.yourDraft) + '</span>' + anonSwitchHtml(d) + '</div>' +
+          laneBoxHtml(d, s) + '</div>',
         // what the card says under the words: a site the text moved out from
         // under (Q1463), and only the two facts that change what the row's ✏️
         // *does* (Ed, 2026-08-17) — it joins a race, it goes in as one change
@@ -1057,7 +1055,7 @@ window.COMPOSER = (function () {
       caretRangeIn, selectedBlocks, laneCaret, placeCaret,
       startDraft, startDraftFromTyping, startDraftFromRun,
       laneRemark, syncEditCtl, markSelection,
-      commitBtnHtml, proposalRowHtml, proposeCtlTitles, draftRowState, setDraftSigned,
+      commitBtnHtml, proposalRowHtml, proposeCtlTitles, draftRowState, setDraftSigned, draftSigned,
       ownParts, editParts, cardCommitActs };
   }
   return { make };
