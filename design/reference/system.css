@@ -730,8 +730,12 @@
   }
   /* the rail's keeps the rail's own glyph and lends its target to the row
      without growing it: the margins give back what the box adds, and it
-     stands over the link's padding it overlaps */
-  .toc .sectoggle { margin: -4px -8px; position: relative; z-index: 1; }
+     stands over the link's padding it overlaps. **Its extra reaches up,
+     never down** (the padding keeps the glyph where it stood): a box that
+     hung below its row hung below the list's last one, and the list
+     scrolled 3px further for it, which carried the last rows' marks under
+     whatever stood at the window's foot (#151, toc-travel's Q1520 step). */
+  .toc .sectoggle { margin: -8px -8px 0; padding-top: var(--s2); position: relative; z-index: 1; }
   .sectoggle:hover { color: var(--fg); }
   .sectoggle .tri { display: inline-block; transition: transform 140ms ease; }
   .sectoggle[aria-expanded="true"] .tri { transform: rotate(90deg); }

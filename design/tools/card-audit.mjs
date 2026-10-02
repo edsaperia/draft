@@ -4180,7 +4180,10 @@ async function walkRail(page, rails, walk) {
  * Rules' headings, the Rules' pile heading, the contents rail — is a target
  * of at least `FOLD_TARGET` on both axes, and showing it moves nothing: a
  * heading's first line stands where it stands with the triangle taken out,
- * and a rail row is no taller than its tallest other child. Read on the page each walk leaves
+ * and a rail row is no taller than its tallest other child. In the rail the
+ * box never hangs below its row (the last one would lengthen the list's
+ * scroll and carry the marks with it), and it never stands over a mark:
+ * at every mark's centre the mark is what the pointer finds (Q1520). Read on the page each walk leaves
  * standing; a triangle inside a folded or hidden part draws no box and is
  * not read.
  */
@@ -4213,6 +4216,7 @@ async function foldPass(page, walk) {
         // not the triangle's height
         const rest = Math.max(0, ...[...host.children].filter((c) => c !== t).map((c) => c.getBoundingClientRect().height));
         rec.grew = Math.round((host.getBoundingClientRect().height - rest) * 100) / 100;
+        rec.hangs = Math.round((b.bottom - host.getBoundingClientRect().bottom) * 100) / 100;
       } else if (host) {
         const was = firstLine(host);
         const keep = t.style.display;
@@ -4225,7 +4229,26 @@ async function foldPass(page, walk) {
     }
     return out;
   });
-  FOLDS.push({ walk, toggles: r });
+  // every rail mark brought to the list's middle, as a reader scrolls to it,
+  // and asked what stands at its centre
+  const covered = await page.evaluate(() => {
+    const ul = document.querySelector('#toc');
+    if (!ul) return [];
+    const keep = ul.scrollTop;
+    const out = [];
+    for (const m of ul.querySelectorAll('.tocmarks .tocmark, .tocmarks .more')) {
+      const li = m.closest('li');
+      ul.scrollTop = Math.max(0, li.offsetTop - ul.clientHeight / 2);
+      const r = m.getBoundingClientRect();
+      if (!r.width || !r.height) continue;
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      const t = hit && hit.closest('.sectoggle');
+      if (t) out.push({ key: 'toc:' + (t.dataset.secToggle || '?'), mark: (li.querySelector('a[data-toc]') || {}).textContent || '?' });
+    }
+    ul.scrollTop = keep;
+    return out;
+  });
+  FOLDS.push({ walk, toggles: r, covered });
 }
 function foldTargetRules(folds) {
   const out = [];
@@ -4243,6 +4266,14 @@ function foldTargetRules(folds) {
         out.push({ check: 'fold-target', walk: f.walk, key: t.key, sub: 'grows', kind: 'fold',
           ex: 'the contents rail\'s row is ' + t.grew + 'px taller for its triangle (#151)' });
       }
+      if (t.hangs > TOL) {
+        out.push({ check: 'fold-target', walk: f.walk, key: t.key, sub: 'hangs', kind: 'fold',
+          ex: 'the contents rail\'s triangle hangs ' + t.hangs + 'px below its row, so the list scrolls further for it (#151)' });
+      }
+    }
+    for (const c of f.covered || []) {
+      out.push({ check: 'fold-target', walk: f.walk, key: c.key, sub: 'covers', kind: 'fold',
+        ex: 'a fold triangle stands over “' + String(c.mark).slice(0, 40) + '”’s mark, at the mark\'s centre (#151, Q1520)' });
     }
   }
   if (folds.length && !folds.some((f) => f.toggles.length)) {
