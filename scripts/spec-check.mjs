@@ -2219,7 +2219,7 @@ function checkStateOnly() {
  * count is pinned below and may only fall; stage 10 takes it to nought. A
  * count that falls is said, so the pin can be lowered with it.
  */
-const STYLE_TYPE_OK = /^(var\(--(t-[a-z]+|h-title|h[1-3])\)|inherit|1em|100%)$/;
+const STYLE_TYPE_OK = /^(var\(--(t-[a-z]+|h-title|h-part|h[1-3])\)|inherit|1em|100%)$/;
 const STYLE_SPACE_OK = (p) => /^(0|0px|auto|inherit)$/.test(p) ||
   /^-?var\(--(s[1-5]|card-inset|slot-gap|block-pad)\)$/.test(p) ||
   (/^-?\d+(\.\d+)?px$/.test(p) && parseFloat(p) % 4 === 0);
