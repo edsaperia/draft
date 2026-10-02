@@ -409,6 +409,15 @@ case "$GROUP" in
     # proposal alike, nothing owed on it (1565 (b), Ed 2026-09-29 17:27).
     # Serves design/ itself
     walk "record-travel" node scripts/repro/record-travel.mjs
+    # **The Text's headings take their look from the levels it uses** (issue
+    # #152, Ed 2026-10-02: *headings are too small … can we have headings get
+    # larger depending on what the smallest level that's used in the text?*):
+    # on the fixture's `#` + `##` + `###` and on it re-bound as `##` + `###`,
+    # each heading at its rank's size, the title stepping up over three
+    # ranks, none under 1.333rem, a card on a heading drawing it at the
+    # column's size in its place, and the Rules' own headings unranked.
+    # Serves design/ itself; red on the page before #152
+    walk "heading-rank" node scripts/repro/heading-rank.mjs
     # **A clause's entries keep the tab stack's order in the rail** (issue
     # #154, SURFACE M6): with each of a clause's three entries open in turn —
     # a 💡, an unread ✔ and a judged ⏳ — the rail's order is the strip's.

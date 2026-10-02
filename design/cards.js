@@ -714,7 +714,7 @@ window.CARDS = (function () {
         body.push(esc(m[1]) + (inner ? '<' + tag + '>' + inner + '</' + tag + '>' : '') + esc(m[3]));
       }
       const inner = body.join('');
-      return '<div class="lp' + (typed && typed.t === 'h' ? ' hblock lvl' + typed.level : '') +
+      return '<div class="lp' + (typed && typed.t === 'h' ? ' hblock lvl' + typed.level + rankCls(typed.level) : '') +
         (typed && typed.t === 'b' ? ' bullet' : '') + (inner ? '' : ' empty') + '">' + (inner || '<br>') + '</div>';
     }).join('');
     return linkifyHtml(html);
@@ -776,7 +776,7 @@ window.CARDS = (function () {
       }
       const kind = typed ? (typed.t === 'h' ? { h: typed.level } : { b: true }) : null;
       const inner = (marker ? '<span class="mdmark">' + esc(marker) + '</span>' : '') + body.join('');
-      return '<div class="lp' + (kind && kind.h ? ' hblock lvl' + kind.h : '') +
+      return '<div class="lp' + (kind && kind.h ? ' hblock lvl' + kind.h + rankCls(kind.h) : '') +
         (kind && kind.b ? ' bullet' : '') +
         (inner ? '' : ' empty') + '">' + (inner || '<br>') + '</div>';
     }).join('');
@@ -905,6 +905,42 @@ window.CARDS = (function () {
       return escShow(part);
     }).join('');
   }
+  // **The Text's headings take their look from the levels it uses** (issue
+  // #152, Ed 2026-10-02: *can we have headings get larger depending on what
+  // the smallest level that's used in the text?*). The deepest level the
+  // Text uses is rank 1 (a chapter, `--h2`'s Bold), the next up rank 2 (a
+  // part, `--h1` Regular and ruled), the next rank 3 (`--h-part`, ruled); a
+  // level not used takes no rank, so `##` + `###` read as `#` + `##` once
+  // did. Past three levels the deepest share rank 1. The ranks are the
+  // Text's alone — the Rules' headings carry no rank and keep their fixed
+  // look — and are set afresh from the Text's own lines wherever it is
+  // bound (`setHeadLevels`), so a change that adds or removes the only
+  // heading of a level re-ranks the rest. `rankCls` is what every site
+  // that draws one of its headings at a size adds beside its `lvlN`: the
+  // column, a card's head, a lane, edit mode. A level the Text does not yet
+  // use — typed in a lane — previews at the rank it would land at.
+  let HEAD_LEVELS = [];
+  function ranksFor(levels) {
+    const used = [...new Set(levels.filter((l) => l > 0))].sort((a, b) => b - a);
+    const over = Math.max(0, used.length - 3);
+    const out = {};
+    used.forEach((lv, i) => { out[lv] = Math.max(1, i + 1 - over); });
+    return out;
+  }
+  function setHeadLevels(levels) {
+    HEAD_LEVELS = [...new Set((levels || []).map(Number).filter((l) => l > 0))];
+    const n = Math.min(3, HEAD_LEVELS.length);
+    // the title keeps its lead over a third rank (1.333⁴, `--h-title` in
+    // system.css under `[data-head-ranks="3"]`)
+    if (typeof document !== 'undefined') document.documentElement.dataset.headRanks = String(n);
+    return n;
+  }
+  function headRankOf(level) {
+    const lv = Number(level) || 0;
+    if (!lv) return 0;
+    return ranksFor(HEAD_LEVELS.includes(lv) ? HEAD_LEVELS : HEAD_LEVELS.concat([lv]))[lv] || 0;
+  }
+  const rankCls = (level) => { const r = headRankOf(level); return r ? ' rank' + r : ''; };
   // The one reading of a line's block marker — the page's `blocksOf`,
   // `relabel` and `textDivs` and the lane's preview all ask this, so a line
   // that is a heading in one place is a heading in every place. `marker` is
@@ -1948,7 +1984,7 @@ window.CARDS = (function () {
         // stage 6): the head then stands as the heading stood — no clause
         // padding above its words, its tab centred on its first line — so
         // the tab and the words keep their places when it opens
-        '<div class="headclause' + (o.onHead ? ' onhead lvl' + o.onHead : '') + '"' + (o.key ? ' data-key="' + o.key + '"' : '') +
+        '<div class="headclause' + (o.onHead ? ' onhead lvl' + o.onHead + rankCls(o.onHead) : '') + '"' + (o.key ? ' data-key="' + o.key + '"' : '') +
         (o.washAttrs !== undefined ? o.washAttrs
           : o.wash === false ? '' : env.washFor(s, o.key)) + '>' + marks +
         // `html` for the one head built of several paragraphs: a composer site is
@@ -2428,7 +2464,7 @@ window.CARDS = (function () {
     tokens, diffPieces, markHtml2, MARK_FLOOR, wordingHtml, laneBlocks, mdDiffPieces, mdPiecesHtml, mdDiffHtml, mdBlocksHtml,
     railPlain, railChange, railPair, railWhen, railAt, railArrow, railTitleHtml, railTitleText, longWhen, longDay,
     reasonHtml, reasonPlain,
-    originText, MD_RX, mdToHtml, htmlToMd, mdStrip, mdBlock, linkify, linkifyHtml, mdLine,
+    originText, MD_RX, mdToHtml, htmlToMd, mdStrip, mdBlock, setHeadLevels, headRankOf, rankCls, linkify, linkifyHtml, mdLine,
     mdUnescape, mdPlain, pasteClean,
     MD_ONE, mdLead, mdInner, mdParts, sourceToRich, readLane, sentText,
     abstainHhmm, abstainLeft, abstainNoteHtml, tickAbstain,

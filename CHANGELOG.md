@@ -13,6 +13,13 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ### For contributors
 - **Surface-only.** `layoutQueue` ranks a clause's entries by the gutter's own `stackKey`, and a flow entry at a pinned entry's clause steps to the side the strip puts it on (`freeFor`, session.js); SURFACE M6 names the open entry's case. Guarded by `scripts/repro/rail-stack-order.mjs`, in the sprint tier's `sprint-pages`.
+## 2026-10-02: headings sized by the levels a document uses
+
+### Changed
+- **A document's headings are larger, and take their size from the levels it uses.** The smallest kind of heading in the text is drawn in bold at a clear step over the body, the next kind up larger again with a rule above it, and a third kind larger still; the document's title grows to stay above them. A document whose headings start at `##` now reads the way one starting at `#` did, and no heading is ever drawn barely larger than the text under it. The Rules keep their own headings as they were.
+
+### For contributors
+- **Surface-only.** `CARDS.setHeadLevels` and `CARDS.rankCls` (`design/cards.js`) give every Text heading a `rank1`–`rank3` class beside its `lvlN`, in the column, a card's head, a lane and edit mode; `--h-part` joins the heading ladder in `design/system.css`. Guard: `scripts/repro/heading-rank.mjs`, in the sprint tier.
 
 ## 2026-10-02: a clause's decisions read top down from the current text
 

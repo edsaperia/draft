@@ -2784,7 +2784,7 @@
     const key = (hints && hints.siteKey) || (s.keys ?? [])[0];
     const rank = headRank(key);
     const gap = !!(s.isInsert || (key && isGapKey(key)));
-    const frame = (cls) => ({ cls: 'sugg ' + cls + (rank ? ' onhead lvl' + rank : '') + (gap ? ' ongap' : ''),
+    const frame = (cls) => ({ cls: 'sugg ' + cls + (rank ? ' onhead lvl' + rank + window.CARDS.rankCls(rank) : '') + (gap ? ' ongap' : ''),
       attrs: ' data-card="' + esc(s.id) + '" data-site="' + esc(key || '') + '"' + laneGroupAttrs(s, key) });
     const kind = stuck(s) ? 'deadlock' : s.kind === 'draft' ? (s.stranded ? 'stranded' : 'mine')
       : s.kind === 'patch' ? 'patch' : isJudged(s) ? 'judged' : s.isInsert ? 'insert' : s.kind;
@@ -3886,7 +3886,7 @@ document.addEventListener('paste', (ev) => {
         }
         const inside = collapsed.has(secN) ? suggestionsInSection(secN) : 0;
         html += '<h2 class="docline editable' + (marks ? ' marked' : '') +
-          ' lvl' + (line.level ?? 1) + '" id="sec-' + secN + '"' +
+          ' lvl' + (line.level ?? 1) + window.CARDS.rankCls(line.level ?? 1) + '" id="sec-' + secN + '"' +
           ' data-key="' + line.key + '">' + marks +
           '<span class="nocaret" contenteditable="false">' + toggleHtml(secN) + '</span>' + blockHtml(line) +
           (inside ? '<span class="sechint" contenteditable="false">' + inside +
@@ -6176,6 +6176,9 @@ document.addEventListener('paste', (ev) => {
       DOC.push({ t: 'p', x: '', key: 'G' + DOC.length, gap: true });
     }
     HEADS = DOC.filter((l) => l.t === 'h').map((l) => l.level ?? 1);
+    // the Text's heading ranks, from its own lines (issue #152): every
+    // heading drawn below asks `CARDS.rankCls`
+    window.CARDS.setHeadLevels(HEADS);
     // **before anything reads the keys** (Q1463): an unproposed draft is the
     // one item carried across a swap by hand, so it is the one item whose
     // keys can be stale — everything else in SUGGS was just derived from the
