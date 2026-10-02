@@ -246,9 +246,7 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1588** — claim by writing the block here, then commit it alone.
-
-**1587 is the fold-triangle builder's calls** (claimed 2026-10-02 by the cloud coordinator; PR #163, issue #151; Ed 2026-10-02 ~00:52 UTC: *Heading toggles are tiny*; the coordinator's sizes OK'd by Ed 01:21 UTC). **Settled by the coordinator from the brief, as built** (2026-10-02): (1) every `.sectoggle` is a drawn 28 × 28 box at every width, not only under a coarse pointer, its glyph centred; (2) the glyph is one step below its heading: `--t-body` beside `--h2`/`--h3`, `--t-lead` beside `--h1` and the Rules' pile heading, `--h2` beside `--h-part`, so rank 2 and rank 3 stay apart; (3) at 390 a heading with a tab laps its box 4px over the heading's words rather than over the tab; (4) the contents rail's glyph stays `--t-cap` and its rows do not grow, so neighbouring rows' targets overlap by 5–7px, the later one taking the overlap; (5) card-audit P36 `fold-target` holds the size, a heading that does not move, and a rail that does not grow, on every kind at both widths; (6) the rail's extra height reaches up, never down, so no box hangs below its row and the list scrolls no further than on main (`toc-travel`'s Q1520 step, red at d94bd14), and P36 also holds that no rail triangle hangs below its row or stands at a rail mark's centre. **Spent.**
+**The next free number is 1587** — claim by writing the block here, then commit it alone.
 
 **1585 is the plan for proposing on a phone** (claimed 2026-10-02 by the cloud coordinator; draft PR #166, issue #164; Ed 2026-10-02 ~10:40 UTC: *We should make a plan for making proposals on mobile*). Eight calls, 1585.1–1585.8, put to Ed in the builder's order, each with its recommendation first: the door into a clause, where the typing happens, a confirming tap, Q1350's paired keyboard, the first cut's scope, motions, the founder's text before 🍾, and the yellow while typing. **Answered** (above): all eight ruled (a) by Ed 2026-10-02, .1 after research.
 
