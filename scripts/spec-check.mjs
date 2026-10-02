@@ -2287,6 +2287,36 @@ function checkMergeable() {
   note(`  ${seen} source files hold no merge-blocking NUL`);
 }
 
+/**
+ * The files that must keep the line endings main had on 2026-10-02 (issue
+ * #179). #174 rewrote CLAUDE.md from CRLF to LF by hand, which broke the
+ * Q1491 gotcha's literal CR; a script that reads session-view.html in text
+ * mode and writes it back turns all its lines into a diff. A lone CR is
+ * content, not an ending, so only `\n` is counted: one with a CR before it is
+ * CRLF, one without is LF, and a file holding the other kind is red — mixed
+ * if it holds both, flipped if it holds only the other. The ledgers are
+ * written by `scripts/ledger.mjs`, which keeps them byte-for-byte.
+ */
+const LINE_ENDINGS = {
+  'QUESTIONS.md': 'CRLF',
+  'design/DECISIONS.md': 'CRLF',
+  'CLAUDE.md': 'CRLF',
+  'design/session-view.html': 'CRLF',
+  'design/reference/session-view.html': 'CRLF',
+};
+function checkLineEndings() {
+  note('line endings — the CRLF files stay CRLF');
+  for (const [rel, want] of Object.entries(LINE_ENDINGS)) {
+    const b = readFileSync(join(ROOT, rel));
+    let crlf = 0, lf = 0;
+    for (let i = b.indexOf(10); i >= 0; i = b.indexOf(10, i + 1)) { if (i > 0 && b[i - 1] === 13) crlf++; else lf++; }
+    const other = want === 'CRLF' ? lf : crlf, own = want === 'CRLF' ? crlf : lf;
+    if (!other) continue;
+    find('line-endings', `${rel} must be ${want} throughout and is ${own ? 'mixed' : 'flipped'} (${crlf} CRLF, ${lf} LF) — restore it byte-for-byte (git checkout the file, then re-apply the change with the Edit tool or \`node scripts/ledger.mjs\`)`);
+  }
+  note(`  ${Object.keys(LINE_ENDINGS).length} files keep their line endings`);
+}
+
 checkMarks();
 checkSetupAlphabet();
 checkSockets();
@@ -2315,6 +2345,7 @@ checkTuning();
 checkStateOnly();
 checkStyleLint();
 checkMergeable();
+checkLineEndings();
 
 console.log(findings.length ? `\n${findings.length} disagreement(s)` : '\nspec and code agree');
 process.exit(findings.length ? 1 : 0);

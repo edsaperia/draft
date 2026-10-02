@@ -342,9 +342,9 @@ case "$GROUP" in
     walk "demo-join" node scripts/repro/demo-join.mjs "$DEMO_BASE" --key=walk
     # a proposal at two places opens as a patch, a card and a tab at each (issue #189)
     walk "two-place-patch" node scripts/repro/two-place-patch.mjs "$DEMO_BASE"
-    # 📧 on a live seat: the address that stands on the first line wearing
-    # the chosen radio, a new one below (issue #169) — a ladder member here,
-    # a demo visitor there
+    # 📧 ✋ 🖼️ on a live seat: what stands on the first line wearing
+    # the chosen radio, a new one below (#169, #176) — a ladder member and
+    # the Founder here, a demo visitor there
     walk "email-card-standing" node scripts/repro/email-card-standing.mjs "$BASE" --demo="$DEMO_BASE"
     walk "demo-bots-walk" npm run demo-bots-walk -- "$DEMO_BASE"
     ;;
