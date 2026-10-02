@@ -4939,9 +4939,9 @@
    },
    "myemail": {
     "eyebrow": "Enter Your Email",
-    "head": "🦉Ivy Fen you",
+    "head": "🦉Ivy Fen youivy@hollowoak.orgChosen",
     "lock": "",
-    "body": "ivy@hollowoak.orgChoose this",
+    "body": "Choose this",
     "options": [],
     "inputs": [
      {
@@ -6532,9 +6532,9 @@
    },
    "myemail": {
     "eyebrow": "Enter Your Email",
-    "head": "ABAsh Bellamy 👑 you",
+    "head": "ABAsh Bellamy 👑 youash@hollowoak.orgChosen",
     "lock": "",
-    "body": "ash@hollowoak.orgChoose this",
+    "body": "Choose this",
     "options": [],
     "inputs": [
      {
