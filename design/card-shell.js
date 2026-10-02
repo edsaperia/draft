@@ -352,9 +352,14 @@ window.CARD_SHELL = (function () {
    * Under reduced motion the content has already swapped, and nothing glides.
    */
   const MORPH_MS = 190;
+  // every morph the page decided on, for the walks (`morph-walk`): the
+  // lineage, the kind it became, and whether it glided or stepped
+  const morphs = [];
   function morph(el, h0) {
     if (!el || !el.isConnected || h0 == null) return;
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    morphs.push({ lineage: el.dataset.lineage || null, kind: el.dataset.kind || null, reduced, t: Date.now() });
+    if (reduced) return;
     const h1 = el.offsetHeight;
     const parts = window.CARDS.cardBody(el);
     const washMs = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--wash-ms')) || 700;
@@ -374,5 +379,5 @@ window.CARD_SHELL = (function () {
   }
 
   return { cardHtml, pillHtml, pickPillHtml, rowShape, PRESENT, esc,
-    fit, roomOf, clearTop, takeRoomBack, holdLine, lineTop, isShell, glassTop, morph, MORPH_MS };
+    fit, roomOf, clearTop, takeRoomBack, holdLine, lineTop, isShell, glassTop, morph, morphs, MORPH_MS };
 })();

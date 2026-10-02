@@ -1253,11 +1253,14 @@
   let bandGhost = null;       // { k, host, c } — a card whose subject has left
   let bandLastCard = null;    // the open card as it last resolved
   let bandTravelled = false;  // a follow happened on this render: it morphs
+  let bandEntryLin = null;     // the open card's lineage while its entry was in the rail
   const bandSuccessor = (k) => {
     let m = /^mo:(.+)$/.exec(k);
     if (m) {
       const id = m[1];
-      if (card('held:' + id)) return 'held:' + id;
+      // its news only where this seat is owed it (E41): `card()` builds one
+      // for any id, owed or not
+      if (heldKeys().includes('held:' + id)) return 'held:' + id;
       const last = MOCACHE[k];
       const host = last && last.hostKey;
       if (host) {
@@ -1270,6 +1273,23 @@
     if (m && card(m[1])) return m[1];
     return null;
   };
+  // whether a key the band had open still has a place: `card()` builds an
+  // application's and a motion's news for any id, so those two ask the lists
+  // the piles are drawn from
+  const bandHere = (k) => (/^adm:/.test(k) ? admitKeys().includes(k)
+    : /^held:/.test(k) ? heldKeys().includes(k) : !!card(k));
+  // the ghost in a hand-listed pile (the doors'), as `chipsFor` adds it to a rule's
+  const ghostIn = (host) => (bandGhost && bandGhost.host === host ? [bandGhost.k] : []);
+  // what the open card showed when its subject left: its label and its head
+  // (the clause and the strip), so the read card it becomes keeps both and
+  // the tab pressed does not move
+  const ghostSnap = () => {
+    const f = [...document.querySelectorAll('#band .setupcard.gshell[data-lineage]')]
+      .find((x) => x.dataset.lineage === bandOpenLineage());
+    const head = f && f.querySelector(':scope > .clausehead');
+    const lab = f && f.querySelector('[data-slot="label"] .glab');
+    return { headSnap: head ? head.outerHTML : null, labelSnap: lab ? lab.textContent : null };
+  };
   const bandFollow = () => {
     bandTravelled = false;
     if (bandGhost && S.open !== bandGhost.k) bandGhost = null;
@@ -1280,7 +1300,7 @@
       if (to) { const lin = bandOpenLineage(); bandGhost = null; S.open = to; bandLin = { k: to, lin }; bandTravelled = true; }
       return;
     }
-    const c = card(S.open);
+    const c = bandHere(S.open) ? card(S.open) : null;
     if (c) { bandLastCard = c; return; }
     if (cs && cs.closed) { S.open = null; bandLastCard = null; return; }
     const to = bandSuccessor(S.open);
@@ -1291,8 +1311,11 @@
     }
     const para = document.querySelector('#band .cpara.open');
     if (bandLastCard && para) {
-      bandGhost = { k: S.open, host: para.dataset.para,
-        c: Object.assign({}, bandLastCard, { gone: true, hide: () => false }) };
+      // its pile: the paragraph's own setting, or for a door's hand-listed
+      // pile (an application, a door's news) the door it stands under
+      bandGhost = { k: S.open, host: para.dataset.para ||
+          (/^adm:/.test(S.open) ? 'invite' : bandLastCard.base || null),
+        c: Object.assign({}, bandLastCard, { gone: true, hide: () => false }, ghostSnap()) };
       bandTravelled = true;
     } else { S.open = null; bandLastCard = null; }
   };
@@ -4987,13 +5010,13 @@
               // so it lists them too), the admit cards behind
               memSub(PAGE_COPY.memHeads.applications, doorRowsNow.invite,
                 ['invite', 'pw:u:invite', 'pw:a:invite']
-                  .concat(motionCardsFor(card('invite')).map((c) => c.k), admitKeys(), heldDoorKeys('invite'))) +
+                  .concat(motionCardsFor(card('invite')).map((c) => c.k), admitKeys(), heldDoorKeys('invite'), ghostIn('invite'))) +
               (lapsesOn() && lapsedOut.length
                 ? memSub(PAGE_COPY.memHeads.lapsed, lapsedOut.map((p) => memRow(p)).join(''), []) : '') +
               // the one heading a *lapsed* tag says something under (Q1557 (c))
               memSub(PAGE_COPY.memHeads.removal, doorRowsNow.remove,
                 ['remove', 'pw:u:remove', 'pw:a:remove'].concat(motionCardsFor(card('remove')).map((c) => c.k),
-                  heldDoorKeys('remove')))) +
+                  heldDoorKeys('remove'), ghostIn('remove')))) +
           alumniSub;
       } },
     // **Proposals reads second** (Q871, Q872, Ed 2026-08-26: *Proposals above
@@ -8547,7 +8570,11 @@
     // a card that became one with no entry of its own — a record in its
     // rule's pile, a rule now settled, a card whose subject left — keeps
     // the entry it had, in its slot and wearing its new mark, until it closes
-    if (S.open && bandLin.k === S.open && bandLin.lin !== S.open && !railEntries.some((e) => e.id === S.open) && card(S.open)) {
+    // — the entry it had *in this opening*, so a card opened from its tab
+    // with no entry (a settled rule) is not given one
+    if (!S.open) bandEntryLin = null;
+    else if (railEntries.some((e) => e.id === S.open)) bandEntryLin = bandOpenLineage();
+    else if (bandEntryLin && bandEntryLin === bandOpenLineage() && card(S.open)) {
       railEntries.push(entryOf(card(S.open), ctx));
     }
 

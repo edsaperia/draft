@@ -1068,8 +1068,9 @@ window.BAND = (function () {
       return {
         kind: 'read', acts: [], owed: null,
         frame: { cls: 'sugg setupcard', attrs: ' role="tabpanel" data-setupcard="' + esc(c.k) + '"' },
-        label: { text: window.SETUP.labelOf(c, cx) },
-        head: line ? { html: window.SETUP.headHtml(c, cx, sibs || [c],
+        label: { text: c.gone && c.labelSnap ? c.labelSnap : window.SETUP.labelOf(c, cx) },
+        // a card whose subject left keeps the head it had (#143, call E)
+        head: c.gone && c.headSnap ? { html: c.headSnap } : line ? { html: window.SETUP.headHtml(c, cx, sibs || [c],
           '<div class="headrule" data-fact="place">' + window.CARDS.linkify(esc(line)).replace(/\n/g, '<br>') + '</div>') } : null,
         body: note ? { html: '<p class="why">' + esc(note) + '</p>' } : null,
       };

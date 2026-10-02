@@ -6184,6 +6184,11 @@ document.addEventListener('paste', (ev) => {
     const found = SUGGS.filter(ofIt);
     const rec = found.filter((g) => !had.has(g.id)).pop() || found.pop() || null;
     if (rec) return rec;
+    // **a race that carried into a park** (SURFACE E36, E37): the Founder's
+    // 🛡️ holds it, and its ⏳ card is what the race became until the park
+    // lifts into the record above
+    const parked = race && !/^park:/.test(item.id || '') && SUGGS.find((g) => g.kind === 'park' && g.id === 'park:' + race);
+    if (parked) return parked;
     // **the pair under you changed with no decision** (issue #143, call B):
     // re-dealt on the same race, or the race renamed by a withdrawal, a
     // retirement or a merge — the race's next card, found by a wording the
