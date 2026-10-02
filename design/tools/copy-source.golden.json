@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 729
+  "entries": 727
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -128,8 +128,6 @@
   "grammar.railTitle.punctuation": "ƒ (name) => name + ' (punctuation)'",
   "grammar.railTitle.quote": "ƒ (s) => '‘' + s + '’'",
   "grammar.railTitle.struck": "without ",
-  "grammar.railTitle.struckPair": "with or without ",
-  "grammar.railTitle.withOrWithout": "ƒ (q) => 'with or without ' + q",
   "grammar.railTitle.without": "ƒ (q) => 'without ' + q",
   "grammar.railWhen.days.0": "Sun",
   "grammar.railWhen.days.1": "Mon",
