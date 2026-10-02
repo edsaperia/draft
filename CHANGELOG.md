@@ -13,6 +13,15 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ### For contributors
 - **Surface-only.** `layoutQueue` ranks a clause's entries by the gutter's own `stackKey`, and a flow entry at a pinned entry's clause steps to the side the strip puts it on (`freeFor`, session.js); SURFACE M6 names the open entry's case. Guarded by `scripts/repro/rail-stack-order.mjs`, in the sprint tier's `sprint-pages`.
+
+## 2026-10-02: the demo's speakers reword rather than repeat
+
+### Fixed
+- **A speaker in the demo document can no longer add a second wording of a paragraph beside the first.** When one of the demo's speakers meant to reword an abstract, it sometimes sent the new wording as an extra paragraph, and once that passed the session read twice, old and new together. Such a proposal is now set aside before it is sent, and the speakers are shown plainly how to reword a line in place.
+
+### For contributors
+- **A server change, so a full deploy.** `proposalHunks` (`demo-model.ts`) drops an insertion that rewords the line beside it — `wordOverlap`, the Dice coefficient over content words, at `REWRITE_OVERLAP` 0.35, a heading weighed only against a heading of the same time; the bot's log reads *dropped a proposal: a rewrite sent as an insertion*. The propose prompt gains a worked `start: k, end: k+1` example. Tests in `demo-model.test.ts`.
+
 ## 2026-10-02: headings sized by the levels a document uses
 
 ### Changed
