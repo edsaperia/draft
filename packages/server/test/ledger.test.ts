@@ -55,7 +55,8 @@ function scratch(eol: '\r\n' | '\n', files = { CHANGELOG, QUESTIONS, DECISIONS }
   return dir;
 }
 const bytesOf = (dir: string, rel: string) => readFileSync(join(dir, rel)).toString('utf8');
-const snapshot = (dir: string) => ['CHANGELOG.md', 'QUESTIONS.md', 'design/DECISIONS.md'].map((f) => bytesOf(dir, f));
+const snapshot = (dir: string): [string, string, string] =>
+  [bytesOf(dir, 'CHANGELOG.md'), bytesOf(dir, 'QUESTIONS.md'), bytesOf(dir, 'design/DECISIONS.md')];
 
 const INPUT = {
   pr: 170,
@@ -170,12 +171,12 @@ describe('on a copy of the real ledgers', () => {
     const r = L.applyLedgers(dir, { ...INPUT, changelog: '## 2099-01-01: a test section\n\n### Fixed\n- x.', questions: `**${n} is a test**`, nextFree: n + 1 });
     expect(r.refusals).toEqual([]);
     const after = snapshot(dir);
-    for (let i = 0; i < 3; i++) {
+    for (const i of [0, 1, 2] as const) {
       const b = L.endings(before[i]), a = L.endings(after[i]);
       // a file never gains the ending it does not use
       if (b.lf === 0) expect(a.lf).toBe(0);
       if (b.crlf === 0) expect(a.crlf).toBe(0);
-      expect(a.crlf + a.lf - b.crlf - b.lf).toBe(r.plans[i].added);
+      expect(a.crlf + a.lf - b.crlf - b.lf).toBe(r.plans[i]?.added);
     }
     // everything before the insertion point is untouched; DECISIONS only grew at its end
     expect(after[2].startsWith(before[2])).toBe(true);
