@@ -6,14 +6,6 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
-## 2026-10-02: your email card shows the address you have
-
-### Fixed
-- **📧 now shows your current address as the chosen option.** It stands under your name and picture with a pressed *Chosen*, and a new address goes in the field below, under its own *Choose this*. Typing a new address chooses it. Pressing *Chosen* again, or 🗑️, puts the card back as it was. 🗑️ used to restore the text but leave your address reading as unverified.
-
-### For contributors
-- **Surface-only.** `emailStands`, `emailStandsHtml` and `BODY_EMAIL` (`design/session-view.html`); SURFACE §9's identity row. Guard: `scripts/repro/email-card-standing.mjs`, in the sprint tier.
-
 ## 2026-10-02: live updates measured before they are built
 
 ### For contributors
