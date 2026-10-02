@@ -34,6 +34,20 @@
 # Empty — a push, or a dispatch with nothing typed — is every one of them,
 # as before. What is not named is skipped, never failed; a name not in the
 # list reds the `select` job before anything runs.
+#
+# **At most once per branch at a time** (issue #184; dev-ops CONVENTIONS.md,
+# *The deploy never queues behind PR checks*): the tier's eight runners
+# competed with the deploy for the account's machines. The `golden` job and
+# each `walks` leg take a concurrency group keyed on the branch (and the
+# leg), so a second run's part waits for the first's. On a branch other than
+# main — a dispatch — the newer run cancels the older; on main nothing in
+# flight is cancelled, and a run waiting behind it is displaced only by a
+# newer one, whose tree holds everything the displaced one would have run.
+# The groups sit on those jobs rather than on the workflow, and a run whose
+# `gate` says *nothing merged* takes a group of its own: otherwise the
+# coordinator's ledger commit, pushed straight after a merge, would displace
+# the merge's waiting run and then decide there was nothing to run, and that
+# merge would never be walked.
 name: Sprint
 on:
   push:
@@ -124,6 +138,9 @@ jobs:
   golden:
     needs: [gate, select]
     if: needs.gate.outputs.run == 'true' && needs.select.outputs.golden == 'true'
+    concurrency:
+      group: ${{ needs.gate.outputs.run == 'true' && format('sprint-golden-{0}', github.ref) || format('sprint-idle-{0}-golden', github.run_id) }}
+      cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -205,6 +222,9 @@ jobs:
     name: walks (${{ matrix.group }})
     needs: [gate, select]
     if: needs.gate.outputs.run == 'true' && needs.select.outputs.walks != '[]'
+    concurrency:
+      group: ${{ needs.gate.outputs.run == 'true' && format('sprint-walks-{0}-{1}', github.ref, matrix.group) || format('sprint-idle-{0}-walks-{1}', github.run_id, matrix.group) }}
+      cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
