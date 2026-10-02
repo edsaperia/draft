@@ -9516,6 +9516,10 @@
       if (k === 'text') { toggleEditMode(); return; }
       // …and any other card opening leaves edit mode, the draft kept
       if (S.editMode) setEditMode(false);
+      // …except from the rail, where the open card's own entry travels back
+      // to it and never closes it (Ed, 2026-10-02, #168; SURFACE C2); the
+      // band tab and the topbar keep their second press
+      if (S.open === k && t.closest('#rail')) { scrollToCard(k); return; }
       if (S.open === k) return closeThen(() => { S.open = null; });
       if (SESSION.openId != null) SESSION.closeCard();   // one open card on the surface
       // **Switching cards is a morph, not a teardown** (Ed, 2026-08-19: the
