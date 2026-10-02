@@ -6,6 +6,14 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-10-02: headings sized by the levels a document uses
+
+### Changed
+- **A document's headings are larger, and take their size from the levels it uses.** The smallest kind of heading in the text is drawn in bold at a clear step over the body, the next kind up larger again with a rule above it, and a third kind larger still; the document's title grows to stay above them. A document whose headings start at `##` now reads the way one starting at `#` did, and no heading is ever drawn barely larger than the text under it. The Rules keep their own headings as they were.
+
+### For contributors
+- **Surface-only.** `CARDS.setHeadLevels` and `CARDS.rankCls` (`design/cards.js`) give every Text heading a `rank1`–`rank3` class beside its `lvlN`, in the column, a card's head, a lane and edit mode; `--h-part` joins the heading ladder in `design/system.css`. Guard: `scripts/repro/heading-rank.mjs`, in the sprint tier.
+
 ## 2026-10-01, night: faces for the demo's speakers
 
 ### Changed
