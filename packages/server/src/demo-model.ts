@@ -175,6 +175,51 @@ export const MAX_SITES = 4;
 export const MAX_SITE_LINES = 12;
 
 /**
+ * **A rewrite sent as an insertion** (#150): Haiku sends `start == end` when
+ * it means *rewrite line start*, and the insertion leaves both wordings in
+ * the document. An inserted line is compared with the line it lands beside —
+ * its first line with the line above, its last with the line below, a
+ * heading only with a heading of the same time — by the Dice coefficient
+ * over their content words (lower case, three letters or more, not a stop
+ * word, a plural's `s` taken off). At `REWRITE_OVERLAP` or above it reads as a rewrite of that
+ * line and is dropped. The two rewrites on /demo (2026-10-02) read 0.40 and
+ * above; a new sentence under a session reads 0.20 and below.
+ */
+export const REWRITE_OVERLAP = 0.35;
+
+const STOP = new Set(('the and for with from into than then there here this that these those who what how why '
+  + 'when where which are was were has have had its our your their they them you not but all any each per '
+  + 'before after over under about can will may').split(' '));
+
+const contentWords = (line: string): Set<string> => new Set(line.toLowerCase()
+  .split(/[^a-z0-9]+/)
+  .filter((w) => w.length >= 3 && !STOP.has(w))
+  .map((w) => w.replace(/ies$/, 'y').replace(/(?<!s)s$/, '')));
+
+/** The Dice coefficient of two lines' content words, 0 to 1. */
+export function wordOverlap(a: string, b: string): number {
+  const A = contentWords(a), B = contentWords(b);
+  if (A.size + B.size === 0) return 0;
+  let shared = 0;
+  for (const w of A) if (B.has(w)) shared += 1;
+  return (2 * shared) / (A.size + B.size);
+}
+
+// two timed headings at different times are two slots, never one reworded
+const sameSlot = (a: string, b: string): boolean => {
+  const ta = TIMED.exec(a)?.[2], tb = TIMED.exec(b)?.[2];
+  return ta === undefined || tb === undefined || ta === tb;
+};
+
+const rewritesNeighbour = (ins: readonly string[], above: string | undefined, below: string | undefined): boolean => {
+  const reads = (line: string | undefined, beside: string | undefined): boolean =>
+    line !== undefined && beside !== undefined && beside.trim() !== ''
+    && HEADING.test(line) === HEADING.test(beside) && sameSlot(line, beside)
+    && wordOverlap(line, beside) >= REWRITE_OVERLAP;
+  return reads(ins[0], above) || reads(ins[ins.length - 1], below);
+};
+
+/**
  * **A `DemoProposal` checked and turned into an attested hunk set**, against
  * exactly the lines the model was shown — or the reason it is dropped. The
  * same shape as Stage 1's `hunksOf` (demo-build.ts): sorted, then `attest`.
@@ -222,6 +267,9 @@ export function proposalHunks(p: DemoProposal, lines: readonly string[]):
     if (s.end - s.start > MAX_SITE_LINES || s.lines.length > MAX_SITE_LINES) return { dropped: 'a place is too long' };
     if (s.start === s.end && s.lines.length === 0) return { dropped: 'an empty insertion' };
     if (s.lines.join('\n') === lines.slice(s.start, s.end).join('\n')) return { dropped: 'a place changes nothing' };
+    if (s.start === s.end && rewritesNeighbour(s.lines, lines[s.start - 1], lines[s.start])) {
+      return { dropped: 'a rewrite sent as an insertion' };
+    }
   }
   for (let i = 1; i < spans.length; i++) {
     const h1 = spans[i - 1]!, h2 = spans[i]!;
@@ -287,6 +335,9 @@ export function proposePrompt(input: DemoProposeInput): string {
     'Answer with one of:',
     '- action "rewrite": "sites" lists 1–4 places; each replaces lines start..end-1 (end is exclusive) with "lines",',
     '  or inserts "lines" before line start when start == end. Write every line in full, exactly as it should read.',
+    '  To reword line k, replace it: {"start": k, "end": k+1, "lines": ["the new wording"]}. For example, to reword',
+    '  line 12 alone, send {"start": 12, "end": 13, ...}. Use start == end ONLY to add a line that is not there yet;',
+    '  an insertion that rewords the line beside it is dropped, because both wordings would stand.',
     '- action "swap": "a" and "b" are the [start, end] line ranges of two sessions from the list above (end exclusive);',
     '  the two sessions exchange places and each slot keeps its time — you do not rewrite anything.',
     '- action "pass" if nothing on the programme bothers you.',

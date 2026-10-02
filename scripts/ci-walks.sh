@@ -418,6 +418,11 @@ case "$GROUP" in
     # column's size in its place, and the Rules' own headings unranked.
     # Serves design/ itself; red on the page before #152
     walk "heading-rank" node scripts/repro/heading-rank.mjs
+    # **A clause's entries keep the tab stack's order in the rail** (issue
+    # #154, SURFACE M6): with each of a clause's three entries open in turn —
+    # a 💡, an unread ✔ and a judged ⏳ — the rail's order is the strip's.
+    # Serves design/ off the file system; red before the fix on the 💡
+    walk "rail-stack-order" node scripts/repro/rail-stack-order.mjs
     # **The copy golden** (entry 128; Q1546 (c)): every card's strings on
     # every walk, keyed by walk and card key, against
     # design/tools/card-copy.golden.json. A STYLE.md pass is a snapshot and
