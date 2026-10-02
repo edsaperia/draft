@@ -14,6 +14,14 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 ### For contributors
 - **Push instead of polling** (Scaling Stage 4, issue #162). `GET /api/d/:slug/events` is a Server-Sent Events stream carrying only the document's two log lengths, plus an empty nudge for the pause, the stall flag, a new build and (to members) a reading place moving. The page asks for its view when an event says something moved. The 4 s poll is now a 30 s backstop while the stream is open, and the old 4 s whenever it is not. `DRAFT_PUSH=off` turns the stream off, and every page then polls as before. `/healthz` counts the streams. New walk `npm run push-walk`, in the sprint tier. Design and measurements: `design/spec-pass/plan-scaling.md` *Stage notes*.
 
+## 2026-10-02: the demo's speakers reword rather than repeat
+
+### Fixed
+- **A speaker in the demo document can no longer add a second wording of a paragraph beside the first.** When one of the demo's speakers meant to reword an abstract, it sometimes sent the new wording as an extra paragraph, and once that passed the session read twice, old and new together. Such a proposal is now set aside before it is sent, and the speakers are shown plainly how to reword a line in place.
+
+### For contributors
+- **A server change, so a full deploy.** `proposalHunks` (`demo-model.ts`) drops an insertion that rewords the line beside it — `wordOverlap`, the Dice coefficient over content words, at `REWRITE_OVERLAP` 0.35, a heading weighed only against a heading of the same time; the bot's log reads *dropped a proposal: a rewrite sent as an insertion*. The propose prompt gains a worked `start: k, end: k+1` example. Tests in `demo-model.test.ts`.
+
 ## 2026-10-02: headings sized by the levels a document uses
 
 ### Changed
