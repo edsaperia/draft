@@ -2835,8 +2835,13 @@
         label: { text: W.currentText + W.sep + T.nav.ofPlaces(i + 1, n),
           steps: '<span class="psteps">' + step(i > 0 ? i - 1 : null, T.nav.prev, '↑') +
             step(i < n - 1 ? i + 1 : null, T.nav.next, '↓') + '</span>' },
-        head: { html: clauseHeadHtml(s, { text: sourceTextFor(site.key), key: site.key, v: 'keep',
-          chips: chipsFor(site.key, s.id), label: null, fact: 'place', onHead: headRank(site.key) }) },
+        // a site is a run of blocks on the live page (issue #189), its head
+        // the whole run (Q1308), and a gap's head the insert's *(no text
+        // here)*; the fixture's sites are one block each
+        head: { html: clauseHeadHtml(s, Object.assign(
+          site.isInsert || isGapKey(site.key) ? { text: null, nothing: gapNothing() }
+            : { text: (site.keys || [site.key]).map(sourceTextFor).filter(Boolean).join('\n') },
+          { key: site.key, v: 'keep', chips: chipsFor(site.key, s.id), label: null, fact: 'place', onHead: headRank(site.key) })) },
         body: bodyOf(reviseNote(s) + '<div class="foot">' + T.patch.foot(n) + '</div>'),
         options: { html: proposalHtml(s, { v: 'approve', html: laneHtml(site.marked), why: s.rationale, by: s.by, key: site.key,
           label: whoLabel(s.by, false), labelFact: s.by ? 'author' : null }) + vinBlockHtml(s) },
@@ -3765,7 +3770,10 @@ document.addEventListener('paste', (ev) => {
     // were: the editing card is edit mode's own (K13, K31), each site's
     // anchor is where its card hangs and the wire lands (Q1311), and the
     // floating row's rules are Q1380's and Q1382's, not this one's.
+    // A patch's gap site is a judged card like any other (issue #189), not a
+    // draft's, so it replaces its anchor at each of its places.
     const anchorHtml = (h) => {
+      if (openId === h.g.id && h.site && h.g.kind === 'patch') return '</div>' + suggCardHtml(h.g, h.key) + PROSE();
       if (openId === h.g.id && !h.site && !cardDone) {
         cardDone = true;
         return '</div>' + suggCardHtml(h.g, h.key) + PROSE();

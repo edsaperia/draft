@@ -1477,6 +1477,27 @@ window.LIVE = (function () {
           const hs = sideIds.map(byId).filter(Boolean).flatMap((c) => c.hunks || []);
           return hs.length ? spanOf(hs) : csp;
         };
+        // **A proposal at several places is a patch** (issue #189, Ed's demo
+        // 2026-10-02: the K1 swap across two days opened as one run from
+        // Day 1's 15:45 to Day 2's 16:00, swallowing everything between):
+        // `spanOf` takes a candidate's hunks from the first start to the last
+        // end, which is right for one place and wrong for two. Its hunks are
+        // grouped into places here — hunks with nothing but blank lines
+        // between them are one run, as a draft site is (225), and any clause
+        // standing unchanged between two hunks makes them two places — so a
+        // pair putting such a proposal against the current text becomes the
+        // page's `patch` item: a site card at each place, a tab at each,
+        // *Current text · i of n* (SURFACE §9's patch row, M18, K17–K18).
+        const placesOf = (c) => {
+          const out = [];
+          for (const h of (c.hunks || []).slice().sort((a, b) => a.start - b.start || a.end - b.end)) {
+            const last = out[out.length - 1];
+            if (last && !lines.slice(last.end, h.start).some((l) => l.trim())) {
+              last.end = Math.max(last.end, h.end); last.hunks.push(h);
+            } else out.push({ start: h.start, end: h.end, hunks: [h] });
+          }
+          return out;
+        };
         const textIn = (c, sp) => applyIn(lines, sp, c.hunks);
         const textOf = (c) => textIn(c, csp);     // the slate's reading, over the race's span
         const srcOf = textOf;     // one text since Q1406 — the source, markers kept; `src` stays for the seed's readers (Q1403)
@@ -1560,6 +1581,22 @@ window.LIVE = (function () {
         // filed at that clause in the rail and headed itself with its one
         // line. Until you have judged it is an ordinary pair card and keeps
         // the pair's span, which is what `whole` says here.
+        // …the patch item itself: each place a site in the draft's own shape
+        // (`siteOfSpan`, a gap's key where the place is an insertion), its
+        // reading over that place alone, and the item's keys the sites' own,
+        // never the clauses between them — exactly as your own patch's
+        // (`v.mine` below), so nothing between its places is swallowed
+        const patchItem = (c, places) => {
+          const sites = places.map((p) => {
+            const st = siteOfSpan(p, lines);
+            const was = plain(lines, p), now = applyIn(lines, p, p.hunks);
+            return { ...st, key: st.keys[0], label: labelFor(st.insertAfterKey || st.keys[0]),
+              marked: markedOf(was, now), was, now };
+          });
+          const { gapKey, insertAfterKey, isInsert, ...b0 } = baseFor(sites[0]);
+          return { ...b0, kind: 'patch', keys: sites.flatMap((s) => s.keys), sites,
+            rationale: c.rationale, by: byOf(c), candId: c.id };
+        };
         const pairItem = (aId, bId, extra, whole) => {
           const sp = whole ? csp : spanOfSides(aId, bId);    // the pair's own span (Q1407)
           const base = baseFor(siteOfSpan(sp, lines));
@@ -1568,6 +1605,8 @@ window.LIVE = (function () {
           const card = { a: A.id, b: B.id, inc: incSide };
           if (incSide) {
             const c = A.inc ? B : A;
+            const places = whole ? [] : placesOf(byId(c.id) || {});
+            if (places.length > 1) return { ...patchItem(byId(c.id), places), ...extra, id: pairId(A.id, B.id), card, ...slate };
             return { ...base, ...extra, id: pairId(A.id, B.id), kind: 'quick', card,
               marked: c.marked || markedOf(plain(lines, sp), c.text || ''), rationale: c.rationale, by: c.by || null,
               // both texts, for the rail's title (Q1523): the current one first, as the card presents it
@@ -1657,7 +1696,12 @@ window.LIVE = (function () {
           const rest = { ...baseFor(siteOfSpan(sp0, lines)), id: r.id, state: r.judged ? 'deciding' : 'needs',
             cap: r.judged ? waitCap : RAIL.wantsVote, urgency: 0.3, card: null,
             abstainAt: undefined, ...slate };
-          if (!two) {
+          const places0 = two || r.deadlocked ? [] : placesOf(c0);
+          if (places0.length > 1) {
+            // the race's own fields, at the patch's own sites rather than the run's
+            items.push({ ...patchItem(c0, places0), id: rest.id, state: rest.state, cap: rest.cap,
+              urgency: rest.urgency, card: null, abstainAt: undefined, ...slate });
+          } else if (!two) {
             const t0 = textIn(c0, sp0);
             items.push({ ...rest, kind: 'quick', marked: markedOf(plain(lines, sp0), t0), was: plain(lines, sp0), now: t0,
               rationale: c0.rationale, by: byOf(c0), candId: c0.id, src: t0 });
