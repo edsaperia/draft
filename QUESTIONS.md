@@ -227,7 +227,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1581** — claim by writing the block here, then commit it alone.
+**The next free number is 1584** — claim by writing the block here, then commit it alone.
+
+**1582 is the rail-order builder's calls** (claimed 2026-10-02 by the cloud coordinator; PR #160, issue #154; Ed 2026-10-02 ~01:02 UTC: *why do the queue cards and tabs come in a different order?*, a bug against SURFACE M6). **Settled by the coordinator from M6, as built** (2026-10-02): (1) the rail ranks a clause's entries by the gutter's own `stackKey` (👑 and a fold first), not `stackRank(kind)`, so the two columns share one comparator; (2) a flow entry at a pinned entry's clause tries the slot below first when every pinned entry shown there leads it in the strip, else above first as before; (3) entries at other clauses, and M4's absolute claim, are unchanged; (4) the guard is `scripts/repro/rail-stack-order.mjs` in `sprint-pages`. **Spent.**
 
 **1580 is the clause-fold builder's calls** (claimed 2026-10-02 by the cloud coordinator; draft PR #157, issue #149; Ed 2026-10-02 ~00:42 and ~00:50 UTC, on the demo's ✔✔✔ card and a lone ✔ record; the coordinator's design OK'd by Ed 01:21 UTC). **Settled by the coordinator from the brief, as built** (2026-10-02): (1) `foldSame` stays, a fold of ✖s alone using it under 2026-09-25 ruling A, and only `foldHead` and `foldSince` retire; (2) the newest ✔ becomes the head only while the clause still reads as it, a later change keeping today's net-change head and the newest its own block; (3) the head's quiet line is `outcomeOf`'s own label without *· since replaced*, in `.rsub` after the speaker; (4) *(no text here)* reuses the deletion line's muted note (`.lp.removed`, a `notext` marker), no CSS changed; (5) a replacement keeps its *Previous text*, and only an empty one reads *(no text here)*; (6) a record open when a second ✔ lands is not folded, as before. **Spent.**
 
