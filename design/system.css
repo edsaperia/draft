@@ -722,12 +722,11 @@
   /* section-toggle: the same control in the contents rail and the document gutter.
      **Its target is 28 × 28** (issue #151, Ed 2026-10-02: *heading toggles are
      tiny*), the glyph centred in it; **the glyph is one step below the text it
-     stands beside** (`--tri`, set by each site below), `--t-cap` where nothing
-     sets it. */
+     stands beside**, set by each site below, `--t-cap` where nothing sets it. */
   .sectoggle {
     appearance: none; background: none; border: 0; padding: 0; margin: 0;
     display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px;
-    font: inherit; font-size: var(--tri, var(--t-cap)); line-height: 1; color: var(--muted); cursor: pointer;
+    font: inherit; font-size: var(--t-cap); line-height: 1; color: var(--muted); cursor: pointer;
   }
   /* the rail's keeps the rail's own glyph and lends its target to the row
      without growing it: the margins give back what the box adds, and it
@@ -1720,12 +1719,12 @@
      below the heading (#151): `--t-body` beside an `--h2` or `--h3`, `--t-lead`
      beside an `--h1`, `--h2` beside a part at `--h-part` (#152's ranks). */
   .doc h2.docline .sectoggle {
-    position: absolute; right: 100%; margin-right: var(--s1); --tri: var(--t-body);
+    position: absolute; right: 100%; margin-right: var(--s1); font-size: var(--t-body);
     top: calc(var(--head-rule, 0px) + (var(--line) - 28px) / 2);
   }
   .doc h2.docline.lvl1 .sectoggle { top: calc(var(--head-rule) + (var(--line) - 28px) / 2); }
-  .doc h2.docline:is(.lvl1:not([class*="rank"]), .rank2) .sectoggle { --tri: var(--t-lead); }
-  .doc h2.docline.rank3 .sectoggle { --tri: var(--h2); }
+  .doc h2.docline:is(.lvl1:not([class*="rank"]), .rank2) .sectoggle { font-size: var(--t-lead); }
+  .doc h2.docline.rank3 .sectoggle { font-size: var(--h2); }
   .doc h2.docline .sechint {
     margin-left: 10px; font-weight: 400; text-transform: none; letter-spacing: 0;
     font-size: var(--t-cap); color: var(--muted); font-style: italic;

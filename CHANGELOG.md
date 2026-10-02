@@ -6,6 +6,14 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-10-02: bigger fold triangles
+
+### Changed
+- **The triangle that folds a heading away is bigger and easier to hit.** It is drawn one step smaller than the heading beside it, rather than at caption size beside every heading, and the area that answers a click or a tap is 28 pixels square everywhere it appears, on a phone too. The contents list's triangles keep their size but answer over the same square, and the list is no taller for it.
+
+### For contributors
+- **Surface-only.** `.sectoggle` in `design/system.css` and `design/setup.css`: a 28 × 28 box, the glyph's size set per heading. Guard: `card-audit` P36 `fold-target`, held on every kind in CI's fast pass at 1600 and 390.
+
 ## 2026-10-02: headings sized by the levels a document uses
 
 ### Changed

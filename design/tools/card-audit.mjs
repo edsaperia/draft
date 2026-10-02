@@ -4180,7 +4180,7 @@ async function walkRail(page, rails, walk) {
  * Rules' headings, the Rules' pile heading, the contents rail — is a target
  * of at least `FOLD_TARGET` on both axes, and showing it moves nothing: a
  * heading's first line stands where it stands with the triangle taken out,
- * and a rail row is no taller for it. Read on the page each walk leaves
+ * and a rail row is no taller than its tallest other child. Read on the page each walk leaves
  * standing; a triangle inside a folded or hidden part draws no box and is
  * not read.
  */
@@ -4207,14 +4207,19 @@ async function foldPass(page, walk) {
       const host = inRail ? t.closest('li') : t.closest('h2, .pilehead');
       const rec = { key: (inRail ? 'toc:' : 'head:') + (t.dataset.secToggle || '?'),
         w: Math.round(b.width * 100) / 100, h: Math.round(b.height * 100) / 100, moved: 0, grew: 0 };
-      if (host) {
-        const was = inRail ? host.getBoundingClientRect().height : firstLine(host);
+      if (host && inRail) {
+        // the row against its tallest other child: taking the triangle out
+        // would hand its width to the link and unwrap a long title, which is
+        // not the triangle's height
+        const rest = Math.max(0, ...[...host.children].filter((c) => c !== t).map((c) => c.getBoundingClientRect().height));
+        rec.grew = Math.round((host.getBoundingClientRect().height - rest) * 100) / 100;
+      } else if (host) {
+        const was = firstLine(host);
         const keep = t.style.display;
         t.style.display = 'none';
-        const bare = inRail ? host.getBoundingClientRect().height : firstLine(host);
+        const bare = firstLine(host);
         t.style.display = keep;
-        if (inRail) rec.grew = Math.round((was - bare) * 100) / 100;
-        else if (was && bare) rec.moved = Math.round(Math.max(Math.abs(was.x - bare.x), Math.abs(was.y - bare.y)) * 100) / 100;
+        if (was && bare) rec.moved = Math.round(Math.max(Math.abs(was.x - bare.x), Math.abs(was.y - bare.y)) * 100) / 100;
       }
       out.push(rec);
     }
