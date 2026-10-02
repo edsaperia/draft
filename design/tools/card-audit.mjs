@@ -52,10 +52,12 @@
  * the walk's first card at scroll 0 (the page-top case), and reads the glass,
  * not the page. They print as their own table, as ruled and v2-comparable,
  * and they are **held only for the kinds in `GRAMMAR_KINDS`** — save P34
- * `glyph-space` (issue #121, STYLE.md T50) and P35 `wait-fill` (a ⏳ rail
- * entry's fill seen on its white slip, #148), held everywhere (`EVERY_KIND`):
+ * `glyph-space` (issue #121, STYLE.md T50), P35 `wait-fill` (a ⏳ rail
+ * entry's fill seen on its white slip, #148) and P36 `fold-target` (every
+ * drawn fold triangle a 28 × 28 target that moves nothing, #151), held
+ * everywhere (`EVERY_KIND`):
  *
- *   node design/tools/card-audit.mjs --walk=all             # the nine walks, P13–P35 among the findings
+ *   node design/tools/card-audit.mjs --walk=all             # the nine walks, P13–P36 among the findings
  *   node design/tools/card-audit.mjs --strict --kinds=GRAMMAR_KINDS --walk=fixture   # CI's fast pass
  *   node design/tools/card-audit.mjs --width=390 --height=844 --baseline=<1600 payload>  # P31
  *
@@ -280,7 +282,7 @@ const GRAMMAR_KINDS = [
 const STAGE = 10;
 /** the checks held on every card under `--kinds`, whatever its kind: a
  *  rendering fault no stage converts (P34, issue #121) */
-const EVERY_KIND = new Set(['glyph-space', 'wait-fill']);
+const EVERY_KIND = new Set(['glyph-space', 'wait-fill', 'fold-target']);
 const STRICT_FROM = { 'closed-page': 7, 'closed-keeps-content': 7, 'closed-powers': 7, 'zone-overlap': 8, 'place-head': 6 };
 const KINDS_ARG = arg('kinds', null);
 const KINDS = KINDS_ARG == null ? null
@@ -2225,7 +2227,7 @@ const RETIRED = [
 const GLYPH_ONLY = /^[^\p{L}\p{N}]{1,4}$/u;
 
 /* ============================================================================
-   **The redesign's checks, P13–P35** (Q1541; design/redesign/checks.md, *The
+   **The redesign's checks, P13–P36** (Q1541; design/redesign/checks.md, *The
    checks as ruled*, which is the specification — answers.md over it). In
    node, over the readings `grammarOf`, `glassOpen`/`glassClosed` and the
    walks took in the page. Stage 0 runs every one in **report mode**: they
@@ -2251,7 +2253,7 @@ const CHECKS = [
   ['P21', 'label-slot'], ['P22', 'no-job'], ['P23', 'note-visible'], ['P24', 'bin-job'],
   ['P25', 'row-vocabulary'], ['P26', 'role-drawing'], ['P27', 'closed-page'], ['P28', 'closed-keeps-content'],
   ['P29', 'closed-powers'], ['P30', 'zone-overlap'], ['P31', 'width-invariance'], ['P32', 'place-head'],
-  ['P33', 'one-home'], ['P34', 'glyph-space'], ['P35', 'wait-fill'], ['—', 'raw-value'],
+  ['P33', 'one-home'], ['P34', 'glyph-space'], ['P35', 'wait-fill'], ['P36', 'fold-target'], ['—', 'raw-value'],
 ];
 const CHECK = Object.fromEntries(CHECKS.map(([n, name]) => [name, n + ' ' + name]));
 /** checks.md's *unchanged* set (BUILD.md stage 0's acceptance): their
@@ -4172,6 +4174,79 @@ async function walkRail(page, rails, walk) {
   await wait(page, 250);
   rails.push({ walk, withPile, without, beneath, stranded, decided, waits });
 }
+/**
+ * **P36 fold-target** (issue #151, Ed 2026-10-02: *heading toggles are
+ * tiny*): every fold triangle drawn on a walked page — the Text's and the
+ * Rules' headings, the Rules' pile heading, the contents rail — is a target
+ * of at least `FOLD_TARGET` on both axes, and showing it moves nothing: a
+ * heading's first line stands where it stands with the triangle taken out,
+ * and a rail row is no taller for it. Read on the page each walk leaves
+ * standing; a triangle inside a folded or hidden part draws no box and is
+ * not read.
+ */
+const FOLD_TARGET = 28;
+const FOLDS = [];
+async function foldPass(page, walk) {
+  const r = await page.evaluate(() => {
+    const SKIP = '.sectoggle, .chipcol, .sechint';
+    const firstLine = (host) => {
+      const tw = document.createTreeWalker(host, NodeFilter.SHOW_TEXT, {
+        acceptNode: (n) => (n.parentElement.closest(SKIP) || !n.nodeValue.trim()) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+      const n = tw.nextNode();
+      if (!n) return null;
+      const rg = document.createRange();
+      rg.selectNodeContents(n);
+      const rc = rg.getClientRects()[0];
+      return rc ? { x: rc.left, y: rc.top } : null;
+    };
+    const out = [];
+    for (const t of document.querySelectorAll('.sectoggle')) {
+      const b = t.getBoundingClientRect();
+      if (!b.width && !b.height) continue;
+      const inRail = !!t.closest('.toc');
+      const host = inRail ? t.closest('li') : t.closest('h2, .pilehead');
+      const rec = { key: (inRail ? 'toc:' : 'head:') + (t.dataset.secToggle || '?'),
+        w: Math.round(b.width * 100) / 100, h: Math.round(b.height * 100) / 100, moved: 0, grew: 0 };
+      if (host) {
+        const was = inRail ? host.getBoundingClientRect().height : firstLine(host);
+        const keep = t.style.display;
+        t.style.display = 'none';
+        const bare = inRail ? host.getBoundingClientRect().height : firstLine(host);
+        t.style.display = keep;
+        if (inRail) rec.grew = Math.round((was - bare) * 100) / 100;
+        else if (was && bare) rec.moved = Math.round(Math.max(Math.abs(was.x - bare.x), Math.abs(was.y - bare.y)) * 100) / 100;
+      }
+      out.push(rec);
+    }
+    return out;
+  });
+  FOLDS.push({ walk, toggles: r });
+}
+function foldTargetRules(folds) {
+  const out = [];
+  for (const f of folds) {
+    for (const t of f.toggles) {
+      if (t.w < FOLD_TARGET - TOL || t.h < FOLD_TARGET - TOL) {
+        out.push({ check: 'fold-target', walk: f.walk, key: t.key, sub: 'size', kind: 'fold',
+          ex: 'a fold triangle\'s target is ' + t.w + ' × ' + t.h + 'px, under ' + FOLD_TARGET + ' × ' + FOLD_TARGET + ' (#151)' });
+      }
+      if (t.moved > TOL) {
+        out.push({ check: 'fold-target', walk: f.walk, key: t.key, sub: 'moves', kind: 'fold',
+          ex: 'the heading\'s first line moves ' + t.moved + 'px when its triangle is drawn (#151)' });
+      }
+      if (t.grew > TOL) {
+        out.push({ check: 'fold-target', walk: f.walk, key: t.key, sub: 'grows', kind: 'fold',
+          ex: 'the contents rail\'s row is ' + t.grew + 'px taller for its triangle (#151)' });
+      }
+    }
+  }
+  if (folds.length && !folds.some((f) => f.toggles.length)) {
+    out.push({ check: 'fold-target', walk: folds.map((f) => f.walk).join(','), key: 'fold', kind: 'fold',
+      ex: 'no fold triangle drawn on any walked page, so the target was measured on nothing' });
+  }
+  return out;
+}
+
 /** P35 wait-fill — the ratio a ⏳'s filled part must stand off its ground,
  *  luminance contrast: 1.15:1, a bar a reader can see on the white slip
  *  without the grey reading as a second, louder hue (#148) */
@@ -4655,6 +4730,8 @@ async function main() {
     if (!WALKS.includes(name)) return;
     const n = cards.length;
     try { await fn(); } catch (e) { errors.push(name + ' walk threw: ' + (e && e.message)); }
+    // P36: the fold triangles on the page the walk leaves standing
+    try { await foldPass(page, name); } catch (e) { errors.push(name + ' fold pass threw: ' + (e && e.message)); }
     // a walk that measures nothing and says nothing is the worst outcome the
     // instrument has: it reads as coverage in the summary line
     if (cards.length === n) errors.push(name + ' walk measured no cards');
@@ -4992,7 +5069,7 @@ async function finish(cards, errors, tok, ref, version, switches, piles, doors, 
     }));
   }
 
-  /* **The redesign's checks** (P13–P35 and raw-value), per card and per walk,
+  /* **The redesign's checks** (P13–P36 and raw-value), per card and per walk,
    * and the table over them. `findings` is the count **as ruled** (stated
    * exceptions out); `v2` is the count comparable with checks.md's *today*
    * column (the exceptions in, the ruling's new findings out), read for the
@@ -5019,6 +5096,7 @@ async function finish(cards, errors, tok, ref, version, switches, piles, doors, 
     ex: clip('an enabled control that does nothing when pressed: “' + d.what + '”', 160) + (d.diag ? ' — ' + JSON.stringify(d.diag) : ''), kind: kindFor(d.walk, d.key) });
   grammar.push(...widthRules(cards, baseline));
   grammar.push(...waitFillRules(rails));
+  grammar.push(...foldTargetRules(FOLDS));
   for (const f of grammar) {
     if (!f.kind) {
       const k = String(f.key).replace(/^(open|rest):/, '');
