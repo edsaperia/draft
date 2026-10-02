@@ -6,6 +6,14 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-10-02: the task list keeps a clause's order
+
+### Fixed
+- **Your task list now lists one clause's entries in the same order as the tabs beside that clause.** With a card open, a decision you had not yet acknowledged could sit above the open entry in the list while its tab sat below it in the margin; both now read the same way.
+
+### For contributors
+- **Surface-only.** `layoutQueue` ranks a clause's entries by the gutter's own `stackKey`, and a flow entry at a pinned entry's clause steps to the side the strip puts it on (`freeFor`, session.js); SURFACE M6 names the open entry's case. Guarded by `scripts/repro/rail-stack-order.mjs`, in the sprint tier's `sprint-pages`.
+
 ## 2026-10-02: the demo's speakers reword rather than repeat
 
 ### Fixed
