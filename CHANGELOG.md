@@ -6,6 +6,17 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-10-02: a clause's decisions read top down from the current text
+
+### Changed
+- **A card holding several decisions on one clause now starts with the current text**, labelled *Current text*, shown once. The newest decision is that text, so it is no longer drawn a second time below it, and the line *Marked against the text before them* is gone. No earlier decision in the card says *since replaced* any more: everything below the top is an earlier version.
+
+### Fixed
+- **A decision that added a new clause now says it replaced nothing.** Its *Previous text* reads *(no text here)* instead of *This clause would be removed*, and the added wording is marked as new throughout.
+
+### For contributors
+- **Surface-only.** `foldPresent` and the sealed record (`session.js`); `foldHead` and `foldSince` retired from `copy.js`. Guarded by `scripts/repro/review-walk.mjs`.
+
 ## 2026-10-02: the waiting entries show their progress
 
 ### Changed

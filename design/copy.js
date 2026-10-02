@@ -408,16 +408,16 @@ window.COPY = (function () {
       // the pair, Indifferent included. Under the losing wording.
       rankedBelow: (n, m) => n + ' of ' + m + ' members preferred the current text to this',
       // **One OK per clause** (Q1536, Ed 2026-09-24): a clause with several
-      // records owed is one rail entry and one card — its eyebrow, the rail
-      // entry's caption and tooltip, the line under a head marked with the
-      // net change, the line under a head nothing changed, the label over the
-      // list of its records, each row's tooltip, the way back to that list
-      // from one of its records, and the OK's tooltip. **Shorter, please**
+      // records owed is one rail entry and one card — the rail entry's
+      // caption and tooltip, the label over the list of its records, each
+      // row's tooltip, the way back to that list from one of its records, and
+      // the OK's tooltip; the card itself is labelled *Current text* since
+      // #149 (Ed, 2026-10-02), its count label and the line under a head
+      // marked with the net change retired with it; a fold of ✖s alone still
+      // says it is unchanged (Ed, 2026-09-25, A). **Shorter, please**
       // (Ed, 2026-09-25, on the builder's call 10): the fewest words that
       // stay clear.
-      foldHead: (n) => n + ' decisions',
       foldCap: (n) => n + ' new decisions',
-      foldSince: 'Marked against the text before them',
       foldSame: 'Unchanged: none passed',
       foldList: 'Oldest first',
       foldOpen: 'Open',
