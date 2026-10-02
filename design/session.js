@@ -373,6 +373,10 @@
   function gapNothing() {
     return window.COPY.grammar.head.noText;      // the head's copy is the card grammar's
   }
+  // …and a record's *Previous text* where nothing stood before it (#149): the
+  // same sentence in the lane's own muted note, never *This clause would be
+  // removed*, which is a deletion's
+  const noTextHtml = () => '<div class="lp removed notext">' + esc(gapNothing()) + '</div>';
   // the head of a card keyed to a clause or to a gap: the run's text, or the
   // gap's own label and sentence
   function headOpts(s, key) {
@@ -2485,36 +2489,68 @@
     // are made walking oldest first, where *the version just passed* is at
     // hand, and the blocks then laid newest first
     let prev = moved ? (s.replaced ?? '') : null;
-    const original = moved ? [{ cls: 'ranked wasthere', label: W.previousText, fact: 'previous', html: mdBlocksHtml(null, prev) }] : [];
-    const blocks = s.fold.map((m) => {
+    // **an insertion's original reads *(no text here)*** (#149, Ed 2026-10-02:
+    // *I think it was an insertion, if so should say "(no text here)"*): the
+    // text before the fold's first ✔ was nothing, and *This clause would be
+    // removed* is a deletion's own wording
+    const original = moved ? [{ cls: 'ranked wasthere', label: W.previousText, fact: 'previous',
+      html: String(prev).trim() ? mdBlocksHtml(null, prev) : noTextHtml() }] : [];
+    // **no *since replaced* inside a fold** (#149): every block below the top
+    // is an earlier version by its place, so the label says how and when only
+    const quiet = (label) => String(label || '').split(W.sep + W.sinceReplaced).join('');
+    const parts = s.fold.map((m) => {
       const rec = window.CARD_STATE.outcomeOf(m.id);
       if (!rec) return null;
       const base = recordBaseOf(m, rec.outcome === 'passed');
       const h = rec.head;
       const won = rec.outcome === 'passed' && h && !h.incumbent;
       const said = h && h.text != null && String(h.text).trim();
+      const before = prev;
       const headWords = won && said ? (prev != null ? wordingHtml(prev, h.text) || mdBlocksHtml(null, h.text) : marked(base, h)) : '';
       if (won && h.text != null) prev = h.text;
-      return {
-        cls: 'ranked foldpart' + (won && h.passed ? ' passed' : ''),
-        label: rec.label, tone: rec.green ? 'ok' : null, fact: null,
-        html: headWords,
-        speaker: (won ? recSpeaker(h.speaker) : '') +
-          (rec.fact ? '<div class="rsub">' + esc(rec.fact) + '</div>' : '') +
-          rec.field.filter((c) => c.role !== 'previous').map((c) => '<div class="ranked' + (c.passed ? ' passed' : '') + '">' +
-            '<span class="glab">' + esc(c.label) + '</span>' +
-            '<div class="rtext">' + marked(base, c) + '</div>' + recSpeaker(c.speaker) + '</div>').join(''),
-      };
-    }).filter(Boolean).reverse().concat(original);
+      return { rec, base, h, won, said, before, headWords };
+    }).filter(Boolean);
+    // **the current text once, at the top, labelled *Current text*** (#149,
+    // Ed 2026-10-02: *I think the top item should be titled "Current Text"*):
+    // the newest ✔ is the clause as it stands, so it is the head — its
+    // wording marked against the version below it, who argued for it, its
+    // participation line, then how and when it passed — and is not drawn a
+    // second time below. A ✖ newest makes no version: the head is the plain
+    // current text and the ✖ keeps its own block
+    // (a ✔ the clause has since moved on from — one of your own, never folded
+    // in, passed after it — is not the current text, so it keeps its block
+    // and the head is the clause marked against the text before them all)
+    const last = parts[parts.length - 1];
+    const top = last && last.won && last.said && !last.rec.since ? parts.pop() : null;
+    const blocks = parts.map(({ rec, base, h, won, headWords }) => ({
+      cls: 'ranked foldpart' + (won && h.passed ? ' passed' : ''),
+      label: quiet(rec.label), tone: rec.green ? 'ok' : null, fact: null,
+      html: headWords,
+      speaker: (won ? recSpeaker(h.speaker) : '') +
+        (rec.fact ? '<div class="rsub">' + esc(rec.fact) + '</div>' : '') +
+        rec.field.filter((c) => c.role !== 'previous').map((c) => '<div class="ranked' + (c.passed ? ' passed' : '') + '">' +
+          '<span class="glab">' + esc(c.label) + '</span>' +
+          '<div class="rtext">' + marked(base, c) + '</div>' + recSpeaker(c.speaker) + '</div>').join(''),
+    })).reverse().concat(original);
+    const nowText = o.text != null && String(o.text).trim();
+    const topHtml = !nowText ? null
+      : top ? (top.before != null ? wordingHtml(top.before, o.text, !String(top.before).trim()) || mdBlocksHtml(null, o.text) : top.headWords)
+      : moved ? wordingHtml(s.replaced ?? '', o.text) : null;
     return {
       kind: 'clause-fold',
       frame: { cls: 'sugg sealed-open foldcard' + (moved ? ' recpass' : ''),
         attrs: ' data-card="' + esc(s.id) + '" data-site="' + esc(skey) + '"' },
-      // the count alone (1568.2, Ed 2026-09-29 21:57 UTC): no moment after it
-      label: { text: T.record.foldHead(s.fold.length), fact: 'outcome' },
+      // *Current text* (#149), retiring 1568.2's count label: the ✔✔✔ tab
+      // and the blocks say there are several
+      label: { text: W.currentText, fact: 'outcome' },
       head: { html: clauseHeadHtml(s, Object.assign(o, { key: skey, chips: chipsFor(skey, s.id), label: null, fact: 'place' },
-        moved && o.text != null && String(o.text).trim() ? { html: wordingHtml(s.replaced ?? '', o.text) } : {})) },
-      fact: moved ? T.record.foldSince : T.record.foldSame,
+        topHtml ? { html: topHtml } : {})) +
+        (top ? recSpeaker(top.h.speaker) +
+          (top.rec.fact ? '<div class="rsub">' + esc(top.rec.fact) + '</div>' : '') +
+          '<div class="rsub foldwhen">' + esc(quiet(top.rec.label)) + '</div>' : '') },
+      // no *Marked against the text before them* (#149): the highlights
+      // explain themselves; a fold of ✖s alone still says nothing changed
+      fact: moved ? null : T.record.foldSame,
       blocks,
       owed: owesOk(s) ? { kind: 'ok', attrs: ' data-seen="' + esc(s.id) + '"', title: T.record.foldOkTitle(s.fold.length), word: T.record.ok } : null,
     };
@@ -2914,14 +2950,25 @@
       // clause has changed since, the recorded wording, unmarked
       const o = headOpts(s, skey);
       const h = rec.head;
+      // **a ✔ that replaced nothing is wholly new** (#149, Ed 2026-10-02, on a
+      // lone record of an insertion: *should I be able to see the current
+      // text and the text it was replaced here?*): its wording wears the
+      // passed green throughout — what passed, against nothing — rather than
+      // falling under the marking floor and reading plain
+      const fresh = rec.outcome === 'passed' && !String(base ?? '').trim();
       if (h && h.text != null && String(h.text).trim()) {
         const words = rec.since || o.text == null ? h.text : o.text;
         if (rec.since) o.html = mdBlocksHtml(null, words);
         else if (h.mark && h.mark.against != null) o.html = wordingHtml(h.mark.against, words);
-        else if (h.mark) o.html = wordingHtml(base, words);
+        else if (h.mark) o.html = wordingHtml(base, words, fresh);
       }
       const marked = (c) => (c.mark && c.mark.against != null ? wordingHtml(c.mark.against, c.text) || mdBlocksHtml(null, c.text)
         : c.mark ? wordingHtml(base, c.text) : mdBlocksHtml(null, c.text));
+      // …and its *Previous text* says so, *(no text here)*, where the field
+      // carries none; an empty one anywhere reads the same, never a deletion's
+      const field = rec.field.concat(fresh && !rec.since && !rec.field.some((c) => c.role === 'previous')
+        ? [{ role: 'previous', label: window.COPY.shell.previousText, text: '', passed: false, speaker: null }] : []);
+      const blockHtml = (c) => (c.role === 'previous' && !String(c.text ?? '').trim() ? noTextHtml() : marked(c));
       const fold = foldOf(s);
       return {
         kind: owesOk(s) ? 'record-owed' : 'record-filed',
@@ -2931,10 +2978,10 @@
         head: { html: clauseHeadHtml(s, Object.assign(o, { key: skey, chips: chipsFor(skey, id), label: null, fact: 'place' })) +
           (h && !rec.since ? recSpeaker(h.speaker) : '') },
         fact: rec.fact,
-        blocks: rec.field.map((c) => ({
+        blocks: field.map((c) => ({
           cls: 'ranked' + (c.role === 'previous' ? ' wasthere' : '') + (c.passed ? ' passed' : ''),
           label: c.label, fact: c.role === 'previous' ? 'previous' : c.author ? 'author' : null,
-          html: marked(c), speaker: recSpeaker(c.speaker) })),
+          html: blockHtml(c), speaker: recSpeaker(c.speaker) })),
         // OK only while owed (Q1522 (6)); **a record's own tab shows just
         // that record, and its OK acknowledges that record only** (Q1561, Ed
         // 2026-09-26) — one of a clause's several included, the fold going on
