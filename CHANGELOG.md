@@ -6,22 +6,6 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
-## 2026-10-02: your name and picture cards show what you have chosen
-
-### Changed
-- **✋ and 🖼️ now mark what you have as the chosen option, as 📧 does.** Your name or picture stands at the top, under your row, with a pressed *Chosen*, and the other choices sit below. If you are anonymous, that is what stands, and *Anonymous* is not offered a second time below. Pressing *Chosen* again puts the card back as it was, and ✓ stays dark until you choose something new.
-
-### For contributors
-- **Surface-only.** `identityStandsHtml` and `identityStandsPick` (`design/session-view.html`), `noAnon` on `nameBody` / `pictureBody` (`design/setup.js`); SURFACE §9's identity row. Guard: `scripts/repro/email-card-standing.mjs` now walks all three cards, in the sprint tier.
-
-## 2026-10-02: your email card shows the address you have
-
-### Fixed
-- **📧 now shows your current address as the chosen option.** It stands under your name and picture with a pressed *Chosen*, and a new address goes in the field below, under its own *Choose this*. Typing a new address chooses it. Pressing *Chosen* again, or 🗑️, puts the card back as it was. 🗑️ used to restore the text but leave your address reading as unverified.
-
-### For contributors
-- **Surface-only.** `emailStands`, `emailStandsHtml` and `BODY_EMAIL` (`design/session-view.html`); SURFACE §9's identity row. Guard: `scripts/repro/email-card-standing.mjs`, in the sprint tier.
-
 ## 2026-10-02: live updates measured before they are built
 
 ### For contributors
