@@ -142,6 +142,8 @@ window.COPY = (function () {
       wroteThis: (escName) => escName + ' wrote this.',
       sealed: 'A member wrote this. Who, is sealed until the closing record.',
       noReason: 'No reason given.',
+      // the comment's byline where the name is sealed (issue #173)
+      anonymous: 'Anonymous',
     },
     // secToggleHtml: the fold triangle
     sectoggle: { fold: 'Fold this section away', unfold: 'Unfold this section' },

@@ -6895,14 +6895,15 @@
       '<span class="dot"></span><span class="off">' + (vin ? G.commit.indifferent : G.lane.prefer) + '</span>' +
       '<span class="on">' + (vin ? G.commit.indifferent : G.lane.preferred) + '</span></button>';
   };
-  /** **the Founder's reason, read**: the face on the speaker's disc and the
-   *  sentence, no name line (Q1560's note for stage 4) — the label above
-   *  already says whose hand it was (*Changed by the Founder*), and a signed
-   *  author's name lives on the label, never twice (Part 4 .8) */
+  /** **the Founder's reason, read**: a comment like every other reason
+   *  (issue #173, Ed's S3), the byline the founder's face and the office —
+   *  *The Founder*, as the label above says whose hand it was (*Changed by the
+   *  Founder*) and an amendment names the office, never the person */
   const founderFace = (why) => {
     const f = founderInfo();
-    return '<div class="speaker revealed founderspoke">' +
-      '<span class="spkface" title="' + esc(PAGE_COPY.crownHand) + '">' + avHtml(f) + '</span>' +
+    return '<div class="speaker comment revealed founderspoke">' +
+      window.CARDS.commentByHtml('<span class="spkface" title="' + esc(PAGE_COPY.crownHand) + '">' + avHtml(f) + '</span>',
+        esc(PAGE_COPY.theFounder)) +
       (why ? '<div class="said">' + window.CARDS.reasonHtml(why) + '</div>'
         : '<div class="said none">' + window.COPY.grammar.speaker.noReason + '</div>') + '</div>';
   };

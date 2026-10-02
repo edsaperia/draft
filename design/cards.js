@@ -1692,19 +1692,30 @@ window.CARDS = (function () {
   // which draws their initials, or a `{ n, pic }` person, which draws whatever
   // they chose. Absent, nothing about this changes.
   const personOf = (who) => (who && typeof who === 'object' ? who : who ? { n: who } : null);
+  //
+  // **A reason is a comment on the proposal** (issue #173, Ed 2026-10-02:
+  // *The rationale is effectively a "comment" on the proposal*; his S3, *Edge
+  // and lift*, at W1, the panel the wording's full width): one soft panel
+  // under the wording, the byline on its own line at its top — the face, then
+  // the name, or the drawn disc and *Anonymous* where the name is sealed —
+  // and the reason under it in the chrome's face, so it no longer reads as
+  // more of the document. `.comment` is the read form; the rationale *fields*
+  // (`.lanebox .speaker`) keep their own markup and look.
+  const commentByHtml = (face, name) =>
+    '<div class="by">' + face + '<span class="who">' + name + '</span></div>';
+  const saidHtml = (why) => (why
+    ? '<div class="said">' + reasonHtml(why) + '</div>'
+    : '<div class="said none">' + G.speaker.noReason + '</div>');
   const speakerHtml = (why, title, who) => {
     const p = personOf(who);
     const name = p ? String(p.n || '') : '';
     const ttl = title || (p ? G.speaker.wroteThis(esc(name)) : G.speaker.sealed);
-    return '<div class="speaker' + (p ? ' revealed' : '') + '">' +
-      (p
+    return '<div class="speaker comment' + (p ? ' revealed' : '') + '">' +
+      commentByHtml(p
         ? '<span class="spkface" title="' + ttl + '">' + avHtml(p) + '</span>'
-        : '<span class="disc" aria-hidden="true" title="' + ttl + '"></span>') +
-      (p ? '<span class="who">' + esc(name) + '</span>' : '') +
-      (why
-        ? '<div class="said">' + reasonHtml(why) + '</div>'
-        : '<div class="said none">' + G.speaker.noReason + '</div>') +
-      '</div>';
+        : '<span class="disc" aria-hidden="true" title="' + ttl + '"></span>',
+      p && name ? esc(name) : G.speaker.anonymous) +
+      saidHtml(why) + '</div>';
   };
   // **A rail entry's body is its speaker** (Ed, 2026-09-12: *[user avatar]
   // Rationale text; if no rationale, no body text*): the teaser under a
@@ -2468,7 +2479,7 @@ window.CARDS = (function () {
     mdUnescape, mdPlain, pasteClean,
     MD_ONE, mdLead, mdInner, mdParts, sourceToRich, readLane, sentText,
     abstainHhmm, abstainLeft, abstainNoteHtml, tickAbstain,
-    laneSeed, laneProposeHtml, laneCtlHtml, laneNameId, laneGroupAttrs, speakerHtml, railSpeakerHtml, secToggleHtml, fieldHtml, fieldOf, groundNote,
+    laneSeed, laneProposeHtml, laneCtlHtml, laneNameId, laneGroupAttrs, speakerHtml, commentByHtml, railSpeakerHtml, secToggleHtml, fieldHtml, fieldOf, groundNote,
     initials, PERSON, avHtml,
     headOnlyHeight, cardBody, COLLAPSE_MS, EXPAND_MS,
     make,
