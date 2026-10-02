@@ -3055,7 +3055,7 @@
     caretRangeIn, selectedBlocks, laneCaret, placeCaret,
     startDraft, startDraftFromTyping, startDraftFromRun,
     laneRemark, syncEditCtl, markSelection,
-    commitBtnHtml, proposalRowHtml, proposeCtlTitles, draftRowState, setDraftSigned,
+    commitBtnHtml, proposalRowHtml, proposeCtlTitles, draftRowState, setDraftSigned, draftSigned,
     ownParts, editParts, cardCommitActs } = COMPOSER;
   let mineSeq = 0;                      // proposing frees the composer for the next draft
 
@@ -5024,7 +5024,7 @@ document.addEventListener('paste', (ev) => {
         d.unproposed = false;
         d.qLabel = d.sites[0].label;
         d.pct = 6;
-        d.cap = T.yours.justIn + (d.signed ? T.yours.signedTail : '');
+        d.cap = T.yours.justIn + (draftSigned(d) ? T.yours.signedTail : '');
         if (hooks.propose) { const r = hooks.propose(d); if (typeof r === 'string') d.id = r; }
         if (wasOpen) openId = null;
         flashProposed(d.id);
@@ -6656,6 +6656,8 @@ document.addEventListener('paste', (ev) => {
     // edit mode's shared pieces (backlog 204): the row both hosts draw, the
     // read-mode keystroke, and what the riding tab says about the draft
     proposalRowHtml, typeAt, draftRowState, dropDraft,
+    // whether a draft goes out signed: its choice, under an elective rung only (#173)
+    draftSigned,
     // the column's one strip (Q1294 (b)), shared with the founder's pre-🍾
     // column since Q1313: its sync, and the one act B and I make (Q1467)
     syncEditCtl, markSelection,
