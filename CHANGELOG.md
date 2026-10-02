@@ -24,14 +24,6 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 ### For contributors
 - **Nothing a member sees changes; a full deploy of the same build.** Sessions on this repo can load the `page-contract` mod (`.claude/skills/page-contract/`, a copy of dev-ops' kept identical to it; loaded where the cloud environment's `CLAUDE_CODE_PLUGIN_DIRS` names it): a write to Ed's questions page that breaks its contract is refused with the reasons, the coordinator's `lastActive` is stamped after working turns, and answers left without `handledAt` are named. `eslint.config.mjs` skips the type files Claude Code writes beside the mod when it loads it.
 
-## 2026-10-02: the edit area stays whole under your proposal
-
-### Changed
-- **While you edit the text, the card for your proposal now lies on top of the editing area instead of splitting it in two.** The editing area runs unbroken from the top of the text to the bottom, and your proposal's card sits over it with its own shadow.
-
-### For contributors
-- **Surface-only.** Each `.prose` segment of the lifted column carries its outline on to the next one's top (`--sheet-join`, measured in `design/paper.js`), its joins' corners and shadows clipped (system.css), so the painted outline is one box; no box moves. Guarded by `card-audit` P36 `one-sheet`.
-
 ## 2026-10-02: the task list keeps a clause's order
 
 ### Fixed

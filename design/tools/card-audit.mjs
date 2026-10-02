@@ -53,11 +53,11 @@
  * not the page. They print as their own table, as ruled and v2-comparable,
  * and they are **held only for the kinds in `GRAMMAR_KINDS`** — save P34
  * `glyph-space` (issue #121, STYLE.md T50), P35 `wait-fill` (a ⏳ rail
- * entry's fill seen on its white slip, #148) and P36 `one-sheet` (the edit
+ * entry's fill seen on its white slip, #148) and P37 `one-sheet` (the edit
  * area one unbroken outline under the editing card, #153), held everywhere
  * (`EVERY_KIND`):
  *
- *   node design/tools/card-audit.mjs --walk=all             # the nine walks, P13–P36 among the findings
+ *   node design/tools/card-audit.mjs --walk=all             # the nine walks, P13–P37 among the findings
  *   node design/tools/card-audit.mjs --strict --kinds=GRAMMAR_KINDS --walk=fixture   # CI's fast pass
  *   node design/tools/card-audit.mjs --width=390 --height=844 --baseline=<1600 payload>  # P31
  *
@@ -2253,7 +2253,7 @@ const CHECKS = [
   ['P21', 'label-slot'], ['P22', 'no-job'], ['P23', 'note-visible'], ['P24', 'bin-job'],
   ['P25', 'row-vocabulary'], ['P26', 'role-drawing'], ['P27', 'closed-page'], ['P28', 'closed-keeps-content'],
   ['P29', 'closed-powers'], ['P30', 'zone-overlap'], ['P31', 'width-invariance'], ['P32', 'place-head'],
-  ['P33', 'one-home'], ['P34', 'glyph-space'], ['P35', 'wait-fill'], ['P36', 'one-sheet'], ['—', 'raw-value'],
+  ['P33', 'one-home'], ['P34', 'glyph-space'], ['P35', 'wait-fill'], ['P37', 'one-sheet'], ['—', 'raw-value'],
 ];
 const CHECK = Object.fromEntries(CHECKS.map(([n, name]) => [name, n + ' ' + name]));
 /** checks.md's *unchanged* set (BUILD.md stage 0's acceptance): their
@@ -3272,7 +3272,7 @@ const wait = (page, ms) => page.waitForTimeout(ms);
 /** zone-overlap's readings, one at rest and one with a card open, per walk;
  *  and the closed walks' page-wide tooltips (closed-page) */
 const zoneReads = [];
-/** P36 one-sheet: the edit area's painted outline read with the editing
+/** P37 one-sheet: the edit area's painted outline read with the editing
  *  card open (`walkEdit`), one entry per walk that reached it */
 const sheetReads = [];
 const tipReads = [];
@@ -3950,7 +3950,7 @@ async function walkEdit(page, cards, errors, walk) {
   m.walk = walk;
   m.switchOpen = false;
   m.p13 = [];
-  // **P36 one-sheet** (#153, Ed 2026-10-02: *the text composer should not
+  // **P37 one-sheet** (#153, Ed 2026-10-02: *the text composer should not
   // look like there's a break in it*): every `.prose` segment's painted
   // outline — its `::before`, as far as its own clip lets it paint — and
   // which of its two horizontal edges is drawn (a clip at 0 is a join, not
@@ -4218,7 +4218,7 @@ function waitFillRules(rails) {
   }
   return out;
 }
-/** P36 one-sheet — under an open card in edit mode the edit area is one
+/** P37 one-sheet — under an open card in edit mode the edit area is one
  *  outline (#153): the segments' painted boxes cover the card's whole span
  *  without a gap, and no drawn edge (a corner, a shadow) falls within it */
 function oneSheetRules(reads) {
