@@ -40,10 +40,12 @@ jobs:
   # side — this job is skipped at once, its dependents start with nothing to
   # wait for (their `!cancelled()` lets a skipped `ci` through), and
   # `ci-pr` below runs the same gates under the same name. One set of steps,
-  # shared by YAML anchor, so the two can never disagree. Each is named for
-  # what it is on the event it skips, so a skipped one never reads as `ci`.
+  # shared by YAML anchor, so the two can never disagree. Each is named by
+  # an expression: the one that runs evaluates it to `ci`, and GitHub lists
+  # the skipped one under the expression's own text (*github.event_name ==
+  # 'push' && 'ci'*), so a skipped twin never reads as `ci` (PR #185).
   ci:
-    name: ${{ github.event_name == 'push' && 'ci' || 'ci (deploys from main; skipped)' }}
+    name: ${{ github.event_name == 'push' && 'ci' }}
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     # **No job stands for ever** (plan-ci-speed.md Stage 1: one run stood for
@@ -487,7 +489,7 @@ jobs:
   # as they always have), fifteen minutes, read-only — nothing on this side
   # writes to GitHub — and no deploy group.
   ci-pr:
-    name: ${{ github.event_name == 'pull_request' && 'ci' || 'ci (pull requests; skipped)' }}
+    name: ${{ github.event_name == 'pull_request' && 'ci' }}
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 15
