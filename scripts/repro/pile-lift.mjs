@@ -3,7 +3,7 @@
  * pile-lift — **an open rail entry with cards beneath lifts as one stack** (issue #190, SURFACE M20;
  * Ed 2026-10-02 on /demo: *visually the whole stack should lift when it's active, not just the top card*).
  *
- *   node scripts/repro/pile-lift.mjs [--width=1600]
+ *   node scripts/repro/pile-lift.mjs [--width=1600] [--cpu=4]
  *
  * The Hollow Oak fixture off the file system, which carries `queue-card-stack`s (`beneath`). Each piled
  * entry is opened in turn, and:
@@ -13,13 +13,15 @@
  *     as closed (min(beneath, 5) of them, Q1462);
  *   - the lift is a transition on the stack (`settleLift`'s paint-at-rest, then lift);
  * and, closed, nothing casts the open step and the top card keeps its resting shadow over its edges.
- * Exit 0 on a pass, 1 on the defect, 2 on a set-up that never got there.
+ * `--cpu=N` slows the page's CPU N times (Chrome's own throttle), the slow runner's first press made
+ * reproducible here. Exit 0 on a pass, 1 on the defect, 2 on a set-up that never got there.
  */
 import { chromium } from 'playwright';
 import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
 
 const width = Number((process.argv.find((a) => a.startsWith('--width=')) || '--width=1600').split('=')[1]);
+const cpu = Number((process.argv.find((a) => a.startsWith('--cpu=')) || '--cpu=1').split('=')[1]);
 const fails = [];
 const say = (s) => console.log(s);
 const check = (what, ok, detail = '') => { say(`${ok ? 'PASS' : 'FAIL'} · ${what}${detail ? ' · ' + detail : ''}`); if (!ok) fails.push(what); };
@@ -27,8 +29,9 @@ const check = (what, ok, detail = '') => { say(`${ok ? 'PASS' : 'FAIL'} · ${wha
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width, height: 1000 } });
 page.on('pageerror', (e) => say('pageerror: ' + e.message));
+if (cpu > 1) await (await page.context().newCDPSession(page)).send('Emulation.setCPUThrottlingRate', { rate: cpu });
 await page.goto(pathToFileURL(resolve('design/session-view.html')).href + '?fixture=session');
-await page.waitForFunction(() => window.SESSION && document.querySelector('#rail .qitem'), null, { timeout: 30000 })
+await page.waitForFunction(() => window.SESSION && document.querySelector('#rail .qitem'), null, { timeout: 60000 })
   .catch(() => { say('SET-UP · the fixture never drew'); process.exit(2); });
 await page.waitForTimeout(800);
 
@@ -74,19 +77,26 @@ for (const q of piled) {
     document.querySelector('#rail .qitem[data-q="' + id.replace(/["\\]/g, '\\$&') + '"]').scrollIntoView({ block: 'center' });
   }, q);
   await page.waitForTimeout(600);
+  // the watch runs from the press until the entry has been open for a while, not for a fixed time: the
+  // first press renders the whole page, and on a slow runner that alone outlasted a 1.5 s window, so the
+  // lift began after the watch had ended (sprint run 37060395678, the first entry at 390)
   await page.evaluate((id) => {
-    window.__lift = new Set();
+    window.__lift = { seen: new Set(), done: false };
     const t0 = performance.now();
+    let openAt = null;
     const tick = () => {
       const li = document.querySelector('#rail .qitem[data-q="' + id.replace(/["\\]/g, '\\$&') + '"]');
-      for (const a of li ? li.getAnimations() : []) if (a.transitionProperty) window.__lift.add(a.transitionProperty);
-      if (performance.now() - t0 < 1500) requestAnimationFrame(tick);
+      for (const a of li ? li.getAnimations() : []) if (a.transitionProperty) window.__lift.seen.add(a.transitionProperty);
+      const now = performance.now();
+      if (openAt == null && li && li.querySelector(':scope > button[aria-current="true"]')) openAt = now;
+      if ((openAt != null && now - openAt > 600) || now - t0 > 10000) window.__lift.done = true;
+      else requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
   }, q);
   await page.evaluate((id) => document.querySelector('#rail .qitem[data-q="' + id.replace(/["\\]/g, '\\$&') + '"] > button').click(), q);
-  await page.waitForTimeout(1600);
-  const lifted = await page.evaluate((id) => ({ opened: window.SESSION.openId === id, seen: [...window.__lift] }), q);
+  await page.waitForFunction(() => window.__lift.done, null, { timeout: 15000 }).catch(() => {});
+  const lifted = await page.evaluate((id) => ({ opened: window.SESSION.openId === id, seen: [...window.__lift.seen] }), q);
   if (!lifted.opened) { check(`${q} opens`, false); continue; }
   await page.waitForTimeout(400);
   const open = await page.evaluate(READ, q);

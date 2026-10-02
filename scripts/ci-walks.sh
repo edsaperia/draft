@@ -431,9 +431,11 @@ case "$GROUP" in
     # 2026-10-02): each piled rail entry opened by a press — the open step's
     # shadow cast by the whole stack, the edges unchanged under it, the lift
     # a transition — at the desk's width and the phone's. Serves design/ off
-    # the file system; red before the fix on every piled entry
+    # the file system; red before the fix on every piled entry. The phone's
+    # pass runs at a quarter of the CPU: the first press's render once
+    # outlasted the guard's watch on a slow runner (run 37060395678)
     walk "pile-lift 1600" node scripts/repro/pile-lift.mjs --width=1600
-    walk "pile-lift 390" node scripts/repro/pile-lift.mjs --width=390
+    walk "pile-lift 390" node scripts/repro/pile-lift.mjs --width=390 --cpu=4
     # **A second press on the open card's rail entry travels back to it**
     # (issue #168, Ed 2026-10-02: *bring it back into view as with the first
     # click … if users want to deactivate it, they can instead click outside
