@@ -406,7 +406,7 @@ Both options keep *nothing rebuilds under a press or a caret*: the lane is patch
 
 - **The lane: keep it as built** (finding 5), and add a guard (§6a.6).
 - **The column: never an IME target on coarse.** `PROSE()` (`session.js:251`) keys `contenteditable` on `coarse()` as well as `editing`, which is §1.5's rule, so on a phone the column is never editable in either mode, and finding 6 cannot happen. The `beforeinput` refusal stays as the second lock it already is.
-- **The re-mark after `compositionend`** rewrites the lane's `innerHTML` (K19's yellow). Gboard and iOS autocorrect may keep a composition region open across it. This is a device question (§7 row 17) with a fallback ready: on coarse, re-mark only on `blur` (§6a.9 question 8).
+- **The re-mark after `compositionend`** rewrites the lane's `innerHTML` (K19's yellow). Gboard and iOS autocorrect may keep a composition region open across it. This is a device question (§7 row 17) with a fallback ready: on coarse, re-mark only on `blur`. **Ruled (a) by Ed, 2026-10-02 (1585.8):** keep the re-mark, and take the fallback only if a device shows doubled text.
 
 ### 6a.4 The commit row and the ✏️
 
@@ -415,6 +415,8 @@ Both options keep *nothing rebuilds under a press or a caret*: the lane is patch
 - **Hit areas, not boxes**: `.lanepropose`, the sign control and the card's 🗑️ take §1.4's coarse `::before` pseudo-element so that each reaches 44px, and no drawn geometry changes.
 
 ### 6a.5 What the first cut holds
+
+**Ruled (a) by Ed, 2026-10-02 (1585.5, 1585.6, 1585.7).**
 
 | In stage 6a | Deferred |
 |---|---|
@@ -450,16 +452,16 @@ Both options keep *nothing rebuilds under a press or a caret*: the lane is patch
 
 ### 6a.9 Questions for Ed
 
-Put to Ed as **1585.1–1585.8** (QUESTIONS.md). **1585.2, 1585.3 and 1585.4 were ruled (a) by Ed on 2026-10-02**, relayed by the coordinator. 1585.1 went back for research and is restated in §6a.1a. 1585.5–1585.8 are open. Each open question has its recommendation first. *Time* is build time. *Looks broken* is CLAUDE.md's guiding light: the risk that a member sees a card that seems wrong.
+Put to Ed as **1585.1–1585.8** (QUESTIONS.md). **1585.2–1585.8 were all ruled (a), as recommended, by Ed on 2026-10-02** (11:21–11:22 UTC), relayed by the coordinator. **1585.1 alone is open**: it went back for research and is restated in §6a.1a, recommendation first. *Time* is build time. *Looks broken* is CLAUDE.md's guiding light: the risk that a member sees a card that seems wrong.
 
 1. **The door into a clause nobody has proposed on.** *Open, and restated after research in §6a.1a:* (a) **the clause becomes its lane** (new, recommended), (b) the card as it stands, (c) `EditContext` on Android, (d) observe and reconcile, (e) a long press, (f) a hidden textarea.
 2. **Where the typing happens.** **Ruled (a), Ed 2026-10-02:** in place, in the card, with the row docked above the keyboard.
 3. **Does a phone's ✏️ need a confirming tap?** **Ruled (a), Ed 2026-10-02:** no, one tap, as the desktop's click.
 4. **Q1350: a paired keyboard on a phone.** **Ruled (a), Ed 2026-10-02:** support it as it is.
-5. **First-cut scope.** (a) **One site, the reason, signing and insertion by Enter. Patches, runs and B · *I* go to 6b.** (b) Patches now as well: +1–2 days, with several open site cards and the patch row at 390, which is the likeliest place for a card to look broken.
-6. **Motions.** (a) **Fold the 16px and 44px sweep into 6a**: under an hour, since they already work. (b) Leave them as they are; iOS zooms on the field.
-7. **The founder's text before 🍾 on a phone.** (a) **Its own later stage, 6c.** (b) Inside 6a, adding ~1 day and the stash path.
-8. **The yellow while typing on a phone** (K19's re-mark after each composition). (a) **Keep it, and check Gboard and iOS autocorrect on a device**, with re-mark-on-blur as the fallback. (b) Re-mark only on blur on coarse from the start: safer, but the card shows no yellow until you leave the lane.
+5. **First-cut scope.** **Ruled (a), Ed 2026-10-02:** one place, the reason, signing and insertion by Enter; patches, runs and B · *I* go to 6b.
+6. **Motions.** **Ruled (a), Ed 2026-10-02:** the 16px and 44px sweep goes into 6a.
+7. **The founder's text before 🍾 on a phone.** **Ruled (a), Ed 2026-10-02:** its own later stage, 6c.
+8. **The yellow while typing on a phone** (K19's re-mark after each composition). **Ruled (a), Ed 2026-10-02:** keep it, check Gboard and iOS autocorrect on a device, and fall back to re-marking on blur if either doubles text.
 
 ## 7. Device checklist
 
