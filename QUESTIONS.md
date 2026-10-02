@@ -227,7 +227,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1582** — claim by writing the block here, then commit it alone.
+**The next free number is 1588** — claim by writing the block here, then commit it alone.
+
+**1587 is the fold-triangle builder's calls** (claimed 2026-10-02 by the cloud coordinator; PR #163, issue #151; Ed 2026-10-02 ~00:52 UTC: *Heading toggles are tiny*; the coordinator's sizes OK'd by Ed 01:21 UTC). **Settled by the coordinator from the brief, as built** (2026-10-02): (1) every `.sectoggle` is a drawn 28 × 28 box at every width, not only under a coarse pointer, its glyph centred; (2) the glyph is one step below its heading: `--t-body` beside `--h2`/`--h3`, `--t-lead` beside `--h1` and the Rules' pile heading, `--h2` beside `--h-part`, so rank 2 and rank 3 stay apart; (3) at 390 a heading with a tab laps its box 4px over the heading's words rather than over the tab; (4) the contents rail's glyph stays `--t-cap` and its rows do not grow, so neighbouring rows' targets overlap by 5–7px, the later one taking the overlap; (5) card-audit P36 `fold-target` holds the size, a heading that does not move, and a rail that does not grow, on every kind at both widths. **Spent.**
 
 **1581 is the heading-ranks builder's calls** (claimed 2026-10-02 by the cloud coordinator; draft PR #156, issue #152; Ed 2026-10-02 ~00:55 UTC: *headings get larger depending on what the smallest level that's used in the text*; the coordinator's ladder OK'd by Ed 01:21 UTC). **Settled by the coordinator from the brief, as built** (2026-10-02): (1) rung 3 is a new token, `--h-part`, 2.369rem Regular ruled; (2) the title steps to 3.157rem only while three ranks are in use, else 2.369rem; (3) a level the Text does not yet use, typed in a lane, previews at the rank it would land at; (4) the ranks come from the Text's own lines (`CARDS.setHeadLevels`) and reach every site through `rankCls`, the Rules unranked; (5) the PR stands on the builder's one push branch, not the brief's name. **Spent.**
 
