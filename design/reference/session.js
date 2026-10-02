@@ -1111,9 +1111,11 @@
   // words this entry is about, from this entry alone — never the clause's
   // name, which every entry on one clause shares, and never by comparison
   // with its neighbours, so a title cannot change because another entry
-  // arrived. A pair to judge reads its two sides as the card presents them
-  // (*‘six’ or ‘seven’*); a decided change and a proposal of your own read
-  // what they changed (*‘monthly’ → ‘quarterly’*). The clause's name stays
+  // arrived. Two proposals put against each other read their two sides as
+  // the card presents them (*‘six’ or ‘seven’*); a pair of the current text
+  // against a proposal, a decided change and a proposal of your own read
+  // the words they put in, plain (*‘quarterly’*; Ed 2026-10-02, #186), and
+  // a pure cut its words struck. The clause's name stays
   // where nothing is about words — a diagonal, a park, a deadlock, which is
   // about the whole field — and is what `railChange` falls back to.
   // A marked wording as its two texts: the hand-authored fixture carries
@@ -1156,7 +1158,7 @@
       if (g.kind === 'patch') {
         const site = (g.sites || [])[(e.n || 1) - 1];
         const two = site && bothOf(site);
-        return two ? railPair(two[0], two[1], name) : name;
+        return two ? railChange(two[0], two[1], name) : name;
       }
       // a record: the wording that carried, or where none did the best of
       // what was tried, against what it replaced — the text it displaced
@@ -1171,9 +1173,11 @@
         if (!pick) return name;
         return railChange(recordBaseOf(g, pick.won), pick.text, name, RAIL_DATED);
       }
+      // two proposals against each other; anything else here is the current
+      // text against one proposal, which is a change (#186)
       if (g.race && g.race.a && g.race.b) return railPair(g.race.a.text || '', g.race.b.text || '', name);
       const two = bothOf(g);
-      return two ? railPair(two[0], two[1], name) : name;
+      return two ? railChange(two[0], two[1], name) : name;
     } catch (err) { return name; }
   }
   // …and its moment, where it has one: the one helper (`railWhen`) against
@@ -1536,7 +1540,7 @@
     // Everything in the rail opens, sealed dots included (Ed, 112): a locked
     // judgment can't be changed, but it can always be read.
     queueEl.querySelectorAll('button[data-q]').forEach((b) =>
-      b.addEventListener('click', () => { toggle(b.dataset.q, true); }, { signal: railCtl.signal })
+      b.addEventListener('click', () => { railPress(b.dataset.q); }, { signal: railCtl.signal })
     );
     layoutQueue();
   }
@@ -1825,7 +1829,9 @@
       // because until a clause carried twelve decisions no tie was ever tight
       // enough to notice. It is also why the rail needs no pile of its own: it
       // already knew how to choose, it just did not know how to choose *here*.
-      row.rank = stackRank(kind);
+      // …by the gutter's own key, 👑 and a fold leading (`stackKey`), so the
+      // two columns cannot drift apart on the cases it adds (issue #154)
+      row.rank = stackKey(g); row.a = a;
       row.news = isUnread(g); row.fam = 1; row.i = idx;
       // where in the document it stands, for the walk's order (Q1536)
       row.at = docIndexOf(g, el.dataset.site || undefined);
@@ -1975,16 +1981,24 @@
       else blocks.push([a, b]);
     }
     const clash = (t, h) => blocks.some(([a, b]) => t < b + QGAP && t + h > a - QGAP);
-    const freeFor = (want, h) => {
+    // **A flow entry at a pinned entry's clause steps to the side the tab stack
+    // puts it on** (issue #154, SURFACE M6; Ed 2026-10-02: *Why do the queue
+    // cards and tabs come in a different order?*): below when every pinned
+    // entry shown at its clause ranks ahead of it, above otherwise — so an
+    // unread ✔ demoted to the flow by the pin cap no longer climbs over the
+    // open 💡 it follows in the strip. Elsewhere, above first, as it always was.
+    const freeFor = (want, h, below) => {
       if (!clash(want, h)) return want;
       const hit = blocks.find(([a, b]) => want < b + QGAP && want + h > a - QGAP);
-      for (const c of [hit[0] - QGAP - h, hit[1] + QGAP]) if (!clash(c, h)) return c;
+      const sides = [hit[0] - QGAP - h, hit[1] + QGAP];
+      for (const c of below ? sides.reverse() : sides) if (!clash(c, h)) return c;
       return null;
     };
     let bottom = 0, prev = -Infinity;
     for (const r of flow) {
       r.el.classList.remove('pinned');
-      let t = freeFor(r.want, r.h);
+      const peers = r.a ? shown.filter((p) => p.a === r.a) : [];
+      let t = freeFor(r.want, r.h, peers.length > 0 && peers.every((p) => order(p, r) < 0));
       if (t !== null && t < prev + QGAP) { t = prev + QGAP; if (clash(t, r.h)) t = null; }
       r.el.style.display = t === null ? 'none' : '';
       if (t === null) continue;
@@ -4744,6 +4758,16 @@ document.addEventListener('paste', (ev) => {
       (g.sites ?? []).flatMap((s) => s.keys ?? (s.key ? [s.key] : [])),
       (g.pair ?? []).map((c) => c.key)).filter(Boolean);
   };
+
+  // **A press on the open card's own rail entry travels to it and never
+  // closes it** (Ed, 2026-10-02, #168: *you may have scrolled away from it*);
+  // a click outside the card closes it (SURFACE C2). The rail's route alone:
+  // `toggle`'s other callers — the tabs, the review walk, edit mode — keep
+  // their second press.
+  function railPress(id) {
+    if (openId !== id) return toggle(id, true);
+    bringIntoView(id, () => {});
+  }
 
   function toggle(id, scroll, after) {
     const closing = openId;

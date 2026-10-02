@@ -92,18 +92,17 @@ window.COPY = (function () {
     // text and is escaped by the renderer, never here.
     railTitle: {
       quote: (s) => '‘' + s + '’',
-      // a proposal that replaces words, or a record of one: what went out, what came in
+      // a rule's value changed, old → new (`railArrow`); a text change reads
+      // only the words it puts in (Ed 2026-10-02, #186)
       arrow: (was, now) => was + ' → ' + now,
       // two wordings put side by side, as the card presents them
       or: (a, b) => a + ' or ' + b,
-      // a pair where one side simply has words the other lacks — drawn as the
-      // words struck through (Q1523 (c)); this is the tooltip's reading, and
-      // `struckPair` the words a screen reader hears before the struck quote
-      withOrWithout: (q) => 'with or without ' + q,
-      // a decided change that only took words out, the same way
+      // a decided change that only took words out — drawn as the words struck
+      // through (Q1523 (c)); this is the tooltip's reading, and `struck` the
+      // words a screen reader hears before the struck quote. A pair's
+      // one-sided words are a plain quote, no strike (Ed 2026-10-02, #186)
       without: (q) => 'without ' + q,
       struck: 'without ',
-      struckPair: 'with or without ',
       // a change of punctuation or spacing alone: the clause's own name, said so
       punctuation: (name) => name + ' (punctuation)',
       // a snippet cut short, and a change with more to it than the title shows

@@ -235,9 +235,18 @@ const titles = [
   // two rewrites are read from where they stop agreeing
   [railPair('The Purse-holder pays only bills approved under the budget.',
     'The Purse-holder pays the house’s bills as good sense directs.', G), '‘only bills…’ or ‘the house’s…’'],
-  // a decided change: what went out, what came in
+  // a change — a pair of the current text against a proposal, a record, a
+  // proposal of your own — reads the words it puts in, plain (Ed
+  // 2026-10-02, #186: *"What you want to see primarily is words added by the
+  // proposal"*); only a pure cut is struck
   [railChange('Subscriptions are reviewed monthly by the house.', 'Subscriptions are reviewed quarterly by the house.', G),
-    '‘monthly’ → ‘quarterly’'],
+    '‘quarterly’'],
+  // Ed's own case: the demo's Aalto proposal adds *senior* and changes a year
+  [railChange('Dr Henrik Aalto, research fellow, author of the report since 2023.',
+    'Dr Henrik Aalto, senior research fellow, author of the report since 2021.', G), '‘senior’ …'],
+  // a cut before an addition: the addition leads, the cut is the ellipsis
+  [railChange('Members, and their guests, may come on Sundays.', 'Members may come on Sundays and holidays.', G),
+    '‘and holidays’ …'],
   [railChange('Friends of the house are welcome.', 'Friends of the house are welcome, and so are their dogs.', G),
     '‘and so are their dogs’'],
   [railChange('The Club has no head, and has managed without one.', 'The Club has no head.', G), 'without ‘and has managed without one’'],
@@ -249,6 +258,9 @@ const titles = [
   // a rewrite with no short difference: as much of the new wording as fits (Q1523 (f))
   [railChange('One two three four five six seven.', 'Completely different words entirely in this new sentence.', G),
     '‘Completely different words…’'],
+  // …from where it stops agreeing with the old, where its own words begin (#186)
+  [railChange('11:15 · The Great Dough Debate, with the Society’s panel', '11:15 · Oven or Baker? A Blind Tasting for the whole room', G),
+    '‘Oven or Baker? A Blind Tasting…’'],
   // punctuation or spacing alone: the clause's name, said so; nothing at all: the name
   [railChange('A b c.', 'A b c!', G), 'Guests (punctuation)'],
   [railPair('A,  b c', 'A b c', G), 'Guests (punctuation)'],
@@ -256,12 +268,12 @@ const titles = [
   // a gap: all of it went in
   [railChange('', 'A new clause.', G), '‘A new clause’'],
   // markdown never reaches a title
-  [railChange('# **The Kitchen** is open', '# **The Kitchen** is shut', G), '‘open’ → ‘shut’'],
+  [railChange('# **The Kitchen** is open', '# **The Kitchen** is shut', G), '‘shut’'],
   [railPlain('- *good* coffee, \\*not\\* the tin'), 'good coffee, *not* the tin'],
   // several changes: the first that says anything, and the ellipsis where
   // the rest says anything too — a scrap (*or* → *and*) is no reason for one
-  [railChange('It is open in May, and closed in winter.', 'It is shut in May, and heated in winter.', G), '‘open’ → ‘shut’ …'],
-  [railChange('It is open in May or June, daily.', 'It is shut in May and June, daily.', G), '‘open’ → ‘shut’'],
+  [railChange('It is open in May, and closed in winter.', 'It is shut in May, and heated in winter.', G), '‘shut’ …'],
+  [railChange('It is open in May or June, daily.', 'It is shut in May and June, daily.', G), '‘shut’'],
   [railChange('Knives are not used on bone or frozen food.', 'Knives are not used on bone, frozen food, or the garden.', G), '‘or the garden’'],
   // *not* is never a scrap
   [railPair('Members may vote.', 'Members may not vote.', G), '‘not’'],

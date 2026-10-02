@@ -92,7 +92,8 @@ window.COPY = (function () {
     // text and is escaped by the renderer, never here.
     railTitle: {
       quote: (s) => '‘' + s + '’',
-      // a proposal that replaces words, or a record of one: what went out, what came in
+      // a rule's value changed, old → new (`railArrow`); a text change reads
+      // only the words it puts in (Ed 2026-10-02, #186)
       arrow: (was, now) => was + ' → ' + now,
       // two wordings put side by side, as the card presents them
       or: (a, b) => a + ' or ' + b,
