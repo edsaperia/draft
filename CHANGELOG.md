@@ -6,6 +6,11 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-10-02: the questions page's contract, kept by code
+
+### For contributors
+- **Nothing a member sees changes; a full deploy of the same build.** Sessions on this repo can load the `page-contract` mod (`.claude/skills/page-contract/`, a copy of dev-ops' kept identical to it; loaded where the cloud environment's `CLAUDE_CODE_PLUGIN_DIRS` names it): a write to Ed's questions page that breaks its contract is refused with the reasons, the coordinator's `lastActive` is stamped after working turns, and answers left without `handledAt` are named. `eslint.config.mjs` skips the type files Claude Code writes beside the mod when it loads it.
+
 ## 2026-10-02: the demo's speakers reword rather than repeat
 
 ### Fixed
