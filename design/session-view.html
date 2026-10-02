@@ -1292,6 +1292,9 @@
   };
   const bandFollow = () => {
     bandTravelled = false;
+    // the door's seats keep their own cards (door.js `STRCARDS`, band.js
+    // `APPCARDS`), which `card()` does not know: nothing there is followed
+    if (atTheDoor()) { bandGhost = null; bandLastCard = null; return; }
     if (bandGhost && S.open !== bandGhost.k) bandGhost = null;
     if (!S.open) { bandLastCard = null; return; }
     if (bandGhost) {
