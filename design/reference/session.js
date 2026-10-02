@@ -878,12 +878,36 @@
   // rail entry in it paints white, and its cable — which reads the entry's
   // own `--washcol` (`wireColor`) — follows. The clause washes keep the grey.
   const PLAIN_WASH = /var\(--lc-(?:closed|deciding)\)/;
-  function washAttrs(key, col, fill) {
-    if (isQueueWash(key)) col = scaledCol(String(col).replace(PLAIN_WASH, '255, 255, 255'));
+  // **…but a ⏳ shows how far the room has got** (#148, Ed 2026-10-02, option
+  // (a): *a white slip with a grey fill*). Painting the deciding hue white took
+  // its bar with it, so a race nearly done and one barely begun read alike and
+  // M24's sweep ran unseen. A waiting entry — the charter's `deciding` hue, or
+  // a band entry whose caller says it waits (setup's `wait` wearing ⏳) — keeps
+  // the white ground and paints its fill in the deciding grey, at the queue's
+  // own alpha. Its ground is the white one, so `waitGround` holds it for the
+  // places that re-derive a ground from the fill (`groundFor`); its cable stays
+  // white (`wireColor` reads `data-waits`). ✖ and ↻ stay white on white.
+  const WAIT_WASH = /var\(--lc-deciding\)/;
+  const waitGround = new Map();
+  const groundFor = (col, key) => waitGround.get(key) || groundOf(col, key);
+  function washAttrs(key, col, fill, waits) {
+    let wait = false;
+    if (isQueueWash(key)) {
+      wait = fill != null && (waits === true || (waits !== false && WAIT_WASH.test(String(col))));
+      const white = scaledCol(String(col).replace(PLAIN_WASH, '255, 255, 255'));
+      if (wait) {
+        waitGround.set(key, groundOf(white, key));
+        col = scaledCol(String(col).replace(PLAIN_WASH, 'var(--lc-deciding)'));
+      } else {
+        waitGround.delete(key);
+        col = white;
+      }
+    }
     const from = prevWash.get(key) || { col, fill };
-    const varsOf = (w) => '--washcol: ' + w.col + '; --washbg: ' + groundOf(w.col, key) +
+    const varsOf = (w) => '--washcol: ' + w.col + '; --washbg: ' + groundFor(w.col, key) +
       (fill == null ? '' : '; --fill: ' + w.fill);
     return ' data-washkey="' + esc(key) + '" data-wash="' + col + '"' +
+      (wait ? ' data-waits=""' : '') +
       (fill == null ? '' : ' data-fill="' + fill + '"') +
       ' style="' + varsOf(from) + '"';
   }
@@ -894,7 +918,7 @@
     for (const el of els) {
       if (el.dataset.wash == null) continue;
       el.style.setProperty('--washcol', el.dataset.wash);
-      el.style.setProperty('--washbg', groundOf(el.dataset.wash, el.dataset.washkey));
+      el.style.setProperty('--washbg', groundFor(el.dataset.wash, el.dataset.washkey));
       if (el.dataset.fill != null) el.style.setProperty('--fill', el.dataset.fill);
       prevWash.set(el.dataset.washkey, { col: el.dataset.wash, fill: el.dataset.fill });
     }
@@ -1031,7 +1055,7 @@
       // the live colour as the from of the record's own crossfade: the slip
       // was drawn in the record's colour, and `settleWashes` fades from here
       const was = prevWash.get(live[0][0]);
-      if (was) { c.el.style.setProperty('--washcol', was.col); c.el.style.setProperty('--washbg', groundOf(was.col, key)); }
+      if (was) { c.el.style.setProperty('--washcol', was.col); c.el.style.setProperty('--washbg', groundFor(was.col, key)); }
       noteSweep({ key, kind: pass ? 'pass' : fail ? 'fail' : 'stamp', from, race: m[2] });
       if (reduced) { stepFill(c.el); continue; }
       if (pass || fail) sweepFill(c.el, pass ? 'pass' : 'fail', from, 100);
@@ -2036,6 +2060,8 @@
     const raw = host ? getComputedStyle(host).getPropertyValue('--washcol').trim() : '';
     const m = raw.match(/^rgba\((.+?),\s*([\d.]+)\s*\)$/);
     if (!m) return { rgb: 'rgb(var(--lc-' + ((g && anchHue(g)) || 'closed') + '))', a: 0.16 };
+    // a ⏳'s fill is grey and its cable stays white (#148; Ed, 2026-09-24)
+    if (host.hasAttribute('data-waits')) m[1] = '255, 255, 255';
     const a = +m[2];
     const ga = groundAOf(host.dataset.washkey);   // a rail entry's doubled ground, else GROUND_A
     return { rgb: 'rgb(' + m[1] + ')', a: +(a + ga * (1 - a)).toFixed(3) };

@@ -17,6 +17,14 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 ### For contributors
 - **Surface-only.** `foldPresent` and the sealed record (`session.js`); `foldHead` and `foldSince` retired from `copy.js`. Guarded by `scripts/repro/review-walk.mjs`.
 
+## 2026-10-02: the waiting entries show their progress
+
+### Changed
+- **An entry you have voted on shows how far the others have got.** In your list of tasks, a ⏳ entry, a proposal or question you have voted on that the others are still deciding, now fills with grey as more members vote, so you can tell one that is nearly decided from one that has barely begun. When a vote lands on it, you can see the bar move.
+
+### For contributors
+- **Surface-only.** A ⏳ rail entry keeps its white slip and paints its fill in the deciding grey (`washAttrs`, session.js); its cable stays white. `card-audit` gains P35 `wait-fill`, held on every card.
+
 ## 2026-10-02: a card stays open while it changes
 
 ### Changed
