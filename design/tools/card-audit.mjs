@@ -52,9 +52,10 @@
  * the walk's first card at scroll 0 (the page-top case), and reads the glass,
  * not the page. They print as their own table, as ruled and v2-comparable,
  * and they are **held only for the kinds in `GRAMMAR_KINDS`** — save P34
- * `glyph-space` (issue #121, STYLE.md T50), held on every card (`EVERY_KIND`):
+ * `glyph-space` (issue #121, STYLE.md T50) and P35 `wait-fill` (a ⏳ rail
+ * entry's fill seen on its white slip, #148), held everywhere (`EVERY_KIND`):
  *
- *   node design/tools/card-audit.mjs --walk=all             # the nine walks, P13–P34 among the findings
+ *   node design/tools/card-audit.mjs --walk=all             # the nine walks, P13–P35 among the findings
  *   node design/tools/card-audit.mjs --strict --kinds=GRAMMAR_KINDS --walk=fixture   # CI's fast pass
  *   node design/tools/card-audit.mjs --width=390 --height=844 --baseline=<1600 payload>  # P31
  *
@@ -279,7 +280,7 @@ const GRAMMAR_KINDS = [
 const STAGE = 10;
 /** the checks held on every card under `--kinds`, whatever its kind: a
  *  rendering fault no stage converts (P34, issue #121) */
-const EVERY_KIND = new Set(['glyph-space']);
+const EVERY_KIND = new Set(['glyph-space', 'wait-fill']);
 const STRICT_FROM = { 'closed-page': 7, 'closed-keeps-content': 7, 'closed-powers': 7, 'zone-overlap': 8, 'place-head': 6 };
 const KINDS_ARG = arg('kinds', null);
 const KINDS = KINDS_ARG == null ? null
@@ -2224,7 +2225,7 @@ const RETIRED = [
 const GLYPH_ONLY = /^[^\p{L}\p{N}]{1,4}$/u;
 
 /* ============================================================================
-   **The redesign's checks, P13–P34** (Q1541; design/redesign/checks.md, *The
+   **The redesign's checks, P13–P35** (Q1541; design/redesign/checks.md, *The
    checks as ruled*, which is the specification — answers.md over it). In
    node, over the readings `grammarOf`, `glassOpen`/`glassClosed` and the
    walks took in the page. Stage 0 runs every one in **report mode**: they
@@ -2250,7 +2251,7 @@ const CHECKS = [
   ['P21', 'label-slot'], ['P22', 'no-job'], ['P23', 'note-visible'], ['P24', 'bin-job'],
   ['P25', 'row-vocabulary'], ['P26', 'role-drawing'], ['P27', 'closed-page'], ['P28', 'closed-keeps-content'],
   ['P29', 'closed-powers'], ['P30', 'zone-overlap'], ['P31', 'width-invariance'], ['P32', 'place-head'],
-  ['P33', 'one-home'], ['P34', 'glyph-space'], ['—', 'raw-value'],
+  ['P33', 'one-home'], ['P34', 'glyph-space'], ['P35', 'wait-fill'], ['—', 'raw-value'],
 ];
 const CHECK = Object.fromEntries(CHECKS.map(([n, name]) => [name, n + ' ' + name]));
 /** checks.md's *unchanged* set (BUILD.md stage 0's acceptance): their
@@ -4112,6 +4113,45 @@ async function walkRail(page, rails, walk) {
     probe.remove();
     return { want, seen, wanted };
   });
+  // **a ⏳ shows how far the room has got** (P35 wait-fill, #148, Ed
+  // 2026-10-02: *a white slip with a grey fill*). Every rail entry wearing
+  // the ⏳ mark — the charter's `deciding`, the band's answered `wait` —
+  // with a fill above nothing: the slip's own ground, its wash (`::after`)
+  // and the fill bar (`::before`) composited in order, and the filled part
+  // read against the ground as a luminance contrast ratio. A ↻ wears no ⏳.
+  const waits = await page.evaluate(() => {
+    const rgba = (s) => {
+      const m = String(s).match(/rgba?\(([^)]+)\)/);
+      if (!m) return null;
+      const v = m[1].split(',').map((x) => +x.trim());
+      return [v[0], v[1], v[2], v.length > 3 ? v[3] : 1];
+    };
+    const over = (top, under) => !top ? under
+      : [0, 1, 2].map((i) => top[i] * top[3] + under[i] * (1 - top[3])).concat(1);
+    const lum = (c) => {
+      const f = (x) => { x /= 255; return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4; };
+      return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]);
+    };
+    const backdrop = (el) => {
+      for (let n = el.parentElement; n; n = n.parentElement) {
+        const c = rgba(getComputedStyle(n).backgroundColor);
+        if (c && c[3] >= 0.999) return c;
+      }
+      return [255, 255, 255, 1];
+    };
+    return [...document.querySelectorAll('#rail .qitem')].map((li) => {
+      const b = li.querySelector('button');
+      if (!b || !b.querySelector('.mk-deciding')) return null;
+      const fill = parseFloat(getComputedStyle(b).getPropertyValue('--fill')) || 0;
+      if (fill <= 0) return null;
+      const base = over(rgba(getComputedStyle(b).backgroundColor), backdrop(b));
+      const ground = over(rgba(getComputedStyle(b, '::after').backgroundColor), base);
+      const filled = over(rgba(getComputedStyle(b, '::before').backgroundColor), ground);
+      const [hi, lo] = [lum(ground), lum(filled)].sort((x, y) => y - x);
+      return { q: li.dataset.q, fill, ratio: Math.round((hi + 0.05) / (lo + 0.05) * 1000) / 1000,
+        ground: ground.slice(0, 3).map(Math.round).join(','), filled: filled.slice(0, 3).map(Math.round).join(',') };
+    }).filter(Boolean);
+  });
   const beneath = await page.evaluate(() =>
     Object.fromEntries(window.SESSION.SUGGS.filter((s) => s.beneath).map((s) => [s.id, s.beneath])));
   // the same rail with the field off, so the comparison is this page's own
@@ -4130,7 +4170,30 @@ async function walkRail(page, rails, walk) {
     window.SESSION.refreshRail();
   }, saved);
   await wait(page, 250);
-  rails.push({ walk, withPile, without, beneath, stranded, decided });
+  rails.push({ walk, withPile, without, beneath, stranded, decided, waits });
+}
+/** P35 wait-fill — the ratio a ⏳'s filled part must stand off its ground,
+ *  luminance contrast: 1.15:1, a bar a reader can see on the white slip
+ *  without the grey reading as a second, louder hue (#148) */
+const WAIT_FILL_FLOOR = 1.15;
+function waitFillRules(rails) {
+  const out = [];
+  let any = 0;
+  for (const r of rails) {
+    for (const w of r.waits || []) {
+      any++;
+      if (w.ratio < WAIT_FILL_FLOOR) {
+        out.push({ check: 'wait-fill', walk: r.walk, key: 'rail:' + w.q, kind: 'rail',
+          ex: 'a ⏳ entry at ' + w.fill + '% shows its fill at ' + w.ratio + ':1 against its ground (rgb ' + w.filled +
+            ' on ' + w.ground + '), under the ' + WAIT_FILL_FLOOR + ':1 floor (#148)' });
+      }
+    }
+  }
+  if (!any && rails.some((r) => r.walk === 'charter')) {
+    out.push({ check: 'wait-fill', walk: rails.map((r) => r.walk).join(','), key: 'rail', kind: 'rail',
+      ex: 'no ⏳ rail entry with a fill on any walked page, so the fill was measured on nothing' });
+  }
+  return out;
 }
 function railRules(rails) {
   const out = [];
@@ -4929,7 +4992,7 @@ async function finish(cards, errors, tok, ref, version, switches, piles, doors, 
     }));
   }
 
-  /* **The redesign's checks** (P13–P34 and raw-value), per card and per walk,
+  /* **The redesign's checks** (P13–P35 and raw-value), per card and per walk,
    * and the table over them. `findings` is the count **as ruled** (stated
    * exceptions out); `v2` is the count comparable with checks.md's *today*
    * column (the exceptions in, the ruling's new findings out), read for the
@@ -4955,6 +5018,7 @@ async function finish(cards, errors, tok, ref, version, switches, piles, doors, 
   for (const d of DRIVEN) grammar.push({ check: 'no-job', walk: d.walk, key: d.key, sub: 'driven',
     ex: clip('an enabled control that does nothing when pressed: “' + d.what + '”', 160) + (d.diag ? ' — ' + JSON.stringify(d.diag) : ''), kind: kindFor(d.walk, d.key) });
   grammar.push(...widthRules(cards, baseline));
+  grammar.push(...waitFillRules(rails));
   for (const f of grammar) {
     if (!f.kind) {
       const k = String(f.key).replace(/^(open|rest):/, '');

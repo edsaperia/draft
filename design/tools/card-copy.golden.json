@@ -898,10 +898,10 @@
     ]
    },
    "fold:quick-lockup-lamp": {
-    "eyebrow": "2 decisions",
+    "eyebrow": "Current text",
     "head": "The last member out locks the front door, closes the Workshop, and puts out the lamp in the Common Room.",
     "lock": "",
-    "body": "Marked against the text before themPassed · Weekday, D Month, 11:56The last member out locks the front door, closes the Workshop, and puts out the lamp in the Common Room.The Workshop door swings open in a draught and nobody thinks to check it. Add it to the same list as the lamp and it gets done with everything else.n of m weighed in · quorum was 5 · you preferred this wordingPassed · last Weekday, 22:10The last member out locks the front door and puts out the lamp in the Common Room.The lamp in the Common Room has been found burning at breakfast three times this month. Whoever locks up is already walking past it.n of m weighed in · quorum was 5 · you preferred this wordingPrevious textThe last member out locks the front door.",
+    "body": "Passed · last Weekday, 22:10The last member out locks the front door and puts out the lamp in the Common Room.The lamp in the Common Room has been found burning at breakfast three times this month. Whoever locks up is already walking past it.n of m weighed in · quorum was 5 · you preferred this wordingPrevious textThe last member out locks the front door.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -919,8 +919,8 @@
      "All 2 leave your margin"
     ],
     "helpers": [
-     "Marked against the text before them",
      "n of m weighed in · quorum was 5 · you preferred this wording",
+     "Passed · Weekday, D Month, HH:MM",
      "n of m weighed in · quorum was 5 · you preferred this wording"
     ]
    },
@@ -2145,10 +2145,10 @@
   },
   "closed": {
    "fold:quick-lockup-lamp": {
-    "eyebrow": "2 decisions",
+    "eyebrow": "Current text",
     "head": "The last member out locks the front door, closes the Workshop, and puts out the lamp in the Common Room.",
     "lock": "",
-    "body": "Marked against the text before themPassed · Weekday, D Month, 11:56The last member out locks the front door, closes the Workshop, and puts out the lamp in the Common Room.The Workshop door swings open in a draught and nobody thinks to check it. Add it to the same list as the lamp and it gets done with everything else.n of m weighed in · quorum was 5 · you preferred this wordingPassed · last Weekday, 22:10The last member out locks the front door and puts out the lamp in the Common Room.The lamp in the Common Room has been found burning at breakfast three times this month. Whoever locks up is already walking past it.n of m weighed in · quorum was 5 · you preferred this wordingPrevious textThe last member out locks the front door.",
+    "body": "Passed · last Weekday, 22:10The last member out locks the front door and puts out the lamp in the Common Room.The lamp in the Common Room has been found burning at breakfast three times this month. Whoever locks up is already walking past it.n of m weighed in · quorum was 5 · you preferred this wordingPrevious textThe last member out locks the front door.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2160,8 +2160,8 @@
      "A member wrote this. Who, is sealed until the closing record."
     ],
     "helpers": [
-     "Marked against the text before them",
      "n of m weighed in · quorum was 5 · you preferred this wording",
+     "Passed · Weekday, D Month, HH:MM",
      "n of m weighed in · quorum was 5 · you preferred this wording"
     ]
    },
@@ -2698,7 +2698,7 @@
     "eyebrow": "Ran out of time · Weekday, D Month, HH:MM",
     "head": "Friends of the house are welcome whenever a member is in, which is what makes them guests and not visitors.",
     "lock": "",
-    "body": "n of m weighed in · quorum was 5 · you never voted on thisPrevious textThis clause would be removed.",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisPrevious text(no text here)",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2954,7 +2954,7 @@
     "eyebrow": "Ran out of time · Weekday, D Month, HH:MM",
     "head": "The house keeps quiet hours from eleven at night to eight in the morning: voices low in the Common Areas, the Workshop’s louder tools asleep, and any gathering still going moves to the Garden or winds down.",
     "lock": "",
-    "body": "n of m weighed in · quorum was 5 · you never voted on thisPrevious textThis clause would be removed.",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisPrevious text(no text here)",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -2970,7 +2970,7 @@
     "eyebrow": "Ran out of time · Weekday, D Month, HH:MM",
     "head": "The house keeps quiet hours from eleven at night to eight in the morning.",
     "lock": "",
-    "body": "n of m weighed in · quorum was 5 · you never voted on thisPrevious textThis clause would be removed.Proposed · Ran out of timeAfter eleven at night the Common Areas are for reading, and the Workshop is closed until eight.Say what the rooms are for after dark rather than what people may not do — a house rule reads better as an invitation.",
+    "body": "n of m weighed in · quorum was 5 · you never voted on thisPrevious text(no text here)Proposed · Ran out of timeAfter eleven at night the Common Areas are for reading, and the Workshop is closed until eight.Say what the rooms are for after dark rather than what people may not do — a house rule reads better as an invitation.",
     "options": [],
     "inputs": [],
     "foot": [],

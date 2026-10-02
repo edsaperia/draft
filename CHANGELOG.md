@@ -14,6 +14,25 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 ### For contributors
 - **Surface-only.** `CARDS.setHeadLevels` and `CARDS.rankCls` (`design/cards.js`) give every Text heading a `rank1`–`rank3` class beside its `lvlN`, in the column, a card's head, a lane and edit mode; `--h-part` joins the heading ladder in `design/system.css`. Guard: `scripts/repro/heading-rank.mjs`, in the sprint tier.
 
+## 2026-10-02: a clause's decisions read top down from the current text
+
+### Changed
+- **A card holding several decisions on one clause now starts with the current text**, labelled *Current text*, shown once. The newest decision is that text, so it is no longer drawn a second time below it, and the line *Marked against the text before them* is gone. No earlier decision in the card says *since replaced* any more: everything below the top is an earlier version.
+
+### Fixed
+- **A decision that added a new clause now says it replaced nothing.** Its *Previous text* reads *(no text here)* instead of *This clause would be removed*, and the added wording is marked as new throughout.
+
+### For contributors
+- **Surface-only.** `foldPresent` and the sealed record (`session.js`); `foldHead` and `foldSince` retired from `copy.js`. Guarded by `scripts/repro/review-walk.mjs`.
+
+## 2026-10-02: the waiting entries show their progress
+
+### Changed
+- **An entry you have voted on shows how far the others have got.** In your list of tasks, a ⏳ entry, a proposal or question you have voted on that the others are still deciding, now fills with grey as more members vote, so you can tell one that is nearly decided from one that has barely begun. When a vote lands on it, you can see the bar move.
+
+### For contributors
+- **Surface-only.** A ⏳ rail entry keeps its white slip and paints its fill in the deciding grey (`washAttrs`, session.js); its cable stays white. `card-audit` gains P35 `wait-fill`, held on every card.
+
 ## 2026-10-02: a card stays open while it changes
 
 ### Changed
