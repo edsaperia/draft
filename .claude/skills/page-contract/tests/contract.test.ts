@@ -24,7 +24,7 @@ test('a well-formed item is written', async ($, on) => {
 
 test('an item with no status is refused, saying why (draft PR #158 hid this way)', async ($, on) => {
   written(on)
-  const { status, ...noStatus } = item()
+  const { status: _status, ...noStatus } = item()
   const r = await call($, { action: 'set', collection: 'questions', doc_id: 'draft-t-1', data: noStatus })
   expect(refused(r)).toBe(true)
   expect(reason(r)).toContain('status is missing')
@@ -41,7 +41,7 @@ test('kind "decision" and kind "final" are refused', async ($, on) => {
 
 test('options as bare strings, body and createdAt are refused, naming the right fields', async ($, on) => {
   written(on)
-  const { context, asked, ...rest } = item({ kind: 'question' })
+  const { context: _context, asked: _asked, ...rest } = item({ kind: 'question' })
   const r = await call($, { action: 'set', collection: 'questions', doc_id: 'draft-d-1', data: { ...rest, body: 'Text.', createdAt: now(), options: ['OK'] } })
   expect(refused(r)).toBe(true)
   expect(reason(r)).toContain('"context", not "body"')
