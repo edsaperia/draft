@@ -843,11 +843,15 @@
   // `data-h` carries the plain words, since it names the block in the
   // contents rail and keys its fold. No links: this column is an editor, and
   // an anchor inside a contenteditable is a door out of the caret.
-  const textDivs = (text) => String(text).split(/\n/).filter((l) => l.trim())
+  // …each heading at the rank the Text's own levels give it (issue #152,
+  // `CARDS.rankCls`), set from the text being drawn
+  const textLevels = (text) => window.CARDS.setHeadLevels(String(text).split(/\n/)
+    .map((l) => window.CARDS.mdBlock(l)).filter((m) => m && m.t === 'h').map((m) => m.level));
+  const textDivs = (text) => (textLevels(text), String(text).split(/\n/).filter((l) => l.trim())
     .map((l) => { const m = window.CARDS.mdBlock(l); const md = window.CARDS.mdToHtml;
       return !m ? '<div>' + md(l) + '</div>'
         : m.t === 'b' ? '<div class="bullet">' + md(m.text) + '</div>'
-        : '<div class="docline lvl' + m.level + '" data-h="' + esc(window.CARDS.mdStrip(m.text)) + '">' + md(m.text) + '</div>'; }).join('');
+        : '<div class="docline lvl' + m.level + window.CARDS.rankCls(m.level) + '" data-h="' + esc(window.CARDS.mdStrip(m.text)) + '">' + md(m.text) + '</div>'; }).join(''));
   // the same text as **source** (Q1313), which since Q1467 is what the column
   // wears whenever it is being edited: the characters exactly, one block per
   // line, the block's marker in the text and no mark rendered. A heading keeps
@@ -855,11 +859,11 @@
   // is one — **and its rank**, since a block keeps the treatment it will land
   // at while it is edited (Q1467); the bullet's own dot is drawn off in
   // `system.css` where the `- ` is standing in the text itself.
-  const srcCls = (m) => (!m ? '' : m.t === 'b' ? ' class="bullet"' : ' class="docline lvl' + m.level + '"');
-  const srcDivs = (text) => String(text).split(/\n/).filter((l) => l.trim())
+  const srcCls = (m) => (!m ? '' : m.t === 'b' ? ' class="bullet"' : ' class="docline lvl' + m.level + window.CARDS.rankCls(m.level) + '"');
+  const srcDivs = (text) => (textLevels(text), String(text).split(/\n/).filter((l) => l.trim())
     .map((l) => { const m = window.CARDS.mdBlock(l);
       return '<div' + srcCls(m) + (m && m.t === 'h' ? ' data-h="' + esc(window.CARDS.mdStrip(m.text)) + '" data-lvl="' + m.level + '"' : '') +
-        '>' + esc(l) + '</div>'; }).join('');
+        '>' + esc(l) + '</div>'; }).join(''));
   // **The address the surface states is the route the server serves** (Ed,
   // backlog 70: *the Link clause says the document lives at docs.vote/[slug]
   // whereas in fact it lives at docs.vote/d/[slug]*). The server has one
@@ -2805,7 +2809,21 @@
       remarkInline(b);
     }
     prose.classList.toggle('empty', prose.textContent.trim() === '');
+    rankProse();
     renderToc(); render();
+  }
+  // **a typed heading re-ranks the column** (issue #152): the levels the
+  // column's headings use, read off their classes, and each heading's rank
+  // class set afresh — a `# ` typed into a text of `##` and `###` makes them
+  // rank 1 and 2 under it
+  function rankProse() {
+    const heads = [...prose.children].filter((b) => /\blvl\d/.test(b.className));
+    window.CARDS.setHeadLevels(heads.map((b) => +b.className.match(/\blvl(\d)/)[1]));
+    for (const b of heads) {
+      const want = window.CARDS.rankCls(+b.className.match(/\blvl(\d)/)[1]).trim();
+      for (const c of [...b.classList]) if (/^rank\d$/.test(c) && c !== want) b.classList.remove(c);
+      if (want) b.classList.add(want);
+    }
   }
   // **Headings fold with ▸s, mirrored in the table of contents** (Ed,
   // 2026-08-19). The control is session-view's own sectoggle; in the prose

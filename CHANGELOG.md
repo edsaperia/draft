@@ -6,10 +6,18 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
-## 2026-10-02: a measuring spike for live updates
+## 2026-10-02: live updates measured before they are built
 
 ### For contributors
-- **Off unless switched on; nothing a member sees changes.** Scaling Stage 4's spike (issue #159): `DRAFT_SPIKE_SSE=1` turns on three `/api/spike/*` routes (`packages/server/src/routes-spike.ts`), a Server-Sent Events stream carrying a counter and the process's own numbers, never a document. `node scripts/spike-sse.mjs <base>` measures them; the findings are in `design/spec-pass/plan-scaling.md`'s *Stage notes*. Removed by Stage 4's build.
+- **Nothing a member sees changes.** Scaling Stage 4's spike (issue #159) measured a Server-Sent Events stream on a local server and found it fit to build on. A stream stayed open past Node's request timeout. Writes arrived within 5 ms with no buffering. Each stream cost one file descriptor and 10–20 KB, with no event-loop lag at 1,000 streams. Stage 4 has to end its streams at shutdown and spread its reconnects. The spike's route was removed unshipped by Ed's ruling (no Render measurement); `scripts/spike-sse.mjs` stays for measuring Stage 4's real stream. Findings: `design/spec-pass/plan-scaling.md` *Stage notes*.
+
+## 2026-10-02: headings sized by the levels a document uses
+
+### Changed
+- **A document's headings are larger, and take their size from the levels it uses.** The smallest kind of heading in the text is drawn in bold at a clear step over the body, the next kind up larger again with a rule above it, and a third kind larger still; the document's title grows to stay above them. A document whose headings start at `##` now reads the way one starting at `#` did, and no heading is ever drawn barely larger than the text under it. The Rules keep their own headings as they were.
+
+### For contributors
+- **Surface-only.** `CARDS.setHeadLevels` and `CARDS.rankCls` (`design/cards.js`) give every Text heading a `rank1`–`rank3` class beside its `lvlN`, in the column, a card's head, a lane and edit mode; `--h-part` joins the heading ladder in `design/system.css`. Guard: `scripts/repro/heading-rank.mjs`, in the sprint tier.
 
 ## 2026-10-02: a clause's decisions read top down from the current text
 

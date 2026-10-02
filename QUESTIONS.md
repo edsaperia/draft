@@ -227,7 +227,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1581** — claim by writing the block here, then commit it alone.
+**The next free number is 1582** — claim by writing the block here, then commit it alone.
+
+**1581 is the heading-ranks builder's calls** (claimed 2026-10-02 by the cloud coordinator; draft PR #156, issue #152; Ed 2026-10-02 ~00:55 UTC: *headings get larger depending on what the smallest level that's used in the text*; the coordinator's ladder OK'd by Ed 01:21 UTC). **Settled by the coordinator from the brief, as built** (2026-10-02): (1) rung 3 is a new token, `--h-part`, 2.369rem Regular ruled; (2) the title steps to 3.157rem only while three ranks are in use, else 2.369rem; (3) a level the Text does not yet use, typed in a lane, previews at the rank it would land at; (4) the ranks come from the Text's own lines (`CARDS.setHeadLevels`) and reach every site through `rankCls`, the Rules unranked; (5) the PR stands on the builder's one push branch, not the brief's name. **Spent.**
 
 **1580 is the clause-fold builder's calls** (claimed 2026-10-02 by the cloud coordinator; draft PR #157, issue #149; Ed 2026-10-02 ~00:42 and ~00:50 UTC, on the demo's ✔✔✔ card and a lone ✔ record; the coordinator's design OK'd by Ed 01:21 UTC). **Settled by the coordinator from the brief, as built** (2026-10-02): (1) `foldSame` stays, a fold of ✖s alone using it under 2026-09-25 ruling A, and only `foldHead` and `foldSince` retire; (2) the newest ✔ becomes the head only while the clause still reads as it, a later change keeping today's net-change head and the newest its own block; (3) the head's quiet line is `outcomeOf`'s own label without *· since replaced*, in `.rsub` after the speaker; (4) *(no text here)* reuses the deletion line's muted note (`.lp.removed`, a `notext` marker), no CSS changed; (5) a replacement keeps its *Previous text*, and only an empty one reads *(no text here)*; (6) a record open when a second ✔ lands is not folded, as before. **Spent.**
 
