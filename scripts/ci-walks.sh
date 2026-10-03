@@ -381,6 +381,11 @@ case "$GROUP" in
     # stage 6): on the ladder's session rung, every live judgment card's
     # strip joins its card, clear of the riding tab, at 1600 and 390
     walk "ridetab-strip" node scripts/repro/ridetab-strip.mjs "$BASE"
+    # **proposing on a phone** (MOBILE.md §6a, stage 6a; #203): iPhone 13 and
+    # Pixel 7 on the session rung — ✏️ *propose edit*, 📝 and a tap that makes
+    # the clause its lane, IME in the lane and never in the column, the row
+    # above a keyboard, 16px, then propose → judge → 👑 → ✔
+    walk "phone-propose" node scripts/repro/phone-propose.mjs "$BASE"
     # **the host refuses nothing a closed page offers** (Q1541 stage 7): the
     # ladder closes a document; the Founder, an unsigned member and a
     # stranger open every tab and entry and press every enabled control, 🥂

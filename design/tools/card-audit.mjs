@@ -1040,7 +1040,10 @@ const IN_PAGE = () => {
     const headTop = head ? firstTop(head.el) : null;
     // the blocks: outermost, visible, not inputs
     const blocks = [...card.querySelectorAll(BLOCK_SEL)].filter((b) => vis(b) && !(b.parentElement && b.parentElement.closest(BLOCK_SEL)) &&
-      !(head && head.el.contains(b)) && !b.querySelector('[contenteditable="true"], textarea, input[type="text"], input:not([type])'));
+      !(head && head.el.contains(b)) && !b.querySelector('[contenteditable="true"], textarea, input[type="text"], input:not([type])') &&
+      // the phone's in-place card's form beneath its lane — the switch and the
+      // reasoning — is the editing block's other half, unlabelled as that is
+      !b.matches('.lanebelow'));
     const out = { blocks: [], headLabel: null, headNeedsLabel: false };
     for (const b of blocks) {
       const live = [...b.querySelectorAll('.lanepick, [role="radio"]')].some((r) => !r.disabled && vis(r));
@@ -1702,6 +1705,9 @@ const IN_PAGE = () => {
         // card-shell.js's `data-kind`): what `GRAMMAR_KINDS` holds it by, so
         // a record filed on a clause is not a live quick card for the audit
         shellKind: card.getAttribute('data-kind') || null,
+        // the phone's editing card, its lane in the clause's own box (MOBILE.md
+        // §6a.1, Ed 1585.1): ruled to carry no label and no *Current text* head
+        inPlace: card.classList.contains('inplacecard'),
         // off unless --specimens asked for it: the payload is the page, and
         // 270 of them would drown the numbers this instrument exists for
         ...(window.__CA_SPEC ? { spec: specimen(card, key) } : {}),
@@ -2617,7 +2623,8 @@ function grammarRules(c, ref) {
    * answers Part 6.2),
    * 700, upper case, `--muted` — a record's outcome in its colour */
   if (v) {
-    if (v.headLabels !== 1) at('label-slot', v.headLabels ? v.headLabels + ' labels above the first line' : 'no label above the first line', v.headLabels ? 'labels' : 'no-label');
+    // …save the phone's in-place editing card, ruled to have none (1585.1)
+    if (v.headLabels !== 1 && !(c.inPlace && !v.headLabels)) at('label-slot', v.headLabels ? v.headLabels + ' labels above the first line' : 'no label above the first line', v.headLabels ? 'labels' : 'no-label');
     const drawn = (d, record) => {
       if (!d || !ref) return null;
       const bad = [];
@@ -3910,8 +3917,9 @@ async function walkEdit(page, cards, errors, walk) {
    * a caret at the end of a clause, one character typed — the draft's card
    * opens in front of the lifted column and is measured like every other;
    * then its own 🗑️ discards it and 📝 again leaves edit mode, so the walks
-   * after this one meet the page as they always did. Not below 900: the
-   * composer has no way in on a phone (MOBILE.md, Q1350).
+   * after this one meet the page as they always did. Below 900 the same
+   * keystroke opens the phone's form, the lane in the clause's own box
+   * (MOBILE.md §6a.1, Ed 1585.1) — the narrow run's editing card.
    */
   // **P30 with the patch row standing** (Q1382, `#patchrow`): a patch race's
   // site card open, the one bar of acts floating at the window's foot — at
@@ -3928,13 +3936,15 @@ async function walkEdit(page, cards, errors, walk) {
     await page.evaluate((k) => { try { window.SESSION.toggle(k, false); } catch (e) { /* closed */ } }, patch);
     await wait(page, 300);
   } else errors.push(walk + ': P30 — the fixture holds no patch race to read the patch row by');
-  if (VIEWPORT.width <= 900) return;
   const ID = 'draft-yours';
   await page.evaluate(() => window.scrollTo(0, 0));
   await wait(page, 150);
   const door = await page.$('#editdoor [data-act="edit-door"]');
   if (!door) { errors.push(walk + ': no floating 📝 to enter edit mode by (the editing card)'); return; }
-  await door.click();
+  // the door hides while the resting 📝 tab is below it (Q1380, D3) — on a
+  // phone's short window that is the page's top; the tab is the same door
+  if (await door.isVisible()) await door.click();
+  else await page.evaluate(() => document.querySelector('#ridetab .achip[data-tab="text"]').click());
   await wait(page, 400);
   const typed = await page.evaluate(() => {
     const p = [...document.querySelectorAll('#charter .editable[data-key]')]
@@ -3981,11 +3991,9 @@ async function walkEdit(page, cards, errors, walk) {
 }
 
 async function walkDoor(page, doors, errors, walk) {
-  // **No door on a phone** (MOBILE.md, Q1350): below 900px the composer is
-  // not drawn, so there is no D1 to measure — the narrow run (`npm run
-  // card-audit:narrow`, Q1351) is about the cards, and clicking a hidden
-  // door would only time out and take the rest of the walk with it.
-  if (VIEWPORT.width <= 900) return;
+  // **The door is a phone's too since stage 6a** (MOBILE.md §6a.6, issue
+  // #203): the narrow run measures D1–D4 at 390, where the door and the row
+  // stand clear of the task sheet's peek (§6a.0 finding 12).
   const DOOR = '#editdoor [data-act="edit-door"]';
   const ROW = '#charter [data-proposalrow] [data-act="row-commit"]';
   const box = (sel) => page.evaluate((s) => {
@@ -4021,6 +4029,14 @@ async function walkDoor(page, doors, errors, walk) {
   // `documentElement`'s client box, which is the whole document on this page
   const win = await page.evaluate(() => ({ w: visualViewport.width, h: visualViewport.height,
     s5: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--s5')),
+    // where the task sheet is drawn (narrow) the floats stand on its peek:
+    // `--s3` above the peek's edge and bar (MOBILE.md §6a.0 finding 12)
+    foot: (() => {
+      const cs = getComputedStyle(document.documentElement);
+      const v = (n) => parseFloat(cs.getPropertyValue(n)) || 0;
+      return document.documentElement.hasAttribute('data-sheet')
+        ? v('--s3') + v('--sheet-edge') + v('--sheet-peek') : v('--s5');
+    })(),
     edge: (() => {
       const sh = document.querySelector('.sheet-text');
       const el = sh && sh.offsetWidth ? sh : document.querySelector('.doc');
@@ -4456,8 +4472,9 @@ function doorRules(doors) {
     if (d.doorWhileEditing) out.push({ rule: 'D1', lens: 'positioning', said, saw: 'the door is still drawn in edit mode, beside the row', note: d.walk });
     const offRight = d.win.w - (d.before.r[0] + d.before.r[2]), offBottom = d.win.h - (d.before.r[1] + d.before.r[3]);
     const wantRight = d.win.edge == null ? d.win.s5 : Math.max(d.win.s5, d.win.w - d.win.edge - d.before.r[2] / 2);
-    if (Math.abs(offRight - wantRight) > 0.5 || Math.abs(offBottom - d.win.s5) > 0.5) out.push({ rule: 'D1', lens: 'positioning', said,
-      saw: 'the door stands ' + Math.round(offRight * 100) / 100 + 'px off the window\'s right and ' + Math.round(offBottom * 100) / 100 + 'px off its foot, against ' + Math.round(wantRight * 100) / 100 + ' and ' + d.win.s5, note: d.walk });
+    const wantFoot = d.win.foot != null ? d.win.foot : d.win.s5;
+    if (Math.abs(offRight - wantRight) > 0.5 || Math.abs(offBottom - wantFoot) > 0.5) out.push({ rule: 'D1', lens: 'positioning', said,
+      saw: 'the door stands ' + Math.round(offRight * 100) / 100 + 'px off the window\'s right and ' + Math.round(offBottom * 100) / 100 + 'px off its foot, against ' + Math.round(wantRight * 100) / 100 + ' and ' + wantFoot, note: d.walk });
     if (Math.abs(d.before.r[2] - d.commit.r[2]) > 1) out.push({ rule: 'D1', lens: 'positioning', said,
       saw: 'the door ' + d.before.r[2] + 'px across, the row\'s ✏️ ' + d.commit.r[2] + 'px (1569.2: the same)', note: d.walk });
     if (!same(d.before, d.after)) out.push({ rule: 'D1', lens: 'positioning', said,
@@ -4796,8 +4813,12 @@ async function main() {
   const base = 'http://127.0.0.1:' + server.address().port;
   const browser = await ENGINES[BROWSER].launch();
   const version = browser.version();
+  // **a phone is touch** (MOBILE.md §6a, stage 6a): below 900px the context
+  // has a coarse pointer, so the narrow run meets the page a phone meets —
+  // the column with no caret, the tap door, the editing card's in-place form
   const context = await browser.newContext({
     viewport: VIEWPORT, deviceScaleFactor: 1, locale: 'en-GB', timezoneId: 'Europe/London',
+    hasTouch: VIEWPORT.width <= 900,
   });
   await context.addInitScript(IN_PAGE);
   if (SPECIMENS) await context.addInitScript(() => { window.__CA_SPEC = true; });
