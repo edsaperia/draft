@@ -303,6 +303,10 @@
     --shadow-lg: 0 1px 2px rgba(0, 0, 0, 0.10), 0 4px 7px rgba(0, 0, 0, 0.16);
     --shadow-xl: 0 1px 2px rgba(0, 0, 0, 0.10), 0 5px 9px rgba(0, 0, 0, 0.15),
                  0 13px 22px rgba(0, 0, 0, 0.20);
+    /* a tab joined to a card casts leftward only, at --shadow-sm's and
+       --shadow-md's depth: its right edge is the joint (#207) */
+    --strip-sm: -1px 1px 1px rgba(0, 0, 0, 0.07), -1px 1px 2px rgba(0, 0, 0, 0.10);
+    --strip-md: -1px 1px 1px rgba(0, 0, 0, 0.08), -2px 2px 4px rgba(0, 0, 0, 0.14);
     /* a comment panel's edge and lift (Ed's S3): a hairline ring in the
        shadow's own colour and a 1px drop — a crisp edge, no border */
     --shadow-edge: 0 0 0 1px rgba(0, 0, 0, 0.06), 0 1px 1px rgba(0, 0, 0, 0.06);
@@ -1369,7 +1373,9 @@
      (Ed, 2026-08-17: every tab's right edge lands on the card's left edge;
      Ed, 2026-08-31: tabs should always tuck). In read mode there is no card
      edge, and the pile rests on the closed piles' own column. */
-  .ridetab.editing .achip { margin-right: -2px; padding-right: 2px; width: 36px; }
+  /* …and the lifted column's own gutter takes the same tuck (#207, below) */
+  .ridetab.editing .achip,
+  :is(.doc.editing:not(.begun) #prose, .doc.editing.begun #charter > .prose) .chipcol:not(.clausehead *) .achip { margin-right: -2px; padding-right: 2px; width: 36px; }
   .ridetab.editing .achip[data-tab="text"] { width: 44px; padding-right: 2px; }
   /* In edit mode the pile is drawn as the strip — the pile expanded, the ✒️ 🛡️
      tabs beneath 📝 reachable (Ed's QA, 2026-08-30) — and only the front tab
@@ -2105,6 +2111,36 @@
   }
   .insert-anchor .chipcol { top: 0; }
   .insert-anchor:hover { box-shadow: inset 0 0 0 1px var(--border); }
+  /* **In edit mode the column's gutter joins the column** (#207, Ed
+     2026-10-03, option 1: *edit mode only*). 📝 lifts the column onto a
+     card, and every tab in its gutter then stands against that card's
+     edge — so each takes the strip's tuck (`.clausehead .achip`'s: 2px
+     under, 2px back as padding, so the glyph does not move), square right
+     corners and the leftward cast, as 📝's own pile already does here
+     (`.ridetab.editing .achip`). And a held-open gap's wash runs on out to
+     its tab: the 12px between them (the gutter's 14px less the tuck) is
+     painted by the gap's `::before` in the gap's own wash, the box and its
+     caret untouched, its left corners squared so the two meet without a
+     doubled band. Read mode keeps its gutter: no card, so no joint.
+     card-audit P40, the edit half. */
+  :is(.doc.editing:not(.begun) #prose, .doc.editing.begun #charter > .prose) .chipcol:not(.clausehead *) .achip {
+    /* the tuck itself rides 📝's rule above, `.ridetab.editing .achip` */
+    border-radius: var(--r-sm) 0 0 var(--r-sm);
+    box-shadow: var(--strip-sm), var(--chipringa, 0 0 0 0 transparent);
+  }
+  :is(.doc.editing:not(.begun) #prose, .doc.editing.begun #charter > .prose) .chipcol:not(.clausehead *) .achip.behind { border-radius: 0 0 0 var(--r-sm); }
+  :is(.doc.editing:not(.begun) #prose, .doc.editing.begun #charter > .prose) .chipcol:not(.clausehead *) .achip:hover { box-shadow: var(--strip-md), var(--chipringa, 0 0 0 0 transparent); }
+  :is(.doc.editing:not(.begun) #prose, .doc.editing.begun #charter > .prose) .chipcol:not(.clausehead *) .achip:active { box-shadow: var(--chipringa, 0 0 0 0 transparent); }
+  :is(.doc.editing:not(.begun) #prose, .doc.editing.begun #charter > .prose) .chipcol:not(.clausehead *) .achip.held:is(:hover, :active) { box-shadow: var(--strip-sm), var(--chipringa, 0 0 0 0 transparent); }
+  :is(.doc.editing:not(.begun) #prose, .doc.editing.begun #charter > .prose) .chipcol:not(.clausehead *) .achip[data-pile] { box-shadow: var(--strip-sm), var(--pile); }
+  :is(.doc.editing:not(.begun) #prose, .doc.editing.begun #charter > .prose) .chipcol:not(.clausehead *) .achip[data-pile]:hover { box-shadow: var(--strip-md), var(--pile); }
+  :is(.doc.editing:not(.begun) #prose, .doc.editing.begun #charter > .prose) .chipcol:not(.clausehead *) .achip[data-pile]:active { box-shadow: var(--pile); }
+  :is(.doc.editing:not(.begun) #prose, .doc.editing.begun #charter > .prose) .insert-anchor { border-top-left-radius: 0; border-bottom-left-radius: 0; }
+  :is(.doc.editing:not(.begun) #prose, .doc.editing.begun #charter > .prose) .insert-anchor::before {
+    content: ''; position: absolute; top: 0; bottom: 0; right: 100%; width: calc(14px - 2px);
+    background-color: var(--washcol, transparent); pointer-events: none;
+    transition: background-color var(--wash-ms) ease;
+  }
 
   /* **Reduced motion: the document.** The gap's wash stops fading, the caret
      stops announcing where it landed, and the gutter tab stops lifting under
@@ -2114,7 +2150,7 @@
      and the two rules that outrank `.achip:hover` here — the filed pile's own
      hover and the open card's strip — did so on specificity, not on order. */
   @media (prefers-reduced-motion: reduce) {
-    .insert-anchor { transition: none; }
+    .insert-anchor, .insert-anchor::before { transition: none; }
     .caretpulse { display: none; }
     .achip { transition: none; }
     .achip:hover, .achip:active { transform: none; }
@@ -2411,11 +2447,7 @@
      at the same depth as before, and a white slip takes the active tab's
      three-sided hairline, the fourth side being the joint. Every width,
      since the seam measured the same at 1600. card-audit P40. */
-  .clausehead .achip:not(.wmark) {
-    --strip-sm: -1px 1px 1px rgba(0, 0, 0, 0.07), -1px 1px 2px rgba(0, 0, 0, 0.10);
-    --strip-md: -1px 1px 1px rgba(0, 0, 0, 0.08), -2px 2px 4px rgba(0, 0, 0, 0.14);
-    box-shadow: var(--strip-sm), var(--chipringa, 0 0 0 0 transparent);
-  }
+  .clausehead .achip:not(.wmark) { box-shadow: var(--strip-sm), var(--chipringa, 0 0 0 0 transparent); }
   .clausehead .achip:not(.wmark):hover { box-shadow: var(--strip-md), var(--chipringa, 0 0 0 0 transparent); }
   .clausehead .achip:not(.wmark):active { box-shadow: var(--chipringa, 0 0 0 0 transparent); }
   .clausehead .achip.held:not(.wmark):is(:hover, :active) { box-shadow: var(--strip-sm), var(--chipringa, 0 0 0 0 transparent); }

@@ -57,7 +57,8 @@
  * drawn fold triangle a 28 × 28 target that moves nothing, #151), P37
  * `one-sheet` (the edit area one unbroken outline under the editing card,
  * #153) and P40 `tab-join` (every tab in an open card's strip meets the
- * card's edge and casts no shadow onto it, #207), held everywhere
+ * card's edge and casts no shadow onto it, and in edit mode the gutter and
+ * a held-open gap's wash meet the lifted column, #207), held everywhere
  * (`EVERY_KIND`):
  *
  *   node design/tools/card-audit.mjs --walk=all             # the nine walks, P13–P37 among the findings
@@ -3325,6 +3326,8 @@ const zoneReads = [];
 /** P37 one-sheet: the edit area's painted outline read with the editing
  *  card open (`walkEdit`), one entry per walk that reached it */
 const sheetReads = [];
+/** P40's edit half, one reading per walk that enters edit mode */
+const EDIT_JOINS = [];
 const tipReads = [];
 /** per walk, at rest: P29's page half (every powers line and ✒️ 🛡️ tab left
  *  on a closed page) and P31's flush tabs */
@@ -3985,6 +3988,34 @@ async function walkEdit(page, cards, errors, walk) {
   if (!door) { errors.push(walk + ': no floating 📝 to enter edit mode by (the editing card)'); return; }
   await door.click();
   await wait(page, 400);
+  // **P40 tab-join, the edit half** (#207, Ed 2026-10-03, option 1): with
+  // the column lifted onto a card, every tab in its gutter against the
+  // card's left edge, and every held-open gap's painted wash (its own box,
+  // or its `::before` where that is drawn) against its own tab's right edge
+  EDIT_JOINS.push({ walk, ...(await page.evaluate(() => {
+    const R2 = (x) => Math.round(x * 100) / 100;
+    const clear = (c) => !c || c === 'transparent' || /^rgba\(.*,\s*0\)$/.test(c);
+    const segs = [...document.querySelectorAll('.doc.editing.begun #charter > .prose, .doc.editing:not(.begun) #prose')];
+    const tabs = [], gaps = [];
+    for (const seg of segs) {
+      const L = seg.getBoundingClientRect().left;
+      for (const t of seg.querySelectorAll('.chipcol .achip')) {
+        if (t.closest('.clausehead')) continue;
+        const r = t.getBoundingClientRect();
+        if (!r.width || !r.height || getComputedStyle(t).visibility === 'hidden') continue;
+        tabs.push({ tab: t.getAttribute('data-anchor') || t.getAttribute('data-chip') || '?', gap: R2(L - r.right) });
+      }
+      for (const g of seg.querySelectorAll('.insert-anchor')) {
+        const t = [...g.querySelectorAll('.chipcol .achip')].find((x) => x.getBoundingClientRect().width);
+        const gr = g.getBoundingClientRect();
+        if (!t || !gr.width || clear(getComputedStyle(g).backgroundColor)) continue;
+        const b = getComputedStyle(g, '::before');
+        const washL = b.content !== 'none' && !clear(b.backgroundColor) ? gr.left - parseFloat(b.width) : gr.left;
+        gaps.push({ tab: t.getAttribute('data-anchor') || '?', gap: R2(washL - t.getBoundingClientRect().right) });
+      }
+    }
+    return { segs: segs.length, tabs, gaps };
+  })) });
   const typed = await page.evaluate(() => {
     const p = [...document.querySelectorAll('#charter .editable[data-key]')]
       .filter((el) => !el.closest('.sugg') && !el.classList.contains('gap') && !el.closest('.hblock'))[5];
@@ -4384,11 +4415,36 @@ function waitFillRules(rails) {
  * edge — a tab is a descendant of the card, so a shadow past it is drawn on
  * the card, the seam *open is said by depth, not by outline* rules out. The
  * active tab has cast leftward only since 2026-08-17; this holds the rest of
- * the strip to it. P38 is #196's, P39 #200's.
+ * the strip to it. **The edit half** (Ed's option 1, the same day:
+ * *edit mode only*): with the column lifted by 📝, every tab in its gutter
+ * meets the column's edge within `TOL`, and a held-open gap's wash meets its
+ * own tab within `TOL` (`EDIT_JOINS`, read in `walkEdit`, so above 900px
+ * only — a phone has no edit mode). P38 is #196's, P39 #200's.
  */
-function tabJoinRules(cards) {
+function tabJoinRules(cards, edits = []) {
   const out = [];
   let any = 0;
+  // the edit half: the lifted column's gutter tabs on its edge, and a
+  // held-open gap's wash on its own tab (Ed's option 1, edit mode only)
+  for (const e of edits) {
+    for (const t of e.tabs) {
+      if (Math.abs(t.gap) > TOL) {
+        out.push({ check: 'tab-join', walk: e.walk, key: 'edit:' + t.tab, sub: 'edit-edge', kind: 'editing',
+          ex: 'in edit mode a gutter tab ' + t.tab + ' stands ' + t.gap + 'px from the lifted column\'s edge (#207)' });
+      }
+    }
+    for (const g of e.gaps) {
+      if (Math.abs(g.gap) > TOL) {
+        out.push({ check: 'tab-join', walk: e.walk, key: 'edit:' + g.tab, sub: 'edit-wash', kind: 'editing',
+          ex: 'in edit mode a held-open gap\'s wash starts ' + g.gap + 'px from its own tab ' + g.tab + ' (#207)' });
+      }
+    }
+    if (!e.tabs.length || !e.gaps.length) {
+      out.push({ check: 'tab-join', walk: e.walk, key: 'edit', sub: 'edit-unread', kind: 'editing',
+        ex: 'edit mode drew ' + e.tabs.length + ' gutter tabs and ' + e.gaps.length + ' washed gaps on ' + e.segs +
+          ' lifted segments, so the edit half was measured on nothing (#207)' });
+    }
+  }
   for (const c of cards) {
     for (const t of c.strip || []) {
       any++;
@@ -5266,7 +5322,7 @@ async function finish(cards, errors, tok, ref, version, switches, piles, doors, 
   grammar.push(...waitFillRules(rails));
   grammar.push(...foldTargetRules(FOLDS));
   grammar.push(...oneSheetRules(sheetReads));
-  grammar.push(...tabJoinRules(cards));
+  grammar.push(...tabJoinRules(cards, EDIT_JOINS));
   for (const f of grammar) {
     if (!f.kind) {
       const k = String(f.key).replace(/^(open|rest):/, '');
