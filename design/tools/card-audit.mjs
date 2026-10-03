@@ -53,11 +53,12 @@
  * not the page. They print as their own table, as ruled and v2-comparable,
  * and they are **held only for the kinds in `GRAMMAR_KINDS`** — save P34
  * `glyph-space` (issue #121, STYLE.md T50), P35 `wait-fill` (a ⏳ rail
- * entry's fill seen on its white slip, #148) and P36 `fold-target` (every
- * drawn fold triangle a 28 × 28 target that moves nothing, #151), held
- * everywhere (`EVERY_KIND`):
+ * entry's fill seen on its white slip, #148), P36 `fold-target` (every
+ * drawn fold triangle a 28 × 28 target that moves nothing, #151) and P37
+ * `one-sheet` (the edit area one unbroken outline under the editing card,
+ * #153), held everywhere (`EVERY_KIND`):
  *
- *   node design/tools/card-audit.mjs --walk=all             # the nine walks, P13–P36 among the findings
+ *   node design/tools/card-audit.mjs --walk=all             # the nine walks, P13–P37 among the findings
  *   node design/tools/card-audit.mjs --strict --kinds=GRAMMAR_KINDS --walk=fixture   # CI's fast pass
  *   node design/tools/card-audit.mjs --width=390 --height=844 --baseline=<1600 payload>  # P31
  *
@@ -282,7 +283,7 @@ const GRAMMAR_KINDS = [
 const STAGE = 10;
 /** the checks held on every card under `--kinds`, whatever its kind: a
  *  rendering fault no stage converts (P34, issue #121) */
-const EVERY_KIND = new Set(['glyph-space', 'wait-fill', 'fold-target']);
+const EVERY_KIND = new Set(['glyph-space', 'wait-fill', 'fold-target', 'one-sheet']);
 const STRICT_FROM = { 'closed-page': 7, 'closed-keeps-content': 7, 'closed-powers': 7, 'zone-overlap': 8, 'place-head': 6 };
 const KINDS_ARG = arg('kinds', null);
 const KINDS = KINDS_ARG == null ? null
@@ -2227,7 +2228,7 @@ const RETIRED = [
 const GLYPH_ONLY = /^[^\p{L}\p{N}]{1,4}$/u;
 
 /* ============================================================================
-   **The redesign's checks, P13–P36** (Q1541; design/redesign/checks.md, *The
+   **The redesign's checks, P13–P37** (Q1541; design/redesign/checks.md, *The
    checks as ruled*, which is the specification — answers.md over it). In
    node, over the readings `grammarOf`, `glassOpen`/`glassClosed` and the
    walks took in the page. Stage 0 runs every one in **report mode**: they
@@ -2253,7 +2254,7 @@ const CHECKS = [
   ['P21', 'label-slot'], ['P22', 'no-job'], ['P23', 'note-visible'], ['P24', 'bin-job'],
   ['P25', 'row-vocabulary'], ['P26', 'role-drawing'], ['P27', 'closed-page'], ['P28', 'closed-keeps-content'],
   ['P29', 'closed-powers'], ['P30', 'zone-overlap'], ['P31', 'width-invariance'], ['P32', 'place-head'],
-  ['P33', 'one-home'], ['P34', 'glyph-space'], ['P35', 'wait-fill'], ['P36', 'fold-target'], ['—', 'raw-value'],
+  ['P33', 'one-home'], ['P34', 'glyph-space'], ['P35', 'wait-fill'], ['P36', 'fold-target'], ['P37', 'one-sheet'], ['—', 'raw-value'],
 ];
 const CHECK = Object.fromEntries(CHECKS.map(([n, name]) => [name, n + ' ' + name]));
 /** checks.md's *unchanged* set (BUILD.md stage 0's acceptance): their
@@ -3272,6 +3273,9 @@ const wait = (page, ms) => page.waitForTimeout(ms);
 /** zone-overlap's readings, one at rest and one with a card open, per walk;
  *  and the closed walks' page-wide tooltips (closed-page) */
 const zoneReads = [];
+/** P37 one-sheet: the edit area's painted outline read with the editing
+ *  card open (`walkEdit`), one entry per walk that reached it */
+const sheetReads = [];
 const tipReads = [];
 /** per walk, at rest: P29's page half (every powers line and ✒️ 🛡️ tab left
  *  on a closed page) and P31's flush tabs */
@@ -3947,6 +3951,24 @@ async function walkEdit(page, cards, errors, walk) {
   m.walk = walk;
   m.switchOpen = false;
   m.p13 = [];
+  // **P37 one-sheet** (#153, Ed 2026-10-02: *the text composer should not
+  // look like there's a break in it*): every `.prose` segment's painted
+  // outline — its `::before`, as far as its own clip lets it paint — and
+  // which of its two horizontal edges is drawn (a clip at 0 is a join, not
+  // an edge), beside the card's own span
+  sheetReads.push({ walk, ...(await page.evaluate((k) => {
+    const card = document.querySelector('.sugg[data-card="' + k + '"]');
+    const sy = window.scrollY, c = card.getBoundingClientRect();
+    const segs = [...document.querySelectorAll('#charter > .prose')].map((seg) => {
+      const r = seg.getBoundingClientRect(), cs = getComputedStyle(seg, '::before');
+      const m = String(cs.clipPath).match(/inset\(([^)]*)\)/);
+      const v = m ? m[1].trim().split(/\s+/).map(parseFloat) : null;
+      const clipTop = v ? v[0] : null, clipFoot = v ? (v.length > 2 ? v[2] : v[0]) : null;
+      return { top: r.top + sy + (parseFloat(cs.top) || 0), bottom: r.bottom + sy - (parseFloat(cs.bottom) || 0),
+        topEdge: clipTop !== 0, footEdge: clipFoot !== 0 };
+    });
+    return { card: [c.top + sy, c.bottom + sy], segs };
+  }, ID)) });
   // P30 with the proposal-row standing (G4 v2): its own reading, since the
   // walk's one `open` reading was taken on its first card
   await zonesFor(page, walk, 'edit', ID);
@@ -4303,6 +4325,35 @@ function waitFillRules(rails) {
   if (!any && rails.some((r) => r.walk === 'charter')) {
     out.push({ check: 'wait-fill', walk: rails.map((r) => r.walk).join(','), key: 'rail', kind: 'rail',
       ex: 'no ⏳ rail entry with a fill on any walked page, so the fill was measured on nothing' });
+  }
+  return out;
+}
+/** P37 one-sheet — under an open card in edit mode the edit area is one
+ *  outline (#153): the segments' painted boxes cover the card's whole span
+ *  without a gap, and no drawn edge (a corner, a shadow) falls within it */
+function oneSheetRules(reads) {
+  const out = [];
+  for (const r of reads) {
+    const [top, foot] = r.card;
+    const segs = [...r.segs].sort((a, b) => a.top - b.top);
+    let reach = -Infinity;
+    for (const s of segs) {
+      if (s.top > reach + TOL && s.top > top && reach < foot) {
+        out.push({ check: 'one-sheet', walk: r.walk, key: 'editing', kind: 'editing',
+          ex: 'the edit area breaks under the open card: the desk shows from ' + Math.round(reach) + ' to ' +
+            Math.round(s.top) + 'px, inside the card\'s span ' + Math.round(top) + '–' + Math.round(foot) + 'px (#153)' });
+      }
+      reach = Math.max(reach, s.bottom);
+    }
+    if (reach < foot - TOL) out.push({ check: 'one-sheet', walk: r.walk, key: 'editing', kind: 'editing',
+      ex: 'the edit area ends at ' + Math.round(reach) + 'px, above the open card\'s foot at ' + Math.round(foot) + 'px (#153)' });
+    for (const s of segs) {
+      for (const [y, drawn, which] of [[s.top, s.topEdge, 'head'], [s.bottom, s.footEdge, 'foot']]) {
+        if (drawn && y > top + TOL && y < foot - TOL) out.push({ check: 'one-sheet', walk: r.walk, key: 'editing', kind: 'editing',
+          ex: 'a segment of the edit area draws its ' + which + ' edge at ' + Math.round(y) + 'px, inside the open card\'s span ' +
+            Math.round(top) + '–' + Math.round(foot) + 'px (#153)' });
+      }
+    }
   }
   return out;
 }
@@ -5105,7 +5156,7 @@ async function finish(cards, errors, tok, ref, version, switches, piles, doors, 
     }));
   }
 
-  /* **The redesign's checks** (P13–P36 and raw-value), per card and per walk,
+  /* **The redesign's checks** (P13–P37 and raw-value), per card and per walk,
    * and the table over them. `findings` is the count **as ruled** (stated
    * exceptions out); `v2` is the count comparable with checks.md's *today*
    * column (the exceptions in, the ruling's new findings out), read for the
@@ -5133,6 +5184,7 @@ async function finish(cards, errors, tok, ref, version, switches, piles, doors, 
   grammar.push(...widthRules(cards, baseline));
   grammar.push(...waitFillRules(rails));
   grammar.push(...foldTargetRules(FOLDS));
+  grammar.push(...oneSheetRules(sheetReads));
   for (const f of grammar) {
     if (!f.kind) {
       const k = String(f.key).replace(/^(open|rest):/, '');

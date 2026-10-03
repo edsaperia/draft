@@ -340,6 +340,8 @@ case "$GROUP" in
     # whose dev target route re-points the bots at a ladder document
     walk "demo-walk" npm run demo-walk -- "$DEMO_BASE"
     walk "demo-join" node scripts/repro/demo-join.mjs "$DEMO_BASE" --key=walk
+    # a proposal at two places opens as a patch, a card and a tab at each (issue #189)
+    walk "two-place-patch" node scripts/repro/two-place-patch.mjs "$DEMO_BASE"
     # 📧 ✋ 🖼️ on a live seat: what stands on the first line wearing
     # the chosen radio, a new one below (#169, #176) — a ladder member and
     # the Founder here, a demo visitor there
@@ -427,6 +429,15 @@ case "$GROUP" in
     # a 💡, an unread ✔ and a judged ⏳ — the rail's order is the strip's.
     # Serves design/ off the file system; red before the fix on the 💡
     walk "rail-stack-order" node scripts/repro/rail-stack-order.mjs
+    # **An open stack lifts as one** (issue #190, SURFACE M20, Ed
+    # 2026-10-02): each piled rail entry opened by a press — the open step's
+    # shadow cast by the whole stack, the edges unchanged under it, the lift
+    # a transition — at the desk's width and the phone's. Serves design/ off
+    # the file system; red before the fix on every piled entry. The phone's
+    # pass runs at a quarter of the CPU: the first press's render once
+    # outlasted the guard's watch on a slow runner (run 37060395678)
+    walk "pile-lift 1600" node scripts/repro/pile-lift.mjs --width=1600
+    walk "pile-lift 390" node scripts/repro/pile-lift.mjs --width=390 --cpu=4
     # **A second press on the open card's rail entry travels back to it**
     # (issue #168, Ed 2026-10-02: *bring it back into view as with the first
     # click … if users want to deactivate it, they can instead click outside
