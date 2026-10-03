@@ -1115,9 +1115,11 @@
   // words this entry is about, from this entry alone — never the clause's
   // name, which every entry on one clause shares, and never by comparison
   // with its neighbours, so a title cannot change because another entry
-  // arrived. A pair to judge reads its two sides as the card presents them
-  // (*‘six’ or ‘seven’*); a decided change and a proposal of your own read
-  // what they changed (*‘monthly’ → ‘quarterly’*). The clause's name stays
+  // arrived. Two proposals put against each other read their two sides as
+  // the card presents them (*‘six’ or ‘seven’*); a pair of the current text
+  // against a proposal, a decided change and a proposal of your own read
+  // the words they put in, plain (*‘quarterly’*; Ed 2026-10-02, #186), and
+  // a pure cut its words struck. The clause's name stays
   // where nothing is about words — a diagonal, a park, a deadlock, which is
   // about the whole field — and is what `railChange` falls back to.
   // A marked wording as its two texts: the hand-authored fixture carries
@@ -1160,7 +1162,7 @@
       if (g.kind === 'patch') {
         const site = (g.sites || [])[(e.n || 1) - 1];
         const two = site && bothOf(site);
-        return two ? railPair(two[0], two[1], name) : name;
+        return two ? railChange(two[0], two[1], name) : name;
       }
       // a record: the wording that carried, or where none did the best of
       // what was tried, against what it replaced — the text it displaced
@@ -1175,9 +1177,11 @@
         if (!pick) return name;
         return railChange(recordBaseOf(g, pick.won), pick.text, name, RAIL_DATED);
       }
+      // two proposals against each other; anything else here is the current
+      // text against one proposal, which is a change (#186)
       if (g.race && g.race.a && g.race.b) return railPair(g.race.a.text || '', g.race.b.text || '', name);
       const two = bothOf(g);
-      return two ? railPair(two[0], two[1], name) : name;
+      return two ? railChange(two[0], two[1], name) : name;
     } catch (err) { return name; }
   }
   // …and its moment, where it has one: the one helper (`railWhen`) against
@@ -2839,8 +2843,13 @@
         label: { text: W.currentText + W.sep + T.nav.ofPlaces(i + 1, n),
           steps: '<span class="psteps">' + step(i > 0 ? i - 1 : null, T.nav.prev, '↑') +
             step(i < n - 1 ? i + 1 : null, T.nav.next, '↓') + '</span>' },
-        head: { html: clauseHeadHtml(s, { text: sourceTextFor(site.key), key: site.key, v: 'keep',
-          chips: chipsFor(site.key, s.id), label: null, fact: 'place', onHead: headRank(site.key) }) },
+        // a site is a run of blocks on the live page (issue #189), its head
+        // the whole run (Q1308), and a gap's head the insert's *(no text
+        // here)*; the fixture's sites are one block each
+        head: { html: clauseHeadHtml(s, Object.assign(
+          site.isInsert || isGapKey(site.key) ? { text: null, nothing: gapNothing() }
+            : { text: (site.keys || [site.key]).map(sourceTextFor).filter(Boolean).join('\n') },
+          { key: site.key, v: 'keep', chips: chipsFor(site.key, s.id), label: null, fact: 'place', onHead: headRank(site.key) })) },
         body: bodyOf(reviseNote(s) + '<div class="foot">' + T.patch.foot(n) + '</div>'),
         options: { html: proposalHtml(s, { v: 'approve', html: laneHtml(site.marked), why: s.rationale, by: s.by, key: site.key,
           label: whoLabel(s.by, false), labelFact: s.by ? 'author' : null }) + vinBlockHtml(s) },
@@ -3771,7 +3780,10 @@ document.addEventListener('paste', (ev) => {
     // were: the editing card is edit mode's own (K13, K31), each site's
     // anchor is where its card hangs and the wire lands (Q1311), and the
     // floating row's rules are Q1380's and Q1382's, not this one's.
+    // A patch's gap site is a judged card like any other (issue #189), not a
+    // draft's, so it replaces its anchor at each of its places.
     const anchorHtml = (h) => {
+      if (openId === h.g.id && h.site && h.g.kind === 'patch') return '</div>' + suggCardHtml(h.g, h.key) + PROSE();
       if (openId === h.g.id && !h.site && !cardDone) {
         cardDone = true;
         return '</div>' + suggCardHtml(h.g, h.key) + PROSE();
@@ -6413,9 +6425,21 @@ document.addEventListener('paste', (ev) => {
   function settleLift() {
     const el = queueEl && queueEl.querySelector('button[aria-current="true"]');
     const id = el ? el.dataset.q : null;
+    // **The rest is painted in no time** (issue #190). Whatever the page
+    // measured between the render and here has already styled the new
+    // element lifted, so the flip to rest started a 220ms transition
+    // *downward* and the flip back reversed it at its first frame: no motion
+    // at all, on every entry. So the rest is painted with a zero duration —
+    // which starts nothing, and leaves a wash fade `settleWashes` has just
+    // begun on the same button running — and the lift is handed over with
+    // the stylesheet's own. A piled entry's lift is its stack's, the `li`'s
+    // (system.css), so the stack is painted at rest with it.
     if (id !== liftedId && el) {
+      const nodes = [el, el.closest('.qitem[data-pile]')].filter(Boolean);
+      for (const n of nodes) n.style.transitionDuration = '0s';
       el.setAttribute('aria-current', 'false');
       void el.offsetHeight;
+      for (const n of nodes) n.style.transitionDuration = '';
       el.setAttribute('aria-current', 'true');
     }
     liftedId = id;
@@ -6690,6 +6714,9 @@ document.addEventListener('paste', (ev) => {
     bandOwes, walkFromBand,
     setDocClosed,
     clockText, dateWords,
+    // a rail entry's title from the entry alone (Q1523, #186): clock-check
+    // reads which builder each kind of entry goes through
+    railTitleOf,
     // a block as the engine's source line — marker and words (Q1403): the
     // live layer builds a proposal's origins with it
     sourceTextFor, markerFor,

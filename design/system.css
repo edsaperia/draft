@@ -659,6 +659,11 @@
       padding: var(--s1) var(--s3) var(--s3);
     }
     .layout > .queue .qitem { position: static; width: 100%; transition: none; margin: 0; }
+    /* an open stack lifts here as at the desk (issue #190): the entry stays
+       untimed for its place, and its stack's lift keeps the button's 220ms */
+    @media (prefers-reduced-motion: no-preference) {
+      .layout > .queue .qitem[data-pile] { transition: box-shadow 220ms cubic-bezier(0.2, 0.7, 0.3, 1); }
+    }
     /* the two doors, in the topbar; a count on the right one says how many
        tasks the rail holds */
     .drawerbtn {
@@ -994,7 +999,24 @@
      declaration it has always had */
   .qitem[data-pile] > button { box-shadow: var(--shadow-sm), var(--pile); }
   .qitem[data-pile] > button:hover { box-shadow: var(--shadow-md), var(--pile); }
-  .qitem[data-pile] > button[aria-current="true"] { box-shadow: var(--shadow-xl), var(--pile); }
+  /* **An open stack lifts as one** (issue #190, Ed 2026-10-02: *visually the
+     whole stack should lift when it's active, not just the top card*). The
+     lift is `--shadow-xl`, and on the button it was cast by the top card's
+     box alone, so the edges beneath stayed on the desk. The `li` is the
+     stack's outline to the pixel — the button, then its pile's depth as
+     padding — so the open step is cast by the `li` and falls from the whole
+     pile; the button keeps its resting shadow, the top card's contact on the
+     edges beneath it, which is the same in a stack lifted and a stack at
+     rest. `:has` follows `settleLift`'s paint-at-rest, so the transition
+     runs here as on the button; a pinned entry keeps its `top` untimed and
+     its lift timed. */
+  .qitem[data-pile] > button[aria-current="true"] { box-shadow: var(--shadow-sm), var(--pile); }
+  .qitem[data-pile] {
+    border-radius: var(--r-md);
+    transition: top 220ms ease, box-shadow 220ms cubic-bezier(0.2, 0.7, 0.3, 1);
+  }
+  .qitem[data-pile].pinned { transition: box-shadow 220ms cubic-bezier(0.2, 0.7, 0.3, 1); }
+  .qitem[data-pile]:has(> button[aria-current="true"]) { box-shadow: var(--shadow-xl); }
 
   /* The wash is the progress bar (Ed, 105/116): how far the fill reaches is
      closeness to resolution — since Q1362 (c), how far the room has got
@@ -1282,7 +1304,7 @@
      cascade had them in: the beat's own rules come last, so they still win over
      `taskBeat` above for a card that is both nudged and arriving. */
   @media (prefers-reduced-motion: reduce) {
-    .qitem { transition: none; }
+    .qitem, .qitem[data-pile], .qitem[data-pile].pinned { transition: none; }
     .queue button { transition: none; }
     .queue button:not(.sealdot)::before { transition: none; }
     .queue button.leaving, .queue button.arriving { animation: none; }
@@ -1404,6 +1426,23 @@
     box-shadow: var(--shadow-xl); background: var(--bg);
     border-radius: var(--r-md) var(--r-md) 0 0;   /* square at the foot: the card runs off the page, it does not end */
   }
+  /* **The edit area is one sheet** (issue #153, Ed 2026-10-02: *the text
+     composer should not look like there's a break in it*). Where an open card
+     splits the column, a segment another follows runs its outline on through
+     the card to the next one's top (`--sheet-join`, measured by paper.js),
+     and every join is seamless: the upper outline's foot and the lower one's
+     head are clipped at the join, shadow and all, and the lower one's corners
+     are square — so the painted outline is one box from the first segment's
+     top to the last one's foot, and the card (z:1, above) lies on it. */
+  .doc.editing.begun #charter > .prose:has(~ .prose)::before {
+    bottom: calc(-1 * var(--sheet-join, 0px));
+    clip-path: inset(-200px -200px 0 -200px);
+  }
+  .doc.editing.begun #charter > .prose ~ .prose::before {
+    border-radius: 0;
+    clip-path: inset(0 -200px -200px -200px);
+  }
+  .doc.editing.begun #charter > .prose ~ .prose:has(~ .prose)::before { clip-path: inset(0 -200px); }
   /* **The proposal-row sticks to the foot of the window** while the column's
      foot is out of view — `sticky; bottom: 0` inside the column's own box, so
      it rests at the section's foot once that is on screen (which, the card
