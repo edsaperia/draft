@@ -40,6 +40,11 @@ export function picture(s: Session): unknown {
       document: s.document(), version: s.currentVersion(), races: tryIt(() => s.races(t)),
       judgments: s.judgments(), candidates: s.allCandidates(), floor: tryIt(() => s.adoptionFloor()),
       backlog: tryIt(() => s.backlog(t)), standings: standings.map((k) => s.standing(k)), closed: s.closed,
+      // the clock index's half (Stage 1): when a sweep at each moment would
+      // next have anything to do — a restored engine must be due exactly
+      // when a replayed one is
+      clocks: [t - 3_600_000, t, t + 60_000, t + 3_600_000, t + 86_400_000]
+        .map((after) => tryIt(() => s.nextClockT(after))),
       seats: seatsOf(s).map((id) => ({ balance: tryIt(() => s.balance(id, t)), hand: tryIt(() => s.feed(id, 8, t)) })),
     };
   } finally { Session.memo.off = false; }

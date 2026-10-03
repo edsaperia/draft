@@ -7,7 +7,7 @@ import { afterAll, afterEach, describe, expect, it } from 'vitest';
 import { configFromEnv } from '../src/config.js';
 import { createDraftServer } from '../src/server.js';
 import { codeVersion, ENGINE_SRC, engineFingerprint } from '../src/code-version.js';
-import { asEngineDoc, snapshotIfDue } from '../src/engine-host.js';
+import { asEngineDoc, clockDueT, snapshotIfDue } from '../src/engine-host.js';
 import { FilePersistence } from '../src/persistence.js';
 import { loadEngine, newSnapshotCounts, parseSnapshotAudit, SNAPSHOT_EVERY, snapshotDue }
   from '../src/snapshots.js';
@@ -56,6 +56,24 @@ async function boot(dir: string, audit = 'strict') {
     PORT: '0', DRAFT_DEMO: 'off', DRAFT_SNAPSHOT_AUDIT: audit, DRAFT_DESIGN_DIR: DESIGN_DIR };
   return createDraftServer(configFromEnv(env));
 }
+
+/**
+ * **Each document's next due time** (Stage 1's clock index), resumed and
+ * then as if swept at each of a few moments around its engine's last event:
+ * a host booted from snapshots must find every document due exactly when a
+ * host that replayed it does.
+ */
+const dues = (draft: Awaited<ReturnType<typeof boot>>): Record<string, unknown> =>
+  Object.fromEntries([...draft.store.all()].map((doc) => {
+    const d = asEngineDoc(doc);
+    const resumed = clockDueT(doc);
+    const last = d.bridge?.engine.log.at(-1)?.event.t ?? 0;
+    const swept = [-3_600_000, 0, 60_000, 86_400_000].map((dt) => {
+      d.sweptAtT = last + dt;
+      try { return clockDueT(doc); } finally { delete d.sweptAtT; }
+    });
+    return [doc.id, { resumed, swept }];
+  }));
 
 /** Each document's engine fold, encoded, from a booted host. */
 const folds = (draft: Awaited<ReturnType<typeof boot>>): Record<string, string> =>
@@ -121,6 +139,7 @@ describe('the host loads from snapshots, and writes them', () => {
     expect(a.snapshots.written).toBe(big.length);
     expect(a.snapshots.audited).toBe(0);
     const foldsA = folds(a);
+    const duesA = dues(a);
     await a.close();
     for (const id of big) expect(existsSync(join(dir, 'docs', id, 'snapshot.state.gz'))).toBe(true);
     const b = await boot(dir);
@@ -130,6 +149,7 @@ describe('the host loads from snapshots, and writes them', () => {
     expect(b.snapshots.audited).toBe(big.length);
     expect(b.snapshots.auditMismatch).toBe(0);
     expect(folds(b)).toEqual(foldsA);
+    expect(dues(b)).toEqual(duesA);
     await b.close();
   }, 300_000);
 
