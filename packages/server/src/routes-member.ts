@@ -434,7 +434,7 @@ function admitJudged(doc: LoadedDoc, app: ApplicantRecord): number {
 /** A cookie names a seat; this says whether the seat still exists
  *  (review #1, finding 1). The convenor always does; a member must be
  *  unremoved; an applicant must still be on the applicant list. */
-function seatAlive(cs: ConstitutionSession, memberId: string,
+export function seatAlive(cs: ConstitutionSession, memberId: string,
   applicantId: string | null): boolean {
   if (applicantId !== null) return cs.applicantRecords().has(applicantId);
   if (memberId === cs.convenorRecord().id) return true;

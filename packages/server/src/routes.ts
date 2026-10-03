@@ -39,6 +39,7 @@ import type { PauseState, WritePath } from './write-path.js';
 import type { RaceCounts } from './error-log.js';
 import type { Demo } from './demo.js';
 import type { DemoBots } from './demo-bots.js';
+import type { EventHub } from './events.js';
 import { str } from './commands.js';
 
 /**
@@ -69,6 +70,8 @@ export interface RouteContext {
   /** the refusals a member did nothing wrong to meet (Q1493 (a)): a race with
    *  the poll, answered by the page and counted rather than logged */
   readonly races: RaceCounts;
+  /** the open push streams (Scaling Stage 4): `GET /api/d/:slug/events` */
+  readonly events: EventHub;
   /** the demo's bots (design/DEMO.md Stage 4): idle until the panel's ▶️ */
   readonly demoBots: DemoBots;
   readonly bootedAtMs: number;
