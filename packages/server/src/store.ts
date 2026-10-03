@@ -197,10 +197,14 @@ export class DocStore {
    */
   async loadRegistry(nowMs: number = Date.now(),
     warm?: { codeVersion: string; minTail: number }): Promise<string[]> {
-    const [ids, rows, lengths, snaps] = await Promise.all([this.persistence.listDocIds(),
-      this.persistence.readRegistry(), this.persistence.docLengths(),
-      warm === undefined ? Promise.resolve(new Map<string, { codeVersion: string; eseq: number }>())
-        : this.persistence.snapshotVersions()]);
+    // one after another, never in parallel: four reads at once opened four
+    // pool connections per host where boot had always used one, and a test
+    // file holding dozens of hosts ran Postgres out of connections
+    const ids = await this.persistence.listDocIds();
+    const rows = await this.persistence.readRegistry();
+    const lengths = await this.persistence.docLengths();
+    const snaps = warm === undefined ? new Map<string, { codeVersion: string; eseq: number }>()
+      : await this.persistence.snapshotVersions();
     // **the documents whose first load would replay a long engine tail**:
     // no snapshot this code can take, or one far behind the log — after a
     // deploy that changed the engine, every convention. Folded at a request,
