@@ -275,8 +275,9 @@ window.EDIT_MODE = (function () {
       // patched (stage 10): the Founder's ✒️ here is a hold, and a render
       // under it keeps the button the pointer went down on
       window.PATCH.set(pr, show ? SESSION.proposalRowHtml({
-        count: 0, pen: true, disabled: !proseDirty(),
-        discardDisabled: !proseDirty(),
+        // never dark (#193): with nothing changed both ends leave edit mode
+        count: 0, pen: true, disabled: false,
+        discardDisabled: false,
         discardTitle: PAGE_COPY.proseRow.discard,
         title: proseDirty() ? PAGE_COPY.proseRow.save : PAGE_COPY.proseRow.saved,
       }) : '');
@@ -286,10 +287,7 @@ window.EDIT_MODE = (function () {
       const b = pr && pr.querySelector('[data-act="row-commit"]');
       if (!b) return;
       const dirty = proseDirty();
-      b.disabled = !dirty;
       b.title = dirty ? PAGE_COPY.proseRow.save : PAGE_COPY.proseRow.saved;
-      const bin = pr.querySelector('[data-act="row-discard"]');
-      if (bin) bin.disabled = !dirty;
     }
     // ---- the column's strip before the start (Q1313) --------------------------
     // **The same strip as after 🍾** (Ed, 2026-09-11 14:08): B · I at the top

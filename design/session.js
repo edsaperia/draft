@@ -4000,8 +4000,11 @@ document.addEventListener('paste', (ev) => {
         // the wallet is what is stopping this press, and the row says when
         // that stops being true (Q1486 (E))
         broke: pt.broke && rs.changed,
-        disabled: !rs.changed || pt.broke, penDisabled: !rs.changed,
-        discardDisabled: !rs.count,
+        // **never dark for want of a change** (#193, Ed 2026-10-02): with
+        // nothing changed both ends are the way out of edit mode, so only an
+        // empty wallet under a real change darkens the ✏️
+        disabled: rs.changed && pt.broke, penDisabled: false,
+        discardDisabled: false,
         title: !rs.changed ? idle : pen ? pt.penTitle : pt.title,
         proposeTitle: !rs.changed ? idle : pt.title,
       });
@@ -4038,7 +4041,10 @@ document.addEventListener('paste', (ev) => {
     doc.querySelectorAll('[data-proposalrow] [data-act="row-commit"], .sugg [data-act="draft-propose"]').forEach((b) => {
       const pen = !!b.dataset.pen;
       const inRow = b.dataset.act === 'row-commit';
-      b.disabled = pen ? !rs.changed : (!rs.changed || pt.broke);
+      // the row's is the way out with nothing changed (#193); a card's
+      // commit outside edit mode has no mode to leave, and stays dark
+      b.disabled = inRow ? (!pen && rs.changed && pt.broke)
+        : pen ? !rs.changed : (!rs.changed || pt.broke);
       b.title = inRow && !rs.changed ? idle : pen ? pt.penTitle : pt.title;
     });
     // **and the countdown appears with the dark button, not one render later**
@@ -4057,7 +4063,7 @@ document.addEventListener('paste', (ev) => {
       const html = abstainNoteHtml(dripAtMs(), 'drip');
       if (html) btn.insertAdjacentHTML('beforebegin', html);
     });
-    doc.querySelectorAll('[data-proposalrow] [data-act="row-discard"]').forEach((b) => { b.disabled = !rs.count; });
+    doc.querySelectorAll('[data-proposalrow] [data-act="row-discard"]').forEach((b) => { b.disabled = false; });
     doc.querySelectorAll('[data-proposalrow] .rowmid').forEach((m) => {
       m.textContent = rs.changedCount ? T.row.placesChanged(rs.changedCount) : '';
     });
