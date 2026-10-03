@@ -340,8 +340,14 @@ case "$GROUP" in
     # whose dev target route re-points the bots at a ladder document
     walk "demo-walk" npm run demo-walk -- "$DEMO_BASE"
     walk "demo-join" node scripts/repro/demo-join.mjs "$DEMO_BASE" --key=walk
+    # 📝 beside the text's first clause: above its pile at rest, at the head
+    # of its card's strip and tucked once open (#194) — the demo's first
+    # clause holds a race, which the fixture's never does (card-audit P38)
+    walk "ride-tab-tuck" node scripts/repro/ride-tab-tuck.mjs "$DEMO_BASE"
     # a proposal at two places opens as a patch, a card and a tab at each (issue #189)
     walk "two-place-patch" node scripts/repro/two-place-patch.mjs "$DEMO_BASE"
+    # …and each place's rail entry travels to its own place's card (issue #204)
+    walk "patch-entry-travel" node scripts/repro/patch-entry-travel.mjs "$DEMO_BASE"
     # opening a document never shows the birth's *Untitled*: the skeleton
     # from the first frame, through a 503's retry, lifted at the first render
     # (issue #201, Q1559)
@@ -350,9 +356,9 @@ case "$GROUP" in
     # the chosen radio, a new one below (#169, #176) — a ladder member and
     # the Founder here, a demo visitor there
     walk "email-card-standing" node scripts/repro/email-card-standing.mjs "$BASE" --demo="$DEMO_BASE"
-    # **the page opens at the Text** behind ?rules=below (#197, SURFACE M26):
+    # **the page opens at the Text** (#197, the default since #212; SURFACE M26):
     # the demo, the ladder before 🍾, in session and closed, and the fixture,
-    # at 1600 and 390 — and without the flag, at the top
+    # at 1600 and 390 — and with the ?open=top dev seam, at the top
     walk "open-at-text" node scripts/repro/open-at-text.mjs "$BASE" --demo="$DEMO_BASE"
     walk "demo-bots-walk" npm run demo-bots-walk -- "$DEMO_BASE"
     ;;
@@ -381,6 +387,11 @@ case "$GROUP" in
     # stage 6): on the ladder's session rung, every live judgment card's
     # strip joins its card, clear of the riding tab, at 1600 and 390
     walk "ridetab-strip" node scripts/repro/ridetab-strip.mjs "$BASE"
+    # **proposing on a phone** (MOBILE.md §6a, stage 6a; #203): iPhone 13 and
+    # Pixel 7 on the session rung — ✏️ *propose edit*, 📝 and a tap that makes
+    # the clause its lane, IME in the lane and never in the column, the row
+    # above a keyboard, 16px, then propose → judge → 👑 → ✔
+    walk "phone-propose" node scripts/repro/phone-propose.mjs "$BASE"
     # **the host refuses nothing a closed page offers** (Q1541 stage 7): the
     # ladder closes a document; the Founder, an unsigned member and a
     # stranger open every tab and entry and press every enabled control, 🥂

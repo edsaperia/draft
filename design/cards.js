@@ -2241,7 +2241,15 @@ window.CARDS = (function () {
     // opens the draft with that character already applied. Which is
     // `always-on-typing`, applied to a box instead of to a paragraph — the same
     // idea and, it turns out, the same function underneath.
-    function laneBoxHtml(d, site, blank) {
+    // `part` (MOBILE.md §6a.1, Ed 1585.1): `'lane'` is the editor alone, for
+    // the phone's card whose lane stands in the clause's own box; `'why'` the
+    // reasoning alone, drawn beneath it. Absent, the whole box as ever.
+    function laneBoxHtml(d, site, blank, part) {
+      if (part === 'lane') {
+        return '<div class="editlane inplace" contenteditable="true" data-lane="' + site.keys[0] +
+          '" spellcheck="false">' + laneBlocks(site.text, originText(site)) + '</div>';
+      }
+      if (part === 'why') return whyBoxHtml((d && d.rationale) || '', ' data-why');
       // **No controls of its own since Q1294 (b)** (Ed, 2026-09-10: *top right
       // of the edit box, identical to the existing composer control. You can
       // put bold and italic there too*): the lane is the text and nothing
