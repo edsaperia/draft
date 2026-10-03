@@ -342,6 +342,8 @@ case "$GROUP" in
     walk "demo-join" node scripts/repro/demo-join.mjs "$DEMO_BASE" --key=walk
     # a proposal at two places opens as a patch, a card and a tab at each (issue #189)
     walk "two-place-patch" node scripts/repro/two-place-patch.mjs "$DEMO_BASE"
+    # …and each place's rail entry travels to its own place's card (issue #204)
+    walk "patch-entry-travel" node scripts/repro/patch-entry-travel.mjs "$DEMO_BASE"
     # opening a document never shows the birth's *Untitled*: the skeleton
     # from the first frame, through a 503's retry, lifted at the first render
     # (issue #201, Q1559)
