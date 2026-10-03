@@ -2830,12 +2830,14 @@ const rowBare = editState.rowGround && /rgba\(0, 0, 0, 0\)|transparent/.test(edi
 // taken the pen at this step, so one ✏️ is the expected shape here)
 const pairOk = editState.commits[editState.commits.length - 1] === '✏️' &&
   (editState.commits.length === 1 || editState.commits.join('') === '✒️✏️');
-const editOk = (await hostEditable()) === 'true' && editState.editing && editState.row && editState.greyed &&
+// **the bare row is live** (#193, Ed 2026-10-02): with nothing changed its ✏️ is
+// the way out of edit mode, no longer greyed until a place has changed
+const editOk = (await hostEditable()) === 'true' && editState.editing && editState.row && !editState.greyed &&
   pairOk && rowBare && wantRide !== null && editState.rideTabs === wantRide &&
   editState.rideRight === editState.consRight + 2 && editState.padTop === 24 &&
   Math.abs(editState.lineDelta) <= 1 && editState.runway === 0 && stripOk &&
   (EMPTY_TEXT ? !editState.gap : editState.gap);
-say('edit mode  · ' + JSON.stringify(editState) + (editOk ? '' : '  FAIL: 📝 should lift the column (24px over the first line), fan the pile to 📝 plus the Text\'s held powers (' + wantRide + ' tabs, Q1404) on the constitution\'s gutter, draw the bare row greyed with ✏️ (✒️ only beside it), the B · I strip at the card\'s top right with no lane carrying controls, and the trailing gap'));
+say('edit mode  · ' + JSON.stringify(editState) + (editOk ? '' : '  FAIL: 📝 should lift the column (24px over the first line), fan the pile to 📝 plus the Text\'s held powers (' + wantRide + ' tabs, Q1404) on the constitution\'s gutter, draw the bare row live with ✏️ — the way out with nothing changed, #193 — (✒️ only beside it), the B · I strip at the card\'s top right with no lane carrying controls, and the trailing gap'));
 if (!editOk) stuck.push('edit mode');
 /* ---- a click outside leaves edit mode after 🍾 too (Q1315, Ed 2026-09-11:
  * *clicking outside of cards should close them*, ruled for both eras): on
