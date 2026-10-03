@@ -17,6 +17,8 @@
  *   still   with that place's clause already on screen and the card shut, its
  *           entry pressed: the clause is still where it was, 0px (Q1465,
  *           *the tab you click does not move*, space-above)
+ *   open    the patch open, each place's entry pressed in turn: each travels
+ *           to its own place and the card stays open (#168, `railPress`)
  *
  * The rail press handed `toggle` the item's id alone, so the travel and the
  * hold both aimed at the patch's topmost place (`topTarget`). Red on main at
@@ -132,6 +134,18 @@ for (let i = 0; i < 2; i++) {
   check(tag + 'still · its clause stays where it was, 0px',
     after.open && moved !== null && Math.abs(moved) <= 1,
     'moved ' + (moved === null ? '?' : moved.toFixed(1)) + 'px · ' + JSON.stringify({ before, after }));
+}
+// open: the patch already open (the last press), place 1's entry and then
+// place 2's pressed — each travels to its own place and leaves the card open
+// (#168, \`railPress\`); on main both went to place 1
+for (const i of [0, 1]) {
+  const before = await where(it.id, it.sites[i]);
+  if (!before.open) { check('open · the patch is still open', false, JSON.stringify(before)); break; }
+  await press(it.id, it.sites[i]);
+  await sleep(3000);
+  const me = await where(it.id, it.sites[i]);
+  check('open · place ' + (i + 1) + '\'s entry, pressed on the open patch, travels there',
+    me.open && me.headTop !== null && Math.abs(me.headTop - READ_LINE) <= NEAR, JSON.stringify(me));
 }
 check('no page error', errors.length === 0, errors.join(' | '));
 await browser.close();
