@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 723
+  "entries": 725
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -283,6 +283,8 @@
   "page.consent.removeSelfWhy": "Whether <b>you</b> leave the membership. Under this document’s rule that is decided by <b>everyone but you</b> — you see it running, and your answer is not asked.",
   "page.consent.staysAsIs": "The membership stays as it is.",
   "page.consent.staysIn": "ƒ (name) => name + ' stays in the membership.'",
+  "page.credit.lead": "Created by the ",
+  "page.credit.name": "London College of Political Technology",
   "page.crownHand": "The founder’s own hand — a Founder Action ✒️, not a proposal",
   "page.departed.byFounder": "ƒ (day) => 'The Founder removed you from this document on ' + day + '.'",
   "page.departed.byMembers": "ƒ (day) => 'The membership removed you from this document on ' + day + '.'",
