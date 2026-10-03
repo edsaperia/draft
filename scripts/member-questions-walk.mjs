@@ -84,18 +84,19 @@ await page.waitForTimeout(2600);
 const state = () => page.evaluate(() => ({
   rail: [...document.querySelectorAll('.qitem')].map((el) => el.dataset.q),
   paras: [...document.querySelectorAll('[data-para]')].map((el) => el.dataset.para),
-  founded: [...document.querySelectorAll('[data-para="founded"] [data-tab], [data-setupcard="grant-voice"] [data-tab]')]
+  // 🏛️'s own clause among the Proposals since #223 (G3), open or closed
+  voiceClause: [...document.querySelectorAll('[data-para="grant-voice"] [data-tab], [data-setupcard="grant-voice"] [data-tab]')]
     .map((el) => el.dataset.tab),
   f: window.__founding ? (({ constituted, amFounder, viewerIsMember, voiceAcked }) =>
     ({ constituted, amFounder, viewerIsMember, voiceAcked }))(window.__founding()) : null,
 }));
 
-// 1 — at arrival: 🏛️ on the Founded line, no question, the delegated paragraphs present
+// 1 — at arrival: 🏛️ on its own Proposals clause (#223, G3), no question, the delegated paragraphs present
 let s = await state();
 say(`arrival    · rail ${JSON.stringify(s.rail)} · paras ${s.paras.join(' ')}`);
 check('the invited seat is a member of an unbegun document', s.f && s.f.viewerIsMember && !s.f.amFounder && !s.f.constituted, JSON.stringify(s.f));
 check('🏛️ is served at arrival (Q1365)', s.rail.includes('grant-voice'), 'rail ' + JSON.stringify(s.rail));
-check('🏛️ rides the Founded line', s.founded.includes('grant-voice'), 'Founded line tabs ' + JSON.stringify(s.founded));
+check('🏛️ rides its own clause among the Proposals (#223, G3)', s.voiceClause.includes('grant-voice'), '🏛️ clause tabs ' + JSON.stringify(s.voiceClause));
 check('no blind question before the grant is OK\'d (Q1365)', !s.rail.some((k) => k.startsWith('ans-')), 'rail ' + JSON.stringify(s.rail));
 check('the delegated settings are on the page with 🎩 unanswered (Q1372)', s.paras.includes('rate') && s.paras.includes('quorum'), 'paras ' + s.paras.join(' '));
 check('what the founder has not reached is absent', !s.paras.includes('hat') && !s.paras.includes('lapse'), 'paras ' + s.paras.join(' '));
