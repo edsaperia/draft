@@ -2,7 +2,8 @@
 /**
  * open-at-text — **the page opens at the Text, the Rules a page above** (issue #197; Ed,
  * 2026-10-02: *when the page opens, it aligns near the top of The Text page, and people could
- * just scroll upwards*), behind `?rules=below`. SURFACE M26.
+ * just scroll upwards*); the default since #212 (Ed, 2026-10-03: *merge and make it the default*),
+ * the flag gone and `?open=top` the dev seam for the old opening. SURFACE M26.
  *
  *   PORT=8297 DRAFT_BASE_URL=http://127.0.0.1:8297 DRAFT_DATA_DIR=<fresh> \
  *     DRAFT_DEMO_KEY=walk DRAFT_DEMO_STUB=1 npm run server
@@ -12,12 +13,12 @@
  * same one will do); the fixture is served from design/ by the walk itself. At 1600×1000 and
  * 390×844 it asserts:
  *
- *   at text     with the flag, past 🍾 — the demo's stranger and visitor, the ladder's member at
+ *   at text     past 🍾 — the demo's stranger and visitor, the ladder's member at
  *               `session`, the closed ladder document, the fixture and the closed fixture — the
  *               Text sheet's top stands `--sheet-margin` under the bar (±1px), the Rules' last
  *               line is above the window, and the page is still there after a poll;
- *   at top      without the flag the same pages open at the top; with it, the ladder at `ready`
- *               (before 🍾) still does, and so do an address with a fragment and the demo's
+ *   at top      with the `?open=top` seam the same pages open at the top; without it, the ladder
+ *               at `ready` (before 🍾) still does, and so do an address with a fragment and the demo's
  *               `?try=1`, which opens 👋;
  *   runway      the read-mode runway is tall enough for any Text, however short, to reach the
  *               line (issue #197 case 4): `#runway` ≥ the window less the bar and the margin;
@@ -143,13 +144,15 @@ async function opens(tag, url, want, { w, h, cookie, poll = false, shot = null }
   return m;
 }
 
-const flag = (u) => u + (u.includes('?') ? '&' : '?') + 'rules=below';
+// the default opens at the Text (#212); the dev seam is the old opening
+const flag = (u) => u;
+const seamTop = (u) => u + (u.includes('?') ? '&' : '?') + 'open=top';
 for (const [w, h] of [[1600, 1000], [390, 844]]) {
   const at = { w, h };
   say(`\n— ${w}×${h}`);
   // the fixture
   await opens(`${w} fixture`, flag(FIX), 'text', at);
-  await opens(`${w} fixture, no flag`, FIX, 'top', at);
+  await opens(`${w} fixture, ?open=top`, seamTop(FIX), 'top', at);
   await opens(`${w} fixture, closed`, flag(FIX + '&closed=1'), 'text', at);
   await opens(`${w} fixture, a fragment`, flag(FIX) + '#dochead', 'top', at);
   // the ladder
@@ -157,7 +160,7 @@ for (const [w, h] of [[1600, 1000], [390, 844]]) {
   const s = await opens(`${w} ladder session, member`, flag(SESSION_DOC.url), 'text', { ...at, cookie: SESSION_DOC.cookie, poll: true });
   check(`${w} ladder session · the runway lets any Text reach the line`,
     s.runway != null && s.runway >= s.h - s.nav - s.margin, show(s));
-  await opens(`${w} ladder session, no flag`, SESSION_DOC.url, 'top', { ...at, cookie: SESSION_DOC.cookie });
+  await opens(`${w} ladder session, ?open=top`, seamTop(SESSION_DOC.url), 'top', { ...at, cookie: SESSION_DOC.cookie });
   await opens(`${w} ladder closed, member`, flag(CLOSED.url), 'text', { ...at, cookie: CLOSED.cookie });
 
   // released by the reader, then a reload: nothing restores the live place, so the Text again
@@ -198,7 +201,7 @@ for (const [w, h] of [[1600, 1000], [390, 844]]) {
   // the demo: a stranger, a visitor, the QR's ?try=1
   if (DEMO) {
     await opens(`${w} demo stranger`, flag(DEMO + '/d/demo'), 'text', { ...at, poll: true, shot: `after-stranger-${w}.png` });
-    await opens(`${w} demo stranger, no flag`, DEMO + '/d/demo', 'top', { ...at, shot: `before-stranger-${w}.png` });
+    await opens(`${w} demo stranger, ?open=top`, seamTop(DEMO + '/d/demo'), 'top', { ...at, shot: `before-stranger-${w}.png` });
     const { ctx, page } = await seatPage(w, h);
     await page.goto(flag(DEMO + '/d/demo?try=1'));
     await page.waitForSelector('[data-strtry]', { timeout: 15000 }).catch(() => null);
@@ -212,10 +215,10 @@ for (const [w, h] of [[1600, 1000], [390, 844]]) {
     const v = await measure(page);
     check(`${w} demo visitor · opens at the Text, the Rules above`, atText(v), show(v));
     if (SHOTS) await page.screenshot({ path: join(SHOTS, `after-visitor-${w}.png`) });
-    await page.goto(DEMO + '/d/demo');
+    await page.goto(seamTop(DEMO + '/d/demo'));
     await sleep(SETTLE);
     const nv = await measure(page);
-    check(`${w} demo visitor, no flag · opens at the top`, nv.y === 0, show(nv));
+    check(`${w} demo visitor, ?open=top · opens at the top`, nv.y === 0, show(nv));
     if (SHOTS) await page.screenshot({ path: join(SHOTS, `before-visitor-${w}.png`) });
     await ctx.close();
   }
