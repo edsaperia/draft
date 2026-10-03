@@ -6,6 +6,43 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-10-03: tabs that join their card
+
+### Fixed
+- **The tabs beside an open card now join it cleanly.** The ones you are not reading had cast a faint shadow and a thin line onto the card's edge, most visible on a phone. And while you edit the text, the tabs in its margin now meet the page you are editing, and a gap held open for a new clause runs its colour on out to its tab.
+
+### For contributors
+- **Surface-only** (issue #207), in `design/system.css`: an open card's inactive strip tabs cast leftward only (`--strip-sm` / `--strip-md`, now `:root` tokens), a white slip taking the active tab's `--chipringa`; in edit mode the column's gutter tabs take the strip's tuck through 📝's own rule, 📝's right corners square, and `.insert-anchor::before` runs a held-open gap's wash to its tab. Read mode's gutter is unchanged. Guard: card-audit P40 `tab-join`, held on every kind at 1600 and 390, its edit half (`EDIT_JOINS` in `walkEdit`) above 900px.
+
+## 2026-10-03: saved checkpoints for long documents
+
+### Changed
+- **docs.vote comes back faster after an update.** A long-running document can now be loaded from a saved checkpoint instead of re-reading its whole history. A checkpoint saved by an earlier version of docs.vote is set aside, and that document is read from the start, so nothing in a document changes.
+
+### For contributors
+- **Engine snapshots** (Scaling Stage 3, issue #211): every 100 engine entries and at the close, `Session.snapshot()` / `restore()` over `engine-core/src/snapshot.ts`, stored by both stores (pg migration 8, `snapshots`; `snapshot.json` + `snapshot.state.gz` on disk) and keyed by `codeVersion`, the sha256 of `packages/engine-core/src` baked into the build (`scripts/engine-fingerprint.mjs`). A restore verifies the whole hash chain and folds only the tail. `DRAFT_SNAPSHOT_AUDIT` (`off` | `strict` | a rate) is strict off the production build and off in production at first, by Ed's call; `/healthz` gains `snapshots`. Convention cold open, engine load: ~4,050 ms → 119–158 ms locally. Guards: `snapshot.test.ts`, `snapshot-fixture.test.ts` and `snapshots.test.ts`, differentials byte-identical against full replay. A cold boot is still a full replay until Stage 2. Design and measurements: `design/spec-pass/plan-scaling.md` *Stage notes*.
+
+## 2026-10-03: leaving edit mode with nothing changed
+
+### Changed
+- **In edit mode, when you haven't changed anything, 🗑️ and ✏️ at the foot of the window take you back to reading**, as pressing 📝 again does, and so does ✒️ where the Founder has it. Nothing is sent and no ✏️ is spent.
+
+### For contributors
+- **Surface-only, desktop and phone alike.** With nothing changed (`draftRowState().changed` after 🍾, `proseDirty()` before it) the row is drawn live and its 🗑️ ✏️ ✒️ go through `leaveEditMode()` by a new `exitEditMode` env hook (`design/session.js`, `design/session-view.html`, `design/edit-mode.js`); a typed-back draft is kept, as 📝 again keeps it; a never-saved column before 🍾 still saves. No copy changed. SURFACE K31, §9.1 and §9's 📝 row. Guard: `scripts/repro/edit-unchanged.mjs`, in the sprint tier's `sprint-motions`, 30 presses at 1600 and on two phones.
+
+## 2026-10-03: a newer push retires the older push's checks
+
+### For contributors
+- **Nothing a member sees changes.** A burst of merges no longer queues the deploy behind checks nobody will read: a push to main that a newer one has already overtaken runs none of its probes and walks, and a newer push's checks cancel an older push's still running. The sprint tier likewise keeps only the newest run on main. In `.github/workflows/ci.yml` the check jobs skip when `ci` was cancelled or when its new last step, `is this push still main's head` (`git ls-remote`), reports `superseded`, and each sits in a job-level group per job and leg with `cancel-in-progress` on a push; the deploying `ci` is in none of them. `sprint.yml`'s `golden` and `walks` cancel in progress on main too (issue #217).
+
+## 2026-10-03: a vote on a rule shows no "Chosen by"
+
+### Changed
+- **When you vote on a proposed change to a rule, the current rule no longer says who chose it.** The card is a straight choice between two wordings: the rule as it stands with its own *Prefer this*, the proposed rule with its own, and *Indifferent*. Nothing is pressed when the card opens. The rule's own card still says who chose it.
+
+### For contributors
+- **Surface-only.** `provenanceOf` in `design/card-state.js` reads no standing on a card its source calls a vote, and the motion card draws its pill from its `CardState` (`motionShellPresent`, session-view.html); `BND.pillOf` left `design/band.js`'s exports. SURFACE §9.3 CP2: *never on a vote*. Guard: card-audit P39 `vote-pill`, in `card-audit:fast` and `fast-narrow`.
+
 ## 2026-10-03: proposing from a phone
 
 ### New
