@@ -1111,9 +1111,11 @@
   // words this entry is about, from this entry alone — never the clause's
   // name, which every entry on one clause shares, and never by comparison
   // with its neighbours, so a title cannot change because another entry
-  // arrived. A pair to judge reads its two sides as the card presents them
-  // (*‘six’ or ‘seven’*); a decided change and a proposal of your own read
-  // what they changed (*‘monthly’ → ‘quarterly’*). The clause's name stays
+  // arrived. Two proposals put against each other read their two sides as
+  // the card presents them (*‘six’ or ‘seven’*); a pair of the current text
+  // against a proposal, a decided change and a proposal of your own read
+  // the words they put in, plain (*‘quarterly’*; Ed 2026-10-02, #186), and
+  // a pure cut its words struck. The clause's name stays
   // where nothing is about words — a diagonal, a park, a deadlock, which is
   // about the whole field — and is what `railChange` falls back to.
   // A marked wording as its two texts: the hand-authored fixture carries
@@ -1156,7 +1158,7 @@
       if (g.kind === 'patch') {
         const site = (g.sites || [])[(e.n || 1) - 1];
         const two = site && bothOf(site);
-        return two ? railPair(two[0], two[1], name) : name;
+        return two ? railChange(two[0], two[1], name) : name;
       }
       // a record: the wording that carried, or where none did the best of
       // what was tried, against what it replaced — the text it displaced
@@ -1171,9 +1173,11 @@
         if (!pick) return name;
         return railChange(recordBaseOf(g, pick.won), pick.text, name, RAIL_DATED);
       }
+      // two proposals against each other; anything else here is the current
+      // text against one proposal, which is a change (#186)
       if (g.race && g.race.a && g.race.b) return railPair(g.race.a.text || '', g.race.b.text || '', name);
       const two = bothOf(g);
-      return two ? railPair(two[0], two[1], name) : name;
+      return two ? railChange(two[0], two[1], name) : name;
     } catch (err) { return name; }
   }
   // …and its moment, where it has one: the one helper (`railWhen`) against
@@ -6690,6 +6694,9 @@ document.addEventListener('paste', (ev) => {
     bandOwes, walkFromBand,
     setDocClosed,
     clockText, dateWords,
+    // a rail entry's title from the entry alone (Q1523, #186): clock-check
+    // reads which builder each kind of entry goes through
+    railTitleOf,
     // a block as the engine's source line — marker and words (Q1403): the
     // live layer builds a proposal's origins with it
     sourceTextFor, markerFor,
