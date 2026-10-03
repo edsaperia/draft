@@ -178,6 +178,85 @@
     place(rules, left, top, width, breakTop - top);
     place(text, left, breakBottom, width, bottom - breakBottom);
     desk.dataset.sheets = '2';
+    openAtText(breakBottom);
+  }
+
+  // ---- the opening place (issue #197, flagged `?rules=below`) --------------
+  // Ed, 2026-10-02: *when the page opens, it aligns near the top of The Text
+  // page, and people could just scroll upwards* — the Rules being, in the
+  // members' word, a menu. SURFACE M26. The page opens with the Text sheet's
+  // top `--sheet-margin` under the bar: the desk gap and the Rules' blank foot
+  // show above it, never a Rules line.
+  //
+  // **Decided once, at the first lay that has the break** — the docsep is
+  // drawn only once the page holds a document, so this is the boot's first
+  // render, whichever boot — and only for a begun one (`.doc.begun`, which
+  // the closed page and the stranger's door wear too): a founding page opens
+  // at the top, and a 🍾 pressed later is not an opening. A fragment in the
+  // address, or a card already open (`?try=1`'s 👋), is a place of its own and
+  // wins.
+  //
+  // **Pinned, not jumped**: `overflow-anchor` is off (system.css, *the page
+  // holds its own scroll*), and the faces landing, the band settling and the
+  // poll all move the Text after the first render, so every lay re-pins it,
+  // instantly, until the reader does anything at all — a wheel, a touch, a
+  // key, a press, or a scroll this code did not make.
+  //
+  // **A reload or a return keeps whatever restores the reader's place**: the
+  // browser's own restoration, landing after `load`. It lands where the
+  // reader was only where the page is already whole by then (the fixture);
+  // on the live path the column arrives on the view's fetch and the browser
+  // restores against a page a fraction of its height, which lands nowhere in
+  // particular (233px for a reader who left at 1800, measured on the demo).
+  // So the place is noted as the page is left, and on a reload or a return
+  // the decision waits for the restoration: where the browser put the reader
+  // back, it stands; where it did not, the page opens at the Text.
+  const FLAG = new URLSearchParams(location.search).get('rules') === 'below';
+  let pinState = FLAG ? 'undecided' : 'off';
+  let pinnedY = null;
+  const PLACE_KEY = 'rules-below:' + location.pathname + location.search;
+  const navType = (() => {
+    try { const n = performance.getEntriesByType('navigation')[0]; return n ? n.type : 'navigate'; } catch (e) { return 'navigate'; }
+  })();
+  let leftAt = 0;
+  if (FLAG && (navType === 'reload' || navType === 'back_forward')) {
+    try { leftAt = Number(sessionStorage.getItem(PLACE_KEY)) || 0; } catch (e) { /* no place noted */ }
+  }
+  // the restoration is the browser's, a frame or so after `load`; a timer,
+  // never rAF, for the backgrounded tabs (CLAUDE.md, *Checking a mockup*)
+  let restoreSettled = !leftAt;
+  if (!restoreSettled) {
+    const settle = () => setTimeout(() => { restoreSettled = true; if (window.PAPER) window.PAPER.lay(); }, 150);
+    if (document.readyState === 'complete') settle(); else addEventListener('load', settle);
+  }
+  if (FLAG) {
+    addEventListener('pagehide', () => {
+      try { sessionStorage.setItem(PLACE_KEY, String(Math.round(window.scrollY))); } catch (e) { /* the place goes unnoted */ }
+    });
+  }
+  function unpin() {
+    if (pinState !== 'pinned') return;
+    pinState = 'released';
+    for (const t of ['wheel', 'touchstart', 'keydown', 'pointerdown']) removeEventListener(t, unpin, true);
+  }
+  function openAtText(breakBottom) {
+    if (pinState === 'undecided') {
+      if (!restoreSettled) return;
+      const restored = leftAt > 0 && Math.abs(window.scrollY - leftAt) <= 2;
+      const take = doc.classList.contains('begun') && !location.hash && !doc.querySelector('.gshell') && !restored;
+      pinState = take ? 'pinned' : 'off';
+      if (!take) return;
+      for (const t of ['wheel', 'touchstart', 'keydown', 'pointerdown']) addEventListener(t, unpin, { capture: true, passive: true });
+      addEventListener('scroll', () => {
+        if (pinState === 'pinned' && pinnedY != null && Math.abs(window.scrollY - pinnedY) > 1) unpin();
+      }, { passive: true });
+    }
+    if (pinState !== 'pinned') return;
+    const nav = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 58;
+    const max = document.documentElement.scrollHeight - innerHeight;
+    const y = Math.max(0, Math.min(max, Math.round(breakBottom - nav - token('--sheet-margin'))));
+    pinnedY = y;
+    if (Math.abs(window.scrollY - y) > 1) window.scrollTo(window.scrollX, y);
   }
 
   let queued = false;
@@ -200,7 +279,7 @@
     // the page lays itself out over several ticks after boot (the fixture's
     // washes, the fonts); a last pass once it has settled
     setTimeout(lay, 300); setTimeout(lay, 1200);
-    window.PAPER = { lay };
+    window.PAPER = { lay, pinState: () => pinState };
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
