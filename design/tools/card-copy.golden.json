@@ -1,6 +1,6 @@
 {
  "meta": {
-  "cards": 276,
+  "cards": 274,
   "walks": [
    "answers",
    "charter",
@@ -210,9 +210,9 @@
    },
    "begin": {
     "eyebrow": "Begin",
-    "head": "When the document begins, members may propose changes to rules and vote on proposals.A proposal ✏️ passes once it is preferred by enough of the membership, and by more than prefer the current text.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "The members are waiting on the Founder to begin.",
     "lock": "",
-    "body": "What beginning does, all at once.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.The document cannot begin while 🌍 Visibility is still being decided.🌍 Visibility is delegated to the membership, and you are its only member: a question answered by one voice has not been handed to anybody. Invite somebody at 🪪 Membership, or take it back on its own card and set it yourself.What the Founder keeps.Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.🪶 Title✒️🛡️📍 Link✒️🛡️🌍 Visibility✒️🛡️🪪 Admissions✒️🛡️🤝 Applications✒️🛡️💤 Lapsing✒️🛡️🥾 Removals✒️🛡️✉️ Invite a Member✒️🛡️❌ Remove a Member✒️🛡️⏱️ Proposal Rate✒️🛡️⏰ Ending✒️🛡️👥 Quorum✒️🛡️👤 Anonymous Proposals✒️🛡️👁️ Vote Reveal✒️🛡️📝 Text✒️🛡️The questions🌍 1 out of 1 of the membership has voted on whether the document can only be seen by members or by anyone with the link.The peopleAda Lovell · answered everything",
+    "body": "What beginning does, all at once.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.The document cannot begin while 🌍 Visibility is still being decided.🌍 Visibility is delegated to the membership, and you are its only member: a question answered by one voice has not been handed to anybody. Invite somebody at 🪪 Membership, or take it back on its own card and set it yourself.What the Founder keeps.Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.🪶 Title✒️🛡️📍 Link✒️🛡️🌍 Visibility✒️🛡️🪪 Admissions✒️🛡️🤝 Applications✒️🛡️💤 Lapsing✒️🛡️🥾 Removals✒️🛡️✉️ Invite a Member✒️🛡️❌ Remove a Member✒️🛡️⏱️ Proposal Rate✒️🛡️👥 Quorum✒️🛡️👤 Anonymous Proposals✒️🛡️👁️ Vote Reveal✒️🛡️⏰ Ending✒️🛡️📝 Text✒️🛡️The questions🌍 1 out of 1 of the membership has voted on whether the document can only be seen by members or by anyone with the link.The peopleAda Lovell · answered everything",
     "options": [],
     "inputs": [],
     "foot": [
@@ -281,17 +281,17 @@
     "eyebrow": "Current rule",
     "head": "The Founder is deciding when the drafting process will end.",
     "lock": "",
-    "body": "No more changes to the document may be made after .Choose thisChanges to the document may be made perpetually.Choose thisThe membership will decide whether changes end on a set date or may be made perpetually.Choose this",
+    "body": "Proposals may be made until .Choose thisProposals may be made indefinitely.Choose thisThe membership will decide whether changes end on a set date or may be made perpetually.Choose this",
     "options": [
      {
       "set": "ending",
       "val": "ends",
-      "label": "No more changes to the document may be made after ."
+      "label": "Proposals may be made until ."
      },
      {
       "set": "ending",
       "val": "perpetual",
-      "label": "Changes to the document may be made perpetually."
+      "label": "Proposals may be made indefinitely."
      },
      {
       "set": "ending",
@@ -326,9 +326,9 @@
    },
    "grant-pen": {
     "eyebrow": "Accept Founder Actions",
-    "head": "Founded by AL Ada Lovell 👑.",
+    "head": "The Founder may ✒️ change anything at will.",
     "lock": "",
-    "body": "As the founder of this document, you have the power to change settings and edit the document at will. Founder Actions are denoted by ✒️. You can give up these powers later if you choose to.",
+    "body": "As the founder, you have the power to change settings and edit the document at will. Founder Actions are denoted by ✒️. You can give up these powers later if you choose to.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -338,19 +338,17 @@
      }
     ],
     "hints": [
-     "Accept Founder Actions — close it",
-     "Accept Constitutional Proposals — yours to take",
-     "Some of the rules are reserved: changing them needs the founder’s assent"
+     "Accept Founder Actions — close it"
     ],
     "helpers": [
-     "As the founder of this document, you have the power to change settings and edit the document at will. Founder Actions are denoted by ✒️. You can give up these powers later if you choose to."
+     "As the founder, you have the power to change settings and edit the document at will. Founder Actions are denoted by ✒️. You can give up these powers later if you choose to."
     ]
    },
    "grant-shield": {
     "eyebrow": "Accept the Founder Veto",
-    "head": "Founded by AL Ada Lovell 👑.",
+    "head": "The Founder may 🛡️ refuse any proposal the membership pass.",
     "lock": "",
-    "body": "As the founder of this document, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can give up this power later if you choose to.",
+    "body": "As the founder, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can give up this power later if you choose to.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -360,20 +358,17 @@
      }
     ],
     "hints": [
-     "Accept the Founder Veto — close it",
-     "Accept Constitutional Proposals — yours to take",
-     "Founder Actions — settled",
-     "Some of the rules are reserved: changing them needs the founder’s assent"
+     "Accept the Founder Veto — close it"
     ],
     "helpers": [
-     "As the founder of this document, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can give up this power later if you choose to."
+     "As the founder, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can give up this power later if you choose to."
     ]
    },
    "grant-voice": {
     "eyebrow": "Accept Constitutional Proposals",
-    "head": "Founded by AL Ada Lovell 👑.",
+    "head": "A 🏛️ proposal passes only when all members agree to it.",
     "lock": "",
-    "body": "A 🏛️ is a constitutional proposal: one at a time, returned whole, passing only when all members agree. You are already a member; activating it opens every question, proposal and vote on the rules.",
+    "body": "A 🏛️ is a constitutional proposal. Members may only make one at a time, and it passes only when all members agree to it.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -383,13 +378,10 @@
      }
     ],
     "hints": [
-     "Accept Constitutional Proposals — close it",
-     "Founder Actions — settled",
-     "Founder Veto — settled",
-     "Some of the rules are reserved: changing them needs the founder’s assent"
+     "Accept Constitutional Proposals — close it"
     ],
     "helpers": [
-     "A 🏛️ is a constitutional proposal: one at a time, returned whole, passing only when all members agree. You are already a member; activating it opens every question, proposal and vote on the rules."
+     "A 🏛️ is a constitutional proposal. Members may only make one at a time, and it passes only when all members agree to it."
     ]
    },
    "hat": {
@@ -416,7 +408,7 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "✒️",
+      "label": "Set it",
       "title": "Set it"
      }
     ],
@@ -675,17 +667,17 @@
     "eyebrow": "Current rule",
     "head": "The Founder is deciding how many members must prefer a proposal before it can pass.",
     "lock": "",
-    "body": "A proposal ✏️ cannot pass until it is preferred by at least % of the membership.Choose thisA proposal ✏️ cannot pass until it is preferred by at least members.Choose thisThe membership will decide how many members must prefer a proposal ✏️ before it can pass.Choose this",
+    "body": "A ✏️ proposal passes once at least % of the membership have voted for it and it’s the most preferred option.Choose thisA ✏️ proposal passes once at least members have voted for it and it’s the most preferred option.Choose thisThe membership will decide how many members must prefer a proposal ✏️ before it can pass.Choose this",
     "options": [
      {
       "set": "quorumForm",
       "val": "share",
-      "label": "A proposal ✏️ cannot pass until it is preferred by at least % of the membership."
+      "label": "A ✏️ proposal passes once at least % of the membership have voted for it and it’s the most preferred option."
      },
      {
       "set": "quorumForm",
       "val": "count",
-      "label": "A proposal ✏️ cannot pass until it is preferred by at least members."
+      "label": "A ✏️ proposal passes once at least members have voted for it and it’s the most preferred option."
      },
      {
       "set": "quorumBy",
@@ -729,12 +721,12 @@
     "eyebrow": "Current rule",
     "head": "The Founder is deciding how often members may propose.",
     "lock": "",
-    "body": "Members may make a new proposal ✏️ every minuteshoursdays.Choose thisThe membership will decide how often members should be able to make proposals.Choose this",
+    "body": "Members may make a new ✏️ proposal every minuteshoursdays, up to 3 at a time.Choose thisThe membership will decide how often members should be able to make proposals.Choose this",
     "options": [
      {
       "set": "rateBy",
       "val": "founder",
-      "label": "Members may make a new proposal ✏️ every minuteshoursdays."
+      "label": "Members may make a new ✏️ proposal every minuteshoursdays, up to 3 at a time."
      },
      {
       "set": "rateBy",
@@ -3238,17 +3230,17 @@
     "eyebrow": "Current rule",
     "head": "The Founder is deciding when the drafting process will end.",
     "lock": "",
-    "body": "No more changes to the document may be made after .Choose thisChanges to the document may be made perpetually.Choose thisThe membership will decide whether changes end on a set date or may be made perpetually.Chosen",
+    "body": "Proposals may be made until .Choose thisProposals may be made indefinitely.Choose thisThe membership will decide whether changes end on a set date or may be made perpetually.Chosen",
     "options": [
      {
       "set": "ending",
       "val": "ends",
-      "label": "No more changes to the document may be made after ."
+      "label": "Proposals may be made until ."
      },
      {
       "set": "ending",
       "val": "perpetual",
-      "label": "Changes to the document may be made perpetually."
+      "label": "Proposals may be made indefinitely."
      },
      {
       "set": "ending",
@@ -3409,17 +3401,17 @@
     "eyebrow": "Current rule",
     "head": "The Founder is deciding how many members must prefer a proposal before it can pass.",
     "lock": "",
-    "body": "A proposal ✏️ cannot pass until it is preferred by at least % of the membership.Choose thisA proposal ✏️ cannot pass until it is preferred by at least members.Choose thisThe membership will decide how many members must prefer a proposal ✏️ before it can pass.Chosen",
+    "body": "A ✏️ proposal passes once at least % of the membership have voted for it and it’s the most preferred option.Choose thisA ✏️ proposal passes once at least members have voted for it and it’s the most preferred option.Choose thisThe membership will decide how many members must prefer a proposal ✏️ before it can pass.Chosen",
     "options": [
      {
       "set": "quorumForm",
       "val": "share",
-      "label": "A proposal ✏️ cannot pass until it is preferred by at least % of the membership."
+      "label": "A ✏️ proposal passes once at least % of the membership have voted for it and it’s the most preferred option."
      },
      {
       "set": "quorumForm",
       "val": "count",
-      "label": "A proposal ✏️ cannot pass until it is preferred by at least members."
+      "label": "A ✏️ proposal passes once at least members have voted for it and it’s the most preferred option."
      },
      {
       "set": "quorumBy",
@@ -3463,12 +3455,12 @@
     "eyebrow": "Current rule",
     "head": "The Founder is deciding how often members may propose.",
     "lock": "",
-    "body": "Members may make a new proposal ✏️ every minuteshoursdays.Choose thisThe membership will decide how often members should be able to make proposals.Chosen",
+    "body": "Members may make a new ✏️ proposal every minuteshoursdays, up to 3 at a time.Choose thisThe membership will decide how often members should be able to make proposals.Chosen",
     "options": [
      {
       "set": "rateBy",
       "val": "founder",
-      "label": "Members may make a new proposal ✏️ every minuteshoursdays."
+      "label": "Members may make a new ✏️ proposal every minuteshoursdays, up to 3 at a time."
      },
      {
       "set": "rateBy",
@@ -3756,9 +3748,9 @@
    },
    "begin": {
     "eyebrow": "Begin",
-    "head": "When the document begins, members may propose changes to rules and vote on proposals.A proposal ✏️ passes once it is preferred by enough of the membership, and by more than prefer the current text.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "The members are waiting on the Founder to begin.",
     "lock": "",
-    "body": "What beginning does, all at once.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.What the Founder keeps.Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.🪶 Title✒️🛡️📍 Link✒️🛡️🌍 Visibility✒️🛡️🪪 Admissions✒️🛡️🤝 Applications✒️🛡️💤 Lapsing✒️🛡️🥾 Removals✒️🛡️✉️ Invite a Member✒️🛡️❌ Remove a Member✒️🛡️⏱️ Proposal Rate✒️🛡️⏰ Ending✒️🛡️👥 Quorum✒️🛡️👤 Anonymous Proposals✒️🛡️👁️ Vote Reveal✒️🛡️📝 Text✒️🛡️The questionsThe peopleAda Lovell · nothing owedNobody is kept waiting by this: whoever has not answered can still answer after the start, and the document takes what was said.",
+    "body": "What beginning does, all at once.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.What the Founder keeps.Every power is the Founder’s until they lay it down. Whatever is not kept here goes the moment the document begins.🪶 Title✒️🛡️📍 Link✒️🛡️🌍 Visibility✒️🛡️🪪 Admissions✒️🛡️🤝 Applications✒️🛡️💤 Lapsing✒️🛡️🥾 Removals✒️🛡️✉️ Invite a Member✒️🛡️❌ Remove a Member✒️🛡️⏱️ Proposal Rate✒️🛡️👥 Quorum✒️🛡️👤 Anonymous Proposals✒️🛡️👁️ Vote Reveal✒️🛡️⏰ Ending✒️🛡️📝 Text✒️🛡️The questionsThe peopleAda Lovell · nothing owedNobody is kept waiting by this: whoever has not answered can still answer after the start, and the document takes what was said.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -3825,17 +3817,17 @@
     "eyebrow": "Current rule",
     "head": "The Founder is deciding when the drafting process will end.",
     "lock": "",
-    "body": "No more changes to the document may be made after .Choose thisChanges to the document may be made perpetually.Choose thisThe membership will decide whether changes end on a set date or may be made perpetually.Choose this",
+    "body": "Proposals may be made until .Choose thisProposals may be made indefinitely.Choose thisThe membership will decide whether changes end on a set date or may be made perpetually.Choose this",
     "options": [
      {
       "set": "ending",
       "val": "ends",
-      "label": "No more changes to the document may be made after ."
+      "label": "Proposals may be made until ."
      },
      {
       "set": "ending",
       "val": "perpetual",
-      "label": "Changes to the document may be made perpetually."
+      "label": "Proposals may be made indefinitely."
      },
      {
       "set": "ending",
@@ -3870,9 +3862,9 @@
    },
    "grant-pen": {
     "eyebrow": "Accept Founder Actions",
-    "head": "Founded by AL Ada Lovell 👑.",
+    "head": "The Founder may ✒️ change anything at will.",
     "lock": "",
-    "body": "As the founder of this document, you have the power to change settings and edit the document at will. Founder Actions are denoted by ✒️. You can give up these powers later if you choose to.",
+    "body": "As the founder, you have the power to change settings and edit the document at will. Founder Actions are denoted by ✒️. You can give up these powers later if you choose to.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -3882,19 +3874,17 @@
      }
     ],
     "hints": [
-     "Accept Founder Actions — close it",
-     "Accept Constitutional Proposals — yours to take",
-     "Some of the rules are reserved: changing them needs the founder’s assent"
+     "Accept Founder Actions — close it"
     ],
     "helpers": [
-     "As the founder of this document, you have the power to change settings and edit the document at will. Founder Actions are denoted by ✒️. You can give up these powers later if you choose to."
+     "As the founder, you have the power to change settings and edit the document at will. Founder Actions are denoted by ✒️. You can give up these powers later if you choose to."
     ]
    },
    "grant-shield": {
     "eyebrow": "Accept the Founder Veto",
-    "head": "Founded by AL Ada Lovell 👑.",
+    "head": "The Founder may 🛡️ refuse any proposal the membership pass.",
     "lock": "",
-    "body": "As the founder of this document, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can give up this power later if you choose to.",
+    "body": "As the founder, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can give up this power later if you choose to.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -3904,20 +3894,17 @@
      }
     ],
     "hints": [
-     "Accept the Founder Veto — close it",
-     "Accept Constitutional Proposals — yours to take",
-     "Founder Actions — settled",
-     "Some of the rules are reserved: changing them needs the founder’s assent"
+     "Accept the Founder Veto — close it"
     ],
     "helpers": [
-     "As the founder of this document, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can give up this power later if you choose to."
+     "As the founder, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can give up this power later if you choose to."
     ]
    },
    "grant-voice": {
     "eyebrow": "Accept Constitutional Proposals",
-    "head": "Founded by AL Ada Lovell 👑.",
+    "head": "A 🏛️ proposal passes only when all members agree to it.",
     "lock": "",
-    "body": "A 🏛️ is a constitutional proposal: one at a time, returned whole, passing only when all members agree. You are already a member; activating it opens every question, proposal and vote on the rules.",
+    "body": "A 🏛️ is a constitutional proposal. Members may only make one at a time, and it passes only when all members agree to it.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -3927,13 +3914,10 @@
      }
     ],
     "hints": [
-     "Accept Constitutional Proposals — close it",
-     "Founder Actions — settled",
-     "Founder Veto — settled",
-     "Some of the rules are reserved: changing them needs the founder’s assent"
+     "Accept Constitutional Proposals — close it"
     ],
     "helpers": [
-     "A 🏛️ is a constitutional proposal: one at a time, returned whole, passing only when all members agree. You are already a member; activating it opens every question, proposal and vote on the rules."
+     "A 🏛️ is a constitutional proposal. Members may only make one at a time, and it passes only when all members agree to it."
     ]
    },
    "hat": {
@@ -3960,7 +3944,7 @@
       "title": "Put it back as it stands"
      },
      {
-      "label": "✒️",
+      "label": "Set it",
       "title": "Set it"
      }
     ],
@@ -4217,17 +4201,17 @@
     "eyebrow": "Current rule",
     "head": "The Founder is deciding how many members must prefer a proposal before it can pass.",
     "lock": "",
-    "body": "A proposal ✏️ cannot pass until it is preferred by at least % of the membership.Choose thisA proposal ✏️ cannot pass until it is preferred by at least members.Choose thisThe membership will decide how many members must prefer a proposal ✏️ before it can pass.Choose this",
+    "body": "A ✏️ proposal passes once at least % of the membership have voted for it and it’s the most preferred option.Choose thisA ✏️ proposal passes once at least members have voted for it and it’s the most preferred option.Choose thisThe membership will decide how many members must prefer a proposal ✏️ before it can pass.Choose this",
     "options": [
      {
       "set": "quorumForm",
       "val": "share",
-      "label": "A proposal ✏️ cannot pass until it is preferred by at least % of the membership."
+      "label": "A ✏️ proposal passes once at least % of the membership have voted for it and it’s the most preferred option."
      },
      {
       "set": "quorumForm",
       "val": "count",
-      "label": "A proposal ✏️ cannot pass until it is preferred by at least members."
+      "label": "A ✏️ proposal passes once at least members have voted for it and it’s the most preferred option."
      },
      {
       "set": "quorumBy",
@@ -4271,12 +4255,12 @@
     "eyebrow": "Current rule",
     "head": "The Founder is deciding how often members may propose.",
     "lock": "",
-    "body": "Members may make a new proposal ✏️ every minuteshoursdays.Choose thisThe membership will decide how often members should be able to make proposals.Choose this",
+    "body": "Members may make a new ✏️ proposal every minuteshoursdays, up to 3 at a time.Choose thisThe membership will decide how often members should be able to make proposals.Choose this",
     "options": [
      {
       "set": "rateBy",
       "val": "founder",
-      "label": "Members may make a new proposal ✏️ every minuteshoursdays."
+      "label": "Members may make a new ✏️ proposal every minuteshoursdays, up to 3 at a time."
      },
      {
       "set": "rateBy",
@@ -4541,46 +4525,40 @@
    },
    "begin": {
     "eyebrow": "Begin",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes once it is preferred by enough of the membership, and by more than prefer the current text.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "Members started making proposals at HH:MM on Weekday D Month.",
     "lock": "",
     "body": "What beginning did.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.",
     "options": [],
     "inputs": [],
     "foot": [],
     "hints": [
-     "Begin — close it",
-     "Proposals — settled",
-     "Voting — settled"
+     "Begin — close it"
     ],
     "helpers": []
    },
    "canjudge": {
     "eyebrow": "Current rule",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes once it is preferred by enough of the membership, and by more than prefer the current text.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "Members may vote on proposals.",
     "lock": "",
     "body": "",
     "options": [],
     "inputs": [],
     "foot": [],
     "hints": [
-     "Begin — settled",
-     "Proposals — settled",
      "Voting — close it"
     ],
     "helpers": []
    },
    "canpropose": {
     "eyebrow": "Current rule",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes once it is preferred by enough of the membership, and by more than prefer the current text.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "Members may propose changes to the text and the rules.",
     "lock": "",
     "body": "",
     "options": [],
     "inputs": [],
     "foot": [],
     "hints": [
-     "Begin — settled",
-     "Proposals — close it",
-     "Voting — settled"
+     "Proposals — close it"
     ],
     "helpers": []
    },
@@ -4609,7 +4587,7 @@
    },
    "ending": {
     "eyebrow": "Current rule",
-    "head": "No more changes to the document may be made after Weekday, D Month, HH:MM.Chosen by the membership",
+    "head": "Proposals may be made until Weekday, D Month, HH:MM.Chosen by the membership",
     "lock": "",
     "body": "The drafting process will end on .Propose thisThe drafting process has no set end — it runs until too few members are active.Propose this",
     "options": [
@@ -4648,39 +4626,25 @@
    },
    "grant-voice": {
     "eyebrow": "Current rule",
-    "head": "Founded by AB Ash Bellamy 👑 at HH:MM on D Month.",
+    "head": "A 🏛️ proposal passes only when all members agree to it.",
     "lock": "",
-    "body": "The Founder invited you into the membership, and Constitutional Proposals came with it.A 🏛️ is a constitutional proposal: one at a time, returned whole, passing only when all members agree. You are already a member; activating it opens every question, proposal and vote on the rules.",
+    "body": "The Founder invited you into the membership, and Constitutional Proposals came with it.A 🏛️ is a constitutional proposal. Members may only make one at a time, and it passes only when all members agree to it.",
     "options": [],
     "inputs": [],
     "foot": [],
     "hints": [
-     "Constitutional Proposals — close it",
-     "Some of the rules are reserved: changing them needs the founder’s assent"
+     "Constitutional Proposals — close it"
     ],
     "helpers": [
      "The Founder invited you into the membership, and Constitutional Proposals came with it.",
-     "A 🏛️ is a constitutional proposal: one at a time, returned whole, passing only when all members agree. You are already a member; activating it opens every question, proposal and vote on the rules."
+     "A 🏛️ is a constitutional proposal. Members may only make one at a time, and it passes only when all members agree to it."
     ]
-   },
-   "hat": {
-    "eyebrow": "Current rule",
-    "head": "The Founder is part of the membership.Chosen by the Founder ✒️",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [],
-    "hints": [
-     "Founder’s Membership — close it"
-    ],
-    "helpers": []
    },
    "held:mo-2": {
     "eyebrow": "Rejected · Weekday, D Month, HH:MM",
-    "head": "Members may make a new proposal ✏️ every 3 hours.",
+    "head": "Members may make a new ✏️ proposal every 3 hours, up to 3 at a time.",
     "lock": "",
-    "body": "Proposed by youMembers may make a new proposal ✏️ every 90 minutes.AnonymousHalf the wait would let people write while the thought is warm.",
+    "body": "Proposed by youMembers may make a new ✏️ proposal every 90 minutes, up to 3 at a time.AnonymousHalf the wait would let people write while the thought is warm.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -4906,9 +4870,9 @@
    },
    "mo:mo-7": {
     "eyebrow": "Current rule",
-    "head": "Members may make a new proposal ✏️ every 3 hours.",
+    "head": "Members may make a new ✏️ proposal every 3 hours, up to 3 at a time.",
     "lock": "",
-    "body": "Proposed by youMembers may make a new proposal ✏️ every 6 hours.AnonymousFewer, better proposals — let the wait be longer.",
+    "body": "Proposed by youMembers may make a new ✏️ proposal every 6 hours, up to 3 at a time.AnonymousFewer, better proposals — let the wait be longer.",
     "options": [],
     "inputs": [],
     "foot": [
@@ -5064,7 +5028,7 @@
    },
    "pw:a:invite": {
     "eyebrow": "Does the Founder Have a Veto over Invitations?",
-    "head": "The Founder may refuse invitations and applications that the membership pass.Chosen by the Founder ✒️",
+    "head": "The Founder may block invitations that the membership have decided to make.Chosen by the Founder ✒️",
     "lock": "",
     "body": "",
     "options": [],
@@ -5097,7 +5061,7 @@
    },
    "pw:a:remove": {
     "eyebrow": "Does the Founder Have a Veto over Removals?",
-    "head": "The Founder may refuse removals that the membership pass.Chosen by the Founder ✒️",
+    "head": "The Founder may block removals that the membership have decided to make.Chosen by the Founder ✒️",
     "lock": "",
     "body": "",
     "options": [],
@@ -5192,7 +5156,7 @@
    },
    "pw:u:remove": {
     "eyebrow": "Can the Founder Remove at Will?",
-    "head": "The Founder may remove members at will.Chosen by the Founder ✒️",
+    "head": "The Founder may remove people at will.Chosen by the Founder ✒️",
     "lock": "",
     "body": "",
     "options": [],
@@ -5237,9 +5201,9 @@
    },
    "quorum": {
     "eyebrow": "Current rule",
-    "head": "A proposal ✏️ cannot pass until it is preferred by at least 38% of the membership (n of m).Chosen by the membership",
+    "head": "A ✏️ proposal passes once at least 38% of the membership (n of m) have voted for it and it’s the most preferred option.Chosen by the membership",
     "lock": "",
-    "body": "A proposal ✏️ cannot pass until it is preferred by at least % of the membership.Propose this",
+    "body": "A ✏️ proposal passes once at least % of the membership have voted for it and it’s the most preferred option.Propose this",
     "options": [],
     "inputs": [
      {
@@ -5272,7 +5236,7 @@
    },
    "rate": {
     "eyebrow": "Current rule",
-    "head": "Members may make a new proposal ✏️ every 3 hours.Chosen by the Founder ✒️",
+    "head": "Members may make a new ✏️ proposal every 3 hours, up to 3 at a time.Chosen by the Founder ✒️",
     "lock": "",
     "body": "Members may make a new proposal ✏️ every minutes.Propose this",
     "options": [],
@@ -5327,7 +5291,7 @@
    },
    "rec:quorum:0": {
     "eyebrow": "Passed · Weekday, D Month, HH:MM",
-    "head": "A proposal ✏️ cannot pass until it is preferred by at least 38% of the membership (n of m).",
+    "head": "A ✏️ proposal passes once at least 38% of the membership (n of m) have voted for it and it’s the most preferred option.",
     "lock": "",
     "body": "AnonymousThe charter should not change until more of us have had our say.",
     "options": [],
@@ -5542,7 +5506,7 @@
    },
    "ending": {
     "eyebrow": "Current rule",
-    "head": "No more changes to the document may be made after Weekday, D Month, HH:MM.Chosen by the membership",
+    "head": "Proposals may be made until Weekday, D Month, HH:MM.Chosen by the membership",
     "lock": "",
     "body": "",
     "options": [],
@@ -5616,9 +5580,9 @@
    },
    "mo:mo-7": {
     "eyebrow": "Current rule",
-    "head": "Members may make a new proposal ✏️ every 3 hours.",
+    "head": "Members may make a new ✏️ proposal every 3 hours, up to 3 at a time.",
     "lock": "",
-    "body": "ProposedMembers may make a new proposal ✏️ every 6 hours.AnonymousFewer, better proposals — let the wait be longer.",
+    "body": "ProposedMembers may make a new ✏️ proposal every 6 hours, up to 3 at a time.AnonymousFewer, better proposals — let the wait be longer.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -5758,7 +5722,7 @@
    },
    "quorum": {
     "eyebrow": "Current rule",
-    "head": "A proposal ✏️ cannot pass until it is preferred by at least 38% of the membership (n of m).Chosen by the membership",
+    "head": "A ✏️ proposal passes once at least 38% of the membership (n of m) have voted for it and it’s the most preferred option.Chosen by the membership",
     "lock": "",
     "body": "",
     "options": [],
@@ -5772,7 +5736,7 @@
    },
    "rate": {
     "eyebrow": "Current rule",
-    "head": "Members may make a new proposal ✏️ every 3 hours.Chosen by the Founder ✒️",
+    "head": "Members may make a new ✏️ proposal every 3 hours, up to 3 at a time.Chosen by the Founder ✒️",
     "lock": "",
     "body": "",
     "options": [],
@@ -5806,7 +5770,7 @@
    },
    "rec:quorum:0": {
     "eyebrow": "Passed · Weekday, D Month, HH:MM",
-    "head": "A proposal ✏️ cannot pass until it is preferred by at least 38% of the membership (n of m).",
+    "head": "A ✏️ proposal passes once at least 38% of the membership (n of m) have voted for it and it’s the most preferred option.",
     "lock": "",
     "body": "AnonymousThe charter should not change until more of us have had our say.",
     "options": [],
@@ -5821,9 +5785,9 @@
    },
    "rec:rate:0": {
     "eyebrow": "Rejected · Weekday, D Month, HH:MM",
-    "head": "Members may make a new proposal ✏️ every 3 hours.",
+    "head": "Members may make a new ✏️ proposal every 3 hours, up to 3 at a time.",
     "lock": "",
-    "body": "ProposedMembers may make a new proposal ✏️ every 90 minutes.AnonymousHalf the wait would let people write while the thought is warm.",
+    "body": "ProposedMembers may make a new ✏️ proposal every 90 minutes, up to 3 at a time.AnonymousHalf the wait would let people write while the thought is warm.",
     "options": [],
     "inputs": [],
     "foot": [],
@@ -6036,46 +6000,40 @@
    },
    "begin": {
     "eyebrow": "Begin",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes once it is preferred by enough of the membership, and by more than prefer the current text.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "Members started making proposals at HH:MM on Weekday D Month.",
     "lock": "",
     "body": "What beginning did.The Founder lays down ✒️ and 🛡️ on the Text — from here it changes by proposal alone.Members gain ✏️s on it, at the proposal rate.Voting opens.The moment is stamped as the founding, and the settings stop being re-set: from here they are amended.",
     "options": [],
     "inputs": [],
     "foot": [],
     "hints": [
-     "Begin — close it",
-     "Proposals — settled",
-     "Voting — settled"
+     "Begin — close it"
     ],
     "helpers": []
    },
    "canjudge": {
     "eyebrow": "Current rule",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes once it is preferred by enough of the membership, and by more than prefer the current text.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "Members may vote on proposals.",
     "lock": "",
     "body": "",
     "options": [],
     "inputs": [],
     "foot": [],
     "hints": [
-     "Begin — settled",
-     "Proposals — settled",
      "Voting — close it"
     ],
     "helpers": []
    },
    "canpropose": {
     "eyebrow": "Current rule",
-    "head": "Members may propose changes to rules as soon as they arrive, and may vote on proposals.A proposal ✏️ passes once it is preferred by enough of the membership, and by more than prefer the current text.A constitutional proposal 🏛️ passes only when all members agree.",
+    "head": "Members may propose changes to the text and the rules.",
     "lock": "",
     "body": "",
     "options": [],
     "inputs": [],
     "foot": [],
     "hints": [
-     "Begin — settled",
-     "Proposals — close it",
-     "Voting — settled"
+     "Proposals — close it"
     ],
     "helpers": []
    },
@@ -6123,7 +6081,7 @@
    },
    "ending": {
     "eyebrow": "Current rule",
-    "head": "No more changes to the document may be made after Weekday, D Month, HH:MM.Chosen by the membership",
+    "head": "Proposals may be made until Weekday, D Month, HH:MM.Chosen by the membership",
     "lock": "",
     "body": "The drafting process will end on .Propose thisThe drafting process has no set end — it runs until too few members are active.Propose this",
     "options": [
@@ -6162,70 +6120,48 @@
    },
    "grant-pen": {
     "eyebrow": "Current rule",
-    "head": "Founded by AB Ash Bellamy 👑 at HH:MM on D Month.",
+    "head": "The Founder may ✒️ change the title, the link, the visibility rule and the proposal rate at will. The Founder may invite people at will. The Founder may remove people at will.",
     "lock": "",
-    "body": "As the founder of this document, you have the power to change settings and edit the document at will. Founder Actions are denoted by ✒️. You can give up these powers later if you choose to.",
+    "body": "As the founder, you have the power to change settings and edit the document at will. Founder Actions are denoted by ✒️. You can give up these powers later if you choose to.",
     "options": [],
     "inputs": [],
     "foot": [],
     "hints": [
-     "Founder Actions — close it",
-     "Founder Veto — settled",
-     "Constitutional Proposals — settled",
-     "Some of the rules are reserved: changing them needs the founder’s assent"
+     "Founder Actions — close it"
     ],
     "helpers": [
-     "As the founder of this document, you have the power to change settings and edit the document at will. Founder Actions are denoted by ✒️. You can give up these powers later if you choose to."
+     "As the founder, you have the power to change settings and edit the document at will. Founder Actions are denoted by ✒️. You can give up these powers later if you choose to."
     ]
    },
    "grant-shield": {
     "eyebrow": "Current rule",
-    "head": "Founded by AB Ash Bellamy 👑 at HH:MM on D Month.",
+    "head": "The Founder may 🛡️ refuse proposals the membership pass on the title, the link, the visibility rule and the proposal rate. The Founder may block invitations that the membership have decided to make. The Founder may block removals that the membership have decided to make.",
     "lock": "",
-    "body": "As the founder of this document, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can give up this power later if you choose to.",
+    "body": "As the founder, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can give up this power later if you choose to.",
     "options": [],
     "inputs": [],
     "foot": [],
     "hints": [
-     "Founder Actions — settled",
-     "Founder Veto — close it",
-     "Constitutional Proposals — settled",
-     "Some of the rules are reserved: changing them needs the founder’s assent"
+     "Founder Veto — close it"
     ],
     "helpers": [
-     "As the founder of this document, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can give up this power later if you choose to."
+     "As the founder, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can give up this power later if you choose to."
     ]
    },
    "grant-voice": {
     "eyebrow": "Current rule",
-    "head": "Founded by AB Ash Bellamy 👑 at HH:MM on D Month.",
+    "head": "A 🏛️ proposal passes only when all members agree to it.",
     "lock": "",
-    "body": "A 🏛️ is a constitutional proposal: one at a time, returned whole, passing only when all members agree. You are already a member; activating it opens every question, proposal and vote on the rules.",
+    "body": "A 🏛️ is a constitutional proposal. Members may only make one at a time, and it passes only when all members agree to it.",
     "options": [],
     "inputs": [],
     "foot": [],
     "hints": [
-     "Founder Actions — settled",
-     "Founder Veto — settled",
-     "Constitutional Proposals — close it",
-     "Some of the rules are reserved: changing them needs the founder’s assent"
+     "Constitutional Proposals — close it"
     ],
     "helpers": [
-     "A 🏛️ is a constitutional proposal: one at a time, returned whole, passing only when all members agree. You are already a member; activating it opens every question, proposal and vote on the rules."
+     "A 🏛️ is a constitutional proposal. Members may only make one at a time, and it passes only when all members agree to it."
     ]
-   },
-   "hat": {
-    "eyebrow": "Current rule",
-    "head": "The Founder is part of the membership.Chosen by the Founder ✒️",
-    "lock": "",
-    "body": "",
-    "options": [],
-    "inputs": [],
-    "foot": [],
-    "hints": [
-     "Founder’s Membership — close it"
-    ],
-    "helpers": []
    },
    "held:mo-4": {
     "eyebrow": "Rejected · Weekday, D Month, HH:MM",
@@ -6469,9 +6405,9 @@
    },
    "mo:mo-7": {
     "eyebrow": "Current rule",
-    "head": "Members may make a new proposal ✏️ every 3 hours.Prefer this",
+    "head": "Members may make a new ✏️ proposal every 3 hours, up to 3 at a time.Prefer this",
     "lock": "",
-    "body": "ProposedMembers may make a new proposal ✏️ every 6 hours.AnonymousFewer, better proposals — let the wait be longer.Prefer thisIndifferent",
+    "body": "ProposedMembers may make a new ✏️ proposal every 6 hours, up to 3 at a time.AnonymousFewer, better proposals — let the wait be longer.Prefer thisIndifferent",
     "options": [
      {
       "set": null,
@@ -6481,7 +6417,7 @@
      {
       "set": null,
       "val": "proposed",
-      "label": "Members may make a new proposal ✏️ every 6 hours."
+      "label": "Members may make a new ✏️ proposal every 6 hours, up to 3 at a time."
      },
      {
       "set": null,
@@ -6660,14 +6596,14 @@
    },
    "pw:a:invite": {
     "eyebrow": "Does the Founder Have a Veto over Invitations?",
-    "head": "The Founder may refuse invitations and applications that the membership pass.Chosen by the Founder ✒️",
+    "head": "The Founder may block invitations that the membership have decided to make.Chosen by the Founder ✒️",
     "lock": "",
-    "body": "The Founder may not refuse invitations and applications that the membership pass.One way — it cannot be taken back.Choose this",
+    "body": "The Founder may not block invitations that the membership have decided to make.One way — it cannot be taken back.Choose this",
     "options": [
      {
       "set": "pw:a:invite",
       "val": "given",
-      "label": "The Founder may not refuse invitations and applications that the membership pass."
+      "label": "The Founder may not block invitations that the membership have decided to make."
      }
     ],
     "inputs": [],
@@ -6732,14 +6668,14 @@
    },
    "pw:a:remove": {
     "eyebrow": "Does the Founder Have a Veto over Removals?",
-    "head": "The Founder may refuse removals that the membership pass.Chosen by the Founder ✒️",
+    "head": "The Founder may block removals that the membership have decided to make.Chosen by the Founder ✒️",
     "lock": "",
-    "body": "The Founder may not refuse removals that the membership pass.One way — it cannot be taken back.Choose this",
+    "body": "The Founder may not block removals that the membership have decided to make.One way — it cannot be taken back.Choose this",
     "options": [
      {
       "set": "pw:a:remove",
       "val": "given",
-      "label": "The Founder may not refuse removals that the membership pass."
+      "label": "The Founder may not block removals that the membership have decided to make."
      }
     ],
     "inputs": [],
@@ -6942,14 +6878,14 @@
    },
    "pw:u:remove": {
     "eyebrow": "Can the Founder Remove at Will?",
-    "head": "The Founder may remove members at will.Chosen by the Founder ✒️",
+    "head": "The Founder may remove people at will.Chosen by the Founder ✒️",
     "lock": "",
-    "body": "The Founder may not remove members at will.One way — it cannot be taken back.Choose this",
+    "body": "The Founder may not remove people at will.One way — it cannot be taken back.Choose this",
     "options": [
      {
       "set": "pw:u:remove",
       "val": "given",
-      "label": "The Founder may not remove members at will."
+      "label": "The Founder may not remove people at will."
      }
     ],
     "inputs": [],
@@ -7044,9 +6980,9 @@
    },
    "quorum": {
     "eyebrow": "Current rule",
-    "head": "A proposal ✏️ cannot pass until it is preferred by at least 38% of the membership (n of m).Chosen by the membership",
+    "head": "A ✏️ proposal passes once at least 38% of the membership (n of m) have voted for it and it’s the most preferred option.Chosen by the membership",
     "lock": "",
-    "body": "A proposal ✏️ cannot pass until it is preferred by at least % of the membership.Propose this",
+    "body": "A ✏️ proposal passes once at least % of the membership have voted for it and it’s the most preferred option.Propose this",
     "options": [],
     "inputs": [
      {
@@ -7079,14 +7015,14 @@
    },
    "rate": {
     "eyebrow": "Current rule",
-    "head": "Members may make a new proposal ✏️ every 3 hours.Chosen by the Founder ✒️",
+    "head": "Members may make a new ✏️ proposal every 3 hours, up to 3 at a time.Chosen by the Founder ✒️",
     "lock": "",
-    "body": "Members may make a new proposal ✏️ every minuteshoursdays.Choose ✒️ or Propose ✏️ this",
+    "body": "Members may make a new ✏️ proposal every minuteshoursdays, up to 3 at a time.Choose ✒️ or Propose ✏️ this",
     "options": [
      {
       "set": "rateBy",
       "val": "founder",
-      "label": "Members may make a new proposal ✏️ every minuteshoursdays."
+      "label": "Members may make a new ✏️ proposal every minuteshoursdays, up to 3 at a time."
      }
     ],
     "inputs": [
@@ -7144,7 +7080,7 @@
    },
    "rec:quorum:0": {
     "eyebrow": "Passed · Weekday, D Month, HH:MM",
-    "head": "A proposal ✏️ cannot pass until it is preferred by at least 38% of the membership (n of m).",
+    "head": "A ✏️ proposal passes once at least 38% of the membership (n of m) have voted for it and it’s the most preferred option.",
     "lock": "",
     "body": "AnonymousThe charter should not change until more of us have had our say.",
     "options": [],
@@ -7159,9 +7095,9 @@
    },
    "rec:rate:0": {
     "eyebrow": "Rejected · Weekday, D Month, HH:MM",
-    "head": "Members may make a new proposal ✏️ every 3 hours.",
+    "head": "Members may make a new ✏️ proposal every 3 hours, up to 3 at a time.",
     "lock": "",
-    "body": "ProposedMembers may make a new proposal ✏️ every 90 minutes.AnonymousHalf the wait would let people write while the thought is warm.",
+    "body": "ProposedMembers may make a new ✏️ proposal every 90 minutes, up to 3 at a time.AnonymousHalf the wait would let people write while the thought is warm.",
     "options": [],
     "inputs": [],
     "foot": [],
