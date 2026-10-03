@@ -7083,7 +7083,7 @@
       blocks,
     };
   }
-  function motionShellPresent(c, hints) {
+  function motionShellPresent(c, hints, st) {
     const kind = motionShellKind(c);
     const sibs = (hints && hints.siblings) || [c];
     if (kind === 'motion-record' || kind === 'failed-motion-news') return recordShellPresent(c, kind, sibs);
@@ -7092,7 +7092,10 @@
     const p = motionParts(c);
     const frame = { cls: 'sugg setupcard', attrs: ' role="tabpanel" data-setupcard="' + esc(c.k) + '"' };
     const line = BND.lineOf(p.host) || esc(decisionLine(c) || '');
-    const pill = window.CARD_SHELL.pillHtml(BND.pillOf(p.host));
+    // **a vote wears no pill** (#199, Ed 2026-10-03): `card-state` reads no
+    // standing on a motion's card, so this draws nothing; it is asked only so
+    // the card says what its state says
+    const pill = window.CARD_SHELL.pillHtml(st && st.standing);
     const speaker = window.CARDS.speakerHtml(p.m.why);
     if (kind === 'crown') {
       const asks = amFounder() && docOpen();
@@ -10639,6 +10642,9 @@
       : amFounder() ? (viewerIsMember() ? 'founder-member' : 'founder-clerk') : 'member'),
     phase: () => (!cs ? 'birth' : cs.closed ? 'closed' : cs.constitutedAtT === null ? 'founding' : 'live'),
     card: (k) => ({ kind: bandKindOf(card(k)), id: k, anchor: k }),
+    // a live motion's card puts a change to a vote (#199): `provenanceOf`
+    // reads no standing there
+    vote: (k) => { const c = card(k); const kd = c ? motionShellKind(c) : null; return kd === 'motion' || kd === 'crown'; },
     standing: (k) => { const st = csState(k);
       return { settledBy: st ? st.settledBy : null, lastRoute: lastCarriedRoute(k), settled: !!(st && st.settledBy !== null) }; },
     // the rule's own words, as the Rules paragraph states it and without the
@@ -10717,7 +10723,7 @@
         };
       }
       if (BND.settingKind(c)) return BND.settingPresent(c, hints);
-      if (motionShellKind(c)) return motionShellPresent(c, hints);
+      if (motionShellKind(c)) return motionShellPresent(c, hints, st);
       if (identityShellKind(c)) return identityPresent(c, hints);
       if (doorShellKind(c)) return doorPresent(c, hints);
       if (admissionShellKind(c)) return admissionPresent(c, hints);

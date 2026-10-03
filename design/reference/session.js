@@ -2839,8 +2839,13 @@
         label: { text: W.currentText + W.sep + T.nav.ofPlaces(i + 1, n),
           steps: '<span class="psteps">' + step(i > 0 ? i - 1 : null, T.nav.prev, '↑') +
             step(i < n - 1 ? i + 1 : null, T.nav.next, '↓') + '</span>' },
-        head: { html: clauseHeadHtml(s, { text: sourceTextFor(site.key), key: site.key, v: 'keep',
-          chips: chipsFor(site.key, s.id), label: null, fact: 'place', onHead: headRank(site.key) }) },
+        // a site is a run of blocks on the live page (issue #189), its head
+        // the whole run (Q1308), and a gap's head the insert's *(no text
+        // here)*; the fixture's sites are one block each
+        head: { html: clauseHeadHtml(s, Object.assign(
+          site.isInsert || isGapKey(site.key) ? { text: null, nothing: gapNothing() }
+            : { text: (site.keys || [site.key]).map(sourceTextFor).filter(Boolean).join('\n') },
+          { key: site.key, v: 'keep', chips: chipsFor(site.key, s.id), label: null, fact: 'place', onHead: headRank(site.key) })) },
         body: bodyOf(reviseNote(s) + '<div class="foot">' + T.patch.foot(n) + '</div>'),
         options: { html: proposalHtml(s, { v: 'approve', html: laneHtml(site.marked), why: s.rationale, by: s.by, key: site.key,
           label: whoLabel(s.by, false), labelFact: s.by ? 'author' : null }) + vinBlockHtml(s) },
@@ -3769,7 +3774,10 @@ document.addEventListener('paste', (ev) => {
     // were: the editing card is edit mode's own (K13, K31), each site's
     // anchor is where its card hangs and the wire lands (Q1311), and the
     // floating row's rules are Q1380's and Q1382's, not this one's.
+    // A patch's gap site is a judged card like any other (issue #189), not a
+    // draft's, so it replaces its anchor at each of its places.
     const anchorHtml = (h) => {
+      if (openId === h.g.id && h.site && h.g.kind === 'patch') return '</div>' + suggCardHtml(h.g, h.key) + PROSE();
       if (openId === h.g.id && !h.site && !cardDone) {
         cardDone = true;
         return '</div>' + suggCardHtml(h.g, h.key) + PROSE();
@@ -6397,9 +6405,21 @@ document.addEventListener('paste', (ev) => {
   function settleLift() {
     const el = queueEl && queueEl.querySelector('button[aria-current="true"]');
     const id = el ? el.dataset.q : null;
+    // **The rest is painted in no time** (issue #190). Whatever the page
+    // measured between the render and here has already styled the new
+    // element lifted, so the flip to rest started a 220ms transition
+    // *downward* and the flip back reversed it at its first frame: no motion
+    // at all, on every entry. So the rest is painted with a zero duration —
+    // which starts nothing, and leaves a wash fade `settleWashes` has just
+    // begun on the same button running — and the lift is handed over with
+    // the stylesheet's own. A piled entry's lift is its stack's, the `li`'s
+    // (system.css), so the stack is painted at rest with it.
     if (id !== liftedId && el) {
+      const nodes = [el, el.closest('.qitem[data-pile]')].filter(Boolean);
+      for (const n of nodes) n.style.transitionDuration = '0s';
       el.setAttribute('aria-current', 'false');
       void el.offsetHeight;
+      for (const n of nodes) n.style.transitionDuration = '';
       el.setAttribute('aria-current', 'true');
     }
     liftedId = id;

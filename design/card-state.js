@@ -93,10 +93,15 @@ window.CARD_STATE = (function () {
    * The one reader: every rule card's pill asks it, at the door and inside
    * (the page's `provOf`, which asked it for the old shell's radio, went
    * with that shell at stage 10).
+   *
+   * **Never on a vote** (#199, Ed 2026-10-03: *this is a straight choice of
+   * what you prefer between two options*; *no provenance at all*): a card
+   * its source says puts a change to a vote — `vote(key)` — has no standing.
    */
   function provenanceOf(key) {
     const src = sourceOf(key);
     if (!src || typeof src.standing !== 'function') return null;
+    if (typeof src.vote === 'function' && src.vote(key)) return null;
     const st = src.standing(key);
     if (!st) return null;
     const by = st.settledBy;

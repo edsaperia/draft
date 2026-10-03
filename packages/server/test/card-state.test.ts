@@ -152,6 +152,23 @@ describe('card-state.js over every rung of the phase ladder', () => {
   }, 120_000);
 });
 
+/* ---- a vote wears no pill (#199) ---------------------------------------- */
+
+describe('card-state.js on a vote', () => {
+  it('provenanceOf reads no standing on a card its source calls a vote, and the rule keeps its own', () => {
+    const w = page();
+    const CS = w.CARD_STATE;
+    CS.register('band', {
+      owns: (id: string) => id === 'rate' || id === 'mo:mo-1',
+      vote: (id: string) => id.startsWith('mo:'),
+      standing: () => ({ settledBy: 'room', lastRoute: 'ordinary', settled: true }),
+    });
+    expect(CS.provenanceOf('rate').label).toBe(w.COPY.page.motionRec.provMembers);
+    expect(CS.provenanceOf('mo:mo-1')).toBeNull();
+    expect(CS.stateOf('mo:mo-1').standing).toBeNull();
+  });
+});
+
 /* ---- the fixture's records ---------------------------------------------- */
 
 describe('card-state.js over every sealed record of the Hollow Oak fixture', () => {
