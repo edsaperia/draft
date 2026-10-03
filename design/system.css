@@ -3467,6 +3467,9 @@
     .inplacecard .headclause .editlane .lp { margin: 0 0 var(--s2); }
     .inplacecard .headclause .editlane .lp:last-child { margin-bottom: 0; }
     .inplacecard .headclause:focus-within { box-shadow: var(--shadow-xl); }
+    /* no label, so no `fit` sets the top: the frame's own air on the grid,
+       never `.sugg`'s pre-shell 14px (card-audit S1) */
+    .sugg.gshell.inplacecard { padding-top: var(--s3); padding-bottom: var(--s3); }
     .inplacecard .lanebelow .glabline { justify-content: flex-end; }
     .inplacecard .lanebelow .glab.whylab { margin-top: var(--s3); }
     /* **44px to the finger, nothing drawn moves** (§1.4, §6a.4): ✏️ *propose
