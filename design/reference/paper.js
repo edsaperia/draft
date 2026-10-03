@@ -25,13 +25,21 @@
    column's end. At narrow (session.js's `NARROW_Q`) the sheets bleed through
    `.wrap`'s side padding to the glass, untrimmed.
 
+   **The credit** (issue #165, Ed 2026-10-02): one line on the desk, centred
+   a desk gap under the last sheet's foot, *Created by the London College of
+   Political Technology*, the name a link to newspeak.house (copy.js
+   `page.credit`). It stands in the runway, so a short document shows it
+   beneath the page and a long one meets it at the end of the text; it is
+   not drawn in edit mode, where the column is lifted and the sheet runs on.
+
    Loaded after session.js, whose breakpoint it reads; it starts itself once
    the document has parsed, and does nothing on a page with no `#doc`.
    ========================================================================== */
 (function () {
   'use strict';
   const NARROW = window.matchMedia((window.SESSION && window.SESSION.NARROW_Q) || '(max-width: 900px)');
-  let desk, rules, text, doc;
+  let desk, rules, text, doc, credit;
+  const CREDIT_HREF = 'https://newspeak.house';
 
   function build() {
     doc = document.getElementById('doc');
@@ -43,6 +51,17 @@
     text = document.createElement('div'); text.className = 'sheet sheet-text';
     desk.append(rules, text);
     document.body.appendChild(desk);
+    // the credit is read and pressed, so it stands outside the aria-hidden desk
+    const words = window.COPY && window.COPY.page && window.COPY.page.credit;
+    if (words) {
+      credit = document.createElement('p');
+      credit.className = 'deskcredit';
+      const a = document.createElement('a');
+      a.href = CREDIT_HREF; a.target = '_blank'; a.rel = 'noopener';
+      a.textContent = words.name;
+      credit.append(document.createTextNode(words.lead), a);
+      document.body.appendChild(credit);
+    }
     return true;
   }
 
@@ -115,6 +134,15 @@
     // trailing leading), so the foot adds the margin less that
     const end = textEnd(r, sy);
     const bottom = end == null ? r.bottom + sy : end + token('--sheet-margin') - token('--s4');
+    // the credit, a desk gap under the last sheet's foot, centred on it
+    if (credit) {
+      if (doc.classList.contains('editing')) credit.hidden = true;
+      else {
+        credit.hidden = false;
+        credit.style.left = px(left); credit.style.width = px(width);
+        credit.style.top = px(bottom + token('--desk-gap'));
+      }
+    }
     const sep = doc.querySelector('.cpara.docsep');
     const s = sep && sep.getClientRects().length ? sep.getBoundingClientRect() : null;
     if (!s) {
