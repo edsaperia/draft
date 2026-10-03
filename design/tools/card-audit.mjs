@@ -1039,7 +1039,10 @@ const IN_PAGE = () => {
     const headTop = head ? firstTop(head.el) : null;
     // the blocks: outermost, visible, not inputs
     const blocks = [...card.querySelectorAll(BLOCK_SEL)].filter((b) => vis(b) && !(b.parentElement && b.parentElement.closest(BLOCK_SEL)) &&
-      !(head && head.el.contains(b)) && !b.querySelector('[contenteditable="true"], textarea, input[type="text"], input:not([type])'));
+      !(head && head.el.contains(b)) && !b.querySelector('[contenteditable="true"], textarea, input[type="text"], input:not([type])') &&
+      // the phone's in-place card's form beneath its lane — the switch and the
+      // reasoning — is the editing block's other half, unlabelled as that is
+      !b.matches('.lanebelow'));
     const out = { blocks: [], headLabel: null, headNeedsLabel: false };
     for (const b of blocks) {
       const live = [...b.querySelectorAll('.lanepick, [role="radio"]')].some((r) => !r.disabled && vis(r));
@@ -1701,6 +1704,9 @@ const IN_PAGE = () => {
         // card-shell.js's `data-kind`): what `GRAMMAR_KINDS` holds it by, so
         // a record filed on a clause is not a live quick card for the audit
         shellKind: card.getAttribute('data-kind') || null,
+        // the phone's editing card, its lane in the clause's own box (MOBILE.md
+        // §6a.1, Ed 1585.1): ruled to carry no label and no *Current text* head
+        inPlace: card.classList.contains('inplacecard'),
         // off unless --specimens asked for it: the payload is the page, and
         // 270 of them would drown the numbers this instrument exists for
         ...(window.__CA_SPEC ? { spec: specimen(card, key) } : {}),
@@ -2616,7 +2622,8 @@ function grammarRules(c, ref) {
    * answers Part 6.2),
    * 700, upper case, `--muted` — a record's outcome in its colour */
   if (v) {
-    if (v.headLabels !== 1) at('label-slot', v.headLabels ? v.headLabels + ' labels above the first line' : 'no label above the first line', v.headLabels ? 'labels' : 'no-label');
+    // …save the phone's in-place editing card, ruled to have none (1585.1)
+    if (v.headLabels !== 1 && !(c.inPlace && !v.headLabels)) at('label-slot', v.headLabels ? v.headLabels + ' labels above the first line' : 'no label above the first line', v.headLabels ? 'labels' : 'no-label');
     const drawn = (d, record) => {
       if (!d || !ref) return null;
       const bad = [];
