@@ -2402,6 +2402,26 @@
     box-shadow: -1px 1px 1px rgba(0, 0, 0, 0.09), -4px 3px 6px rgba(0, 0, 0, 0.16), var(--chipringa, 0 0 0 0 transparent);
   }
   .clausehead .achip.wmark:active { transform: none; }
+  /* **…and so do the tabs beside it** (#207, Ed 2026-10-03: *tab not joining
+     its card cleanly (lower one)*): an inactive tab in the strip wore the
+     resting tab's `--shadow-sm`, straight down, whose blur reaches a pixel
+     or two past the tab's right edge — and the tab is a descendant of the
+     card, so that is drawn on the card; a white slip's all-round hairline
+     drew a line down the card's edge besides. So each casts leftward only,
+     at the same depth as before, and a white slip takes the active tab's
+     three-sided hairline, the fourth side being the joint. Every width,
+     since the seam measured the same at 1600. card-audit P39. */
+  .clausehead .achip:not(.wmark) {
+    --strip-sm: -1px 1px 1px rgba(0, 0, 0, 0.07), -1px 1px 2px rgba(0, 0, 0, 0.10);
+    --strip-md: -1px 1px 1px rgba(0, 0, 0, 0.08), -2px 2px 4px rgba(0, 0, 0, 0.14);
+    box-shadow: var(--strip-sm), var(--chipringa, 0 0 0 0 transparent);
+  }
+  .clausehead .achip:not(.wmark):hover { box-shadow: var(--strip-md), var(--chipringa, 0 0 0 0 transparent); }
+  .clausehead .achip:not(.wmark):active { box-shadow: var(--chipringa, 0 0 0 0 transparent); }
+  .clausehead .achip.held:not(.wmark):is(:hover, :active) { box-shadow: var(--strip-sm), var(--chipringa, 0 0 0 0 transparent); }
+  .clausehead .achip[data-pile]:not(.wmark) { box-shadow: var(--strip-sm), var(--pile); }
+  .clausehead .achip[data-pile]:not(.wmark):hover { box-shadow: var(--strip-md), var(--pile); }
+  .clausehead .achip[data-pile]:not(.wmark):active { box-shadow: var(--pile); }
   .clausehead .headlab {
     display: flex; align-items: baseline; gap: var(--s2); margin-bottom: var(--s1);
   }
