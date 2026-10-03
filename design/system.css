@@ -1377,6 +1377,11 @@
   .ridetab.editing .achip,
   :is(.doc.editing:not(.begun) #prose, .doc.editing.begun #charter > .prose) .chipcol:not(.clausehead *) .achip { margin-right: -2px; padding-right: 2px; width: 36px; }
   .ridetab.editing .achip[data-tab="text"] { width: 44px; padding-right: 2px; }
+  /* …and its right corners are square, the joint's, as every tab joined
+     to a card has them: with the lifted column's own gutter tucked onto
+     the same edge (#207), a rounded 📝 showed the first clause's tab
+     through its corners */
+  .ridetab.editing .achip { border-radius: var(--r-sm) 0 0 var(--r-sm); }
   /* In edit mode the pile is drawn as the strip — the pile expanded, the ✒️ 🛡️
      tabs beneath 📝 reachable (Ed's QA, 2026-08-30) — and only the front tab
      wears the active treatment; the power tabs stay 34px, as in any strip. */
