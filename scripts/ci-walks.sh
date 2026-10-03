@@ -340,6 +340,10 @@ case "$GROUP" in
     # whose dev target route re-points the bots at a ladder document
     walk "demo-walk" npm run demo-walk -- "$DEMO_BASE"
     walk "demo-join" node scripts/repro/demo-join.mjs "$DEMO_BASE" --key=walk
+    # 📝 beside the text's first clause: above its pile at rest, at the head
+    # of its card's strip and tucked once open (#194) — the demo's first
+    # clause holds a race, which the fixture's never does (card-audit P38)
+    walk "ride-tab-tuck" node scripts/repro/ride-tab-tuck.mjs "$DEMO_BASE"
     # 📧 ✋ 🖼️ on a live seat: what stands on the first line wearing
     # the chosen radio, a new one below (#169, #176) — a ladder member and
     # the Founder here, a demo visitor there
