@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.146
+# Group Drafting Engine — Specification v0.147
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -309,7 +309,7 @@ The founding is optional in full: a convenor may set everything and delegate not
 | room proposes, convenor answers | — | held |
 | delegated | — | — |
 
-How each state reads to a member is copy rather than mechanism: the power clause is `design/STYLE.md` T8's, in `design/copy.js`, and a delegated setting carries no governance sentence at all — the preamble's default applies.
+How each state reads to a member is copy rather than mechanism: the power clause is `design/STYLE.md` T8's, in `design/copy.js`, and a delegated setting carries no governance sentence at all — the Founder's own ✒️ and 🛡️ clauses name what the Founder holds (SURFACE §8, F16).
 
 1. **Birth.** Every setting is born convenor-held, both powers, question shut, value unset. → why: R-001
 2. **Delegation is an act, one-way, the convenor's own, never a motion.** Before the start, on a delegable setting, it opens the founding question; otherwise — and always after the start — it is a **hand-over**: the value stands, only the holder changes. Each setting's hand-over moment is in §9.7.1 (*hand-over from*). → why: R-006, R-027

@@ -173,11 +173,13 @@ window.BAND = (function () {
     // clause is a list rather than a sentence. It carries markup (the avatar, the
     // 👑 span), so it rides `ctx.clauseFor` beside `rosterClause()` and never
     // `headFor`, which escapes what it is given.
+    // …and it no longer carries the time (#223, Ed 2026-10-03): the moment
+    // moved to 🍾's clause in the Schedule
     const foundedClause = () =>
-      (!env.cs ? '' : '<p class="cpv founded">Founded by ' +
+      (!env.cs ? '' : '<p class="cpv founded">' + esc(PAGE_COPY.clause.foundedLead) +
         avHtml(founderInfo()) + ' ' + esc(founderInfo().n.trim() || 'Anonymous') +
         // 👑 by any reservation (Ed, Q379 wide); 📯 = holds nothing.
-        ' ' + founderMark() + esc(foundedAt()) + '.</p>');
+        ' ' + founderMark() + '.</p>');
     // the close's moment, the same shape as the founding's
     const closedAtWords = () => {
       if (!env.cs || !env.cs.closed || env.cs.closedAt == null) return '';
@@ -580,7 +582,7 @@ window.BAND = (function () {
         // stacked field. The chips a shape's unit once grew above the field
         // left with 🧭 (Q1363).
         opt(V, 'ending', 'ends',
-          'No more changes to the document may be made after ' +
+          'Proposals may be made until ' +
           '<input class="num numin datein" type="datetime-local" data-txt="endsAt" value="' + V.endsAt + '">.') +
         rungOpt(V, 'ending', 'perpetual', ENDING_NEVER) +
         '</div>'; })(),
@@ -644,9 +646,9 @@ window.BAND = (function () {
               '<option value="' + u + '"' + (u === unit ? ' selected' : '') + '>' + u + '</option>').join('') +
             '</select>';
           return opt(V, 'rateBy', 'founder',
-            'Members may make a new proposal ✏️ every ' +
+            'Members may make a new ✏️ proposal every ' +
             '<input class="num numin" type="number" data-num="dripN" min="1" max="2880"' +
-            (shown === '' ? '' : ' value="' + shown + '"') + '> ' + sel + '.', ''); })() +
+            (shown === '' ? '' : ' value="' + shown + '"') + '> ' + sel + ', up to 3 at a time.', ''); })() +
         '</div>',
       chamber: () =>
         (() => { const V = ladderView('chamber');
@@ -1086,7 +1088,9 @@ window.BAND = (function () {
       // other seat (Q1503)
       if (c.k === 'hat') {
         if (stateOf(c, ctx) === 'news') return 'watching';
-        return amFounder() && !constituted() && docOpen() && founderCanCommit() ? 'setting' : 'watching';
+        // …answerable before ✒️ is accepted (#223, G6: 🎩 is the walk's second
+        // step, ✒️ its third), so not pen-gated
+        return amFounder() && !constituted() && docOpen() ? 'setting' : 'watching';
       }
       if (!MANAGED_KEYS.includes(c.k)) return null;
       if (c.record || c.isGate || c.door || c.kind === 'personal' || c.admit || c.release ||
@@ -1169,9 +1173,12 @@ window.BAND = (function () {
           attrs: ' data-confirm="1"', title: PAGE_COPY.setIt, until: powerParts(c).chosen ? null : 'choose' });
         return acts;
       }
+      // **🎩 is answered above the pen** (#223, G6): the walk meets it before
+      // ✒️ is accepted, so it commits with no power, as ✋ and 🖼️ do (Q980) —
+      // a ✒️ on it would be a power not yet held (T44)
       if (c.k === 'hat') {
-        const ready = !!S.hatPick && S.hatPick !== hatCurrent() && mayPen() && docOpen();
-        acts.push({ kind: 'commit', glyph: '✒️', glyphHtml: glyphHtml('✒️'), cls: 'btn-approve emojibtn',
+        const ready = !!S.hatPick && S.hatPick !== hatCurrent() && docOpen();
+        acts.push({ kind: 'commit', glyph: '✓', glyphHtml: window.CARDS.TICK, cls: 'btn-approve',
           attrs: ' data-confirm="1"', title: PAGE_COPY.setIt, until: ready ? null : 'choose' });
         return acts;
       }

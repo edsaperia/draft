@@ -265,7 +265,8 @@ window.BEGIN = (function () {
     const BEGIN_ROWS = [
       'title', 'slug', 'chamber',
       'admission', 'applications', 'lapse', 'removal', 'invite', 'remove',
-      'rate', 'ending', 'quorum', 'authorship', 'judgments',
+      // the Rules' own order since #223 (G6): ⏰ in the Schedule, after 👤 👁️
+      'rate', 'quorum', 'authorship', 'judgments', 'ending',
       'text',
       // `machines` is not here (Ed, 2026-09-09: *we are not having machines*):
       // it has had no card since 🤖 left the surface (R-078) and stays in the

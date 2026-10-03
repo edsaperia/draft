@@ -179,6 +179,14 @@
   // closes the open card first: the card has already collapsed by the time
   // this is called, and a second close would animate nothing twice.
   let LEAVE_EDITING = () => {};
+  // …and 📝 again's own way out, the open card closed first, for the row's
+  // 🗑️ and ✏️ ✒️ pressed with nothing changed (#193, Ed 2026-10-02: *clicking
+  // on either 🗑️ or ✏️ should leave edit mode with no action*)
+  let EXIT_EDIT_MODE = () => {};
+  // **A coarse pointer** (MOBILE.md §1.5, §6a): touch is the primary input,
+  // so the column never takes a caret and a tap is the door (`PROSE`)
+  const COARSE_Q = '(pointer: coarse)';
+  const COARSE = () => matchMedia(COARSE_Q).matches;
   // the sign control (Q770): null means no elective 👤 rung — no control
   let SIGNING = () => null;
   let SIGNER = () => '';
@@ -248,8 +256,14 @@
   // …and since backlog 204 the caret is edit mode's alone: in read mode the
   // column is prose you can read and select, and a click there beats the 📝
   // tab (the host's job — `#ridetab`), which is the door in.
+  // **…and on a coarse pointer it never takes one** (MOBILE.md §6a.3, Ed
+  // 1585.1): a phone's keyboard composes, a composition's `beforeinput`
+  // cannot be cancelled, and the browser wrote the word into the clause in
+  // place (§6a.0 finding 6). So on touch the column is prose in both modes,
+  // and in edit mode a tap on a clause is the door: it opens as its own lane
+  // (`startDraftFromTap`), a real editor the page owns.
   const PROSE = () => '<div class="prose' + (srcMode() ? ' mdsrc' : '') + '" contenteditable="' +
-    (MAY_PROPOSE() && EDITING() ? 'true' : 'false') + '" spellcheck="false">';
+    (MAY_PROPOSE() && EDITING() && !COARSE() ? 'true' : 'false') + '" spellcheck="false">';
 
   // ---- one rendering of a block for reading (Q1294, Ed 2026-09-10) ---------
   // The column renders markdown for reading: `mdLine` draws the inline marks
@@ -1540,10 +1554,21 @@
     // Everything in the rail opens, sealed dots included (Ed, 112): a locked
     // judgment can't be changed, but it can always be read.
     queueEl.querySelectorAll('button[data-q]').forEach((b) =>
-      b.addEventListener('click', () => { railPress(b.dataset.q); }, { signal: railCtl.signal })
+      b.addEventListener('click', () => { railPress(b.dataset.q, entrySiteOf(b)); }, { signal: railCtl.signal })
     );
     layoutQueue();
   }
+
+  // **The place an entry stands at** (#204): a patch stands an entry beside
+  // each of its places, and pressing one travels to that place's card — the
+  // entry's `li` says which (`data-site`). Only an item of several places
+  // answers; everything else stands at one place and travels as it always has.
+  const entrySiteOf = (b) => {
+    const li = b.closest('li[data-site]');
+    if (!li || li.dataset.q !== b.dataset.q || !li.dataset.site) return undefined;
+    const g = SUGGS.find((x) => x.id === b.dataset.q);
+    return g && (g.sites || []).length > 1 ? li.dataset.site : undefined;
+  };
 
   // The heading a folded-away clause hides behind, so its entry still has
   // somewhere to stand.
@@ -2111,6 +2136,15 @@
     const swallowed = [...doc.querySelectorAll('.sugg[data-card="' + id + '"][data-site]')];
     return [...new Set([...chips, ...paras, ...inserts, ...swallowed])];
   }
+
+  // …and the ones at one place of a patch (#204): its paragraph, its gap's
+  // anchor or the card that swallowed it, each of which carries the site's key
+  const siteTargets = (id, site) => (site
+    ? wireTargets(id).filter((el) => el.dataset.site === site || el.dataset.key === site)
+    : wireTargets(id));
+  // the open card at that place, else the item's first
+  const cardAt = (id, site) => (site && doc.querySelector('.sugg[data-card="' + CSS.escape(id) + '"][data-site="' + CSS.escape(site) + '"]')) ||
+    [...doc.querySelectorAll('.sugg[data-card]')].find((c) => c.dataset.card === id) || null;
 
   // Only the open judgment gets wires. Drawing them on hover made the gutter
   // flicker as the pointer crossed the queue (Ed, 78). Now that entries stand
@@ -2767,10 +2801,28 @@
    * proposal-row's (1541.22 (a), grammar B9).
    */
   const editing = (s) => !!s && !docClosed && s.kind === 'draft' && !!s.unproposed;
+  // **The phone's editing card** (MOBILE.md §6a.1, Ed 1585.1, 2026-10-02:
+  // *the clause becomes its lane*): on a coarse pointer at narrow width, one
+  // place on a clause — not a gap, not a wording taken from another lane,
+  // not a stranded one — opens with **its lane standing in the clause's own
+  // box**: no label and no *Current text* head, the clause's strip in its
+  // gutter, the Anonymous switch and the reasoning beneath, 🗑️ on the row.
+  // The clause as it stood is one press away on its tab.
+  const inPlaceLane = (p) => COARSE() && NARROW() && p.n === 1 && !p.gap && !p.seeded && !!p.lane;
   function editPresent(s, st, hints) {
     const W = window.COPY.shell;
     const site = (hints && hints.siteKey && siteFor(s, hints.siteKey)) || s.sites[0];
     const p = editParts(s, site);
+    if (inPlaceLane(p)) {
+      return {
+        kind: 'editing',
+        frame: { cls: 'sugg editcard inplacecard', attrs: ' data-card="' + esc(s.id) + '" data-anchor="' + esc(s.id) + '" data-site="' + esc(p.key) + '"' },
+        head: { html: p.head({ label: null, fact: 'place', chips: chipsFor(p.key, s.id), onHead: headRank(p.key), html: p.lane }) },
+        body: p.body ? { html: p.body } : null,
+        options: { html: p.below },
+        rowNote: [EDITING() ? '' : cardCommitActs(s).drip, p.refusal || ''].join('') || null,
+      };
+    }
     return {
       kind: 'editing',
       frame: { cls: 'sugg editcard', attrs: ' data-card="' + esc(s.id) + '" data-anchor="' + esc(s.id) + '" data-site="' + esc(p.key) + '"' },
@@ -3072,7 +3124,7 @@
   const { DRAFT_ID, draftOf, docIndexOfKey, siteFor, syncDraftKeys,
     dropDraft, dropDraftSite,
     caretRangeIn, selectedBlocks, laneCaret, placeCaret,
-    startDraft, startDraftFromTyping, startDraftFromRun,
+    startDraft, startDraftFromTyping, startDraftFromTap, startDraftFromRun,
     laneRemark, syncEditCtl, markSelection,
     commitBtnHtml, proposalRowHtml, proposeCtlTitles, draftRowState, setDraftSigned, draftSigned,
     ownParts, editParts, cardCommitActs } = COMPOSER;
@@ -3510,6 +3562,8 @@ document.addEventListener('pointerdown', (ev) => {
   // …and on the row, with the draft's card closed, the press opens the card
   // and starts no flight (Q1296): the review comes before the commit
   if (b.dataset.act === 'row-commit') {
+    // with nothing changed the click leaves edit mode (#193): no hold to start
+    if (!draftRowState().changed) return;
     const d = draftOf();
     if (!d) return;
     if (openId !== d.id) { toggle(d.id, true); return; }
@@ -4006,8 +4060,11 @@ document.addEventListener('paste', (ev) => {
         // the wallet is what is stopping this press, and the row says when
         // that stops being true (Q1486 (E))
         broke: pt.broke && rs.changed,
-        disabled: !rs.changed || pt.broke, penDisabled: !rs.changed,
-        discardDisabled: !rs.count,
+        // **never dark for want of a change** (#193, Ed 2026-10-02): with
+        // nothing changed both ends are the way out of edit mode, so only an
+        // empty wallet under a real change darkens the ✏️
+        disabled: rs.changed && pt.broke, penDisabled: false,
+        discardDisabled: false,
         title: !rs.changed ? idle : pen ? pt.penTitle : pt.title,
         proposeTitle: !rs.changed ? idle : pt.title,
       });
@@ -4044,7 +4101,10 @@ document.addEventListener('paste', (ev) => {
     doc.querySelectorAll('[data-proposalrow] [data-act="row-commit"], .sugg [data-act="draft-propose"]').forEach((b) => {
       const pen = !!b.dataset.pen;
       const inRow = b.dataset.act === 'row-commit';
-      b.disabled = pen ? !rs.changed : (!rs.changed || pt.broke);
+      // the row's is the way out with nothing changed (#193); a card's
+      // commit outside edit mode has no mode to leave, and stays dark
+      b.disabled = inRow ? (!pen && rs.changed && pt.broke)
+        : pen ? !rs.changed : (!rs.changed || pt.broke);
       b.title = inRow && !rs.changed ? idle : pen ? pt.penTitle : pt.title;
     });
     // **and the countdown appears with the dark button, not one render later**
@@ -4063,7 +4123,7 @@ document.addEventListener('paste', (ev) => {
       const html = abstainNoteHtml(dripAtMs(), 'drip');
       if (html) btn.insertAdjacentHTML('beforebegin', html);
     });
-    doc.querySelectorAll('[data-proposalrow] [data-act="row-discard"]').forEach((b) => { b.disabled = !rs.count; });
+    doc.querySelectorAll('[data-proposalrow] [data-act="row-discard"]').forEach((b) => { b.disabled = false; });
     doc.querySelectorAll('[data-proposalrow] .rowmid').forEach((m) => {
       m.textContent = rs.changedCount ? T.row.placesChanged(rs.changedCount) : '';
     });
@@ -4092,6 +4152,9 @@ document.addEventListener('paste', (ev) => {
     doc.querySelectorAll('[data-proposalrow] [data-act="row-discard"]').forEach((b) =>
       on(b, 'click', (ev) => {
         ev.stopPropagation();
+        // **nothing changed, nothing binned** (#193, Ed 2026-10-02): the press
+        // is 📝 again's — the mode left, a typed-back draft kept as 📝 keeps it
+        if (!draftRowState().changed) { EXIT_EDIT_MODE(); return; }
         dropDraft();
         renderAll(); drawWires();
       })
@@ -4132,6 +4195,10 @@ document.addEventListener('paste', (ev) => {
     doc.querySelectorAll('[data-proposalrow] [data-act="row-commit"]').forEach((b) =>
       on(b, 'click', (ev) => {
         ev.stopPropagation();
+        // **nothing changed, nothing sent** (#193, Ed 2026-10-02): ✏️ and ✒️
+        // leave as 📝 again does — no command, no ✏️ spent, no flight, and on
+        // the press under either gesture, a hold being for a spend (D1)
+        if (!draftRowState().changed) { EXIT_EDIT_MODE(); return; }
         const d = draftOf();
         if (!d) return;
         // **With the draft's card closed, the press opens it** (Q1296): the
@@ -4623,9 +4690,10 @@ document.addEventListener('paste', (ev) => {
 
   const topTarget = (targets) => targets.reduce((a, c) =>
     (c.getBoundingClientRect().top < a.getBoundingClientRect().top ? c : a));
-  // The clause a move is aimed at — a patch's topmost site, everyone else's only
-  // one — as a selector that will still find it after the re-render.
-  const holdSel = (id) => {
+  // The clause a move is aimed at — a patch's topmost site, or the one its
+  // pressed entry stands at (#204), everyone else's only one — as a selector
+  // that will still find it after the re-render.
+  const holdSel = (id, site) => {
     // Opening the composer is the one case where the thing to hold still is not
     // in the document yet: the clause is about to *become* the card, and the
     // card puts a rationale field above the lanes, so the clause ends up ~80px
@@ -4635,20 +4703,21 @@ document.addEventListener('paste', (ev) => {
     // gives way instead. Measured: 82px of travel before, 0 after.
     const d = draftOf();
     if (d && d.id === id && d.focusKey) return '[data-key="' + d.focusKey + '"]';
-    const t = wireTargets(id);
+    const t = siteTargets(id, site);
     // **a heading is a clause too** (Q1541 stage 6): the wires land on
     // paragraphs, so a card on a heading had nothing held and the label's
     // room pushed the heading down instead of the content above up — its
     // own tab's line is what stands for it
     if (!t.length) {
+      if (site) return '[data-key="' + site + '"]';
       const own = doc.querySelector('.achip[data-anchor="' + id + '"]');
       const k = own && own.closest('[data-key]');
       return k ? '[data-key="' + k.dataset.key + '"]' : null;
     }
     const el = topTarget(t);
     return el.dataset.key ? '[data-key="' + el.dataset.key + '"]'
-      : el.classList.contains('insert-anchor') ? '.insert-anchor[data-anchor="' + id + '"]'
-      : el.classList.contains('sugg') ? '.sugg[data-card="' + id + '"]'
+      : el.classList.contains('insert-anchor') ? '.insert-anchor[data-anchor="' + id + '"]' + (site ? '[data-site="' + site + '"]' : '')
+      : el.classList.contains('sugg') ? '.sugg[data-card="' + id + '"]' + (site ? '[data-site="' + site + '"]' : '')
       : null;
   };
 
@@ -4677,16 +4746,17 @@ document.addEventListener('paste', (ev) => {
   // far that its head leaves the top, so a card taller than the window keeps
   // its head and gives up its foot. After the unroll, never during it: the
   // three steps of an open do not overlap.
-  function fitOpened(id) {
-    const el = [...doc.querySelectorAll('.sugg')].find((c) => c.dataset.card === id);
+  function fitOpened(id, site) {
+    const el = cardAt(id, site);
     if (!el) return;
     const r = el.getBoundingClientRect();
     const by = Math.min(r.bottom - (innerHeight - HEAD_GAP), r.top - headLine());
     if (by > 1) smoothScrollBy(by, () => { layoutQueue(); drawWires(); });
   }
 
-  function bringIntoView(id, done) {
-    let targets = wireTargets(id);
+  function bringIntoView(id, done, site) {
+    // a patch's entry aims at its own place (#204), never the topmost
+    let targets = siteTargets(id, site);
     // **Every entry travels, whether or not its tab is drawn** (Ed, 2026-09-11:
     // *when I click on green ✔ tasks whose clauses are outside the viewport,
     // I'm not moved*). A wire target is a drawn tab, and a filed record in a
@@ -4695,7 +4765,7 @@ document.addEventListener('paste', (ev) => {
     // dead; a candidate on a heading had none either, `wireTargets` keeping
     // only paragraphs. The clause the entry stands beside is the fallback:
     // `anchorForEntry` is what levels the entry against it, so the two agree.
-    if (!targets.length) { const a = anchorForEntry(id); if (a) targets = [a]; }
+    if (!targets.length) { const a = anchorForEntry(id, site); if (a) targets = [a]; }
     if (!targets.length) { drawWires(); return done(); }
     const y = topTarget(targets).getBoundingClientRect().top;
     const arrive = () => { layoutQueue(); drawWires(); done(); };
@@ -4772,12 +4842,13 @@ document.addEventListener('paste', (ev) => {
   // a click outside the card closes it (SURFACE C2). The rail's route alone:
   // `toggle`'s other callers — the tabs, the review walk, edit mode — keep
   // their second press.
-  function railPress(id) {
-    if (openId !== id) return toggle(id, true);
-    bringIntoView(id, () => {});
+  // …and a patch's entry travels to its own place's card (#204), `site`
+  function railPress(id, site) {
+    if (openId !== id) return toggle(id, true, undefined, site);
+    bringIntoView(id, () => {}, site);
   }
 
-  function toggle(id, scroll, after) {
+  function toggle(id, scroll, after, site) {
     const closing = openId;
     const next = openId === id ? null : id;
     if (!closing && !next) return;
@@ -4837,7 +4908,7 @@ document.addEventListener('paste', (ev) => {
       // and is therefore never seen.
       const open = (stayed) => {
         if (!alive()) return;
-        const hold = holdSel(next);
+        const hold = holdSel(next, site);
         // **Where the held thing stood, in case its own card swallows it** (Ed's
         // screenshot from the residency room, 2026-09-19: *I clicked on this
         // queue card and this is where it opened* — the card's foot under the
@@ -4869,7 +4940,7 @@ document.addEventListener('paste', (ev) => {
         const tabEl = closing && !scroll ? tabOf(closing) : null;
         const tabTop = tabEl ? tabEl.getBoundingClientRect().top : null;
         keepStill(() => { openId = next; renderAll(); }, hold);
-        focusOpenedCard(next);
+        focusOpenedCard(next, site);
         const tabNow = tabTop !== null ? tabOf(next) : null;
         if (tabNow) {
           const drift = tabNow.getBoundingClientRect().top - tabTop;
@@ -4893,20 +4964,24 @@ document.addEventListener('paste', (ev) => {
         // there the tab pressed is what holds (M12, *the tab you click does
         // not move*), and a tab low in a long strip on a phone puts the head
         // and its label above the glass — the page does not chase the label
-        if (!tabNow) window.CARD_SHELL.clearTop(doc.querySelector('.sugg.gshell[data-card="' + next + '"]'));
+        if (!tabNow) {
+          const opened = cardAt(next, site);
+          window.CARD_SHELL.clearTop(opened && opened.classList.contains('gshell') ? opened
+            : doc.querySelector('.sugg.gshell[data-card="' + next + '"]'));
+        }
         // the card made the document taller, so every entry below it has moved
         layoutQueue();
         if (after) after();
         expandCards(next, () => {
           if (!alive()) return;
           layoutQueue();
-          if (stayed === true) fitOpened(next);
+          if (stayed === true) fitOpened(next, site);
           settle();
         });
       };
       // The scroll runs with the old card still standing, so the geometry it
       // aims at cannot move underneath it; the swap happens on arrival.
-      if (scroll) bringIntoView(next, open); else open();
+      if (scroll) bringIntoView(next, open, site); else open();
     };
 
     // Closing with nothing to open is the one case where the collapse is worth
@@ -5652,9 +5727,9 @@ document.addEventListener('paste', (ev) => {
   // the chosen lane, else the first, never the commit row; a card with no
   // lane — a record — takes its own tab in the strip, which is inside it.
   // The editing card is the caret's (K13) and is left to the composer.
-  const focusOpenedCard = (id) => {
+  const focusOpenedCard = (id, site) => {
     if (id === DRAFT_ID) return;
-    const card = [...doc.querySelectorAll('.sugg[data-card]')].find((c) => c.dataset.card === id);
+    const card = cardAt(id, site);
     // the tab pressed rides into the card's strip, so the keyboard may already
     // be inside — it still goes on to the decision, unless it is on one
     if (!card || (card.contains(document.activeElement) && document.activeElement.matches('[data-v]'))) return;
@@ -5870,6 +5945,7 @@ document.addEventListener('paste', (ev) => {
     if (env.editing) EDITING = env.editing;
     if (env.enterEditing) ENTER_EDITING = env.enterEditing;
     if (env.leaveEditing) LEAVE_EDITING = env.leaveEditing;
+    if (env.exitEditMode) EXIT_EDIT_MODE = env.exitEditMode;
     // the sign control's two reads (Q770): the elective base, if any, and
     // what a signature would read as — both at call time, like the two above
     if (env.signing) SIGNING = env.signing;
@@ -5933,6 +6009,83 @@ document.addEventListener('paste', (ev) => {
       if (picked.blocks.length > 1) return startDraftFromRun(picked, ev);
       startDraftFromTyping(picked.blocks[0], ev);
     });
+
+    // **On touch, a tap on a clause in edit mode is the door** (MOBILE.md
+    // §6a.1, Ed 1585.1): the column takes no caret on a coarse pointer
+    // (`PROSE`), so the tap opens the clause as its own lane, the caret at the
+    // point tapped. A tap on a gutter tab, a link, the fold triangle or a
+    // card is that thing's, never the door's.
+    doc.addEventListener('click', (ev) => {
+      if (!COARSE() || !EDITING() || !MAY_PROPOSE() || closedMode) return;
+      const t = ev.target && ev.target.closest ? ev.target : null;
+      if (!t || t.closest('.sugg, .chipcol, a, button, .sectoggle, .nocaret')) return;
+      const p = t.closest('.editable[data-key]');
+      if (!p || !p.closest('.prose')) return;
+      if (startDraftFromTap(p, ev.clientX, ev.clientY)) ev.preventDefault();
+    });
+
+    // **The keyboard on a phone** (MOBILE.md §6a.2, Ed 1585.2): while a
+    // card's field holds the caret at narrow width on touch, the root wears
+    // `data-kbd` (the sheet and the 📝 door go), and the row is lifted by
+    // what the keyboard takes from the layout viewport — `visualViewport`'s
+    // foot against the window's. One style property, never a render: the
+    // caret rule holds. The lane being typed in is kept on the glass, moved
+    // only as far as it must be (Q1465's rule): a lane already in view
+    // stays where the clause stood.
+    // a field of a card holds the caret — or held it, and a control on the
+    // same card or the row took the focus from it: a tap on ✏️ blurs the lane
+    // before its click lands, and the sheet and the door must not come back
+    // under the finger
+    let kbdCard = null;
+    const kbdField = () => {
+      const a = document.activeElement;
+      const card = a && a.closest ? a.closest('.sugg') : null;
+      const field = !!card && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) &&
+        !/^(checkbox|radio|button|submit)$/.test(a.type || '');
+      if (field) { kbdCard = card; return true; }
+      if (card && card === kbdCard && card.isConnected) return true;
+      // …or the floating row's own buttons, the same tap one step out
+      if (kbdCard && kbdCard.isConnected && a && a.closest && a.closest('[data-proposalrow]')) return true;
+      kbdCard = null;
+      return false;
+    };
+    const keepFieldOnGlass = () => {
+      const a = document.activeElement;
+      if (!a || !document.documentElement.hasAttribute('data-kbd')) return;
+      const vv = window.visualViewport;
+      const foot = vv ? vv.offsetTop + vv.height : innerHeight;
+      const row = doc.querySelector('.race-mid.commitrow.proposalrow:not([data-editdoor]) .btn');
+      const floor = foot - (row ? row.getBoundingClientRect().height + 16 : 0);
+      const nav = document.querySelector('.navbar');
+      const top = nav ? Math.max(0, nav.getBoundingClientRect().bottom) : 0;
+      const r = a.getBoundingClientRect();
+      // the caret's line where there is one, else the field's own top line
+      let line = null;
+      const sel = getSelection();
+      if (sel && sel.rangeCount && a.contains(sel.getRangeAt(0).endContainer)) {
+        const q = sel.getRangeAt(0).getClientRects();
+        if (q.length) line = q[q.length - 1];
+      }
+      const lt = line ? line.top : r.top, lb = line ? line.bottom : Math.min(r.bottom, r.top + 40);
+      if (lt < top) scrollBy(0, lt - top - 8);
+      else if (lb > floor) scrollBy(0, Math.min(lb - floor + 8, r.top - top - 8));
+    };
+    const syncKbd = () => {
+      const root = document.documentElement;
+      const on = NARROW() && COARSE() && kbdField();
+      if (on !== root.hasAttribute('data-kbd')) root.toggleAttribute('data-kbd', on);
+      const vv = window.visualViewport;
+      const lift = on && vv ? Math.max(0, Math.round(innerHeight - (vv.offsetTop + vv.height))) : 0;
+      root.style.setProperty('--kbd-lift', lift + 'px');
+      if (on) keepFieldOnGlass();
+    };
+    document.addEventListener('focusin', () => syncKbd());
+    document.addEventListener('focusout', () => setTimeout(syncKbd, 0));
+    if (window.visualViewport) {
+      visualViewport.addEventListener('resize', syncKbd);
+      visualViewport.addEventListener('scroll', syncKbd);
+    }
+    addEventListener('resize', syncKbd);
 
     addEventListener('scroll', onViewportChange, { passive: true });
     // the strip's B and I follow the caret: live while an editing lane holds

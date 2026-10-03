@@ -160,26 +160,13 @@ async function okThe(key) {
  * has held the fact since Q682. Opens 🎩, reads its two radios, and closes
  * it by the bin so the rung's other measures see the page they always saw.
  */
-async function hatCard() {
-  await page.evaluate(() => {
-    document.querySelector('#rail [data-card="hat"], #band [data-tab="hat"]')?.click();
-  });
-  await T(500);
-  // **the locked 🎩 is read** (Q1541 stage 3b): the sentence that stands as
-  // its first line, wearing its pill; nothing unchosen, no row
-  const r = await page.evaluate(() => {
-    const c = document.querySelector('.setupcard');
-    const out = {
-      radios: c ? c.querySelectorAll('.choice .pick, .lanepick').length : -1,
-      line: (c?.querySelector('[data-fact="place"]')?.textContent ?? '').replace(/\s+/g, ' ').trim(),
-      pill: !!c?.querySelector('.standpill'),
-      row: !!c?.querySelector('[data-slot="row"]'),
-    };
-    document.querySelector('.setupcard .chipcol .achip')?.click();
-    return out;
-  });
-  await T(400);
-  return r;
+async function hatGone() {
+  return page.evaluate(() => ({
+    tabs: document.querySelectorAll('#band [data-chip="hat"], #band [data-tab="hat"]').length,
+    entries: document.querySelectorAll('#rail [data-card="hat"]').length,
+    // …and the Founded line still stands, where 🎩 sat until the start
+    founder: !!document.querySelector('#band .cpara[data-para="founded"]'),
+  }));
 }
 
 /**
@@ -347,11 +334,13 @@ async function assertSurface(rung) {
       m.walletClass !== null && !/\bnotheld\b/.test(m.walletClass),
       m.walletClass === null ? 'no socket' : `class="${m.walletClass}"`);
     check(rung, 'the membership is drawn', m.members > 1, `${m.members} rows`);
-    // **Q1503**: a reloaded page past 🍾 must say what 🎩 was locked at
-    const hat = await hatCard();
-    check(rung, '🎩 is locked, with its answer standing',
-      hat.radios === 0 && /^The Founder is (not )?part of the membership\./.test(hat.line) && hat.pill && !hat.row,
-      `“${hat.line}”${hat.pill ? ' wearing its pill' : ', no pill'}, ${hat.radios} radios${hat.row ? ', a row' : ''}`);
+    // **Q1503 as amended by #223 (G2b, Ed 2026-10-03)**: past 🍾 🎩 is
+    // hidden — the members list says the rest — so a reloaded page draws no
+    // 🎩 tab and no 🎩 entry anywhere, settled all the same (the ✏️ wallet
+    // above, Q1242, is what a 🎩 the live path could not rebuild would stop)
+    const hat = await hatGone();
+    check(rung, '🎩 is hidden at 🍾, no tab and no entry',
+      hat.tabs === 0 && hat.entries === 0 && hat.founder, JSON.stringify(hat));
   }
   if (rung === 'closing') {
     check(rung, 'the clock is counting down', /m|min|hour|h\b/i.test(m.clockText), m.clockText);

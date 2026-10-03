@@ -52,7 +52,7 @@ Glyph names are stable (tabulated 2026-09-07, Q1208; the founding order's own gl
 | visibility | 🌍 | — |
 | text | 📝 | 📄 until backlog 204; the applicant's words are 👋 |
 | founder-is-member | 🎩 | — |
-| proposing gate | 💡 | keeps its glyph on the card titled *Proposals* — Ed's ruling of 2026-09-01 (Q1121), the gate being what the tab and the preamble stack show |
+| proposing gate | 💡 | keeps its glyph on the card titled *Proposals* — Ed's ruling of 2026-09-01 (Q1121), the gate being what the tab on the ✏️ clause shows (#223) |
 | voting gate | ⚖️ | — |
 | crown | 👑 | — |
 | horn | 📯 | — |
@@ -197,8 +197,8 @@ Glyph names are stable (tabulated 2026-09-07, Q1208; the founding order's own gl
   you · Ran out of time* — nothing was decided, so nothing ranks it. *Refused*
   is the Founder's 🛡️ alone; a wording the room closed early is *Rejected*
   (T8). **Nor does a heading-over-text card carry a title head** (Ed,
-  2026-09-15, Q1373): the grants ✒️ 🛡️ open as the strip, the paragraph and
-  OK, and 🏛️ 💡 ⚖️ head with the Proposals clause, their rule. The card's name
+  2026-09-15, Q1373): every grant and gate — ✒️ 🛡️ 🏛️ 💡 ⚖️ — heads with
+  the clause its tab hangs on, its rule (#223). The card's name
   survives on the rail entry, the tab tooltip and the record.
 
 ## 5. Bodies and notes
@@ -208,7 +208,7 @@ Glyph names are stable (tabulated 2026-09-07, Q1208; the founding order's own gl
 - **T21 · Read-only copy must survive the spec it summarises.** "Fixed for the
   life of the document" predated motions and was false. **The lockline goes
   from the settings cards** (1541.14 (a); Q1541 stage 3a): who chose a rule is
-  its pill (T48), and what changing it takes is the constitution's preamble
+  its pill (T48), and what changing it takes is the Proposals clauses
   and the card's own commits.
 - **T22 · Section headings carry no intro prose.**
 - **T17 · The price is said in words exactly once**, at the act: *the edit is

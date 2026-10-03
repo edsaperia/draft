@@ -888,12 +888,11 @@ function checkOrder(pm) {
   const secs = [...page.matchAll(/\{ key: '([a-z]+)', title: '([^']*)'[\s\S]*?keys: \[([^\]]*)\]/g)]
     .map((m) => ({ key: m[1], keys: [...m[3].matchAll(/'([a-z-]+)'/g)].map((x) => x[1]) }));
   const secOf = (k) => (secs.find((s) => s.keys.includes(k)) || {}).key;
-  // 🏛️ was skipped here while its clause hung off whichever question the
-  // grant arrived with; Q750 pins the clause to the Proposals preamble, so
-  // there is a section to name. It is deliberately not in `SEC.rate.keys`
-  // (admitting it would make the whole section live from its place in ORDER),
-  // hence an override rather than a `secOf` lookup.
-  const hosts = { 'grant-pen': 'lead', 'grant-shield': 'lead', 'grant-voice': 'lead', title: 'lead', slug: 'lead', shape: 'lead', myemail: 'lead', chamber: 'lead' };
+  // The lead is no section of `SEC` — it is the constitution group's own
+  // `lead` — so its cards are named here: the title, the link, 📧 at the
+  // birth, 🎩 on the Founded line (#223, G2), ✒️ and 🛡️ on their own clauses
+  // (G1) and 🌍. 🏛️ is the Proposals section's own key since #223 (G3).
+  const hosts = { 'grant-pen': 'lead', 'grant-shield': 'lead', hat: 'lead', title: 'lead', slug: 'lead', shape: 'lead', myemail: 'lead', chamber: 'lead' };
   for (const r of rows) {
     const want = r.section.split(/[,—(]/)[0].trim();
     const got = (r.key in hosts) ? hosts[r.key] : secOf(r.key);
@@ -921,20 +920,22 @@ function checkOrder(pm) {
   const glyphs = {};
   for (const m of page.matchAll(/\{ k: '([a-z-]+)', g: '([^']+)'/g)) glyphs[m[1]] = m[2];
   for (const r of rows) if (glyphs[r.key] && glyphs[r.key] !== r.glyph) find('order', `${r.key}: glyph ${r.glyph} vs the card's ${glyphs[r.key]}`);
-  // **The Proposals opening is one clause carrying four tabs** (Y23, Q748).
-  // The page names the group in `PROPOSAL_CHIPS`; the band prose above names
-  // the glyph run the section opens with. Neither is derivable from the other,
-  // so the stack could drift from the document that describes it — and the
-  // group is what decides which tabs a reader can reach at all.
-  const chipsLit = page.match(/const PROPOSAL_CHIPS = \[([^\]]*)\]/);
-  if (!chipsLit) find('order', 'PROPOSAL_CHIPS is gone — the Proposals opening no longer names its own stack (Y23)');
+  // **The Proposals section is five clauses, one per power** (#223, G3, Ed
+  // 2026-10-03), retiring Y23's one clause carrying four tabs. The page names
+  // them in `PROPOSAL_CLAUSES`; the band prose above names the glyph run the
+  // section reads in. Neither is derivable from the other, so the order could
+  // drift from the document that describes it.
+  const clausesLit = page.match(/const PROPOSAL_CLAUSES = \[([^\]]*)\]/);
+  if (!clausesLit) find('order', 'PROPOSAL_CLAUSES is gone — the Proposals section no longer names its own clauses (G3)');
   else {
-    const chipKeys = [...chipsLit[1].matchAll(/'([a-z-]+)'/g)].map((m) => m[1]);
-    const prose = read('SURFACE.md').split('\n').find((l) => l.includes('the preamble wearing')) || '';
-    const run = ((prose.match(/the preamble wearing ([^·)]+)/) || [, ''])[1] || '').trim();
-    const want = chipKeys.map((k) => glyphs[k] || '?').join(' ');
-    if (run !== want) find('order', `SURFACE's Proposals run is '${run}', PROPOSAL_CHIPS is '${want}'`);
-    for (const k of chipKeys) if (!pm.ORDER.includes(k)) find('order', `PROPOSAL_CHIPS names '${k}', which is not in ORDER`);
+    const clauseKeys = [...clausesLit[1].matchAll(/'([a-z-]+)'/g)].map((m) => m[1]);
+    const prose = read('SURFACE.md').split('\n').find((l) => l.includes('the five clauses wearing')) || '';
+    const run = ((prose.match(/the five clauses wearing ([^·)|—]+)/) || [, ''])[1] || '').trim();
+    const want = clauseKeys.map((k) => glyphs[k] || '?').join(' ');
+    if (run !== want) find('order', `SURFACE's Proposals run is '${run}', PROPOSAL_CLAUSES is '${want}'`);
+    for (const k of clauseKeys) if (!pm.ORDER.includes(k)) find('order', `PROPOSAL_CLAUSES names '${k}', which is not in ORDER`);
+    if (secs.find((s2) => s2.key === 'rate') && JSON.stringify(secs.find((s2) => s2.key === 'rate').keys) !== JSON.stringify(clauseKeys))
+      find('order', `SEC.rate.keys is not PROPOSAL_CLAUSES: ${secs.find((s2) => s2.key === 'rate').keys.join(' ')} / ${clauseKeys.join(' ')}`);
   }
   // F16, the half a table cannot hold (Q639): ✒️ and 🛡️ write no clause of
   // their own — the count they used to state is already on every setting
