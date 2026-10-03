@@ -1132,8 +1132,10 @@ window.COPY = (function () {
       penSome: (list) => 'The Founder may ✒️ change ' + list + ' at will.',
       shieldAll: 'The Founder may 🛡️ refuse any proposal the membership pass.',
       shieldSome: (list) => 'The Founder may 🛡️ refuse proposals the membership pass on ' + list + '.',
-      penBirth: 'The Founder (that’s you!) may ✒️ change anything at will.',
-      shieldBirth: 'The Founder (that’s you!) may 🛡️ refuse proposals the membership pass.',
+      // at the birth, with no aside: *(that's you!)* is the title clause's alone
+      // (Ed, 2026-10-03 20:01, on #224, overriding #223's *Before the save*)
+      penBirth: 'The Founder may ✒️ change anything at will.',
+      shieldBirth: 'The Founder may 🛡️ refuse proposals the membership pass.',
       // *Friday 2 October*, his example's shape: the weekday, then the day
       weekDay: (weekday, day) => weekday + ' ' + day,
       list: (names) => (names.length < 2 ? names.join('')

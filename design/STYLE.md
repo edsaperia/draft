@@ -104,11 +104,10 @@ Glyph names are stable (tabulated 2026-09-07, Q1208; the founding order's own gl
   redesign (1541.25 (a); the words 1567.2), because the door's card heads with the same
   line: *There are no applications at the moment.* · *Nobody is proposed for
   removal.* · *Nobody has left.* — SURFACE §8's statuses table (F21).
-- T10's second exception, the birth's two founder clauses, where the Founder
-  meets the word for the first time, say *(that’s you!)* there and nowhere else
-  (#223, Ed 2026-10-03, G1's *Before the save*, taking it from the title clause
-  of entry 140) — only the Founder ever sees the birth, and after the save
-  neither clause carries it.
+- T10's second exception, the birth's title clause, where the Founder meets
+  the word for the first time, says *(that’s you!)* once and only there (Ed,
+  2026-08-27, entry 140) — only the Founder ever sees the birth, and after the
+  save the same clause is byte-identical to what every other reader gets.
 - **The membership takes a plural verb** (Ed, 2026-09-02, Q1150): *the
   membership will decide*, on every delegation sentence and anywhere else the
   word stands for the people rather than the count. **The tense is future**
@@ -268,7 +267,7 @@ The rules the audit log (§7) audits against, lifted from CLAUDE.md's glossary a
 | T7 | A power option is a proposal block, not a radio label: the rule at document size with a full stop, its consequence as a note, a lane bar reading *Choose this / Chosen* | `powerLane` |
 | T8 | The power clause is one sentence in Ed's vocabulary: a member proposes; the membership passes and rejects; the Founder assents, refuses and amends. *pass* not *carry*; *refuse* is the Founder's word. The Founder **also proposes**, and the word for it is the membership's — a Founder putting a change to the room does the same thing a member does and is said to in the same words (entry 161) | `PW_PHRASE`; the 👑 question's buttons are *Refuse / Accept*; the pair's second commit is *✏️ Propose* / *🏛️ Ask all members*, unchanged |
 | T9 | One voice, only the object changing: per-setting phrases only where the generic would be untrue (policy, text) | `PW_PHRASE`, `PW_OPTS`, `PW_NOUN` |
-| T10 | §3 · The document reads identically to every reader; "you" belongs to tasks and cards | *The Founder is checking their email for a link.* · *The Founder (that’s you!) may ✒️ change anything at will.* (birth only) |
+| T10 | §3 · The document reads identically to every reader; "you" belongs to tasks and cards | *The Founder is checking their email for a link.* · *The Founder (that’s you!) may amend this at will.* (birth only) |
 | T11 | §3 · A paragraph states the document's rule, never your own answer | a delegated clause's *(x of y have answered so far)*, never a value |
 | T12 | §2 · A count, never a direction | *4 of 9 have answered* |
 | T13 | §2 · A value, never a guess | *The Founder is deciding [x]* |

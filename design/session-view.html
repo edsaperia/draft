@@ -4159,8 +4159,9 @@
   // hand is on every setting and both doors, the settings named where it is
   // on some — the doors in their own whole sentences, Ed's — and nothing at
   // all where it is on none, the clause and its tab going together. Before
-  // the save the founder holds both by construction, and the clause says
-  // whose hand that is (*that's you!*, STYLE T10). A closed document states
+  // the save the founder holds both by construction, with no aside — *(that's
+  // you!)* is the title clause's alone (STYLE T10; Ed, 2026-10-03, on #224).
+  // A closed document states
   // no power at all (1541.52), so neither clause stands on one.
   const founderPowerClause = (power) => {
     const C = PAGE_COPY.clause;
@@ -8067,9 +8068,9 @@
     if (!PW_KEYS.includes(k)) return '';
     // at the birth the founder holds everything by construction — there is no
     // module yet, and nobody else to hold anything
-    // — whose hand that is, *(that's you!)*, the founder's own two clauses say
-    // since #223 (G1's *Before the save*); it was the title's (backlog 140)
-    if (!cs) return ' ' + founderMay([pwPhrase(k, 'u')]);
+    // — and the title's is the one that says whose hand that is (backlog 140;
+    // Ed, 2026-10-03 on #224: *only on the Title clause during the birth*)
+    if (!cs) return ' ' + founderMay([pwPhrase(k, 'u')], k === 'title');
     // a closed document states no power at all (1541.52; answers Part 6.6):
     // the Rules paragraph keeps its rule and *this* as its subject
     if (!docOpen()) return '';
