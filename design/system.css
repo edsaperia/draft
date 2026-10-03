@@ -1367,10 +1367,18 @@
      the strip's own tuck-under (`.clausehead .achip`'s -2px) — on every tab,
      ✒️ 🛡️ included, exactly as a clausehead gives it to resting tabs too
      (Ed, 2026-08-17: every tab's right edge lands on the card's left edge;
-     Ed, 2026-08-31: tabs should always tuck). In read mode there is no card
-     edge, and the pile rests on the closed piles' own column. */
-  .ridetab.editing .achip { margin-right: -2px; padding-right: 2px; width: 36px; }
+     Ed, 2026-08-31: tabs should always tuck). In read mode the pile rests on
+     the closed piles' own column — unless a card is open beside it, below. */
+  .ridetab.editing .achip, .ridetab.tucked .achip { margin-right: -2px; padding-right: 2px; width: 36px; }
   .ridetab.editing .achip[data-tab="text"] { width: 44px; padding-right: 2px; }
+  /* …**and in read mode, beside a card open on the text's first clause**
+     (#194, Ed 2026-10-02: *it should tuck into the card*): there is a card
+     edge there after all, so 📝 stands at the head of that card's strip
+     (`ridePile` in edit-mode.js measures where) and takes a resting strip
+     tab's tuck — `.clausehead .achip`'s box, never the active treatment,
+     since 📝 is not the open card. The box is the edit-mode rule's above,
+     shared; the square right corners are this case's own. */
+  .ridetab.tucked .achip { border-radius: var(--r-sm) 0 0 var(--r-sm); }
   /* In edit mode the pile is drawn as the strip — the pile expanded, the ✒️ 🛡️
      tabs beneath 📝 reachable (Ed's QA, 2026-08-30) — and only the front tab
      wears the active treatment; the power tabs stay 34px, as in any strip. */

@@ -340,6 +340,10 @@ case "$GROUP" in
     # whose dev target route re-points the bots at a ladder document
     walk "demo-walk" npm run demo-walk -- "$DEMO_BASE"
     walk "demo-join" node scripts/repro/demo-join.mjs "$DEMO_BASE" --key=walk
+    # 📝 beside the text's first clause: above its pile at rest, at the head
+    # of its card's strip and tucked once open (#194) — the demo's first
+    # clause holds a race, which the fixture's never does (card-audit P38)
+    walk "ride-tab-tuck" node scripts/repro/ride-tab-tuck.mjs "$DEMO_BASE"
     # a proposal at two places opens as a patch, a card and a tab at each (issue #189)
     walk "two-place-patch" node scripts/repro/two-place-patch.mjs "$DEMO_BASE"
     # …and each place's rail entry travels to its own place's card (issue #204)

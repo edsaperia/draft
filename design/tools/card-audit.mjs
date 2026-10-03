@@ -54,11 +54,12 @@
  * and they are **held only for the kinds in `GRAMMAR_KINDS`** — save P34
  * `glyph-space` (issue #121, STYLE.md T50), P35 `wait-fill` (a ⏳ rail
  * entry's fill seen on its white slip, #148), P36 `fold-target` (every
- * drawn fold triangle a 28 × 28 target that moves nothing, #151) and P37
+ * drawn fold triangle a 28 × 28 target that moves nothing, #151), P37
  * `one-sheet` (the edit area one unbroken outline under the editing card,
- * #153), held everywhere (`EVERY_KIND`):
+ * #153) and P38 `ride-tuck` (📝 beside an open card tucks into it, #194),
+ * held everywhere (`EVERY_KIND`):
  *
- *   node design/tools/card-audit.mjs --walk=all             # the nine walks, P13–P37 among the findings
+ *   node design/tools/card-audit.mjs --walk=all             # the nine walks, P13–P38 among the findings
  *   node design/tools/card-audit.mjs --strict --kinds=GRAMMAR_KINDS --walk=fixture   # CI's fast pass
  *   node design/tools/card-audit.mjs --width=390 --height=844 --baseline=<1600 payload>  # P31
  *
@@ -283,7 +284,7 @@ const GRAMMAR_KINDS = [
 const STAGE = 10;
 /** the checks held on every card under `--kinds`, whatever its kind: a
  *  rendering fault no stage converts (P34, issue #121) */
-const EVERY_KIND = new Set(['glyph-space', 'wait-fill', 'fold-target', 'one-sheet']);
+const EVERY_KIND = new Set(['glyph-space', 'wait-fill', 'fold-target', 'one-sheet', 'ride-tuck']);
 const STRICT_FROM = { 'closed-page': 7, 'closed-keeps-content': 7, 'closed-powers': 7, 'zone-overlap': 8, 'place-head': 6 };
 const KINDS_ARG = arg('kinds', null);
 const KINDS = KINDS_ARG == null ? null
@@ -1234,6 +1235,25 @@ const IN_PAGE = () => {
       const g = [...t.querySelectorAll('svg[data-char]')].map((e) => e.getAttribute('data-char')).join('') + (t.textContent || '');
       return /^pw:/.test(k) || /[✒🛡]/u.test(g);
     }).map((t) => t.dataset.tab || t.dataset.anchor || t.dataset.chip || '?') : [];
+    // P38: the 📝 riding tab beside this card (#194, Ed 2026-10-02: *it
+    // should tuck into the card*) — read in read mode only, where the text is
+    // not itself the open card, and only where 📝's box meets the card's
+    // height: its right edge, its tuck and its place at the strip's head
+    const ride = document.querySelector('#ridetab:not(.editing) .achip[data-tab="text"]');
+    if (ride && vis(ride)) {
+      const r = ride.getBoundingClientRect(), f = card.getBoundingClientRect();
+      if (r.bottom > f.top && r.top < f.bottom) {
+        const col = card.querySelector('.clausehead .chipcol');
+        const st = getComputedStyle(ride);
+        out.rideTuck = {
+          right: R2(r.right), cardLeft: R2(f.left), top: R2(r.top), cardTop: R2(f.top),
+          // 📝's whole pile above the strip: a Founder's ✒️ 🛡️ slivers beneath it
+          head: col ? R2(col.getBoundingClientRect().top - ride.closest('.chipcol').getBoundingClientRect().height -
+            (parseFloat(getComputedStyle(col).rowGap) || 0)) : null,
+          mr: st.marginRight, radius: st.borderTopRightRadius + ' ' + st.borderBottomRightRadius,
+        };
+      }
+    }
     // P24: can anything be typed on this card (a lane, a box, a composer)
     out.typeable = [...card.querySelectorAll(INPUTS)].some((i) => vis(i) && i.tagName !== 'SELECT');
     out.isRecord = card.matches('.sealed-open') || !!card.querySelector('.rechead, .gtone-ok') ||
@@ -2260,7 +2280,7 @@ const CHECKS = [
   ['P21', 'label-slot'], ['P22', 'no-job'], ['P23', 'note-visible'], ['P24', 'bin-job'],
   ['P25', 'row-vocabulary'], ['P26', 'role-drawing'], ['P27', 'closed-page'], ['P28', 'closed-keeps-content'],
   ['P29', 'closed-powers'], ['P30', 'zone-overlap'], ['P31', 'width-invariance'], ['P32', 'place-head'],
-  ['P33', 'one-home'], ['P34', 'glyph-space'], ['P35', 'wait-fill'], ['P36', 'fold-target'], ['P37', 'one-sheet'], ['—', 'raw-value'],
+  ['P33', 'one-home'], ['P34', 'glyph-space'], ['P35', 'wait-fill'], ['P36', 'fold-target'], ['P37', 'one-sheet'], ['P38', 'ride-tuck'], ['—', 'raw-value'],
 ];
 const CHECK = Object.fromEntries(CHECKS.map(([n, name]) => [name, n + ' ' + name]));
 /** checks.md's *unchanged* set (BUILD.md stage 0's acceptance): their
@@ -2808,6 +2828,21 @@ function grammarRules(c, ref) {
    * and the picture, in the card and its rail entry. Held on every card, not
    * only `GRAMMAR_KINDS` — it is a rendering fault wherever it stands */
   if (v && v.glyphGaps) for (const x of v.glyphGaps) at('glyph-space', 'a word and ' + x.ch + ' run together ' + x.side + ' it: “' + x.word + '” ' + x.gap + 'px, under 0.2em of ' + x.em + 'px', x.side);
+
+  /* P38 ride-tuck — the 📝 riding tab beside an open card tucks into it as a
+   * resting strip tab does (#194, Ed 2026-10-02): its right edge on the card's
+   * left edge, −2px and square right corners, and its place the strip's head —
+   * a tab and the strip's gap above the first tab, inside the card's top edge.
+   * Held on every card: the fixture never stands a card beside 📝, so the
+   * live half is `scripts/repro/ride-tab-tuck.mjs` on the demo */
+  const rt = v && v.rideTuck;
+  if (rt) {
+    const px = (x) => Math.round(x * 100) / 100;
+    if (Math.abs(rt.right - rt.cardLeft) > TOL) at('ride-tuck', '📝 stops ' + px(rt.cardLeft - rt.right) + 'px short of the card\'s left edge', 'edge');
+    if (rt.mr !== '-2px' || rt.radius !== '0px 0px') at('ride-tuck', '📝 beside the card wears a pile tab\'s box, not the strip\'s tuck (margin-right ' + rt.mr + ', right radii ' + rt.radius + ')', 'tuck');
+    if (rt.top < rt.cardTop - TOL) at('ride-tuck', '📝 stands ' + px(rt.cardTop - rt.top) + 'px over the card\'s top edge', 'over');
+    if (rt.head != null && Math.abs(rt.top - rt.head) > TOL) at('ride-tuck', '📝 stands ' + px(rt.head - rt.top) + 'px off the strip\'s head', 'head');
+  }
 
   return out;
 }
