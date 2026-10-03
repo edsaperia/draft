@@ -89,7 +89,7 @@ const read = () => page.evaluate(() => {
     topmost = !!hit && (hit === tab || tab.contains(hit));
   }
   return {
-    ride: box(ride), glyph: box(ride && ride.querySelector('svg, span')), tab: box(tab), tabGlyph: box(tab && tab.querySelector('svg, span')), card: box(card),
+    ride: box(ride), ridePile: box(ride && ride.closest('.chipcol')), glyph: box(ride && ride.querySelector('svg, span')), tab: box(tab), tabGlyph: box(tab && tab.querySelector('svg, span')), card: box(card),
     firstKey: first ? (first.dataset.key || first.className) : null, cardOpen: !!card, topmost,
     radiusTR: cs && cs.borderTopRightRadius, radiusBR: cs && cs.borderBottomRightRadius, mr: cs && cs.marginRight,
   };
@@ -111,8 +111,8 @@ const overlap = rest.ride.b > rest.tab.t && rest.ride.t < rest.tab.b;
 check('rest · the first clause\'s tab is not under 📝', !overlap && rest.topmost,
   `📝 ${rest.ride.t.toFixed(2)}–${rest.ride.b.toFixed(2)}, its tab ${rest.tab.t.toFixed(2)}–${rest.tab.b.toFixed(2)}, topmost ${rest.topmost}`);
 check('rest · 📝 stands above the pile in its column, the strip\'s gap between',
-  near(rest.ride.r, rest.tab.r) && near(rest.tab.t - rest.ride.b, 3),
-  `right edges ${rest.ride.r} / ${rest.tab.r}, gap ${(rest.tab.t - rest.ride.b).toFixed(2)}`);
+  near(rest.ride.r, rest.tab.r) && near(rest.tab.t - rest.ridePile.b, 3),
+  `right edges ${rest.ride.r} / ${rest.tab.r}, gap ${(rest.tab.t - rest.ridePile.b).toFixed(2)}`);
 
 // ---- open, by a real pointer on the pile's own tab --------------------------------
 const at = { x: (rest.tab.l + rest.tab.r) / 2, y: (rest.tab.t + rest.tab.b) / 2 };
@@ -128,8 +128,8 @@ if (open.cardOpen) {
     `its glyph ${rest.tabGlyph.l},${rest.tabGlyph.t.toFixed(2)} → ${open.tabGlyph.l},${open.tabGlyph.t.toFixed(2)}`);
   check('open · 📝\'s right edge is on the card\'s left edge', near(open.ride.r, open.card.l),
     `📝 right ${open.ride.r}, card left ${open.card.l}`);
-  check('open · 📝 heads the strip: a tab and the strip\'s gap above its first tab',
-    near(open.ride.t, open.tab.t - open.ride.h - 3), `📝 top ${open.ride.t.toFixed(2)}, first tab ${open.tab.t.toFixed(2)}`);
+  check('open · 📝 heads the strip: its pile and the strip\'s gap above its first tab',
+    near(open.ride.t, open.tab.t - open.ridePile.h - 3), `📝 top ${open.ride.t.toFixed(2)}, first tab ${open.tab.t.toFixed(2)}`);
   check('open · 📝 lies inside the card\'s top edge', open.ride.t >= open.card.t - 0.5,
     `📝 top ${open.ride.t.toFixed(2)}, card top ${open.card.t.toFixed(2)}`);
   check('open · 📝 takes a resting strip tab\'s tuck', open.mr === '-2px' && open.radiusTR === '0px' && open.radiusBR === '0px',

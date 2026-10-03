@@ -229,7 +229,11 @@ window.EDIT_MODE = (function () {
         // at rest puts 📝 above the pile, which it had covered 1px off
         const pile = ridePile();
         rt.style.position = 'static';
-        const up = rt.getBoundingClientRect().top - (pile ? pile.top - pile.gap - tabH : line.top + (line.lineBox - tabH) / 2);
+        // the whole of 📝's pile stands clear, the ✒️ 🛡️ slivers beneath it
+        // a Founder's included
+        const ownCol = rt.querySelector('.chipcol');
+        const pileH = ownCol ? ownCol.getBoundingClientRect().height : tabH;
+        const up = rt.getBoundingClientRect().top - (pile ? pile.top - pile.gap - pileH : line.top + (line.lineBox - tabH) / 2);
         rt.style.position = '';
         rt.style.setProperty('--ride-up', up.toFixed(2) + 'px');
       }

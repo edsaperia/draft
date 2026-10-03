@@ -1240,7 +1240,9 @@ const IN_PAGE = () => {
         const st = getComputedStyle(ride);
         out.rideTuck = {
           right: R2(r.right), cardLeft: R2(f.left), top: R2(r.top), cardTop: R2(f.top),
-          head: col ? R2(col.getBoundingClientRect().top - r.height - (parseFloat(getComputedStyle(col).rowGap) || 0)) : null,
+          // 📝's whole pile above the strip: a Founder's ✒️ 🛡️ slivers beneath it
+          head: col ? R2(col.getBoundingClientRect().top - ride.closest('.chipcol').getBoundingClientRect().height -
+            (parseFloat(getComputedStyle(col).rowGap) || 0)) : null,
           mr: st.marginRight, radius: st.borderTopRightRadius + ' ' + st.borderBottomRightRadius,
         };
       }
