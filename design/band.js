@@ -1780,8 +1780,6 @@ window.BAND = (function () {
       settingKind, settingActs, settingOwed, settingPresent, lineOf, readState,
       // stage 5: the doors' bodies, for their cards on the one shell
       BODY,
-      // stage 4: a motion's card heads with its host's rule and pill (Q1541)
-      pillOf,
       // stage 3b: the composer's commit swaps in place as a motion is typed,
       // and its bin and pill follow (Q1541 stage 3b)
       syncShellRow,
