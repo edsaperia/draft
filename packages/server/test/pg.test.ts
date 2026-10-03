@@ -158,6 +158,26 @@ d('PgPersistence contract', () => {
     expect(await f.readSnapshot('d1')).toEqual({ seq: 4, eseq: 200, codeVersion: 'f1.b', state, writtenMs: 6 });
   });
 
+  it('the registry is a row (Stage 2): read in one go, overwritten, beside both logs\' lengths, gone with its document', async () => {
+    const row = { slugs: ['a', 'b'], phase: 'live' as const, dueT: 1234.5, lastT: 1000, clockVersion: 'r1.x',
+      seq: 2, eseq: 1, writtenMs: 7 };
+    for (const p of [await open(), new FilePersistence(tmp())]) {
+      await p.createDoc('d1');
+      await p.appendDocLog('d1', [
+        { seq: 0, hash: 'h0', prevHash: '', event: { t: 1, type: 'genesis' } },
+        { seq: 1, hash: 'h1', prevHash: 'h0', event: { t: 2, type: 'x' } },
+      ] as never);
+      await p.appendEngineLog('d1', [{ seq: 0, hash: 'e0', prevHash: '', event: { t: 1, type: 'opened' } }]);
+      expect((await p.readRegistry()).size).toBe(0);
+      await p.writeRegistry('d1', { ...row, dueT: null });
+      await p.writeRegistry('d1', row);
+      expect(await p.readRegistry()).toEqual(new Map([['d1', row]]));
+      expect((await p.docLengths()).get('d1')).toEqual({ seq: 2, eseq: 1 });
+      expect(await p.deleteDoc('d1')).toBe(true);
+      expect((await p.readRegistry()).size).toBe(0);
+    }
+  });
+
   it('takeToken is delete-and-return, once, under concurrency', async () => {
     const p = await open();
     const rec = { kind: 'login' as const, email: 'a@example.org', expMs: 9e12 };
