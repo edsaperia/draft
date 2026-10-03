@@ -265,6 +265,21 @@ export class Races {
     }).slice();
   }
 
+  /**
+   * **The first moment after `after` at which the race picture changes by the
+   * clock alone** (plan-scaling Stage 1, issue #210): the next expiry moment
+   * strictly later than `after`, or null where none is left. `races(t)` is
+   * keyed on how many of these `t` has passed, so between two of them every
+   * `t` reads the same races — which is what lets a host skip the ticks in
+   * between. Read off the same memo `races` reads.
+   */
+  nextExpiryAfter(after: number): number | null {
+    const builds = this.host.derived('races', () => this.buildRaces());
+    const expiries = this.host.derived('raceExpiries', () => this.expiryMoments(builds));
+    const i = upperBound(expiries, after);
+    return i < expiries.length ? expiries[i]! : null;
+  }
+
   /** Every moment a silence on some pair runs its period, sorted; none where 💤 is *never*. */
   private expiryMoments(builds: RaceBuild[]): number[] {
     const after = this.host.constitution().abstainAfterMs ?? null;

@@ -25,13 +25,21 @@
    column's end. At narrow (session.js's `NARROW_Q`) the sheets bleed through
    `.wrap`'s side padding to the glass, untrimmed.
 
+   **The credit** (issue #165, Ed 2026-10-02): one line on the desk, centred
+   a desk gap under the last sheet's foot, *Created by the London College of
+   Political Technology*, the name a link to newspeak.house (copy.js
+   `page.credit`). It stands in the runway, so a short document shows it
+   beneath the page and a long one meets it at the end of the text; it is
+   not drawn in edit mode, where the column is lifted and the sheet runs on.
+
    Loaded after session.js, whose breakpoint it reads; it starts itself once
    the document has parsed, and does nothing on a page with no `#doc`.
    ========================================================================== */
 (function () {
   'use strict';
   const NARROW = window.matchMedia((window.SESSION && window.SESSION.NARROW_Q) || '(max-width: 900px)');
-  let desk, rules, text, doc;
+  let desk, rules, text, doc, credit;
+  const CREDIT_HREF = 'https://newspeak.house';
 
   function build() {
     doc = document.getElementById('doc');
@@ -43,6 +51,17 @@
     text = document.createElement('div'); text.className = 'sheet sheet-text';
     desk.append(rules, text);
     document.body.appendChild(desk);
+    // the credit is read and pressed, so it stands outside the aria-hidden desk
+    const words = window.COPY && window.COPY.page && window.COPY.page.credit;
+    if (words) {
+      credit = document.createElement('p');
+      credit.className = 'deskcredit';
+      const a = document.createElement('a');
+      a.href = CREDIT_HREF; a.target = '_blank'; a.rel = 'noopener';
+      a.textContent = words.name;
+      credit.append(document.createTextNode(words.lead), a);
+      document.body.appendChild(credit);
+    }
     return true;
   }
 
@@ -138,6 +157,15 @@
     // trailing leading), so the foot adds the margin less that
     const end = textEnd(r, sy);
     const bottom = end == null ? r.bottom + sy : end + token('--sheet-margin') - token('--s4');
+    // the credit, a desk gap under the last sheet's foot, centred on it
+    if (credit) {
+      if (doc.classList.contains('editing')) credit.hidden = true;
+      else {
+        credit.hidden = false;
+        credit.style.left = px(left); credit.style.width = px(width);
+        credit.style.top = px(bottom + token('--desk-gap'));
+      }
+    }
     const sep = doc.querySelector('.cpara.docsep');
     const s = sep && sep.getClientRects().length ? sep.getBoundingClientRect() : null;
     if (!s) {
@@ -150,6 +178,96 @@
     place(rules, left, top, width, breakTop - top);
     place(text, left, breakBottom, width, bottom - breakBottom);
     desk.dataset.sheets = '2';
+    openAtText(breakBottom);
+  }
+
+  // ---- the opening place (issue #197; the default since #212) --------------
+  // Ed, 2026-10-02: *when the page opens, it aligns near the top of The Text
+  // page, and people could just scroll upwards* — the Rules being, in the
+  // members' word, a menu. SURFACE M26. The page opens with the Text sheet's
+  // top `--sheet-margin` under the bar: the desk gap and the Rules' blank foot
+  // show above it, never a Rules line. Behind `?rules=below` from #197 until
+  // Ed's *merge and make it the default* (2026-10-03, #212).
+  //
+  // **Decided once, at the first lay that has the break** — the docsep is
+  // drawn only once the page holds a document, so this is the boot's first
+  // render, whichever boot — and only for a begun one (`.doc.begun`, which
+  // the closed page and the stranger's door wear too): a founding page opens
+  // at the top, and a 🍾 pressed later is not an opening. A fragment in the
+  // address, or a card already open (`?try=1`'s 👋), is a place of its own and
+  // wins.
+  //
+  // **Pinned, not jumped**: `overflow-anchor` is off (system.css, *the page
+  // holds its own scroll*), and the faces landing, the band settling and the
+  // poll all move the Text after the first render, so every lay re-pins it,
+  // instantly, until the reader does anything at all — a wheel, a touch, a
+  // key, a press, or a scroll this code did not make.
+  //
+  // **A reload or a return keeps whatever restores the reader's place**: the
+  // browser's own restoration, landing after `load`. It lands where the
+  // reader was only where the page is already whole by then (the fixture);
+  // on the live path the column arrives on the view's fetch and the browser
+  // restores against a page a fraction of its height, which lands nowhere in
+  // particular (233px for a reader who left at 1800, measured on the demo).
+  // So the place is noted as the page is left, and on a reload or a return
+  // the decision waits for the restoration: where the browser put the reader
+  // back, it stands; where it did not, the page opens at the Text.
+  // **`?open=top` is a dev seam, not a member's option** (#212): the old
+  // opening, for a walk or a probe whose measurements are frozen at scroll 0.
+  const SEAM_TOP = new URLSearchParams(location.search).get('open') === 'top';
+  const ON = !SEAM_TOP;
+  let pinState = ON ? 'undecided' : 'off';
+  let pinnedY = null;
+  const PLACE_KEY = 'open-at:' + location.pathname + location.search;
+  const navType = (() => {
+    try { const n = performance.getEntriesByType('navigation')[0]; return n ? n.type : 'navigate'; } catch (e) { return 'navigate'; }
+  })();
+  let leftAt = 0;
+  if (ON && (navType === 'reload' || navType === 'back_forward')) {
+    try { leftAt = Number(sessionStorage.getItem(PLACE_KEY)) || 0; } catch (e) { /* no place noted */ }
+  }
+  // the restoration is the browser's, a frame or so after `load`; a timer,
+  // never rAF, for the backgrounded tabs (CLAUDE.md, *Checking a mockup*)
+  let restoreSettled = !leftAt;
+  if (!restoreSettled) {
+    const settle = () => setTimeout(() => { restoreSettled = true; if (window.PAPER) window.PAPER.lay(); }, 150);
+    if (document.readyState === 'complete') settle(); else addEventListener('load', settle);
+  }
+  if (ON) {
+    addEventListener('pagehide', () => {
+      try { sessionStorage.setItem(PLACE_KEY, String(Math.round(window.scrollY))); } catch (e) { /* the place goes unnoted */ }
+    });
+  }
+  function unpin() {
+    if (pinState !== 'pinned') return;
+    pinState = 'released';
+    for (const t of ['wheel', 'touchstart', 'keydown', 'pointerdown']) removeEventListener(t, unpin, true);
+  }
+  function openAtText(breakBottom) {
+    if (pinState === 'undecided') {
+      if (!restoreSettled) return;
+      const restored = leftAt > 0 && Math.abs(window.scrollY - leftAt) <= 2;
+      const take = doc.classList.contains('begun') && !location.hash && !doc.querySelector('.gshell') && !restored;
+      pinState = take ? 'pinned' : 'off';
+      if (!take) return;
+      for (const t of ['wheel', 'touchstart', 'keydown', 'pointerdown']) addEventListener(t, unpin, { capture: true, passive: true });
+      addEventListener('scroll', () => {
+        if (pinState === 'pinned' && pinnedY != null && Math.abs(window.scrollY - pinnedY) > 1) unpin();
+      }, { passive: true });
+    }
+    if (pinState !== 'pinned') return;
+    // a card opened by anything — an evaluated click carries no pointerdown —
+    // is a place of its own, as at the decision
+    if (doc.querySelector('.gshell')) { unpin(); return; }
+    const max = document.documentElement.scrollHeight - innerHeight;
+    // …and so is a scroll made since the last pin and not yet announced by
+    // its event (a walk's `scrollTo(0, 0)`, a travel's first frame): the
+    // reader's, unless it is the page clamping a scroll it no longer has room for
+    if (pinnedY != null && Math.abs(window.scrollY - pinnedY) > 1 && window.scrollY < max - 1) { unpin(); return; }
+    const nav = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 58;
+    const y = Math.max(0, Math.min(max, Math.round(breakBottom - nav - token('--sheet-margin'))));
+    pinnedY = y;
+    if (Math.abs(window.scrollY - y) > 1) window.scrollTo(window.scrollX, y);
   }
 
   let queued = false;
@@ -172,7 +290,7 @@
     // the page lays itself out over several ticks after boot (the fixture's
     // washes, the fonts); a last pass once it has settled
     setTimeout(lay, 300); setTimeout(lay, 1200);
-    window.PAPER = { lay };
+    window.PAPER = { lay, pinState: () => pinState };
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);

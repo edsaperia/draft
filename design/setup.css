@@ -883,7 +883,8 @@ button.cline:hover b { text-decoration: underline; }
 .constsec h2.docline[id^="cs-"], .constsec .pilehead { cursor: pointer; }
 .constsec .pilehead { position: relative; }
 .constsec .pilehead .sectoggle { position: absolute; right: 100%;
-  margin-right: var(--s3); top: 4px; }
+  margin-right: var(--s1); font-size: var(--t-lead);
+  top: calc((var(--h1) * var(--lh-head) - 28px) / 2); }
 .constsec .pilelab:hover .sectoggle[aria-expanded="true"] { opacity: 1; }
 
 /* **An emoji needs a quiet ground** (Ed, 2026-08-19: *icon button

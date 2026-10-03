@@ -53,11 +53,13 @@
  * not the page. They print as their own table, as ruled and v2-comparable,
  * and they are **held only for the kinds in `GRAMMAR_KINDS`** — save P34
  * `glyph-space` (issue #121, STYLE.md T50), P35 `wait-fill` (a ⏳ rail
- * entry's fill seen on its white slip, #148) and P37 `one-sheet` (the edit
- * area one unbroken outline under the editing card, #153), held everywhere
- * (`EVERY_KIND`):
+ * entry's fill seen on its white slip, #148), P36 `fold-target` (every
+ * drawn fold triangle a 28 × 28 target that moves nothing, #151), P37
+ * `one-sheet` (the edit area one unbroken outline under the editing card,
+ * #153) and P38 `ride-tuck` (📝 beside an open card tucks into it, #194),
+ * held everywhere (`EVERY_KIND`):
  *
- *   node design/tools/card-audit.mjs --walk=all             # the nine walks, P13–P37 among the findings
+ *   node design/tools/card-audit.mjs --walk=all             # the nine walks, P13–P38 among the findings
  *   node design/tools/card-audit.mjs --strict --kinds=GRAMMAR_KINDS --walk=fixture   # CI's fast pass
  *   node design/tools/card-audit.mjs --width=390 --height=844 --baseline=<1600 payload>  # P31
  *
@@ -282,7 +284,7 @@ const GRAMMAR_KINDS = [
 const STAGE = 10;
 /** the checks held on every card under `--kinds`, whatever its kind: a
  *  rendering fault no stage converts (P34, issue #121) */
-const EVERY_KIND = new Set(['glyph-space', 'wait-fill', 'one-sheet']);
+const EVERY_KIND = new Set(['glyph-space', 'wait-fill', 'fold-target', 'one-sheet', 'ride-tuck']);
 const STRICT_FROM = { 'closed-page': 7, 'closed-keeps-content': 7, 'closed-powers': 7, 'zone-overlap': 8, 'place-head': 6 };
 const KINDS_ARG = arg('kinds', null);
 const KINDS = KINDS_ARG == null ? null
@@ -1039,7 +1041,10 @@ const IN_PAGE = () => {
     const headTop = head ? firstTop(head.el) : null;
     // the blocks: outermost, visible, not inputs
     const blocks = [...card.querySelectorAll(BLOCK_SEL)].filter((b) => vis(b) && !(b.parentElement && b.parentElement.closest(BLOCK_SEL)) &&
-      !(head && head.el.contains(b)) && !b.querySelector('[contenteditable="true"], textarea, input[type="text"], input:not([type])'));
+      !(head && head.el.contains(b)) && !b.querySelector('[contenteditable="true"], textarea, input[type="text"], input:not([type])') &&
+      // the phone's in-place card's form beneath its lane — the switch and the
+      // reasoning — is the editing block's other half, unlabelled as that is
+      !b.matches('.lanebelow'));
     const out = { blocks: [], headLabel: null, headNeedsLabel: false };
     for (const b of blocks) {
       const live = [...b.querySelectorAll('.lanepick, [role="radio"]')].some((r) => !r.disabled && vis(r));
@@ -1230,6 +1235,25 @@ const IN_PAGE = () => {
       const g = [...t.querySelectorAll('svg[data-char]')].map((e) => e.getAttribute('data-char')).join('') + (t.textContent || '');
       return /^pw:/.test(k) || /[✒🛡]/u.test(g);
     }).map((t) => t.dataset.tab || t.dataset.anchor || t.dataset.chip || '?') : [];
+    // P38: the 📝 riding tab beside this card (#194, Ed 2026-10-02: *it
+    // should tuck into the card*) — read in read mode only, where the text is
+    // not itself the open card, and only where 📝's box meets the card's
+    // height: its right edge, its tuck and its place at the strip's head
+    const ride = document.querySelector('#ridetab:not(.editing) .achip[data-tab="text"]');
+    if (ride && vis(ride)) {
+      const r = ride.getBoundingClientRect(), f = card.getBoundingClientRect();
+      if (r.bottom > f.top && r.top < f.bottom) {
+        const col = card.querySelector('.clausehead .chipcol');
+        const st = getComputedStyle(ride);
+        out.rideTuck = {
+          right: R2(r.right), cardLeft: R2(f.left), top: R2(r.top), cardTop: R2(f.top),
+          // 📝's whole pile above the strip: a Founder's ✒️ 🛡️ slivers beneath it
+          head: col ? R2(col.getBoundingClientRect().top - ride.closest('.chipcol').getBoundingClientRect().height -
+            (parseFloat(getComputedStyle(col).rowGap) || 0)) : null,
+          mr: st.marginRight, radius: st.borderTopRightRadius + ' ' + st.borderBottomRightRadius,
+        };
+      }
+    }
     // P24: can anything be typed on this card (a lane, a box, a composer)
     out.typeable = [...card.querySelectorAll(INPUTS)].some((i) => vis(i) && i.tagName !== 'SELECT');
     out.isRecord = card.matches('.sealed-open') || !!card.querySelector('.rechead, .gtone-ok') ||
@@ -1701,6 +1725,9 @@ const IN_PAGE = () => {
         // card-shell.js's `data-kind`): what `GRAMMAR_KINDS` holds it by, so
         // a record filed on a clause is not a live quick card for the audit
         shellKind: card.getAttribute('data-kind') || null,
+        // the phone's editing card, its lane in the clause's own box (MOBILE.md
+        // §6a.1, Ed 1585.1): ruled to carry no label and no *Current text* head
+        inPlace: card.classList.contains('inplacecard'),
         // off unless --specimens asked for it: the payload is the page, and
         // 270 of them would drown the numbers this instrument exists for
         ...(window.__CA_SPEC ? { spec: specimen(card, key) } : {}),
@@ -2227,7 +2254,7 @@ const RETIRED = [
 const GLYPH_ONLY = /^[^\p{L}\p{N}]{1,4}$/u;
 
 /* ============================================================================
-   **The redesign's checks, P13–P35** (Q1541; design/redesign/checks.md, *The
+   **The redesign's checks, P13–P37** (Q1541; design/redesign/checks.md, *The
    checks as ruled*, which is the specification — answers.md over it). In
    node, over the readings `grammarOf`, `glassOpen`/`glassClosed` and the
    walks took in the page. Stage 0 runs every one in **report mode**: they
@@ -2253,7 +2280,7 @@ const CHECKS = [
   ['P21', 'label-slot'], ['P22', 'no-job'], ['P23', 'note-visible'], ['P24', 'bin-job'],
   ['P25', 'row-vocabulary'], ['P26', 'role-drawing'], ['P27', 'closed-page'], ['P28', 'closed-keeps-content'],
   ['P29', 'closed-powers'], ['P30', 'zone-overlap'], ['P31', 'width-invariance'], ['P32', 'place-head'],
-  ['P33', 'one-home'], ['P34', 'glyph-space'], ['P35', 'wait-fill'], ['P37', 'one-sheet'], ['—', 'raw-value'],
+  ['P33', 'one-home'], ['P34', 'glyph-space'], ['P35', 'wait-fill'], ['P36', 'fold-target'], ['P37', 'one-sheet'], ['P38', 'ride-tuck'], ['—', 'raw-value'],
 ];
 const CHECK = Object.fromEntries(CHECKS.map(([n, name]) => [name, n + ' ' + name]));
 /** checks.md's *unchanged* set (BUILD.md stage 0's acceptance): their
@@ -2616,7 +2643,8 @@ function grammarRules(c, ref) {
    * answers Part 6.2),
    * 700, upper case, `--muted` — a record's outcome in its colour */
   if (v) {
-    if (v.headLabels !== 1) at('label-slot', v.headLabels ? v.headLabels + ' labels above the first line' : 'no label above the first line', v.headLabels ? 'labels' : 'no-label');
+    // …save the phone's in-place editing card, ruled to have none (1585.1)
+    if (v.headLabels !== 1 && !(c.inPlace && !v.headLabels)) at('label-slot', v.headLabels ? v.headLabels + ' labels above the first line' : 'no label above the first line', v.headLabels ? 'labels' : 'no-label');
     const drawn = (d, record) => {
       if (!d || !ref) return null;
       const bad = [];
@@ -2800,6 +2828,21 @@ function grammarRules(c, ref) {
    * and the picture, in the card and its rail entry. Held on every card, not
    * only `GRAMMAR_KINDS` — it is a rendering fault wherever it stands */
   if (v && v.glyphGaps) for (const x of v.glyphGaps) at('glyph-space', 'a word and ' + x.ch + ' run together ' + x.side + ' it: “' + x.word + '” ' + x.gap + 'px, under 0.2em of ' + x.em + 'px', x.side);
+
+  /* P38 ride-tuck — the 📝 riding tab beside an open card tucks into it as a
+   * resting strip tab does (#194, Ed 2026-10-02): its right edge on the card's
+   * left edge, −2px and square right corners, and its place the strip's head —
+   * a tab and the strip's gap above the first tab, inside the card's top edge.
+   * Held on every card: the fixture never stands a card beside 📝, so the
+   * live half is `scripts/repro/ride-tab-tuck.mjs` on the demo */
+  const rt = v && v.rideTuck;
+  if (rt) {
+    const px = (x) => Math.round(x * 100) / 100;
+    if (Math.abs(rt.right - rt.cardLeft) > TOL) at('ride-tuck', '📝 stops ' + px(rt.cardLeft - rt.right) + 'px short of the card\'s left edge', 'edge');
+    if (rt.mr !== '-2px' || rt.radius !== '0px 0px') at('ride-tuck', '📝 beside the card wears a pile tab\'s box, not the strip\'s tuck (margin-right ' + rt.mr + ', right radii ' + rt.radius + ')', 'tuck');
+    if (rt.top < rt.cardTop - TOL) at('ride-tuck', '📝 stands ' + px(rt.cardTop - rt.top) + 'px over the card\'s top edge', 'over');
+    if (rt.head != null && Math.abs(rt.top - rt.head) > TOL) at('ride-tuck', '📝 stands ' + px(rt.head - rt.top) + 'px off the strip\'s head', 'head');
+  }
 
   return out;
 }
@@ -3909,8 +3952,9 @@ async function walkEdit(page, cards, errors, walk) {
    * a caret at the end of a clause, one character typed — the draft's card
    * opens in front of the lifted column and is measured like every other;
    * then its own 🗑️ discards it and 📝 again leaves edit mode, so the walks
-   * after this one meet the page as they always did. Not below 900: the
-   * composer has no way in on a phone (MOBILE.md, Q1350).
+   * after this one meet the page as they always did. Below 900 the same
+   * keystroke opens the phone's form, the lane in the clause's own box
+   * (MOBILE.md §6a.1, Ed 1585.1) — the narrow run's editing card.
    */
   // **P30 with the patch row standing** (Q1382, `#patchrow`): a patch race's
   // site card open, the one bar of acts floating at the window's foot — at
@@ -3927,13 +3971,15 @@ async function walkEdit(page, cards, errors, walk) {
     await page.evaluate((k) => { try { window.SESSION.toggle(k, false); } catch (e) { /* closed */ } }, patch);
     await wait(page, 300);
   } else errors.push(walk + ': P30 — the fixture holds no patch race to read the patch row by');
-  if (VIEWPORT.width <= 900) return;
   const ID = 'draft-yours';
   await page.evaluate(() => window.scrollTo(0, 0));
   await wait(page, 150);
   const door = await page.$('#editdoor [data-act="edit-door"]');
   if (!door) { errors.push(walk + ': no floating 📝 to enter edit mode by (the editing card)'); return; }
-  await door.click();
+  // the door hides while the resting 📝 tab is below it (Q1380, D3) — on a
+  // phone's short window that is the page's top; the tab is the same door
+  if (await door.isVisible()) await door.click();
+  else await page.evaluate(() => document.querySelector('#ridetab .achip[data-tab="text"]').click());
   await wait(page, 400);
   const typed = await page.evaluate(() => {
     const p = [...document.querySelectorAll('#charter .editable[data-key]')]
@@ -3980,11 +4026,9 @@ async function walkEdit(page, cards, errors, walk) {
 }
 
 async function walkDoor(page, doors, errors, walk) {
-  // **No door on a phone** (MOBILE.md, Q1350): below 900px the composer is
-  // not drawn, so there is no D1 to measure — the narrow run (`npm run
-  // card-audit:narrow`, Q1351) is about the cards, and clicking a hidden
-  // door would only time out and take the rest of the walk with it.
-  if (VIEWPORT.width <= 900) return;
+  // **The door is a phone's too since stage 6a** (MOBILE.md §6a.6, issue
+  // #203): the narrow run measures D1–D4 at 390, where the door and the row
+  // stand clear of the task sheet's peek (§6a.0 finding 12).
   const DOOR = '#editdoor [data-act="edit-door"]';
   const ROW = '#charter [data-proposalrow] [data-act="row-commit"]';
   const box = (sel) => page.evaluate((s) => {
@@ -4020,6 +4064,14 @@ async function walkDoor(page, doors, errors, walk) {
   // `documentElement`'s client box, which is the whole document on this page
   const win = await page.evaluate(() => ({ w: visualViewport.width, h: visualViewport.height,
     s5: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--s5')),
+    // where the task sheet is drawn (narrow) the floats stand on its peek:
+    // `--s3` above the peek's edge and bar (MOBILE.md §6a.0 finding 12)
+    foot: (() => {
+      const cs = getComputedStyle(document.documentElement);
+      const v = (n) => parseFloat(cs.getPropertyValue(n)) || 0;
+      return document.documentElement.hasAttribute('data-sheet')
+        ? v('--s3') + v('--sheet-edge') + v('--sheet-peek') : v('--s5');
+    })(),
     edge: (() => {
       const sh = document.querySelector('.sheet-text');
       const el = sh && sh.offsetWidth ? sh : document.querySelector('.doc');
@@ -4195,6 +4247,115 @@ async function walkRail(page, rails, walk) {
   await wait(page, 250);
   rails.push({ walk, withPile, without, beneath, stranded, decided, waits });
 }
+/**
+ * **P36 fold-target** (issue #151, Ed 2026-10-02: *heading toggles are
+ * tiny*): every fold triangle drawn on a walked page — the Text's and the
+ * Rules' headings, the Rules' pile heading, the contents rail — is a target
+ * of at least `FOLD_TARGET` on both axes, and showing it moves nothing: a
+ * heading's first line stands where it stands with the triangle taken out,
+ * and a rail row is no taller than its tallest other child. In the rail the
+ * box never hangs below its row (the last one would lengthen the list's
+ * scroll and carry the marks with it), and it never stands over a mark:
+ * at every mark's centre the mark is what the pointer finds (Q1520). Read on the page each walk leaves
+ * standing; a triangle inside a folded or hidden part draws no box and is
+ * not read.
+ */
+const FOLD_TARGET = 28;
+const FOLDS = [];
+async function foldPass(page, walk) {
+  const r = await page.evaluate(() => {
+    const SKIP = '.sectoggle, .chipcol, .sechint';
+    const firstLine = (host) => {
+      const tw = document.createTreeWalker(host, NodeFilter.SHOW_TEXT, {
+        acceptNode: (n) => (n.parentElement.closest(SKIP) || !n.nodeValue.trim()) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+      const n = tw.nextNode();
+      if (!n) return null;
+      const rg = document.createRange();
+      rg.selectNodeContents(n);
+      const rc = rg.getClientRects()[0];
+      return rc ? { x: rc.left, y: rc.top } : null;
+    };
+    const out = [];
+    for (const t of document.querySelectorAll('.sectoggle')) {
+      const b = t.getBoundingClientRect();
+      if (!b.width && !b.height) continue;
+      const inRail = !!t.closest('.toc');
+      const host = inRail ? t.closest('li') : t.closest('h2, .pilehead');
+      const rec = { key: (inRail ? 'toc:' : 'head:') + (t.dataset.secToggle || '?'),
+        w: Math.round(b.width * 100) / 100, h: Math.round(b.height * 100) / 100, moved: 0, grew: 0 };
+      if (host && inRail) {
+        // the row against its tallest other child: taking the triangle out
+        // would hand its width to the link and unwrap a long title, which is
+        // not the triangle's height
+        const rest = Math.max(0, ...[...host.children].filter((c) => c !== t).map((c) => c.getBoundingClientRect().height));
+        rec.grew = Math.round((host.getBoundingClientRect().height - rest) * 100) / 100;
+        rec.hangs = Math.round((b.bottom - host.getBoundingClientRect().bottom) * 100) / 100;
+      } else if (host) {
+        const was = firstLine(host);
+        const keep = t.style.display;
+        t.style.display = 'none';
+        const bare = firstLine(host);
+        t.style.display = keep;
+        if (was && bare) rec.moved = Math.round(Math.max(Math.abs(was.x - bare.x), Math.abs(was.y - bare.y)) * 100) / 100;
+      }
+      out.push(rec);
+    }
+    return out;
+  });
+  // every rail mark brought to the list's middle, as a reader scrolls to it,
+  // and asked what stands at its centre
+  const covered = await page.evaluate(() => {
+    const ul = document.querySelector('#toc');
+    if (!ul) return [];
+    const keep = ul.scrollTop;
+    const out = [];
+    for (const m of ul.querySelectorAll('.tocmarks .tocmark, .tocmarks .more')) {
+      const li = m.closest('li');
+      ul.scrollTop = Math.max(0, li.offsetTop - ul.clientHeight / 2);
+      const r = m.getBoundingClientRect();
+      if (!r.width || !r.height) continue;
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      const t = hit && hit.closest('.sectoggle');
+      if (t) out.push({ key: 'toc:' + (t.dataset.secToggle || '?'), mark: (li.querySelector('a[data-toc]') || {}).textContent || '?' });
+    }
+    ul.scrollTop = keep;
+    return out;
+  });
+  FOLDS.push({ walk, toggles: r, covered });
+}
+function foldTargetRules(folds) {
+  const out = [];
+  for (const f of folds) {
+    for (const t of f.toggles) {
+      if (t.w < FOLD_TARGET - TOL || t.h < FOLD_TARGET - TOL) {
+        out.push({ check: 'fold-target', walk: f.walk, key: t.key, sub: 'size', kind: 'fold',
+          ex: 'a fold triangle\'s target is ' + t.w + ' × ' + t.h + 'px, under ' + FOLD_TARGET + ' × ' + FOLD_TARGET + ' (#151)' });
+      }
+      if (t.moved > TOL) {
+        out.push({ check: 'fold-target', walk: f.walk, key: t.key, sub: 'moves', kind: 'fold',
+          ex: 'the heading\'s first line moves ' + t.moved + 'px when its triangle is drawn (#151)' });
+      }
+      if (t.grew > TOL) {
+        out.push({ check: 'fold-target', walk: f.walk, key: t.key, sub: 'grows', kind: 'fold',
+          ex: 'the contents rail\'s row is ' + t.grew + 'px taller for its triangle (#151)' });
+      }
+      if (t.hangs > TOL) {
+        out.push({ check: 'fold-target', walk: f.walk, key: t.key, sub: 'hangs', kind: 'fold',
+          ex: 'the contents rail\'s triangle hangs ' + t.hangs + 'px below its row, so the list scrolls further for it (#151)' });
+      }
+    }
+    for (const c of f.covered || []) {
+      out.push({ check: 'fold-target', walk: f.walk, key: c.key, sub: 'covers', kind: 'fold',
+        ex: 'a fold triangle stands over “' + String(c.mark).slice(0, 40) + '”’s mark, at the mark\'s centre (#151, Q1520)' });
+    }
+  }
+  if (folds.length && !folds.some((f) => f.toggles.length)) {
+    out.push({ check: 'fold-target', walk: folds.map((f) => f.walk).join(','), key: 'fold', kind: 'fold',
+      ex: 'no fold triangle drawn on any walked page, so the target was measured on nothing' });
+  }
+  return out;
+}
+
 /** P35 wait-fill — the ratio a ⏳'s filled part must stand off its ground,
  *  luminance contrast: 1.15:1, a bar a reader can see on the white slip
  *  without the grey reading as a second, louder hue (#148) */
@@ -4346,8 +4507,9 @@ function doorRules(doors) {
     if (d.doorWhileEditing) out.push({ rule: 'D1', lens: 'positioning', said, saw: 'the door is still drawn in edit mode, beside the row', note: d.walk });
     const offRight = d.win.w - (d.before.r[0] + d.before.r[2]), offBottom = d.win.h - (d.before.r[1] + d.before.r[3]);
     const wantRight = d.win.edge == null ? d.win.s5 : Math.max(d.win.s5, d.win.w - d.win.edge - d.before.r[2] / 2);
-    if (Math.abs(offRight - wantRight) > 0.5 || Math.abs(offBottom - d.win.s5) > 0.5) out.push({ rule: 'D1', lens: 'positioning', said,
-      saw: 'the door stands ' + Math.round(offRight * 100) / 100 + 'px off the window\'s right and ' + Math.round(offBottom * 100) / 100 + 'px off its foot, against ' + Math.round(wantRight * 100) / 100 + ' and ' + d.win.s5, note: d.walk });
+    const wantFoot = d.win.foot != null ? d.win.foot : d.win.s5;
+    if (Math.abs(offRight - wantRight) > 0.5 || Math.abs(offBottom - wantFoot) > 0.5) out.push({ rule: 'D1', lens: 'positioning', said,
+      saw: 'the door stands ' + Math.round(offRight * 100) / 100 + 'px off the window\'s right and ' + Math.round(offBottom * 100) / 100 + 'px off its foot, against ' + Math.round(wantRight * 100) / 100 + ' and ' + wantFoot, note: d.walk });
     if (Math.abs(d.before.r[2] - d.commit.r[2]) > 1) out.push({ rule: 'D1', lens: 'positioning', said,
       saw: 'the door ' + d.before.r[2] + 'px across, the row\'s ✏️ ' + d.commit.r[2] + 'px (1569.2: the same)', note: d.walk });
     if (!same(d.before, d.after)) out.push({ rule: 'D1', lens: 'positioning', said,
@@ -4686,8 +4848,12 @@ async function main() {
   const base = 'http://127.0.0.1:' + server.address().port;
   const browser = await ENGINES[BROWSER].launch();
   const version = browser.version();
+  // **a phone is touch** (MOBILE.md §6a, stage 6a): below 900px the context
+  // has a coarse pointer, so the narrow run meets the page a phone meets —
+  // the column with no caret, the tap door, the editing card's in-place form
   const context = await browser.newContext({
     viewport: VIEWPORT, deviceScaleFactor: 1, locale: 'en-GB', timezoneId: 'Europe/London',
+    hasTouch: VIEWPORT.width <= 900,
   });
   await context.addInitScript(IN_PAGE);
   if (SPECIMENS) await context.addInitScript(() => { window.__CA_SPEC = true; });
@@ -4707,6 +4873,8 @@ async function main() {
     if (!WALKS.includes(name)) return;
     const n = cards.length;
     try { await fn(); } catch (e) { errors.push(name + ' walk threw: ' + (e && e.message)); }
+    // P36: the fold triangles on the page the walk leaves standing
+    try { await foldPass(page, name); } catch (e) { errors.push(name + ' fold pass threw: ' + (e && e.message)); }
     // a walk that measures nothing and says nothing is the worst outcome the
     // instrument has: it reads as coverage in the summary line
     if (cards.length === n) errors.push(name + ' walk measured no cards');
@@ -5044,7 +5212,7 @@ async function finish(cards, errors, tok, ref, version, switches, piles, doors, 
     }));
   }
 
-  /* **The redesign's checks** (P13–P35 and raw-value), per card and per walk,
+  /* **The redesign's checks** (P13–P37 and raw-value), per card and per walk,
    * and the table over them. `findings` is the count **as ruled** (stated
    * exceptions out); `v2` is the count comparable with checks.md's *today*
    * column (the exceptions in, the ruling's new findings out), read for the
@@ -5071,6 +5239,7 @@ async function finish(cards, errors, tok, ref, version, switches, piles, doors, 
     ex: clip('an enabled control that does nothing when pressed: “' + d.what + '”', 160) + (d.diag ? ' — ' + JSON.stringify(d.diag) : ''), kind: kindFor(d.walk, d.key) });
   grammar.push(...widthRules(cards, baseline));
   grammar.push(...waitFillRules(rails));
+  grammar.push(...foldTargetRules(FOLDS));
   grammar.push(...oneSheetRules(sheetReads));
   for (const f of grammar) {
     if (!f.kind) {

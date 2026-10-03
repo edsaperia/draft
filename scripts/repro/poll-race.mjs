@@ -188,7 +188,12 @@ if (!ONLY || ONLY === 'judge') {
     .filter((x) => !x.mine && x.card).map((x) => x.id));
   check('bee is dealt the pair', dealt.length > 0, JSON.stringify(dealt));
 
-  // …and al withdraws it in the gap before bee's next poll
+  // …and al withdraws it in the gap before bee's page hears of it. Since
+  // push (Scaling Stage 4) that gap is the stream's ~200 ms rather than the
+  // poll's 4 s, so the walk holds bee's ear for the length of the press —
+  // `__pollPaused` defers a push event exactly as it defers the tick — and
+  // the race is the walk's to stage, not the clock's
+  await bee.page.evaluate(() => { window.__pollPaused = true; });
   if (cand) await post(`/api/d/${doc.slug}/cmd`, { cmd: 'withdraw-text', args: { candidate: cand } }, al.cookie);
 
   const sent = await onWire(bee.page, async () => {
@@ -203,6 +208,7 @@ if (!ONLY || ONLY === 'judge') {
       if (ok && !ok.disabled) ok.click();
     }, dealt[0]);
   });
+  await bee.page.evaluate(() => { window.__pollPaused = false; });
   const judged = cmdsOf(sent, 'judge-race');
   const shown = await errLine(bee.page);
   const open = await bee.page.evaluate(() => window.SESSION.openId);
@@ -253,7 +259,10 @@ if (!ONLY || ONLY === 'propose') {
   check('bee holds a draft', !!draft && draft.sites === 1, JSON.stringify(draft));
 
   // …and the Founder decrees a change to a clause bee is not writing on, so
-  // the version moves and bee's own wording is untouched
+  // the version moves and bee's own wording is untouched — bee's ear held
+  // across it, as in the judge case (push would otherwise bring the new
+  // version in before the press, and the race would not happen)
+  await bee.page.evaluate(() => { window.__pollPaused = true; });
   await doc.decree([{ start: 2, end: 3, lines: ['Guests are welcome, and are asked to sign the book.'] }],
     'the book');
   const held = await bee.page.evaluate(() => window.SESSION && window.SESSION.DOC ? 1 : 0);
@@ -271,6 +280,7 @@ if (!ONLY || ONLY === 'propose') {
     else await bee.page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
     await sleep(3500);
   });
+  await bee.page.evaluate(() => { window.__pollPaused = false; });
   const puts = cmdsOf(sent, 'propose-text');
   const shown = await errLine(bee.page);
   const mine = await bee.page.evaluate(() => (window.SESSION.SUGGS || [])

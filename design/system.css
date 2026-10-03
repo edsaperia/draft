@@ -738,11 +738,23 @@
   .toc li.lvl2 a { font-weight: 600; color: var(--fg); }
   .toc li.lvl3 { padding-left: 26px; }
 
-  /* section-toggle: the same control in the contents rail and the document gutter */
+  /* section-toggle: the same control in the contents rail and the document gutter.
+     **Its target is 28 × 28** (issue #151, Ed 2026-10-02: *heading toggles are
+     tiny*), the glyph centred in it; **the glyph is one step below the text it
+     stands beside**, set by each site below, `--t-cap` where nothing sets it. */
   .sectoggle {
-    appearance: none; background: none; border: 0; padding: 2px var(--s1); margin: 0;
+    appearance: none; background: none; border: 0; padding: 0; margin: 0;
+    display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px;
     font: inherit; font-size: var(--t-cap); line-height: 1; color: var(--muted); cursor: pointer;
   }
+  /* the rail's keeps the rail's own glyph and lends its target to the row
+     without growing it: the margins give back what the box adds, and it
+     stands over the link's padding it overlaps. **Its extra reaches up,
+     never down** (the padding keeps the glyph where it stood): a box that
+     hung below its row hung below the list's last one, and the list
+     scrolled 3px further for it, which carried the last rows' marks under
+     whatever stood at the window's foot (#151, toc-travel's Q1520 step). */
+  .toc .sectoggle { margin: -8px -8px 0; padding-top: var(--s2); position: relative; z-index: 1; }
   .sectoggle:hover { color: var(--fg); }
   .sectoggle .tri { display: inline-block; transition: transform 140ms ease; }
   .sectoggle[aria-expanded="true"] .tri { transform: rotate(90deg); }
@@ -1355,10 +1367,18 @@
      the strip's own tuck-under (`.clausehead .achip`'s -2px) — on every tab,
      ✒️ 🛡️ included, exactly as a clausehead gives it to resting tabs too
      (Ed, 2026-08-17: every tab's right edge lands on the card's left edge;
-     Ed, 2026-08-31: tabs should always tuck). In read mode there is no card
-     edge, and the pile rests on the closed piles' own column. */
-  .ridetab.editing .achip { margin-right: -2px; padding-right: 2px; width: 36px; }
+     Ed, 2026-08-31: tabs should always tuck). In read mode the pile rests on
+     the closed piles' own column — unless a card is open beside it, below. */
+  .ridetab.editing .achip, .ridetab.tucked .achip { margin-right: -2px; padding-right: 2px; width: 36px; }
   .ridetab.editing .achip[data-tab="text"] { width: 44px; padding-right: 2px; }
+  /* …**and in read mode, beside a card open on the text's first clause**
+     (#194, Ed 2026-10-02: *it should tuck into the card*): there is a card
+     edge there after all, so 📝 stands at the head of that card's strip
+     (`ridePile` in edit-mode.js measures where) and takes a resting strip
+     tab's tuck — `.clausehead .achip`'s box, never the active treatment,
+     since 📝 is not the open card. The box is the edit-mode rule's above,
+     shared; the square right corners are this case's own. */
+  .ridetab.tucked .achip { border-radius: var(--r-sm) 0 0 var(--r-sm); }
   /* In edit mode the pile is drawn as the strip — the pile expanded, the ✒️ 🛡️
      tabs beneath 📝 reachable (Ed's QA, 2026-08-30) — and only the front tab
      wears the active treatment; the power tabs stay 34px, as in any strip. */
@@ -1759,13 +1779,17 @@
   #charter > .prose:first-of-type > .docline:is(.lvl1, .rank2, .rank3):nth-child(1 of .docline, p, .doctitle),
   #charter > .prose:first-of-type > .doctitle + .docline:is(.lvl1, .rank2, .rank3) { border-top: 0; padding-top: 0; --head-rule: 0px; }
   /* the fold triangle sits in the chip-gutter, in line with the anchor marks —
-     centred on the heading's first line box (`--line`, Q1402): its own box is
-     its glyph at `--t-cap` on a line-height of 1 plus 2px of padding each side */
+     its 28px box centred on the heading's first line box (`--line`, Q1402),
+     out of the flow, so it never moves the heading. Its glyph is one step
+     below the heading (#151): `--t-body` beside an `--h2` or `--h3`, `--t-lead`
+     beside an `--h1`, `--h2` beside a part at `--h-part` (#152's ranks). */
   .doc h2.docline .sectoggle {
-    position: absolute; right: 100%; margin-right: var(--s3);
-    top: calc(var(--head-rule, 0px) + (var(--line) - var(--t-cap) - 4px) / 2);
+    position: absolute; right: 100%; margin-right: var(--s1); font-size: var(--t-body);
+    top: calc(var(--head-rule, 0px) + (var(--line) - 28px) / 2);
   }
-  .doc h2.docline.lvl1 .sectoggle { top: calc(var(--head-rule) + (var(--line) - var(--t-cap) - 4px) / 2); }
+  .doc h2.docline.lvl1 .sectoggle { top: calc(var(--head-rule) + (var(--line) - 28px) / 2); }
+  .doc h2.docline:is(.lvl1:not([class*="rank"]), .rank2) .sectoggle { font-size: var(--t-lead); }
+  .doc h2.docline.rank3 .sectoggle { font-size: var(--h2); }
   .doc h2.docline .sechint {
     margin-left: 10px; font-weight: 400; text-transform: none; letter-spacing: 0;
     font-size: var(--t-cap); color: var(--muted); font-style: italic;
@@ -3147,7 +3171,9 @@
   /* NARROW_Q */
   @media (max-width: 900px) {
     .clausehead .achip.wmark { width: 36px; padding-left: 0; }
-    .doc h2.docline.marked .sectoggle { margin-right: var(--s2); }
+    /* 26px stand between the tab and the words here, so the 28px box
+       laps 4px over the heading's edge rather than over the tab (#151) */
+    .doc h2.docline.marked .sectoggle { margin-right: -4px; }
   }
   /* **The judgment's ✓ is accent blue when armed** (1541.50, Q1541 stage 6):
      green means *decided* (principle 7), and an armed ✓ has decided
@@ -3405,14 +3431,23 @@
     #drawerright.asks .n { background: var(--slash); }
     #drawerright[aria-expanded="true"] .n { background: var(--primary); }
     .navbar .pulse { display: none; }
-    #ridetab, #editdoor, #prosectl, .lanepropose { display: none; }
+    /* **the doors are a phone's too** (MOBILE.md §6a.6, Ed 1585.1): 📝 on its
+       riding tab and in its corner, ✏️ *propose edit* on a lane; only the
+       B · I strip stays hidden, in both eras — edit mode is the source, so
+       `**` marks (§6a.5) */
+    #prosectl, .doc .editctl { display: none; }
     /* **iOS zooms the page to any field smaller than 16px on focus**
        (MOBILE.md §1.8; Ed's screenshot `bugs/mobile screen width.png`,
        2026-09-12: the door's email field focused, the keyboard up, the whole
        page scaled past the right edge — *cards are too wide*). Every field
        a phone can focus is 16px or its own size, whichever is larger, so
        the page keeps its scale. */
-    input, textarea, select, [contenteditable="true"], [contenteditable="plaintext-only"] { font-size: max(16px, 1em); }
+    /* …and the reason and a motion's fields by name (MOBILE.md §6a.6): they
+       were 12.64 and 14px, their class rules outranking the element rule —
+       setup.css's `.sugg input` among them, later in the cascade, hence `html` */
+    input, textarea, select, [contenteditable="true"], [contenteditable="plaintext-only"],
+    .lanebox .edit-why, .lanebox.whybox .edit-why,
+    html .sugg input, html .sugg textarea, html .sugg select { font-size: max(16px, 1em); }
     /* the 95vh runway keeps the last clause reachable above the dock */
   }
   /* Touch (MOBILE.md §1.5): no double-tap zoom or 300ms delay on a control,
@@ -3426,6 +3461,64 @@
     .btn, .holdmotion, .okbtn, .lanepick, .achip {
       touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
     }
+  }
+  /* ---- proposing on a phone (MOBILE.md §6a, stage 6a; Ed 1585.1–1585.8) ----
+     At narrow width, and the most of it on touch alone, so nothing here
+     reaches the desktop. **The floats stand clear of the task sheet's peek**
+     (§6a.0 finding 12) wherever the sheet is drawn: the 📝 door and the
+     proposal row rise by the peek's height, so a tap meant for one never
+     lands on the other. */
+  /* NARROW_Q */
+  @media (max-width: 900px) {
+    html[data-sheet] .race-mid.commitrow.proposalrow {
+      --row-foot: calc(var(--s3) + var(--sheet-edge) + var(--sheet-peek) + env(safe-area-inset-bottom, 0px));
+    }
+    html[data-sheet] #editdoor .race-mid.commitrow.proposalrow[data-editdoor] {
+      bottom: calc(var(--s3) + var(--sheet-edge) + var(--sheet-peek) + env(safe-area-inset-bottom, 0px));
+    }
+  }
+  /* NARROW_Q */
+  @media (max-width: 900px) and (pointer: coarse) {
+    /* **The clause becomes its lane** (§6a.1, 1585.1): the in-place card's
+       head is the clause's own box (`.headclause`, a `.anch`'s box by
+       construction) and the lane stands in it as the words stood — no
+       padding, no ground, no floor of its own — so the words do not move
+       when the clause opens. Open is said by depth: the head rises while
+       the caret is in it, as the lane box does. */
+    .inplacecard .headclause .rtext > .editlane.inplace {
+      display: block; padding: 0; min-height: 0; background: none; border: 0;
+      font: inherit; line-height: inherit; color: inherit; cursor: text; caret-color: var(--primary);
+    }
+    .inplacecard .headclause .rtext > .editlane.inplace:focus { outline: none; }
+    .inplacecard .headclause .editlane .lp { margin: 0 0 var(--s2); }
+    .inplacecard .headclause .editlane .lp:last-child { margin-bottom: 0; }
+    .inplacecard .headclause:focus-within { box-shadow: var(--shadow-xl); }
+    /* no label, so no `fit` sets the top: the frame's own air on the grid,
+       never `.sugg`'s pre-shell 14px (card-audit S1) */
+    .sugg.gshell.inplacecard { padding-top: var(--s3); padding-bottom: var(--s3); }
+    .inplacecard .lanebelow .glabline { justify-content: flex-end; }
+    .inplacecard .lanebelow .glab.whylab { margin-top: var(--s3); }
+    /* **44px to the finger, nothing drawn moves** (§1.4, §6a.4): ✏️ *propose
+       edit*, the Anonymous switch and the editing card's 🗑️ take a
+       pseudo-element hit area round the box they already draw */
+    .lanepropose, .anonsw .sw, .editcard .commitrow .btn { position: relative; }
+    .lanepropose::before, .anonsw .sw::before, .editcard .commitrow .btn::before {
+      content: ''; position: absolute; left: 50%; top: 50%;
+      width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%);
+    }
+    /* **The keyboard** (§6a.2, 1585.2): while a card's field has the caret
+       the root wears `data-kbd`; the sheet and the 📝 door go, and the row
+       stands above the keyboard — `--kbd-lift` is the height the keyboard
+       takes from the layout viewport, read off `visualViewport` (iOS keeps
+       the layout viewport full height; Android's `resizes-content` makes
+       it 0) */
+    html[data-kbd] .layout > .queue { visibility: hidden; }
+    html[data-kbd] #editdoor [data-editdoor] { display: none; }
+    /* …and the corner 📝 stands down while a card is open: at this width the
+       page's edge is the glass's, so the corner is over the card itself, and
+       its commit row's ✏️ stood under the door (`phone-propose` (1)) */
+    .doc:has(.sugg) #editdoor [data-editdoor] { display: none; }
+    html[data-kbd] .race-mid.commitrow.proposalrow { --row-foot: var(--s3); bottom: var(--kbd-lift, 0px); }
   }
 
 
@@ -3619,6 +3712,17 @@
   /* the column is no longer the paper: its ground and its outline go, the
      border keeping its width so nothing inside moves by a pixel */
   html.desk .doc { background: transparent; border-color: transparent; }
+
+  /* ---- the credit (paper.js; issue #165) ------------------------------------ */
+  /* one quiet line on the desk under the last sheet, the link the line's own
+     colour, underlined: no new accent */
+  html.desk .deskcredit {
+    position: absolute; margin: 0; text-align: center;
+    font-family: var(--font-ui); font-size: var(--t-cap); line-height: var(--lh-text);
+    color: var(--desk-muted);
+  }
+  html.desk .deskcredit a { color: inherit; text-decoration: underline; }
+  html.desk .deskcredit[hidden] { display: none; }
 
   /* ---- the break ------------------------------------------------------------ */
   /* The one hairline in the document (setup.css, `.cpara.docsep`) becomes the
