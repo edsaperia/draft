@@ -2,9 +2,37 @@
 
 **[docs.vote](https://docs.vote)** is a place for a group to write a document together. Anybody may propose a change; rival wordings of the same passage race each other; the membership votes on them in blind pairs (*which of these two wordings?*, no names attached, no scores shown), and the wording that comes out on top is adopted once enough of the membership has voted. The document's own rules are decided the same way, inside the document.
 
-docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first, back to the project's first commit on 2026-08-13. The mechanism's full rules are in [`SPEC.md`](SPEC.md) (v0.146 today), and what the page shows a member is in [`SURFACE.md`](SURFACE.md).
+docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first, back to the project's first commit on 2026-08-13. The mechanism's full rules are in [`SPEC.md`](SPEC.md) (v0.147 today), and what the page shows a member is in [`SURFACE.md`](SURFACE.md).
 
 ---
+
+## 2026-10-03: the Rules, re-laid
+
+### Changed
+- **The Founder's powers each have a sentence of their own**, under the *Founded by* line: one for ✒️, saying what the Founder may change at will, and one for 🛡️, saying what they may refuse. Where the Founder keeps a power on only some settings, the sentence names them. Where they have given a power up everywhere, its sentence and its tab are gone.
+- **🎩 *Is the Founder a Member?* sits by the Founder** on the *Founded by* line, and is answered before Founder Actions are accepted. It is hidden once the document begins; the members list says the rest.
+- **Proposals is five sentences, one per power**: proposing ✏️, the proposal rate ⏱️, voting ⚖️, the quorum 👥 (now the rule that says when a ✏️ proposal passes), and constitutional proposals 🏛️. Each of 💡, ⚖️ and 🏛️ wears its tab on its own sentence.
+- **A new last section of the Rules, Schedule**, just above the text, holds 🍾 (when proposals began), ⏰ (until when they may be made) and 🥂 (when they closed, and how many have signed). The Decisions section is gone.
+- **The founding reads the Rules top to bottom**, in the order they appear on the page.
+- The grant cards for ✒️ 🛡️ 🏛️ 💡 ⚖️ have new wording, and the power cards name their settings the way the Rules do (*the quorum*, *anonymity of proposals*, *anonymity of votes*, *the end time*).
+
+### For contributors
+- **SPEC v0.147** (one sentence of §9.7's power-clause note); **SURFACE §8** (`ORDER`, the band table, F16, F20, F22; Y21 and Y23 retired) and §9's grant, gate, 🍾 and 🎩 rows (issue #223, Ed's G1–G6).
+- `design/session-view.html`: `founderPowerClause`, `releaseHostOf`, `gateClause`, `PROPOSAL_CLAUSES`, the `schedule` section; `PROPOSAL_CHIPS`, `proposalsClause` and the preamble's copy retired. Every new sentence is in `design/copy.js` under `page.clause`.
+- `spec-check` holds `PROPOSAL_CLAUSES` against SURFACE's Proposals run and `SEC.rate.keys`, replacing the Y23 check. `founding-walk`, `journey`, `slider-walk` and the setup-probe walk the new order; the setup reference and the copy goldens are re-frozen.
+
+## 2026-10-03: the demo's join walk proposes as a phone does
+
+### For contributors
+- **Nothing a member sees changes; the walk was wrong, not the product** (issue #221). The demo's join walk proposes the way a phone visitor does: it taps 📝, taps a clause, types into the lane that opens and taps ✏️. It had gone red in the sprint tier's `sprint-doors` since d3e0c1e, when the phone's tap-to-lane door arrived (#209), while proposing on the demo kept working. Only `scripts/repro/demo-join.mjs` changed: it now asserts the lane opens with focus, requires exactly one `propose-text` 200, and hides the dev ⏭ bar as `phone-propose` does. No check was skipped or loosened.
+
+## 2026-10-03: documents opened when they are needed
+
+### Changed
+- **docs.vote no longer reads every document into memory when it restarts.** A document is opened the first time somebody asks for it, or when one of its clocks falls due, and is put away again after ten minutes with nobody reading it. A restart after an ordinary update stays quick however many documents there are. The first page of a document that has been put away can take up to about a second longer to arrive.
+
+### For contributors
+- **Scaling Stage 2** (issue #219): boot reads a registry, one row per document (`doc_registry`, pg migration 9; `docs/<id>/registry.json`), trusted only while it matches both logs' lengths and rebuilt from the constitution log when it does not; a document loads on its first request or due tick through `DocStore.open` / `openSlug`, concurrent loads shared, and unloads after `DRAFT_IDLE_MS` (10 min) idle (`WritePath.evictIdle`), held meanwhile by any open request scope, push stream, queued commit or unsaved write. By Ed's (a), boot still folds a document whose engine would replay `DRAFT_WARM_TAIL` (1,000) entries or more, so after an engine-changing deploy a convention is warmed at boot rather than at its first request. The demo is never unloaded; `DRAFT_LOAD=eager` is the old boot; `/healthz` gains `documents`, `documentsLoaded`, `memory` and `loads`. boot-guard warm 5,374 → 20 ms, cold 5,176 ms (24% of the window); 300 documents' heap 217 MB eager → 15 MB idle. Guards: `load-on-demand.test.ts`, the clock-index differential's lazy host, and `scripts/load-walk.mjs` in the sprint tier's `sprint-motions`. Design and measurements: `design/spec-pass/plan-scaling.md` *Stage notes*.
 
 ## 2026-10-03: tabs that join their card
 
