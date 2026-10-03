@@ -56,12 +56,14 @@
  * entry's fill seen on its white slip, #148), P36 `fold-target` (every
  * drawn fold triangle a 28 × 28 target that moves nothing, #151), P37
  * `one-sheet` (the edit area one unbroken outline under the editing card,
- * #153) and P38 `ride-tuck` (📝 beside an open card tucks into it, #194),
- * held everywhere (`EVERY_KIND`). P39 `vote-pill` (#199) holds a vote's
- * *Current rule* to its own *Prefer this* — no standing pill, nothing
- * pressed on open:
+ * #153), P38 `ride-tuck` (📝 beside an open card tucks into it, #194) and
+ * P40 `tab-join` (every tab in an open card's strip meets the card's edge
+ * and casts no shadow onto it, and in edit mode the gutter and a held-open
+ * gap's wash meet the lifted column, #207), held everywhere (`EVERY_KIND`).
+ * P39 `vote-pill` (#199) holds a vote's *Current rule* to its own *Prefer
+ * this* — no standing pill, nothing pressed on open:
  *
- *   node design/tools/card-audit.mjs --walk=all             # the nine walks, P13–P39 among the findings
+ *   node design/tools/card-audit.mjs --walk=all             # the nine walks, P13–P40 among the findings
  *   node design/tools/card-audit.mjs --strict --kinds=GRAMMAR_KINDS --walk=fixture   # CI's fast pass
  *   node design/tools/card-audit.mjs --width=390 --height=844 --baseline=<1600 payload>  # P31
  *
@@ -286,7 +288,7 @@ const GRAMMAR_KINDS = [
 const STAGE = 10;
 /** the checks held on every card under `--kinds`, whatever its kind: a
  *  rendering fault no stage converts (P34, issue #121) */
-const EVERY_KIND = new Set(['glyph-space', 'wait-fill', 'fold-target', 'one-sheet', 'ride-tuck']);
+const EVERY_KIND = new Set(['glyph-space', 'wait-fill', 'fold-target', 'one-sheet', 'ride-tuck', 'tab-join']);
 const STRICT_FROM = { 'closed-page': 7, 'closed-keeps-content': 7, 'closed-powers': 7, 'zone-overlap': 8, 'place-head': 6 };
 const KINDS_ARG = arg('kinds', null);
 const KINDS = KINDS_ARG == null ? null
@@ -522,6 +524,49 @@ const IN_PAGE = () => {
    * a margin is exactly the nothing this is about. The strip is not the
    * card's body: its tabs hang outside the card's left edge.
    */
+  /**
+   * **P40 tab-join** (#207): the open card's strip, read tab by tab. `gap` is
+   * the card's left edge less the tab's right edge; `reach` is how far the
+   * tab's outer shadow carries past its own right edge — per layer the
+   * x-offset plus the spread plus σ, half the blur radius (the CSS blur is a
+   * Gaussian of σ = blur / 2), the largest over every layer with any alpha.
+   * A tab is a descendant of the card, so whatever reaches past that edge is
+   * painted on the card. Inset layers stay inside the tab and are not read.
+   */
+  const shadowReach = (v) => {
+    if (!v || v === 'none') return 0;
+    const layers = [];
+    let depth = 0, cur = '';
+    for (const ch of v) {
+      if (ch === '(') depth++;
+      if (ch === ')') depth--;
+      if (ch === ',' && !depth) { layers.push(cur); cur = ''; } else cur += ch;
+    }
+    layers.push(cur);
+    let reach = -Infinity;
+    for (const l of layers) {
+      if (/\binset\b/.test(l)) continue;
+      const col = (l.match(/(rgba?|color)\([^)]*\)/) || [''])[0];
+      const a = /^rgba/.test(col) ? parseFloat(col.split(',')[3]) :
+        /\//.test(col) ? parseFloat(col.split('/')[1]) : (col === '' && /transparent/.test(l) ? 0 : 1);
+      if (!(a > 0)) continue;
+      const n = l.replace(/(rgba?|color)\([^)]*\)/g, '').match(/-?[\d.]+px/g) || [];
+      const [ox, , blur, spread] = n.map(parseFloat).concat([0, 0, 0, 0]);
+      reach = Math.max(reach, ox + (spread || 0) + (blur || 0) / 2);
+    }
+    return reach === -Infinity ? 0 : R2(reach);
+  };
+  const stripJoin = (card) => {
+    const left = card.getBoundingClientRect().left;
+    return [...card.querySelectorAll('.clausehead .chipcol .achip')]
+      .filter((t) => { const r = t.getBoundingClientRect(); return r.width && r.height && getComputedStyle(t).visibility !== 'hidden'; })
+      .map((t) => {
+        const r = t.getBoundingClientRect();
+        return { tab: (t.getAttribute('data-tab') || t.getAttribute('data-anchor') || t.getAttribute('data-chip') || '?') +
+          (t.closest('.filedpile') ? ' (filed)' : ''), active: t.classList.contains('wmark'),
+          gap: R2(left - r.right), reach: shadowReach(getComputedStyle(t).boxShadow) };
+      });
+  };
   const hairlines = (card, ghair) => {
     const vis = (el) => {
       for (let n = el; n && n !== card.parentElement; n = n.parentElement) {
@@ -1789,6 +1834,10 @@ const IN_PAGE = () => {
                   })() },
         card: { r: rect(card), shadow: s.boxShadow === 'none' ? 'none' : s.boxShadow,
                 border: px(s.borderTopWidth), radius: px(s.borderTopLeftRadius) },
+        // P40 tab-join (#207): every drawn tab in the open card's strip, its
+        // right edge against the card's left and how far its outer shadow
+        // reaches past that edge onto the card
+        strip: stripJoin(card),
         // the card's identity is the glyph on its own tab, not the first
         // glyph in its head — a grant card's head is the Founded line, which
         // wears 👑 for a different reason entirely
@@ -2296,7 +2345,7 @@ const CHECKS = [
   ['P21', 'label-slot'], ['P22', 'no-job'], ['P23', 'note-visible'], ['P24', 'bin-job'],
   ['P25', 'row-vocabulary'], ['P26', 'role-drawing'], ['P27', 'closed-page'], ['P28', 'closed-keeps-content'],
   ['P29', 'closed-powers'], ['P30', 'zone-overlap'], ['P31', 'width-invariance'], ['P32', 'place-head'],
-  ['P33', 'one-home'], ['P34', 'glyph-space'], ['P35', 'wait-fill'], ['P36', 'fold-target'], ['P37', 'one-sheet'], ['P38', 'ride-tuck'], ['P39', 'vote-pill'], ['—', 'raw-value'],
+  ['P33', 'one-home'], ['P34', 'glyph-space'], ['P35', 'wait-fill'], ['P36', 'fold-target'], ['P37', 'one-sheet'], ['P38', 'ride-tuck'], ['P39', 'vote-pill'], ['P40', 'tab-join'], ['—', 'raw-value'],
 ];
 /** P39's kinds: the cards that put a change to a vote — a live motion on a
  *  rule or a door, the same motion at the Founder's 👑, an application */
@@ -3351,6 +3400,8 @@ const zoneReads = [];
 /** P37 one-sheet: the edit area's painted outline read with the editing
  *  card open (`walkEdit`), one entry per walk that reached it */
 const sheetReads = [];
+/** P40's edit half, one reading per walk that enters edit mode */
+const EDIT_JOINS = [];
 const tipReads = [];
 /** per walk, at rest: P29's page half (every powers line and ✒️ 🛡️ tab left
  *  on a closed page) and P31's flush tabs */
@@ -4014,6 +4065,34 @@ async function walkEdit(page, cards, errors, walk) {
   if (await door.isVisible()) await door.click();
   else await page.evaluate(() => document.querySelector('#ridetab .achip[data-tab="text"]').click());
   await wait(page, 400);
+  // **P40 tab-join, the edit half** (#207, Ed 2026-10-03, option 1): with
+  // the column lifted onto a card, every tab in its gutter against the
+  // card's left edge, and every held-open gap's painted wash (its own box,
+  // or its `::before` where that is drawn) against its own tab's right edge
+  EDIT_JOINS.push({ walk, ...(await page.evaluate(() => {
+    const R2 = (x) => Math.round(x * 100) / 100;
+    const clear = (c) => !c || c === 'transparent' || /^rgba\(.*,\s*0\)$/.test(c);
+    const segs = [...document.querySelectorAll('.doc.editing.begun #charter > .prose, .doc.editing:not(.begun) #prose')];
+    const tabs = [], gaps = [];
+    for (const seg of segs) {
+      const L = seg.getBoundingClientRect().left;
+      for (const t of seg.querySelectorAll('.chipcol .achip')) {
+        if (t.closest('.clausehead')) continue;
+        const r = t.getBoundingClientRect();
+        if (!r.width || !r.height || getComputedStyle(t).visibility === 'hidden') continue;
+        tabs.push({ tab: t.getAttribute('data-anchor') || t.getAttribute('data-chip') || '?', gap: R2(L - r.right) });
+      }
+      for (const g of seg.querySelectorAll('.insert-anchor')) {
+        const t = [...g.querySelectorAll('.chipcol .achip')].find((x) => x.getBoundingClientRect().width);
+        const gr = g.getBoundingClientRect();
+        if (!t || !gr.width || clear(getComputedStyle(g).backgroundColor)) continue;
+        const b = getComputedStyle(g, '::before');
+        const washL = b.content !== 'none' && !clear(b.backgroundColor) ? gr.left - parseFloat(b.width) : gr.left;
+        gaps.push({ tab: t.getAttribute('data-anchor') || '?', gap: R2(washL - t.getBoundingClientRect().right) });
+      }
+    }
+    return { segs: segs.length, tabs, gaps };
+  })) });
   const typed = await page.evaluate(() => {
     const p = [...document.querySelectorAll('#charter .editable[data-key]')]
       .filter((el) => !el.closest('.sugg') && !el.classList.contains('gap') && !el.closest('.hblock'))[5];
@@ -4409,6 +4488,63 @@ function waitFillRules(rails) {
   if (!any && rails.some((r) => r.walk === 'charter')) {
     out.push({ check: 'wait-fill', walk: rails.map((r) => r.walk).join(','), key: 'rail', kind: 'rail',
       ex: 'no ⏳ rail entry with a fill on any walked page, so the fill was measured on nothing' });
+  }
+  return out;
+}
+/**
+ * **P40 tab-join** (issue #207, Ed 2026-10-03: *tab not joining its card
+ * cleanly (lower one)*): every tab in an open card's strip meets the card's
+ * left edge within `TOL`, and its outer shadow reaches no further than that
+ * edge — a tab is a descendant of the card, so a shadow past it is drawn on
+ * the card, the seam *open is said by depth, not by outline* rules out. The
+ * active tab has cast leftward only since 2026-08-17; this holds the rest of
+ * the strip to it. **The edit half** (Ed's option 1, the same day:
+ * *edit mode only*): with the column lifted by 📝, every tab in its gutter
+ * meets the column's edge within `TOL`, and a held-open gap's wash meets its
+ * own tab within `TOL` (`EDIT_JOINS`, read in `walkEdit`, so above 900px
+ * only — a phone has no edit mode). P38 is #196's, P39 #200's.
+ */
+function tabJoinRules(cards, edits = []) {
+  const out = [];
+  let any = 0;
+  // the edit half: the lifted column's gutter tabs on its edge, and a
+  // held-open gap's wash on its own tab (Ed's option 1, edit mode only)
+  for (const e of edits) {
+    for (const t of e.tabs) {
+      if (Math.abs(t.gap) > TOL) {
+        out.push({ check: 'tab-join', walk: e.walk, key: 'edit:' + t.tab, sub: 'edit-edge', kind: 'editing',
+          ex: 'in edit mode a gutter tab ' + t.tab + ' stands ' + t.gap + 'px from the lifted column\'s edge (#207)' });
+      }
+    }
+    for (const g of e.gaps) {
+      if (Math.abs(g.gap) > TOL) {
+        out.push({ check: 'tab-join', walk: e.walk, key: 'edit:' + g.tab, sub: 'edit-wash', kind: 'editing',
+          ex: 'in edit mode a held-open gap\'s wash starts ' + g.gap + 'px from its own tab ' + g.tab + ' (#207)' });
+      }
+    }
+    if (!e.tabs.length || !e.gaps.length) {
+      out.push({ check: 'tab-join', walk: e.walk, key: 'edit', sub: 'edit-unread', kind: 'editing',
+        ex: 'edit mode drew ' + e.tabs.length + ' gutter tabs and ' + e.gaps.length + ' washed gaps on ' + e.segs +
+          ' lifted segments, so the edit half was measured on nothing (#207)' });
+    }
+  }
+  for (const c of cards) {
+    for (const t of c.strip || []) {
+      any++;
+      const who = (t.active ? 'the active tab ' : 'an inactive tab ') + t.tab;
+      if (Math.abs(t.gap) > TOL) {
+        out.push({ check: 'tab-join', walk: c.walk, key: c.key, sub: 'edge',
+          ex: who + '\'s right edge stands ' + t.gap + 'px from the card\'s left edge (#207)' });
+      }
+      if (t.reach > 0) {
+        out.push({ check: 'tab-join', walk: c.walk, key: c.key, sub: 'shadow',
+          ex: who + '\'s shadow reaches ' + t.reach + 'px past its edge onto the card (#207)' });
+      }
+    }
+  }
+  if (!any && cards.some((c) => c.walk === 'charter')) {
+    out.push({ check: 'tab-join', walk: 'charter', key: 'strip', kind: 'strip',
+      ex: 'no open card with a tab in its strip on the charter walk, so the join was measured on nothing' });
   }
   return out;
 }
@@ -5274,6 +5410,7 @@ async function finish(cards, errors, tok, ref, version, switches, piles, doors, 
   grammar.push(...waitFillRules(rails));
   grammar.push(...foldTargetRules(FOLDS));
   grammar.push(...oneSheetRules(sheetReads));
+  grammar.push(...tabJoinRules(cards, EDIT_JOINS));
   for (const f of grammar) {
     if (!f.kind) {
       const k = String(f.key).replace(/^(open|rest):/, '');
