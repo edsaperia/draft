@@ -572,7 +572,30 @@
       }
       const words = n > 1 ? window.COPY.session.rail.sheetMore(n - 1) : '';
       if (more.textContent !== words) more.textContent = words;
+      setTimeout(noteCard, 0);
     });
+    // **A card closed back into the document brings the peek back** (#206,
+    // Ed 2026-10-03: *resolve a card, click 🔥, repeat*): reading down a card
+    // slid the bar away, and once the card was answered it stayed away, so
+    // the next task meant scrolling up for it. When the last card standing
+    // closes and nothing opens after it, the bar returns, naming the next
+    // entry; the quiet keeps the close's own settling from hiding it again,
+    // and reading on afterwards hides it as ever. An OK that walks to the
+    // next owed card never has nothing open, so the walk leaves the sheet as
+    // it is. Asked a turn after the rail is laid, so a walk's next card —
+    // opened from inside the same close — is already on its way.
+    let cardWas = false;
+    const cardOpen = () => !!document.querySelector('.setupcard') ||
+      !!(window.SESSION && (window.SESSION.openId != null || window.SESSION.travelling));
+    function noteCard() {
+      const now = cardOpen();
+      if (cardWas && !now && mq.matches && sheet() === 'peek') {
+        root.removeAttribute('data-sheethide');
+        readDown = 0;
+        quietUntil = Date.now() + 1200;
+      }
+      cardWas = now;
+    }
 
     // **The bar follows the finger** and settles to the nearer rest when it
     // lets go — or to the one it was flung towards. A tap is told from a drag
