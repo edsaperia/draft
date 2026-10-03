@@ -719,6 +719,10 @@ export class WritePath {
       const c = this.coldDue(id, row, nowMs, realMs);
       if (c === 'due') due.add(id); else if (c === 'unknown') unknown.push(id);
     }
+    // the untrusted in the order their rows guess they fall due: a stale
+    // row's old due time, a rebuilt row's constitution clock — the soonest
+    // first, so a passed close or lapse is not waiting behind quiet documents
+    unknown.sort((x, y) => (store.rowOf(x)?.dueT ?? Infinity) - (store.rowOf(y)?.dueT ?? Infinity));
     const budgetEnd = performance.now() + (cfg.loadBudgetMs ?? 5_000);
     for (const id of [...due, ...unknown]) {
       if (closing()) return;

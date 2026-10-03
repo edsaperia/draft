@@ -33,3 +33,23 @@ export function engineFingerprint(srcDir) {
   }
   return h.digest('hex');
 }
+
+/**
+ * **The clock's fingerprint** (plan-scaling.md Stage 2): what a registry
+ * row's due time was computed by — the constitution's sources (its
+ * `nextClockT`, the lapse ladder, the bridge) and the two server files that
+ * read them into a due time (`engine-host.ts`'s `clockDueT`, `write-path.ts`'s
+ * `dueT` and `rowOf`). `code-version.ts` mirrors these lines too, and
+ * `load-on-demand.test.ts` holds the two equal.
+ */
+export const CLOCK_FILES = ['packages/server/src/engine-host.ts', 'packages/server/src/write-path.ts'];
+
+export function clockFingerprint(root) {
+  const h = createHash('sha256');
+  h.update(engineFingerprint(join(root, 'packages', 'constitution', 'src'))); h.update('\0');
+  for (const f of CLOCK_FILES) {
+    h.update(f); h.update('\0');
+    h.update(readFileSync(join(root, ...f.split('/')), 'utf8').replace(/\r\n/g, '\n')); h.update('\0');
+  }
+  return h.digest('hex');
+}

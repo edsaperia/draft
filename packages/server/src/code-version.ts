@@ -56,8 +56,23 @@ export function codeVersion(): string {
   return cached;
 }
 
-/** The constitution's sources beside this file, on a dev host. */
-export const CONSTITUTION_SRC = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'constitution', 'src');
+/** The repository root, on a dev host. */
+export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
+
+/** The server files that read the clocks into a due time (mirrors `scripts/engine-fingerprint.mjs`). */
+export const CLOCK_FILES = ['packages/server/src/engine-host.ts', 'packages/server/src/write-path.ts'];
+
+/** The clock's fingerprint (Stage 2): the constitution's sources and `CLOCK_FILES`,
+ *  as `scripts/engine-fingerprint.mjs`'s `clockFingerprint` computes it. */
+export function clockFingerprint(root: string): string {
+  const h = createHash('sha256');
+  h.update(engineFingerprint(join(root, 'packages', 'constitution', 'src'))); h.update('\0');
+  for (const f of CLOCK_FILES) {
+    h.update(f); h.update('\0');
+    h.update(readFileSync(join(root, ...f.split('/')), 'utf8').replace(/\r\n/g, '\n')); h.update('\0');
+  }
+  return h.digest('hex');
+}
 
 /** Moved by hand when the registry row's meaning changes shape (Stage 2). */
 export const REGISTRY_FORMAT = 1;
@@ -66,17 +81,18 @@ let clockCached: string | null = null;
 
 /**
  * **Which clock code computed a registry row's `dueT`** (plan-scaling.md
- * Stage 2, issue #219): the engine's fold (`codeVersion`) and the
- * constitution's — whose `nextClockT`, lapse ladder and bridge sweep are the
- * other half of every due time. A row written by any other build is not
- * trusted for when the document is due; the host loads it and asks again.
- * Baked into the bundle as `DRAFT_CLOCK_FINGERPRINT`, computed from the tree
- * on a dev host, as the engine's half is.
+ * Stage 2, issue #219): the engine's fold (`codeVersion`), the constitution's
+ * sources — whose `nextClockT`, lapse ladder and bridge sweep are the other
+ * half of every due time — and the server files that read them into one
+ * (`CLOCK_FILES`). A row written by any other build is not trusted for when
+ * the document is due; the host loads it and asks again. Baked into the
+ * bundle as `DRAFT_CLOCK_FINGERPRINT`, computed from the tree on a dev host,
+ * as the engine's half is.
  */
 export function clockVersion(): string {
   if (clockCached !== null) return clockCached;
   const baked = process.env.DRAFT_CLOCK_FINGERPRINT;
-  const cons = baked !== undefined && baked.length > 0 ? baked : engineFingerprint(CONSTITUTION_SRC);
-  clockCached = `r${REGISTRY_FORMAT}.${codeVersion()}.c${cons.slice(0, 24)}`;
+  const clock = baked !== undefined && baked.length > 0 ? baked : clockFingerprint(REPO_ROOT);
+  clockCached = `r${REGISTRY_FORMAT}.${codeVersion()}.c${clock.slice(0, 24)}`;
   return clockCached;
 }

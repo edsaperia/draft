@@ -28,6 +28,10 @@ import { createDraftServer } from '../src/server.js';
 import type { DraftServer } from '../src/server.js';
 import { FilePersistence } from '../src/persistence.js';
 import { attestBody } from './attest-wire.js';
+import { clockFingerprint, REPO_ROOT } from '../src/code-version.js';
+// the build's own copy of the fingerprint, a plain script
+// @ts-expect-error — a .mjs without types, read only here
+import { clockFingerprint as buildClockFingerprint } from '../../../scripts/engine-fingerprint.mjs';
 
 const DESIGN_DIR = join(import.meta.dirname, '..', '..', '..', 'design');
 const IDLE = 40;
@@ -300,6 +304,25 @@ describe('load on demand (Scaling Stage 2)', () => {
     await idleOut(a);
     expect(a.draft.store.isLoaded(id), 'released, then idle').toBe(false);
   }, 60_000);
+
+  it('work a request left running after it settled takes no hold (the outbox pass a commit kicks)', async () => {
+    const a = await boot();
+    const { id } = await room(a);
+    await a.draft.tick();
+    let later!: Promise<void>;
+    await a.draft.store.scope(async () => {
+      // not awaited: runs on in this request's context once it has settled
+      later = new Promise<void>((r) => setTimeout(() => { void a.draft.store.open(id).then(() => r()); }, 20));
+    });
+    await later;
+    expect(a.draft.store.byId(id)!.holds ?? 0).toBe(0);
+    await idleOut(a);
+    expect(a.draft.store.isLoaded(id)).toBe(false);
+  }, 60_000);
+
+  it('the clock fingerprint is computed alike by the host and the build', () => {
+    expect(clockFingerprint(REPO_ROOT)).toBe(buildClockFingerprint(REPO_ROOT));
+  });
 
   it('never unloads the demo document', async () => {
     const a = await boot({ demo: true });

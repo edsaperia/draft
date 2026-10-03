@@ -18,7 +18,7 @@
  */
 import { build } from 'esbuild';
 import { readFileSync } from 'node:fs';
-import { engineFingerprint } from './engine-fingerprint.mjs';
+import { clockFingerprint, engineFingerprint } from './engine-fingerprint.mjs';
 
 /**
  * The DEV drop, asserted rather than trusted (Q674). `dropLabels` removes the
@@ -101,10 +101,9 @@ await build({
   define: { 'process.env.DRAFT_BUILD': '"prod"',
     'process.env.DRAFT_ENGINE_FINGERPRINT':
       JSON.stringify(engineFingerprint('packages/engine-core/src')),
-    // the constitution's half of a registry row's clock (plan-scaling.md
-    // Stage 2): the same hash over its sources, which the bundle lacks too
-    'process.env.DRAFT_CLOCK_FINGERPRINT':
-      JSON.stringify(engineFingerprint('packages/constitution/src')) },
+    // a registry row's clock (plan-scaling.md Stage 2): the constitution's
+    // sources and the two server files that read them into a due time
+    'process.env.DRAFT_CLOCK_FINGERPRINT': JSON.stringify(clockFingerprint('.')) },
 });
 assertNoDevCode('dist/server.mjs');
 console.log('dist/server.mjs built (production artifact), no dev code in it');

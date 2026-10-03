@@ -161,7 +161,7 @@ export class DocStore {
   /** Loads in flight: concurrent first requests for a cold document share one. */
   private readonly loading = new Map<string, Promise<LoadedDoc | null>>();
   /** The request scope (Stage 2): every document a request opens is held until it ends. */
-  private readonly scopes = new AsyncLocalStorage<Set<LoadedDoc>>();
+  private readonly scopes = new AsyncLocalStorage<{ held: Set<LoadedDoc>; open: boolean }>();
   /** The engine's half of a load, and the row an unload leaves; set by the host. */
   lifecycle: DocLifecycle | null = null;
   readonly loadStats: LoadStats = { loads: 0, unloads: 0, failed: 0, rebuilt: 0, recent: [] };
@@ -234,8 +234,10 @@ export class DocStore {
         const cs = ConstitutionSession.replay(log, people);
         const fresh: RegistryRow = { slugs: [...cs.slugs],
           phase: cs.closed ? 'closed' : cs.constitutedAtT === null ? 'founding' : 'live',
-          // no due time this code vouches for: the tick loads it (`dueKnown`)
-          dueT: null, lastT: log.length > 0 ? log[log.length - 1]!.event.t : 0, clockVersion: '',
+          // no due time this code vouches for (`clockVersion` empty), so the
+          // tick loads it; the constitution's own next clock rides as the
+          // order the minute's budget takes such documents in
+          dueT: cs.constitutedAtT === null || cs.closed ? null : cs.nextClockT(), lastT: log.length > 0 ? log[log.length - 1]!.event.t : 0, clockVersion: '',
           seq: log.length, eseq: len?.eseq ?? 0, writtenMs: nowMs };
         this.registry.set(id, fresh);
         for (const slug of fresh.slugs) this.slugIndex.set(slug, id);
@@ -343,9 +345,13 @@ export class DocStore {
   /** Mark a loaded document used now, and held by the request in scope if any. */
   use(doc: LoadedDoc, nowMs: number = Date.now()): void {
     doc.lastUsedMs = nowMs;
-    const held = this.scopes.getStore();
-    if (held !== undefined && !held.has(doc)) {
-      held.add(doc);
+    // **only a scope still open holds** (Stage 2): work a request started
+    // and did not await — the outbox pass a commit kicks, and the give-up it
+    // may write back — runs on in that request's context after it settles,
+    // and a hold taken there would never be released
+    const scope = this.scopes.getStore();
+    if (scope !== undefined && scope.open && !scope.held.has(doc)) {
+      scope.held.add(doc);
       doc.holds = (doc.holds ?? 0) + 1;
     }
   }
@@ -357,12 +363,13 @@ export class DocStore {
    * hub instead.
    */
   async scope<T>(fn: () => Promise<T>): Promise<T> {
-    const held = new Set<LoadedDoc>();
+    const scope = { held: new Set<LoadedDoc>(), open: true };
     try {
-      return await this.scopes.run(held, fn);
+      return await this.scopes.run(scope, fn);
     } finally {
+      scope.open = false;
       const now = Date.now();
-      for (const doc of held) {
+      for (const doc of scope.held) {
         doc.holds = Math.max(0, (doc.holds ?? 1) - 1);
         doc.lastUsedMs = now;
       }
@@ -377,6 +384,11 @@ export class DocStore {
   /** Whether a load of it is in flight. */
   isLoading(id: string): boolean {
     return this.loading.has(id);
+  }
+
+  /** A document's registry row, or null where it has none in this process. */
+  rowOf(id: string): RegistryRow | null {
+    return this.registry.get(id) ?? null;
   }
 
   /** Every document id this host knows, loaded or not. */
