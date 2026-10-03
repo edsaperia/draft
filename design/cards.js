@@ -1104,18 +1104,16 @@ window.CARDS = (function () {
   // A caller passes the room its line leaves; the sides of a pair or an arrow
   // share it, and each cut is inside its own snippet, so neither side is lost
   const RAIL_ROOM = 34;
-  const sideOf = (room) => Math.max(8, Math.floor((room - 7) / 2));   // two quotes each, and ' → '
   // **Words taken out are struck through** (Q1523 (c), Ed 2026-09-24), where
-  // the title said *without ‘…’* and *with or without ‘…’*. A title stays
+  // the title said *without ‘…’*. A title stays
   // plain text: the struck quote is fenced by two private-use characters
   // (clear of `MD_SENT` and the escapes' U+E121–U+E17E), which `railTitleHtml`
   // turns into `<del>` after escaping and `railTitleText` back into the words.
   // `railPlain` takes them out of member text, so nobody can type one.
-  const STRUCK = '', STRUCK_PAIR = '', STRUCK_END = '';
-  const STRUCK_ANY = /[]/g;
-  const STRUCK_RX = /([])([^]*)/g;
+  const STRUCK = '', STRUCK_END = '';
+  const STRUCK_ANY = /[]/g;
+  const STRUCK_RX = /([^]*)/g;
   const struck = (q) => STRUCK + q + STRUCK_END;
-  const struckPair = (q) => STRUCK_PAIR + q + STRUCK_END;
   /** The words a reader sees: markers, a heading's `# `, a bullet's `- `
    *  and backslash escapes off, whitespace folded to one space. */
   // — `mdPlain` per line (the escapes' own reader, Q1530), then the fold
@@ -1199,6 +1197,11 @@ window.CARDS = (function () {
   const scrap = (r) => (r.del + ' ' + r.ins).toLowerCase().split(/[^\p{L}\p{N}’']+/u)
     .filter(Boolean).every((w) => SCRAP.has(w));
   const mainRun = (runs) => runs.find((r) => !scrap(r)) || runs[0];
+  // **a change leads with what it puts in** (Ed 2026-10-02, #186: *"What you
+  // want to see primarily is words added by the proposal"*): the first run
+  // that names something and adds words, and only where none adds anything
+  // the first that names something, a cut
+  const leadRun = (runs) => runs.find((r) => r.ins && !scrap(r)) || mainRun(runs);
   // …and the ellipsis says there is more only where the more names something
   const moreThan = (runs, main) => runs.some((r) => r !== main && !scrap(r));
   /** Where two wordings stop agreeing, word by word: each side from there on. */
@@ -1209,36 +1212,42 @@ window.CARDS = (function () {
     return [A.slice(i).join(''), B.slice(i).join('')];
   };
   /**
-   * **A change's title** — a record, decided either way, and a proposal of
-   * your own: the words it took out and the words it put in, *‘monthly’ →
-   * ‘quarterly’*; what went in alone where nothing was removed; the words
-   * taken out struck through where nothing went in (`struck`, Q1523 (c));
+   * **A change's title** — a pair of the current text against a proposal, a
+   * record, decided either way, and a proposal of your own: **the words it
+   * puts in, plain** (Ed 2026-10-02, #186), *‘quarterly’* where it replaced
+   * *monthly*, *‘senior’* where it only added, and where it changed several
+   * places the first that adds something; the words taken out struck
+   * through only where nothing went in, a pure cut (`struck`, Q1523 (c));
    * as much of the new wording as fits where it is a rewrite with no short
-   * difference (Q1523 (f)); the clause's `name` with
+   * difference (Q1523 (f)), from where it stops agreeing with the old; the clause's `name` with
    * *(punctuation)* where only punctuation or spacing moved, and the name
    * alone where nothing did. Where it changed several places, the first that
    * says anything is shown and the ellipsis says there is more.
    */
   function railChange(was, now, name, room = RAIL_ROOM) {
-    const one = room - 2, side = sideOf(room);
+    const one = room - 2;
     const a = railPlain(was), b = railPlain(now);
     if (a === b) return name;
     if (onlyPunct(a, b)) return RT.punctuation(name);
     if (!a) return railQ(b, one);
     if (!b) return struck(railQ(a, one));
     const runs = changeRuns(a, b);
-    if (rewrite(runs)) return railLead(b, room);
+    // a rewrite fills the line with the new wording from where it stops
+    // agreeing with the old, which is where the words it puts in begin (#186)
+    if (rewrite(runs)) return railLead(afterCommon(a, b)[1] || b, room);
     if (!runs.length) return RT.punctuation(name);
-    const r = mainRun(runs);
-    const t = r.del && r.ins ? RT.arrow(railQ(r.del, side), railQ(r.ins, side))
-      : r.ins ? railQ(r.ins, one) : struck(railQ(r.del, one));
+    const r = leadRun(runs);
+    const t = r.ins ? railQ(r.ins, one) : struck(railQ(r.del, one));
     return moreThan(runs, r) ? t + ' ' + RT.more : t;
   }
   /**
-   * **A pair's title** — two wordings put to you, `a` first as the card
-   * presents it: the words where they differ, *‘six’ or ‘seven’*; those
-   * words struck through where one side simply has words the other lacks
-   * (`struckPair`, read *with or without ‘…’*, Q1523 (c)). Two
+   * **A pair's title** — two proposals put to you against each other, `a`
+   * first as the card presents it (a pair with the current text is a change,
+   * `railChange`): each side's own words where they differ, *‘six’ or
+   * ‘seven’*; those words **plain** where one side simply has words the
+   * other lacks (Ed 2026-10-02, #186: a strike reads as *removed*; a screen
+   * reader hears what a sighted reader sees, there being no strike left to
+   * explain). Two
    * rewrites of one sentence are read from where they stop agreeing, so the
    * words shown are the ones that tell them apart.
    */
@@ -1247,7 +1256,7 @@ window.CARDS = (function () {
     const a = railPlain(aText), b = railPlain(bText);
     if (a === b) return name;
     if (onlyPunct(a, b)) return RT.punctuation(name);
-    if (!a || !b) return struckPair(railQ(a || b, one));
+    if (!a || !b) return railQ(a || b, one);
     const runs = changeRuns(a, b);
     if (rewrite(runs)) {
       const [x, y] = afterCommon(a, b);
@@ -1256,24 +1265,22 @@ window.CARDS = (function () {
     if (!runs.length) return RT.punctuation(name);
     const r = mainRun(runs);
     const t = r.del && r.ins ? RT.or(railQ(r.del, side), railQ(r.ins, side))
-      : struckPair(railQ(r.del || r.ins, one));
+      : railQ(r.del || r.ins, one);
     return moreThan(runs, r) ? t + ' ' + RT.more : t;
   }
   /**
    * **A title printed** — the one renderer of a title the builders above
    * made: the `§` off and the escapes read (`plainLabel`), **escaped**, and
    * only then each struck quote drawn as `<del>` with its meaning said to a
-   * screen reader in a visually hidden span (*without*, *with or without*),
+   * screen reader in a visually hidden span (*without*),
    * since a strike alone says nothing to one. The words inside were escaped
    * with the rest, so the markup is the page's and nothing of the member's.
    */
-  const railTitleHtml = (t) => esc(plainLabel(t)).replace(STRUCK_RX, (m, kind, q) =>
-    '<del class="struck"><span class="sr-only">' + esc(kind === STRUCK_PAIR ? RT.struckPair : RT.struck) +
-    '</span>' + q + '</del>');
+  const railTitleHtml = (t) => esc(plainLabel(t)).replace(STRUCK_RX, (m, q) =>
+    '<del class="struck"><span class="sr-only">' + esc(RT.struck) + '</span>' + q + '</del>');
   /** …and as words, for a tooltip or anything else that is not markup:
-   *  *without ‘…’*, *with or without ‘…’* — unescaped, the caller escapes. */
-  const railTitleText = (t) => plainLabel(t).replace(STRUCK_RX, (m, kind, q) =>
-    (kind === STRUCK_PAIR ? RT.withOrWithout(q) : RT.without(q)));
+   *  *without ‘…’* — unescaped, the caller escapes. */
+  const railTitleText = (t) => plainLabel(t).replace(STRUCK_RX, (m, q) => RT.without(q));
   /**
    * **A rail entry's moment** (Q1523): 24-hour, shortest by distance from
    * `nowMs` — *15:25* the same day, *Sun 15:25* within the last seven days,
@@ -1692,20 +1699,44 @@ window.CARDS = (function () {
   // which draws their initials, or a `{ n, pic }` person, which draws whatever
   // they chose. Absent, nothing about this changes.
   const personOf = (who) => (who && typeof who === 'object' ? who : who ? { n: who } : null);
+  //
+  // **A reason is a comment on the proposal** (issue #173, Ed 2026-10-02:
+  // *The rationale is effectively a "comment" on the proposal*; his S3, *Edge
+  // and lift*, at W1, the panel the wording's full width): one soft panel
+  // under the wording, the byline on its own line at its top — the face, then
+  // the name, or the drawn disc and *Anonymous* where the name is sealed —
+  // and the reason under it in the chrome's face, so it no longer reads as
+  // more of the document. `.comment` is the read form; the rationale *fields*
+  // (`.lanebox .speaker`) keep their own markup and look.
+  const commentByHtml = (face, name) =>
+    '<div class="by">' + face + '<span class="who">' + name + '</span></div>';
+  const saidHtml = (why) => (why
+    ? '<div class="said">' + reasonHtml(why) + '</div>'
+    : '<div class="said none">' + G.speaker.noReason + '</div>');
   const speakerHtml = (why, title, who) => {
     const p = personOf(who);
     const name = p ? String(p.n || '') : '';
     const ttl = title || (p ? G.speaker.wroteThis(esc(name)) : G.speaker.sealed);
-    return '<div class="speaker' + (p ? ' revealed' : '') + '">' +
-      (p
+    return '<div class="speaker comment' + (p ? ' revealed' : '') + '">' +
+      commentByHtml(p
         ? '<span class="spkface" title="' + ttl + '">' + avHtml(p) + '</span>'
-        : '<span class="disc" aria-hidden="true" title="' + ttl + '"></span>') +
-      (p ? '<span class="who">' + esc(name) + '</span>' : '') +
-      (why
-        ? '<div class="said">' + reasonHtml(why) + '</div>'
-        : '<div class="said none">' + G.speaker.noReason + '</div>') +
-      '</div>';
+        : '<span class="disc" aria-hidden="true" title="' + ttl + '"></span>',
+      p && name ? esc(name) : G.speaker.anonymous) +
+      saidHtml(why) + '</div>';
   };
+  // **The reasoning's label and box**, one helper for every rationale being
+  // written — the draft's, the ⚔️ desk's, and the page's settings reason
+  // boxes (`whyLane`), so the forms cannot drift. `attrs` is the field's own
+  // hook (`data-why`, `data-deadwhy`, `data-motionlane="why"`, …); the
+  // placeholder states the act (Ed, 2026-08-17: an opening clause invites
+  // the sentence the field is for).
+  function whyBoxHtml(text, attrs, placeholder, cls) {
+    return '<span class="glab whylab">' + G.yourReasoning + '</span>' +
+      '<div class="lanebox whybox"><div class="said edit-why' + (cls ? ' ' + cls : '') +
+      '" contenteditable="plaintext-only"' + attrs + ' spellcheck="false"' +
+      ' data-placeholder="' + (placeholder || G.whyPlaceholder) + '">' + esc(text || '') + '</div></div>';
+  }
+
   // **A rail entry's body is its speaker** (Ed, 2026-09-12: *[user avatar]
   // Rationale text; if no rationale, no body text*): the teaser under a
   // proposal's title and under a motion's is the rationale behind the same
@@ -2229,25 +2260,15 @@ window.CARDS = (function () {
           : '<div class="editlane" contenteditable="true" data-lane="' +
             site.keys[0] + '" spellcheck="false">' +
             laneBlocks(site.text, originText(site)) + '</div>') +
-        // …and the face on it is **what everybody else will see**, not what you
-        // know (K30, backlog 255). One place decides it, because `setDraftSigned`
-        // patches the same element in place when the sign choice flips.
-        // The rationale is **inside** the same surface (Ed, 2026-08-17): you are
-        // expected to fill in both, so they are one editing surface at one
-        // height rather than two boxes at different ones — and the speaker's
-        // disc comes with it, because it belongs to the words beside it. A
-        // hairline separates them without dividing them, which is the card's own
-        // band grammar applied one level down.
-        '<div class="speaker">' + draftFaceHtml(d) +
-        '<div class="said edit-why" contenteditable="plaintext-only"' +
-        (blank ? ' data-deadwhy="' + blank + '"' : ' data-why') + ' spellcheck="false"' +
-        // Ed, 2026-08-17. A question invited an answer to a different question —
-        // "because it's clearer" — where an opening clause invites the sentence
-        // the field is actually for. It also states the act: what you are writing
-        // is the case for a change, not a note about one.
-        ' data-placeholder="' + G.whyPlaceholder + '">' +
-        esc((d && d.rationale) || '') + '</div></div>' +
-        '</div>';
+        '</div>' +
+        // **The reasoning is the form's second part** (issue #173, Ed
+        // 2026-10-02, his D4: *your reasoning*): its own label and a box drawn
+        // like the draft box, two lines at the least, in the chrome's face —
+        // no face, no name and no hairline while writing (his K3: *we don't
+        // need to show the username*). What it was, one surface with a
+        // hairline and the disc beside the field (Ed, 2026-08-17), and why it
+        // went: `design/DECISIONS.md`.
+        whyBoxHtml((d && d.rationale) || '', blank ? ' data-deadwhy="' + blank + '"' : ' data-why');
     }
 
     // ---- open/close geometry ----------------------------------------------
@@ -2468,7 +2489,7 @@ window.CARDS = (function () {
     mdUnescape, mdPlain, pasteClean,
     MD_ONE, mdLead, mdInner, mdParts, sourceToRich, readLane, sentText,
     abstainHhmm, abstainLeft, abstainNoteHtml, tickAbstain,
-    laneSeed, laneProposeHtml, laneCtlHtml, laneNameId, laneGroupAttrs, speakerHtml, railSpeakerHtml, secToggleHtml, fieldHtml, fieldOf, groundNote,
+    laneSeed, laneProposeHtml, laneCtlHtml, laneNameId, laneGroupAttrs, speakerHtml, commentByHtml, whyBoxHtml, railSpeakerHtml, secToggleHtml, fieldHtml, fieldOf, groundNote,
     initials, PERSON, avHtml,
     headOnlyHeight, cardBody, COLLAPSE_MS, EXPAND_MS,
     make,

@@ -429,10 +429,11 @@ check('#149 · the lone ✔ of an insertion draws its Previous text, reading (no
   !!one && one.prev.length === 1 && one.prev[0] === '(no text here)', JSON.stringify(one && { prev: one.prev }));
 check('#149 · …and its passed wording is green whole, what passed against nothing',
   !!one && one.head === 'Zeta line.' && one.headIns === 'Zeta line.', JSON.stringify(one && { head: one.head, ins: one.headIns }));
-// closed again by its own entry, never by its OK: an open record is never folded in
-await page.evaluate((id) => { const b = document.querySelector('#rail li[data-q="' + id + '"] button'); if (b) b.click(); }, lone.id);
+// closed again by Escape, never by its OK: an open record is never folded in
+// (a second press on its entry travels back to it since #168, and closes nothing)
+await page.keyboard.press('Escape');
 await sleep(1500);
-if ((await read()).open === lone.id) bail('the insertion\'s lone card would not close from its entry');
+if ((await read()).open === lone.id) bail('the insertion\'s lone card would not close on Escape');
 // b's rewording of that line, passed: r is owed two ✔ on one clause, which fold
 const RW = await propose('b', L6.length, 'Zeta line two.');
 await decide(RW, ['founder', 'a', 'c'], 'b');

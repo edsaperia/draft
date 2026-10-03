@@ -92,18 +92,17 @@ window.COPY = (function () {
     // text and is escaped by the renderer, never here.
     railTitle: {
       quote: (s) => '‘' + s + '’',
-      // a proposal that replaces words, or a record of one: what went out, what came in
+      // a rule's value changed, old → new (`railArrow`); a text change reads
+      // only the words it puts in (Ed 2026-10-02, #186)
       arrow: (was, now) => was + ' → ' + now,
       // two wordings put side by side, as the card presents them
       or: (a, b) => a + ' or ' + b,
-      // a pair where one side simply has words the other lacks — drawn as the
-      // words struck through (Q1523 (c)); this is the tooltip's reading, and
-      // `struckPair` the words a screen reader hears before the struck quote
-      withOrWithout: (q) => 'with or without ' + q,
-      // a decided change that only took words out, the same way
+      // a decided change that only took words out — drawn as the words struck
+      // through (Q1523 (c)); this is the tooltip's reading, and `struck` the
+      // words a screen reader hears before the struck quote. A pair's
+      // one-sided words are a plain quote, no strike (Ed 2026-10-02, #186)
       without: (q) => 'without ' + q,
       struck: 'without ',
-      struckPair: 'with or without ',
       // a change of punctuation or spacing alone: the clause's own name, said so
       punctuation: (name) => name + ' (punctuation)',
       // a snippet cut short, and a change with more to it than the title shows
@@ -142,6 +141,8 @@ window.COPY = (function () {
       wroteThis: (escName) => escName + ' wrote this.',
       sealed: 'A member wrote this. Who, is sealed until the closing record.',
       noReason: 'No reason given.',
+      // the comment's byline where the name is sealed (issue #173)
+      anonymous: 'Anonymous',
     },
     // secToggleHtml: the fold triangle
     sectoggle: { fold: 'Fold this section away', unfold: 'Unfold this section' },
@@ -251,6 +252,9 @@ window.COPY = (function () {
       italic: 'Italic (the markdown is *like this*)',
     },
     whyPlaceholder: 'We should change this because…',
+    // the editing card's second part, over the reasoning box (issue #173, Ed
+    // 2026-10-02: *It should say 'your reasoning' instead of 'your reason'*)
+    yourReasoning: 'Your reasoning',
   };
 
   // ---- the session surface (session.js) ------------------------------------
@@ -463,15 +467,11 @@ window.COPY = (function () {
       withdrawCost: ' — the edit comes back in full',
       idle: 'Nothing has changed yet — type in the document to start a draft',
     },
-    // the sign control (Q770): whether your name goes on the draft
+    // the sign control (Q770): whether your name goes on the draft — since
+    // issue #173 one switch and its word, no helper line (Ed, 2026-10-02:
+    // *Remove the … helper text*)
     sign: {
-      anonymousName: 'Anonymous',
       anonLabel: 'Anonymous',
-      anonExpLead: 'Nobody is told who proposed this',
-      expEver: ' — ever.',
-      expUntil: ' until the document is finished.',
-      signedAs: (escName) => 'Signed — as ' + escName,
-      signedExp: 'Your name goes on it from the moment you propose it, and stays there.',
     },
     // the place-stepper a patch and a multi-site draft share
     nav: {

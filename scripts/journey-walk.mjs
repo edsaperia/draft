@@ -4460,45 +4460,54 @@ if (caret) {
   say('draft kept · ' + (backOk ? '📝 again, its chip in the gutter, and the draft is where it was'
     : 'FAIL: ' + JSON.stringify({ foundAgain, reopened, ...back })));
   if (!backOk) stuck.push('the draft did not survive the leave');
-  /* ---- the sign control (Q770): there under an elective 👤 rung, absent
-   * under a fixed one; pressing *Signed* flips the draft without a render
-   * (the lane keeps its caret) and the ✏️ hold's title says what leaves. */
-  const sc = await page.evaluate(() => {
-    const ctl = document.querySelector('.sugg.editcard .signctl');
-    const picks = ctl ? [...ctl.querySelectorAll('[data-act="draft-sign"]')] : [];
-    return { present: !!ctl, base: ctl ? ctl.dataset.signbase : null,
-      labels: picks.map((b) => b.textContent.trim()),
-      on: picks.map((b) => b.getAttribute('aria-pressed')) };
+  /* ---- the sign control (Q770; issue #173, Ed 2026-10-02): one *Anonymous*
+   * switch on the *Your proposal* line under an elective 👤 rung, absent
+   * under a fixed one; **off — signed — by default**. Pressing it flips the
+   * draft without a render (the lane keeps its caret) and the ✏️ hold's title
+   * says what leaves; pressed again it is signed once more, as the rest of
+   * this walk expects. */
+  const swState = () => page.evaluate(() => {
+    const d = (window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours');
+    // the row's ✏️ carries the hold and its tooltip since Q1382 — the card commits nothing
+    const pb = document.querySelector('#charter [data-proposalrow] [data-act="row-commit"]:not([data-pen])');
+    const lane = document.querySelector('.sugg.editcard [data-lane]');
+    const sws = [...document.querySelectorAll('.sugg.editcard .anonsw [data-act="draft-sign"]')];
+    return { present: sws.length > 0, base: (document.querySelector('.sugg.editcard .anonsw') || { dataset: {} }).dataset.signbase || null,
+      signed: !!(d && d.signed), title: pb ? pb.title : '',
+      checked: sws.map((b) => b.getAttribute('aria-checked')),
+      role: sws.map((b) => b.getAttribute('role')),
+      laneText: lane ? lane.textContent : null };
   });
+  const sc = await swState();
   if (ELECTIVE) {
-    const shape = sc.present && sc.labels.length === 2 && sc.on[0] === 'true' && sc.on[1] === 'false' &&
-      sc.labels[0] === 'Anonymous' && /^Signed — as /.test(sc.labels[1]);
-    say('sign ctl   · ' + (shape ? 'present under ' + AUTHORSHIP + ' (base ' + sc.base + '), Anonymous by default · ' +
-      JSON.stringify(sc.labels) : 'FAIL: no sign control · ' + JSON.stringify(sc)));
-    if (!shape) stuck.push('no sign control');
-    const signBtn = shape && await handle('.sugg.editcard [data-act="draft-sign"][data-signed="1"]', 'sign button');
-    if (signBtn) {
-      await signBtn.scrollIntoViewIfNeeded();
-      await signBtn.click();
+    const shape = sc.present && sc.role.every((r) => r === 'switch') && sc.checked.every((c) => c === 'false') &&
+      sc.signed && / — signed — /.test(sc.title);
+    say('sign ctl   · ' + (shape ? 'the Anonymous switch under ' + AUTHORSHIP + ' (base ' + sc.base + '), off — signed — by default'
+      : 'FAIL: no sign switch, or not signed by default · ' + JSON.stringify(sc)));
+    if (!shape) stuck.push('no sign switch');
+    const flip = async () => {
+      const b = await handle('.sugg.editcard .anonsw [data-act="draft-sign"]', 'anonymous switch');
+      if (!b) return null;
+      await b.scrollIntoViewIfNeeded();
+      await b.click();
       await T(300);
-      const flipped = await page.evaluate(() => {
-        const d = (window.SESSION.SUGGS || []).find((x) => x.id === 'draft-yours');
-        // the row's ✏️ carries the hold and its tooltip since Q1382 — the card commits nothing
-        const pb = document.querySelector('#charter [data-proposalrow] [data-act="row-commit"]:not([data-pen])');
-        const lane = document.querySelector('.sugg.editcard [data-lane]');
-        return { signed: !!(d && d.signed), title: pb ? pb.title : '',
-          pressed: [...document.querySelectorAll('.sugg.editcard [data-act="draft-sign"]')].map((b) => b.getAttribute('aria-pressed')),
-          laneText: lane ? lane.textContent : null };
-      });
-      const okFlip = flipped.signed && / — signed — /.test(flipped.title) && flipped.pressed.join() === 'false,true';
-      say('signed     · ' + (okFlip ? 'the draft is signed, the card patched in place · title “' + flipped.title.slice(0, 60) + '…”'
-        : 'FAIL: ' + JSON.stringify(flipped)));
-      if (!okFlip) stuck.push('the sign choice did not take');
-    }
+      return swState();
+    };
+    const anon = shape && await flip();
+    const okAnon = anon && !anon.signed && anon.checked.every((c) => c === 'true') && !/ — signed/.test(anon.title) &&
+      anon.laneText === sc.laneText;
+    say('anonymous  · ' + (okAnon ? 'the switch on makes the draft anonymous, the card patched in place, the lane untouched'
+      : 'FAIL: ' + JSON.stringify(anon)));
+    if (shape && !okAnon) stuck.push('the switch did not make the draft anonymous');
+    const back = okAnon && await flip();
+    const okFlip = back && back.signed && / — signed — /.test(back.title) && back.checked.every((c) => c === 'false');
+    say('signed     · ' + (okFlip ? 'off again: the draft is signed · title “' + back.title.slice(0, 60) + '…”'
+      : 'FAIL: ' + JSON.stringify(back)));
+    if (okAnon && !okFlip) stuck.push('the sign choice did not take');
   } else {
     say('sign ctl   · ' + (!sc.present ? 'absent under ' + AUTHORSHIP + ', as a fixed rung offers no choice'
-      : 'FAIL: a sign control under ' + AUTHORSHIP + ' · ' + JSON.stringify(sc)));
-    if (sc.present) stuck.push('a sign control under a fixed rung');
+      : 'FAIL: a sign switch under ' + AUTHORSHIP + ' · ' + JSON.stringify(sc)));
+    if (sc.present) stuck.push('a sign switch under a fixed rung');
   }
   /* **And now the hold itself** (2026-08-22). This step used to say the
    * gesture could not be exercised here, and the bug it could not see cost
@@ -4739,7 +4748,10 @@ if (caret) {
           const rung = (document.querySelector('.cpara[data-para="authorship"]') || {}).textContent;
           return { id: k, card: true, said, speakers: sps.length,
             revealed: sps.some((s) => s.classList.contains('revealed')),
-            who: sps.some((s) => !!s.querySelector('.who')),
+            // a byline naming somebody: since #173 a sealed comment's byline
+            // is the drawn disc and *Anonymous*, which names nobody
+            who: sps.some((s) => { const w = s.querySelector('.who');
+              return !!w && w.textContent.trim() !== window.COPY.grammar.speaker.anonymous; }),
             face: sps.some((s) => !!s.querySelector('.av, .emojiface')),
             named: sps.some((s) => s.textContent.includes(name)),
             // the guest's rationale is visible at every rung (§3.5a), and

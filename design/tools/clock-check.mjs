@@ -228,16 +228,25 @@ const titles = [
   // a pair: the two sides as the card presents them
   [railPair('A quorum is six members.', 'A quorum is seven members.', G), '‘six’ or ‘seven’'],
   [railPair('Guests are welcome.', 'Guests are welcome, and until the quiet hours begin.', G),
-    'with or without ‘and until the quiet hours begin’'],   // struck: the words *with or without* no longer take room
+    '‘and until the quiet hours begin’'],   // one side's words alone: plain, never struck (Ed 2026-10-02, #186)
   [railPair('Guests come whenever a member is in, up to three at a time without telling anybody.',
     'Guests come whenever a member is in, and until the quiet hours begin.', G),
     '‘up to three…’ or ‘and until the…’'],
   // two rewrites are read from where they stop agreeing
   [railPair('The Purse-holder pays only bills approved under the budget.',
     'The Purse-holder pays the house’s bills as good sense directs.', G), '‘only bills…’ or ‘the house’s…’'],
-  // a decided change: what went out, what came in
+  // a change — a pair of the current text against a proposal, a record, a
+  // proposal of your own — reads the words it puts in, plain (Ed
+  // 2026-10-02, #186: *"What you want to see primarily is words added by the
+  // proposal"*); only a pure cut is struck
   [railChange('Subscriptions are reviewed monthly by the house.', 'Subscriptions are reviewed quarterly by the house.', G),
-    '‘monthly’ → ‘quarterly’'],
+    '‘quarterly’'],
+  // Ed's own case: the demo's Aalto proposal adds *senior* and changes a year
+  [railChange('Dr Henrik Aalto, research fellow, author of the report since 2023.',
+    'Dr Henrik Aalto, senior research fellow, author of the report since 2021.', G), '‘senior’ …'],
+  // a cut before an addition: the addition leads, the cut is the ellipsis
+  [railChange('Members, and their guests, may come on Sundays.', 'Members may come on Sundays and holidays.', G),
+    '‘and holidays’ …'],
   [railChange('Friends of the house are welcome.', 'Friends of the house are welcome, and so are their dogs.', G),
     '‘and so are their dogs’'],
   [railChange('The Club has no head, and has managed without one.', 'The Club has no head.', G), 'without ‘and has managed without one’'],
@@ -249,6 +258,9 @@ const titles = [
   // a rewrite with no short difference: as much of the new wording as fits (Q1523 (f))
   [railChange('One two three four five six seven.', 'Completely different words entirely in this new sentence.', G),
     '‘Completely different words…’'],
+  // …from where it stops agreeing with the old, where its own words begin (#186)
+  [railChange('11:15 · The Great Dough Debate, with the Society’s panel', '11:15 · Oven or Baker? A Blind Tasting for the whole room', G),
+    '‘Oven or Baker? A Blind Tasting…’'],
   // punctuation or spacing alone: the clause's name, said so; nothing at all: the name
   [railChange('A b c.', 'A b c!', G), 'Guests (punctuation)'],
   [railPair('A,  b c', 'A b c', G), 'Guests (punctuation)'],
@@ -256,18 +268,46 @@ const titles = [
   // a gap: all of it went in
   [railChange('', 'A new clause.', G), '‘A new clause’'],
   // markdown never reaches a title
-  [railChange('# **The Kitchen** is open', '# **The Kitchen** is shut', G), '‘open’ → ‘shut’'],
+  [railChange('# **The Kitchen** is open', '# **The Kitchen** is shut', G), '‘shut’'],
   [railPlain('- *good* coffee, \\*not\\* the tin'), 'good coffee, *not* the tin'],
   // several changes: the first that says anything, and the ellipsis where
   // the rest says anything too — a scrap (*or* → *and*) is no reason for one
-  [railChange('It is open in May, and closed in winter.', 'It is shut in May, and heated in winter.', G), '‘open’ → ‘shut’ …'],
-  [railChange('It is open in May or June, daily.', 'It is shut in May and June, daily.', G), '‘open’ → ‘shut’'],
+  [railChange('It is open in May, and closed in winter.', 'It is shut in May, and heated in winter.', G), '‘shut’ …'],
+  [railChange('It is open in May or June, daily.', 'It is shut in May and June, daily.', G), '‘shut’'],
   [railChange('Knives are not used on bone or frozen food.', 'Knives are not used on bone, frozen food, or the garden.', G), '‘or the garden’'],
   // *not* is never a scrap
-  [railPair('Members may vote.', 'Members may not vote.', G), 'with or without ‘not’'],
+  [railPair('Members may vote.', 'Members may not vote.', G), '‘not’'],
+  // Ed's own case (#186): a proposal that only adds a word reads it plain
+  [railPair('Dr Henrik Aalto, lecturer since 2023.', 'Dr Henrik Aalto, senior lecturer since 2023.', G), '‘senior’'],
   // only punctuation between two changes: one change
   [railPair('It is said once and not more.', 'It is said once. No further reminder is given.', G),
     '‘and not more’ or ‘No further…’'],
+  // **every kind of entry through the page's own router** (#186, the
+  // coordinator's rows): a change leads with what it puts in whatever entry
+  // shows it, a pure cut is struck, two proposals keep *‘a’ or ‘b’*
+  ...(() => {
+    const T = (g) => railTitleText(ctx.window.SESSION.railTitleOf(g, { label: G }));
+    const OLD = 'Subscriptions are reviewed monthly by the house.', NEW = 'Subscriptions are reviewed quarterly by the house.';
+    const FULL = 'The Club has no head, and has managed without one.', CUT = 'The Club has no head.';
+    return [
+      // a replacement — as a pair against the current text, a patch's site,
+      // your own proposal, and a ✔ record
+      [T({ id: 'q1', kind: 'quick', was: OLD, now: NEW }), '‘quarterly’'],
+      [T({ id: 'p1', kind: 'patch', sites: [{ was: OLD, now: NEW }] }), '‘quarterly’'],
+      [T({ id: 'd1', kind: 'draft', mine: true, sites: [{ seed: OLD, text: NEW }] }), '‘quarterly’'],
+      [T({ id: 'r1', state: 'sealed', replaced: OLD, slate: [{ text: NEW, won: true }] }), '‘quarterly’'],
+      // a pure cut — as a pair and as a record — keeps its strike
+      [T({ id: 'q2', kind: 'quick', was: FULL, now: CUT }), 'without ‘and has managed without one’'],
+      // (a record's line keeps room for its moment, so its quote is cut)
+      [T({ id: 'r2', state: 'sealed', replaced: FULL, slate: [{ text: CUT, won: true }] }), 'without ‘and has managed without…’'],
+      // *not*: the proposal's side decides — added plain, removed struck
+      [T({ id: 'q3', kind: 'quick', was: 'Members may vote.', now: 'Members may not vote.' }), '‘not’'],
+      [T({ id: 'q4', kind: 'quick', was: 'Members may not vote.', now: 'Members may vote.' }), 'without ‘not’'],
+      // two proposals against each other: each side's own words, plain
+      [T({ id: 'x1', kind: 'race', race: { a: { text: 'A quorum is six members.' }, b: { text: 'A quorum is seven members.' } } }), '‘six’ or ‘seven’'],
+      [T({ id: 'x2', kind: 'race', race: { a: { text: FULL }, b: { text: CUT } } }), '‘and has managed without one’'],
+    ];
+  })(),
   // a rule's value, old → new, a shared tail said once
   [railArrow('10 minutes', '5 minutes'), '10 → 5 minutes'],
   [railArrow('6', '8'), '6 → 8'],                           // a count alone (Q1523 (e))
@@ -303,8 +343,12 @@ titles.push(
   // everything a member wrote is escaped before the markup goes round it
   [railTitleHtml(ctx.window.CARDS.railChange('Keep <b>it</b> & more.', 'Keep.', G)),
     '<del class="struck"><span class="sr-only">without </span>‘&lt;b&gt;it&lt;/b&gt; &amp; more’</del>'],
-  [railTitleHtml(ctx.window.CARDS.railPair('Members may vote.', 'Members may not vote.', G)),
-    '<del class="struck"><span class="sr-only">with or without </span>‘not’</del>'],
+  // a pair's one-sided words are plain, no `<del>` (Ed 2026-10-02, #186); a
+  // decided removal keeps its strike
+  [railTitleHtml(ctx.window.CARDS.railPair('Members may vote.', 'Members may not vote.', G)), '‘not’'],
+  [railTitleHtml(ctx.window.CARDS.railPair('Dr Henrik Aalto, lecturer.', 'Dr Henrik Aalto, senior lecturer.', G)), '‘senior’'],
+  [railTitleHtml(ctx.window.CARDS.railChange('Dr Henrik Aalto, senior lecturer.', 'Dr Henrik Aalto, lecturer.', G)),
+    '<del class="struck"><span class="sr-only">without </span>‘senior’</del>'],
   [railTitleHtml('§ A <script>‘x’'), 'A &lt;script&gt;<del class="struck"><span class="sr-only">without </span>‘x’</del>'],
   // …and a member cannot type the fence: it is taken out of the text
   [railPlain('a b c'), 'a b c'],
