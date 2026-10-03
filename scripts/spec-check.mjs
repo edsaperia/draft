@@ -2227,8 +2227,8 @@ const STYLE_SPACE_OK = (p) => /^(0|0px|auto|inherit)$/.test(p) ||
 /** the pins: today's pre-redesign literals, per stylesheet (2026-09-26) —
  *  lowered as each stage converts rules, never raised */
 const STYLE_PINS = {
-  'design/system.css': { type: 23, space: 110 },
-  'design/setup.css': { type: 16, space: 38 },
+  'design/system.css': { type: 23, space: 108 },
+  'design/setup.css': { type: 16, space: 37 },
 };
 function styleReadings(css) {
   const flat = css.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '));
