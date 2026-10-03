@@ -21,6 +21,7 @@
 import { createServer } from 'node:http';
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import { Auth } from './auth.js';
+import { IDLE_MS } from './config.js';
 import type { ServerConfig } from './config.js';
 import { DocStore } from './store.js';
 import { FilePersistence, WriteChain } from './persistence.js';
@@ -195,22 +196,32 @@ export async function createDraftServer(cfg: ServerConfig,
   const pause = new PauseState();
   const persistence = injected ?? await openPersistence(cfg);
   const store = new DocStore(persistence);
-  await store.loadAll();
   // the snapshots' counts (plan-scaling.md Stage 3), on `/healthz`
   const snapshots = newSnapshotCounts();
   const snapshotOpts = { audit: cfg.snapshotAudit ?? parseSnapshotAudit(undefined),
     counts: snapshots };
-  for (const doc of store.all()) {
-    try {
-      await resumeBridge(persistence, doc, cfg.engineTuning, snapshotOpts);
-    } catch (e) {
-      // review #2, finding 1: a half-written bridge state or engine log
-      // must quarantine this document's engine, never the whole server —
-      // the document itself still serves, as loadAll already ensures
-      console.error(`document '${doc.id}': engine state failed to load — engine quarantined:`, e);
-      asEngineDoc(doc).engineQuarantined = true;
-    }
-  }
+  // **the load life-cycle** (Scaling Stage 2, issue #219): a document folded
+  // from the store has its engine resumed here, and an unload asks the write
+  // path for the row it leaves; `writes` is made below and reached long after
+  store.lifecycle = {
+    afterLoad: async (doc) => {
+      try {
+        await resumeBridge(persistence, doc, cfg.engineTuning, snapshotOpts);
+      } catch (e) {
+        // review #2, finding 1: a half-written bridge state or engine log
+        // must quarantine this document's engine, never the whole server —
+        // the document itself still serves
+        console.error(`document '${doc.id}': engine state failed to load — engine quarantined:`, e);
+        asEngineDoc(doc).engineQuarantined = true;
+      }
+    },
+    rowOf: (doc, nowMs) => writes.rowOf(doc, nowMs),
+  };
+  // **boot loads no document** (Stage 2): the registry routes and ticks them,
+  // and each loads on its first request or due tick; `DRAFT_LOAD=eager` is
+  // the boot before it, every document folded before `/healthz` answers
+  if (cfg.load === 'eager') await store.loadAll();
+  else await store.loadRegistry();
   const auth = new Auth(cfg.secret, persistence);
   const mailer = makeMailer(cfg);
   const outbox: MailOutbox = new MailOutbox({
@@ -241,6 +252,9 @@ export async function createDraftServer(cfg: ServerConfig,
     closing: () => closing !== null,
     now: () => Date.now(),
     snapshots,
+    // an open push stream keeps its document loaded (Stage 2); the hub is
+    // made below and asked long after
+    watched: (doc) => events.watching(doc),
   });
 
   const httpsOn = cfg.baseUrl.startsWith('https://');
@@ -348,6 +362,11 @@ export async function createDraftServer(cfg: ServerConfig,
       }
     }
     await writes.tick(nowMs);
+    // …and what has gone idle is unloaded (Scaling Stage 2), after the tick
+    // so a document it has just driven counts as used; never under eager
+    // **on the wall clock**, whatever time a test states: idle is how long
+    // nobody has asked, which only the real clock measures
+    if (cfg.load !== 'eager') await writes.evictIdle(Date.now(), cfg.idleMs ?? IDLE_MS);
   };
 
   const server = createServer((req, res) => {
@@ -363,7 +382,9 @@ export async function createDraftServer(cfg: ServerConfig,
           `${Date.now() - startedMs}ms`);
       });
     }
-    void route(req, res).catch((e: unknown) => {
+    // one request is one scope (Scaling Stage 2): a document it opens is
+    // held until it settles, so an unload never lands under it
+    void store.scope(() => route(req, res)).catch((e: unknown) => {
       // module and validation errors are written for members and pass
       // through; anything carrying a system code (fs, net) is internal
       // and says nothing about itself (stage 3, defect 9)

@@ -55,3 +55,28 @@ export function codeVersion(): string {
   cached = `f${SNAPSHOT_FORMAT}.v8-${process.versions.v8}.${fold.slice(0, 24)}`;
   return cached;
 }
+
+/** The constitution's sources beside this file, on a dev host. */
+export const CONSTITUTION_SRC = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'constitution', 'src');
+
+/** Moved by hand when the registry row's meaning changes shape (Stage 2). */
+export const REGISTRY_FORMAT = 1;
+
+let clockCached: string | null = null;
+
+/**
+ * **Which clock code computed a registry row's `dueT`** (plan-scaling.md
+ * Stage 2, issue #219): the engine's fold (`codeVersion`) and the
+ * constitution's — whose `nextClockT`, lapse ladder and bridge sweep are the
+ * other half of every due time. A row written by any other build is not
+ * trusted for when the document is due; the host loads it and asks again.
+ * Baked into the bundle as `DRAFT_CLOCK_FINGERPRINT`, computed from the tree
+ * on a dev host, as the engine's half is.
+ */
+export function clockVersion(): string {
+  if (clockCached !== null) return clockCached;
+  const baked = process.env.DRAFT_CLOCK_FINGERPRINT;
+  const cons = baked !== undefined && baked.length > 0 ? baked : engineFingerprint(CONSTITUTION_SRC);
+  clockCached = `r${REGISTRY_FORMAT}.${codeVersion()}.c${cons.slice(0, 24)}`;
+  return clockCached;
+}

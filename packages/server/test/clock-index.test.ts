@@ -58,8 +58,14 @@ const TICK_COOLDOWN = 4 * MIN;
 const booted: DraftServer[] = [];
 afterAll(async () => { for (const d of booted) await d.close().catch(() => {}); });
 
-function cfgFor(dataDir: string, tickAll: boolean, cooldownMs = TICK_COOLDOWN) {
+function cfgFor(dataDir: string, tickAll: boolean, cooldownMs = TICK_COOLDOWN,
+  load: 'eager' | 'lazy' = 'eager') {
   return {
+    // Stage 1's two hosts keep every document in memory, as the host did
+    // then; Stage 2's third loads on demand and unloads at once (`idleMs` 1)
+    // — with no load budget, so a row this build cannot vouch for (the
+    // fixture has none) is loaded at the first tick, as host A ticks it
+    load, idleMs: 1, loadBudgetMs: 1e12, snapshotAudit: 'off' as const,
     port: 0, dataDir, baseUrl: 'http://127.0.0.1', designDir: DESIGN_DIR,
     resendApiKey: null as string | null, mailFrom: 'test <t@example.org>', mailOff: false,
     secret: 'test-secret', store: 'file' as const, databaseUrl: null,
@@ -237,11 +243,19 @@ describe('the clock index (Scaling Stage 1, issue #210)', () => {
     const src = await source();
     const dirA = mkdtempSync(join(tmpdir(), 'draft-clock-all-'));
     const dirB = mkdtempSync(join(tmpdir(), 'draft-clock-due-'));
+    const dirC = mkdtempSync(join(tmpdir(), 'draft-clock-lazy-'));
     cpSync(src, dirA, { recursive: true });
     cpSync(src, dirB, { recursive: true });
+    cpSync(src, dirC, { recursive: true });
     const a = await createDraftServer(cfgFor(dirA, true), new FilePersistence(dirA));
     const b = await createDraftServer(cfgFor(dirB, false), new FilePersistence(dirB));
-    booted.push(a, b);
+    // **Stage 2's host** (issue #219): boots loading nothing, loads a document
+    // when its row says it is due, and unloads every idle one after each tick
+    const c = await createDraftServer(cfgFor(dirC, false, TICK_COOLDOWN, 'lazy'),
+      new FilePersistence(dirC));
+    booted.push(a, b, c);
+    expect([...c.store.all()]).toHaveLength(0);
+    expect(c.store.registeredCount()).toBe([...a.store.all()].length);
     expect([...a.store.all()].length).toBe([...b.store.all()].length);
     expect(b.store.quarantined()).toHaveLength(0);
 
@@ -258,6 +272,7 @@ describe('the clock index (Scaling Stage 1, issue #210)', () => {
       }
       await a.tick(t);
       await b.tick(t);
+      await c.tick(t);
     }
     // the abstain room carried on the expiry alone: its adoption lands before
     // any of its constitution's own clocks fires after t0
@@ -269,15 +284,24 @@ describe('the clock index (Scaling Stage 1, issue #210)', () => {
     expect(carried, 'the abstain room adopted after t0').toBeTruthy();
     expect(firstClock, 'the abstain room\'s own clocks ran after t0').toBeTruthy();
     expect(carried!.event.t).toBeLessThan(firstClock!.event.t);
+    const lazy = { ...c.store.loadStats, recent: c.store.loadStats.recent.length };
     await a.outbox.drain();
     await b.outbox.drain();
+    await c.outbox.drain();
     await a.close();
     await b.close();
+    await c.close();
 
     const sa = snapshot(dirA);
     const sb = snapshot(dirB);
+    const sc = snapshot(dirC);
     expect(Object.keys(sb)).toEqual(Object.keys(sa));
     for (const k of Object.keys(sa)) expect(sb[k], `${k} differs`).toBe(sa[k]);
+    // …and the host that loaded on demand and unloaded when idle, too
+    expect(Object.keys(sc)).toEqual(Object.keys(sa));
+    for (const k of Object.keys(sa)) expect(sc[k], `lazy: ${k} differs`).toBe(sa[k]);
+    expect(lazy.unloads, 'the lazy host unloaded').toBeGreaterThan(0);
+    expect(lazy.loads, 'the lazy host reloaded').toBeGreaterThan(lazy.unloads - 12);
 
     // the schedule crossed every kind (host A's logs say so)
     const events = Object.entries(sa).filter(([k]) => k.endsWith('/log.jsonl') || k.endsWith('/engine.jsonl'))
@@ -293,6 +317,6 @@ describe('the clock index (Scaling Stage 1, issue #210)', () => {
     // …and host B passed documents over
     expect(skipped).toBeGreaterThan(times.length);
     console.log(`clock-index differential: ${times.length} ticks, ${events.length} events after t0, `
-      + `${skipped} document-ticks skipped`);
+      + `${skipped} document-ticks skipped; lazy host ${lazy.loads} loads, ${lazy.unloads} unloads`);
   }, 600_000);
 });

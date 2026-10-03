@@ -110,6 +110,12 @@ export class EventHub {
 
   get size(): number { return this.streams.size; }
 
+  /** Whether any stream is open on this document (Scaling Stage 2: a streamed document is never idle). */
+  watching(doc: LoadedDoc): boolean {
+    for (const s of this.streams) if (s.doc === doc) return true;
+    return false;
+  }
+
   /** `/healthz`'s numbers: open now, opened and refused since boot. */
   stats(): { open: number; opened: number; refused: number } {
     return { open: this.streams.size, opened: this.opened, refused: this.refused };

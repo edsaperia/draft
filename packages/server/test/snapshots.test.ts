@@ -51,10 +51,14 @@ const engineLog = (dir: string, id: string): LogEntry[] =>
 const engineDocs = (dir: string): string[] =>
   readdirSync(join(dir, 'docs')).filter((id) => existsSync(join(dir, 'docs', id, 'engine.jsonl'))).sort();
 
+/** A host over `dir` with every document opened — since Stage 2 a boot loads
+ *  none, and these tests are about the loads, so each is asked for once. */
 async function boot(dir: string, audit = 'strict') {
   const env: NodeJS.ProcessEnv = { DRAFT_DATA_DIR: dir, DRAFT_STORE: 'file', DRAFT_NOTIFY_EMAIL: '',
     PORT: '0', DRAFT_DEMO: 'off', DRAFT_SNAPSHOT_AUDIT: audit, DRAFT_DESIGN_DIR: DESIGN_DIR };
-  return createDraftServer(configFromEnv(env));
+  const draft = await createDraftServer(configFromEnv(env));
+  for (const id of draft.store.ids()) await draft.store.open(id, 'boot');
+  return draft;
 }
 
 /**

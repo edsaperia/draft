@@ -16,7 +16,8 @@ import { ConstitutionSession, InMemoryPeople, PEOPLE_SCHEMA_VERSION, slugify, ve
   from '../../constitution/src/index.js';
 import type { LogEntry, PersonFields, PersonId } from '../../constitution/src/index.js';
 import type { OpenInput } from '../../constitution/src/index.js';
-import type { Persistence, PersonRow } from './persistence.js';
+import { AsyncLocalStorage } from 'node:async_hooks';
+import type { Persistence, PersonRow, RegistryRow } from './persistence.js';
 
 /**
  * The module's `People` port over the store (decision 1253): the rows a
@@ -102,30 +103,108 @@ export interface LoadedDoc {
    * mail for it (D3). Absent on every other document.
    */
   ephemeral?: true;
+  /**
+   * When anything last asked for this document (Scaling Stage 2, issue #219):
+   * a request that resolved it, a tick that drove it. Its idle clock.
+   */
+  lastUsedMs?: number;
+  /** How many requests in flight hold it (Stage 2): never unloaded above 0. */
+  holds?: number;
 }
+
+/**
+ * **What the load life-cycle asks of the host** (Scaling Stage 2): the engine
+ * is the host's (`engine-host.ts`), so the store hands a freshly folded
+ * document to `afterLoad` to resume its engine, and asks `rowOf` for the
+ * registry row a document leaves behind when it is unloaded.
+ */
+export interface DocLifecycle {
+  afterLoad(doc: LoadedDoc): Promise<void>;
+  rowOf(doc: LoadedDoc, nowMs: number): RegistryRow;
+}
+
+/** One load, for `/healthz`'s slowest recent load (issue #70's gap). */
+export interface LoadRecord { ms: number; atMs: number; why: 'request' | 'tick' | 'boot' }
+
+/** What the load life-cycle did since boot (Stage 2), served on `/healthz`. */
+export interface LoadStats {
+  loads: number;
+  unloads: number;
+  /** loads that threw: the document is quarantined, as a boot's would be */
+  failed: number;
+  /** registry rows rebuilt from the log at boot: missing, or behind the log */
+  rebuilt: number;
+  /** the loads of the last hour, newest last */
+  recent: LoadRecord[];
+}
+
+/** How long `/healthz` remembers a load for its slowest-recent figure. */
+export const RECENT_LOAD_MS = 60 * 60_000;
 
 /** The one loud line a skipped document earns at boot (decision 1253). */
 export const preShapeLine = (id: string): string =>
   `[store] ${id} is the pre-people shape (decision 1253): not loaded`;
 
 export class DocStore {
+  /** The documents in memory now. */
   private readonly docs = new Map<string, LoadedDoc>();
-  /** Every slug a document has ever worn routes to it (§9.7: no link breaks). */
+  /** Every slug a document has ever worn routes to it (§9.7: no link breaks) —
+   *  loaded or not, since Stage 2. */
   private readonly slugIndex = new Map<string, string>();
+  /**
+   * **Every document this host knows, loaded or not** (Scaling Stage 2): its
+   * registry row, or null where it is loaded and no row has been written for
+   * it in this process. A row is what the tick reads for a document that is
+   * not in memory.
+   */
+  private readonly registry = new Map<string, RegistryRow | null>();
+  /** Loads in flight: concurrent first requests for a cold document share one. */
+  private readonly loading = new Map<string, Promise<LoadedDoc | null>>();
+  /** The request scope (Stage 2): every document a request opens is held until it ends. */
+  private readonly scopes = new AsyncLocalStorage<Set<LoadedDoc>>();
+  /** The engine's half of a load, and the row an unload leaves; set by the host. */
+  lifecycle: DocLifecycle | null = null;
+  readonly loadStats: LoadStats = { loads: 0, unloads: 0, failed: 0, rebuilt: 0, recent: [] };
   /** Documents whose logs hold the pre-people shape, skipped at boot (decision 1253). */
   private readonly preShape: string[] = [];
   private readonly quarantine: string[] = [];
 
   constructor(private readonly persistence: Persistence) {}
 
+  /**
+   * **The boot before Stage 2** (`DRAFT_LOAD=eager`): every document read,
+   * folded and its engine resumed before `/healthz` answers.
+   */
   async loadAll(): Promise<void> {
     for (const id of await this.persistence.listDocIds()) {
+      this.registry.set(id, null);
+      await this.loadOne(id, 'boot');
+    }
+  }
+
+  /**
+   * **The boot since Stage 2** (issue #219): no document is folded. The
+   * registry is read in one go and checked against both logs' lengths; a row
+   * that still describes its log routes the document's slugs and tells the
+   * tick when it is due. A document with no row, or whose row is behind its
+   * log — a crash after a commit, a deploy's old instance, a rollback's build
+   * — has its constitution log read and folded for its slugs and phase (tens
+   * of milliseconds, the engine left alone), and its row rewritten with no
+   * due time this code vouches for, so the tick loads it when it can.
+   */
+  async loadRegistry(nowMs: number = Date.now()): Promise<void> {
+    const [ids, rows, lengths] = await Promise.all([this.persistence.listDocIds(),
+      this.persistence.readRegistry(), this.persistence.docLengths()]);
+    for (const id of ids) {
+      const row = rows.get(id);
+      const len = lengths.get(id);
+      if (row !== undefined && len !== undefined && row.seq === len.seq && row.eseq === len.eseq) {
+        this.registry.set(id, row);
+        for (const slug of row.slugs) this.slugIndex.set(slug, id);
+        continue;
+      }
       try {
         const log = await this.persistence.readDocLog(id);
-        // **The old shape is refused, never read** (decision 1253): named
-        // once, counted for `/healthz`, and neither migrated nor allowed to
-        // crash the host — a dev data dir may hold such a document until its
-        // own wipe; production holds none after it
         if (log.some((e) => versionOf(e) < PEOPLE_SCHEMA_VERSION)) {
           console.error(preShapeLine(id));
           this.preShape.push(id);
@@ -133,23 +212,191 @@ export class DocStore {
         }
         const people = new StorePeople(await this.persistence.readPeople(id));
         const cs = ConstitutionSession.replay(log, people);
-        const provisional = await this.persistence.readProvisional(id);
-        // `relayed` starts level with `persisted` (issue #7): what a past
-        // instance persisted, it relayed — a boot must not re-send the mail
-        // of every invitation the document has ever carried
-        this.register({ id, cs, people, persisted: log.length,
-          relayed: log.length, provisional });
+        const fresh: RegistryRow = { slugs: [...cs.slugs],
+          phase: cs.closed ? 'closed' : cs.constitutedAtT === null ? 'founding' : 'live',
+          // no due time this code vouches for: the tick loads it (`dueKnown`)
+          dueT: null, lastT: log.length > 0 ? log[log.length - 1]!.event.t : 0, clockVersion: '',
+          seq: log.length, eseq: len?.eseq ?? 0, writtenMs: nowMs };
+        this.registry.set(id, fresh);
+        for (const slug of fresh.slugs) this.slugIndex.set(slug, id);
+        this.loadStats.rebuilt += 1;
+        await this.persistence.writeRegistry(id, fresh);
       } catch (e) {
-        // one corrupt log must not stop every other document serving
-        // (review #1, finding 11): quarantine loudly — the document 404s
-        // until its log is repaired, and nothing here ever rewrites it
-        // — and counted (Q1322): the health route said *errors 0* over a
-        // production document that had just vanished
         console.error(`document '${id}' failed to load — quarantined:`, e);
         this.quarantine.push(id);
       }
     }
   }
+
+  /**
+   * **Fold one document from the store** — the body `loadAll` always had, and
+   * since Stage 2 also every lazy load: the log replayed (its chain verified
+   * by the module), the people beside it, the provisional text, and the
+   * engine resumed from its snapshot by the host's `afterLoad`.
+   */
+  private async loadOne(id: string, why: LoadRecord['why']): Promise<LoadedDoc | null> {
+    const t0 = performance.now();
+    try {
+      const log = await this.persistence.readDocLog(id);
+      // **The old shape is refused, never read** (decision 1253): named
+      // once, counted for `/healthz`, and neither migrated nor allowed to
+      // crash the host — a dev data dir may hold such a document until its
+      // own wipe; production holds none after it
+      if (log.some((e) => versionOf(e) < PEOPLE_SCHEMA_VERSION)) {
+        console.error(preShapeLine(id));
+        if (!this.preShape.includes(id)) this.preShape.push(id);
+        return null;
+      }
+      const people = new StorePeople(await this.persistence.readPeople(id));
+      const cs = ConstitutionSession.replay(log, people);
+      const provisional = await this.persistence.readProvisional(id);
+      // `relayed` starts level with `persisted` (issue #7): what a past
+      // instance persisted, it relayed — a boot must not re-send the mail
+      // of every invitation the document has ever carried
+      const doc: LoadedDoc = { id, cs, people, persisted: log.length,
+        relayed: log.length, provisional };
+      if (this.lifecycle !== null) await this.lifecycle.afterLoad(doc);
+      this.register(doc);
+      this.loadStats.loads += 1;
+      this.noteLoad({ ms: Math.round(performance.now() - t0), atMs: Date.now(), why });
+      return doc;
+    } catch (e) {
+      // one corrupt log must not stop every other document serving
+      // (review #1, finding 11): quarantine loudly — the document 404s
+      // until its log is repaired, and nothing here ever rewrites it
+      // — and counted (Q1322): the health route said *errors 0* over a
+      // production document that had just vanished
+      console.error(`document '${id}' failed to load — quarantined:`, e);
+      if (!this.quarantine.includes(id)) this.quarantine.push(id);
+      this.loadStats.failed += 1;
+      return null;
+    }
+  }
+
+  private noteLoad(rec: LoadRecord): void {
+    const recent = this.loadStats.recent;
+    recent.push(rec);
+    while (recent.length > 0 && rec.atMs - recent[0]!.atMs > RECENT_LOAD_MS) recent.shift();
+    if (recent.length > 1000) recent.splice(0, recent.length - 1000);
+  }
+
+  /** The slowest load of the last hour, or null (issue #70's gap). */
+  slowestRecentLoad(nowMs: number): LoadRecord | null {
+    let worst: LoadRecord | null = null;
+    for (const r of this.loadStats.recent) {
+      if (nowMs - r.atMs > RECENT_LOAD_MS) continue;
+      if (worst === null || r.ms > worst.ms) worst = r;
+    }
+    return worst;
+  }
+
+  /**
+   * **A document, loaded if it is not** (Scaling Stage 2): the one way a
+   * request or a tick reaches a document by id. Null for an id this host does
+   * not know, a quarantined one, or one whose load threw. Concurrent callers
+   * for a cold document share one load. Inside a request scope the document
+   * is held until the request ends, so it is never unloaded under it.
+   */
+  async open(id: string, why: LoadRecord['why'] = 'request'): Promise<LoadedDoc | null> {
+    let doc = this.docs.get(id) ?? null;
+    if (doc === null) {
+      if (!this.registry.has(id) || this.quarantine.includes(id)) return null;
+      let pending = this.loading.get(id);
+      if (pending === undefined) {
+        pending = this.loadOne(id, why).finally(() => this.loading.delete(id));
+        this.loading.set(id, pending);
+      }
+      doc = await pending;
+      if (doc === null) return null;
+    }
+    this.use(doc);
+    return doc;
+  }
+
+  /** `open` by any slug the document has worn. */
+  async openSlug(slug: string, why: LoadRecord['why'] = 'request'): Promise<LoadedDoc | null> {
+    const id = this.slugIndex.get(slug);
+    return id === undefined ? null : this.open(id, why);
+  }
+
+  /** Mark a loaded document used now, and held by the request in scope if any. */
+  use(doc: LoadedDoc, nowMs: number = Date.now()): void {
+    doc.lastUsedMs = nowMs;
+    const held = this.scopes.getStore();
+    if (held !== undefined && !held.has(doc)) {
+      held.add(doc);
+      doc.holds = (doc.holds ?? 0) + 1;
+    }
+  }
+
+  /**
+   * **Run `fn` as one request** (Stage 2): every document it opens is held
+   * until it settles, so an unload can never land between a request's lookup
+   * and its commit. A push stream outlives its request and is counted by the
+   * hub instead.
+   */
+  async scope<T>(fn: () => Promise<T>): Promise<T> {
+    const held = new Set<LoadedDoc>();
+    try {
+      return await this.scopes.run(held, fn);
+    } finally {
+      const now = Date.now();
+      for (const doc of held) {
+        doc.holds = Math.max(0, (doc.holds ?? 1) - 1);
+        doc.lastUsedMs = now;
+      }
+    }
+  }
+
+  /** Whether the document is in memory now. */
+  isLoaded(id: string): boolean {
+    return this.docs.has(id);
+  }
+
+  /** Whether a load of it is in flight. */
+  isLoading(id: string): boolean {
+    return this.loading.has(id);
+  }
+
+  /** Every document id this host knows, loaded or not. */
+  ids(): string[] {
+    return [...this.registry.keys()];
+  }
+
+  /** How many documents this host knows, loaded or not. */
+  registeredCount(): number {
+    return this.registry.size;
+  }
+
+  /** The documents not in memory, with their rows (Stage 2's tick reads these). */
+  *unloaded(): Iterable<{ id: string; row: RegistryRow }> {
+    for (const [id, row] of this.registry) {
+      if (row === null || this.docs.has(id) || this.quarantine.includes(id)) continue;
+      yield { id, row };
+    }
+  }
+
+  /**
+   * **Unload one idle document** (Stage 2): its registry row written first,
+   * so a host that dies a moment later still knows it, then dropped from
+   * memory — its slugs stay routed, its next request loads it again. The
+   * caller has checked that it is idle and owes the store nothing; this
+   * checks again after the write, since a request may have arrived during it.
+   * Never an ephemeral document. True when it went.
+   */
+  async unload(doc: LoadedDoc, nowMs: number,
+    stillIdle: () => boolean): Promise<boolean> {
+    if (doc.ephemeral === true || this.lifecycle === null) return false;
+    if (this.docs.get(doc.id) !== doc) return false;
+    const row = this.lifecycle.rowOf(doc, nowMs);
+    await this.persistence.writeRegistry(doc.id, row);
+    if (this.docs.get(doc.id) !== doc || (doc.holds ?? 0) > 0 || !stillIdle()) return false;
+    this.docs.delete(doc.id);
+    this.registry.set(doc.id, row);
+    this.loadStats.unloads += 1;
+    return true;
+  }
+
   /** The documents `loadAll` could not replay (review #1 finding 11; counted since Q1322). */
   quarantined(): readonly string[] {
     return this.quarantine;
@@ -161,7 +408,7 @@ export class DocStore {
   }
 
   async create(id: string, input: OpenInput, t: number): Promise<LoadedDoc> {
-    if (this.docs.has(id)) throw new Error(`document '${id}' already exists`);
+    if (this.docs.has(id) || this.registry.has(id)) throw new Error(`document '${id}' already exists`);
     await this.persistence.createDoc(id);
     const people = new StorePeople();
     const cs = ConstitutionSession.open(input, t, people);
@@ -184,7 +431,7 @@ export class DocStore {
    * check refuse the address.
    */
   createEphemeral(id: string, input: OpenInput, t: number): LoadedDoc {
-    if (this.docs.has(id)) throw new Error(`document '${id}' already exists`);
+    if (this.docs.has(id) || this.registry.has(id)) throw new Error(`document '${id}' already exists`);
     const people = new StorePeople();
     const cs = ConstitutionSession.open(input, t, people);
     const doc: LoadedDoc = { id, cs, people, persisted: 0, relayed: 0,
@@ -208,6 +455,7 @@ export class DocStore {
       throw new Error(`document '${id}' is not ephemeral — the store deletes nothing`);
     }
     this.docs.delete(id);
+    this.registry.delete(id);
     for (const [slug, owner] of this.slugIndex) if (owner === id) this.slugIndex.delete(slug);
   }
 
@@ -217,19 +465,35 @@ export class DocStore {
     await this.persistence.writeProvisional(doc.id, doc.provisional);
   }
 
+  /** A document **in memory**, by id — never a load (Stage 2): `open` is the
+   *  way to a document; this is for one the caller knows is loaded (the demo,
+   *  a test that just made it). */
   byId(id: string): LoadedDoc | null {
     return this.docs.get(id) ?? null;
   }
 
+  /** `byId` by slug: in memory only. */
   bySlug(slug: string): LoadedDoc | null {
     const id = this.slugIndex.get(slug);
     return id === undefined ? null : this.byId(id);
+  }
+
+  /**
+   * **Whether a slug answers** without loading anything (Scaling Stage 2):
+   * a known document's, not quarantined. The page rows ask this; the page's
+   * own first view request is what loads the document. A truthy marker or null,
+   * in `docOr404`'s shape.
+   */
+  servesSlug(slug: string): { id: string } | null {
+    const id = this.slugIndex.get(slug);
+    return id === undefined || this.quarantine.includes(id) ? null : { id };
   }
 
   slugTaken(slug: string): boolean {
     return this.slugIndex.has(slug);
   }
 
+  /** The documents **in memory** (Stage 2): not every document this host knows. */
   all(): Iterable<LoadedDoc> {
     return this.docs.values();
   }
@@ -296,6 +560,7 @@ export class DocStore {
 
   private register(doc: LoadedDoc): void {
     this.docs.set(doc.id, doc);
+    if (!this.registry.has(doc.id)) this.registry.set(doc.id, null);
     for (const slug of doc.cs.slugs) this.slugIndex.set(slug, doc.id);
   }
 }

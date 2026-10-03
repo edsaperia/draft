@@ -230,8 +230,10 @@ export class Demo {
   /** At boot, after the store has loaded: build the first generation. */
   async boot(nowMs: number = Date.now()): Promise<void> {
     if (!this.host.enabled) return;
-    const holder = this.host.store.bySlug(DEMO_SLUG);
-    if (holder !== null && holder.ephemeral !== true) {
+    // the registry, not memory (Scaling Stage 2): a persisted document holding
+    // the address need not be loaded to hold it
+    const holder = this.host.store.servesSlug(DEMO_SLUG);
+    if (holder !== null && this.host.store.byId(holder.id)?.ephemeral !== true) {
       this.state_ = 'slug-held';
       console.error(`[demo] a persisted document (${holder.id}) holds the address ` +
         `'${DEMO_SLUG}' — the demo document is off`);

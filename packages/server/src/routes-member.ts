@@ -42,7 +42,7 @@ export const memberTable: Route[] = [
     handler: async (ctx, r) => {
       const { req, res, url, seg, nowMs } = r;
       const { store, auth, mailer, pause, writes } = ctx;
-      const doc = r.docOr404(store.bySlug(seg[2]!));
+      const doc = r.docOr404(await store.openSlug(seg[2]!));
       if (!doc) return true;
       const session = cookieSession(auth, req, doc.id);
       // no seat, or a seat that has since died (review #1, finding 1 — a
@@ -326,7 +326,7 @@ export const memberTable: Route[] = [
       seg[3] === 'stash' && seg.length === 4,
     handler: async (ctx, r) => {
       const { req, res, seg } = r;
-      const doc = r.docOr404(ctx.store.bySlug(seg[2]!));
+      const doc = r.docOr404(await ctx.store.openSlug(seg[2]!));
       if (!doc) return true;
       const session = cookieSession(ctx.auth, req, doc.id);
       if (session === null) { json(res, 401, { error: 'log in first' }); return true; }
@@ -374,7 +374,7 @@ export const memberTable: Route[] = [
       const { req, res, nowMs } = r;
       if (r.tooMany('page-error', 60)) return true;
       const body = await readJson(req);
-      const doc = typeof body.slug === 'string' ? ctx.store.bySlug(body.slug) : null;
+      const doc = typeof body.slug === 'string' ? await ctx.store.openSlug(body.slug) : null;
       const session = doc === null ? null : cookieSession(ctx.auth, req, doc.id);
       const seat = session === null ? null : session.memberId;
       if (rateLimited(`page-error:${seat ?? ipOf(req, ctx.cfg)}`, nowMs,

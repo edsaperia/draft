@@ -146,9 +146,9 @@ export const feedTable: Route[] = [
     name: 'GET /api/d/:slug/feed — the spectator feed',
     method: 'GET',
     match: ({ seg }) => seg[0] === 'api' && seg[1] === 'd' && seg.length === 4 && seg[3] === 'feed',
-    handler: (ctx, r) => {
+    handler: async (ctx, r) => {
       const { req, res, url, seg, nowMs } = r;
-      const doc = r.docOr404(ctx.store.bySlug(seg[2]!));
+      const doc = r.docOr404(await ctx.store.openSlug(seg[2]!));
       if (!doc) return true;
       const member = memberSeat(doc, cookieSession(ctx.auth, req, doc.id));
       // the door's brake, on the feed's own bucket: a page polls every ten
@@ -205,7 +205,8 @@ export const feedTable: Route[] = [
     method: 'GET',
     match: ({ seg }) => seg[0] === 'd' && seg.length === 3 && seg[2] === 'feed',
     handler: (ctx, r) => {
-      if (r.docOr404(ctx.store.bySlug(r.seg[1]!)) === null) return true;
+      // the page only: the document loads when the page first asks for it (Stage 2)
+      if (r.docOr404(ctx.store.servesSlug(r.seg[1]!)) === null) return true;
       serveFile(r.res, join(ctx.designDir, 'feed.html'));
       return true;
     },

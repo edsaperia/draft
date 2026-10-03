@@ -24,10 +24,10 @@ export const eventsTable: Route[] = [
     name: 'GET /api/d/:slug/events',
     method: 'GET',
     match: ({ seg }) => seg[0] === 'api' && seg[1] === 'd' && seg.length === 4 && seg[3] === 'events',
-    handler: (ctx, r) => {
+    handler: async (ctx, r) => {
       const { req, res, seg, nowMs } = r;
       if (ctx.cfg.push === false) { json(res, 404, { error: 'not found' }); return true; }
-      const doc = r.docOr404(ctx.store.bySlug(seg[2]!));
+      const doc = r.docOr404(await ctx.store.openSlug(seg[2]!));
       if (!doc) return true;
       const session = cookieSession(ctx.auth, req, doc.id);
       const seated = session !== null && seatAlive(doc.cs, session.memberId, session.applicantId);

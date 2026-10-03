@@ -31,7 +31,7 @@
 import pg from 'pg';
 import type { LogEntry, PersonId } from '../../constitution/src/index.js';
 import { OUTBOX_MAX_ATTEMPTS, outboxBackoffMs } from './persistence.js';
-import type { ErrorLine, MaintainablePersistence, OutboxRow, PersonRow, SnapshotRow, StashRecord,
+import type { ErrorLine, MaintainablePersistence, OutboxRow, PersonRow, RegistryRow, SnapshotRow, StashRecord,
   TokenRecord } from './persistence.js';
 
 /** Each migration runs once, in order, inside one transaction. */
@@ -211,6 +211,28 @@ const MIGRATIONS: ReadonlyArray<{ version: number; sql: string }> = [
         code_version text   NOT NULL,
         state        bytea  NOT NULL,
         written_ms   bigint NOT NULL
+      );
+    `,
+  },
+  {
+    // **The registry** (plan-scaling.md Stage 2, issue #219): one row per
+    // document, overwritten — its slugs, its phase and when its clocks next
+    // need the tick — so a host routes and ticks documents it has not loaded.
+    // Derived from the logs, never a truth: `clock_version` names the clock
+    // code that computed `due_t`, and a host running other code does not
+    // trust it.
+    version: 9,
+    sql: `
+      CREATE TABLE doc_registry (
+        document_id   text    PRIMARY KEY REFERENCES documents(id),
+        slugs         jsonb   NOT NULL,
+        phase         text    NOT NULL,
+        due_t         double precision,
+        last_t        double precision NOT NULL,
+        clock_version text    NOT NULL,
+        seq           int     NOT NULL,
+        eseq          int     NOT NULL,
+        written_ms    bigint  NOT NULL
       );
     `,
   },
@@ -450,6 +472,39 @@ export class PgPersistence implements MaintainablePersistence {
       [id, row.seq, row.eseq, row.codeVersion, row.state, row.writtenMs]);
   }
 
+  /* -- the registry ------------------------------------------------------ */
+
+  async readRegistry(): Promise<Map<string, RegistryRow>> {
+    const { rows } = await this.pool.query<{ document_id: string; slugs: string[]; phase: string;
+      due_t: number | null; last_t: number; clock_version: string; seq: number; eseq: number;
+      written_ms: string }>(
+      'SELECT document_id, slugs, phase, due_t, last_t, clock_version, seq, eseq, written_ms FROM doc_registry');
+    return new Map(rows.map((r) => [r.document_id, { slugs: r.slugs,
+      phase: r.phase as RegistryRow['phase'], dueT: r.due_t === null ? null : Number(r.due_t),
+      lastT: Number(r.last_t), clockVersion: r.clock_version, seq: r.seq, eseq: r.eseq,
+      writtenMs: Number(r.written_ms) }]));
+  }
+
+  async docLengths(): Promise<Map<string, { seq: number; eseq: number }>> {
+    const { rows } = await this.pool.query<{ id: string; seq: string; eseq: string }>(
+      `SELECT d.id,
+          (SELECT count(*) FROM document_log l WHERE l.document_id = d.id) AS seq,
+          (SELECT count(*) FROM engine_log e WHERE e.document_id = d.id) AS eseq
+        FROM documents d`);
+    return new Map(rows.map((r) => [r.id, { seq: Number(r.seq), eseq: Number(r.eseq) }]));
+  }
+
+  async writeRegistry(id: string, row: RegistryRow): Promise<void> {
+    await this.pool.query(
+      `INSERT INTO doc_registry (document_id, slugs, phase, due_t, last_t, clock_version, seq, eseq, written_ms)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        ON CONFLICT (document_id) DO UPDATE SET slugs = EXCLUDED.slugs, phase = EXCLUDED.phase,
+          due_t = EXCLUDED.due_t, last_t = EXCLUDED.last_t, clock_version = EXCLUDED.clock_version,
+          seq = EXCLUDED.seq, eseq = EXCLUDED.eseq, written_ms = EXCLUDED.written_ms`,
+      [id, JSON.stringify(row.slugs), row.phase, row.dueT, row.lastT, row.clockVersion, row.seq,
+        row.eseq, row.writtenMs]);
+  }
+
   /* -- tokens -------------------------------------------------------------- */
 
   async putTokens(entries: ReadonlyArray<readonly [string, TokenRecord]>): Promise<void> {
@@ -671,7 +726,7 @@ export class PgPersistence implements MaintainablePersistence {
   async wipe(): Promise<number> {
     const ids = await this.listDocIds();
     await this.pool.query(
-      'TRUNCATE people, document_log, engine_log, provisional, bridge_state, snapshots, ' +
+      'TRUNCATE people, document_log, engine_log, provisional, bridge_state, snapshots, doc_registry, ' +
       'documents, tokens, stashes, outbox, errors');
     return ids.length;
   }
@@ -690,7 +745,7 @@ export class PgPersistence implements MaintainablePersistence {
       await c.query('BEGIN');
       await c.query('SELECT pg_advisory_xact_lock(1, hashtext($1))', [id]);
       for (const table of ['people', 'document_log', 'engine_log', 'provisional', 'bridge_state',
-        'snapshots']) {
+        'snapshots', 'doc_registry']) {
         await c.query(`DELETE FROM ${table} WHERE document_id = $1`, [id]);
       }
       const r = await c.query('DELETE FROM documents WHERE id = $1', [id]);

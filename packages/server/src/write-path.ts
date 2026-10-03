@@ -35,6 +35,8 @@ import type { Mail, Mailer } from './mailer.js';
 import { asEngineDoc, clockDueT, devNow, driveBridge, foldTime, persistEngine, rewindEngine,
   snapshotIfDue } from './engine-host.js';
 import type { SnapshotCounts } from './snapshots.js';
+import type { RegistryRow } from './persistence.js';
+import { clockVersion } from './code-version.js';
 
 /**
  * **A command the store could not write, said as what it is** (issue #79).
@@ -127,6 +129,8 @@ export interface WritePathDeps {
   readonly now: () => number;
   /** what the snapshots did (plan-scaling.md Stage 3), served on `/healthz` */
   readonly snapshots?: SnapshotCounts;
+  /** whether a push stream is open on the document (Stage 2: an open stream is not idle) */
+  readonly watched?: (doc: LoadedDoc) => boolean;
 }
 
 export class WritePath {
@@ -153,6 +157,95 @@ export class WritePath {
     const due = clockDueT(doc);
     this.clockIndex.set(doc.cs, { key, due });
     return due;
+  }
+
+  /**
+   * **The registry row a document leaves when it is unloaded** (Scaling Stage
+   * 2, issue #219): its slugs, phase, due time and both logs' lengths, read
+   * off the loaded document. A bridge nobody has swept answers *now*
+   * (`-Infinity`), which is written as its last event's time — due at the
+   * next tick — though an unload never takes one (`evictable`).
+   */
+  rowOf(doc: LoadedDoc, nowMs: number): RegistryRow {
+    const e = asEngineDoc(doc);
+    const lastT = foldTime(doc, 0);
+    const due = this.dueT(doc);
+    return {
+      slugs: [...doc.cs.slugs],
+      phase: doc.cs.closed ? 'closed' : doc.cs.constitutedAtT === null ? 'founding' : 'live',
+      dueT: due === -Infinity ? lastT : due,
+      lastT,
+      clockVersion: clockVersion(),
+      seq: doc.persisted,
+      eseq: e.bridge === null ? 0 : e.enginePersisted,
+      writtenMs: nowMs,
+    };
+  }
+
+  /**
+   * **Whether a loaded document may be unloaded now** (Stage 2): nobody has
+   * asked for it for `idleMs` and no request holds it, no push stream is open
+   * on it, no commit is queued or running on it, it owes the store nothing
+   * (both logs persisted, mail relayed, the bridge state written, no stalled
+   * save), and no tick is due on it inside the idle period — including the
+   * first sweep a freshly loaded bridge is owed. Never the demo (it is
+   * ephemeral: never unloaded, so a reset is the only thing that rebuilds
+   * it), never during a pause (the store is not being written), never while
+   * the host is closing. A throw is *keep it*.
+   */
+  evictable(doc: LoadedDoc, nowMs: number, idleMs: number): boolean {
+    const { commits, pause, watched } = this.d;
+    try {
+      if (doc.ephemeral === true || this.d.closing() || pause.now(nowMs) !== null) return false;
+      if ((doc.holds ?? 0) > 0 || nowMs - (doc.lastUsedMs ?? 0) < idleMs) return false;
+      if (watched?.(doc) === true || commits.busy(doc.id)) return false;
+      const e = asEngineDoc(doc);
+      if (doc.persisted < doc.cs.logEntries().length || doc.relayed < doc.persisted
+        || (doc.stalled ?? null) !== null) return false;
+      if (e.bridge !== null && (e.enginePersisted < e.bridge.engine.log.length
+        || JSON.stringify(e.bridge.state()) !== e.bridgeSerialized)) return false;
+      const due = this.dueT(doc);
+      if (due === -Infinity) return false;
+      return due === null || due > foldTime(doc, devNow(doc.id, nowMs)) + idleMs;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * **Unload what is idle** (Stage 2): every loaded document `evictable`
+   * passes, its row written and then dropped from memory. Run after the
+   * minute's tick, so a document the tick has just driven is fresh.
+   */
+  async evictIdle(nowMs: number, idleMs: number): Promise<number> {
+    let n = 0;
+    for (const doc of [...this.d.store.all()]) {
+      if (!this.evictable(doc, nowMs, idleMs)) continue;
+      try {
+        if (await this.d.store.unload(doc, nowMs, () => this.evictable(doc, Date.now(), idleMs))) n += 1;
+      } catch (e) {
+        // a row that could not be written keeps the document loaded: the
+        // next minute tries again, and nothing is lost meanwhile
+        this.d.noteError('tick', e);
+        console.error(`unload failed for document '${doc.id}':`, e);
+      }
+    }
+    return n;
+  }
+
+  /**
+   * **Whether a document not in memory is due** (Stage 2): by its row's due
+   * time against its own clock where this build's clock code wrote the row;
+   * a row from any other build is `unknown`, and is loaded when the minute
+   * has time for it. Before 🍾 and after the close nothing ticks.
+   */
+  coldDue(id: string, row: RegistryRow, nowMs: number | undefined, realMs: number):
+    'due' | 'unknown' | 'no' {
+    if (row.phase !== 'live') return 'no';
+    if (this.d.cfg.tickAll === true || row.clockVersion !== clockVersion()) return 'unknown';
+    // the time `tOf` would fold at (Q1455: a stated time is that time)
+    const at = Math.max(nowMs ?? devNow(id, realMs), row.lastT);
+    return row.dueT !== null && row.dueT <= at ? 'due' : 'no';
   }
 
   /**
@@ -549,10 +642,44 @@ export class WritePath {
     }
     const nowMs = this.d.now();
     for (const [docId, addresses] of byDoc) {
-      const doc = this.d.store.byId(docId);
+      const doc = await this.d.store.open(docId, 'tick');
       if (!doc) continue;
       doc.cs.mailGaveUp(this.tOf(doc, nowMs), addresses);
       await this.commit(doc, nowMs);
+    }
+  }
+
+  /** One document's minute: the engine, the constitution, the commit (Q679: never the loop's throw). */
+  private async tickOne(doc: LoadedDoc, nowMs: number | undefined, realMs: number): Promise<void> {
+    const { cfg, noteError } = this.d;
+    // **One document must never stop the clock for the others** (Q679).
+    // Without this the loop is a single point of failure for every
+    // document at once: the tick is the adoption metronome, the lapse
+    // clock and the close, and `main.ts`'s interval only logs the throw
+    // — so one document that cannot tick silently freezes every document
+    // after it in insertion order, once a minute, for ever. The throw is
+    // real and reachable: both closes stamp themselves at the *ending*
+    // rather than at t, so a document whose log runs past its own close
+    // raises "timestamps must be non-decreasing" on every tick from then
+    // on — and that one is **permanent**, not transient (issue #3): the
+    // stamp never moves back under the log, so nothing but `tOf`'s guard,
+    // which keeps the log from passing the ending in the first place,
+    // stops it. Logged rather than quarantined all the same, because the
+    // other reasons a tick may throw are transient and the once-a-minute
+    // repeat is itself the alarm — `errors.tick` in `/healthz` climbs by
+    // one a minute for exactly this shape of wedge.
+    try {
+      // engine first (SPEC §4.6): the final adoption batch must run before
+      // the constitution closes, or a carried motion has nowhere to land —
+      // driveBridge closes the engine at the ending and finishes the
+      // constitution's close itself; cs.tick then finds it closed
+      // the tick's own clock: a test-driven tick states the time it is
+      driveBridge(doc, this.tOf(doc, nowMs), cfg.engineTuning);
+      doc.cs.tick(this.tOf(doc, nowMs));
+      await this.commit(doc, realMs);
+    } catch (e) {
+      noteError('tick', e);
+      console.error(`tick failed for document '${doc.id}':`, e);
     }
   }
 
@@ -575,39 +702,30 @@ export class WritePath {
     const { cfg, closing, noteError, outbox, pause, store } = this.d;
     const realMs = nowMs ?? this.d.now();
     if (pause.now(realMs) !== null) return; // paused (Q1345): the clock waits with the store
-    for (const doc of store.all()) {
+    // the documents in memory, as Stage 1 ticked them
+    for (const doc of [...store.all()]) {
       if (closing()) return; // shutting down: no new commits join the drain
       if (doc.cs.constitutedAtT === null) continue;
       if (cfg.tickAll !== true && !this.isDue(doc, nowMs, realMs)) continue;
-      // **One document must never stop the clock for the others** (Q679).
-      // Without this the loop is a single point of failure for every
-      // document at once: the tick is the adoption metronome, the lapse
-      // clock and the close, and `main.ts`'s interval only logs the throw
-      // — so one document that cannot tick silently freezes every document
-      // after it in insertion order, once a minute, for ever. The throw is
-      // real and reachable: both closes stamp themselves at the *ending*
-      // rather than at t, so a document whose log runs past its own close
-      // raises "timestamps must be non-decreasing" on every tick from then
-      // on — and that one is **permanent**, not transient (issue #3): the
-      // stamp never moves back under the log, so nothing but `tOf`'s guard,
-      // which keeps the log from passing the ending in the first place,
-      // stops it. Logged rather than quarantined all the same, because the
-      // other reasons a tick may throw are transient and the once-a-minute
-      // repeat is itself the alarm — `errors.tick` in `/healthz` climbs by
-      // one a minute for exactly this shape of wedge.
-      try {
-        // engine first (SPEC §4.6): the final adoption batch must run before
-        // the constitution closes, or a carried motion has nowhere to land —
-        // driveBridge closes the engine at the ending and finishes the
-        // constitution's close itself; cs.tick then finds it closed
-        // the tick's own clock: a test-driven tick states the time it is
-        driveBridge(doc, this.tOf(doc, nowMs), cfg.engineTuning);
-        doc.cs.tick(this.tOf(doc, nowMs));
-        await this.commit(doc, realMs);
-      } catch (e) {
-        noteError('tick', e);
-        console.error(`tick failed for document '${doc.id}':`, e);
-      }
+      await this.tickOne(doc, nowMs, realMs);
+    }
+    // **and the documents not in memory** (Scaling Stage 2, issue #219): one
+    // whose row says a clock is due is loaded and ticked, as it would have
+    // been had it stayed; one whose row this build cannot vouch for is
+    // loaded while the minute's budget lasts, which writes it a row it can
+    const due = new Set<string>();
+    const unknown: string[] = [];
+    for (const { id, row } of [...store.unloaded()]) {
+      const c = this.coldDue(id, row, nowMs, realMs);
+      if (c === 'due') due.add(id); else if (c === 'unknown') unknown.push(id);
+    }
+    const budgetEnd = performance.now() + (cfg.loadBudgetMs ?? 5_000);
+    for (const id of [...due, ...unknown]) {
+      if (closing()) return;
+      if (cfg.tickAll !== true && !due.has(id) && performance.now() > budgetEnd) break;
+      const doc = await store.open(id, 'tick');
+      if (doc === null || doc.cs.constitutedAtT === null) continue;
+      await this.tickOne(doc, nowMs, realMs);
     }
     // the sender's own metronome (finding 15): the kick after each commit
     // is the fast path, and this is what re-offers a row whose backoff has
