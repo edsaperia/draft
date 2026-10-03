@@ -3415,7 +3415,11 @@
        page scaled past the right edge — *cards are too wide*). Every field
        a phone can focus is 16px or its own size, whichever is larger, so
        the page keeps its scale. */
-    input, textarea, select, [contenteditable="true"], [contenteditable="plaintext-only"] { font-size: max(16px, 1em); }
+    /* …and the reason and a motion's fields by name (MOBILE.md §6a.6): they
+       were 12.64 and 14px, their class rules outranking the element rule */
+    input, textarea, select, [contenteditable="true"], [contenteditable="plaintext-only"],
+    .lanebox .edit-why, .lanebox.whybox .edit-why, .gshell input, .gshell textarea, .gshell select,
+    .gshell [contenteditable="true"], .gshell [contenteditable="plaintext-only"] { font-size: max(16px, 1em); }
     /* the 95vh runway keeps the last clause reachable above the dock */
   }
   /* Touch (MOBILE.md §1.5): no double-tap zoom or 300ms delay on a control,
@@ -3431,7 +3435,21 @@
     }
   }
   /* ---- proposing on a phone (MOBILE.md §6a, stage 6a; Ed 1585.1–1585.8) ----
-     Touch at narrow width only, so nothing here reaches the desktop. */
+     At narrow width, and the most of it on touch alone, so nothing here
+     reaches the desktop. **The floats stand clear of the task sheet's peek**
+     (§6a.0 finding 12) wherever the sheet is drawn: the 📝 door and the
+     proposal row rise by the peek's height, so a tap meant for one never
+     lands on the other. */
+  /* NARROW_Q */
+  @media (max-width: 900px) {
+    html[data-sheet] .race-mid.commitrow.proposalrow {
+      --row-foot: calc(var(--s3) + var(--sheet-edge) + var(--sheet-peek) + env(safe-area-inset-bottom, 0px));
+    }
+    html[data-sheet] #editdoor .race-mid.commitrow.proposalrow[data-editdoor] {
+      bottom: calc(var(--s3) + var(--sheet-edge) + var(--sheet-peek) + env(safe-area-inset-bottom, 0px));
+    }
+  }
+  /* NARROW_Q */
   @media (max-width: 900px) and (pointer: coarse) {
     /* **The clause becomes its lane** (§6a.1, 1585.1): the in-place card's
        head is the clause's own box (`.headclause`, a `.anch`'s box by
@@ -3449,12 +3467,6 @@
     .inplacecard .headclause:focus-within { box-shadow: var(--shadow-xl); }
     .inplacecard .lanebelow .glabline { justify-content: flex-end; }
     .inplacecard .lanebelow .glab.whylab { margin-top: var(--s3); }
-    /* **16px on every field a phone can focus** (§1.8, §6a.6): the reason
-       and a motion's fields were 12.64 and 14px, and iOS zooms the page to
-       a smaller one on focus; the class rules outrank the narrow element
-       rule, so they are named */
-    .lanebox .edit-why, .lanebox.whybox .edit-why, .gshell input, .gshell textarea, .gshell select,
-    .gshell [contenteditable="true"], .gshell [contenteditable="plaintext-only"] { font-size: max(16px, 1em); }
     /* **44px to the finger, nothing drawn moves** (§1.4, §6a.4): ✏️ *propose
        edit*, the Anonymous switch and the editing card's 🗑️ take a
        pseudo-element hit area round the box they already draw */
@@ -3462,15 +3474,6 @@
     .lanepropose::before, .anonsw .sw::before, .editcard .commitrow .btn::before {
       content: ''; position: absolute; left: 50%; top: 50%;
       width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%);
-    }
-    /* **The floats stand clear of the task sheet's peek** (§6a.0 finding
-       12): the 📝 door and the proposal row rise by the peek's height, so a
-       tap meant for one never lands on the other */
-    html[data-sheet] .race-mid.commitrow.proposalrow {
-      --row-foot: calc(var(--s3) + var(--sheet-edge) + var(--sheet-peek) + env(safe-area-inset-bottom, 0px));
-    }
-    html[data-sheet] #editdoor .race-mid.commitrow.proposalrow[data-editdoor] {
-      bottom: calc(var(--s3) + var(--sheet-edge) + var(--sheet-peek) + env(safe-area-inset-bottom, 0px));
     }
     /* **The keyboard** (§6a.2, 1585.2): while a card's field has the caret
        the root wears `data-kbd`; the sheet and the 📝 door go, and the row
