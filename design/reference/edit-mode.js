@@ -202,6 +202,7 @@ window.EDIT_MODE = (function () {
       }
       window.PATCH.set(rt, tmp.innerHTML);
       rt.classList.toggle('editing', !!env.S.editMode);
+      rt.classList.toggle('tucked', !!(ridePile() || {}).card);
       // **the rest position is a measurement, not a constant** (the band's
       // gotcha about `fitBand`): the pile is lifted from the sticky box's
       // natural top — the band's bottom edge — back up to the **first line of
@@ -222,8 +223,17 @@ window.EDIT_MODE = (function () {
         // clamp swallowed.
         const tab = rt.querySelector('.achip');
         const tabH = tab ? tab.getBoundingClientRect().height : 30;
+        // **beside the first clause's own tabs, it stacks above them** (#194,
+        // Ed 2026-10-02: *it should tuck into the card*): a card open on the
+        // first clause puts 📝 at the head of its strip, tucked; a pile there
+        // at rest puts 📝 above the pile, which it had covered 1px off
+        const pile = ridePile();
         rt.style.position = 'static';
-        const up = rt.getBoundingClientRect().top - (line.top + (line.lineBox - tabH) / 2);
+        // the whole of 📝's pile stands clear, the ✒️ 🛡️ slivers beneath it
+        // a Founder's included
+        const ownCol = rt.querySelector('.chipcol');
+        const pileH = ownCol ? ownCol.getBoundingClientRect().height : tabH;
+        const up = rt.getBoundingClientRect().top - (pile ? pile.top - pile.gap - pileH : line.top + (line.lineBox - tabH) / 2);
         rt.style.position = '';
         rt.style.setProperty('--ride-up', up.toFixed(2) + 'px');
       }
@@ -247,6 +257,33 @@ window.EDIT_MODE = (function () {
       }
       const r = col.getBoundingClientRect(), pt = parseFloat(getComputedStyle(col).paddingTop) || 0;
       return { top: r.top + pt, bottom: r.top + pt + 24, lineBox: 24 };
+    }
+    // **the first clause's own tabs**, when 📝 stands beside them (#194): the
+    // strip of a card open on the text's first block, or that block's pile at
+    // rest. Null in edit mode (the text is the card, K31), with no tab there,
+    // and before 🍾. `gap` is the strip's own, read off a strip — a pile is
+    // drawn with none, so its class comes off for the one reading.
+    function ridePile() {
+      if (env.S.editMode || !constituted()) return null;
+      const charter = document.getElementById('charter');
+      if (!charter) return null;
+      let first = null;
+      for (const el of charter.children) {
+        first = el.classList.contains('prose') ? el.firstElementChild : el;
+        if (first) break;
+      }
+      if (!first) return null;
+      const card = first.classList.contains('sugg');
+      const col = first.querySelector(card ? '.clausehead .chipcol' : ':scope > .chipcol');
+      const tab = col && col.querySelector('.achip');
+      if (!tab) return null;
+      const stack = col.classList.contains('stack');
+      if (stack) col.classList.remove('stack');
+      const gap = parseFloat(getComputedStyle(col).rowGap) || 0;
+      if (stack) col.classList.add('stack');
+      // the column's top, not the tab's: the tab under the pointer that
+      // opened the card wears its hover lift, a transform the rect includes
+      return { top: col.getBoundingClientRect().top, gap, card };
     }
     // **The tab no longer rides** (Q1516 (2), Ed 2026-09-23: the floating
     // button being enough): it rests at the text's heading and scrolls away
@@ -275,8 +312,9 @@ window.EDIT_MODE = (function () {
       // patched (stage 10): the Founder's ✒️ here is a hold, and a render
       // under it keeps the button the pointer went down on
       window.PATCH.set(pr, show ? SESSION.proposalRowHtml({
-        count: 0, pen: true, disabled: !proseDirty(),
-        discardDisabled: !proseDirty(),
+        // never dark (#193): with nothing changed both ends leave edit mode
+        count: 0, pen: true, disabled: false,
+        discardDisabled: false,
         discardTitle: PAGE_COPY.proseRow.discard,
         title: proseDirty() ? PAGE_COPY.proseRow.save : PAGE_COPY.proseRow.saved,
       }) : '');
@@ -286,10 +324,7 @@ window.EDIT_MODE = (function () {
       const b = pr && pr.querySelector('[data-act="row-commit"]');
       if (!b) return;
       const dirty = proseDirty();
-      b.disabled = !dirty;
       b.title = dirty ? PAGE_COPY.proseRow.save : PAGE_COPY.proseRow.saved;
-      const bin = pr.querySelector('[data-act="row-discard"]');
-      if (bin) bin.disabled = !dirty;
     }
     // ---- the column's strip before the start (Q1313) --------------------------
     // **The same strip as after 🍾** (Ed, 2026-09-11 14:08): B · I at the top

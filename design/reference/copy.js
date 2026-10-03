@@ -997,8 +997,8 @@ window.COPY = (function () {
     pw: {
       phrase: {
         star: { u: 'amend this at will', a: 'refuse proposals that the membership pass' },
-        invite: { u: 'invite people at will', a: 'refuse invitations and applications that the membership pass' },
-        remove: { u: 'remove members at will', a: 'refuse removals that the membership pass' },
+        invite: { u: 'invite people at will', a: 'block invitations that the membership have decided to make' },
+        remove: { u: 'remove people at will', a: 'block removals that the membership have decided to make' },
         text: { u: 'amend the text at will', a: 'refuse changes to the text that the membership pass' },
       },
       // **On the decision card the phrase names its setting** (Q1429, Ed
@@ -1025,8 +1025,8 @@ window.COPY = (function () {
       // (entry 94) and are only ever the veto sentence's.
       noun: {
         title: 'the title', slug: 'the link', text: 'the text',
-        ending: 'the ending', quorum: 'the quorum rule',
-        authorship: 'the anonymity rule', judgments: 'the vote-reveal rule',
+        ending: 'the end time', quorum: 'the quorum',
+        authorship: 'anonymity of proposals', judgments: 'anonymity of votes',
         chamber: 'the visibility rule', rate: 'the proposal rate', lapse: 'the lapse rule',
         removal: 'the removal rule',
         admission: 'the admissions rule', applications: 'the applications rule',
@@ -1121,19 +1121,36 @@ window.COPY = (function () {
       founderRefused: (what) => 'The Founder refused your proposal: ' + what + '.',
       couldNotBePut: 'Your proposal could not be put to the membership, and your ✏️ is back in your wallet.',
     },
-    // the Proposals preamble (Y21): the gates' fragments, composed
-    preamble: {
-      beforeBegin: 'When the document begins, members may propose changes to rules and vote on proposals.',
-      voteOnly: 'Members may vote on proposals.',
-      voteWhenDecided: 'Members may begin voting on proposals when all the rules have been decided.',
-      proposeAtBegin: ' They may propose changes to rules when the document begins.',
-      proposeLead: 'Members may propose changes to rules ',
-      onceAnswered: 'once they have answered the questions the Founder delegated',
-      asArrive: 'as soon as they arrive',
-      andVote: ', and may vote on proposals.',
-      voteTail: '. They may begin voting on proposals when all the rules have been decided.',
-      passOrdinary: 'A proposal ✏️ passes once it is preferred by enough of the membership, and by more than prefer the current text.',
-      passConstitutional: 'A constitutional proposal 🏛️ passes only when all members agree.',
+    // **The Rules' clauses for the grants, the gates and the Schedule** (#223,
+    // Ed 2026-10-03, G1–G5, every sentence his, verbatim): the ✒️ and 🛡️
+    // clauses in the lead, the five Proposals clauses, the Schedule's 🍾 and
+    // 🥂. `list` joins the setting names (`pw.noun`) the way his examples
+    // read: *the title, the link, the visibility rule and the text*.
+    clause: {
+      foundedLead: 'Founded by ',
+      penAll: 'The Founder may ✒️ change anything at will.',
+      penSome: (list) => 'The Founder may ✒️ change ' + list + ' at will.',
+      shieldAll: 'The Founder may 🛡️ refuse any proposal the membership pass.',
+      shieldSome: (list) => 'The Founder may 🛡️ refuse proposals the membership pass on ' + list + '.',
+      penBirth: 'The Founder (that’s you!) may ✒️ change anything at will.',
+      shieldBirth: 'The Founder (that’s you!) may 🛡️ refuse proposals the membership pass.',
+      // *Friday 2 October*, his example's shape: the weekday, then the day
+      weekDay: (weekday, day) => weekday + ' ' + day,
+      list: (names) => (names.length < 2 ? names.join('')
+        : names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1]),
+      propose: 'Members may propose changes to the text and the rules.',
+      proposeBefore: 'When the document begins, members may propose changes to the text and the rules.',
+      vote: 'Members may vote on proposals.',
+      voteBefore: 'When the document begins, members may vote on proposals.',
+      rate: (phrase, cap) => 'Members may make a new ✏️ proposal every ' + phrase + ', up to ' + cap + ' at a time.',
+      constitutional: 'A 🏛️ proposal passes only when all members agree to it.',
+      beginWaiting: 'The members are waiting on the Founder to begin.',
+      begun: (time, day) => 'Members started making proposals at ' + time + ' on ' + day + '.',
+      endingAfter: (when) => 'Proposals may be made until ' + when + '.',
+      endingNever: 'Proposals may be made indefinitely.',
+      // *[N] members have signed* — the verb agrees with one (*1 member has*)
+      closed: (time, day, n) => 'Proposals closed at ' + time + ' on ' + day + '. ' +
+        n + (n === 1 ? ' member has signed.' : ' members have signed.'),
     },
     // 👥's rule, in Ed's own words (Q1439, ruling t, 2026-09-18: *A proposal
     // cannot pass until it is preferred by at least 50% of the membership
@@ -1151,10 +1168,12 @@ window.COPY = (function () {
     // member's answer card and the composer's lane (Q1137) — and then the
     // `(x of y)` that follows *of the membership*. `val.quorumPct` is still
     // the one writer of a share where a share is printed whole.
+    // …and since #223 (G4, Ed 2026-10-03 17:10) it is the pass rule, the one
+    // clause saying what carries a ✏️ proposal, in his words
     quorumRule: {
-      share: (share, tail) => 'A proposal ✏️ cannot pass until it is preferred by at least ' +
-        share + ' of the membership' + (tail || '') + '.',
-      count: (n) => 'A proposal ✏️ cannot pass until it is preferred by at least ' + n + ' members.',
+      share: (share, tail) => 'A ✏️ proposal passes once at least ' +
+        share + ' of the membership' + (tail || '') + ' have voted for it and it’s the most preferred option.',
+      count: (n) => 'A ✏️ proposal passes once at least ' + n + ' members have voted for it and it’s the most preferred option.',
     },
     // **👥 is the one card that says what its number comes to** (Q1490, Ed
     // 2026-09-21 → why: R-139), a deliberate exception to Q1439 ruling u,
@@ -1357,13 +1376,13 @@ window.COPY = (function () {
     gate: {
       canpropose: {
         title: 'Proposals',
-        why: 'A proposal is a change you write to the document, for the membership to vote on.',
+        why: 'A proposal is a change to the document that the membership vote on.',
         waiting: 'Waiting on the start.',
         done: 'Open — members can propose as soon as they arrive.',
       },
       canjudge: {
         title: 'Voting',
-        why: 'A vote is your say on a proposal: you are shown two at a time and choose the one you prefer, or neither.',
+        why: 'A vote is your say on a proposed change to the document.',
         waiting: 'Waiting on the rules.',
         done: 'Open — the rules are settled.',
       },
@@ -1376,7 +1395,7 @@ window.COPY = (function () {
         // and tab read *Accept Constitutional Proposals*, the card's own
         // words, and *Activate Your Membership* went
         title: 'Constitutional Proposals',
-        why: 'A 🏛️ is a constitutional proposal: one at a time, returned whole, passing only when all members agree. You are already a member; activating it opens every question, proposal and vote on the rules.',
+        why: 'A 🏛️ is a constitutional proposal. Members may only make one at a time, and it passes only when all members agree to it.',
         waiting: 'Waiting on your arrival.',
         // *Accept 🏛️* like every grant (Q1541.24 (a), Ed 2026-09-25),
         // replacing Q1502's *Activate 🏛️*
@@ -1384,12 +1403,12 @@ window.COPY = (function () {
       },
       pen: {
         title: 'Founder Actions',
-        why: 'As the founder of this document, you have the power to change settings and edit the document at will. Founder Actions are denoted by ✒️. You can give up these powers later if you choose to.',
+        why: 'As the founder, you have the power to change settings and edit the document at will. Founder Actions are denoted by ✒️. You can give up these powers later if you choose to.',
         waiting: 'Waiting on the save.',
       },
       shield: {
         title: 'Founder Veto',
-        why: 'As the founder of this document, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can give up this power later if you choose to.',
+        why: 'As the founder, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can give up this power later if you choose to.',
         waiting: 'Waiting on the save.',
       },
       // **a grant is accepted, not OK'd** (Q1501, Ed 2026-09-22; T44 amended
@@ -1591,11 +1610,11 @@ window.COPY = (function () {
     // until the page reads these, which is a change to the regular page and
     // waits for its own pass.
     rule: {
-      endingNever: 'Changes to the document may be made perpetually.',
-      endingAfter: (when) => 'No more changes to the document may be made after ' + when + '.',
+      endingNever: 'Proposals may be made indefinitely.',
+      endingAfter: (when) => 'Proposals may be made until ' + when + '.',
       lapseNever: 'Inactive members never lapse and are still counted towards votes.',
       lapseAfter: (spell) => 'After ' + spell + ', inactive members lapse and automatically abstain from votes.',
-      rate: (phrase) => 'Members may make a new proposal ✏️ every ' + phrase + '.',
+      rate: (phrase, cap) => 'Members may make a new ✏️ proposal every ' + phrase + ', up to ' + cap + ' at a time.',
       unit: { days: 'day', hours: 'hour', minutes: 'minute' },
       units: (n, unit) => n + ' ' + unit,
       address: (slug) => 'The document lives at docs.vote/d/' + slug + '.',
