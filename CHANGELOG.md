@@ -79,6 +79,31 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 ### For contributors
 - **Surface-only.** `design/paper.js` draws `.deskcredit` a desk gap under the last sheet; the words are `page.credit` in `design/copy.js`; SURFACE M21.
 
+## 2026-10-03: the task list says what a proposal adds
+
+### Changed
+- **The task list says what a proposal adds.** A proposal's title now shows the words it puts in, like ‘senior’ or ‘quarterly’, instead of crossing out words or showing old → new. Only a proposal that just removes words shows them crossed out. Two proposals put against each other still show both, like ‘six’ or ‘seven’.
+- **While you edit the text, the card for your proposal now lies on top of the editing area instead of splitting it in two.** The editing area runs unbroken from the top of the text to the bottom, and your proposal's card sits over it with its own shadow.
+
+### Fixed
+- **A proposal that changes two places now opens at both.** Voting on a proposal that swaps or edits two separate parts of the document used to open one long card running over everything between them. It now opens a card at each place, with a tab beside each and ↑ ↓ to step between them, and one vote covers both.
+
+### For contributors
+- **Every change title leads with what goes in** (#186), surface-only: `railChange` in `design/cards.js` titles a pair of the current text against a proposal, a record and your own proposal by the first run that adds anything (`leadRun`), striking only a pure cut; two proposals against each other keep `railPair`'s *‘a’ or ‘b’*, plain. Retired: `STRUCK_PAIR`, `railTitle.withOrWithout` and `railTitle.struckPair` in `design/copy.js`, and the text arrow; rule values keep `railArrow`'s *old → new*. SURFACE M22; Q1594. Guard: `npm run clock-check`, every kind of entry through `railTitleOf`.
+- **A proposal at several places is a patch on every page** (#189): `itemsFromView` in `design/live.js` groups a candidate's hunks into places (`placesOf`, an unchanged clause between two hunks making two) and builds a `patch` item for a pair of the current text against it (`patchItem`); the patch card reads a site that is a run of blocks (`design/session.js`). A pair of two rivals keeps one run (Q1595). Guard: `scripts/repro/two-place-patch.mjs`, in the sprint tier's `sprint-doors`.
+- **The edit area is one sheet under the open card** (#153), surface-only: each `.prose` segment of the lifted column carries its outline on to the next one's top (`--sheet-join`, measured in `design/paper.js`), its joins' corners and shadows clipped (`design/system.css`), so the painted outline is one box; no box moves. SURFACE K31. Guard: `card-audit` P37 `one-sheet`.
+
+## 2026-10-03: an open stack of tasks lifts as one
+
+### Changed
+- **When a task with more wordings waiting beneath it is open, the whole stack lifts, not just the top card.** The shadow falls from under the last card edge, and the edges rise with it.
+
+### Fixed
+- **An open task rises into place again** instead of jumping there.
+
+### For contributors
+- **Surface-only** (#190). The open shadow of a piled rail entry is cast by its `li` (`design/system.css`); `settleLift` (`design/session.js`) paints the rest at a zero duration. SURFACE M20; Q1596. Guard: `scripts/repro/pile-lift.mjs`, in the sprint tier's `sprint-pages`, at 1600 and at 390 (the phone's pass at `--cpu=4`).
+
 ## 2026-10-02: pressing an open card's task takes you back to it
 
 ### Changed
