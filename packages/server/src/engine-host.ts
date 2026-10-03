@@ -19,6 +19,8 @@ import { DEFAULT_TUNING } from '../../constitution/src/adapter.js';
 import type { EngineTuning } from '../../constitution/src/adapter.js';
 import type { LoadedDoc } from './store.js';
 import type { Persistence } from './persistence.js';
+import { loadEngine, newSnapshotCounts, snapshotDue, writeEngineSnapshot } from './snapshots.js';
+import type { SnapshotOpts } from './snapshots.js';
 
 interface EngineLogEntry { seq: number; hash: string; prevHash: string; event: { t: number } }
 
@@ -31,6 +33,9 @@ export interface EngineDoc extends LoadedDoc {
   enginePersisted: number;
   /** The bridge state as last persisted — unchanged means no rewrite. */
   bridgeSerialized: string | null;
+  /** Where the stored engine snapshot stands (plan-scaling.md Stage 3): its
+   *  engine entry count, 0 where none fits this code and this log. */
+  snapshotEseq?: number;
   /**
    * When `driveBridge` last swept this bridge (Scaling Stage 1, issue #210):
    * the *after* the engine's `nextClockT` needs. Unset on a bridge nobody has
@@ -123,9 +128,13 @@ export function devNow(docId: string, nowMs: number = Date.now()): number {
 
 /** Resume a persisted bridge; called once per document at load. The host's
  *  tuning rides along so the bridge can re-state the host's cooldown on a
- *  document born under another (R-086) — at the first sweep, never here. */
+ *  document born under another (R-086) — at the first sweep, never here.
+ *  **The engine is folded from its snapshot where one fits** (plan-scaling.md
+ *  Stage 3), and where none does it is replayed whole and a snapshot written
+ *  at once, so the next load of a document is a fast one. */
 export async function resumeBridge(persistence: Persistence, doc: LoadedDoc,
-  tuning?: Partial<EngineTuning>): Promise<void> {
+  tuning?: Partial<EngineTuning>,
+  snapshots: SnapshotOpts = { audit: 'off', counts: newSnapshotCounts() }): Promise<void> {
   const d = asEngineDoc(doc);
   if (d.bridge !== null) return;
   const log = await persistence.readEngineLog(doc.id) as EngineLogEntry[];
@@ -141,13 +150,40 @@ export async function resumeBridge(persistence: Persistence, doc: LoadedDoc,
     return;
   }
   const state = JSON.parse(raw) as BridgeState;
+  const loaded = await loadEngine(persistence, doc.id, log as never, snapshots);
   d.bridge = new EngineBridge(doc.cs, {
     t: doc.cs.constitutedAtT!, rngSeed: doc.id,
     ...(tuning ? { tuning: { ...DEFAULT_TUNING, ...tuning } } : {}),
-    resume: { log: log as never, ...state },
+    resume: { log: log as never, engine: loaded.engine, ...state },
   });
   d.enginePersisted = log.length;
   d.bridgeSerialized = raw;
+  d.snapshotEseq = loaded.snapshotEseq;
+  // the store holds the whole log here, so a due snapshot is written now: a
+  // document met with none (the first boot under this code) pays its full
+  // replay once, and a closed one is snapshotted at its end
+  if (doc.ephemeral !== true && snapshotDue(loaded.engine, loaded.snapshotEseq)) {
+    const at = await writeEngineSnapshot(persistence, doc, loaded.engine, snapshots.counts, Date.now());
+    if (at !== null) d.snapshotEseq = at;
+  }
+}
+
+/**
+ * **A snapshot after a persist, when one is due** (plan-scaling.md Stage 3):
+ * called by the commit once both logs are written. Taken only while the
+ * engine stands exactly where the store does, so the snapshot never stands
+ * on an entry the store does not yet hold — a judgment that landed during
+ * the persist defers it to the next commit.
+ */
+export async function snapshotIfDue(persistence: Persistence, doc: LoadedDoc,
+  counts: import('./snapshots.js').SnapshotCounts, nowMs: number): Promise<void> {
+  const d = asEngineDoc(doc);
+  if (d.bridge === null || doc.ephemeral === true) return;
+  const engine = d.bridge.engine;
+  if (engine.log.length !== d.enginePersisted) return;
+  if (!snapshotDue(engine, d.snapshotEseq ?? 0)) return;
+  const at = await writeEngineSnapshot(persistence, doc, engine, counts, nowMs);
+  if (at !== null) d.snapshotEseq = at;
 }
 
 /**

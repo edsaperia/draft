@@ -140,6 +140,24 @@ d('PgPersistence contract', () => {
     expect(await p.readBridgeState('d1')).toBe('{"a":2}');
   });
 
+  it('the engine snapshot is a row (Stage 3): bytes kept exactly, overwritten, gone with its document', async () => {
+    const p = await open();
+    await p.createDoc('d1');
+    expect(await p.readSnapshot('d1')).toBeNull();
+    const state = Buffer.from([0x1f, 0x8b, 0, 255, 7]);
+    await p.writeSnapshot('d1', { seq: 3, eseq: 100, codeVersion: 'f1.a', state, writtenMs: 5 });
+    await p.writeSnapshot('d1', { seq: 4, eseq: 200, codeVersion: 'f1.b', state, writtenMs: 6 });
+    expect(await p.readSnapshot('d1')).toEqual({ seq: 4, eseq: 200, codeVersion: 'f1.b', state, writtenMs: 6 });
+    expect(await p.deleteDoc('d1')).toBe(true);
+    expect(await p.readSnapshot('d1')).toBeNull();
+    // and the file store keeps the same contract
+    const f = new FilePersistence(tmp());
+    await f.createDoc('d1');
+    expect(await f.readSnapshot('d1')).toBeNull();
+    await f.writeSnapshot('d1', { seq: 4, eseq: 200, codeVersion: 'f1.b', state, writtenMs: 6 });
+    expect(await f.readSnapshot('d1')).toEqual({ seq: 4, eseq: 200, codeVersion: 'f1.b', state, writtenMs: 6 });
+  });
+
   it('takeToken is delete-and-return, once, under concurrency', async () => {
     const p = await open();
     const rec = { kind: 'login' as const, email: 'a@example.org', expMs: 9e12 };

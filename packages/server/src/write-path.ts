@@ -32,8 +32,9 @@ import type { OutboxRow, Persistence } from './persistence.js';
 import type { MailOutbox, QueuedMail } from './outbox.js';
 import { MAILS } from './mailer.js';
 import type { Mail, Mailer } from './mailer.js';
-import { asEngineDoc, clockDueT, devNow, driveBridge, foldTime, persistEngine, rewindEngine }
-  from './engine-host.js';
+import { asEngineDoc, clockDueT, devNow, driveBridge, foldTime, persistEngine, rewindEngine,
+  snapshotIfDue } from './engine-host.js';
+import type { SnapshotCounts } from './snapshots.js';
 
 /**
  * **A command the store could not write, said as what it is** (issue #79).
@@ -124,6 +125,8 @@ export interface WritePathDeps {
   readonly closing: () => boolean;
   /** the clock, so a host can state the time it is */
   readonly now: () => number;
+  /** what the snapshots did (plan-scaling.md Stage 3), served on `/healthz` */
+  readonly snapshots?: SnapshotCounts;
 }
 
 export class WritePath {
@@ -508,6 +511,12 @@ export class WritePath {
       if (doc.relayed < end) {
         await this.relay(doc, doc.cs.logEntries().slice(doc.relayed, end), nowMs);
         doc.relayed = end;
+      }
+      // the engine's snapshot, every K entries and at its close (Stage 3):
+      // after the mail, so nobody's invitation waits on a cache, and never
+      // the commit's failure
+      if (this.d.snapshots !== undefined) {
+        await snapshotIfDue(persistence, doc, this.d.snapshots, nowMs);
       }
       return doc.cs.logEntries().length;
     });

@@ -8,6 +8,8 @@ export * from './types.js';
 export * from './text/types.js';
 export * from './ranking/types.js';
 export { Session, makeConstitution, DEFAULT_CONSTITUTION, DocumentClosedError } from './session.js';
+export type { EngineSnapshot } from './session.js';
+export { encodeState, decodeState, SnapshotShapeError } from './snapshot.js';
 export { pairValue } from './routing.js';
 export type { JudgmentView } from './session.js';
 export { ParticipantApi, authorVisible } from './participant-api.js';

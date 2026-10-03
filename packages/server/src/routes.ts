@@ -70,6 +70,8 @@ export interface RouteContext {
   /** the refusals a member did nothing wrong to meet (Q1493 (a)): a race with
    *  the poll, answered by the page and counted rather than logged */
   readonly races: RaceCounts;
+  /** what the engine snapshots did since boot (plan-scaling.md Stage 3) */
+  readonly snapshots?: import('./snapshots.js').SnapshotCounts;
   /** the open push streams (Scaling Stage 4): `GET /api/d/:slug/events` */
   readonly events: EventHub;
   /** the demo's bots (design/DEMO.md Stage 4): idle until the panel's ▶️ */

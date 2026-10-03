@@ -38,6 +38,20 @@ export interface PersonRow {
   picture: string | null;
 }
 
+/**
+ * One snapshot row (plan-scaling.md Stage 3): `(document, seq, eseq,
+ * codeVersion, state)`. `state` is the gzipped JSON of `EngineSnapshot`;
+ * `seq` is the constitution log's length when it was taken, kept for the
+ * record (the constitution's own fold is replayed whole, being cheap).
+ */
+export interface SnapshotRow {
+  seq: number;
+  eseq: number;
+  codeVersion: string;
+  state: Buffer;
+  writtenMs: number;
+}
+
 export interface PendingCreate {
   title: string;
   slug: string;
@@ -206,6 +220,16 @@ export interface Persistence {
   /** The serialized bridge state, or null if the engine never ran. */
   readBridgeState(id: string): Promise<string | null>;
   writeBridgeState(id: string, serialized: string): Promise<void>;
+
+  /* -- the engine's snapshot (plan-scaling.md Stage 3) ------------------ */
+  /**
+   * The newest snapshot of the document's engine fold, or null. **A cache,
+   * never a truth** (the plan's invariant 1): a host reads it only to skip
+   * folding a prefix of the engine log, checks it against that log, and
+   * replays in full whenever it does not fit. One per document, overwritten.
+   */
+  readSnapshot(id: string): Promise<SnapshotRow | null>;
+  writeSnapshot(id: string, row: SnapshotRow): Promise<void>;
 
   /* -- magic-link tokens, keyed by their hash ---------------------------- */
   putTokens(entries: ReadonlyArray<readonly [string, TokenRecord]>): Promise<void>;
@@ -403,6 +427,31 @@ export class FilePersistence implements MaintainablePersistence {
     const path = join(this.docsDir, id, 'bridge.json');
     writeFileSync(path + '.tmp', serialized, 'utf8');
     renameSync(path + '.tmp', path);
+  }
+
+  async readSnapshot(id: string): Promise<SnapshotRow | null> {
+    const dir = join(this.docsDir, id);
+    const meta = join(dir, 'snapshot.json');
+    if (!existsSync(meta)) return null;
+    const m = JSON.parse(readFileSync(meta, 'utf8')) as Omit<SnapshotRow, 'state'>;
+    const state = join(dir, 'snapshot.state.gz');
+    if (!existsSync(state)) return null;
+    return { ...m, state: readFileSync(state) };
+  }
+
+  async writeSnapshot(id: string, row: SnapshotRow): Promise<void> {
+    // the state first and the row that names it last, each temp-then-rename:
+    // a crash between the two leaves an old row over new state, which the
+    // load's hash check refuses — never a half-written file
+    const dir = join(this.docsDir, id);
+    const state = join(dir, 'snapshot.state.gz');
+    const meta = join(dir, 'snapshot.json');
+    const { state: bytes, ...m } = row;
+    rmSync(meta, { force: true });
+    writeFileSync(state + '.tmp', bytes);
+    renameSync(state + '.tmp', state);
+    writeFileSync(meta + '.tmp', JSON.stringify(m), 'utf8');
+    renameSync(meta + '.tmp', meta);
   }
 
   /* -- tokens -------------------------------------------------------------- */

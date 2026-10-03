@@ -18,6 +18,7 @@
  */
 import { build } from 'esbuild';
 import { readFileSync } from 'node:fs';
+import { engineFingerprint } from './engine-fingerprint.mjs';
 
 /**
  * The DEV drop, asserted rather than trusted (Q674). `dropLabels` removes the
@@ -95,7 +96,11 @@ await build({
   entryPoints: ['packages/server/src/main.ts'],
   outfile: 'dist/server.mjs',
   dropLabels: ['DEV'],
-  define: { 'process.env.DRAFT_BUILD': '"prod"' },
+  // the engine fold's fingerprint (plan-scaling.md Stage 3): the bundle
+  // carries no sources to hash, so a snapshot's `codeVersion` is baked in
+  define: { 'process.env.DRAFT_BUILD': '"prod"',
+    'process.env.DRAFT_ENGINE_FINGERPRINT':
+      JSON.stringify(engineFingerprint('packages/engine-core/src')) },
 });
 assertNoDevCode('dist/server.mjs');
 console.log('dist/server.mjs built (production artifact), no dev code in it');

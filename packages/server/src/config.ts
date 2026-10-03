@@ -11,6 +11,7 @@
  * a server quietly serving everyone's magic links from a dev outbox
  * (defect 1). The dev path (tsx) sees it false and keeps its defaults.
  */
+import { parseSnapshotAudit } from './snapshots.js';
 import { randomBytes } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -195,6 +196,16 @@ export interface ServerConfig {
    * would leave them believing it took.
    */
   engineTuning?: Partial<import('../../constitution/src/adapter.js').EngineTuning>;
+  /**
+   * **The snapshot audit** (plan-scaling.md Stage 3), `DRAFT_SNAPSHOT_AUDIT`:
+   * `off`, `strict`, or a rate from 0 to 1. An audited load also replays the
+   * engine log in full and compares the two folds byte for byte. On a
+   * mismatch `strict` throws, which quarantines the engine. A rate logs the
+   * mismatch, counts it on `/healthz` and serves the full replay. Absent, it
+   * is `strict` on every dev host and in CI, and `off` in the production
+   * build (PR #214's QUESTION, recommended (a)).
+   */
+  snapshotAudit?: import('./snapshots.js').SnapshotAudit;
 }
 
 export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ServerConfig {
@@ -274,6 +285,7 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ServerConfi
     proxyHops: env.DRAFT_PROXY_HOPS ? Math.max(1, Number(env.DRAFT_PROXY_HOPS)) : 1,
     buildSha: env.RENDER_GIT_COMMIT ?? env.DRAFT_BUILD_SHA ?? null,
     engineTuning: { cooldownMs },
+    snapshotAudit: parseSnapshotAudit(env.DRAFT_SNAPSHOT_AUDIT),
   };
 }
 

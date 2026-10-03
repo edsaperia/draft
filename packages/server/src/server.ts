@@ -31,6 +31,8 @@ import { makeMailer } from './mailer.js';
 import { logError, newRaceCounts } from './error-log.js';
 import { MailOutbox } from './outbox.js';
 import { asEngineDoc, resumeBridge } from './engine-host.js';
+import { newSnapshotCounts, parseSnapshotAudit } from './snapshots.js';
+import type { SnapshotCounts } from './snapshots.js';
 import type { Mailer } from './mailer.js';
 import { NotSavedError, PauseState, WritePath } from './write-path.js';
 import { json, makeReq, pathOf, routeMatches, sweepBuckets } from './routes.js';
@@ -105,6 +107,8 @@ export interface DraftServer {
   demoBots: DemoBots;
   /** The open push streams (Scaling Stage 4). */
   events: EventHub;
+  /** what the engine snapshots did since boot (plan-scaling.md Stage 3) */
+  snapshots: SnapshotCounts;
   /** Drive the clocks (§9.5/§9.5a): call periodically; safe to call any time. */
   tick(nowMs?: number): Promise<void>;
   /**
@@ -192,9 +196,13 @@ export async function createDraftServer(cfg: ServerConfig,
   const persistence = injected ?? await openPersistence(cfg);
   const store = new DocStore(persistence);
   await store.loadAll();
+  // the snapshots' counts (plan-scaling.md Stage 3), on `/healthz`
+  const snapshots = newSnapshotCounts();
+  const snapshotOpts = { audit: cfg.snapshotAudit ?? parseSnapshotAudit(undefined),
+    counts: snapshots };
   for (const doc of store.all()) {
     try {
-      await resumeBridge(persistence, doc, cfg.engineTuning);
+      await resumeBridge(persistence, doc, cfg.engineTuning, snapshotOpts);
     } catch (e) {
       // review #2, finding 1: a half-written bridge state or engine log
       // must quarantine this document's engine, never the whole server —
@@ -232,6 +240,7 @@ export async function createDraftServer(cfg: ServerConfig,
     noteError,
     closing: () => closing !== null,
     now: () => Date.now(),
+    snapshots,
   });
 
   const httpsOn = cfg.baseUrl.startsWith('https://');
@@ -314,7 +323,7 @@ export async function createDraftServer(cfg: ServerConfig,
   });
   const ctx: RouteContext = {
     cfg, store, persistence, auth, mailer, outbox, stash, commits, writes, pause,
-    errors, races, demoBots, bootedAtMs, httpsOn, demo, events,
+    errors, races, snapshots, demoBots, bootedAtMs, httpsOn, demo, events,
     designDir: cfg.designDir,
     buildSha: cfg.buildSha,
     surfaceSha: null,
@@ -479,5 +488,5 @@ export async function createDraftServer(cfg: ServerConfig,
     return closing;
   };
 
-  return { server, store, auth, mailer, outbox, demo, demoBots, events, tick, close };
+  return { server, store, auth, mailer, outbox, demo, demoBots, events, snapshots, tick, close };
 }
