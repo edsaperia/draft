@@ -32,6 +32,30 @@ concurrency:
   group: ${{ github.event_name == 'pull_request' && format('ci-pr-{0}', github.head_ref) || format('ci-run-{0}', github.run_id) }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+# **A newer push to main retires the older push's checks** (issue #217, Ed
+# 2026-10-03: five merges in a minute, and the newest deploy waited 22
+# minutes for a machine behind three displaced pushes' thirty checks). The
+# run-id group above never cancels a push to main, and must not, since the
+# deploy is in it; so the ten check jobs below (`probe`, `raw-values`,
+# `redesign-checks` ×2, `boot-guard`, `walks` ×5) are retired job by job,
+# three ways, and the deploying `ci` job is in none of them:
+#   1. a push whose `ci` was cancelled runs none of its checks. That is a
+#      push displaced as the pending run of `deploy-main` (the `ci` job's
+#      group): its commit deploys with the newer one, and the newer run
+#      checks a tree that holds it. Until now `!cancelled()` let a
+#      cancelled `ci` through, so a displaced push ran every check;
+#   2. a push whose `ci` ends with main already past its commit runs none
+#      either: `ci`'s last step asks the remote for main's head and says
+#      `superseded` when it has moved, the newer push's own checks to come;
+#   3. each check job takes a group of its own per job and leg, keyed on
+#      the workflow and the ref (`<workflow>-checks-<ref>-<job>[-<leg>]`),
+#      with `cancel-in-progress`, so a newer push's checks, as they start,
+#      cancel the older push's that are still running.
+# A pull request keeps what it had: its jobs take run-unique groups, its
+# skipped `ci` lets every check through, and the workflow group above
+# cancels a stale PR run whole. Which checks gate the deploy is unchanged —
+# none; `ci` with the deploy in it is still never cancelled.
+
 jobs:
   # **Two jobs, one check named `ci`** (issue #184). On a push to main the
   # other ten jobs `needs: ci`, so the deploying job takes the first machine
@@ -77,6 +101,10 @@ jobs:
     concurrency:
       group: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'deploy-main' || format('ci-{0}', github.run_id) }}
       cancel-in-progress: false
+    # read by the check jobs' `if:` (issue #217, above `jobs:`): `true` when
+    # main had moved past this commit by the end of this job
+    outputs:
+      superseded: ${{ steps.head.outputs.superseded }}
     # Stage 6: the Postgres backend is tested against the same major the
     # local container pins (17), or the migration is tested only on one
     # machine. The server's whole HTTP walk runs a second time over it.
@@ -484,6 +512,23 @@ jobs:
             && echo "the pause is lifted — the live host is writing again" \
             || echo "the resume was refused: lift it by hand (docs/OPERATING.md §3) or wait out PauseState.MAX_MS"
 
+      # **Is this still main's head?** (issue #217, above `jobs:`, way 2.)
+      # Last, after the deploy, so a push that lands while this one deploys
+      # still counts. A push only; it never fails the job — a remote that
+      # will not answer says `false`, and the checks run as they always did.
+      - name: is this push still main's head
+        id: head
+        if: ${{ !cancelled() && github.event_name == 'push' }}
+        run: |
+          head=$(git ls-remote origin "$GITHUB_REF" 2>/dev/null | cut -f1) || head=
+          if [ -n "$head" ] && [ "$head" != "$GITHUB_SHA" ]; then
+            echo "superseded=true" >> "$GITHUB_OUTPUT"
+            echo "${GITHUB_REF#refs/heads/} is at $head now, past $GITHUB_SHA — this push's checks stand down for that push's"
+          else
+            echo "superseded=false" >> "$GITHUB_OUTPUT"
+            echo "${GITHUB_REF#refs/heads/} is still at $GITHUB_SHA (remote said: ${head:-nothing}) — this push's checks run"
+          fi
+
   # `ci` on a pull request: the same services, environment and steps (the
   # deploy and the tag are main-only by their own `if:`, so they skip here
   # as they always have), fifteen minutes, read-only — nothing on this side
@@ -529,7 +574,12 @@ jobs:
   probe:
     # after `ci` on main, beside it on a pull request (issue #184, above `ci`)
     needs: ci
-    if: ${{ !cancelled() }}
+    # not for a displaced or superseded push (issue #217, above `jobs:`)
+    if: ${{ !cancelled() && needs.ci.result != 'cancelled' && needs.ci.outputs.superseded != 'true' }}
+    # newer push cancels older (issue #217, above `jobs:`, way 3)
+    concurrency:
+      group: ${{ github.event_name == 'push' && format('{0}-checks-{1}-probe', github.workflow, github.ref) || format('{0}-checks-{1}-probe', github.workflow, github.run_id) }}
+      cancel-in-progress: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -622,7 +672,12 @@ jobs:
     name: probe (raw values)
     # after `ci` on main, beside it on a pull request (issue #184, above `ci`)
     needs: ci
-    if: ${{ !cancelled() }}
+    # not for a displaced or superseded push (issue #217, above `jobs:`)
+    if: ${{ !cancelled() && needs.ci.result != 'cancelled' && needs.ci.outputs.superseded != 'true' }}
+    # newer push cancels older (issue #217, above `jobs:`, way 3)
+    concurrency:
+      group: ${{ github.event_name == 'push' && format('{0}-checks-{1}-raw-values', github.workflow, github.ref) || format('{0}-checks-{1}-raw-values', github.workflow, github.run_id) }}
+      cancel-in-progress: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -660,7 +715,12 @@ jobs:
     name: probe (redesign checks ${{ matrix.width }})
     # after `ci` on main, beside it on a pull request (issue #184, above `ci`)
     needs: ci
-    if: ${{ !cancelled() }}
+    # not for a displaced or superseded push (issue #217, above `jobs:`)
+    if: ${{ !cancelled() && needs.ci.result != 'cancelled' && needs.ci.outputs.superseded != 'true' }}
+    # newer push cancels older (issue #217, above `jobs:`, way 3)
+    concurrency:
+      group: ${{ github.event_name == 'push' && format('{0}-checks-{1}-redesign-checks-{2}', github.workflow, github.ref, matrix.width) || format('{0}-checks-{1}-redesign-checks-{2}', github.workflow, github.run_id, matrix.width) }}
+      cancel-in-progress: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
@@ -705,7 +765,12 @@ jobs:
   boot-guard:
     # after `ci` on main, beside it on a pull request (issue #184, above `ci`)
     needs: ci
-    if: ${{ !cancelled() }}
+    # not for a displaced or superseded push (issue #217, above `jobs:`)
+    if: ${{ !cancelled() && needs.ci.result != 'cancelled' && needs.ci.outputs.superseded != 'true' }}
+    # newer push cancels older (issue #217, above `jobs:`, way 3)
+    concurrency:
+      group: ${{ github.event_name == 'push' && format('{0}-checks-{1}-boot-guard', github.workflow, github.ref) || format('{0}-checks-{1}-boot-guard', github.workflow, github.run_id) }}
+      cancel-in-progress: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -792,7 +857,12 @@ jobs:
     name: walks (${{ matrix.group }})
     # after `ci` on main, beside it on a pull request (issue #184, above `ci`)
     needs: ci
-    if: ${{ !cancelled() }}
+    # not for a displaced or superseded push (issue #217, above `jobs:`)
+    if: ${{ !cancelled() && needs.ci.result != 'cancelled' && needs.ci.outputs.superseded != 'true' }}
+    # newer push cancels older (issue #217, above `jobs:`, way 3)
+    concurrency:
+      group: ${{ github.event_name == 'push' && format('{0}-checks-{1}-walks-{2}', github.workflow, github.ref, matrix.group) || format('{0}-checks-{1}-walks-{2}', github.workflow, github.run_id, matrix.group) }}
+      cancel-in-progress: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
