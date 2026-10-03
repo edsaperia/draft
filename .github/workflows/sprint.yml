@@ -39,10 +39,11 @@
 # *The deploy never queues behind PR checks*): the tier's eight runners
 # competed with the deploy for the account's machines. The `golden` job and
 # each `walks` leg take a concurrency group keyed on the branch (and the
-# leg), so a second run's part waits for the first's. On a branch other than
-# main — a dispatch — the newer run cancels the older; on main nothing in
-# flight is cancelled, and a run waiting behind it is displaced only by a
-# newer one, whose tree holds everything the displaced one would have run.
+# leg), and the newer run cancels the older, in flight or waiting, on main
+# as on any branch: the newer run's tree holds everything the older one
+# would have run. Until issue #217 (Ed, 2026-10-03) a run in flight on main
+# was left to finish, and with five merges in a minute those legs held
+# machines the newest deploy was waiting for.
 # The groups sit on those jobs rather than on the workflow, and a run whose
 # `gate` says *nothing merged* takes a group of its own: otherwise the
 # coordinator's ledger commit, pushed straight after a merge, would displace
@@ -140,7 +141,8 @@ jobs:
     if: needs.gate.outputs.run == 'true' && needs.select.outputs.golden == 'true'
     concurrency:
       group: ${{ needs.gate.outputs.run == 'true' && format('sprint-golden-{0}', github.ref) || format('sprint-idle-{0}-golden', github.run_id) }}
-      cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+      # newer cancels older on every branch, main included (issue #217, at the top)
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -224,7 +226,8 @@ jobs:
     if: needs.gate.outputs.run == 'true' && needs.select.outputs.walks != '[]'
     concurrency:
       group: ${{ needs.gate.outputs.run == 'true' && format('sprint-walks-{0}-{1}', github.ref, matrix.group) || format('sprint-idle-{0}-walks-{1}', github.run_id, matrix.group) }}
-      cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+      # newer cancels older on every branch, main included (issue #217, at the top)
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
