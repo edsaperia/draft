@@ -271,6 +271,12 @@ export interface Persistence {
    * a rollback's build) from one that still describes its log.
    */
   docLengths(): Promise<Map<string, { seq: number; eseq: number }>>;
+  /**
+   * Every stored snapshot's code version and engine length, without its
+   * state (Stage 2): how boot finds the documents whose first load would
+   * replay a long engine tail, and warms them inside the boot window.
+   */
+  snapshotVersions(): Promise<Map<string, { codeVersion: string; eseq: number }>>;
 
   /* -- magic-link tokens, keyed by their hash ---------------------------- */
   putTokens(entries: ReadonlyArray<readonly [string, TokenRecord]>): Promise<void>;
@@ -524,6 +530,19 @@ export class FilePersistence implements MaintainablePersistence {
     for (const id of await this.listDocIds()) {
       out.set(id, { seq: lines(join(this.docsDir, id, 'log.jsonl')),
         eseq: lines(join(this.docsDir, id, 'engine.jsonl')) });
+    }
+    return out;
+  }
+
+  async snapshotVersions(): Promise<Map<string, { codeVersion: string; eseq: number }>> {
+    const out = new Map<string, { codeVersion: string; eseq: number }>();
+    for (const id of await this.listDocIds()) {
+      const meta = join(this.docsDir, id, 'snapshot.json');
+      if (!existsSync(meta)) continue;
+      try {
+        const m = JSON.parse(readFileSync(meta, 'utf8')) as { codeVersion: string; eseq: number };
+        out.set(id, { codeVersion: m.codeVersion, eseq: m.eseq });
+      } catch { /* unreadable is absent: the load replays */ }
     }
     return out;
   }

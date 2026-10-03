@@ -191,10 +191,30 @@ export class DocStore {
    * — has its constitution log read and folded for its slugs and phase (tens
    * of milliseconds, the engine left alone), and its row rewritten with no
    * due time this code vouches for, so the tick loads it when it can.
+   *
+   * Returns the documents the caller should warm before `/healthz` answers
+   * (`warm`): those whose engine would replay `minTail` entries or more.
    */
-  async loadRegistry(nowMs: number = Date.now()): Promise<void> {
-    const [ids, rows, lengths] = await Promise.all([this.persistence.listDocIds(),
-      this.persistence.readRegistry(), this.persistence.docLengths()]);
+  async loadRegistry(nowMs: number = Date.now(),
+    warm?: { codeVersion: string; minTail: number }): Promise<string[]> {
+    const [ids, rows, lengths, snaps] = await Promise.all([this.persistence.listDocIds(),
+      this.persistence.readRegistry(), this.persistence.docLengths(),
+      warm === undefined ? Promise.resolve(new Map<string, { codeVersion: string; eseq: number }>())
+        : this.persistence.snapshotVersions()]);
+    // **the documents whose first load would replay a long engine tail**:
+    // no snapshot this code can take, or one far behind the log — after a
+    // deploy that changed the engine, every convention. Folded at a request,
+    // one would hold the event loop past the health check (~30 s on Render
+    // for nh2026's size), so the caller loads them inside the boot window
+    const warmIds: string[] = [];
+    if (warm !== undefined) {
+      for (const id of ids) {
+        const eseq = lengths.get(id)?.eseq ?? 0;
+        const snap = snaps.get(id);
+        const from = snap !== undefined && snap.codeVersion === warm.codeVersion && snap.eseq <= eseq ? snap.eseq : 0;
+        if (eseq - from >= warm.minTail) warmIds.push(id);
+      }
+    }
     for (const id of ids) {
       const row = rows.get(id);
       const len = lengths.get(id);
@@ -226,6 +246,7 @@ export class DocStore {
         this.quarantine.push(id);
       }
     }
+    return warmIds.filter((id) => this.registry.has(id) && !this.quarantine.includes(id));
   }
 
   /**

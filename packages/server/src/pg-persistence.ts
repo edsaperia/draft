@@ -494,6 +494,12 @@ export class PgPersistence implements MaintainablePersistence {
     return new Map(rows.map((r) => [r.id, { seq: Number(r.seq), eseq: Number(r.eseq) }]));
   }
 
+  async snapshotVersions(): Promise<Map<string, { codeVersion: string; eseq: number }>> {
+    const { rows } = await this.pool.query<{ document_id: string; code_version: string; eseq: number }>(
+      'SELECT document_id, code_version, eseq FROM snapshots');
+    return new Map(rows.map((r) => [r.document_id, { codeVersion: r.code_version, eseq: r.eseq }]));
+  }
+
   async writeRegistry(id: string, row: RegistryRow): Promise<void> {
     await this.pool.query(
       `INSERT INTO doc_registry (document_id, slugs, phase, due_t, last_t, clock_version, seq, eseq, written_ms)

@@ -41,6 +41,7 @@
     "morph-walk": "node scripts/morph-walk.mjs",
     "presence-walk": "node scripts/presence-walk.mjs",
     "push-walk": "node scripts/push-walk.mjs",
+    "load-walk": "node scripts/load-walk.mjs",
     "overlapping-sites": "node scripts/repro/overlapping-sites.mjs",
     "rate-motion": "node scripts/repro/member-rate-motion.mjs",
     "journey": "node scripts/journey-walk.mjs",

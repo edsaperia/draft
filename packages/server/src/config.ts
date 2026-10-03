@@ -127,6 +127,22 @@ export interface ServerConfig {
    */
   loadBudgetMs?: number;
   /**
+   * **How often the clocks are driven** (`DRAFT_TICK_MS`, Stage 2): the
+   * minute's tick, and the idle unload behind it, every this many
+   * milliseconds. A minute unless stated; the load walk states a second so
+   * an eviction is not a minute's wait. Not less than a second.
+   */
+  tickMs?: number;
+  /**
+   * **Which documents boot still folds** (`DRAFT_WARM_TAIL`, Stage 2): one
+   * whose engine would replay this many entries or more at its first load —
+   * no snapshot this code can take, or one this far behind the log. Folded at
+   * a request instead, a convention holds the event loop for ~30 s on Render;
+   * at boot it is inside the deploy window. A thousand entries unless stated
+   * (~0.8 s locally, ~6 s on Render); a snapshot is written every hundred.
+   */
+  warmTail?: number;
+  /**
    * **The demo document** (design/DEMO.md Stage 1; Q1535): `/d/demo` built
    * in memory from `design/demo/pizzacon-2027.md` at boot. On unless
    * `DRAFT_DEMO=off`; a config that does not say — every test's — is off, so
@@ -301,6 +317,8 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ServerConfi
     load: (env.DRAFT_LOAD ?? '').trim() === 'eager' ? 'eager' : 'lazy',
     idleMs: positiveMs(env.DRAFT_IDLE_MS, 'DRAFT_IDLE_MS') ?? IDLE_MS,
     loadBudgetMs: positiveMs(env.DRAFT_LOAD_BUDGET_MS, 'DRAFT_LOAD_BUDGET_MS') ?? LOAD_BUDGET_MS,
+    warmTail: positiveMs(env.DRAFT_WARM_TAIL, 'DRAFT_WARM_TAIL') ?? WARM_TAIL,
+    tickMs: Math.max(1_000, positiveMs(env.DRAFT_TICK_MS, 'DRAFT_TICK_MS') ?? 60_000),
     demo: (env.DRAFT_DEMO ?? '').trim() !== 'off',
     demoKey: (env.DRAFT_DEMO_KEY ?? '').trim() || null,
     demoAnthropicKey: (env.DRAFT_DEMO_ANTHROPIC_KEY ?? '').trim() || null,
@@ -318,13 +336,14 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ServerConfi
 /** Stage 2's defaults (issue #219): ten minutes idle, five seconds of a tick. */
 export const IDLE_MS = 10 * 60_000;
 export const LOAD_BUDGET_MS = 5_000;
+export const WARM_TAIL = 1_000;
 
 /** A positive number of milliseconds, or undefined where unset; refused, never guessed. */
 function positiveMs(raw: string | undefined, name: string): number | undefined {
   const v = (raw ?? '').trim();
   if (v === '') return undefined;
   const n = Number(v);
-  if (!Number.isFinite(n) || n <= 0) throw new Error(`${name} must be a positive number of milliseconds (got '${raw}')`);
+  if (!Number.isFinite(n) || n <= 0) throw new Error(`${name} must be a positive number (got '${raw}')`);
   return n;
 }
 

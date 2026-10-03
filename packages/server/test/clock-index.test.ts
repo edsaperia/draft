@@ -40,7 +40,8 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { createDraftServer } from '../src/server.js';
 import type { DraftServer } from '../src/server.js';
 import { FilePersistence } from '../src/persistence.js';
-import { clockDueT, foldTime } from '../src/engine-host.js';
+import { asEngineDoc, clockDueT, foldTime } from '../src/engine-host.js';
+import { WARM_TAIL } from '../src/config.js';
 import { attestBody } from './attest-wire.js';
 
 const DESIGN_DIR = join(import.meta.dirname, '..', '..', '..', 'design');
@@ -254,7 +255,10 @@ describe('the clock index (Scaling Stage 1, issue #210)', () => {
     const c = await createDraftServer(cfgFor(dirC, false, TICK_COOLDOWN, 'lazy'),
       new FilePersistence(dirC));
     booted.push(a, b, c);
-    expect([...c.store.all()]).toHaveLength(0);
+    // nothing folded at boot but an engine that would replay a long tail
+    for (const d of c.store.all()) {
+      expect(asEngineDoc(d).bridge!.engine.log.length).toBeGreaterThanOrEqual(WARM_TAIL);
+    }
     expect(c.store.registeredCount()).toBe([...a.store.all()].length);
     expect([...a.store.all()].length).toBe([...b.store.all()].length);
     expect(b.store.quarantined()).toHaveLength(0);

@@ -247,12 +247,13 @@ async function main(): Promise<void> {
     const onRender = (ms: number): string => `${((ms / 1000) * (FLEET / SET_DOCS) * RENDER).toFixed(0)} s`;
     // **the verdict's boot** (Stage 2): the lazy boot with nothing to lean on
     // — no registry rows, so every document's constitution is read for its
-    // slugs, and no snapshots — the first boot under this code
+    // slugs, and no snapshots, so the convention's engine is folded before
+    // `/healthz` answers (the warm set, `DRAFT_WARM_TAIL`) — the first boot
+    // under this code, and every boot after a deploy that changed the engine
     const cold = Array.from({ length: RUNS }, () => {
       dropSnapshots(dir); dropRegistry(dir);
       return bootOnce(dir, 'lazy');
     });
-    if (cold.some((b) => b.loaded !== 0)) throw new Error('the lazy boot loaded a document');
     const coldMs = median(cold.map((b) => b.ms));
     const projected = (coldMs / 1000) * (FLEET / SET_DOCS) * RENDER;
     const budget = SHARE * WINDOW_S;
@@ -265,9 +266,10 @@ async function main(): Promise<void> {
     // the cold open of every document after a warm boot, from its snapshot
     const opens = Array.from({ length: RUNS }, () => bootOnce(dir, 'lazy', true).openMs ?? 0);
     say(`  boot of the set, lazy, cold (no registry, no snapshots): ${fmt(cold.map((b) => b.ms))} ms `
-      + `(median ${coldMs.toFixed(0)}; ${cold[0]!.loaded} of ${cold[0]!.docs} loaded)`);
-    say(`  boot of the set, lazy, warm (registry whole): ${fmt(warm.map((b) => b.ms))} ms `
-      + `(median ${median(warm.map((b) => b.ms)).toFixed(0)}; ${FLEET} on Render ≈ `
+      + `(median ${coldMs.toFixed(0)}; ${cold[0]!.loaded} of ${cold[0]!.docs} folded at boot, `
+      + 'the engines that would replay a long tail)');
+    say(`  boot of the set, lazy, warm (registry whole, snapshots standing): ${fmt(warm.map((b) => b.ms))} ms `
+      + `(median ${median(warm.map((b) => b.ms)).toFixed(0)}; ${warm[0]!.loaded} folded; ${FLEET} on Render ≈ `
       + `${onRender(median(warm.map((b) => b.ms)))}) — reported, not judged`);
     say(`  boot of the set, eager (before Stage 2), cold: ${fmt(eager.map((b) => b.ms))} ms `
       + `(median ${median(eager.map((b) => b.ms)).toFixed(0)}; ${FLEET} on Render ≈ `

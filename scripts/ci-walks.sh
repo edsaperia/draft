@@ -51,7 +51,7 @@ case "$GROUP" in
   repros)      PORT_MAIN=8171; PORT_DESIGN=8164 ;;
   repros-b)    PORT_MAIN=8173; PORT_DESIGN=8166 ;;
   sprint-doors)   PORT_MAIN=8175; PORT_DEMO=8168 ;;
-  sprint-motions) PORT_MAIN=8177 ;;
+  sprint-motions) PORT_MAIN=8177; PORT_LOAD=8170 ;;
   # a server since the liveness walks (Q1570, Q1571): the rest of the group serves design/ itself
   sprint-pages)   PORT_MAIN=8179 ;;
   *) echo "usage: ci-walks.sh seat-member|seat-clerk|journey|motions|doors|repros|repros-b|sprint-doors|sprint-motions|sprint-pages"; exit 2 ;;
@@ -403,6 +403,16 @@ case "$GROUP" in
     # before 🍾, after it with and without ✒️, and a member, untouched and
     # typed back — every press leaves, posts nothing and spends nothing
     walk "edit-unchanged" node scripts/repro/edit-unchanged.mjs "$BASE"
+    # **Load on demand, unload when idle** (Scaling Stage 2, issue #219), on a
+    # server of its own whose idle period is three seconds and whose clocks
+    # are driven every second: a document whose clock falls due while it is
+    # unloaded is loaded by the tick and closed at its ending, mailed, with
+    # no request for it; a page holding a push stream keeps its document
+    # loaded, closed it unloads, and the next page loads it again — one load
+    # for six concurrent views, every seat's view as it was, the same text
+    # and rail. Sprint tier from its first day (Q1547). About a minute
+    boot load "$PORT_LOAD" DRAFT_IDLE_MS=3000 DRAFT_TICK_MS=1000; LOAD_BASE=$BOOTED
+    walk "load-walk" npm run load-walk -- "$LOAD_BASE"
     ;;
 
   # the self-starting walks: each serves design/ itself and takes no base URL

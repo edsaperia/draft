@@ -21,7 +21,8 @@
 import { createServer } from 'node:http';
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import { Auth } from './auth.js';
-import { IDLE_MS } from './config.js';
+import { IDLE_MS, WARM_TAIL } from './config.js';
+import { codeVersion } from './code-version.js';
 import type { ServerConfig } from './config.js';
 import { DocStore } from './store.js';
 import { FilePersistence, WriteChain } from './persistence.js';
@@ -221,7 +222,16 @@ export async function createDraftServer(cfg: ServerConfig,
   // and each loads on its first request or due tick; `DRAFT_LOAD=eager` is
   // the boot before it, every document folded before `/healthz` answers
   if (cfg.load === 'eager') await store.loadAll();
-  else await store.loadRegistry();
+  else {
+    // **…except what would hold the loop past the health check**: a document
+    // whose engine has no snapshot this code can take and a long log behind
+    // it — every convention after a deploy that changed `engine-core` — is
+    // folded here, inside the boot window as every document once was, and
+    // its fresh snapshot written; it unloads when idle like any other
+    const warm = await store.loadRegistry(Date.now(),
+      { codeVersion: codeVersion(), minTail: cfg.warmTail ?? WARM_TAIL });
+    for (const id of warm) await store.open(id, 'boot');
+  }
   const auth = new Auth(cfg.secret, persistence);
   const mailer = makeMailer(cfg);
   const outbox: MailOutbox = new MailOutbox({

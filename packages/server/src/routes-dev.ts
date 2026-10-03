@@ -260,4 +260,20 @@ DEV: devLadderTable.push(
       return true;
     },
   },
+  {
+    /* **Whether a document is in memory** (Scaling Stage 2, issue #219): the
+       load walk's one question, which `/healthz` answers only as a count — a
+       public endpoint names no document. Never a load: asking is not using. */
+    name: 'GET whether a document is loaded',
+    method: 'GET',
+    match: '/api/dev/loaded',
+    handler: (ctx, r) => {
+      if (r.devOff()) return true;
+      const held = ctx.store.servesSlug(r.url.searchParams.get('slug') ?? '');
+      if (held === null) { json(r.res, 404, { error: 'no such document' }); return true; }
+      json(r.res, 200, { loaded: ctx.store.isLoaded(held.id), loading: ctx.store.isLoading(held.id),
+        loads: ctx.store.loadStats.loads, unloads: ctx.store.loadStats.unloads });
+      return true;
+    },
+  },
 );
