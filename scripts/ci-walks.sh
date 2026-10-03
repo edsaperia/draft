@@ -398,6 +398,11 @@ case "$GROUP" in
     # last; no refusal, no page error, no error-log row, and nothing owed
     # after the signature (1541.7 (a))
     walk "closed-press-walk" npm run closed-press-walk -- "$BASE"
+    # **edit mode with nothing changed** (#193, Ed 2026-10-02: *clicking on
+    # either 🗑️ or ✏️ should leave edit mode with no action*): the Founder
+    # before 🍾, after it with and without ✒️, and a member, untouched and
+    # typed back — every press leaves, posts nothing and spends nothing
+    walk "edit-unchanged" node scripts/repro/edit-unchanged.mjs "$BASE"
     ;;
 
   # the self-starting walks: each serves design/ itself and takes no base URL

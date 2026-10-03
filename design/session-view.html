@@ -1102,6 +1102,11 @@
     const b = ev.target.closest('#proserow [data-act]');
     if (!b || b.disabled || !cs || constituted()) return;
     ev.stopPropagation();
+    // **nothing changed: both ends leave edit mode and do nothing else** (#193,
+    // Ed 2026-10-02: *clicking on either 🗑️ or ✏️ should leave edit mode with
+    // no action*), `proseDirty` being the row's own test — and a column never
+    // saved is dirty, so its ✒️ still saves it (C1)
+    if (!proseDirty()) { leaveEditMode(); return; }
     if (b.dataset.act === 'row-commit') {
       try { cs.confirmStartingText(now(), proseText()); } catch (e) { console.warn('[text]', e && e.message); }
       renderProseRow();
@@ -11413,6 +11418,10 @@
     // in it. `setEditMode` and not `leaveEditMode`, whose first act is to
     // close the open card — the card has already collapsed by then.
     leaveEditing: () => setEditMode(false),
+    // …and the whole way out, card and all, for a press on the row with
+    // nothing changed (#193, Ed 2026-10-02: *clicking on either 🗑️ or ✏️
+    // should leave edit mode with no action*): 📝 again's own act
+    exitEditMode: () => leaveEditMode(),
     // the sign control (Q770): the elective 👤 rung's base, or null — read at
     // call time, so a 👤 motion carrying while a draft is open changes what the
     // next draft offers and nothing about the one being typed

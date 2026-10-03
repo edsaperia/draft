@@ -152,3 +152,14 @@ pre-fix page before its fix landed.
   Rules' owed news first, then the text — wrapping to the top, and the one pinned record is
   the one the walk would open (Ed's rulings of 2026-09-25). Asserting: exit 1 on the defect,
   2 on a set-up that never got there.
+
+## 2026-10-02 — edit mode with nothing changed (#193)
+
+- `edit-unchanged.mjs <dev server>` — Ed, 2026-10-02: *When you are in edit mode, and you
+  haven't changed any of the text, clicking on either 🗑️ or ✏️ should leave edit mode with no
+  action.* Three ladder documents at 1600: the Founder before 🍾 (`#proserow`), the Founder
+  after 🍾 with ✒️ kept on the Text (a `ready` begun with `laidDown: []`) and without, and a
+  member. 📝 is pressed and each row control pressed with the mouse, untouched and typed back
+  (a character in, then out); every press must leave edit mode, post nothing under `/api/d/`
+  and leave the wallet as it was. Asserting: exit 1 on the defect, 2 on a set-up that never
+  got there. The sprint tier's `sprint-motions`.
