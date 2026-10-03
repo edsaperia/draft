@@ -77,6 +77,16 @@
     --muted: #6B747C;
     --border: #DEE2E6;
     --light: #F8F9FA;
+    /* --- a comment (issue #173, Ed 2026-10-02, his S3 *Edge and lift*): a
+           reason's panel, one step darker than --light so it reads as a
+           thing laid on the card; its ink #343A40 (Bootstrap's gray-800),
+           10.4:1 there; its byline #5F676F, the desk's own muted, 5.2:1
+           (--muted is 4.3:1 on this ground, under AA) --------------- */
+    --comment-bg: #F2F3F5;
+    --comment-ink: #343A40;
+    --comment-muted: #5F676F;
+    /* a switch's track when off (issue #173), Bootstrap's gray-400 */
+    --switch-off: #CED4DA;
 
     /* --- accent: the one blue. Every open card, every wire, every
            selection (Ed, 198) ------------------------------------- */
@@ -256,6 +266,7 @@
     --r-sm: 0.25rem;       /* an anchor, a chip                       */
     --r-md: 0.375rem;       /* a card in a rail, a button              */
     --r-lg: 0.5rem;         /* the document, an open decision card     */
+    --r-xl: 0.75rem;        /* a comment panel (issue #173, Ed's S3)   */
 
     /* --- elevation: the document is the ground, rail cards rest just
            above it, an open decision card floats highest. Neutral, never
@@ -292,6 +303,9 @@
     --shadow-lg: 0 1px 2px rgba(0, 0, 0, 0.10), 0 4px 7px rgba(0, 0, 0, 0.16);
     --shadow-xl: 0 1px 2px rgba(0, 0, 0, 0.10), 0 5px 9px rgba(0, 0, 0, 0.15),
                  0 13px 22px rgba(0, 0, 0, 0.20);
+    /* a comment panel's edge and lift (Ed's S3): a hairline ring in the
+       shadow's own colour and a 1px drop — a crisp edge, no border */
+    --shadow-edge: 0 0 0 1px rgba(0, 0, 0, 0.06), 0 1px 1px rgba(0, 0, 0, 0.06);
     /* The one shadow that goes **inward** (Q532), and the only one: a wallet is
        a socket in the toolbar, a depression saying *something goes here*. Same
        light source as the family above — a contact line at the top edge where
@@ -2481,7 +2495,7 @@
   /* The winner is the head, and its reason belongs to it — so it wants room
      above to sit under the text rather than against it, and more room below to
      close the group off from the field (Ed, 2026-08-17). */
-  .sealed-open > .speaker { margin: var(--s3) 0 var(--s4); }
+  .sealed-open > .speaker { margin: var(--s4) 0 var(--s4); }
   .bridgedesk .fieldlab { color: var(--stuck-ink); }
   .dead-open .field.bridgedesk { margin-top: var(--s3); }
   /* **A commit row is one object, so its controls share a height** (housekeeping
@@ -2601,6 +2615,41 @@
     align-self: center;
   }
   .speaker .said.none { color: var(--muted); font-style: italic; }
+
+  /* ---- the comment: a reason read (issue #173) ------------------------
+     **A reason is a comment on the proposal** (Ed, 2026-10-02: *The rationale
+     is effectively a "comment" on the proposal*; *they seem cramped and
+     unbalanced*; *the comment text is too similar to the body text*). Four
+     rounds of mockups ended at his S3, *Edge and lift*, and W1 (*w1 is good*):
+     one panel the wording's full width, `--s4` under it, `--comment-bg` at
+     `--r-xl` with `--shadow-edge` and no border; the byline on its own line
+     at its top — the face at 18px, bare on the panel (an `.emojiface` has no
+     ground, a photo stays round, the sealed disc stays as drawn; Ed: *just on
+     the panel*), then the name, or *Anonymous* — and the reason under it in
+     the chrome's face at the regular size, filling the panel to its padding.
+     The card's label keeps *Proposed by ‹name›* (Ed: *I'd like to keep the
+     name in the title*). The rationale fields (`.lanebox .speaker`) are
+     written, not read, and keep their own look above. */
+  .speaker.comment {
+    display: block; margin: var(--s4) 0 0; padding: var(--s3) var(--s4);
+    background: var(--comment-bg); border-radius: var(--r-xl); box-shadow: var(--shadow-edge);
+  }
+  .speaker.comment .by { display: flex; align-items: center; gap: var(--s2); margin-bottom: var(--s2); min-width: 0; }
+  .speaker.comment .spkface { width: 18px; height: 18px; align-items: center; }
+  .speaker.comment .spkface .emojiface { font-size: var(--t-body); line-height: 1; }
+  .speaker.comment .spkface .av { width: 18px; height: 18px; }
+  .speaker.comment .disc { width: 18px; height: 18px; }
+  .speaker.comment .disc::before { width: 6px; height: 6px; top: 3.5px; }
+  .speaker.comment .disc::after { width: 11.5px; height: 8px; border-radius: 6px 6px 0 0; }
+  .speaker.comment .who {
+    font-family: var(--font-ui); font-size: var(--t-small); font-weight: 500; line-height: 1.3;
+    color: var(--comment-muted); min-width: 0; overflow-wrap: anywhere;
+  }
+  .speaker.comment .said {
+    font-family: var(--font-ui); font-size: var(--t-ui); line-height: 1.55; color: var(--comment-ink);
+    max-width: none; overflow-wrap: anywhere;
+  }
+  .speaker.comment .said.none { color: var(--comment-muted); font-style: italic; }
 
   /* ---- a link in a reason (Q1533, Ed 2026-09-24) ----------------------
      A reason may carry links, `reasonHtml` in cards.js. One that leaves
@@ -2795,26 +2844,53 @@
     padding: 3px var(--s2); cursor: text; min-height: 1.9rem;
     align-self: start;
   }
-  /* The rationale sits inside the drafting surface rather than under it (Ed,
-     2026-08-17), so it needs no elevation of its own — the surface carries
-     both, at one height, because you are expected to fill in both. A hairline
-     separates the two without dividing them. */
-  .lanebox .speaker {
-    margin: 0; padding: var(--s3) 14px var(--s3) 12px;
-    border-top: 1px solid var(--border);
+  /* **The editing card is a form with two parts** (issue #173, Ed 2026-10-02,
+     his D4: *your reasoning*; his K3: *we don't need to show the username,
+     just the switch and "Anonymous"*). *Your proposal* over the draft box,
+     the Anonymous switch at the label line's right; *Your reasoning* `--s5`
+     below over a box drawn exactly like the draft box — the same white, the
+     same `--shadow-md` rising to `--shadow-xl` with the caret, the same corners
+     and padding — its text the chrome's face at the regular size, two lines
+     at the least and growing with the words. No face, no name, no hairline
+     while writing: the grey comment panel is the read form only. Before it the
+     reason sat in the draft box under a hairline, the disc beside it (Ed,
+     2026-08-17), and on a settings card in a box of its own (Q1560 (2)). */
+  .glabline {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: var(--s3); flex-wrap: wrap; margin: 0 0 var(--s2);
   }
-  /* **The rationale gets a step more air** (Ed's QA, 2026-08-30: *always too
-     close to the elements above and below*). On the editing card the row
-     under the hairline takes `--s5` top and bottom; on the composer, whose
-     rationale is its own box, the same `--s5` as margin — which collapses
-     with the neighbours' `--s3`, so both sites measure 24px each side. */
-  .lanebox .editlane + .speaker { padding-top: var(--s5); padding-bottom: var(--s5); }
-  .lanebox.whylane { margin: var(--s5) 0; }
-  /* **A settings reason box is a text proposal's rationale, drawn the same**
-     (Ed, Q1560 (2)): the speaker row takes the editing card's `--s5` inside
-     the box too; with no lane above it there is nothing for its hairline to
-     separate, and a hairline at a box's edge is never drawn (H1) */
-  .lanebox.whylane > .speaker { border-top: 0; padding-top: var(--s5); padding-bottom: var(--s5); }
+  .gblocks .glabline .glab { margin: 0; }
+  .glab.whylab { margin: var(--s5) 0 var(--s2); }
+  .whylane { margin: 0 0 var(--s5); }
+  .lanebox.whybox .edit-why {
+    display: block; padding: var(--s3) 14px; min-height: calc(2 * 1.55em + 2 * var(--s3));
+    font-family: var(--font-ui); font-size: var(--t-ui); line-height: 1.55; color: var(--fg);
+    box-sizing: border-box; overflow-wrap: anywhere;
+  }
+  .lanebox.whybox .edit-why:empty::before,
+  .lanebox.whybox .edit-why.blank::before { left: 14px; top: var(--s3); right: 14px; }
+  /* **The Anonymous switch** (K3): about 30 × 18 with a 14px knob, then its
+     word; off — the default, a grey track — is signed, on — the accent — is
+     anonymous, the word `--fg` only then. A button with `role="switch"`, so
+     Space and Enter press it. */
+  .anonsw {
+    display: inline-flex; align-items: center; gap: var(--s2);
+    font-family: var(--font-ui); font-size: var(--t-small); font-weight: 500; color: var(--muted);
+  }
+  .anonsw.on { color: var(--fg); }
+  .anonsw .sw {
+    appearance: none; border: 0; padding: 0; flex: none; position: relative; cursor: pointer;
+    width: 30px; height: 18px; border-radius: 999px; background: var(--switch-off);
+    transition: background 120ms ease;
+  }
+  .anonsw .sw .knob {
+    position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%;
+    background: var(--bg); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25); transition: left 120ms ease;
+  }
+  .anonsw.on .sw { background: var(--primary); }
+  .anonsw.on .sw .knob { left: 14px; }
+  .anonsw .sw:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { .anonsw .sw, .anonsw .sw .knob { transition: none; } }
   .lanebox .edit-why {
     border: 0; box-shadow: none; padding: 0; min-height: 1.4rem;
     position: relative;

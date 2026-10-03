@@ -962,7 +962,7 @@ button.cline:hover b { text-decoration: underline; }
      what carries it when there is no name and no picture: an anonymous
      founder is ordinary, and the mark still says whose hand this was. */
   .founderspoke .spksaid { min-width: 0; }
-  .founderspoke .who {
+  .founderspoke:not(.comment) .who {
     display: block; font-weight: 600; font-size: var(--t-cap);
     color: var(--muted); margin-bottom: 2px;
   }
@@ -978,8 +978,9 @@ button.cline:hover b { text-decoration: underline; }
   .waswas span { flex: none; width: 2.4rem; color: var(--muted);
     font-size: var(--t-cap); text-transform: uppercase; letter-spacing: 0.06em;
     line-height: 1.6; }
-  /* the speaker's revealed form: the disc stays, the name stands beside it */
-  .speaker.revealed .who { font-weight: 600; font-size: var(--t-small); margin-right: 6px; }
+  /* the speaker's revealed form outside a comment: the disc stays, the name
+     stands beside it (a comment's byline is system.css's, issue #173) */
+  .speaker.revealed:not(.comment) .who { font-weight: 600; font-size: var(--t-small); margin-right: 6px; }
   /* the closed page: every clause grey, every tab filed; nothing is asked */
   .doc.closedpage .prose, .doc.closedpage .cpv, .doc.closedpage .cptext { color: var(--muted); }
   .doc.closedpage .prose .anch { color: var(--muted); }

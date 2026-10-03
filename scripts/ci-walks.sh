@@ -340,6 +340,10 @@ case "$GROUP" in
     # whose dev target route re-points the bots at a ladder document
     walk "demo-walk" npm run demo-walk -- "$DEMO_BASE"
     walk "demo-join" node scripts/repro/demo-join.mjs "$DEMO_BASE" --key=walk
+    # 📧 ✋ 🖼️ on a live seat: what stands on the first line wearing
+    # the chosen radio, a new one below (#169, #176) — a ladder member and
+    # the Founder here, a demo visitor there
+    walk "email-card-standing" node scripts/repro/email-card-standing.mjs "$BASE" --demo="$DEMO_BASE"
     walk "demo-bots-walk" npm run demo-bots-walk -- "$DEMO_BASE"
     ;;
 
