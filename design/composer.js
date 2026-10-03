@@ -589,6 +589,46 @@ window.COMPOSER = (function () {
       startDraft(key, null, { text: src.slice(0, a) + ins + src.slice(b), caret: a + ins.length });
     }
 
+    // **A tap on a clause makes it its lane** (MOBILE.md §6a.1, Ed 1585.1,
+    // 2026-10-02): on a coarse pointer the column never takes a caret, so in
+    // edit mode the tap is the door — the clause opens as a draft of itself,
+    // nothing changed yet, the caret where the finger landed (the point
+    // mapped to a source offset exactly as a keystroke's caret is). The same
+    // opening as a keystroke's, with no character applied.
+    function startDraftFromTap(p, x, y) {
+      const key = p.dataset.key;
+      if (!key) return false;
+      const src = markerFor(key) + currentTextFor(key);
+      let caret = src.length;
+      let r = null;
+      if (document.caretRangeFromPoint) r = document.caretRangeFromPoint(x, y);
+      else if (document.caretPositionFromPoint) {
+        const c = document.caretPositionFromPoint(x, y);
+        if (c) { r = document.createRange(); r.setStart(c.offsetNode, c.offset); r.collapse(true); }
+      }
+      if (r && p.contains(r.startContainer)) {
+        const off = offsetIn(p, r.startContainer, r.startOffset);
+        if (off != null) caret = Math.min(off, src.length);
+      }
+      // **the words do not move** (§6a.6 (2)): the head is a `.anch`'s box,
+      // its words 6px inside it, where an untouched clause's words stand at
+      // its own top — so the scroll takes up whatever the opening moved them
+      const wordsTop = (el) => {
+        const w = el && document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+        for (let n = w && w.nextNode(); n; n = w.nextNode()) {
+          if (!n.nodeValue.trim() || (n.parentElement && n.parentElement.closest('.chipcol, .nocaret'))) continue;
+          const q = document.createRange(); q.selectNodeContents(n);
+          const rs = q.getClientRects(); if (rs.length) return rs[0].top;
+        }
+        return null;
+      };
+      const t0 = wordsTop(p);
+      startDraft(key, null, { text: src, caret });
+      const t1 = wordsTop(env.doc.querySelector('[data-lane="' + key + '"]'));
+      if (t0 != null && t1 != null && Math.abs(t1 - t0) > 0.5) scrollBy(0, t1 - t0);
+      return true;
+    }
+
     // **Backspace at the start of a clause joins it to the one above** (Q1302,
     // Ed's bot room 2026-09-10: *I should be able to backspace at the start of a
     // clause to join it to the previous clause*), and Delete at its end joins
@@ -1004,6 +1044,13 @@ window.COMPOSER = (function () {
         block: '<div class="propblock editblock"><div class="glabline"><span class="glab">' +
           esc(window.COPY.shell.yourDraft) + '</span>' + anonSwitchHtml(d) + '</div>' +
           laneBoxHtml(d, s) + '</div>',
+        // the phone's form (MOBILE.md §6a.1, Ed 1585.1): the lane alone, to
+        // stand in the clause's own box, and beneath it the switch and the
+        // reasoning — the same parts, the head left out
+        lane: s.lost ? null : laneBoxHtml(d, s, null, 'lane'),
+        below: '<div class="propblock editblock lanebelow">' +
+          (SIGNING() ? '<div class="glabline">' + anonSwitchHtml(d) + '</div>' : '') +
+          laneBoxHtml(d, s, null, 'why') + '</div>',
         // what the card says under the words: a site the text moved out from
         // under (Q1463), and only the two facts that change what the row's ✏️
         // *does* (Ed, 2026-08-17) — it joins a race, it goes in as one change
@@ -1053,7 +1100,7 @@ window.COMPOSER = (function () {
     return { DRAFT_ID, draftOf, docIndexOfKey, siteFor, syncDraftKeys,
       dropDraft, dropDraftSite,
       caretRangeIn, selectedBlocks, laneCaret, placeCaret,
-      startDraft, startDraftFromTyping, startDraftFromRun,
+      startDraft, startDraftFromTyping, startDraftFromTap, startDraftFromRun,
       laneRemark, syncEditCtl, markSelection,
       commitBtnHtml, proposalRowHtml, proposeCtlTitles, draftRowState, setDraftSigned, draftSigned,
       ownParts, editParts, cardCommitActs };

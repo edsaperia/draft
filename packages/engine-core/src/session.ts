@@ -2174,6 +2174,34 @@ export class Session {
   }
 
   /**
+   * **When `tick` next might do something, given a sweep at `after`**
+   * (plan-scaling Stage 1, issue #210), or null where nothing will until
+   * another event is folded. `tick` above does one of two things: the close,
+   * from `windowEndMs`; and the sweep, whose outcome on one state moves with
+   * `t` in exactly two ways — the cooldown running out, and a silence on some
+   * pair becoming an abstention (`Races.nextExpiryAfter`, the very moments
+   * `races(t)` is keyed on). Between the earliest of those after `after` and
+   * `after` itself, a sweep reads what the sweep at `after` read and adopts
+   * nothing it did not.
+   *
+   * **Unlike the constitution's clocks these are moments, not states**: an
+   * expiry passed is not consumed by anything, so the caller must say when
+   * it last swept, and a caller that cannot say must tick.
+   */
+  nextClockT(after: number): number | null {
+    if (this.closedFlag) return null;
+    let next = Infinity;
+    if (this.windowed()) next = Math.min(next, this.constitutionValue.windowEndMs);
+    if (this.lastAdoptionT !== null) {
+      const cool = this.lastAdoptionT + this.constitutionValue.cooldownMs;
+      if (cool > after) next = Math.min(next, cool);
+    }
+    const expiry = this.raceRules.nextExpiryAfter(after);
+    if (expiry !== null) next = Math.min(next, expiry);
+    return next === Infinity ? null : next;
+  }
+
+  /**
    * `raceId` is passed only by `assent` (R-056): a parked candidate is in
    * no live race, so `raceIdOf` would name it `r:<id>` and the record would
    * file the adoption apart from the race it was decided in.
