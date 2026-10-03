@@ -366,6 +366,21 @@ try {
       meta: document.querySelector('meta[name=viewport]').content }));
     check(`${dev} · the doors are not hidden at narrow`, pre.doors.every((d) => d !== 'none'), JSON.stringify(pre.doors));
     check(`${dev} · the viewport resizes its content for the keyboard`, /interactive-widget=resizes-content/.test(pre.meta));
+    // (6) a motion's fields too (§6a.7: their share of stage 6 is the font
+    // and hit-area sweep): 💤's card, every field it draws ≥ 16px
+    const motion = await ph.p.evaluate(async () => {
+      const t = document.querySelector('[data-tab="lapse"]');
+      if (!t) return null;
+      t.click();
+      await new Promise((r) => setTimeout(r, 900));
+      const out = [...document.querySelectorAll('.setupcard input, .setupcard textarea, .setupcard select, .setupcard [contenteditable="true"], .setupcard [contenteditable="plaintext-only"]')]
+        .filter((e) => e.getBoundingClientRect().height && e.type !== 'file' && e.type !== 'radio' && e.type !== 'checkbox')
+        .map((e) => ({ f: (e.className || e.tagName), px: parseFloat(getComputedStyle(e).fontSize) }));
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await new Promise((r) => setTimeout(r, 600));
+      return out;
+    });
+    check(`${dev} · (6) a motion's fields ≥ 16px (💤)`, !!motion && motion.length > 0 && motion.every((x) => x.px >= 16), JSON.stringify(motion));
     await laneDoor(ph);
     const key = await tapDoor(ph, raced);
     if (i === 0 && key) {

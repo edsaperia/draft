@@ -3417,10 +3417,11 @@
        a phone can focus is 16px or its own size, whichever is larger, so
        the page keeps its scale. */
     /* …and the reason and a motion's fields by name (MOBILE.md §6a.6): they
-       were 12.64 and 14px, their class rules outranking the element rule */
+       were 12.64 and 14px, their class rules outranking the element rule —
+       setup.css's `.sugg input` among them, later in the cascade, hence `html` */
     input, textarea, select, [contenteditable="true"], [contenteditable="plaintext-only"],
-    .lanebox .edit-why, .lanebox.whybox .edit-why, .gshell input, .gshell textarea, .gshell select,
-    .gshell [contenteditable="true"], .gshell [contenteditable="plaintext-only"] { font-size: max(16px, 1em); }
+    .lanebox .edit-why, .lanebox.whybox .edit-why,
+    html .sugg input, html .sugg textarea, html .sugg select { font-size: max(16px, 1em); }
     /* the 95vh runway keeps the last clause reachable above the dock */
   }
   /* Touch (MOBILE.md §1.5): no double-tap zoom or 300ms delay on a control,
