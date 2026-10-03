@@ -31,6 +31,7 @@ import { chainHash, sha256Hex, stableStringify } from './hash.js';
 import { Routing, contextKey, pairKey, type RoutingHost } from './routing.js';
 import { Races, candidateNum, floorFor, type RacesHost } from './races.js';
 import { smoothstep } from './adoption-threshold.js';
+import { decodeState, encodeState } from './snapshot.js';
 import {
   balanceAt,
   creditedAt,
@@ -230,6 +231,21 @@ export class DocumentClosedError extends Error {
     this.closedAt = closedAt;
   }
 }
+
+/** What `Session.snapshot` writes (plan-scaling.md Stage 3). */
+export interface EngineSnapshot {
+  /** How many log entries the state has folded. */
+  eseq: number;
+  /** The hash of the last of them: the snapshot stands on a log whose entry
+   *  `eseq - 1` carries it, and on no other. */
+  hash: string;
+  /** The fold's fields, `encodeState`'s output. */
+  state: unknown;
+}
+
+/** The session's fields that are not the fold's state (`Session.snapshot`). */
+const SNAPSHOT_SKIP: ReadonlySet<string> = new Set(['log', 'routing', 'raceRules',
+  'derivedMap', 'derivedVersion', 'stateVersion', 'fitCache']);
 
 export class Session {
   readonly log: LogEntry[] = [];
@@ -440,6 +456,61 @@ export class Session {
       s.apply(entry.event, entry.seq);
       prev = entry.hash;
     }
+    return s;
+  }
+
+  /**
+   * **The fold, written down** (plan-scaling.md Stage 3): every field `apply`
+   * writes, as plain data (`snapshot.ts`), and the log entry it stands at.
+   * A cache of the log, never a truth: `restore` checks it against the log it
+   * is handed, and anything it cannot promise throws rather than writing.
+   *
+   * The fields are enumerated, not listed, so a field added to the fold is in
+   * the next snapshot without anybody remembering it; what is **not** state is
+   * named in `SNAPSHOT_SKIP` — the log itself (the store's), the two rule
+   * objects (closures over this instance), and the memo and the fit cache,
+   * both keyed caches that start empty on any session.
+   */
+  snapshot(): EngineSnapshot {
+    const fields: Record<string, unknown> = {};
+    for (const k of Object.keys(this)) {
+      if (!SNAPSHOT_SKIP.has(k)) fields[k] = (this as unknown as Record<string, unknown>)[k];
+    }
+    return { eseq: this.log.length, hash: this.rollingHash(), state: encodeState(fields) };
+  }
+
+  /**
+   * **A session from a snapshot and its log** (Stage 3): the fold restored at
+   * `snap.eseq`, the rest of the log applied as `replay` applies it. The whole
+   * chain is verified as `replay` verifies it, so a snapshot can only skip the
+   * fold's work, never the log's integrity (SPEC §11); and a snapshot that
+   * does not stand on this log — its entry's hash differs, the log is shorter,
+   * its fields are not this code's — throws, and the host replays in full.
+   */
+  static restore(snap: EngineSnapshot, log: LogEntry[]): Session {
+    if (snap.eseq < 1 || snap.eseq > log.length || log[snap.eseq - 1]!.hash !== snap.hash) {
+      throw new Error(`snapshot at ${snap.eseq} does not stand on this log`);
+    }
+    const s = new Session();
+    const fields = decodeState(snap.state) as Record<string, unknown>;
+    // a field declared without an initialiser is defined only when the fold
+    // first writes it, so the snapshot may carry more keys than a fresh session
+    const have = Object.keys(fields);
+    if (Object.keys(s).some((k) => !SNAPSHOT_SKIP.has(k) && !have.includes(k))) {
+      throw new Error('snapshot fields are not this code\'s');
+    }
+    for (const k of have) (s as unknown as Record<string, unknown>)[k] = fields[k];
+    let prev = '';
+    for (const entry of log) {
+      const expected = chainHash(prev, entry.event);
+      if (entry.hash !== expected || entry.prevHash !== prev) {
+        throw new Error(`hash chain broken at seq ${entry.seq}`);
+      }
+      s.log.push(entry);
+      if (entry.seq >= snap.eseq) s.apply(entry.event, entry.seq);
+      prev = entry.hash;
+    }
+    s.touch();
     return s;
   }
 
