@@ -56,7 +56,7 @@
  * entry's fill seen on its white slip, #148), P36 `fold-target` (every
  * drawn fold triangle a 28 × 28 target that moves nothing, #151), P37
  * `one-sheet` (the edit area one unbroken outline under the editing card,
- * #153) and P39 `tab-join` (every tab in an open card's strip meets the
+ * #153) and P40 `tab-join` (every tab in an open card's strip meets the
  * card's edge and casts no shadow onto it, #207), held everywhere
  * (`EVERY_KIND`):
  *
@@ -522,7 +522,7 @@ const IN_PAGE = () => {
    * card's body: its tabs hang outside the card's left edge.
    */
   /**
-   * **P39 tab-join** (#207): the open card's strip, read tab by tab. `gap` is
+   * **P40 tab-join** (#207): the open card's strip, read tab by tab. `gap` is
    * the card's left edge less the tab's right edge; `reach` is how far the
    * tab's outer shadow carries past its own right edge — per layer the
    * x-offset plus the spread plus σ, half the blur radius (the CSS blur is a
@@ -1792,7 +1792,7 @@ const IN_PAGE = () => {
                   })() },
         card: { r: rect(card), shadow: s.boxShadow === 'none' ? 'none' : s.boxShadow,
                 border: px(s.borderTopWidth), radius: px(s.borderTopLeftRadius) },
-        // P39 tab-join (#207): every drawn tab in the open card's strip, its
+        // P40 tab-join (#207): every drawn tab in the open card's strip, its
         // right edge against the card's left and how far its outer shadow
         // reaches past that edge onto the card
         strip: stripJoin(card),
@@ -2303,7 +2303,7 @@ const CHECKS = [
   ['P21', 'label-slot'], ['P22', 'no-job'], ['P23', 'note-visible'], ['P24', 'bin-job'],
   ['P25', 'row-vocabulary'], ['P26', 'role-drawing'], ['P27', 'closed-page'], ['P28', 'closed-keeps-content'],
   ['P29', 'closed-powers'], ['P30', 'zone-overlap'], ['P31', 'width-invariance'], ['P32', 'place-head'],
-  ['P33', 'one-home'], ['P34', 'glyph-space'], ['P35', 'wait-fill'], ['P36', 'fold-target'], ['P37', 'one-sheet'], ['P39', 'tab-join'], ['—', 'raw-value'],
+  ['P33', 'one-home'], ['P34', 'glyph-space'], ['P35', 'wait-fill'], ['P36', 'fold-target'], ['P37', 'one-sheet'], ['P40', 'tab-join'], ['—', 'raw-value'],
 ];
 const CHECK = Object.fromEntries(CHECKS.map(([n, name]) => [name, n + ' ' + name]));
 /** checks.md's *unchanged* set (BUILD.md stage 0's acceptance): their
@@ -4378,13 +4378,13 @@ function waitFillRules(rails) {
   return out;
 }
 /**
- * **P39 tab-join** (issue #207, Ed 2026-10-03: *tab not joining its card
+ * **P40 tab-join** (issue #207, Ed 2026-10-03: *tab not joining its card
  * cleanly (lower one)*): every tab in an open card's strip meets the card's
  * left edge within `TOL`, and its outer shadow reaches no further than that
  * edge — a tab is a descendant of the card, so a shadow past it is drawn on
  * the card, the seam *open is said by depth, not by outline* rules out. The
  * active tab has cast leftward only since 2026-08-17; this holds the rest of
- * the strip to it. P38 is #196's.
+ * the strip to it. P38 is #196's, P39 #200's.
  */
 function tabJoinRules(cards) {
   const out = [];
