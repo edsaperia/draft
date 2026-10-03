@@ -350,9 +350,9 @@ case "$GROUP" in
     # the chosen radio, a new one below (#169, #176) — a ladder member and
     # the Founder here, a demo visitor there
     walk "email-card-standing" node scripts/repro/email-card-standing.mjs "$BASE" --demo="$DEMO_BASE"
-    # **the page opens at the Text** behind ?rules=below (#197, SURFACE M26):
+    # **the page opens at the Text** (#197, the default since #212; SURFACE M26):
     # the demo, the ladder before 🍾, in session and closed, and the fixture,
-    # at 1600 and 390 — and without the flag, at the top
+    # at 1600 and 390 — and with the ?open=top dev seam, at the top
     walk "open-at-text" node scripts/repro/open-at-text.mjs "$BASE" --demo="$DEMO_BASE"
     walk "demo-bots-walk" npm run demo-bots-walk -- "$DEMO_BASE"
     ;;

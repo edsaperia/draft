@@ -641,7 +641,10 @@
       const atFoot = y + innerHeight >= root.scrollHeight - 48;
       if (dy < 0 || atFoot) { readDown = 0; root.removeAttribute('data-sheethide'); return; }
       readDown += dy;
-      const busy = Date.now() < quietUntil || (window.SESSION && window.SESSION.travelling);
+      // …nor on the page's own opening (#212): while paper.js holds the Text
+      // at its line, a scroll is that hold, never the reader reading down
+      const busy = Date.now() < quietUntil || (window.SESSION && window.SESSION.travelling)
+        || (window.PAPER && window.PAPER.pinState && window.PAPER.pinState() === 'pinned');
       if (readDown > 24 && y > 80 && !busy) root.setAttribute('data-sheethide', '');
     }, { passive: true });
 
