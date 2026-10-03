@@ -506,7 +506,10 @@ if (!EMPTY_TEXT) {
    * ✒️ (Ed, 2026-09-11: after pasting the starting text the row's ✒️ stayed
    * dark). One paragraph pasted at the end, as a ClipboardEvent carrying
    * text/plain; the row lit through the column's input listener; pressed,
-   * the second confirm carries the line. */
+   * the second confirm carries the line. Since #193 (Ed, 2026-10-02) the row
+   * is never dark — with nothing changed ✒️ is the way out of edit mode — so
+   * *lit* is read from what the press would do: the tooltip says *Saved*
+   * while the column matches, *Save the text* once it does not. */
   const pasteLit = await page.evaluate(() => {
     const pr = document.getElementById('prose');
     pr.focus({ preventScroll: true });
@@ -514,7 +517,7 @@ if (!EMPTY_TEXT) {
     const r = document.createRange(); r.setStart(d, 0); r.collapse(true);
     const s = getSelection(); s.removeAllRanges(); s.addRange(r);
     const b = document.querySelector('#proserow [data-act="row-commit"]');
-    const darkBefore = !!(b && b.disabled);
+    const darkBefore = !!(b && b.title === window.COPY.page.proseRow.saved);
     // two paragraphs into an **empty block** — Chromium nests the pasted
     // divs inside it, and the column must unwrap them (Q1314's second shape)
     // with Windows line ends, as Chrome's clipboard hands them over (Q1432): the
@@ -536,7 +539,7 @@ if (!EMPTY_TEXT) {
   await T(400);
   Object.assign(pasteLit, await page.evaluate(() => {
     const b = document.querySelector('#proserow [data-act="row-commit"]');
-    const lit = !!(b && !b.disabled);
+    const lit = !!(b && !b.disabled && b.title === window.COPY.page.proseRow.save);
     const blocks = [...document.getElementById('prose').children].map((c) => c.textContent);
     if (lit) b.click();
     return { lit, blocks };
