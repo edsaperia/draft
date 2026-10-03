@@ -379,6 +379,108 @@ say(s.state === 'peek', 'and the sheet stays at the peek (data-sheet=' + s.state
 await page.evaluate(() => window.SESSION.closeCard());
 await page.waitForTimeout(900);
 
+// 6b. **a card resolved back into the document brings the peek back** (#206,
+// Ed 2026-10-03: *resolve a card, click 🔥, repeat*): reading down an open
+// card slides the bar away; judging it closes the card into the document,
+// and the bar comes back naming the next entry, whose card one tap opens.
+// An OK that walks on to the next owed card leaves the sheet as it is.
+const readDown = async () => { for (let i = 0; i < 4; i++) { await page.mouse.wheel(0, 120); await page.waitForTimeout(80); } await settle(page, 350); };
+const openCard = () => page.evaluate(() => {
+  const id = window.SESSION.openId;
+  const band = document.querySelector('.setupcard');
+  return id != null ? id : band ? 'band:' + (band.dataset.setupcard || '') : null;
+});
+await page.evaluate(() => scrollTo(0, 0));
+await page.waitForTimeout(1400);
+pk = await peekCard(page);
+const judgedId = pk.id, judgedTitle = pk.title;
+await page.touchscreen.tap((pk.box.left + pk.box.right) / 2, (pk.box.top + pk.box.bottom) / 2);
+await page.waitForFunction((id) => window.SESSION.openId === id && !window.SESSION.travelling, judgedId, { timeout: 4000 }).catch(() => {});
+await page.waitForTimeout(1400);   // past the quiet the travel's own scroll gets
+await readDown();
+s = await sheet(page);
+say(s.hide, 'reading down the open card slides the peek away (' + judgedId + ')');
+const judged = await page.evaluate((id) => {
+  const card = [...document.querySelectorAll('.sugg[data-card]')].find((c) => c.dataset.card === id);
+  const pick = card && card.querySelector('.pick .lanepick');
+  if (!pick) return 'no radio';
+  pick.click();
+  const ok = card.querySelector('.btn-approve');
+  if (!ok || ok.disabled) return 'no commit';
+  ok.click();
+  return 'judged';
+}, judgedId);
+await page.waitForFunction(() => window.SESSION.openId == null, null, { timeout: 4000 }).catch(() => {});
+await settle(page, 900);
+s = await sheet(page);
+say(judged === 'judged' && s.state === 'peek' && !s.hide && s.bar.top < s.vh && s.bar.bottom <= s.vh + 0.5,
+  'judging it closes the card, and the sheet comes back to its peek (' + judged + (s.hide ? ', still hidden' : ', bar at ' + px(s.bar.top)) + ')');
+say(!!s.line && s.line !== judgedTitle, 'naming the next entry: «' + s.line + '»');
+pk = await peekCard(page);
+await page.touchscreen.tap((pk.box.left + pk.box.right) / 2, (pk.box.top + pk.box.bottom) / 2);
+await page.waitForTimeout(1200);
+const nextOpened = await openCard();
+// the next entry may be a clause's card or a Rules card (a motion's, the band's)
+say(nextOpened != null && nextOpened !== judgedId && (nextOpened === pk.id || nextOpened === 'band:' + pk.id),
+  'one tap on the peek opens the next card (' + nextOpened + ', wanted ' + pk.id + ')');
+await page.evaluate(() => { window.SESSION.closeCard(); const t = document.querySelector('.setupcard'); if (t) document.querySelector('[data-tab="' + t.dataset.setupcard + '"]').click(); });
+await page.waitForTimeout(1400);   // past the close's quiet
+await readDown();
+s = await sheet(page);
+say(s.hide, 'and reading down afterwards still slides the peek away');
+// the review walk: an owed record's OK opens the next owed card, and the
+// sheet stays as it was — hidden, here, while the walk travels on down
+const owed = await page.evaluate(() => [...document.querySelectorAll('.layout > .queue .qitem')]
+  .map((el) => el.dataset.q).filter((id) => window.SESSION.SUGGS.some((g) => g.id === id)));
+const pressOk = () => page.evaluate(() => {
+  const id = window.SESSION.openId;
+  const card = id != null ? [...document.querySelectorAll('.sugg[data-card]')].find((c) => c.dataset.card === id)
+    : document.querySelector('.setupcard');
+  const ok = card && card.querySelector(id != null ? '.okbtn[data-seen]' : '.okbtn[data-ok]:not(.grantok)');
+  if (!ok || ok.disabled) return false;
+  ok.click();
+  return true;
+});
+let first = null;
+for (const id of owed) {
+  await page.evaluate((x) => window.SESSION.toggle(x, true), id);
+  await page.waitForFunction((x) => window.SESSION.openId === x && !window.SESSION.travelling, id, { timeout: 4000 }).catch(() => {});
+  await page.waitForTimeout(300);
+  if (await page.evaluate(() => { const id = window.SESSION.openId; const c = id != null && [...document.querySelectorAll('.sugg[data-card]')].find((x) => x.dataset.card === id); return !!(c && c.querySelector('.okbtn[data-seen]')); })) { first = id; break; }
+}
+await page.waitForTimeout(1400);
+await readDown();
+const hidBefore = (await sheet(page)).hide;
+const y0 = await page.evaluate(() => scrollY);
+const pressed = first ? await pressOk() : false;
+await page.waitForTimeout(250);
+await page.waitForFunction(() => !window.SESSION.travelling, null, { timeout: 4000 }).catch(() => {});
+await settle(page, 600);
+s = await sheet(page);
+const walkedTo = await openCard();
+const y1 = await page.evaluate(() => scrollY);
+say(pressed && walkedTo != null && walkedTo !== first, 'an owed record\'s OK walks on to the next owed card (' + first + ' → ' + walkedTo + ')');
+// what the walk's own travel does to the bar is the scroll rule's, as before
+// #206 (its collapse lifts the page, which reads as a scroll up); this asks
+// only that the walk is not a return to the document
+say(hidBefore && s.state === 'peek', 'and the sheet stays at the peek, not raised (hidden before, ' +
+  (s.hide ? 'hidden' : 'shown by the travel\'s scroll') + ' after; net ' + Math.round(y1 - y0) + 'px)');
+// …and the OK that walks nowhere, at the walk's end, closes back into the
+// document and brings the peek back
+let walked = 0;
+while ((await openCard()) != null && walked < 20) {
+  await readDown();                // so the OK that ends the walk meets the peek hidden
+  if (!(await pressOk())) break;
+  walked++;
+  await page.waitForTimeout(250);
+  await page.waitForFunction(() => !window.SESSION.travelling, null, { timeout: 4000 }).catch(() => {});
+  await page.waitForTimeout(600);
+}
+await settle(page, 600);
+s = await sheet(page);
+say((await openCard()) == null && s.state === 'peek' && !s.hide && s.bar.bottom <= s.vh + 0.5,
+  'the last OK walks nowhere, and the sheet is back at its peek (' + walked + ' more OKs' + (s.hide ? ', still hidden' : '') + ')');
+
 // 7. reading down hides it, up shows it, the foot keeps it
 await page.evaluate(() => scrollTo(0, 0));
 await page.waitForTimeout(1400);   // past the quiet a choice's own scroll gets

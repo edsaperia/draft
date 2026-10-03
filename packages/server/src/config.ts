@@ -95,6 +95,14 @@ export interface ServerConfig {
    */
   push?: boolean;
   /**
+   * **The clock index** (`DRAFT_TICK`, Scaling Stage 1, issue #210): the
+   * minute's tick visits only the documents that are due, unless `all`.
+   * `all` is the tick before the index — every begun document every minute —
+   * kept as the differential's reference and as an operator's switch.
+   * Optional on the type: a config that does not say ticks the due only.
+   */
+  tickAll?: boolean;
+  /**
    * **The demo document** (design/DEMO.md Stage 1; Q1535): `/d/demo` built
    * in memory from `design/demo/pizzacon-2027.md` at boot. On unless
    * `DRAFT_DEMO=off`; a config that does not say — every test's — is off, so
@@ -255,6 +263,7 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ServerConfi
     botKey: (env.DRAFT_BOT_KEY ?? '').trim() || null,
     adminKey: (env.DRAFT_ADMIN_KEY ?? '').trim() || null,
     push: (env.DRAFT_PUSH ?? '').trim() !== 'off',
+    tickAll: (env.DRAFT_TICK ?? '').trim() === 'all',
     demo: (env.DRAFT_DEMO ?? '').trim() !== 'off',
     demoKey: (env.DRAFT_DEMO_KEY ?? '').trim() || null,
     demoAnthropicKey: (env.DRAFT_DEMO_ANTHROPIC_KEY ?? '').trim() || null,

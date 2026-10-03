@@ -31,6 +31,13 @@ export interface EngineDoc extends LoadedDoc {
   enginePersisted: number;
   /** The bridge state as last persisted — unchanged means no rewrite. */
   bridgeSerialized: string | null;
+  /**
+   * When `driveBridge` last swept this bridge (Scaling Stage 1, issue #210):
+   * the *after* the engine's `nextClockT` needs. Unset on a bridge nobody has
+   * swept in this process — born, resumed at boot or rebuilt by a rewind —
+   * which is therefore due at once.
+   */
+  sweptAtT?: number;
 }
 
 export function asEngineDoc(doc: LoadedDoc): EngineDoc {
@@ -158,11 +165,13 @@ export function rewindEngine(doc: LoadedDoc, tuning?: Partial<EngineTuning>): vo
   if (d.bridge === null) return;
   if (d.enginePersisted === 0 || d.bridgeSerialized === null) {
     d.bridge = null; d.enginePersisted = 0; d.bridgeSerialized = null;
+    delete d.sweptAtT;
     return;
   }
   const log = structuredClone((d.bridge.engine.log as unknown as EngineLogEntry[])
     .slice(0, d.enginePersisted));
   const state = JSON.parse(d.bridgeSerialized) as BridgeState;
+  delete d.sweptAtT;
   d.bridge = new EngineBridge(doc.cs, {
     t: doc.cs.constitutedAtT!, rngSeed: doc.id,
     ...(tuning ? { tuning: { ...DEFAULT_TUNING, ...tuning } } : {}),
@@ -188,6 +197,7 @@ export function driveBridge(doc: LoadedDoc, t: number,
     // tick, not bare sync (Ed, 2026-08-19): the minute timer is the
     // adoption metronome — a due batch lands even in a quiet room.
     d.bridge.tick(t);
+    d.sweptAtT = t;
   }
   const ending = doc.cs.settingState('ending').value as { endsAtMs: number | null } | null;
   if (ending !== null && ending.endsAtMs !== null && t >= ending.endsAtMs &&
@@ -223,4 +233,32 @@ export async function persistEngine(persistence: Persistence, doc: LoadedDoc): P
     await persistence.writeBridgeState(d.id, state);
     d.bridgeSerialized = state;
   }
+}
+
+/**
+ * **When this document next needs the minute's tick** (Scaling Stage 1,
+ * issue #210): the earlier of its two clocks — the constitution's (the close,
+ * the 💤 warnings and lapses, the crown's own lapse) and the engine's (the
+ * close, the cooldown's next beat, the next silence that becomes an
+ * abstention) — as a time on the document's own clock; `-Infinity` where it
+ * must be ticked now whatever the time, null where no clock runs until
+ * something is folded. Unbegun documents are null: the tick skips them.
+ *
+ * *Now* is a bridge waiting to be born or one nobody has swept in this
+ * process: the tick is what births it, and after a boot or a rewind the
+ * first sweep is what re-states the host's cooldown (R-086), so a resumed
+ * bridge cannot be trusted to have nothing to say until it has swept once.
+ *
+ * Pure: it reads, and the caller compares it with `foldTime`. What a commit
+ * still owes the store is the write path's question, not the clocks'.
+ */
+export function clockDueT(doc: LoadedDoc): number | null {
+  if (doc.cs.constitutedAtT === null) return null;
+  const d = asEngineDoc(doc);
+  let next = doc.cs.nextClockT() ?? Infinity;
+  if (!d.engineQuarantined) {
+    if (d.bridge === null || (!d.bridge.engine.closed && d.sweptAtT === undefined)) return -Infinity;
+    if (!d.bridge.engine.closed) next = Math.min(next, d.bridge.engine.nextClockT(d.sweptAtT!) ?? Infinity);
+  }
+  return next === Infinity ? null : next;
 }

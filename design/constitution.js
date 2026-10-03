@@ -3517,6 +3517,52 @@ var CONSTITUTION = (() => {
         }
       }
     }
+    /**
+     * **When `tick` next has something to do** (plan-scaling Stage 1, issue
+     * #210): the earliest moment any branch of `tick` above would emit, read
+     * off the same state and the same arithmetic, or null where none ever will
+     * until something else is folded — unbegun, closed, or no ending and no
+     * 💤 clock. A host may then skip this document's ticks before that moment
+     * and lose nothing, since `tick` at any earlier `t` emits nothing.
+     *
+     * **Every clock here is a state, never a moment that passes**: a lapse
+     * point already behind `t` still names a member in E, and a warning point
+     * behind it still names a lead shorter than the one sent, until `tick`
+     * folds them — so a point that was never ticked comes back from here as
+     * due, and the answer needs no *since when*. Kept beside `tick` because it
+     * is `tick` read backwards: a branch added there is a branch owed here.
+     */
+    nextClockT() {
+      if (this.constitutedT === null || this.closedFlag) return null;
+      let next = Infinity;
+      const ending = this.settings.get("ending").value;
+      if (ending && ending.endsAtMs !== null) next = Math.min(next, ending.endsAtMs);
+      const lapse = this.settings.get("lapse").value;
+      if (lapse && lapse.afterMs !== null) {
+        const pointsOf = (lastT, warnedLead, warns) => {
+          const due = lapseDue(lastT, lapse.afterMs);
+          let at = due.lapseAtT;
+          if (warns) {
+            for (const w of due.warnAt) {
+              if (warnedLead === null || w.lead < warnedLead) at = Math.min(at, w.t);
+            }
+          }
+          return at;
+        };
+        for (const m of this.members.values()) {
+          if (!inE(m)) continue;
+          next = Math.min(next, pointsOf(m.lastActivityT, m.lapseWarnedLead, true));
+        }
+        if (!this.crownLapsedFlag && this.holdsAnythingReserved()) {
+          next = Math.min(next, pointsOf(
+            this.convenor.lastActivityT,
+            this.convenor.lapseWarnedLead,
+            !this.members.has(this.convenor.id)
+          ));
+        }
+      }
+      return next === Infinity ? null : next;
+    }
     holdsAnythingReserved() {
       for (const st of this.settings.values()) {
         if (st.holder === "convenor") return true;
