@@ -3407,8 +3407,9 @@
     .navbar .pulse { display: none; }
     /* **the doors are a phone's too** (MOBILE.md §6a.6, Ed 1585.1): 📝 on its
        riding tab and in its corner, ✏️ *propose edit* on a lane; only the
-       B · I strip stays hidden — edit mode is the source, so `**` marks */
-    #prosectl { display: none; }
+       B · I strip stays hidden, in both eras — edit mode is the source, so
+       `**` marks (§6a.5) */
+    #prosectl, .doc .editctl { display: none; }
     /* **iOS zooms the page to any field smaller than 16px on focus**
        (MOBILE.md §1.8; Ed's screenshot `bugs/mobile screen width.png`,
        2026-09-12: the door's email field focused, the keyboard up, the whole
