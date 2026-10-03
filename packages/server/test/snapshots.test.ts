@@ -195,7 +195,9 @@ describe('the host loads from snapshots, and writes them', () => {
     writeFileSync(path, gzipSync(JSON.stringify({ ...snap, eseq: snap.eseq + 5 })));
     const m = JSON.parse(readFileSync(meta, 'utf8')) as { eseq: number };
     writeFileSync(meta, JSON.stringify({ ...m, eseq: m.eseq + 5 }));
-    const b = await boot(dir, 'strict');
+    // the audit off: nothing here is restored, and a strict boot would replay
+    // the whole set twice for nothing, under every other file's load
+    const b = await boot(dir, 'off');
     expect(b.snapshots.replayed.stale).toBe(1);
     expect(b.snapshots.written).toBe(1);
     await b.close();
