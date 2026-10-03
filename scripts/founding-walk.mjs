@@ -242,33 +242,35 @@ const record = async (step, note) => {
 };
 
 /**
- * **At the birth the title clause says who the Founder is** (Ed, 2026-08-27,
- * backlog 140). The birth's first clause is the founder's first meeting with
- * the word *Founder*, and until this sentence nothing on the page has told
- * them it means them — so it carries *(that’s you!)*, once, on the title and
- * nowhere else. Three assertions, because the aside has three ways to be
- * wrong: absent at the birth, still there after the save (where the clause is
- * read by members who are *not* the Founder, and must be byte-identical to
- * what it always was), or repeated down the band, where it reads as a tic.
+ * **At the birth the founder's two clauses say who the Founder is** (#223,
+ * Ed 2026-10-03, G1's *Before the save*: *The Founder (that's you!) may ✒️
+ * change anything at will.* and its 🛡️ twin), taking the aside from the title
+ * clause, where it stood from backlog 140 (Ed, 2026-08-27). The birth is the
+ * founder's first meeting with the word *Founder*, so it carries *(that’s
+ * you!)* there, on ✒️'s and 🛡️'s clauses and nowhere else. Three assertions,
+ * because the aside has three ways to be wrong: absent at the birth, still
+ * there after the save (where the clauses are read by members who are *not*
+ * the Founder), or on any other clause down the band — the title's included.
  * The apostrophe is the page's own curly `Q`, which `snap()` preserves — it
  * only collapses whitespace — so a straight quote here would pass vacuously.
  */
 const BIRTH_TITLE =
-  /^The document is titled “Hollow Oak Club Charter”\. The Founder \(that’s you!\) may amend this at will\.$/;
+  /^The document is titled “Hollow Oak Club Charter”\. The Founder may amend this at will\.$/;
 const SAVED_TITLE =
   'The document is titled “Hollow Oak Club Charter”. The Founder may amend this at will.';
 const ASIDE = 'that’s you';
+const ASIDE_CLAUSES = ['grant-pen', 'grant-shield'];
 const titleClauseAtBirth = async () => {
   const said = await clauseText('title');
   if (!BIRTH_TITLE.test(said || '')) {
-    errors.push('the birth’s title clause does not tell the founder who the Founder is: ' +
+    errors.push('the birth’s title clause is not the plain rule: ' +
       (said === null ? '(no title clause in the band)' : said));
   }
 };
 const titleClauseAfterSave = async (s) => {
   const said = await clauseText('title');
   if (said !== SAVED_TITLE) {
-    errors.push('the aside outlived the birth: ' +
+    errors.push('the title clause changed after the save: ' +
       (said === null ? '(no title clause in the band)' : said));
   }
   const carried = (s.paras || []).filter((p) => String(p.text).includes(ASIDE));
@@ -277,11 +279,11 @@ const titleClauseAfterSave = async (s) => {
       carried.map((p) => p.k).join(', ') + ' still say it after the save');
   }
 };
-const asideOnTitleAlone = (s) => {
-  const carried = (s.paras || []).filter((p) => String(p.text).includes(ASIDE));
-  if (carried.length !== 1 || carried[0].k !== 'title') {
-    errors.push('the aside is on ' + carried.length + ' clauses at the birth (' +
-      (carried.map((p) => p.k).join(', ') || 'none') + '), and it belongs on the title alone');
+const asideOnFounderClauses = (s) => {
+  const carried = (s.paras || []).filter((p) => String(p.text).includes(ASIDE)).map((p) => p.k);
+  if (JSON.stringify(carried) !== JSON.stringify(ASIDE_CLAUSES)) {
+    errors.push('the aside is on ' + (carried.join(', ') || 'none') +
+      ' at the birth, and it belongs on ' + ASIDE_CLAUSES.join(' and ') + ' alone');
   }
 };
 
@@ -299,7 +301,7 @@ await openCard('slug');
 await record('open slug');
 await clickIn('.setupcard [data-confirm]');
 const atCommitSlug = await record('commit slug');
-asideOnTitleAlone(atCommitSlug);
+asideOnFounderClauses(atCommitSlug);
 
 await openCard('myemail');
 await record('open myemail');

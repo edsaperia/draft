@@ -3164,7 +3164,9 @@
       // clause had nothing true for them) and served to them from the cork
       hide: () => !viewerIsMember() || !docOpen(),
       open: () => !!cs && viewerIsMember() && !!viewerRow().in,
-      early: () => !!cs && viewerIsMember() && !!viewerRow().in,
+      // …the Founder's at its place in the founding walk, after 👥 (#223, G6);
+      // an invitee's or an applicant's still on arrival, before any question
+      early: () => !!cs && !amFounder() && viewerIsMember() && !!viewerRow().in,
       // **a body of its own, about 🏛️ alone** (Q1502, Ed 2026-09-22): it
       // headed with the Proposals preamble — three rules about three things —
       // and asked for one OK; `proposalsClause` stays the constitution's
@@ -3183,7 +3185,8 @@
     // by `holderLine` — which is the whole of Ed's argument for retiring them.
     { k: 'grant-pen', g: '✒️', t: PAGE_COPY.gate.pen.title, own: 'you', isGate: true, isGrant: true,
       grants: '✒️', textcard: true,
-      hide: () => !amFounder() || !docOpen(),
+      // …and with its clause, where the power is laid down everywhere (#223, G1b)
+      hide: () => !amFounder() || !docOpen() || !founderClauseStands('u'),
       open: () => !!cs && amFounder() && holdsPenAnywhere(),
       // Ed's sentence, card review 2026-09-02
       why: PAGE_COPY.gate.pen.why,
@@ -3207,7 +3210,7 @@
     // which is a thing the journey walk asserts.
     { k: 'grant-shield', g: '🛡️', t: PAGE_COPY.gate.shield.title, own: 'you', isGate: true, isGrant: true,
       grants: '🛡️', textcard: true,
-      hide: () => !amFounder() || !docOpen(),   // the holder's, like the pen above
+      hide: () => !amFounder() || !docOpen() || !founderClauseStands('a'),   // the holder's, like the pen above
       open: () => !!cs && amFounder() && holdsShieldAnywhere(),
       // Ed's sentence, card review 2026-09-02
       why: PAGE_COPY.gate.shield.why,
@@ -3350,7 +3353,12 @@
       routeOf: () => (removalPrice() === 'proposal' ? 'ordinary' : 'constitutional'),
       hide: () => !docOpen(),
       ready: () => true, door: true },
-    { k: 'hat', g: '🎩', t: PAGE_COPY.cards.hat.t, n: PAGE_COPY.cards.hat.n, kind: 'personal', changeable: true },
+    // **🎩 sits by the Founder and is hidden at 🍾** (#223, G2 / G2b, Ed
+    // 2026-10-03): a fact about membership, its tab on the Founded line until
+    // the start, after which the members list says the rest. Hidden, never
+    // unsettled — `settled()` still reads it decided once the document begins.
+    { k: 'hat', g: '🎩', t: PAGE_COPY.cards.hat.t, n: PAGE_COPY.cards.hat.n, kind: 'personal', changeable: true,
+      hide: () => constituted() },
     // **The register and the door are two decisions** (Ed, 2026-08-18: *We
     // should separate "Membership" which is the register of people who are
     // members from "Membership Policy" which is how people become members
@@ -4133,56 +4141,92 @@
   // member sees from arrival (`onFoundedLine`). The voice's *sentence* stays
   // merged into the preamble (Q750) — sentence 3 of `proposalsClause` — so
   // the preamble still states the constitutional route; only the tab moved.
-  const PROPOSAL_CHIPS = ['begin', 'canpropose', 'canjudge'];
-  // The open card is kept in its own group even if it has just gone invisible
-  // under the pointer: the strip a card opened into must not lose the tab you
-  // are looking at.
-  // **A release batch belongs to no clause, so it stands where 🍾 does**
-  // (entry 162). What one act laid down spans the constitution's sections —
-  // 🍾 itself lays down the Text's pair and every pending release at once —
-  // and the Proposals preamble is the page's own precedent for a card that is
-  // a *moment* rather than a rule. So the 👑 tab joins the four already in
-  // that stack and opens at the same paragraph, which is also what gives the
-  // card a home to render in: it draws no clause of its own.
-  const proposalChips = () => PROPOSAL_CHIPS.concat(releaseKeys()).map(card)
-    .filter((c) => c && (visible(c) || S.open === c.k));
-  const proposalsClause = () => {
-    // sentence 1 — who may take part: 💡's own two branches joined to ⚖️'s.
-    // Before the press both gates say the same thing, so they join into one
-    // clause; *the document begins*, never *the session*, which is engine
-    // vocabulary the surface otherwise avoids.
-    let s1;
-    if (!constituted()) s1 = PAGE_COPY.preamble.beforeBegin;
-    // the defensive branch — begun, with proposing shut (a constituted
-    // document whose text never confirmed). 💡's own sentence, with what is
-    // true said first rather than a new one invented — and ⚖️ keeps its own
-    // condition here as it does below: judging is not open just because the
-    // document has begun.
-    else if (!canPropose()) s1 = (canJudge() ? PAGE_COPY.preamble.voteOnly
-      : PAGE_COPY.preamble.voteWhenDecided) +
-      PAGE_COPY.preamble.proposeAtBegin;
-    else {
-      // a delegated ordinary question may still be collecting after the
-      // start (🍾 waits only on the judge-gate ones), and the module keeps
-      // a member who owes it an answer from proposing until they give it
-      const prop = PAGE_COPY.preamble.proposeLead + (LIVE().some(owesAnswer)
-        ? PAGE_COPY.preamble.onceAnswered
-        : PAGE_COPY.preamble.asArrive);
-      s1 = canJudge() ? prop + PAGE_COPY.preamble.andVote
-        : prop + PAGE_COPY.preamble.voteTail;
-    }
-    // sentences 2 and 3 — what it takes to pass, one route per line (Ed's
-    // card review, 2026-09-02: three lines with explicit breaks on the 🏛️
-    // card — `breakLines` draws them there; the constitution's own paragraph
-    // flows them as prose). What the rewrite drops is *Nobody amends a rule
-    // at will, and no passed change waits on anyone's assent, unless a rule
-    // says so* — the default-powers sentence, cut by Ed with the review.
-    return s1 + '\n' +
-      PAGE_COPY.preamble.passOrdinary + '\n' +
-      PAGE_COPY.preamble.passConstitutional;
+  // **Every grant and gate hangs on a clause of its own** (#223, Ed
+  // 2026-10-03, G1 · G3 · G5). The Proposals preamble — one paragraph of three
+  // sentences wearing 🍾 💡 ⚖️ and the 👑 news (Q748–Q750, Y21, Y23) — is
+  // retired: ✒️ and 🛡️ each have a clause in the lead under the link, after
+  // the Founded line; 💡 ⚖️ 🏛️ each theirs among Proposals' five clauses
+  // (✏️ ⏱️ ⚖️ 👥 🏛️); 🍾 and 🥂 theirs in the Schedule. Every sentence is
+  // Ed's, in `PAGE_COPY.clause`.
+  // **The setting names, in the Rules' own order** (G1b): the list a clause
+  // names when the Founder holds a power on some settings and not all. A key
+  // the catalogue gains later is named after these, so nothing goes unsaid.
+  // the Proposals section's five clauses, in Ed's order (#223, G3)
+  const PROPOSAL_CLAUSES = ['canpropose', 'rate', 'canjudge', 'quorum', 'grant-voice'];
+  const PW_NAME_ORDER = ['title', 'slug', 'chamber', 'admission', 'applications',
+    'lapse', 'removal', 'rate', 'quorum', 'authorship', 'judgments', 'ending', 'text'];
+  // **The founder's clause for one power** (G1, G1b): *anything* where the
+  // hand is on every setting and both doors, the settings named where it is
+  // on some — the doors in their own whole sentences, Ed's — and nothing at
+  // all where it is on none, the clause and its tab going together. Before
+  // the save the founder holds both by construction, and the clause says
+  // whose hand that is (*that's you!*, STYLE T10). A closed document states
+  // no power at all (1541.52), so neither clause stands on one.
+  const founderPowerClause = (power) => {
+    const C = PAGE_COPY.clause;
+    if (!cs) return power === 'u' ? C.penBirth : C.shieldBirth;
+    if (!docOpen()) return '';
+    // the settings the surface names and the two doors — never a catalogue
+    // key the surface has retired (🌡️ 🪜 🤖), which no reader could find
+    const keys = PW_NAME_ORDER.concat(DOOR_KEYS).filter((k) => PW_KEYS.includes(k));
+    const holds = (k) => !!pwPair(k)[power];
+    if (!keys.some(holds)) return '';
+    if (keys.every(holds)) return power === 'u' ? C.penAll : C.shieldAll;
+    const named = PW_NAME_ORDER.filter((k) => keys.includes(k) && holds(k)).map(pwNoun);
+    return [named.length ? (power === 'u' ? C.penSome : C.shieldSome)(C.list(named)) : '']
+      .concat(DOOR_KEYS.filter(holds).map((k) => founderMay([pwPhrase(k, power)])))
+      .filter(Boolean).join(' ');
   };
-  const preamblePara = () =>
-    '<div class="cpara notab"><p class="cpv">' + proposalsClause() + '</p></div>';
+  // whether the clause stands at all — the test its tab shares (G1b)
+  const founderClauseStands = (power) => !!founderPowerClause(power);
+  // **A release batch hangs on the founder's clause it laid down** (G1, G3:
+  // *the 👑 news moves to the founder's clauses*): ✒️'s where it laid a ✒️
+  // down and that clause still stands, else 🛡️'s on the same test — and
+  // where the power it laid down is gone everywhere, its clause gone with it,
+  // on the Founded line (*the 👑 news for the last power laid down hangs
+  // here*). The answer is a paragraph key: `grant-pen`, `grant-shield` or
+  // `founded`.
+  const releaseHostOf = (rk) => {
+    const c = card(rk);
+    const b = c && c.release ? releaseBatch(c.release) : null;
+    const laid = (power) => !!b && b.releases.some((r) => r.power === power);
+    if (laid('unilateral') && founderClauseStands('u')) return 'grant-pen';
+    if (laid('assent') && founderClauseStands('a')) return 'grant-shield';
+    if (!laid('unilateral') && !laid('assent')) {
+      if (founderClauseStands('u')) return 'grant-pen';
+      if (founderClauseStands('a')) return 'grant-shield';
+    }
+    return 'founded';
+  };
+  const releasesOn = (host) => releaseKeys().filter((rk) => releaseHostOf(rk) === host)
+    .map(card).filter((c) => c && (visible(c) || S.open === c.k));
+  // *Friday 2 October*: the day in the page's own words, never the browser's
+  // locale (STYLE T16, Q1523)
+  const dayWords = (d0) => PAGE_COPY.clause.weekDay(window.COPY.grammar.longWhen.days[d0.getDay()],
+    window.CARDS.longDay(d0.getTime()));
+  // the 💡 ⚖️ 🍾 🥂 clauses' sentences, each its gate's own (G3, G5)
+  const gateClause = (c) => {
+    const C = PAGE_COPY.clause;
+    if (c.k === 'canpropose') return constituted() ? C.propose : C.proposeBefore;
+    if (c.k === 'canjudge') return constituted() ? C.vote : C.voteBefore;
+    if (c.isBegin) {
+      if (!constituted() || !cs || cs.constitutedAtT === null) return C.beginWaiting;
+      const d0 = new Date(cs.constitutedAtT);
+      const p2 = (x) => String(x).padStart(2, '0');
+      // the date in the page's own words, never the browser's locale (STYLE T16, Q1523)
+      return C.begun(p2(d0.getHours()) + ':' + p2(d0.getMinutes()), dayWords(d0));
+    }
+    if (c.isClosing) {
+      const at = cs && cs.closedAt != null ? new Date(cs.closedAt) : null;
+      const p2 = (x) => String(x).padStart(2, '0');
+      return at ? C.closed(p2(at.getHours()) + ':' + p2(at.getMinutes()),
+        dayWords(at), closeSignatures().length) : '';
+    }
+    if (c.k === 'grant-voice') return C.constitutional;
+    if (c.k === 'grant-pen') return founderPowerClause('u');
+    if (c.k === 'grant-shield') return founderPowerClause('a');
+    return '';
+  };
   // The title's clause (403/404, revised Ed 2026-08-19: *move title tab to
   // the first clause once that clause appears*): the 🪶 value tab stands in
   // front of the two power tabs — the governance tab group proper — so once
@@ -4679,13 +4723,19 @@
   // pen's own blocking rule — every card below it is committed with the very
   // pen it hands over — does not reach them: a name and a picture are personal,
   // bind nobody (§9.0c) and are committed with no power at all.
+  // **The founding walk reads the Rules top to bottom** (#223, G6, Ed
+  // 2026-10-03): 🪶 📍 📧 (✋ 🖼️ alongside), 🎩 on the Founded line, ✒️ then
+  // 🛡️ on their own clauses, 🌍; 🪪 🤝 💤 🥾; 💡 ⏱️ ⚖️ 👥 🏛️; 👤 👁️; ⏰ and
+  // then 🍾 — the Schedule's 🍾 standing last in the file though its clause
+  // opens the section, as it always has, and 📝 last but one. 💡 and ⚖️ are
+  // accepted for the founder at the start; 🏛️ is the founder-member's here,
+  // and an invitee's or applicant's on arrival (`early`).
   const ORDER = ['title', 'slug', 'myemail', 'myname', 'mypic',
-    'grant-pen', 'grant-shield', 'chamber',
-    'admission', 'applications', 'hat', 'lapse', 'removal',
-    'canpropose', 'canjudge', 'grant-voice', 'rate',
-    'ending', 'quorum',
+    'hat', 'grant-pen', 'grant-shield', 'chamber',
+    'admission', 'applications', 'lapse', 'removal',
+    'canpropose', 'rate', 'canjudge', 'quorum', 'grant-voice',
     'authorship', 'judgments',
-    'text', 'begin'];
+    'ending', 'text', 'begin'];
   // a card in the order waits for everything above it and nothing else: the
   // ORDER *is* the dependency list. Since Q619 (b) (2026-08-22) a `dep` array
   // survives only on the cards outside it — ✉️ ❌ the doors and 🥂, 🪜 having
@@ -4774,6 +4824,9 @@
   // every purpose that counts them — the rail enumerates from `tasksFor`, and
   // so does the group's own note — but they draw no paragraph of their own:
   // their tabs stand on the Founded line, and that sentence is their clause.
+  // (since #223 the grants hang on clauses of their own — ✒️ 🛡️ in the lead,
+  // 🏛️ among the Proposals — so the name is the history; what it answers is
+  // still *a grant enumerated by the link that draws no paragraph there*)
   const onFoundedLine = (c) => !!c && (c.k === 'grant-pen' || c.k === 'grant-shield' || c.k === 'grant-voice');
   // **Your identity tabs ride wherever you appear in the document** (Q759, Ed
   // 2026-08-23). Ordinarily that is your own row in the Members list; a clerk
@@ -4785,6 +4838,11 @@
   // way out is the *Alumni* heading's act now, beside the people who took it
   const myIdCards = () => ['myname', 'mypic', 'myemail'].map(card).filter((c) => c && visible(c));
   const idOnFounded = () => (cs && amFounder() && !viewerIsMember() ? myIdCards() : []);
+  // **The Founded line's pile** (#223): 🎩 until 🍾 (G2, G2b — hidden at the
+  // start, the members list saying the rest), the 👑 news for the last power
+  // laid down (G1), and a clerk's identity tabs (Q759)
+  const foundedChips = () => [card('hat')].filter((c) => c && (visible(c) || S.open === c.k))
+    .concat(releasesOn('founded'), idOnFounded());
   // One question card per delegable setting, born when its setting is handed
   // over and gone if it is taken back. Same glyph, same title — it is the
   // same question — told apart by whose pile it stands in.
@@ -5079,8 +5137,8 @@
           // the admit judgments on *Applications for Membership* (Q1557),
           // where every vote on letting somebody in is listed, ❌ on *Proposed
           // for removal* — each still wearing its own ✒️/🛡️ pair, and each a
-          // pile rather than a button in a row. 🎩 stays on *Members*, being
-          // about the founder's own place in it. The stranger reads the
+          // pile rather than a button in a row. 🎩 left *Members* for the
+          // Founded line (#223, G2), sitting by the Founder. The stranger reads the
           // register as the door serves it, under *Members* and *Alumni*.
           // **The register tells the room who left** (Q901, E31–E32), under
           // *Alumni* since Q1557 (e) — document text, so it reads on the
@@ -5099,11 +5157,11 @@
           (isStranger()
             ? memSub(PAGE_COPY.memHeads.members, strangerRows, [], true)
             // The invitations sent stand after the arrived rows and before
-            // your own (Q1557 (a)), and 📭 beside 🎩 (E34): the give-up is
+            // your own (Q1557 (a)), and 📭 at the head (E34): the give-up is
             // about somebody listed here, and this is where a reader looks
             : memSub(PAGE_COPY.memHeads.members, nobody + here.map((p) => memRow(p)).join('') +
                 invited.map((p) => memRow(p)).join('') + meBlock,
-                ['hat'].concat(mailGiveUpKeys()), false, !!openId) +
+                mailGiveUpKeys(), false, !!openId) +
               // **Every vote on letting somebody in, one heading** (Q1557 (b)):
               // a member's proposal to invite, by its address, then a
               // stranger's own application. ✉️ heads it — its result in the
@@ -5123,58 +5181,43 @@
           alumniSub;
       } },
     // **Proposals reads second** (Q871, Q872, Ed 2026-08-26: *Proposals above
-    // Decisions* — reversing *Proposals reads fourth*, Ed 2026-08-21). That
-    // ruling was itself a restoration: the section had drifted to second and
-    // was put back to fourth because its whole arrival landed directly beneath
-    // the Membership clauses the founder was still working through. What has
-    // changed since is that the section no longer arrives at once — Q748 made
-    // its opening one clause wearing four tabs, and ORDER (not a wave graph)
-    // paces the two settings under it one at a time — so the objection the
-    // fourth-place ruling was answering no longer holds. What is left is the
-    // reading order, and it reads better this way: who may propose, and how
-    // often, before how the room decides what is proposed. Membership ·
-    // Proposals · Decisions · Anonymity · The Document.
-    // The gates lead it (Ed, 2026-08-18); the preamble opens it
-    // (Ed, 2026-08-19 — moved from the head of the constitution, redrafted
-    // in his words); no intro lines — the sections are not big enough to
-    // need explanations, and the clauses ought to be self-explanatory
-    // (Ed, 2026-08-19)
+    // Decisions*): who may propose, and how often, before how the room
+    // decides what is proposed. Membership · Proposals · Anonymity ·
+    // Schedule · The Document since #223 (G5: *the Decisions section goes
+    // away*).
+    // **Five clauses, one per power, in Ed's order** (#223, G3 · G4, Ed
+    // 2026-10-03): ✏️ wearing 💡, ⏱️, ⚖️ wearing ⚖️, 👥 — the quorum, now the
+    // pass rule, moved here from Decisions — and 🏛️ wearing its grant. The
+    // three that are rules about everybody (✏️ ⚖️ 🏛️) stand whenever the
+    // section does, their tabs joining as each grant or gate is served to the
+    // reader; ⏱️ and 👥 as the founding order reaches them. 🍾 moved to the
+    // Schedule, the 👑 news to the founder's clauses.
     { key: 'rate', title: 'Proposals',
       text: '',
-      // **The section opens with one clause wearing four tabs** (Q748). The
-      // preamble stands tab-less while the group is empty, so the sentence
-      // saying what beginning will do is readable from the moment the section
-      // is live; each of 🍾 💡 ⚖️ 🏛️ *joins the stack* as it arrives rather
-      // than a new paragraph appearing under it, and the whole group opens at
-      // this one paragraph (`chipsFor` / `PROPOSAL_CHIPS`). `body` therefore
-      // skips all four; `keys` keeps 🍾 💡 ⚖️, because the rail and the
-      // group's own count enumerate from the section's cards. 🏛️ stays out of
-      // `keys` deliberately — it is `visible` from its place in ORDER, and
-      // admitting it would make the whole section live that early and offer
-      // its news before 🍾 (F9). It is enumerated by `tasksFor`, as Q605
-      // built it, and only its *clause* moves here.
-      lead: (H) => (cs ? (proposalChips().length ? H.para(card('begin')) : preamblePara()) : ''),
-      body: (H) => ['rate'].map(card)
-        .filter((c) => c && visible(c)).map((c) => H.para(c) + H.tasks(c)).join(''),
-      keys: ['begin', 'canpropose', 'canjudge', 'rate'],
-      // one 👑 card per act that laid powers down (entry 162) — news, never a
-      // task, and enumerated here because the rail reads a section's own keys:
-      // a card the section does not enumerate is a card nothing can serve
-      extraKeys: () => releaseKeys() },
-    { key: 'deciding', title: 'Decisions',
-      text: '',
-      // ⏰ when it ends, 👥 how many must have voted. Two of the four left on
-      // 2026-09-15 (Q1362): 🌡️ *how sure the room must be at that point* and
-      // 🪜 *how that number gets there* were the confidence, and the rule that
-      // asked for one is gone — the wording the room prefers stands once the
-      // quorum is met, so 👥 is the whole of what this section decides.
-      keys: ['ending', 'closing', 'quorum'],
-      body: (h) => ['ending', 'closing', 'quorum'].map(card)
-        .filter((c) => c && visible(c)).map((c) => h.para(c) + h.tasks(c)).join('') },
+      body: (H) => PROPOSAL_CLAUSES.map(card)
+        .filter((c) => c && (c.isGate || c.isGrant || visible(c)))
+        .map((c) => H.para(c) + (c.isGate || c.isGrant ? '' : H.tasks(c))).join(''),
+      keys: ['canpropose', 'rate', 'canjudge', 'quorum', 'grant-voice'] },
     // "Anonymity" (Ed, 2026-08-19), not "Privacy"
     { key: 'privacy', title: 'Anonymity',
       text: '',
       keys: ['authorship', 'judgments'] },
+    // **The Schedule, the last section of the Rules** (#223, G5, Ed
+    // 2026-10-03), just above the Text: 🍾 ⏰ 🥂. 🍾's clause stands whenever
+    // the section does — *The members are waiting on the Founder to begin*
+    // until the press, the moment after it — its tab joining when 🍾 is
+    // served; ⏰ moved here from Decisions; 🥂's clause once the document is
+    // closed. One 👑 card per act that laid powers down is enumerated here
+    // (entry 162) — news, never a task — and drawn on the founder's clause
+    // it hangs on (`releaseHostOf`): the rail reads a section's own keys, and
+    // a card no section enumerates is a card nothing can serve.
+    { key: 'schedule', title: 'Schedule',
+      text: '',
+      body: (H) => H.para(card('begin')) +
+        ['ending', 'closing'].map(card).filter((c) => c && visible(c))
+          .map((c) => H.para(c) + H.tasks(c)).join(''),
+      keys: ['begin', 'ending', 'closing'],
+      extraKeys: () => releaseKeys() },
     // rail-only: the title is the heading, the link leads the constitution,
     // and the starting text anchors the prose (Ed, 2026-08-18)
     { key: 'doc', title: 'The Document', railOnly: true,
@@ -5221,7 +5264,8 @@
     // (Q1365; it was the first blind question's, Q605 (a)) — all three
     // enumerated here and drawn on the Founded line (Q639).
     .concat(c.k === 'slug'
-      ? [card('grant-pen'), card('grant-shield'), card('grant-voice')].filter(visible) : []);
+      // 🏛️ is the Proposals section's own key since #223, its clause there
+      ? [card('grant-pen'), card('grant-shield')].filter(visible) : []);
   // **The keys the rail can ever list** (Q775). Every section's own keys, plus
   // the three grants and the answer tasks `tasksFor` adds beside them — the
   // whole of what `servedCards` below can produce, read off the same literals
@@ -5300,8 +5344,8 @@
       // at the 🍾 press; a founder who set no name is Anonymous like anybody
       // else (§9.0c). **It is where ✒️ and 🛡️ hang their tabs** (Q639 (a)).
       lead: (h) => titleGovPara(h) +
-        // the link's own answer-task still draws here; the two grants it
-        // carries do not — they are drawn on the Founded line below (Q639)
+        // the link's own answer-task still draws here
+        // — the grants it carries do not: they are drawn on their own clauses
         (visible(card('slug')) ? h.para(card('slug')) +
           tasksFor(card('slug')).filter((t) => !onFoundedLine(t)).map((t) => h.para(t)).join('') : '') +
         // **The birth's third clause** (Ed, 2026-08-21): the document says
@@ -5309,39 +5353,30 @@
         // to say *Sent to…* and the founder can get back to their own
         // address from the document itself. It stands here for the whole of
         // the birth — open, unsent, and awaiting the link — because the tab
-        // must not move: it used to be rendered by the Membership section's
-        // own body while the card was open and by this line once the mail
-        // was out, so the paragraph jumped up the page at the send.
+        // must not move.
         (!cs && visible(card('myemail')) ? h.para(card('myemail')) : '') +
-        // 🌍 is about the document, not member privacy — the penultimate
-        // clause of the opening section (Ed, 2026-08-19)
-        (visible(card('chamber')) ? h.para(card('chamber')) + h.tasks(card('chamber')) : '') +
-        // **The grants stand here** (Q639 (a), Ed 2026-08-22). Their own two
-        // clauses — *The Founder holds the pen on 16 settings.* and its
-        // shield twin — are retired: the count is already stated on every
-        // setting the power turns (`holderLine`) and in the second person on
-        // the wallet's own tooltip, so the clause was the third telling and
-        // the one that went stale whenever a power was laid down. Every
-        // *settings* clause wears ✒️ and 🛡️ for its **own** powers, so a
-        // grant could not hang on one without putting two ✒️ tabs meaning
-        // different things in one stack; the Founded line carries none, sits
-        // in the opening run where the grants arrive, and already wears 👑 —
-        // the mark that means *holds either power*. The tabs make the crown
-        // clickable, which is the dividend rather than the cost.
+        // **The Founded line** (Q640, Q639 (a)): from the save, *Founded by
+        // [avatar] [name] 👑.* — the time moved to 🍾's clause (#223). It
+        // carries 🎩 until 🍾 (G2, G2b: *a fact about membership, but it sits
+        // by the Founder*), the 👑 news for the last power laid down (G1), and
+        // a clerk's ✋🖼️📧 (Q759) — the grants left it for their own clauses.
         (cs ? (() => {
-          // and a clerk's ✋🖼️📧 join them (Q759): the Founded line is where
-          // a clerk appears in the document, so it is where their identity
-          // tabs ride. Five tabs is the tallest this pile gets.
-          // …and 🏛️ rides here for every member (Q1365): the grant of the
-          // membership, on the line that says who founded the document
-          const gc = [card('grant-pen'), card('grant-shield'), card('grant-voice')].filter((c) => c && visible(c))
-            .concat(idOnFounded());
-          // a member, a stranger, a founder who holds nothing: no pile, and
-          // the line renders exactly as it always did
-          return gc.some((c) => S.open === c.k) ? h.paraWith(card(S.open), gc)
+          const gc = foundedChips();
+          const open = gc.find((c) => S.open === c.k);
+          return open ? h.paraWith(open, gc)
             : '<div class="cpara' + (gc.length ? '' : ' notab') + '" data-para="founded">' +
               (gc.length ? h.pile(gc) : '') +
-              '<div class="cptext">' + foundedClause() + '</div></div>'; })() : ''),
+              '<div class="cptext">' + foundedClause() + '</div></div>'; })() : '') +
+        // **✒️ and 🛡️, a clause each** (#223, G1, Ed 2026-10-03): in the lead,
+        // under the link, after the Founded line, each wearing its grant and
+        // the 👑 news that hangs there; at the birth, under the link, saying
+        // whose hand it is. A power held nowhere has no clause and no tab (G1b).
+        (visible(card('slug')) || cs
+          ? ['grant-pen', 'grant-shield'].map(card).filter((c) => c && gateClause(c))
+            .map((c) => h.para(c)).join('') : '') +
+        // 🌍 is about the document, not member privacy — the last clause of
+        // the opening run, after the founder's (#223, G6's order)
+        (visible(card('chamber')) ? h.para(card('chamber')) + h.tasks(card('chamber')) : ''),
       // **The hairline and the title are facts about the document, not about
       // the 📄 task** (Ed, backlog 33: *immediately after the birth, when my
       // named document opens for the first time, the Text area should already
@@ -7907,7 +7942,7 @@
   const endingAt = () => (endingVal() !== 'never' && endingVal()) || S.endsAt;
   // Ed's sentence (card review 2026-09-02); the freeze is real (SPEC §9.5)
   // and the card no longer mentions it
-  const ENDING_NEVER = 'Changes to the document may be made perpetually.';
+  const ENDING_NEVER = PAGE_COPY.clause.endingNever;
   // **A number states its own sentence** (Q1112 (b), step 5): the numeric
   // clauses are named here, taking the value rather than reading the
   // document's, so the clause and the *You said* readback are the one
@@ -7917,7 +7952,7 @@
   // none of these writes a second consequence sentence, which is the half of
   // that rule the surface still keeps.
   const ENDING_RULE = (v) => (v === 'never' || !v ? ENDING_NEVER
-    : 'No more changes to the document may be made after ' + endFmtOf(v) + '.');
+    : PAGE_COPY.clause.endingAfter(endFmtOf(v)));
   // `form` is the value's own since Q1162 — a delegated resolution can land
   // in either form whatever the founder's frame says, so a caller with a
   // typed value passes its form and only the founder's own field defaults
@@ -7957,8 +7992,8 @@
     return !p ? '' : p.n === 1
       ? { days: 'day', hours: 'hour', minutes: 'minute' }[p.unit]
       : p.n + ' ' + p.unit; };
-  const RATE_RULE = (drip) =>
-    'Members may make a new proposal ✏️ every ' + dripPhrase(drip) + '.';
+  // …and the cap in its own sentence since #223 (G3, Ed 2026-10-03)
+  const RATE_RULE = (drip) => PAGE_COPY.clause.rate(dripPhrase(drip), RATE_START.cap);
   const DECIDED = {
     // the ⏰ clause is `ENDING_RULE`'s like the readback's — it was the one
     // numeric clause left spelling itself a second time beside its builder
@@ -8032,8 +8067,9 @@
     if (!PW_KEYS.includes(k)) return '';
     // at the birth the founder holds everything by construction — there is no
     // module yet, and nobody else to hold anything
-    // — and the title's is the one that says whose hand that is (backlog 140)
-    if (!cs) return ' ' + founderMay([pwPhrase(k, 'u')], k === 'title');
+    // — whose hand that is, *(that's you!)*, the founder's own two clauses say
+    // since #223 (G1's *Before the save*); it was the title's (backlog 140)
+    if (!cs) return ' ' + founderMay([pwPhrase(k, 'u')]);
     // a closed document states no power at all (1541.52; answers Part 6.6):
     // the Rules paragraph keeps its rule and *this* as its subject
     if (!docOpen()) return '';
@@ -8088,21 +8124,12 @@
     const c = hostOf(c0);
     // a grant's paragraph states the document's rule (third person, the same
     // for every reader); the card that opens on it is yours
-    // 🍾's clause is the Proposals preamble (Ed, 2026-08-22): the tab hangs
-    // on the sentence the press makes true, and the moment itself stays on the
-    // Founded line, which carried it already. Since Q748 the preamble is
-    // **the whole opening of the section** and 💡 ⚖️ 🏛️ share it, so all four
-    // heads are the rule as the document states it (F15).
-    if (c.isBegin) return proposalsClause();
-    if (c.k === 'canpropose' || c.k === 'canjudge') return proposalsClause();
-    if (c.isClosing) return 'The document closed' + closedAtWords() + '. ' +
-      (closeSignatures().length === 0 ? 'Nobody has signed it yet.'
-        : closeSignatures().length + (closeSignatures().length === 1 ? ' member has' : ' members have') + ' signed it.');
-    // 🏛️ draws no paragraph of its own since Q1365 — its tab is on the
-    // Founded line with ✒️ 🛡️ — but its card's head is still the preamble's
-    // three rule lines (Q750; the whole body of the card, Ed's QA 2026-09-02
-    // pm), whichever paragraph the tab stands on
-    if (c.k === 'grant-voice') return proposalsClause();
+    // **Each grant and gate states its own clause** (#223, G1 · G3 · G5, Ed
+    // 2026-10-03), the sentence its tab hangs on: 🍾 and 🥂 in the Schedule,
+    // 💡 ⚖️ 🏛️ among the Proposals, ✒️ and 🛡️ in the lead — the preamble
+    // they shared (Q748–Q750) and the grants' silence on the Founded line
+    // (Q639 (a)) are both retired.
+    if (c.isBegin || c.isClosing || c.isGrant || c.k === 'canpropose' || c.k === 'canjudge') return gateClause(c);
     // ✒️ and 🛡️ write no sentence (Q639 (a), Ed 2026-08-22). They used to
     // state a count — *The Founder holds the pen on 16 settings.* — which
     // `holderLine` already says on every setting the power turns, and which
@@ -8420,7 +8447,14 @@
       // the Proposals opening is one clause carrying four tabs (Q748): the
       // group is the same whichever of the four you come in by, and `para`
       // opens the card at 🍾's paragraph for any of them
-      if (PROPOSAL_CHIPS.includes(c.k) || c.release) return proposalChips();
+      // every grant and gate is a clause of its own since #223 (G1, G3, G5):
+      // its own tab, and on ✒️ 🛡️ the 👑 batches that hang there; a batch
+      // opens at its host's paragraph with that pile as its strip
+      if (c.release) { const host = releaseHostOf(c.k);
+        return host === 'founded' ? foundedChips() : chipsForRaw(card(host)); }
+      if (c.k === 'grant-pen' || c.k === 'grant-shield') return [c].filter((x) => visible(x) || S.open === x.k)
+        .concat(releasesOn(c.k));
+      if (c.isGate || c.isGrant) return [c].filter((x) => visible(x) || S.open === x.k);
       // 🪜 shared 🌡️'s stack, having no clause of its own; both left the
       // surface on 2026-09-15 (Q1362), so every card is its own pile again
       const k = c.k;
@@ -10659,9 +10693,11 @@
       // an acknowledgement card's line is the paragraph its tab hangs on:
       // the Founded line for a grant, the Proposals clause for 💡 ⚖️ 🍾
       if (shellAck(c)) {
-        return { kind: 'para', key: k, html: c.isGrant ? foundedClause() : ctx.headFor(c) };
+        return { kind: 'para', key: k, html: c.isGrant ? breakLines(linkify(esc(gateClause(c)))) : ctx.headFor(c) };
       }
-      if (shellRelease(c)) return { kind: 'para', key: k, html: ctx.headFor(card('begin')) };
+      // …and a 👑 batch's is the founder's clause it hangs on (#223)
+      if (shellRelease(c)) { const host = releaseHostOf(k);
+        return { kind: 'para', key: k, html: host === 'founded' ? foundedClause() : breakLines(linkify(esc(gateClause(card(host))))) }; }
       if (peopleNewsOf(c)) return { kind: 'para', key: k, html: '<div class="memlist">' + (doorRowsNow[peopleNewsOf(c).rows] || '') + '</div>' };
       // stage 3a's settings cards: the paragraph's own sentence, settled or
       // not, without its powers line — an answer card's is its setting's

@@ -1121,6 +1121,37 @@ window.COPY = (function () {
       founderRefused: (what) => 'The Founder refused your proposal: ' + what + '.',
       couldNotBePut: 'Your proposal could not be put to the membership, and your ✏️ is back in your wallet.',
     },
+    // **The Rules' clauses for the grants, the gates and the Schedule** (#223,
+    // Ed 2026-10-03, G1–G5, every sentence his, verbatim): the ✒️ and 🛡️
+    // clauses in the lead, the five Proposals clauses, the Schedule's 🍾 and
+    // 🥂. `list` joins the setting names (`pw.noun`) the way his examples
+    // read: *the title, the link, the visibility rule and the text*.
+    clause: {
+      foundedLead: 'Founded by ',
+      penAll: 'The Founder may ✒️ change anything at will.',
+      penSome: (list) => 'The Founder may ✒️ change ' + list + ' at will.',
+      shieldAll: 'The Founder may 🛡️ refuse any proposal the membership pass.',
+      shieldSome: (list) => 'The Founder may 🛡️ refuse proposals the membership pass on ' + list + '.',
+      penBirth: 'The Founder (that’s you!) may ✒️ change anything at will.',
+      shieldBirth: 'The Founder (that’s you!) may 🛡️ refuse proposals the membership pass.',
+      // *Friday 2 October*, his example's shape: the weekday, then the day
+      weekDay: (weekday, day) => weekday + ' ' + day,
+      list: (names) => (names.length < 2 ? names.join('')
+        : names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1]),
+      propose: 'Members may propose changes to the text and the rules.',
+      proposeBefore: 'When the document begins, members may propose changes to the text and the rules.',
+      vote: 'Members may vote on proposals.',
+      voteBefore: 'When the document begins, members may vote on proposals.',
+      rate: (phrase, cap) => 'Members may make a new ✏️ proposal every ' + phrase + ', up to ' + cap + ' at a time.',
+      constitutional: 'A 🏛️ proposal passes only when all members agree to it.',
+      beginWaiting: 'The members are waiting on the Founder to begin.',
+      begun: (time, day) => 'Members started making proposals at ' + time + ' on ' + day + '.',
+      endingAfter: (when) => 'Proposals may be made until ' + when + '.',
+      endingNever: 'Proposals may be made indefinitely.',
+      // *[N] members have signed* — the verb agrees with one (*1 member has*)
+      closed: (time, day, n) => 'Proposals closed at ' + time + ' on ' + day + '. ' +
+        n + (n === 1 ? ' member has signed.' : ' members have signed.'),
+    },
     // the Proposals preamble (Y21): the gates' fragments, composed
     preamble: {
       beforeBegin: 'When the document begins, members may propose changes to rules and vote on proposals.',
@@ -1151,10 +1182,12 @@ window.COPY = (function () {
     // member's answer card and the composer's lane (Q1137) — and then the
     // `(x of y)` that follows *of the membership*. `val.quorumPct` is still
     // the one writer of a share where a share is printed whole.
+    // …and since #223 (G4, Ed 2026-10-03 17:10) it is the pass rule, the one
+    // clause saying what carries a ✏️ proposal, in his words
     quorumRule: {
-      share: (share, tail) => 'A proposal ✏️ cannot pass until it is preferred by at least ' +
-        share + ' of the membership' + (tail || '') + '.',
-      count: (n) => 'A proposal ✏️ cannot pass until it is preferred by at least ' + n + ' members.',
+      share: (share, tail) => 'A ✏️ proposal passes once at least ' +
+        share + ' of the membership' + (tail || '') + ' have voted for it and it’s the most preferred option.',
+      count: (n) => 'A ✏️ proposal passes once at least ' + n + ' members have voted for it and it’s the most preferred option.',
     },
     // **👥 is the one card that says what its number comes to** (Q1490, Ed
     // 2026-09-21 → why: R-139), a deliberate exception to Q1439 ruling u,
@@ -1591,11 +1624,11 @@ window.COPY = (function () {
     // until the page reads these, which is a change to the regular page and
     // waits for its own pass.
     rule: {
-      endingNever: 'Changes to the document may be made perpetually.',
-      endingAfter: (when) => 'No more changes to the document may be made after ' + when + '.',
+      endingNever: 'Proposals may be made indefinitely.',
+      endingAfter: (when) => 'Proposals may be made until ' + when + '.',
       lapseNever: 'Inactive members never lapse and are still counted towards votes.',
       lapseAfter: (spell) => 'After ' + spell + ', inactive members lapse and automatically abstain from votes.',
-      rate: (phrase) => 'Members may make a new proposal ✏️ every ' + phrase + '.',
+      rate: (phrase, cap) => 'Members may make a new ✏️ proposal every ' + phrase + ', up to ' + cap + ' at a time.',
       unit: { days: 'day', hours: 'hour', minutes: 'minute' },
       units: (n, unit) => n + ' ' + unit,
       address: (slug) => 'The document lives at docs.vote/d/' + slug + '.',

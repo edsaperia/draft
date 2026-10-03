@@ -1427,9 +1427,9 @@ window.SETUP = (function () {
       // The whole typed value still comes from the caller's own `ANSTYPED`.
       const unit = A.rateUnit || 'minutes';
       const sel = unitSel(unit, 'data-ansunit="rate"');
-      return '<span class="opttext">Members may make a new proposal ✏️ every ' +
+      return '<span class="opttext">Members may make a new ✏️ proposal every ' +
         '<input class="num numin" type="number" min="1" max="2880" data-ansnum="rate"' +
-        (typeof A.rate === 'number' ? ' value="' + A.rate + '"' : '') + '> ' + sel + '.</span>';
+        (typeof A.rate === 'number' ? ' value="' + A.rate + '"' : '') + '> ' + sel + ', up to 3 at a time.</span>';
     },
   };
 
