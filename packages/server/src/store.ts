@@ -582,6 +582,10 @@ export class DocStore {
   private register(doc: LoadedDoc): void {
     this.docs.set(doc.id, doc);
     if (!this.registry.has(doc.id)) this.registry.set(doc.id, null);
+    // **used from the moment it is in memory** (Stage 2): a birth or a load
+    // is held by the request that made it and fresh on the idle clock, so no
+    // tick can unload it under the hands still holding its object
+    this.use(doc);
     for (const slug of doc.cs.slugs) this.slugIndex.set(slug, doc.id);
   }
 }

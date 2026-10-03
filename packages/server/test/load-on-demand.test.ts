@@ -280,6 +280,27 @@ describe('load on demand (Scaling Stage 2)', () => {
     expect((await fetch(`${c.base}/api/d/orchard-rules/view`, { headers: { cookie: ada } })).status).toBe(200);
   }, 60_000);
 
+  it('a document born or loaded inside a request is held by it until it ends', async () => {
+    const a = await boot();
+    let release!: () => void;
+    let id = '';
+    const held = a.draft.store.scope(async () => {
+      const doc = await a.draft.store.create(`d-held-${Date.now()}`, {
+        title: 'Held', slug: `held-${Date.now()}`,
+        convenor: { id: 'founder', email: 'held@example.org', isMember: true },
+      }, Date.now());
+      id = doc.id;
+      await new Promise<void>((r) => { release = r; });
+    });
+    await sleep(IDLE * 3);
+    await a.draft.tick();
+    expect(a.draft.store.isLoaded(id), 'held by the request that made it').toBe(true);
+    release();
+    await held;
+    await idleOut(a);
+    expect(a.draft.store.isLoaded(id), 'released, then idle').toBe(false);
+  }, 60_000);
+
   it('never unloads the demo document', async () => {
     const a = await boot({ demo: true });
     await a.draft.tick();
