@@ -930,7 +930,7 @@ function checkOrder(pm) {
   else {
     const clauseKeys = [...clausesLit[1].matchAll(/'([a-z-]+)'/g)].map((m) => m[1]);
     const prose = read('SURFACE.md').split('\n').find((l) => l.includes('the five clauses wearing')) || '';
-    const run = ((prose.match(/the five clauses wearing ([^·)|]+)/) || [, ''])[1] || '').trim();
+    const run = ((prose.match(/the five clauses wearing ([^·)|—]+)/) || [, ''])[1] || '').trim();
     const want = clauseKeys.map((k) => glyphs[k] || '?').join(' ');
     if (run !== want) find('order', `SURFACE's Proposals run is '${run}', PROPOSAL_CLAUSES is '${want}'`);
     for (const k of clauseKeys) if (!pm.ORDER.includes(k)) find('order', `PROPOSAL_CLAUSES names '${k}', which is not in ORDER`);

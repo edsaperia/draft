@@ -257,13 +257,16 @@ for (const key of ['quorum']) {
   // Ed's own sentence since Q1439 (ruling t, 2026-09-18, re-wording ruling
   // p): the quorum counts the members who *prefer* the proposal to the
   // current text, so *must vote on* is gone — and the verb is **pass**,
-  // STYLE T8's, with the emphasis on the bar. The share block ends in *of the
-  // membership*, the count block in *members*, so the assertion is the shared
-  // opening and then each block's own ending.
+  // STYLE T8's, with the emphasis on the bar. Since #223 (G4, Ed 2026-10-03
+  // 17:10) it is the pass rule: *A ✏️ proposal passes once at least …*, the
+  // share block saying *of the membership*, the count block *members*, and
+  // both ending on the most preferred option — so the assertion is the shared
+  // opening, each block's own middle and the shared ending.
   check('each block is the rule with its number inline',
     born.picks.every((p) => p.box &&
-      /^A proposal ✏️ cannot pass until it is preferred by at least/.test(p.label) &&
-      (p.val === 'share' ? /of the membership\.$/ : /members\.$/).test(p.label)),
+      /^A ✏️ proposal passes once at least/.test(p.label) &&
+      (p.val === 'share' ? / of the membership/ : / members have voted for it/).test(p.label) &&
+      /have voted for it and it’s the most preferred option\.$/.test(p.label)),
     born.picks.map((p) => p.label.slice(0, 50)).join(' | '));
   check('born untouched', !born.picks.some((p) => p.on) &&
     born.picks.every((p) => p.box.value === ''),

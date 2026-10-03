@@ -1152,20 +1152,6 @@ window.COPY = (function () {
       closed: (time, day, n) => 'Proposals closed at ' + time + ' on ' + day + '. ' +
         n + (n === 1 ? ' member has signed.' : ' members have signed.'),
     },
-    // the Proposals preamble (Y21): the gates' fragments, composed
-    preamble: {
-      beforeBegin: 'When the document begins, members may propose changes to rules and vote on proposals.',
-      voteOnly: 'Members may vote on proposals.',
-      voteWhenDecided: 'Members may begin voting on proposals when all the rules have been decided.',
-      proposeAtBegin: ' They may propose changes to rules when the document begins.',
-      proposeLead: 'Members may propose changes to rules ',
-      onceAnswered: 'once they have answered the questions the Founder delegated',
-      asArrive: 'as soon as they arrive',
-      andVote: ', and may vote on proposals.',
-      voteTail: '. They may begin voting on proposals when all the rules have been decided.',
-      passOrdinary: 'A proposal ✏️ passes once it is preferred by enough of the membership, and by more than prefer the current text.',
-      passConstitutional: 'A constitutional proposal 🏛️ passes only when all members agree.',
-    },
     // 👥's rule, in Ed's own words (Q1439, ruling t, 2026-09-18: *A proposal
     // cannot pass until it is preferred by at least 50% of the membership
     // (5 of 10).*). It read *At least 50% (5 of 10) of the membership must

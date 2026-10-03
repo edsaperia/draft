@@ -258,12 +258,16 @@ say('birth      · saved at ' + page.url());
 // with no power at all, so they stand at the save and block nothing (F2, F3).
 // **And 🏛️ is the save's too, for a founder who is a member** (Q1365, Ed
 // 2026-09-15: *you should get a 🏛️ grant when you first become a member*) — a
-// grant is news and blocks nothing, so it stands beside the pen from the save.
+// grant is news and blocks nothing, so it stood beside the pen from the save.
+// **Since #223 the walk reads the Rules top to bottom** (G6, Ed 2026-10-03):
+// 🎩 on the Founded line is the save's question, answered with no power, ✒️
+// arrives once it is answered, and the founder-member's 🏛️ at its own place
+// after 👥 — an invitee's and an applicant's still on arrival.
 const atSave = await rail();
-const saveWant = ['grant-pen', 'grant-voice', 'myname', 'mypic'];
+const saveWant = ['hat', 'myname', 'mypic'];
 const saveOk = JSON.stringify([...atSave].sort()) === JSON.stringify(saveWant);
 say('at save    · rail ' + JSON.stringify(atSave) +
-  (saveOk ? '' : '  FAIL: expected the pen and the voice with ✋ and 🖼️, and nothing else'));
+  (saveOk ? '' : '  FAIL: expected 🎩 with ✋ and 🖼️, and nothing else'));
 if (!saveOk) stuck.push('rail at save');
 // **The column carries the document's name from the save** (backlog 33, Ed:
 // *immediately after the birth, when my named document opens for the first
@@ -998,7 +1002,8 @@ const secondSeatPreBegin = async () => {
   if (owed.length) stuck.push('pre-Begin acks in the member seat: ' + owed.join(','));
   /* **…and 🏛️ reaches them as *Accept Constitutional Proposals*** (Q1502,
    * Ed 2026-09-22; the rail matching the card since Q1556 (14)): a body
-   * about 🏛️ alone, and the commit *Accept 🏛️* (Q1541.24). Read
+   * about 🏛️ alone, in Ed's words since #223, and the commit *Accept 🏛️*
+   * (Q1541.24). Read
    * and closed, never pressed — what the OK then opens is the member
    * questions walk's. */
   const voice = await guestPage.evaluate(async () => {
@@ -1016,7 +1021,7 @@ const secondSeatPreBegin = async () => {
   });
   await guestPage.waitForTimeout(400);
   const voiceOk = !!voice && voice.word === 'Accept 🏛️' && /^Accept Constitutional Proposals\b/.test(voice.title || '') &&
-    /You are already a member/.test(voice.body || '');
+    /Members may only make one at a time, and it passes only when all members agree to it\./.test(voice.body || '');
   say('activate   · ' + (voiceOk ? 'the member’s 🏛️ grant reads “' + voice.word + '”, titled ' + voice.title
     : 'FAIL: ' + JSON.stringify(voice)));
   if (!voiceOk) stuck.push('the member’s 🏛️ grant (Q1502)');

@@ -46,8 +46,9 @@ const EXEMPT = {
   // 💡 and ⚖️ were exempted here on 2026-09-01, when SURFACE Y27 — **a gate
   // never withholds from the seat that set it** — took both off the founder's
   // rail and left the pair covered by nothing. The exemption is spent (F20):
-  // the founding scenario now opens both on Bo's seat, through the preamble
-  // pile, because a member is served them unacknowledged. An exemption is
+  // the founding scenario now opens both on Bo's seat, each by its own tab on
+  // its own Proposals clause (#223), because a member is served them
+  // unacknowledged. An exemption is
   // honest only while no seat can reach the card, and one could.
 };
 

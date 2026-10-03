@@ -198,6 +198,28 @@
     ['type-email', () => typeInto('.setupcard input[type="email"]', 'ada@example.org')],
     ['send-verify', () => click('.setupcard [data-confirm]')],
     ['click-magic-link', () => click('[data-act="clickmail"]')],
+    // **The walk reads the Rules top to bottom** (#223, G6, Ed 2026-10-03):
+    // 🎩 on the Founded line, ✋ 🖼️ beside it, then ✒️ and 🛡️ on their own
+    // clauses, 🌍, Membership, Proposals, Anonymity, the Schedule
+    ['open-hat', () => openTab('hat')],
+    ['choose-hat', () => click('.setupcard [data-set="hatPick"][data-val="member"]')],
+    // 🎩 commits through the one commit control like every other setting
+    // (Q522, 2026-08-21), with ✓ since #223: it is the walk's second step,
+    // answered before ✒️ is accepted (G6)
+    ['confirm-hat', () => click('.setupcard [data-confirm]')],
+    ['open-name', () => openTab('myname')],
+    ['type-name', () => typeInto('.setupcard input[data-txt="myname"]', 'Ada Lovell')],
+    ['confirm-name', () => click('.setupcard [data-confirm]')],
+    // 🖼️ is step 10 of the founding order and the probe had never opened it
+    // (Q732, 2026-08-23) — which is how an emoji face rendered at 7px on the
+    // Founded line for four days with every check green.
+    ['open-picture', () => openTab('mypic')],
+    // the picker opens when its block is chosen since the card review of
+    // 2026-09-02 (Q1165: 🖼️ is Anonymous · Upload an image · Pick an emoji),
+    // so the block is chosen first and the fox clicked where it stands
+    ['choose-emoji-block', () => click('.setupcard [data-set="picPick"][data-val="emoji"]')],
+    ['choose-emoji', () => click('.setupcard .avopt[data-pic="e🦊"]')],
+    ['confirm-picture', () => click('.setupcard [data-confirm]')],
     ['open-the-pen', () => openTab('grant-pen')],
     ['ok-the-pen', () => click('.setupcard [data-ok]')],
     // 🛡️ takes its own place in ORDER, right behind the pen, and had never
@@ -261,24 +283,6 @@
     }],
     ['choose-join', () => click('.setupcard [data-set="joinBy"][data-val="invite"]')],
     ['confirm-applications', () => click('.setupcard [data-confirm]')],
-    ['open-hat', () => openTab('hat')],
-    ['choose-hat', () => click('.setupcard [data-set="hatPick"][data-val="member"]')],
-    // 🎩 commits through the one commit control like every other setting
-    // (Q522, 2026-08-21); it used to carry a data-hatgo of its own
-    ['confirm-hat', () => click('.setupcard [data-confirm]')],
-    ['open-name', () => openTab('myname')],
-    ['type-name', () => typeInto('.setupcard input[data-txt="myname"]', 'Ada Lovell')],
-    ['confirm-name', () => click('.setupcard [data-confirm]')],
-    // 🖼️ is step 10 of the founding order and the probe had never opened it
-    // (Q732, 2026-08-23) — which is how an emoji face rendered at 7px on the
-    // Founded line for four days with every check green.
-    ['open-picture', () => openTab('mypic')],
-    // the picker opens when its block is chosen since the card review of
-    // 2026-09-02 (Q1165: 🖼️ is Anonymous · Upload an image · Pick an emoji),
-    // so the block is chosen first and the fox clicked where it stands
-    ['choose-emoji-block', () => click('.setupcard [data-set="picPick"][data-val="emoji"]')],
-    ['choose-emoji', () => click('.setupcard .avopt[data-pic="e🦊"]')],
-    ['confirm-picture', () => click('.setupcard [data-confirm]')],
     /* **The rest of the founding, card by card** (Q915, Ed 2026-08-26).
      * `npm run probe-coverage` reported the scenario opened 12 of the
      * founding's cards, and the thirteen it never opened were exactly
@@ -310,30 +314,32 @@
     ['open-removal', () => openTab('removal')],
     ['choose-removal', () => click('.setupcard [data-set="removal"][data-val="proposal"]')],
     ['confirm-removal', () => click('.setupcard [data-confirm]')],
-    // 🏛️ is a grant, so it OKs rather than commits — and it is news to a
-    // founder who is a member, which this one is (🎩 above)
-    ['open-the-voice', () => openTab('grant-voice')],
-    ['ok-the-voice', () => click('.setupcard [data-ok]')],
     // ⏱️ is one number since Q1160 (Ed's card review, 2026-09-02): the
     // interval, typed inside the sentence — typing claims the rung (F6)
     ['open-rate', () => openTab('rate')],
     ['type-rate-drip', () => typeInto('.setupcard input[data-num="dripN"]', '45')],
     ['confirm-rate', () => click('.setupcard [data-confirm]')],
-    ['open-ending', () => openTab('ending')],
-    ['choose-ending', () => click('.setupcard [data-set="ending"][data-val="perpetual"]')],
-    ['confirm-ending', () => click('.setupcard [data-confirm]')],
     // 👥 collects form and number together since Q1162: the count block is
     // its own rule sentence, the number typed inside it
     ['open-quorum', () => openTab('quorum')],
     ['choose-quorum-form', () => click('.setupcard [data-set="quorumForm"][data-val="count"]')],
     ['type-quorum', () => typeInto('.setupcard input[data-num="quorumN"]', '3')],
     ['confirm-quorum', () => click('.setupcard [data-confirm]')],
+    // 🏛️ is a grant, so it OKs rather than commits — and it is news to a
+    // founder who is a member, which this one is (🎩 above); its clause is
+    // the Proposals section's last, after 👥 (#223, G3, G6)
+    ['open-the-voice', () => openTab('grant-voice')],
+    ['ok-the-voice', () => click('.setupcard [data-ok]')],
     ['open-authorship', () => openTab('authorship')],
     ['choose-authorship', () => click('.setupcard [data-set="authorship"][data-val="sealed"]')],
     ['confirm-authorship', () => click('.setupcard [data-confirm]')],
     ['open-judgments', () => openTab('judgments')],
     ['choose-judgments', () => click('.setupcard [data-set="judgments"][data-val="after"]')],
     ['confirm-judgments', () => click('.setupcard [data-confirm]')],
+    // ⏰ is the Schedule's, after 👁️ (#223, G5, G6)
+    ['open-ending', () => openTab('ending')],
+    ['choose-ending', () => click('.setupcard [data-set="ending"][data-val="perpetual"]')],
+    ['confirm-ending', () => click('.setupcard [data-confirm]')],
     // 📝 is the door into edit mode (backlog 204), not a card: it lifts the
     // column, the founder writes, the row's ✒️ saves, and 📝 again leaves
     ['open-text', () => openTab('text')],
@@ -364,18 +370,14 @@
     // untouched and `seat-founder` below finds the surface it always did.
     ['fast-forward', () => click('#devff')],
     ['seat-bo', () => setSeat('1')],
-    // …and they are reached through the pile, not by key. 💡 ⚖️ and 🏛️ stand
-    // behind 🍾 on the Proposals preamble's one paragraph (`PROPOSAL_CHIPS`),
-    // and `pileHtml` marks every chip after the first `inert` and emits no
-    // `data-tab` on it — so `openTab` cannot address either gate from the
-    // closed page, on any seat. Opening the front of the stack draws the
-    // strip live, and there the tabs carry their keys. No OK is pressed:
-    // opening is what coverage measures, the open card is what the region
-    // hashes compare, and Bo's own acknowledgements are left alone so
-    // `seat-founder` below finds the surface it always did.
-    ['open-preamble-bo', () => openTab('begin')],
-    ['open-canpropose', () => click('.setupcard .chipcol [data-tab="canpropose"]')],
-    ['open-canjudge', () => click('.setupcard .chipcol [data-tab="canjudge"]')],
+    // …and each by its own tab since #223 (G3): 💡 on the ✏️ clause, ⚖️ on
+    // the ⚖️ clause, each the front of its own pile — the preamble's one
+    // stack (`PROPOSAL_CHIPS`), which hid both behind 🍾, is retired. No OK
+    // is pressed: opening is what coverage measures, and Bo's own
+    // acknowledgements are left alone so `seat-founder` below finds the
+    // surface it always did.
+    ['open-canpropose', () => openTab('canpropose')],
+    ['open-canjudge', () => openTab('canjudge')],
     ['seat-founder', () => setSeat('0')],
   ];
 
