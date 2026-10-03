@@ -107,8 +107,31 @@
     return after > 0 ? r.bottom + sy - after : null;
   }
 
+  // **The edit area is one sheet** (issue #153, Ed 2026-10-02: *the proposal
+  // card should look like it's floating above the text container/composer.
+  // The text composer should not look like there's a break in it*). An open
+  // card splits the lifted column into `.prose` segments (session.js's
+  // `renderDoc`), each painting its own outline (system.css); each segment a
+  // later one follows is handed the distance to it as `--sheet-join`, and
+  // its outline runs on through the card to the next one's top, the joins'
+  // corners and shadows clipped — so the outline is one box behind the card
+  // and the card lies on it. Paint only: no box moves.
+  function joinEdit() {
+    const segs = [...doc.querySelectorAll('#charter > .prose')];
+    const on = doc.classList.contains('editing');
+    segs.forEach((seg, i) => {
+      const next = on ? segs[i + 1] : null;
+      const v = next ? px(Math.max(0, next.getBoundingClientRect().top - seg.getBoundingClientRect().bottom)) : '';
+      // set only when it moves: the style write is a mutation this file observes
+      if (seg.style.getPropertyValue('--sheet-join') !== v) {
+        if (v) seg.style.setProperty('--sheet-join', v); else seg.style.removeProperty('--sheet-join');
+      }
+    });
+  }
+
   function lay() {
     if (!doc) return;
+    joinEdit();
     const r = doc.getBoundingClientRect();
     const sx = window.scrollX, sy = window.scrollY;
     const wrap = doc.closest('.wrap');
