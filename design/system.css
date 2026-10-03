@@ -1426,6 +1426,23 @@
     box-shadow: var(--shadow-xl); background: var(--bg);
     border-radius: var(--r-md) var(--r-md) 0 0;   /* square at the foot: the card runs off the page, it does not end */
   }
+  /* **The edit area is one sheet** (issue #153, Ed 2026-10-02: *the text
+     composer should not look like there's a break in it*). Where an open card
+     splits the column, a segment another follows runs its outline on through
+     the card to the next one's top (`--sheet-join`, measured by paper.js),
+     and every join is seamless: the upper outline's foot and the lower one's
+     head are clipped at the join, shadow and all, and the lower one's corners
+     are square — so the painted outline is one box from the first segment's
+     top to the last one's foot, and the card (z:1, above) lies on it. */
+  .doc.editing.begun #charter > .prose:has(~ .prose)::before {
+    bottom: calc(-1 * var(--sheet-join, 0px));
+    clip-path: inset(-200px -200px 0 -200px);
+  }
+  .doc.editing.begun #charter > .prose ~ .prose::before {
+    border-radius: 0;
+    clip-path: inset(0 -200px -200px -200px);
+  }
+  .doc.editing.begun #charter > .prose ~ .prose:has(~ .prose)::before { clip-path: inset(0 -200px); }
   /* **The proposal-row sticks to the foot of the window** while the column's
      foot is out of view — `sticky; bottom: 0` inside the column's own box, so
      it rests at the section's foot once that is on screen (which, the card
