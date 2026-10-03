@@ -18,7 +18,7 @@ Presence today is one bit per member: an authenticated read stamps the member's 
 8. **The topbar row stays.** It says who is here; the margin says where.
 9. **Faces are named wherever proposals may be signed.** *If the proposal setting is fully anonymous, we can have anonymous faces* — and, ruled on 1570.1, *I can live with faces being shown on any setting that allows signed proposals*: under 👤 Anonymous Proposals' `public`, `anonymousElective` and `sealedElective` rungs a member's own face; under `anonymous` and `sealed` an anonymous mark, **👀**, drawn **right-facing** — looking into the document, not out of it (the emoji faces left in every platform set).
 10. **Tracking an anonymous mark from poll to poll is not a concern** — *not very important in practice*. A mark keeps its identity between polls and glides under every rung.
-11. **Not real-time.** The 4 s poll is the clock; nothing new is opened to the host.
+11. *Retired with Scaling Stage 4* (issue #162; coordinator's ruling on #171, 2026-10-02, under Ed's (b) on #161): the page is told by the push stream when a place moves, and reports its own settled block once when it changes — `design/spec-pass/plan-scaling.md` *Stage 4* and its *Stage notes*; `push-stream` in CLAUDE.md. Reasoning: `design/DECISIONS.md`, *Presence on the push stream*.
 
 ## 1. The mechanism
 
@@ -31,7 +31,7 @@ Presence today is one bit per member: an authenticated read stamps the member's 
 
 ### 1.2 The host: a table in memory, never the log
 
-- Each open document keeps `presence: Map<memberId, { at: string, t: number }>` beside its record in the server's memory, written by every view that carries `at`, an entry dropped after `PRESENCE_TTL_MS` (30 s — seven polls) or on the member's removal. Lost at a restart, which is right: nobody is reading a host that has just come up until they poll it, four seconds later.
+- Each open document keeps `presence: Map<memberId, { at: string, t: number }>` beside its record in the server's memory, written by every view that carries `at`, an entry dropped after `PRESENCE_TTL_MS` (30 s) from the last report or the member stream's last heartbeat, or on the member's removal. Lost at a restart, which is right: nobody is reading a host that has just come up until they poll it, four seconds later.
 - The member view carries `reading: [{ id, at }]` for every *other* member whose entry is inside the TTL. The stranger's view and the applicant's view carry none: the audience is **the membership** (a §2 row in SURFACE, `seat-matrix` reading it).
 - **Under the two anonymous rungs the payload carries no member id** (1570.3, ruled): each entry is `{ k, at }` with `k` an opaque token minted per member per host boot. The view is the blind projection — what a seat may know is what the payload holds (SPEC §3.5) — so *anonymous* has to be true of the bytes, not only of the picture. The token keeps decision 10: a mark still glides.
 - **The demo**: a bot sets its `at` through the same table when it acts (the target clause is known in `applyCommand`, `packages/server/src/apply-command.ts`), so the PizzaCon room visibly moves around the document; a visitor's phone reports through the poll like any member.

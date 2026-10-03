@@ -738,11 +738,23 @@
   .toc li.lvl2 a { font-weight: 600; color: var(--fg); }
   .toc li.lvl3 { padding-left: 26px; }
 
-  /* section-toggle: the same control in the contents rail and the document gutter */
+  /* section-toggle: the same control in the contents rail and the document gutter.
+     **Its target is 28 × 28** (issue #151, Ed 2026-10-02: *heading toggles are
+     tiny*), the glyph centred in it; **the glyph is one step below the text it
+     stands beside**, set by each site below, `--t-cap` where nothing sets it. */
   .sectoggle {
-    appearance: none; background: none; border: 0; padding: 2px var(--s1); margin: 0;
+    appearance: none; background: none; border: 0; padding: 0; margin: 0;
+    display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px;
     font: inherit; font-size: var(--t-cap); line-height: 1; color: var(--muted); cursor: pointer;
   }
+  /* the rail's keeps the rail's own glyph and lends its target to the row
+     without growing it: the margins give back what the box adds, and it
+     stands over the link's padding it overlaps. **Its extra reaches up,
+     never down** (the padding keeps the glyph where it stood): a box that
+     hung below its row hung below the list's last one, and the list
+     scrolled 3px further for it, which carried the last rows' marks under
+     whatever stood at the window's foot (#151, toc-travel's Q1520 step). */
+  .toc .sectoggle { margin: -8px -8px 0; padding-top: var(--s2); position: relative; z-index: 1; }
   .sectoggle:hover { color: var(--fg); }
   .sectoggle .tri { display: inline-block; transition: transform 140ms ease; }
   .sectoggle[aria-expanded="true"] .tri { transform: rotate(90deg); }
@@ -1759,13 +1771,17 @@
   #charter > .prose:first-of-type > .docline:is(.lvl1, .rank2, .rank3):nth-child(1 of .docline, p, .doctitle),
   #charter > .prose:first-of-type > .doctitle + .docline:is(.lvl1, .rank2, .rank3) { border-top: 0; padding-top: 0; --head-rule: 0px; }
   /* the fold triangle sits in the chip-gutter, in line with the anchor marks —
-     centred on the heading's first line box (`--line`, Q1402): its own box is
-     its glyph at `--t-cap` on a line-height of 1 plus 2px of padding each side */
+     its 28px box centred on the heading's first line box (`--line`, Q1402),
+     out of the flow, so it never moves the heading. Its glyph is one step
+     below the heading (#151): `--t-body` beside an `--h2` or `--h3`, `--t-lead`
+     beside an `--h1`, `--h2` beside a part at `--h-part` (#152's ranks). */
   .doc h2.docline .sectoggle {
-    position: absolute; right: 100%; margin-right: var(--s3);
-    top: calc(var(--head-rule, 0px) + (var(--line) - var(--t-cap) - 4px) / 2);
+    position: absolute; right: 100%; margin-right: var(--s1); font-size: var(--t-body);
+    top: calc(var(--head-rule, 0px) + (var(--line) - 28px) / 2);
   }
-  .doc h2.docline.lvl1 .sectoggle { top: calc(var(--head-rule) + (var(--line) - var(--t-cap) - 4px) / 2); }
+  .doc h2.docline.lvl1 .sectoggle { top: calc(var(--head-rule) + (var(--line) - 28px) / 2); }
+  .doc h2.docline:is(.lvl1:not([class*="rank"]), .rank2) .sectoggle { font-size: var(--t-lead); }
+  .doc h2.docline.rank3 .sectoggle { font-size: var(--h2); }
   .doc h2.docline .sechint {
     margin-left: 10px; font-weight: 400; text-transform: none; letter-spacing: 0;
     font-size: var(--t-cap); color: var(--muted); font-style: italic;
@@ -3147,7 +3163,9 @@
   /* NARROW_Q */
   @media (max-width: 900px) {
     .clausehead .achip.wmark { width: 36px; padding-left: 0; }
-    .doc h2.docline.marked .sectoggle { margin-right: var(--s2); }
+    /* 26px stand between the tab and the words here, so the 28px box
+       laps 4px over the heading's edge rather than over the tab (#151) */
+    .doc h2.docline.marked .sectoggle { margin-right: -4px; }
   }
   /* **The judgment's ✓ is accent blue when armed** (1541.50, Q1541 stage 6):
      green means *decided* (principle 7), and an armed ✓ has decided
@@ -3619,6 +3637,17 @@
   /* the column is no longer the paper: its ground and its outline go, the
      border keeping its width so nothing inside moves by a pixel */
   html.desk .doc { background: transparent; border-color: transparent; }
+
+  /* ---- the credit (paper.js; issue #165) ------------------------------------ */
+  /* one quiet line on the desk under the last sheet, the link the line's own
+     colour, underlined: no new accent */
+  html.desk .deskcredit {
+    position: absolute; margin: 0; text-align: center;
+    font-family: var(--font-ui); font-size: var(--t-cap); line-height: var(--lh-text);
+    color: var(--desk-muted);
+  }
+  html.desk .deskcredit a { color: inherit; text-decoration: underline; }
+  html.desk .deskcredit[hidden] { display: none; }
 
   /* ---- the break ------------------------------------------------------------ */
   /* The one hairline in the document (setup.css, `.cpara.docsep`) becomes the

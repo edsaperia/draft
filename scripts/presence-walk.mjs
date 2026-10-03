@@ -194,6 +194,13 @@ check('1 · …and never B\'s own', !(vB.reading || []).some((r) => r.id === ME.
 
 /* ---- 2. scrolling on inside the dwell moves nobody; dwelling glides ------- */
 const K2 = 'L9', K3 = 'L13';
+// the walk's relay times the glide, so neither page may learn by itself in
+// this step: since push (Scaling Stage 4) A's page reports a settled block at
+// once and B's is nudged to fetch it, which would land the glide before the
+// relay and leave nothing mid-way to see. `__pollPaused` holds both the tick
+// and a push event; `__poll()` — the relay — still runs
+await pa.page.evaluate(() => { window.__pollPaused = true; });
+await pb.page.evaluate(() => { window.__pollPaused = true; });
 await pb.page.evaluate((me) => { const el = document.querySelector('#reading [data-k="m:' + me + '"]'); if (el) el.__walkTag = 'before-move'; }, ME.A);
 await scrollTo(pa, K2);
 await sleep(Math.max(200, DWELL / 4));
@@ -224,6 +231,9 @@ check('2 · the mark is the node it was (stage 9)', same === 'before-move', 'tag
 check('2 · …and it glided (a top between the two lines was seen)',
   !!midTop && !!aMark() && midTop.top > Math.min(bt1.top, bt3.top) - 1 && midTop.top < Math.max(bt1.top, bt3.top) + 1 && Math.abs(midTop.top - bt3.top) > 1,
   `mid ${midTop && midTop.top} · from ${bt1.top} to ${bt3.top}`);
+
+await pa.page.evaluate(() => { window.__pollPaused = false; });
+await pb.page.evaluate(() => { window.__pollPaused = false; });
 
 /* ---- 3. A and C on one block: one column, lined up, arrival order --------- */
 await scrollTo(pc, K3);

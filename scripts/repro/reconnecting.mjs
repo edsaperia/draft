@@ -137,6 +137,7 @@ const waitFor = async (page, fn, ms) => {
 const judges = (page) => page.sent.filter((b) => b.includes('"judge-race"')).length;
 const proposes = (page) => page.sent.filter((b) => b.includes('"propose-text"')).length;
 const VIEW = '**/api/d/*/view**';
+const EVENTS = '**/api/d/*/events**';
 
 // offline
 if (!only || only === 'offline') {
@@ -227,11 +228,15 @@ if (!only || only === 'offline') {
 if (!only || only === '502') {
   const page = await openPage();
   await page.route(VIEW, (r) => r.fulfill({ status: 502, contentType: 'text/html', body: '<h1>502 Bad Gateway</h1>' }));
+  // the host failing takes the push stream down too (Scaling Stage 4): the
+  // stream's address answers as the view does, and the open one is dropped
+  await page.route(EVENTS, (r) => r.fulfill({ status: 502, contentType: 'text/html', body: '<h1>502 Bad Gateway</h1>' }));
+  await page.evaluate(() => window.__pushDrop && window.__pushDrop());
   const { v: b, after } = await waitFor(page, bar, 12000);
   say(`  · the bar after ${after} ms`);
   check('502 · two server errors put the bar up saying docs.vote is not answering',
     !!b && /^Reconnecting…/.test(b.text) && /docs\.vote is not answering/i.test(b.text), JSON.stringify({ b, after }));
-  await page.unroute(VIEW);
+  await page.unroute(VIEW); await page.unroute(EVENTS);
   const { v: gone, after: liftMs } = await waitFor(page, async (p) => !(await bar(p)), 9000);
   check('502 · the first good poll lifts it', !!gone, 'still up after ' + liftMs + ' ms');
   await page.context().close();
@@ -241,11 +246,15 @@ if (!only || only === '502') {
 if (!only || only === 'hang') {
   const page = await openPage();
   await page.route(VIEW, () => { /* never answered */ });
+  // the host failing takes the push stream down too (Scaling Stage 4): the
+  // stream's address answers as the view does, and the open one is dropped
+  await page.route(EVENTS, () => { /* never answered */ });
+  await page.evaluate(() => window.__pushDrop && window.__pushDrop());
   const { v: b, after } = await waitFor(page, bar, 16000);
   say(`  · the bar after ${after} ms`);
   check('hang · two polls out of time put the bar up, saying nothing more',
     !!b && b.text === 'Reconnecting…', JSON.stringify({ b, after }));
-  await page.unroute(VIEW);
+  await page.unroute(VIEW); await page.unroute(EVENTS);
   const { v: gone, after: liftMs } = await waitFor(page, async (p) => !(await bar(p)), 10000);
   check('hang · the first good poll lifts it', !!gone, 'still up after ' + liftMs + ' ms');
   await page.context().close();
@@ -256,10 +265,15 @@ if (!only || only === 'pause') {
   const page = await openPage();
   await page.route(VIEW, (r) => r.fulfill({ status: 503, contentType: 'application/json',
     body: JSON.stringify({ paused: { elapsedMs: 1000, expectedMs: 120000 } }) }));
+  // the host failing takes the push stream down too (Scaling Stage 4): the
+  // stream's address answers as the view does, and the open one is dropped
+  await page.route(EVENTS, (r) => r.fulfill({ status: 503, contentType: 'application/json',
+    body: JSON.stringify({ paused: { elapsedMs: 1000, expectedMs: 120000 } }) }));
+  await page.evaluate(() => window.__pushDrop && window.__pushDrop());
   await sleep(10000);
   const seen = { bar: await bar(page), modal: !!(await page.$('#pausemodal')) };
   check('pause · the announced pause keeps its modal and draws no bar', seen.modal && !seen.bar, JSON.stringify(seen));
-  await page.unroute(VIEW);
+  await page.unroute(VIEW); await page.unroute(EVENTS);
   await sleep(6000);
   check('pause · the modal goes when the pause does', !(await page.$('#pausemodal')), 'modal still up');
   await page.context().close();
