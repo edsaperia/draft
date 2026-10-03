@@ -32,7 +32,8 @@ import type { OutboxRow, Persistence } from './persistence.js';
 import type { MailOutbox, QueuedMail } from './outbox.js';
 import { MAILS } from './mailer.js';
 import type { Mail, Mailer } from './mailer.js';
-import { devNow, driveBridge, foldTime, persistEngine, rewindEngine } from './engine-host.js';
+import { asEngineDoc, clockDueT, devNow, driveBridge, foldTime, persistEngine, rewindEngine }
+  from './engine-host.js';
 
 /**
  * **A command the store could not write, said as what it is** (issue #79).
@@ -127,6 +128,47 @@ export interface WritePathDeps {
 
 export class WritePath {
   constructor(private readonly d: WritePathDeps) {}
+
+  /**
+   * **The clock index** (Scaling Stage 1, issue #210): each document's
+   * `clockDueT`, held against the state it was read from — the session
+   * object, both logs' lengths and the last sweep — so a document nothing
+   * has touched since the last minute costs a lookup, not a reading of its
+   * members and races. Keyed by the session, which a rewind replaces, so a
+   * rewound document is read afresh. Memory only: nothing is unloaded yet
+   * (Stage 2), so nothing needs finding that is not in memory.
+   */
+  private readonly clockIndex = new WeakMap<object, { key: string; due: number | null }>();
+
+  /** The document's next due time, from the index where it still holds. */
+  dueT(doc: LoadedDoc): number | null {
+    const e = asEngineDoc(doc);
+    const key = `${doc.cs.logEntries().length}|${e.bridge === null ? '-' : e.bridge.engine.log.length}`
+      + `|${e.sweptAtT ?? '-'}|${e.engineQuarantined === true ? 'q' : ''}`;
+    const held = this.clockIndex.get(doc.cs);
+    if (held !== undefined && held.key === key) return held.due;
+    const due = clockDueT(doc);
+    this.clockIndex.set(doc.cs, { key, due });
+    return due;
+  }
+
+  /**
+   * **Whether the minute's tick has anything to do here** (issue #210). Two
+   * reasons, either enough: a clock has come due on the document's own clock
+   * (`foldTime`, the time `tOf` would fold at, read without `tOf`'s close),
+   * or the store is still owed something a commit writes — entries behind
+   * the cursor (a pause, a failed save), mail behind the relay, an engine
+   * log behind its persist, a stalled flag to clear. The second is what the
+   * tick's commit has always retried, and it is retried as before.
+   */
+  isDue(doc: LoadedDoc, nowMs: number | undefined, realMs: number): boolean {
+    const e = asEngineDoc(doc);
+    if (doc.persisted < doc.cs.logEntries().length || doc.relayed < doc.persisted
+      || (doc.stalled ?? null) !== null
+      || (e.bridge !== null && e.enginePersisted < e.bridge.engine.log.length)) return true;
+    const due = this.dueT(doc);
+    return due !== null && due <= foldTime(doc, nowMs ?? devNow(doc.id, realMs));
+  }
 
   /**
    * The one door every mail goes through (finding 15). The relayed ones —
@@ -494,8 +536,16 @@ export class WritePath {
     }
   }
 
-  /** Drive the clocks (§9.5/§9.5a) over every document, then the sender.
-   *  `server.ts`'s own `tick` sweeps the rate-limit buckets and calls this.
+  /** Drive the clocks (§9.5/§9.5a) over every document that is due, then the
+   *  sender. `server.ts`'s own `tick` sweeps the rate-limit buckets and calls
+   *  this.
+   *
+   *  **Only the due** (Scaling Stage 1, issue #210): a document whose clocks
+   *  have nothing to do before now, and which owes the store nothing, is
+   *  passed over — the tick at that minute would have emitted nothing and
+   *  written nothing. `cfg.tickAll` (`DRAFT_TICK=all`) visits every begun
+   *  document as before; the clock-index differential holds the two to the
+   *  same bytes.
    *
    *  **Each document is asked for its own now** (Q1455): `nowMs` omitted is
    *  the ordinary minute turn, and `tOf` then answers per document, so one a
@@ -508,6 +558,7 @@ export class WritePath {
     for (const doc of store.all()) {
       if (closing()) return; // shutting down: no new commits join the drain
       if (doc.cs.constitutedAtT === null) continue;
+      if (cfg.tickAll !== true && !this.isDue(doc, nowMs, realMs)) continue;
       // **One document must never stop the clock for the others** (Q679).
       // Without this the loop is a single point of failure for every
       // document at once: the tick is the adoption metronome, the lapse
