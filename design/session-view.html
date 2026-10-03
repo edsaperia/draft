@@ -19,6 +19,9 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪶</text></svg>">
 <link rel="stylesheet" href="system.css">
 <link rel="stylesheet" href="setup.css">
+<!-- the opening skeleton (Q1559): on /d/ the page opens an existing document,
+     and knows it before its first frame; liveBoot lifts the class -->
+<script>if (location.pathname.indexOf('/d/') === 0) document.documentElement.classList.add('opening');</script>
 <style>
 /* ============================================================================
    document-creation — **the document, from its first minute.**
@@ -111,6 +114,37 @@
   .redacted .bar { display: block; height: .72em; border-radius: 3px; background: var(--border); margin: .42em 0; }
   .redacted .h1 .bar { height: 1.1em; } .redacted .h2 .bar { height: .95em; } .redacted .h3 .bar { height: .85em; }
   .redacted.black .bar { background: var(--fg); }
+  /* **the opening skeleton** (Q1559, Ed 2026-09-26; issue #201): the page
+     ships the birth's *Untitled* in the topbar and above the column, and on
+     /d/ nothing replaced it until liveBoot's first view was drawn, so every
+     opening flashed another document. The script in <head> marks the root
+     `opening` on /d/ from the first frame; liveBoot lifts it at its first
+     render, and the boot's 4 s retries keep it. The page's own shape and no
+     words: both titles and the column's first lines as the door's bars,
+     pulsing, still under reduced motion. Transparent text and a
+     pseudo-element only, so nothing here is in the tree a render patches. */
+  /* the topbar's title by its full path: at narrow system.css states its
+     colour as `.navbar .brand #titletext`, which outranks the short form */
+  html.opening .navbar .brand #titletext, html.opening #doctitle { color: transparent; }
+  html.opening .navbar .brand #titletext { background: linear-gradient(var(--border), var(--border)) left center / 7em .72em no-repeat; }
+  html.opening #doctitle { background: linear-gradient(var(--border), var(--border)) left center / min(12em, 70%) .6em no-repeat; }
+  /* and no figure the page cannot know yet: at narrow the ✏️ wallet and the task
+     sheet's count draw a 0 of their own before any view; their boxes stay */
+  html.opening #wallet, html.opening #drawercount { visibility: hidden; }
+  html.opening #prose::before {
+    content: ''; display: block; font-size: var(--t-body); height: 11.2em;
+    background:
+      linear-gradient(var(--border), var(--border)) 0 .44em / 100% .72em,
+      linear-gradient(var(--border), var(--border)) 0 2.04em / 100% .72em,
+      linear-gradient(var(--border), var(--border)) 0 3.64em / 96% .72em,
+      linear-gradient(var(--border), var(--border)) 0 5.24em / 58% .72em,
+      linear-gradient(var(--border), var(--border)) 0 8.44em / 100% .72em,
+      linear-gradient(var(--border), var(--border)) 0 10.04em / 41% .72em;
+    background-repeat: no-repeat; }
+  @keyframes openingPulse { 50% { opacity: .45; } }
+  @media (prefers-reduced-motion: no-preference) {
+    html.opening #titletext, html.opening #doctitle, html.opening #prose::before { animation: openingPulse 1.6s ease-in-out infinite; }
+  }
   /* narrow: the dock owns the foot of the window and nothing may sit over the
      text, so the flag is a strip in the flow under the topbar */
   @media (max-width: 900px) { .alphaflag { position: static !important; display: block; width: fit-content; margin: 8px auto 0; } }
