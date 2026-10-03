@@ -1141,10 +1141,11 @@ function checkAuthorNeverAsked() {
   const pat = page.indexOf('function itemsFromView(');
   // The window reaches past the deck and ledger building above the skip
   // (Q1200) — and grows with them: 8,000 until the abstention clock's own
-  // lines (Q1460) pushed the skip past it. A window that misses the skip
+  // lines (Q1460) pushed the skip past it, and 10,000 until the patch item's
+  // (issue #189) did the same. A window that misses the skip
   // reports the skip as *conditional again*, which is a false finding, so
   // the number is kept comfortably ahead of the code it has to clear.
-  const items = pat < 0 ? '' : page.slice(pat, pat + 10_000);
+  const items = pat < 0 ? '' : page.slice(pat, pat + 14_000);
   if (!/r\.candidates\.every\(\(c\) => c\.mine\)\) continue;/.test(items))
     find('events', 'the all-mine skip in `itemsFromView` carries a condition again — the engine serves no pair for an all-mine race at any E, so E19 exempts nothing (backlog 253 overturns Q835)');
   else note('  the `mine` skip is unconditional');
