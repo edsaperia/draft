@@ -101,7 +101,7 @@ DEV: {
       if (r.devOff()) return true;
       if (refused(ctx, r)) return true;
       const body = await readJson(r.req);
-      const doc = typeof body.slug === 'string' ? ctx.store.bySlug(body.slug) : null;
+      const doc = typeof body.slug === 'string' ? await ctx.store.openSlug(body.slug) : null;
       if (doc === null) { json(r.res, 404, { error: 'no such document' }); return true; }
       ctx.demoBots.setTarget(documentTarget(doc, Date.now()));
       json(r.res, 200, { ok: true, seats: ctx.demoBots.stats().seats });

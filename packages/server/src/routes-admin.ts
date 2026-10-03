@@ -17,12 +17,33 @@ import { SURFACE_MAX_BYTES, installSurface, readTarGz } from './surface.js';
 import { botOutboxPath, outboxTail } from './mailer.js';
 import { PauseState } from './write-path.js';
 import { json, readJson } from './routes.js';
-import type { Route } from './routes.js';
+import type { Route, RouteContext } from './routes.js';
+import { IDLE_MS } from './config.js';
 
 /* -- health (stage 7): which bytes, which store, how much is loaded -- */
 // Public by the same argument as x-build: the repository is public and
 // none of this is about a person. The document count is what lets an
 // operator read "the restore brought everything back" from one curl.
+/** The process's memory in MB, for `/healthz` (Scaling Stage 2). */
+function memoryNow(): { rssMb: number; heapUsedMb: number } {
+  const m = process.memoryUsage();
+  const mb = (n: number): number => Math.round(n / 1024 / 102.4) / 10;
+  return { rssMb: mb(m.rss), heapUsedMb: mb(m.heapUsed) };
+}
+
+/** The load life-cycle's numbers (Stage 2): the mode, the idle period, the
+ *  slowest load of the last hour, and the counts since boot. */
+function loadsNow(ctx: RouteContext, nowMs: number): Record<string, unknown> {
+  const st = ctx.store.loadStats;
+  const slow = ctx.store.slowestRecentLoad(nowMs);
+  return {
+    mode: ctx.cfg.load ?? 'lazy',
+    idleMs: ctx.cfg.idleMs ?? IDLE_MS,
+    slowestRecent: slow === null ? null : { ms: slow.ms, why: slow.why, agoS: Math.round((nowMs - slow.atMs) / 1000) },
+    loads: st.loads, unloads: st.unloads, failed: st.failed, rebuilt: st.rebuilt,
+  };
+}
+
 export const healthTable: Route[] = [
   {
     name: 'HEAD / and /healthz',
@@ -91,7 +112,14 @@ export const healthTable: Route[] = [
         booted: ctx.cfg.buildSha,
         catalogue: CATALOGUE.map((e) => e.id).sort(),
         store: ctx.cfg.store,
-        documents: [...ctx.store.all()].length,
+        // every document this host knows, loaded or not (Scaling Stage 2)
+        documents: ctx.store.registeredCount(),
+        // **the load life-cycle** (Stage 2, issue #219): how many are in
+        // memory now, the host's memory, the slowest load of the last hour
+        // (issue #70's gap) and the counts since boot — never a document
+        documentsLoaded: [...ctx.store.all()].length,
+        memory: memoryNow(),
+        loads: loadsNow(ctx, nowMs),
         // documents the boot skipped as the pre-people shape (decision 1253):
         // a count, never an id, on the same public-endpoint argument as the
         // errors below; production holds none after the wipe, so a non-zero

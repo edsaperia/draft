@@ -117,7 +117,7 @@ export const authTable: Route[] = [
          holder learns this: no token, no mail, no cookie. */
       if (mine !== null) {
         const pend = await stash.pendingOf(mine, nowMs);
-        const made = pend?.docId === undefined ? null : ctx.store.byId(pend.docId);
+        const made = pend?.docId === undefined ? null : await ctx.store.open(pend.docId);
         if (made) {
           json(res, 200, { ok: true, created: true, slug: made.cs.slug });
           return true;
@@ -187,7 +187,7 @@ export const authTable: Route[] = [
         // which nothing read — so the page is told where the document is,
         // and stops sending what no longer reaches it
         const pend = await ctx.stash.pendingOf(key, nowMs);
-        const made = pend?.docId === undefined ? null : ctx.store.byId(pend.docId);
+        const made = pend?.docId === undefined ? null : await ctx.store.open(pend.docId);
         if (made) {
           json(res, 409, { error: 'that document has already been created',
             created: true, slug: made.cs.slug });
@@ -209,7 +209,7 @@ export const authTable: Route[] = [
     method: 'GET',
     match: ({ path }) =>
       path === '/auth/create' || path === '/auth/login' || path === '/auth/apply',
-    handler: (ctx, r) => {
+    handler: async (ctx, r) => {
       const { res, url, path } = r;
       const token = url.searchParams.get('token') ?? '';
       // a link a mail client wrapped across two lines arrives without its
@@ -219,7 +219,7 @@ export const authTable: Route[] = [
       // shape was truncated in transit — read as cut, and spent nowhere,
       // rather than as a link somebody used
       if (!TOKEN_SHAPE.test(token)) {
-        spentPage(ctx, r, PAGE.cut, path.slice(6) as 'create' | 'login' | 'apply');
+        await spentPage(ctx, r, PAGE.cut, path.slice(6) as 'create' | 'login' | 'apply');
         return true;
       }
       // same-origin, overriding the global no-referrer (found on staging,
@@ -257,7 +257,7 @@ export const authTable: Route[] = [
       if (pausedDoor(ctx, r, token)) return true;
       const rec = await auth.useToken(token, nowMs);
       if (!rec || rec.kind !== 'create' || !rec.pending) {
-        spentPage(ctx, r, PAGE.used, 'create');
+        await spentPage(ctx, r, PAGE.used, 'create');
         return true;
       }
       const p = rec.pending;
@@ -270,7 +270,7 @@ export const authTable: Route[] = [
          moved in between, because the claim is on the creation rather than
          on a name. */
       const pend = p.stashKey === undefined ? null : await stash.pendingOf(p.stashKey, nowMs);
-      const made = pend?.docId === undefined ? null : store.byId(pend.docId);
+      const made = pend?.docId === undefined ? null : await store.open(pend.docId);
       if (made) {
         // **…to the founder it names** (issue #38 F1): a link minted to a
         // mistyped 📧 and followed after the corrected one founded the
@@ -279,7 +279,7 @@ export const authTable: Route[] = [
         // and the page says why (Q1506 (b))
         const founder = made.cs.convenorRecord().email?.toLowerCase();
         if (founder !== p.email.toLowerCase()) {
-          spentPage(ctx, r, PAGE.changed, 'create');
+          await spentPage(ctx, r, PAGE.changed, 'create');
           return true;
         }
         setCookie(res, made.id, auth.cookieFor(made.id, made.cs.convenorRecord().id, nowMs), ctx.httpsOn);
@@ -294,7 +294,7 @@ export const authTable: Route[] = [
          be asked. The page says the claimed branch's sentence: one cause,
          one sentence (Q1511 (a)). */
       if (pend?.email !== undefined && pend.email.toLowerCase() !== p.email.toLowerCase()) {
-        spentPage(ctx, r, PAGE.changed, 'create');
+        await spentPage(ctx, r, PAGE.changed, 'create');
         return true;
       }
       /* **The address is the creation's, not the link's** (issue #38 F2):
@@ -307,7 +307,7 @@ export const authTable: Route[] = [
       /* …and the same for a link minted before the stash carried its claim:
          the address it promised already holds a document this very founder
          made, so it forwards there rather than founding a twin beside it. */
-      const twin = store.bySlug(want);
+      const twin = await store.openSlug(want);
       if (twin && twin.cs.convenorRecord().email?.toLowerCase() === p.email.toLowerCase()) {
         setCookie(res, twin.id, auth.cookieFor(twin.id, twin.cs.convenorRecord().id, nowMs), ctx.httpsOn);
         redirect(res, `/d/${want}`);
@@ -354,7 +354,7 @@ export const authTable: Route[] = [
     handler: async (ctx, r) => {
       const { req, res, seg, nowMs } = r;
       const { cfg, store, auth, mailer, writes } = ctx;
-      const doc = r.docOr404(store.bySlug(seg[2]!));
+      const doc = r.docOr404(await store.openSlug(seg[2]!));
       if (!doc) return true;
       // Two buckets on this door (Q1341, Ed 2026-09-12). Per IP, 200 in ten
       // minutes: a convention room shares one venue wifi and so one address,
@@ -402,7 +402,7 @@ export const authTable: Route[] = [
     handler: async (ctx, r) => {
       const { req, res, seg, nowMs } = r;
       const { cfg, store, auth, mailer, writes } = ctx;
-      const doc = r.docOr404(store.bySlug(seg[2]!));
+      const doc = r.docOr404(await store.openSlug(seg[2]!));
       if (!doc) return true;
       // the knock beside the login door kept the limiter's default 20 when
       // Q1341 raised the door to 200: keyed `apply:<ip>`, global across
@@ -478,10 +478,10 @@ export const authTable: Route[] = [
       if (pausedDoor(ctx, r, token)) return true;
       const rec = await auth.useToken(token, nowMs);
       if (!rec || rec.kind !== 'apply' || rec.docId === undefined) {
-        spentPage(ctx, r, PAGE.used, 'apply');
+        await spentPage(ctx, r, PAGE.used, 'apply');
         return true;
       }
-      const doc = r.docOr404(store.byId(rec.docId));
+      const doc = r.docOr404(await store.open(rec.docId));
       if (!doc) return true;
       const t = writes.tOf(doc);
       // **A refusal here is a page, and it is logged** (issue #35 F2, F3;
@@ -528,7 +528,7 @@ export const authTable: Route[] = [
         // purpose and with the document named (Y25: every refusal is logged)
         logError(ctx.persistence, { kind: 'refused', status: 410, method: 'POST',
           path: r.path, doc: doc.id, slug: doc.cs.slug, reason });
-        spentPage(ctx, r, refusedSentence(reason), 'apply');
+        await spentPage(ctx, r, refusedSentence(reason), 'apply');
         return true;
       }
       await writes.commit(doc, nowMs);
@@ -556,10 +556,10 @@ export const authTable: Route[] = [
       const rec = await auth.useToken(token, nowMs);
       if (!rec || rec.kind !== 'login' || rec.docId === undefined ||
           rec.memberId === undefined) {
-        spentPage(ctx, r, PAGE.used, 'login');
+        await spentPage(ctx, r, PAGE.used, 'login');
         return true;
       }
-      const doc = r.docOr404(store.byId(rec.docId));
+      const doc = r.docOr404(await store.open(rec.docId));
       if (!doc) return true;
       const t = writes.tOf(doc);
       const m = doc.cs.memberRecords().get(rec.memberId);
@@ -784,11 +784,11 @@ function refusedSentence(reason: string): string {
   return `That was refused: ${said}.`;
 }
 
-function spentPage(ctx: RouteContext, r: Req, lead: string,
-  kind: 'create' | 'login' | 'apply'): void {
+async function spentPage(ctx: RouteContext, r: Req, lead: string,
+  kind: 'create' | 'login' | 'apply'): Promise<void> {
   const asked = r.url.searchParams.get('d') ?? '';
   const slug = SLUG_OK.test(asked) && asked.length <= LIMITS.slug ? asked : null;
-  const doc = slug === null ? null : ctx.store.bySlug(slug);
+  const doc = slug === null ? null : await ctx.store.openSlug(slug);
   let body = '<p>' + e(lead) + '</p>';
   if (doc !== null) {
     const at = '/d/' + e(doc.cs.slug);

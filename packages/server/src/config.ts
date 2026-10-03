@@ -104,6 +104,45 @@ export interface ServerConfig {
    */
   tickAll?: boolean;
   /**
+   * **Load on demand** (`DRAFT_LOAD`, Scaling Stage 2, issue #219): boot
+   * reads the registry and loads no document; a document loads on its first
+   * request or its first due tick and is unloaded once idle. `eager` is the
+   * boot before Stage 2 — every document replayed before `/healthz` answers,
+   * none ever unloaded — kept as the differential's reference and an
+   * operator's switch. Optional on the type: a config that does not say is lazy.
+   */
+  load?: 'lazy' | 'eager';
+  /**
+   * **How long a document nobody has open stays loaded** (`DRAFT_IDLE_MS`,
+   * Stage 2): no request and no push stream for this long, and no tick due
+   * inside it, and the document is unloaded. Ten minutes unless stated; a
+   * walk states a short one.
+   */
+  idleMs?: number;
+  /**
+   * **How much of one minute's tick may go on loading documents whose due
+   * time the registry cannot vouch for** (`DRAFT_LOAD_BUDGET_MS`, Stage 2):
+   * the rows a new build of the clocks has made stale, and the documents met
+   * with no row. Documents known to be due are loaded whatever this says.
+   */
+  loadBudgetMs?: number;
+  /**
+   * **How often the clocks are driven** (`DRAFT_TICK_MS`, Stage 2): the
+   * minute's tick, and the idle unload behind it, every this many
+   * milliseconds. A minute unless stated; the load walk states a second so
+   * an eviction is not a minute's wait. Not less than a second.
+   */
+  tickMs?: number;
+  /**
+   * **Which documents boot still folds** (`DRAFT_WARM_TAIL`, Stage 2): one
+   * whose engine would replay this many entries or more at its first load —
+   * no snapshot this code can take, or one this far behind the log. Folded at
+   * a request instead, a convention holds the event loop for ~30 s on Render;
+   * at boot it is inside the deploy window. A thousand entries unless stated
+   * (~0.8 s locally, ~6 s on Render); a snapshot is written every hundred.
+   */
+  warmTail?: number;
+  /**
    * **The demo document** (design/DEMO.md Stage 1; Q1535): `/d/demo` built
    * in memory from `design/demo/pizzacon-2027.md` at boot. On unless
    * `DRAFT_DEMO=off`; a config that does not say — every test's — is off, so
@@ -275,6 +314,11 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ServerConfi
     adminKey: (env.DRAFT_ADMIN_KEY ?? '').trim() || null,
     push: (env.DRAFT_PUSH ?? '').trim() !== 'off',
     tickAll: (env.DRAFT_TICK ?? '').trim() === 'all',
+    load: (env.DRAFT_LOAD ?? '').trim() === 'eager' ? 'eager' : 'lazy',
+    idleMs: positiveMs(env.DRAFT_IDLE_MS, 'DRAFT_IDLE_MS') ?? IDLE_MS,
+    loadBudgetMs: positiveMs(env.DRAFT_LOAD_BUDGET_MS, 'DRAFT_LOAD_BUDGET_MS') ?? LOAD_BUDGET_MS,
+    warmTail: positiveMs(env.DRAFT_WARM_TAIL, 'DRAFT_WARM_TAIL') ?? WARM_TAIL,
+    tickMs: Math.max(1_000, positiveMs(env.DRAFT_TICK_MS, 'DRAFT_TICK_MS') ?? 60_000),
     demo: (env.DRAFT_DEMO ?? '').trim() !== 'off',
     demoKey: (env.DRAFT_DEMO_KEY ?? '').trim() || null,
     demoAnthropicKey: (env.DRAFT_DEMO_ANTHROPIC_KEY ?? '').trim() || null,
@@ -287,6 +331,20 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ServerConfi
     engineTuning: { cooldownMs },
     snapshotAudit: parseSnapshotAudit(env.DRAFT_SNAPSHOT_AUDIT),
   };
+}
+
+/** Stage 2's defaults (issue #219): ten minutes idle, five seconds of a tick. */
+export const IDLE_MS = 10 * 60_000;
+export const LOAD_BUDGET_MS = 5_000;
+export const WARM_TAIL = 1_000;
+
+/** A positive number of milliseconds, or undefined where unset; refused, never guessed. */
+function positiveMs(raw: string | undefined, name: string): number | undefined {
+  const v = (raw ?? '').trim();
+  if (v === '') return undefined;
+  const n = Number(v);
+  if (!Number.isFinite(n) || n <= 0) throw new Error(`${name} must be a positive number (got '${raw}')`);
+  return n;
 }
 
 /** A secret that survives restarts, so cookies and tokens do too. */

@@ -77,7 +77,9 @@ export const surfaceTable: Route[] = [
         redirect(r.res, r.path.replace(/\/+$/, '') + r.url.search);
         return true;
       }
-      if (r.docOr404(ctx.store.bySlug(r.seg[1]!)) === null) return true;
+      // the page only: the document loads when the page first asks for its
+      // view (Scaling Stage 2), so serving the file never folds a log
+      if (r.docOr404(ctx.store.servesSlug(r.seg[1]!)) === null) return true;
       serveFile(r.res, join(ctx.designDir, 'session-view.html'));
       return true;
     },

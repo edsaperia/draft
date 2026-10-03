@@ -77,7 +77,7 @@ const stats = (xs: number[]): { n: number; p50: number; p95: number; max: number
 
 const send = (id: number, body: unknown): void => { process.send?.({ id, body }); };
 send(0, { ready: true, startedAtMs: startedAt, createMs, listenAtMs: listenAt,
-  docs: [...draft.store.all()].length, quarantined: draft.store.quarantined().length,
+  docs: draft.store.registeredCount(), loaded: [...draft.store.all()].length, quarantined: draft.store.quarantined().length,
   skipped: draft.store.skippedPreShape().length });
 
 process.on('message', (raw: unknown) => {

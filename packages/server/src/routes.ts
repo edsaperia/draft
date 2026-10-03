@@ -30,7 +30,7 @@ import { createReadStream, existsSync, statSync } from 'node:fs';
 import { extname } from 'node:path';
 import type { Auth } from './auth.js';
 import type { ServerConfig } from './config.js';
-import type { DocStore, LoadedDoc } from './store.js';
+import type { DocStore } from './store.js';
 import type { Persistence, WriteChain } from './persistence.js';
 import type { Mailer } from './mailer.js';
 import type { MailOutbox } from './outbox.js';
@@ -99,7 +99,7 @@ export interface Req {
   /** the one origin every Origin header on this request is checked against */
   readonly baseOrigin: string;
   /** 404 for a document that isn't there; hand back whatever is. */
-  docOr404(doc: LoadedDoc | null): LoadedDoc | null;
+  docOr404<T extends object>(doc: T | null): T | null;
   /** 429 a mail-minting door when its per-IP bucket overflows. `refused`
    *  writes the answer in the caller's own shape where JSON is the wrong
    *  one — a door a person is looking at owes them a page (issue #69, F3). */

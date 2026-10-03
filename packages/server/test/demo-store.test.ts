@@ -187,7 +187,9 @@ describe('the demo document (DEMO.md Stage 1)', () => {
     await a.draft.close();
     const b = await boot({ dataDir: a.dataDir });
     expect((await health(b)).demo.state).toBe('slug-held');
-    const doc = b.draft.store.bySlug('demo')!;
+    // not loaded at boot since Scaling Stage 2, and the address still held
+    expect(b.draft.store.bySlug('demo')).toBeNull();
+    const doc = (await b.draft.store.openSlug('demo'))!;
     expect(doc.id).toBe('d-realdemo');
     expect(doc.ephemeral).toBeUndefined();
   });

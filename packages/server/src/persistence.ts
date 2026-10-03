@@ -52,6 +52,32 @@ export interface SnapshotRow {
   writtenMs: number;
 }
 
+/**
+ * **One document's registry row** (plan-scaling.md Stage 2, issue #219):
+ * what a host must know of a document it has not loaded — every slug it has
+ * worn, where it is in its life, and when its clocks next need the minute's
+ * tick. **Derived, never a truth** (the plan's invariant 1): written by the
+ * host from the loaded document after each commit and before an unload,
+ * read at boot, and rebuilt from the log whenever it is missing or was
+ * written by other clock code (`clockVersion`).
+ */
+export interface RegistryRow {
+  /** every slug the document has worn, oldest first (§9.7: no link breaks) */
+  slugs: string[];
+  /** `founding` before 🍾, `live` from it, `closed` once the clock closed it */
+  phase: 'founding' | 'live' | 'closed';
+  /** the next time the minute's tick has anything to do, on the document's own clock; null for never */
+  dueT: number | null;
+  /** the last event's time across both logs: the floor of the document's own clock (`foldTime`) */
+  lastT: number;
+  /** the clock code that computed `dueT`; another build's row is not trusted for it */
+  clockVersion: string;
+  /** both logs' lengths when written, for the record */
+  seq: number;
+  eseq: number;
+  writtenMs: number;
+}
+
 export interface PendingCreate {
   title: string;
   slug: string;
@@ -230,6 +256,27 @@ export interface Persistence {
    */
   readSnapshot(id: string): Promise<SnapshotRow | null>;
   writeSnapshot(id: string, row: SnapshotRow): Promise<void>;
+
+  /* -- the registry (plan-scaling.md Stage 2) -------------------------- */
+  /**
+   * Every document's registry row, keyed by id: one read at boot, so a host
+   * routes and ticks documents it has not loaded. A document with no row is
+   * simply absent; the host rebuilds the row from the log.
+   */
+  readRegistry(): Promise<Map<string, RegistryRow>>;
+  writeRegistry(id: string, row: RegistryRow): Promise<void>;
+  /**
+   * Both logs' lengths for every document, in one read: how boot tells a row
+   * written before the last entries landed (a crash, a deploy's old instance,
+   * a rollback's build) from one that still describes its log.
+   */
+  docLengths(): Promise<Map<string, { seq: number; eseq: number }>>;
+  /**
+   * Every stored snapshot's code version and engine length, without its
+   * state (Stage 2): how boot finds the documents whose first load would
+   * replay a long engine tail, and warms them inside the boot window.
+   */
+  snapshotVersions(): Promise<Map<string, { codeVersion: string; eseq: number }>>;
 
   /* -- magic-link tokens, keyed by their hash ---------------------------- */
   putTokens(entries: ReadonlyArray<readonly [string, TokenRecord]>): Promise<void>;
@@ -452,6 +499,58 @@ export class FilePersistence implements MaintainablePersistence {
     renameSync(state + '.tmp', state);
     writeFileSync(meta + '.tmp', JSON.stringify(m), 'utf8');
     renameSync(meta + '.tmp', meta);
+  }
+
+  /* -- the registry ------------------------------------------------------ */
+
+  async readRegistry(): Promise<Map<string, RegistryRow>> {
+    const out = new Map<string, RegistryRow>();
+    for (const id of await this.listDocIds()) {
+      const path = join(this.docsDir, id, 'registry.json');
+      if (!existsSync(path)) continue;
+      try {
+        out.set(id, JSON.parse(readFileSync(path, 'utf8')) as RegistryRow);
+      } catch {
+        // a row that does not parse is a row that is not there: the host
+        // rebuilds it from the log (invariant 1)
+      }
+    }
+    return out;
+  }
+
+  async docLengths(): Promise<Map<string, { seq: number; eseq: number }>> {
+    const lines = (path: string): number => {
+      if (!existsSync(path)) return 0;
+      const text = readFileSync(path, 'utf8');
+      let n = 0;
+      for (let i = text.indexOf('\n'); i >= 0; i = text.indexOf('\n', i + 1)) n += 1;
+      return n;
+    };
+    const out = new Map<string, { seq: number; eseq: number }>();
+    for (const id of await this.listDocIds()) {
+      out.set(id, { seq: lines(join(this.docsDir, id, 'log.jsonl')),
+        eseq: lines(join(this.docsDir, id, 'engine.jsonl')) });
+    }
+    return out;
+  }
+
+  async snapshotVersions(): Promise<Map<string, { codeVersion: string; eseq: number }>> {
+    const out = new Map<string, { codeVersion: string; eseq: number }>();
+    for (const id of await this.listDocIds()) {
+      const meta = join(this.docsDir, id, 'snapshot.json');
+      if (!existsSync(meta)) continue;
+      try {
+        const m = JSON.parse(readFileSync(meta, 'utf8')) as { codeVersion: string; eseq: number };
+        out.set(id, { codeVersion: m.codeVersion, eseq: m.eseq });
+      } catch { /* unreadable is absent: the load replays */ }
+    }
+    return out;
+  }
+
+  async writeRegistry(id: string, row: RegistryRow): Promise<void> {
+    const path = join(this.docsDir, id, 'registry.json');
+    writeFileSync(path + '.tmp', JSON.stringify(row), 'utf8');
+    renameSync(path + '.tmp', path);
   }
 
   /* -- tokens -------------------------------------------------------------- */
@@ -715,12 +814,25 @@ function appendJsonl(path: string, entries: readonly unknown[]): void {
  */
 export class WriteChain {
   private readonly tails = new Map<string, Promise<unknown>>();
+  /** Links enqueued and not yet settled, per key (Scaling Stage 2's unload asks). */
+  private readonly pending = new Map<string, number>();
 
   run<T>(key: string, fn: () => Promise<T>): Promise<T> {
     const tail = this.tails.get(key) ?? Promise.resolve();
+    this.pending.set(key, (this.pending.get(key) ?? 0) + 1);
+    const settle = (): void => {
+      const n = (this.pending.get(key) ?? 1) - 1;
+      if (n <= 0) this.pending.delete(key); else this.pending.set(key, n);
+    };
     const next = tail.then(fn, fn);
+    next.then(settle, settle);
     this.tails.set(key, next.catch(() => undefined));
     return next;
+  }
+
+  /** Whether a link on this key is queued or running: a document mid-commit. */
+  busy(key: string): boolean {
+    return this.pending.has(key);
   }
 
   /** Resolve once every chain's current tail has settled (PRODUCTION.md

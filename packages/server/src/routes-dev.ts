@@ -97,7 +97,7 @@ DEV: devLadderTable.push(
       if (r.devOff()) return true;
       if (devCrossSite(req, res, baseOrigin)) return true;
       const body = await readJson(req) as { slug?: unknown; to?: unknown };
-      const doc = r.docOr404(typeof body.slug === 'string' ? ctx.store.bySlug(body.slug) : null);
+      const doc = r.docOr404(typeof body.slug === 'string' ? await ctx.store.openSlug(body.slug) : null);
       if (!doc) return true;
       const to = typeof body.to === 'string' ? body.to : '';
       if (to === '') { json(res, 400, { error: 'an address to give up on' }); return true; }
@@ -129,7 +129,7 @@ DEV: devLadderTable.push(
       const { phaseOf, RUNGS, seedOfSlug, seatsOf, manifestOf } =
         await import('./dev-ladder.js');
       const slug = url.searchParams.get('slug');
-      const doc = slug === null ? null : ctx.store.bySlug(slug);
+      const doc = slug === null ? null : await ctx.store.openSlug(slug);
       /* **The ladder reads the document's own clock, not the wall's**
          (Q1455). `foldTime` is real now for every document there has ever
          been — the log cannot get ahead of the clock by itself — so this is
@@ -181,7 +181,7 @@ DEV: devLadderTable.push(
       if (devCrossSite(req, res, baseOrigin)) return true;
       const body = await readJson(req) as { to?: unknown; seed?: unknown; slug?: unknown };
       const { runLadder } = await import('./dev-ladder.js');
-      const doc = typeof body.slug === 'string' ? ctx.store.bySlug(body.slug) : null;
+      const doc = typeof body.slug === 'string' ? await ctx.store.openSlug(body.slug) : null;
       const result = await runLadder(
         { store: ctx.store, commit: (d, t) => ctx.writes.commit(d, t) }, doc, {
         ...(typeof body.to === 'string' ? { to: body.to as never } : {}),
@@ -218,7 +218,7 @@ DEV: devLadderTable.push(
       if (r.devOff()) return true;
       if (devCrossSite(req, res, baseOrigin)) return true;
       const body = await readJson(req) as { slug?: unknown };
-      const doc = r.docOr404(typeof body.slug === 'string' ? ctx.store.bySlug(body.slug) : null);
+      const doc = r.docOr404(typeof body.slug === 'string' ? await ctx.store.openSlug(body.slug) : null);
       if (!doc) return true;
       const { advanceClock } = await import('./dev-clock.js');
       const out = await advanceClock({
@@ -245,7 +245,7 @@ DEV: devLadderTable.push(
       if (r.devOff()) return true;
       if (devCrossSite(req, res, baseOrigin)) return true;
       const body = await readJson(req) as { slug?: unknown; member?: unknown };
-      const doc = r.docOr404(typeof body.slug === 'string' ? ctx.store.bySlug(body.slug) : null);
+      const doc = r.docOr404(typeof body.slug === 'string' ? await ctx.store.openSlug(body.slug) : null);
       if (!doc) return true;
       const member = typeof body.member === 'string' ? body.member : '';
       const rec = doc.cs.memberRecords().get(member);
@@ -257,6 +257,22 @@ DEV: devLadderTable.push(
       await ctx.writes.commit(doc, nowMs);
       setCookie(res, doc.id, ctx.auth.cookieFor(doc.id, member, nowMs), ctx.httpsOn);
       json(res, 200, { ok: true, member });
+      return true;
+    },
+  },
+  {
+    /* **Whether a document is in memory** (Scaling Stage 2, issue #219): the
+       load walk's one question, which `/healthz` answers only as a count — a
+       public endpoint names no document. Never a load: asking is not using. */
+    name: 'GET whether a document is loaded',
+    method: 'GET',
+    match: '/api/dev/loaded',
+    handler: (ctx, r) => {
+      if (r.devOff()) return true;
+      const held = ctx.store.servesSlug(r.url.searchParams.get('slug') ?? '');
+      if (held === null) { json(r.res, 404, { error: 'no such document' }); return true; }
+      json(r.res, 200, { loaded: ctx.store.isLoaded(held.id), loading: ctx.store.isLoading(held.id),
+        loads: ctx.store.loadStats.loads, unloads: ctx.store.loadStats.unloads });
       return true;
     },
   },

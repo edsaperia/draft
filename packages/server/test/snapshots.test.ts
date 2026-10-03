@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { gunzipSync, gzipSync } from 'node:zlib';
 import { afterAll, afterEach, describe, expect, it } from 'vitest';
-import { configFromEnv } from '../src/config.js';
+import { WARM_TAIL, configFromEnv } from '../src/config.js';
 import { createDraftServer } from '../src/server.js';
 import { codeVersion, ENGINE_SRC, engineFingerprint } from '../src/code-version.js';
 import { asEngineDoc, clockDueT, snapshotIfDue } from '../src/engine-host.js';
@@ -51,10 +51,14 @@ const engineLog = (dir: string, id: string): LogEntry[] =>
 const engineDocs = (dir: string): string[] =>
   readdirSync(join(dir, 'docs')).filter((id) => existsSync(join(dir, 'docs', id, 'engine.jsonl'))).sort();
 
+/** A host over `dir` with every document opened — since Stage 2 a boot loads
+ *  none, and these tests are about the loads, so each is asked for once. */
 async function boot(dir: string, audit = 'strict') {
   const env: NodeJS.ProcessEnv = { DRAFT_DATA_DIR: dir, DRAFT_STORE: 'file', DRAFT_NOTIFY_EMAIL: '',
     PORT: '0', DRAFT_DEMO: 'off', DRAFT_SNAPSHOT_AUDIT: audit, DRAFT_DESIGN_DIR: DESIGN_DIR };
-  return createDraftServer(configFromEnv(env));
+  const draft = await createDraftServer(configFromEnv(env));
+  for (const id of draft.store.ids()) await draft.store.open(id, 'boot');
+  return draft;
 }
 
 /**
@@ -200,6 +204,25 @@ describe('the host loads from snapshots, and writes them', () => {
     const b = await boot(dir, 'off');
     expect(b.snapshots.replayed.stale).toBe(1);
     expect(b.snapshots.written).toBe(1);
+    await b.close();
+  }, 300_000);
+
+  it('a lazy boot (Stage 2) folds only what would replay a long engine tail, and the next boot nothing', async () => {
+    const dir = unpack();
+    const raw = async () => createDraftServer(configFromEnv({ DRAFT_DATA_DIR: dir, DRAFT_STORE: 'file',
+      DRAFT_NOTIFY_EMAIL: '', PORT: '0', DRAFT_DEMO: 'off', DRAFT_SNAPSHOT_AUDIT: 'off',
+      DRAFT_DESIGN_DIR: DESIGN_DIR }));
+    const long = engineDocs(dir).filter((id) => engineLog(dir, id).length >= WARM_TAIL);
+    expect(long.length).toBeGreaterThan(0);
+    expect(long.length).toBeLessThan(engineDocs(dir).length);
+    const a = await raw();
+    expect([...a.store.all()].map((d) => d.id).sort()).toEqual([...long].sort());
+    expect(a.snapshots.written).toBe(long.length);
+    await a.close();
+    // the snapshots it wrote stand: nothing would replay long now
+    const b = await raw();
+    expect([...b.store.all()]).toHaveLength(0);
+    expect(b.store.registeredCount()).toBe(readdirSync(join(dir, 'docs')).length);
     await b.close();
   }, 300_000);
 

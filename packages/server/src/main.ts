@@ -27,9 +27,16 @@ draft.server.listen(cfg.port, () => {
     `${cfg.buildSha ? `, build: ${cfg.buildSha.slice(0, 12)}` : ''})`);
 });
 
+// the minute's metronome (`DRAFT_TICK_MS`, a minute unless stated — Scaling
+// Stage 2's load walk states a second, so an idle unload is not a minute away)
+// — and one tick at a time: a turn that finds the last still running skips
+let ticking = false;
 const clock = setInterval(() => {
-  void draft.tick().catch((e: unknown) => console.error('tick failed:', e));
-}, 60_000);
+  if (ticking) return;
+  ticking = true;
+  void draft.tick().catch((e: unknown) => console.error('tick failed:', e))
+    .finally(() => { ticking = false; });
+}, cfg.tickMs ?? 60_000);
 
 let stopping = false;
 function shutdown(signal: string): void {

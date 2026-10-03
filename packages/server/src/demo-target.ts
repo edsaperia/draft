@@ -67,6 +67,12 @@ export const PLAIN_PERSONA = 'a thoughtful member of the committee: votes for th
  * named by the name they chose (or their address's local part).
  */
 export function documentTarget(doc: LoadedDoc, generation = 1): DemoTarget {
+  // **the target holds its document** (Scaling Stage 2): the bots commit on
+  // this object through `applyCommand`, never through a request, so nothing
+  // else would keep an ordinary document from being unloaded between their
+  // turns — and their next commit would land on an object the store had
+  // dropped, a second owner of one log. Dev and test only; never released
+  doc.holds = (doc.holds ?? 0) + 1;
   return {
     doc: () => doc,
     generation: () => generation,
