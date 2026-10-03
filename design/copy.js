@@ -997,8 +997,8 @@ window.COPY = (function () {
     pw: {
       phrase: {
         star: { u: 'amend this at will', a: 'refuse proposals that the membership pass' },
-        invite: { u: 'invite people at will', a: 'refuse invitations and applications that the membership pass' },
-        remove: { u: 'remove members at will', a: 'refuse removals that the membership pass' },
+        invite: { u: 'invite people at will', a: 'block invitations that the membership have decided to make' },
+        remove: { u: 'remove people at will', a: 'block removals that the membership have decided to make' },
         text: { u: 'amend the text at will', a: 'refuse changes to the text that the membership pass' },
       },
       // **On the decision card the phrase names its setting** (Q1429, Ed
@@ -1025,8 +1025,8 @@ window.COPY = (function () {
       // (entry 94) and are only ever the veto sentence's.
       noun: {
         title: 'the title', slug: 'the link', text: 'the text',
-        ending: 'the ending', quorum: 'the quorum rule',
-        authorship: 'the anonymity rule', judgments: 'the vote-reveal rule',
+        ending: 'the end time', quorum: 'the quorum',
+        authorship: 'anonymity of proposals', judgments: 'anonymity of votes',
         chamber: 'the visibility rule', rate: 'the proposal rate', lapse: 'the lapse rule',
         removal: 'the removal rule',
         admission: 'the admissions rule', applications: 'the applications rule',
@@ -1357,13 +1357,13 @@ window.COPY = (function () {
     gate: {
       canpropose: {
         title: 'Proposals',
-        why: 'A proposal is a change you write to the document, for the membership to vote on.',
+        why: 'A proposal is a change to the document that the membership vote on.',
         waiting: 'Waiting on the start.',
         done: 'Open — members can propose as soon as they arrive.',
       },
       canjudge: {
         title: 'Voting',
-        why: 'A vote is your say on a proposal: you are shown two at a time and choose the one you prefer, or neither.',
+        why: 'A vote is your say on a proposed change to the document.',
         waiting: 'Waiting on the rules.',
         done: 'Open — the rules are settled.',
       },
@@ -1376,7 +1376,7 @@ window.COPY = (function () {
         // and tab read *Accept Constitutional Proposals*, the card's own
         // words, and *Activate Your Membership* went
         title: 'Constitutional Proposals',
-        why: 'A 🏛️ is a constitutional proposal: one at a time, returned whole, passing only when all members agree. You are already a member; activating it opens every question, proposal and vote on the rules.',
+        why: 'A 🏛️ is a constitutional proposal. Members may only make one at a time, and it passes only when all members agree to it.',
         waiting: 'Waiting on your arrival.',
         // *Accept 🏛️* like every grant (Q1541.24 (a), Ed 2026-09-25),
         // replacing Q1502's *Activate 🏛️*
@@ -1384,12 +1384,12 @@ window.COPY = (function () {
       },
       pen: {
         title: 'Founder Actions',
-        why: 'As the founder of this document, you have the power to change settings and edit the document at will. Founder Actions are denoted by ✒️. You can give up these powers later if you choose to.',
+        why: 'As the founder, you have the power to change settings and edit the document at will. Founder Actions are denoted by ✒️. You can give up these powers later if you choose to.',
         waiting: 'Waiting on the save.',
       },
       shield: {
         title: 'Founder Veto',
-        why: 'As the founder of this document, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can give up this power later if you choose to.',
+        why: 'As the founder, you have the power to veto choices that the membership make. Founder Veto is denoted by 🛡️. You can give up this power later if you choose to.',
         waiting: 'Waiting on the save.',
       },
       // **a grant is accepted, not OK'd** (Q1501, Ed 2026-09-22; T44 amended
