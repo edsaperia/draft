@@ -12,7 +12,7 @@
  *               survives with its origin's own wording (`draftRowState`'s `changed` false)
  *
  * After each press it asserts: edit mode is left; no command was posted (any POST under
- * /api/d/); the wallet the view serves is the same; no page error.
+ * /api/d/); no ✏️ spent from the wallet the view serves (a drip may land, never a spend); no page error.
  *
  * **And on a phone** (MOBILE.md §6a, #209): iPhone 13 and Pixel 7, a member, every press a
  * `touchscreen.tap`, in three states — untouched; *tapped open*, a clause tapped in edit mode
@@ -222,7 +222,9 @@ try {
         say(`     ${name} · drawn ${r.btn.disabled ? 'dark' : 'live'}${r.btn.until ? ' (data-until=' + r.btn.until + ')' : ''} · "${r.btn.title}"`);
         check(`${name} · edit mode left`, r.left);
         check(`${name} · no command posted`, !r.posts.length, r.posts.join(', '));
-        check(`${name} · wallet unchanged`, r.w0 === r.w1, `${r.w0} → ${r.w1}`);
+        // nothing spent: the drip runs on real minutes, so a ✏️ may land during the press (9 → 10 on a
+        // phone run), never leave
+        check(`${name} · no ✏️ spent`, r.w0 === r.w1 || (r.w0 != null && r.w1 >= r.w0), `${r.w0} → ${r.w1}`);
       }
     }
   }
@@ -236,7 +238,7 @@ try {
         say(`     ${name} · drawn ${r.btn.disabled ? 'dark' : 'live'} · "${r.btn.title}"`);
         check(`${name} · edit mode left`, r.left);
         check(`${name} · no command posted`, !r.posts.length, r.posts.join(', '));
-        check(`${name} · wallet unchanged`, r.w0 === r.w1, `${r.w0} → ${r.w1}`);
+        check(`${name} · no ✏️ spent`, r.w0 === r.w1 || (r.w0 != null && r.w1 >= r.w0), `${r.w0} → ${r.w1}`);
         errs.push(...r.errs);
       }
     }
