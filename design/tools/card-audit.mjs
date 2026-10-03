@@ -56,11 +56,11 @@
  * entry's fill seen on its white slip, #148), P36 `fold-target` (every
  * drawn fold triangle a 28 × 28 target that moves nothing, #151) and P37
  * `one-sheet` (the edit area one unbroken outline under the editing card,
- * #153), held everywhere (`EVERY_KIND`). P38 `vote-pill` (#199) holds a
+ * #153), held everywhere (`EVERY_KIND`). P39 `vote-pill` (#199) holds a
  * vote's *Current rule* to its own *Prefer this* — no standing pill,
  * nothing pressed on open:
  *
- *   node design/tools/card-audit.mjs --walk=all             # the nine walks, P13–P38 among the findings
+ *   node design/tools/card-audit.mjs --walk=all             # the nine walks, P13–P39 among the findings
  *   node design/tools/card-audit.mjs --strict --kinds=GRAMMAR_KINDS --walk=fixture   # CI's fast pass
  *   node design/tools/card-audit.mjs --width=390 --height=844 --baseline=<1600 payload>  # P31
  *
@@ -1704,7 +1704,7 @@ const IN_PAGE = () => {
         // card-shell.js's `data-kind`): what `GRAMMAR_KINDS` holds it by, so
         // a record filed on a clause is not a live quick card for the audit
         shellKind: card.getAttribute('data-kind') || null,
-        // P38 vote-pill (#199): what a vote's *Current rule* block draws — the
+        // P39 vote-pill (#199): what a vote's *Current rule* block draws — the
         // standing pill anywhere on the card, and the head's radios and
         // pressed controls on open
         vote: (() => {
@@ -2270,9 +2270,9 @@ const CHECKS = [
   ['P21', 'label-slot'], ['P22', 'no-job'], ['P23', 'note-visible'], ['P24', 'bin-job'],
   ['P25', 'row-vocabulary'], ['P26', 'role-drawing'], ['P27', 'closed-page'], ['P28', 'closed-keeps-content'],
   ['P29', 'closed-powers'], ['P30', 'zone-overlap'], ['P31', 'width-invariance'], ['P32', 'place-head'],
-  ['P33', 'one-home'], ['P34', 'glyph-space'], ['P35', 'wait-fill'], ['P36', 'fold-target'], ['P37', 'one-sheet'], ['P38', 'vote-pill'], ['—', 'raw-value'],
+  ['P33', 'one-home'], ['P34', 'glyph-space'], ['P35', 'wait-fill'], ['P36', 'fold-target'], ['P37', 'one-sheet'], ['P39', 'vote-pill'], ['—', 'raw-value'],
 ];
-/** P38's kinds: the cards that put a change to a vote — a live motion on a
+/** P39's kinds: the cards that put a change to a vote — a live motion on a
  *  rule or a door, the same motion at the Founder's 👑, an application */
 const VOTE_KINDS = new Set(['motion', 'crown', 'admission']);
 const CHECK = Object.fromEntries(CHECKS.map(([n, name]) => [name, n + ' ' + name]));
@@ -2760,7 +2760,7 @@ function grammarRules(c, ref) {
     if (k.radio && (k.disabled || (!anyCommit && !floats))) at('role-drawing', 'a radio “' + clip(k.tok, 30) + '” on a block nobody may choose' + (k.on ? ' (pressed)' : ''), 'unchoosable');
   }
 
-  /* P38 vote-pill (#199, Ed 2026-10-03: *this is a straight choice of what
+  /* P39 vote-pill (#199, Ed 2026-10-03: *this is a straight choice of what
    * you prefer between two options*; *no provenance at all*): a card that
    * puts a change to a vote draws no standing pill, and its *Current rule*
    * holds one radio, its own *Prefer this*, with nothing pressed on open */
