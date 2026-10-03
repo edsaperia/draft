@@ -159,15 +159,26 @@ export class WritePath {
    * or the store is still owed something a commit writes — entries behind
    * the cursor (a pause, a failed save), mail behind the relay, an engine
    * log behind its persist, a stalled flag to clear. The second is what the
-   * tick's commit has always retried, and it is retried as before.
+   * tick's commit has always retried, and it is retried as before. (An
+   * ephemeral document's engine is never persisted, so it owes nothing.)
+   *
+   * **A throw here is *due*** (Q679's rule): asked outside the tick's own
+   * try, a document whose clocks cannot be read would stop the loop for every
+   * document after it; ticked instead, its tick throws where it always did,
+   * and is counted and logged there.
    */
   isDue(doc: LoadedDoc, nowMs: number | undefined, realMs: number): boolean {
-    const e = asEngineDoc(doc);
-    if (doc.persisted < doc.cs.logEntries().length || doc.relayed < doc.persisted
-      || (doc.stalled ?? null) !== null
-      || (e.bridge !== null && e.enginePersisted < e.bridge.engine.log.length)) return true;
-    const due = this.dueT(doc);
-    return due !== null && due <= foldTime(doc, nowMs ?? devNow(doc.id, realMs));
+    try {
+      const e = asEngineDoc(doc);
+      if (doc.persisted < doc.cs.logEntries().length || doc.relayed < doc.persisted
+        || (doc.stalled ?? null) !== null
+        || (e.bridge !== null && doc.ephemeral !== true
+          && e.enginePersisted < e.bridge.engine.log.length)) return true;
+      const due = this.dueT(doc);
+      return due !== null && due <= foldTime(doc, nowMs ?? devNow(doc.id, realMs));
+    } catch {
+      return true;
+    }
   }
 
   /**
