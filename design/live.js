@@ -1279,6 +1279,10 @@ window.LIVE = (function () {
         return { retry: true };
       }).then((data) => {
         if (data && data.retry) { setTimeout(liveBoot, 4000); return; }
+        // **the opening skeleton is lifted by the first render** (Q1559):
+        // until one, the page wears `html.opening` from its <head> and shows
+        // the bars in place of the birth's *Untitled*; a retry above keeps it
+        const opened = () => document.documentElement.classList.remove('opening');
         if (!data) return;
         // **The stagehand's controls are asked for only where the host says
         // it has them** (Q1349, Ed 2026-09-12): `devMail` rides every view
@@ -1303,6 +1307,7 @@ window.LIVE = (function () {
           // at once, so a phone that scanned is one tap from a seat
           if (data.demoJoin && new URLSearchParams(location.search).get('try') === '1') S.open = 'strtry';
           render();
+          opened();
           api.pushOpen(LIVESLUG);
           setInterval(() => {
           // **Nothing rebuilds under a press.** A pen hold is a gesture in
@@ -1332,6 +1337,7 @@ window.LIVE = (function () {
           hydrateApplicant(data.applicant);
           hydrateS();
           render();
+          opened();
           api.pushOpen(LIVESLUG);
           setInterval(() => api.pollTick(), 4000);
           return;
@@ -1359,6 +1365,7 @@ window.LIVE = (function () {
         if (data.text) setProse(data.text);
         else if (data.provisionalText) setProse(data.provisionalText);
         render();
+        opened();
         api.pushOpen(LIVESLUG);
         setInterval(() => {
           // **Nothing rebuilds under a press.** A pen hold is a gesture in
