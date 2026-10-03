@@ -55,9 +55,10 @@
  * `glyph-space` (issue #121, STYLE.md T50), P35 `wait-fill` (a ⏳ rail
  * entry's fill seen on its white slip, #148) and P37 `one-sheet` (the edit
  * area one unbroken outline under the editing card, #153), held everywhere
- * (`EVERY_KIND`):
+ * (`EVERY_KIND`). P38 `vote-pill` (#199) holds a vote's *Current rule* to
+ * its own *Prefer this* — no standing pill, nothing pressed on open:
  *
- *   node design/tools/card-audit.mjs --walk=all             # the nine walks, P13–P37 among the findings
+ *   node design/tools/card-audit.mjs --walk=all             # the nine walks, P13–P38 among the findings
  *   node design/tools/card-audit.mjs --strict --kinds=GRAMMAR_KINDS --walk=fixture   # CI's fast pass
  *   node design/tools/card-audit.mjs --width=390 --height=844 --baseline=<1600 payload>  # P31
  *
@@ -1701,6 +1702,20 @@ const IN_PAGE = () => {
         // card-shell.js's `data-kind`): what `GRAMMAR_KINDS` holds it by, so
         // a record filed on a clause is not a live quick card for the audit
         shellKind: card.getAttribute('data-kind') || null,
+        // P38 vote-pill (#199): what a vote's *Current rule* block draws — the
+        // standing pill anywhere on the card, and the head's radios and
+        // pressed controls on open
+        vote: (() => {
+          const head = card.querySelector(':scope > .clausehead');
+          const radios = head ? [...head.querySelectorAll('.lanepick, .standpill, [role="radio"]')] : [];
+          return {
+            pills: card.querySelectorAll('[data-fact="pill"], .standpill, [data-standpick]').length,
+            headRadios: radios.length,
+            headPressed: radios.filter((r) => r.matches('.standpill, .on, [aria-pressed="true"], [aria-checked="true"]') ||
+              !!(r.closest('.pick') && r.closest('.pick').classList.contains('on'))).length,
+            asks: !!card.querySelector('.vinblock'),
+          };
+        })(),
         // off unless --specimens asked for it: the payload is the page, and
         // 270 of them would drown the numbers this instrument exists for
         ...(window.__CA_SPEC ? { spec: specimen(card, key) } : {}),
@@ -2253,8 +2268,11 @@ const CHECKS = [
   ['P21', 'label-slot'], ['P22', 'no-job'], ['P23', 'note-visible'], ['P24', 'bin-job'],
   ['P25', 'row-vocabulary'], ['P26', 'role-drawing'], ['P27', 'closed-page'], ['P28', 'closed-keeps-content'],
   ['P29', 'closed-powers'], ['P30', 'zone-overlap'], ['P31', 'width-invariance'], ['P32', 'place-head'],
-  ['P33', 'one-home'], ['P34', 'glyph-space'], ['P35', 'wait-fill'], ['P37', 'one-sheet'], ['—', 'raw-value'],
+  ['P33', 'one-home'], ['P34', 'glyph-space'], ['P35', 'wait-fill'], ['P37', 'one-sheet'], ['P38', 'vote-pill'], ['—', 'raw-value'],
 ];
+/** P38's kinds: the cards that put a change to a vote — a live motion on a
+ *  rule or a door, the same motion at the Founder's 👑, an application */
+const VOTE_KINDS = new Set(['motion', 'crown', 'admission']);
 const CHECK = Object.fromEntries(CHECKS.map(([n, name]) => [name, n + ' ' + name]));
 /** checks.md's *unchanged* set (BUILD.md stage 0's acceptance): their
  *  v2-comparable count is read against checks.md's *today* column */
@@ -2738,6 +2756,20 @@ function grammarRules(c, ref) {
     // every place, so its places' radios are choosable with no row of their own
     const floats = !anyCommit && c.shellKind === 'patch';
     if (k.radio && (k.disabled || (!anyCommit && !floats))) at('role-drawing', 'a radio “' + clip(k.tok, 30) + '” on a block nobody may choose' + (k.on ? ' (pressed)' : ''), 'unchoosable');
+  }
+
+  /* P38 vote-pill (#199, Ed 2026-10-03: *this is a straight choice of what
+   * you prefer between two options*; *no provenance at all*): a card that
+   * puts a change to a vote draws no standing pill, and its *Current rule*
+   * holds one radio, its own *Prefer this*, with nothing pressed on open */
+  if (VOTE_KINDS.has(c.shellKind) && c.vote) {
+    const vt = c.vote;
+    if (vt.pills) at('vote-pill', 'a standing pill on a vote (' + vt.pills + ')', 'pill');
+    if (vt.headPressed) at('vote-pill', 'Current rule has ' + vt.headPressed + ' control(s) pressed on open', 'pressed');
+    // …a door's *stays as it is* is an option of its own under the door's
+    // rows, so a head with no radio is a door's, not a fault
+    if (vt.asks && vt.headRadios > 1) at('vote-pill', 'Current rule holds ' + vt.headRadios + ' radios on a card that asks, not one', 'radios');
+    if (!vt.asks && vt.headRadios) at('vote-pill', 'Current rule holds ' + vt.headRadios + ' radio(s) on a card that asks nothing', 'radios');
   }
 
   /* P27 closed-page (as measured): nothing enabled but the tabs, 🥂 and a
