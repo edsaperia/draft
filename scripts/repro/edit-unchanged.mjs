@@ -14,11 +14,15 @@
  * After each press it asserts: edit mode is left; no command was posted (any POST under
  * /api/d/); the wallet the view serves is the same; no page error.
  *
+ * **And on a phone** (MOBILE.md §6a, #209): iPhone 13 and Pixel 7, a member, every press a
+ * `touchscreen.tap`, in three states — untouched; *tapped open*, a clause tapped in edit mode
+ * so it becomes its lane (1585.1), its wording the clause's own; and typed back in that lane.
+ *
  * Exit 0 when every press passes, 1 on a finding, 2 on a set-up that never got there.
  *
  *   node scripts/repro/edit-unchanged.mjs [<base-url>]
  */
-import { chromium } from 'playwright';
+import { chromium, devices } from 'playwright';
 import { assertServerBuild, walkBase } from '../lib/assert-server.mjs';
 import { say } from '../lib/walk.mjs';
 
@@ -107,6 +111,78 @@ async function press(p, slug, me, era, which, typedBack) {
   return { btn, left, posts, w0, w1 };
 }
 
+// **a phone** (MOBILE.md §6a, #209): on a coarse pointer the column takes no caret, and a tap
+// on a clause in edit mode makes it its lane — a draft site whose wording is the clause's own,
+// so *nothing changed* until a key lands. `state` is 'untouched' · 'tapped' · 'typed back'.
+async function phonePress(browser, dev, slug, me, which, state) {
+  const ctx = await browser.newContext({ ...devices[dev] });
+  const p = await ctx.newPage();
+  const errs = [];
+  p.on('pageerror', (e) => errs.push(e.message));
+  const posts = [];
+  const onReq = (rq) => { if (rq.method() === 'POST' && /\/api\/d\//.test(new URL(rq.url()).pathname)) posts.push(new URL(rq.url()).pathname); };
+  await p.goto(BASE + '/');
+  await p.evaluate(async ({ slug, me }) => {
+    await fetch('/api/dev/seat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ slug, member: me }) });
+    localStorage.setItem('draft:grants:' + slug + ':' + me, JSON.stringify(['canpropose', 'grant-pen', 'grant-shield', 'grant-voice', 'canjudge']));
+  }, { slug, me });
+  await p.goto(BASE + '/d/' + slug);
+  await p.waitForSelector('#ridetab .achip[data-tab="text"]', { timeout: 30_000 }).catch(() => bail(`${dev}: no 📝 tab`));
+  await p.waitForTimeout(1500);
+  // the stagehand's ⏭ bar stands over the window's foot, where the row is (phone-propose's own)
+  await p.addStyleTag({ content: '#ladderbar, .ladderbar { display: none !important; }' });
+  await p.evaluate(() => { window.SESSION.smoothScrollBy = (dy, done) => { window.scrollBy(0, dy); if (done) done(); }; });
+  const tap = async (sel) => {
+    const b = await p.evaluate((sel) => { const e = document.querySelector(sel); if (!e) return null;
+      e.scrollIntoView({ block: 'center' }); const r = e.getBoundingClientRect();
+      return r.width ? { x: r.left + r.width / 2, y: r.top + r.height / 2, disabled: e.disabled, title: e.title } : null; }, sel);
+    if (b) await p.touchscreen.tap(b.x, b.y);
+    return b;
+  };
+  const wallet = () => p.evaluate(async (slug) => (await (await fetch('/api/d/' + slug + '/view')).json()).wallet, slug);
+  const editing = () => p.evaluate(() => document.getElementById('doc').classList.contains('editing'));
+  const w0 = await wallet();
+  await tap('#ridetab .achip[data-tab="text"]');
+  await p.waitForTimeout(800);
+  if (!(await editing())) bail(`${dev}: 📝 did not enter edit mode`);
+  let lane = null;
+  if (state !== 'untouched') {
+    // an unraced paragraph's words, tapped as phone-propose taps them
+    const at = await p.evaluate(() => {
+      const b = [...document.querySelectorAll('#charter .prose .editable[data-key]')]
+        .find((x) => !x.closest('.sugg') && !/lvl\d/.test(x.className) && !x.querySelector('.achip') && x.textContent.trim().length > 40);
+      if (!b) return null;
+      b.scrollIntoView({ block: 'center' });
+      const w = document.createTreeWalker(b, NodeFilter.SHOW_TEXT);
+      let n; for (n = w.nextNode(); n; n = w.nextNode()) if (n.nodeValue.trim().length > 20 && !n.parentElement.closest('.chipcol, .nocaret')) break;
+      if (!n) return null;
+      const r = document.createRange(); r.setStart(n, 12); r.setEnd(n, 13);
+      const c = r.getClientRects()[0];
+      return { key: b.dataset.key, x: c.left + 1, y: c.top + c.height / 2 };
+    });
+    if (!at) bail(`${dev}: no unraced clause to tap`);
+    await p.touchscreen.tap(at.x, at.y);
+    await p.waitForTimeout(1200);
+    lane = await p.evaluate((k) => !!document.querySelector('[data-lane="' + k + '"]'), at.key);
+    if (!lane) bail(`${dev}: the tap on ${at.key} opened no lane`);
+    if (state === 'typed back') {
+      await p.keyboard.type('x');
+      await p.waitForTimeout(400);
+      await p.keyboard.press('Backspace');
+      await p.waitForTimeout(600);
+    }
+  }
+  p.on('request', onReq);
+  const sel = '[data-proposalrow] [data-act="' + (which === '🗑️' ? 'row-discard' : 'row-commit') + '"]:not([data-pen])';
+  const btn = await tap(sel);
+  await p.waitForTimeout(1200);
+  const left = !(await editing());
+  const w1 = await wallet();
+  p.off('request', onReq);
+  await ctx.close();
+  return { btn, left, posts, w0, w1, errs };
+}
+
 try {
   const ctx = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
   const page = await ctx.newPage();
@@ -150,9 +226,24 @@ try {
       }
     }
   }
+  // the phones: a member, every press a tap
+  for (const dev of ['iPhone 13', 'Pixel 7']) {
+    for (const state of ['untouched', 'tapped', 'typed back']) {
+      for (const which of ['🗑️', '✏️']) {
+        const name = `${dev} member · ${state} · ${which}`;
+        const r = await phonePress(browser, dev, live.slug, member.id, which, state);
+        if (!r.btn) { check(`${name} · drawn`, false, 'no control on the glass'); continue; }
+        say(`     ${name} · drawn ${r.btn.disabled ? 'dark' : 'live'} · "${r.btn.title}"`);
+        check(`${name} · edit mode left`, r.left);
+        check(`${name} · no command posted`, !r.posts.length, r.posts.join(', '));
+        check(`${name} · wallet unchanged`, r.w0 === r.w1, `${r.w0} → ${r.w1}`);
+        errs.push(...r.errs);
+      }
+    }
+  }
   check('no page error', !errs.length, errs.slice(0, 2).join(' | '));
 } finally {
   await browser.close();
 }
-say(fails.length ? `✗ ${fails.length} finding(s)` : '✓ #193: with nothing changed, 🗑️ and ✏️ (✒️) leave edit mode and do nothing else');
+say(fails.length ? `✗ ${fails.length} finding(s)` : '✓ #193: with nothing changed, 🗑️ and ✏️ (✒️) leave edit mode and do nothing else, at 1600 and on a phone');
 process.exit(fails.length ? 1 : 0);
