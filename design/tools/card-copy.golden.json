@@ -4830,7 +4830,7 @@
    },
    "mo:mo-3": {
     "eyebrow": "Current rule",
-    "head": "The document can be seen by anyone with the link.Chosen by the Founder ✒️",
+    "head": "The document can be seen by anyone with the link.",
     "lock": "",
     "body": "Awaiting assent from the Founder 🛡️ProposedThe document can only be seen by members.AnonymousWho reads the document should be the membership’s call.",
     "options": [],
@@ -4869,7 +4869,7 @@
    },
    "mo:mo-6": {
     "eyebrow": "Current rule",
-    "head": "All proposals are made anonymously.Chosen by the membershipPrefer this",
+    "head": "All proposals are made anonymously.Prefer this",
     "lock": "",
     "body": "ProposedAll proposals are made anonymously, and all names are revealed at the end.AnonymousNames put pressure on people; the writing should stand alone.Prefer thisIndifferent",
     "options": [
@@ -4906,7 +4906,7 @@
    },
    "mo:mo-7": {
     "eyebrow": "Current rule",
-    "head": "Members may make a new proposal ✏️ every 3 hours.Chosen by the Founder ✒️",
+    "head": "Members may make a new proposal ✏️ every 3 hours.",
     "lock": "",
     "body": "Proposed by youMembers may make a new proposal ✏️ every 6 hours.AnonymousFewer, better proposals — let the wait be longer.",
     "options": [],
@@ -5581,7 +5581,7 @@
    },
    "mo:mo-3": {
     "eyebrow": "Current rule",
-    "head": "The document can be seen by anyone with the link.Chosen by the Founder ✒️",
+    "head": "The document can be seen by anyone with the link.",
     "lock": "",
     "body": "Awaiting assent from the Founder 🛡️ProposedThe document can only be seen by members.AnonymousWho reads the document should be the membership’s call.",
     "options": [],
@@ -5601,7 +5601,7 @@
    },
    "mo:mo-6": {
     "eyebrow": "Current rule",
-    "head": "All proposals are made anonymously.Chosen by the membership",
+    "head": "All proposals are made anonymously.",
     "lock": "",
     "body": "ProposedAll proposals are made anonymously, and all names are revealed at the end.AnonymousNames put pressure on people; the writing should stand alone.",
     "options": [],
@@ -5616,7 +5616,7 @@
    },
    "mo:mo-7": {
     "eyebrow": "Current rule",
-    "head": "Members may make a new proposal ✏️ every 3 hours.Chosen by the Founder ✒️",
+    "head": "Members may make a new proposal ✏️ every 3 hours.",
     "lock": "",
     "body": "ProposedMembers may make a new proposal ✏️ every 6 hours.AnonymousFewer, better proposals — let the wait be longer.",
     "options": [],
@@ -6386,7 +6386,7 @@
    },
    "mo:mo-3": {
     "eyebrow": "Accept This Change?",
-    "head": "The document can be seen by anyone with the link.Chosen by the Founder ✒️",
+    "head": "The document can be seen by anyone with the link.",
     "lock": "",
     "body": "The membership passed this. Until you answer, the rule above stands.ProposedThe document can only be seen by members.AnonymousWho reads the document should be the membership’s call.",
     "options": [],
@@ -6448,7 +6448,7 @@
    },
    "mo:mo-6": {
     "eyebrow": "Current rule",
-    "head": "All proposals are made anonymously.Chosen by the membership",
+    "head": "All proposals are made anonymously.",
     "lock": "",
     "body": "Proposed by youAll proposals are made anonymously, and all names are revealed at the end.AnonymousNames put pressure on people; the writing should stand alone.",
     "options": [],
@@ -6469,7 +6469,7 @@
    },
    "mo:mo-7": {
     "eyebrow": "Current rule",
-    "head": "Members may make a new proposal ✏️ every 3 hours.Chosen by the Founder ✒️Prefer this",
+    "head": "Members may make a new proposal ✏️ every 3 hours.Prefer this",
     "lock": "",
     "body": "ProposedMembers may make a new proposal ✏️ every 6 hours.AnonymousFewer, better proposals — let the wait be longer.Prefer thisIndifferent",
     "options": [

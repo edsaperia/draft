@@ -6,6 +6,79 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-10-03: proposing from a phone
+
+### New
+- **You can propose a change from your phone.** Press 📝, then tap the paragraph you want to change: it becomes the place you type, where it stands, with the cursor where your finger landed. Your reasoning and the Anonymous switch sit beneath it, and ✏️ proposes in one tap. ✏️ *propose edit* on a wording you are voting on works on a phone too.
+
+### Changed
+- **On a phone, the keyboard no longer hides ✏️.** While you type, the buttons stand above the keyboard and the task list steps aside.
+- **iPhones no longer zoom the page when you tap into a field**: your reasoning and a rule's fields are drawn large enough on a phone.
+- **On a phone, the task bar at the foot of the screen comes back when a card closes into the document**, after you vote, propose or press OK, and shows your next task, so one tap takes you there. An OK that opens the next card still does just that.
+
+### Fixed
+- **When a proposal changes the document in several places, each place's entry in your task list now takes you to the card at that place**, not always the first one.
+- **📝 no longer hides the first paragraph's own tab.** When the first paragraph of the text had a proposal on it, the 📝 tab sat on top of that paragraph's tab, so you could not see it or press it. 📝 now stands just above it.
+- **📝 tucks into a card open on the first paragraph**, as the card's own tabs do, instead of standing a little apart and over the card's top edge. It no longer jumps when that card opens.
+
+### For contributors
+- **Touch at narrow width only; the desktop is unchanged** (both probes IDENTICAL at 1600). MOBILE.md §6a, stage 6a (#203): the column never takes a caret on a coarse pointer (`PROSE`), and in edit mode a tap on a clause opens it as its own lane in the clause's box (`startDraftFromTap`, composer.js; `editPresent`'s in-place form, session.js). The viewport meta adds `interactive-widget=resizes-content`, and the root wears `data-kbd` with `--kbd-lift` read from `visualViewport`. card-audit's narrow run is a touch context and measures the 📝 door (D1's skip gone). Guard: `scripts/repro/phone-propose.mjs`, in the sprint tier.
+- **The task sheet's peek returns on a close** (#206): one turn after the rail is laid, if a card was open and none is open or pending now, `data-sheethide` is lifted (`design/session-view.html`, narrow only); MOBILE.md *The task sheet*. Guard: `npm run drawer-walk` step 6b.
+- **A patch's rail entry travels to its own place** (#204): `entrySiteOf` → `railPress` → `toggle`'s fourth argument, in `design/session.js`, for items of several places only. Guard: `scripts/repro/patch-entry-travel.mjs`, in the sprint tier's `sprint-doors`.
+- **📝 beside the first clause** (#194), surface-only and desktop only: `ridePile` and `.ridetab.tucked` (`design/edit-mode.js`, `design/system.css`); SURFACE §9's 📝 row. Guards: `scripts/repro/ride-tab-tuck.mjs` in the sprint tier (`sprint-doors`, on the demo), and card-audit P38 `ride-tuck`.
+- **The once-a-minute clock visits only the documents with something due** (Scaling Stage 1, issue #210): a closing time, a lapse or its warnings, a vote's abstention, or the pause between batches of decisions, instead of every document every minute. Nothing a member sees changes. `nextClockT` beside each `tick` (constitution, engine-core), `clockDueT` and `sweptAtT` in engine-host, the index and `isDue` in `WritePath`; `DRAFT_TICK=all` is the old tick. Guard: `packages/server/test/clock-index.test.ts`, a differential against the old tick. Design and measurements: `design/spec-pass/plan-scaling.md` *Stage notes*.
+
+## 2026-10-03: documents open at their Text
+
+### Changed
+- **A document now opens at its Text, with the Rules a page above.** Scroll up for the Rules; the task list, the contents and the cards are where they were. Before the document begins, from a link to a place, or when you come back to where you were, it opens as it always has.
+
+### Fixed
+- **On a phone the task list stays in view when the document opens**, rather than sliding away as if you had read down.
+
+### For contributors
+- **The `?rules=below` flag is gone**; `?open=top` is a dev seam for the old opening. `design/paper.js`, SURFACE M26. Guard: `scripts/repro/open-at-text.mjs` (sprint tier, `sprint-doors`) and `npm run drawer-walk`.
+
+## 2026-10-03: try opening a document at its Text (behind a flag)
+
+### New
+- **Add `?rules=below` to a document's address and it opens at the Text, with the Rules a page above.** Scroll up for the Rules; everything else is where it was. Before the document begins, from a link to a place, or when you reload to where you were, it opens as it always has. Without the flag nothing changes.
+
+### For contributors
+- **Surface-only, flagged.** `openAtText` in `design/paper.js`; SURFACE M26. Guard: `scripts/repro/open-at-text.mjs`, in the sprint tier's `sprint-doors`.
+
+## 2026-10-03: no blank page while a document opens
+
+### Fixed
+- **Opening a document no longer flashes a blank *Untitled* page first**: the page shows grey placeholder lines in the document's own shape until it has loaded.
+
+### For contributors
+- **Surface-only.** A one-line script in `session-view.html`'s `<head>` sets `html.opening` on `/d/`, and `liveBoot` (`design/live.js`) lifts it after the first render; Q1559. Guard: `scripts/repro/opening-skeleton.mjs`, in the sprint tier's `sprint-doors`.
+
+## 2026-10-03: votes and changes arrive at once
+
+### Changed
+- **What others do now reaches your page at once.** A proposal, a vote, a change passing and where others are reading appear on your page within a moment of happening, instead of up to four seconds later. A page left open and idle also asks docs.vote for far less, so a full room weighs less on the service.
+
+### For contributors
+- **Push instead of polling** (Scaling Stage 4, issue #162). `GET /api/d/:slug/events` is a Server-Sent Events stream carrying only the document's two log lengths, plus an empty nudge for the pause, the stall flag, a new build and (to members) a reading place moving. The page asks for its view when an event says something moved. The 4 s poll is now a 30 s backstop while the stream is open, and the old 4 s whenever it is not. `DRAFT_PUSH=off` turns the stream off, and every page then polls as before. `/healthz` counts the streams. New walk `npm run push-walk`, in the sprint tier. Design and measurements: `design/spec-pass/plan-scaling.md` *Stage notes*.
+
+## 2026-10-03: bigger fold triangles
+
+### Changed
+- **The triangle that folds a heading away is bigger and easier to hit.** It is drawn one step smaller than the heading beside it, rather than at caption size beside every heading, and the area that answers a click or a tap is 28 pixels square everywhere it appears, on a phone too. The contents list's triangles keep their size but answer over the same square, and the list is no taller for it.
+
+### For contributors
+- **Surface-only.** `.sectoggle` in `design/system.css` and `design/setup.css`: a 28 × 28 box, the glyph's size set per heading. Guard: `card-audit` P36 `fold-target`, held on every kind in CI's fast pass at 1600 and 390.
+
+## 2026-10-03: a credit under the page
+
+### New
+- **A line under the last page says who made docs.vote**: *Created by the London College of Political Technology*, the name a link to the college's site. On a short document it sits just beneath the page; on a long one it is there when you reach the end of the text. It is not shown while you are editing.
+
+### For contributors
+- **Surface-only.** `design/paper.js` draws `.deskcredit` a desk gap under the last sheet; the words are `page.credit` in `design/copy.js`; SURFACE M21.
+
 ## 2026-10-02: pressing an open card's task takes you back to it
 
 ### Changed
