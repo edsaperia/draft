@@ -443,8 +443,11 @@ export class Session {
     return s;
   }
 
-  /** Rebuild a session by replaying a log (verifies the hash chain). */
-  static replay(log: LogEntry[]): Session {
+  /** Rebuild a session by replaying a log (verifies the hash chain).
+   *  `after`, where given, is called with the session after each entry is
+   *  folded — the snapshot differential reads the replay's own state at every
+   *  point of one pass (plan-scaling.md Stage 3). */
+  static replay(log: LogEntry[], after?: (s: Session, folded: number) => void): Session {
     const s = new Session();
     let prev = '';
     for (const entry of log) {
@@ -455,6 +458,7 @@ export class Session {
       s.log.push(entry);
       s.apply(entry.event, entry.seq);
       prev = entry.hash;
+      if (after !== undefined) after(s, s.log.length);
     }
     return s;
   }

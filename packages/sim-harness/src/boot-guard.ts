@@ -91,14 +91,31 @@ function entriesIn(dir: string): number {
   return n;
 }
 
+/**
+ * **Cold and warm** (plan-scaling.md Stage 3). A boot writes each due
+ * document's engine snapshot, and the next boot restores from it, so a set
+ * booted twice times two different things. **Cold** is every snapshot gone:
+ * the first boot under this code, and every boot after a deploy that changed
+ * `packages/engine-core` (`codeVersion`). Until Stage 2 stops boot loading
+ * every document, that is still a full replay of the fleet, so **the verdict
+ * stays on cold**. **Warm** is the boot after one that wrote them, which is
+ * every other deploy and restart; it is reported beside the verdict.
+ */
+function dropSnapshots(dir: string): void {
+  for (const id of readdirSync(join(dir, 'docs'))) {
+    for (const f of ['snapshot.json', 'snapshot.state.gz']) rmSync(join(dir, 'docs', id, f), { force: true });
+  }
+}
+
 /** A fresh process's boot replay over `dir`, in milliseconds. */
 function replayOnce(dir: string): number {
   const r = spawnSync(process.execPath, [...process.execArgv, fileURLToPath(import.meta.url),
     '--replay', dir], {
     encoding: 'utf8', cwd: join(HERE, '..', '..', 'server'),
     // the demo document (Q1535) builds at every boot, in memory; the guard
-    // times the stored set's replay, so it boots with the demo off
-    env: { ...process.env, DRAFT_DEMO: 'off' },
+    // times the stored set's replay, so it boots with the demo off — and with
+    // the snapshot audit off, as production boots (PR #214's QUESTION (a))
+    env: { ...process.env, DRAFT_DEMO: 'off', DRAFT_SNAPSHOT_AUDIT: 'off' },
   });
   const m = /replay-ms (\d+(?:\.\d+)?) docs (\d+) quarantined (\d+)/.exec(r.stdout ?? '');
   if (r.status !== 0 || m === null) throw new Error(`the replay child failed: ${r.stderr}`);
@@ -196,11 +213,19 @@ async function main(): Promise<void> {
     const set = unpack(dir);
     say(`boot guard: the fixed set ${SET} (${set.entries} entries, seeded ${set.seededAt}, `
       + `fixture ${set.sha})`);
-    const runs = Array.from({ length: RUNS }, () => replayOnce(dir)).sort((x, y) => x - y);
+    const runs = Array.from({ length: RUNS }, () => { dropSnapshots(dir); return replayOnce(dir); })
+      .sort((x, y) => x - y);
     const median = runs[Math.floor(RUNS / 2)]!;
     const projected = (median / 1000) * (FLEET / SET_DOCS) * RENDER;
     const budget = SHARE * WINDOW_S;
-    say(`  replay of the set: ${runs.map((r) => r.toFixed(0)).join(' / ')} ms (median ${median.toFixed(0)})`);
+    // the last cold boot left its snapshots behind: the warm boots read them
+    const warm = Array.from({ length: RUNS }, () => replayOnce(dir)).sort((x, y) => x - y);
+    const warmMedian = warm[Math.floor(RUNS / 2)]!;
+    say(`  replay of the set, cold (no snapshots): ${runs.map((r) => r.toFixed(0)).join(' / ')} ms `
+      + `(median ${median.toFixed(0)})`);
+    say(`  boot of the set, warm (from snapshots): ${warm.map((r) => r.toFixed(0)).join(' / ')} ms `
+      + `(median ${warmMedian.toFixed(0)}; ${FLEET} on Render ≈ `
+      + `${((warmMedian / 1000) * (FLEET / SET_DOCS) * RENDER).toFixed(0)} s) — reported, not judged`);
     say(`  projected boot of ${FLEET} such documents on Render: ${projected.toFixed(0)} s `
       + `(× ${FLEET / SET_DOCS} × ${RENDER}); budget ${budget} s = ${SHARE} × the ${WINDOW_S} s window`);
     if (projected > budget) {

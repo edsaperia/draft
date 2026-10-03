@@ -99,7 +99,9 @@ export function encodeState(value: unknown): Enc {
       const d = Object.getOwnPropertyDescriptor(o, k)!;
       if (!('value' in d)) throw new SnapshotShapeError(`${path}.${k}`, 'an accessor property');
       if (!d.enumerable) throw new SnapshotShapeError(`${path}.${k}`, 'a non-enumerable property');
-      out[k] = walk(d.value, `${path}.${k}`);
+      // defined, never assigned: a key named `__proto__` must stay a key
+      Object.defineProperty(out, k, { value: walk(d.value, `${path}.${k}`), enumerable: true,
+        writable: true, configurable: true });
     }
     return { $id: id, $o: out };
   };

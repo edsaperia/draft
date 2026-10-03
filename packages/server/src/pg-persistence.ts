@@ -31,7 +31,7 @@
 import pg from 'pg';
 import type { LogEntry, PersonId } from '../../constitution/src/index.js';
 import { OUTBOX_MAX_ATTEMPTS, outboxBackoffMs } from './persistence.js';
-import type { ErrorLine, MaintainablePersistence, OutboxRow, PersonRow, StashRecord,
+import type { ErrorLine, MaintainablePersistence, OutboxRow, PersonRow, SnapshotRow, StashRecord,
   TokenRecord } from './persistence.js';
 
 /** Each migration runs once, in order, inside one transaction. */
@@ -193,6 +193,25 @@ const MIGRATIONS: ReadonlyArray<{ version: number; sql: string }> = [
     version: 7,
     sql: `
       ALTER TABLE stashes ADD COLUMN email text;
+    `,
+  },
+  {
+    // **The engine's snapshot** (plan-scaling.md Stage 3): one row per
+    // document, overwritten, so a load folds only the engine log's tail. A
+    // cache of `engine_log`, never a truth: `code_version` names the code that
+    // wrote it, and a host running other code ignores the row and replays in
+    // full. `state` is gzipped JSON — about 50 KB for a convention, where
+    // the JSON is about 650 KB.
+    version: 8,
+    sql: `
+      CREATE TABLE snapshots (
+        document_id  text   PRIMARY KEY REFERENCES documents(id),
+        seq          int    NOT NULL,
+        eseq         int    NOT NULL,
+        code_version text   NOT NULL,
+        state        bytea  NOT NULL,
+        written_ms   bigint NOT NULL
+      );
     `,
   },
 ];
@@ -410,6 +429,25 @@ export class PgPersistence implements MaintainablePersistence {
     await this.pool.query(
       `INSERT INTO bridge_state (document_id, state) VALUES ($1, $2)
         ON CONFLICT (document_id) DO UPDATE SET state = EXCLUDED.state`, [id, serialized]);
+  }
+
+  async readSnapshot(id: string): Promise<SnapshotRow | null> {
+    const { rows } = await this.pool.query<{ seq: number; eseq: number; code_version: string;
+      state: Buffer; written_ms: string }>(
+      'SELECT seq, eseq, code_version, state, written_ms FROM snapshots WHERE document_id = $1', [id]);
+    const r = rows[0];
+    return r === undefined ? null : { seq: r.seq, eseq: r.eseq, codeVersion: r.code_version,
+      state: r.state, writtenMs: Number(r.written_ms) };
+  }
+
+  async writeSnapshot(id: string, row: SnapshotRow): Promise<void> {
+    await this.pool.query(
+      `INSERT INTO snapshots (document_id, seq, eseq, code_version, state, written_ms)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        ON CONFLICT (document_id) DO UPDATE SET seq = EXCLUDED.seq, eseq = EXCLUDED.eseq,
+          code_version = EXCLUDED.code_version, state = EXCLUDED.state,
+          written_ms = EXCLUDED.written_ms`,
+      [id, row.seq, row.eseq, row.codeVersion, row.state, row.writtenMs]);
   }
 
   /* -- tokens -------------------------------------------------------------- */
@@ -633,7 +671,7 @@ export class PgPersistence implements MaintainablePersistence {
   async wipe(): Promise<number> {
     const ids = await this.listDocIds();
     await this.pool.query(
-      'TRUNCATE people, document_log, engine_log, provisional, bridge_state, ' +
+      'TRUNCATE people, document_log, engine_log, provisional, bridge_state, snapshots, ' +
       'documents, tokens, stashes, outbox, errors');
     return ids.length;
   }
@@ -651,7 +689,8 @@ export class PgPersistence implements MaintainablePersistence {
     try {
       await c.query('BEGIN');
       await c.query('SELECT pg_advisory_xact_lock(1, hashtext($1))', [id]);
-      for (const table of ['people', 'document_log', 'engine_log', 'provisional', 'bridge_state']) {
+      for (const table of ['people', 'document_log', 'engine_log', 'provisional', 'bridge_state',
+        'snapshots']) {
         await c.query(`DELETE FROM ${table} WHERE document_id = $1`, [id]);
       }
       const r = await c.query('DELETE FROM documents WHERE id = $1', [id]);

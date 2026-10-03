@@ -126,6 +126,10 @@ export const healthTable: Route[] = [
         // instead of being written into the error log. A room that makes
         // many of these is saying something about its pace, not a defect.
         races: ctx.races,
+        // the engine snapshots (plan-scaling.md Stage 3): loads restored and
+        // loads replayed whole (by why), writes, the audit, and the slowest
+        // engine load since boot (issue #70's gap)
+        snapshots: ctx.snapshots ?? null,
         // the adoption metronome this process is pacing at (§4.2, entry
         // 77): stated because it is an operator knob a restart changes and
         // nothing else on the surface reports it.

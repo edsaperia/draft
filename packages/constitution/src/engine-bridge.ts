@@ -88,8 +88,10 @@ export class EngineBridge {
     cs: ConstitutionSession,
     opts: {
       t: number; rngSeed: string; tuning?: EngineTuning;
-      /** Resume from a persisted engine log + bridge state (Q391). */
-      resume?: { log: EngineLogEntry[] } & BridgeState;
+      /** Resume from a persisted engine log + bridge state (Q391). `engine`,
+       *  where given, is that log already folded — a snapshot restored over it
+       *  (plan-scaling.md Stage 3) — and the log is not replayed again. */
+      resume?: { log: EngineLogEntry[]; engine?: EngineSession } & BridgeState;
     },
   ) {
     if (cs.constitutedAtT === null) {
@@ -98,7 +100,7 @@ export class EngineBridge {
     this.cs = cs;
     this.tuning = opts.tuning ?? null;
     if (opts.resume !== undefined) {
-      this.engine = EngineSession.replay([...opts.resume.log]);
+      this.engine = opts.resume.engine ?? EngineSession.replay([...opts.resume.log]);
       for (const entry of opts.resume.log) {
         const e = entry.event;
         if (e.type === 'opened') for (const p of e.roster) this.known.add(p.id);
