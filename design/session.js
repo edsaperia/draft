@@ -179,6 +179,10 @@
   // closes the open card first: the card has already collapsed by the time
   // this is called, and a second close would animate nothing twice.
   let LEAVE_EDITING = () => {};
+  // …and 📝 again's own way out, the open card closed first, for the row's
+  // 🗑️ and ✏️ ✒️ pressed with nothing changed (#193, Ed 2026-10-02: *clicking
+  // on either 🗑️ or ✏️ should leave edit mode with no action*)
+  let EXIT_EDIT_MODE = () => {};
   // the sign control (Q770): null means no elective 👤 rung — no control
   let SIGNING = () => null;
   let SIGNER = () => '';
@@ -3501,6 +3505,8 @@ document.addEventListener('pointerdown', (ev) => {
   // …and on the row, with the draft's card closed, the press opens the card
   // and starts no flight (Q1296): the review comes before the commit
   if (b.dataset.act === 'row-commit') {
+    // with nothing changed the click leaves edit mode (#193): no hold to start
+    if (!draftRowState().changed) return;
     const d = draftOf();
     if (!d) return;
     if (openId !== d.id) { toggle(d.id, true); return; }
@@ -4080,6 +4086,9 @@ document.addEventListener('paste', (ev) => {
     doc.querySelectorAll('[data-proposalrow] [data-act="row-discard"]').forEach((b) =>
       on(b, 'click', (ev) => {
         ev.stopPropagation();
+        // **nothing changed, nothing binned** (#193, Ed 2026-10-02): the press
+        // is 📝 again's — the mode left, a typed-back draft kept as 📝 keeps it
+        if (!draftRowState().changed) { EXIT_EDIT_MODE(); return; }
         dropDraft();
         renderAll(); drawWires();
       })
@@ -4120,6 +4129,10 @@ document.addEventListener('paste', (ev) => {
     doc.querySelectorAll('[data-proposalrow] [data-act="row-commit"]').forEach((b) =>
       on(b, 'click', (ev) => {
         ev.stopPropagation();
+        // **nothing changed, nothing sent** (#193, Ed 2026-10-02): ✏️ and ✒️
+        // leave as 📝 again does — no command, no ✏️ spent, no flight, and on
+        // the press under either gesture, a hold being for a spend (D1)
+        if (!draftRowState().changed) { EXIT_EDIT_MODE(); return; }
         const d = draftOf();
         if (!d) return;
         // **With the draft's card closed, the press opens it** (Q1296): the
@@ -5858,6 +5871,7 @@ document.addEventListener('paste', (ev) => {
     if (env.editing) EDITING = env.editing;
     if (env.enterEditing) ENTER_EDITING = env.enterEditing;
     if (env.leaveEditing) LEAVE_EDITING = env.leaveEditing;
+    if (env.exitEditMode) EXIT_EDIT_MODE = env.exitEditMode;
     // the sign control's two reads (Q770): the elective base, if any, and
     // what a signature would read as — both at call time, like the two above
     if (env.signing) SIGNING = env.signing;
