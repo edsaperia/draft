@@ -123,9 +123,14 @@
      words: both titles and the column's first lines as the door's bars,
      pulsing, still under reduced motion. Transparent text and a
      pseudo-element only, so nothing here is in the tree a render patches. */
-  html.opening #titletext, html.opening #doctitle { color: transparent; }
-  html.opening #titletext { background: linear-gradient(var(--border), var(--border)) left center / 7em .72em no-repeat; }
+  /* the topbar's title by its full path: at narrow system.css states its
+     colour as `.navbar .brand #titletext`, which outranks the short form */
+  html.opening .navbar .brand #titletext, html.opening #doctitle { color: transparent; }
+  html.opening .navbar .brand #titletext { background: linear-gradient(var(--border), var(--border)) left center / 7em .72em no-repeat; }
   html.opening #doctitle { background: linear-gradient(var(--border), var(--border)) left center / min(12em, 70%) .6em no-repeat; }
+  /* and no figure the page cannot know yet: at narrow the ✏️ wallet and the task
+     sheet's count draw a 0 of their own before any view; their boxes stay */
+  html.opening #wallet, html.opening #drawercount { visibility: hidden; }
   html.opening #prose::before {
     content: ''; display: block; font-size: var(--t-body); height: 11.2em;
     background:
