@@ -6393,9 +6393,21 @@ document.addEventListener('paste', (ev) => {
   function settleLift() {
     const el = queueEl && queueEl.querySelector('button[aria-current="true"]');
     const id = el ? el.dataset.q : null;
+    // **The rest is painted in no time** (issue #190). Whatever the page
+    // measured between the render and here has already styled the new
+    // element lifted, so the flip to rest started a 220ms transition
+    // *downward* and the flip back reversed it at its first frame: no motion
+    // at all, on every entry. So the rest is painted with a zero duration —
+    // which starts nothing, and leaves a wash fade `settleWashes` has just
+    // begun on the same button running — and the lift is handed over with
+    // the stylesheet's own. A piled entry's lift is its stack's, the `li`'s
+    // (system.css), so the stack is painted at rest with it.
     if (id !== liftedId && el) {
+      const nodes = [el, el.closest('.qitem[data-pile]')].filter(Boolean);
+      for (const n of nodes) n.style.transitionDuration = '0s';
       el.setAttribute('aria-current', 'false');
       void el.offsetHeight;
+      for (const n of nodes) n.style.transitionDuration = '';
       el.setAttribute('aria-current', 'true');
     }
     liftedId = id;
