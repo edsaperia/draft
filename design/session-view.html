@@ -1,6 +1,6 @@
 <html lang="en" class="desk">
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <!-- **The root element above, for its `lang` alone** (Q1394 (a), Ed
      2026-09-18). WCAG 3.1.1 is Level A and this page had nothing to hang it
      on: the file opened at `<meta charset>` and the parser synthesised
@@ -8569,6 +8569,9 @@
     for (const at of [origin, ev.target]) {
       if (!(at instanceof Element)) return;
       if (at.closest(WAY_IN) || at.closest(CARD_SIDE)) return;
+      // in edit mode a clause is the way in on touch too (MOBILE.md §6a.1):
+      // the column takes no caret there, and the tap is its door
+      if (editing && at.closest('#charter .prose .editable[data-key]')) return;
     }
     const sel = window.getSelection();
     if (sel && !sel.isCollapsed && String(sel).trim()) return;

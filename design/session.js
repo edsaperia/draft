@@ -179,6 +179,10 @@
   // closes the open card first: the card has already collapsed by the time
   // this is called, and a second close would animate nothing twice.
   let LEAVE_EDITING = () => {};
+  // **A coarse pointer** (MOBILE.md §1.5, §6a): touch is the primary input,
+  // so the column never takes a caret and a tap is the door (`PROSE`)
+  const COARSE_Q = '(pointer: coarse)';
+  const COARSE = () => matchMedia(COARSE_Q).matches;
   // the sign control (Q770): null means no elective 👤 rung — no control
   let SIGNING = () => null;
   let SIGNER = () => '';
@@ -248,8 +252,14 @@
   // …and since backlog 204 the caret is edit mode's alone: in read mode the
   // column is prose you can read and select, and a click there beats the 📝
   // tab (the host's job — `#ridetab`), which is the door in.
+  // **…and on a coarse pointer it never takes one** (MOBILE.md §6a.3, Ed
+  // 1585.1): a phone's keyboard composes, a composition's `beforeinput`
+  // cannot be cancelled, and the browser wrote the word into the clause in
+  // place (§6a.0 finding 6). So on touch the column is prose in both modes,
+  // and in edit mode a tap on a clause is the door: it opens as its own lane
+  // (`startDraftFromTap`), a real editor the page owns.
   const PROSE = () => '<div class="prose' + (srcMode() ? ' mdsrc' : '') + '" contenteditable="' +
-    (MAY_PROPOSE() && EDITING() ? 'true' : 'false') + '" spellcheck="false">';
+    (MAY_PROPOSE() && EDITING() && !COARSE() ? 'true' : 'false') + '" spellcheck="false">';
 
   // ---- one rendering of a block for reading (Q1294, Ed 2026-09-10) ---------
   // The column renders markdown for reading: `mdLine` draws the inline marks
@@ -2767,10 +2777,28 @@
    * proposal-row's (1541.22 (a), grammar B9).
    */
   const editing = (s) => !!s && !docClosed && s.kind === 'draft' && !!s.unproposed;
+  // **The phone's editing card** (MOBILE.md §6a.1, Ed 1585.1, 2026-10-02:
+  // *the clause becomes its lane*): on a coarse pointer at narrow width, one
+  // place on a clause — not a gap, not a wording taken from another lane,
+  // not a stranded one — opens with **its lane standing in the clause's own
+  // box**: no label and no *Current text* head, the clause's strip in its
+  // gutter, the Anonymous switch and the reasoning beneath, 🗑️ on the row.
+  // The clause as it stood is one press away on its tab.
+  const inPlaceLane = (p) => COARSE() && NARROW() && p.n === 1 && !p.gap && !p.seeded && !!p.lane;
   function editPresent(s, st, hints) {
     const W = window.COPY.shell;
     const site = (hints && hints.siteKey && siteFor(s, hints.siteKey)) || s.sites[0];
     const p = editParts(s, site);
+    if (inPlaceLane(p)) {
+      return {
+        kind: 'editing',
+        frame: { cls: 'sugg editcard inplacecard', attrs: ' data-card="' + esc(s.id) + '" data-anchor="' + esc(s.id) + '" data-site="' + esc(p.key) + '"' },
+        head: { html: p.head({ label: null, fact: 'place', chips: chipsFor(p.key, s.id), onHead: headRank(p.key), html: p.lane }) },
+        body: p.body ? { html: p.body } : null,
+        options: { html: p.below },
+        rowNote: [EDITING() ? '' : cardCommitActs(s).drip, p.refusal || ''].join('') || null,
+      };
+    }
     return {
       kind: 'editing',
       frame: { cls: 'sugg editcard', attrs: ' data-card="' + esc(s.id) + '" data-anchor="' + esc(s.id) + '" data-site="' + esc(p.key) + '"' },
@@ -3072,7 +3100,7 @@
   const { DRAFT_ID, draftOf, docIndexOfKey, siteFor, syncDraftKeys,
     dropDraft, dropDraftSite,
     caretRangeIn, selectedBlocks, laneCaret, placeCaret,
-    startDraft, startDraftFromTyping, startDraftFromRun,
+    startDraft, startDraftFromTyping, startDraftFromTap, startDraftFromRun,
     laneRemark, syncEditCtl, markSelection,
     commitBtnHtml, proposalRowHtml, proposeCtlTitles, draftRowState, setDraftSigned, draftSigned,
     ownParts, editParts, cardCommitActs } = COMPOSER;
@@ -5933,6 +5961,83 @@ document.addEventListener('paste', (ev) => {
       if (picked.blocks.length > 1) return startDraftFromRun(picked, ev);
       startDraftFromTyping(picked.blocks[0], ev);
     });
+
+    // **On touch, a tap on a clause in edit mode is the door** (MOBILE.md
+    // §6a.1, Ed 1585.1): the column takes no caret on a coarse pointer
+    // (`PROSE`), so the tap opens the clause as its own lane, the caret at the
+    // point tapped. A tap on a gutter tab, a link, the fold triangle or a
+    // card is that thing's, never the door's.
+    doc.addEventListener('click', (ev) => {
+      if (!COARSE() || !EDITING() || !MAY_PROPOSE() || closedMode) return;
+      const t = ev.target && ev.target.closest ? ev.target : null;
+      if (!t || t.closest('.sugg, .chipcol, a, button, .sectoggle, .nocaret')) return;
+      const p = t.closest('.editable[data-key]');
+      if (!p || !p.closest('.prose')) return;
+      if (startDraftFromTap(p, ev.clientX, ev.clientY)) ev.preventDefault();
+    });
+
+    // **The keyboard on a phone** (MOBILE.md §6a.2, Ed 1585.2): while a
+    // card's field holds the caret at narrow width on touch, the root wears
+    // `data-kbd` (the sheet and the 📝 door go), and the row is lifted by
+    // what the keyboard takes from the layout viewport — `visualViewport`'s
+    // foot against the window's. One style property, never a render: the
+    // caret rule holds. The lane being typed in is kept on the glass, moved
+    // only as far as it must be (Q1465's rule): a lane already in view
+    // stays where the clause stood.
+    // a field of a card holds the caret — or held it, and a control on the
+    // same card or the row took the focus from it: a tap on ✏️ blurs the lane
+    // before its click lands, and the sheet and the door must not come back
+    // under the finger
+    let kbdCard = null;
+    const kbdField = () => {
+      const a = document.activeElement;
+      const card = a && a.closest ? a.closest('.sugg') : null;
+      const field = !!card && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) &&
+        !/^(checkbox|radio|button|submit)$/.test(a.type || '');
+      if (field) { kbdCard = card; return true; }
+      if (card && card === kbdCard && card.isConnected) return true;
+      // …or the floating row's own buttons, the same tap one step out
+      if (kbdCard && kbdCard.isConnected && a && a.closest && a.closest('[data-proposalrow]')) return true;
+      kbdCard = null;
+      return false;
+    };
+    const keepFieldOnGlass = () => {
+      const a = document.activeElement;
+      if (!a || !document.documentElement.hasAttribute('data-kbd')) return;
+      const vv = window.visualViewport;
+      const foot = vv ? vv.offsetTop + vv.height : innerHeight;
+      const row = doc.querySelector('.race-mid.commitrow.proposalrow:not([data-editdoor]) .btn');
+      const floor = foot - (row ? row.getBoundingClientRect().height + 16 : 0);
+      const nav = document.querySelector('.navbar');
+      const top = nav ? Math.max(0, nav.getBoundingClientRect().bottom) : 0;
+      const r = a.getBoundingClientRect();
+      // the caret's line where there is one, else the field's own top line
+      let line = null;
+      const sel = getSelection();
+      if (sel && sel.rangeCount && a.contains(sel.getRangeAt(0).endContainer)) {
+        const q = sel.getRangeAt(0).getClientRects();
+        if (q.length) line = q[q.length - 1];
+      }
+      const lt = line ? line.top : r.top, lb = line ? line.bottom : Math.min(r.bottom, r.top + 40);
+      if (lt < top) scrollBy(0, lt - top - 8);
+      else if (lb > floor) scrollBy(0, Math.min(lb - floor + 8, r.top - top - 8));
+    };
+    const syncKbd = () => {
+      const root = document.documentElement;
+      const on = NARROW() && COARSE() && kbdField();
+      if (on !== root.hasAttribute('data-kbd')) root.toggleAttribute('data-kbd', on);
+      const vv = window.visualViewport;
+      const lift = on && vv ? Math.max(0, Math.round(innerHeight - (vv.offsetTop + vv.height))) : 0;
+      root.style.setProperty('--kbd-lift', lift + 'px');
+      if (on) keepFieldOnGlass();
+    };
+    document.addEventListener('focusin', () => syncKbd());
+    document.addEventListener('focusout', () => setTimeout(syncKbd, 0));
+    if (window.visualViewport) {
+      visualViewport.addEventListener('resize', syncKbd);
+      visualViewport.addEventListener('scroll', syncKbd);
+    }
+    addEventListener('resize', syncKbd);
 
     addEventListener('scroll', onViewportChange, { passive: true });
     // the strip's B and I follow the caret: live while an editing lane holds
