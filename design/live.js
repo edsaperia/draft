@@ -169,9 +169,15 @@ window.LIVE = (function () {
     // the poll's place field (PRESENCE.md §1.1): session.js owns the dwell
     const readingAt = () => {
       const k = window.SESSION && window.SESSION.readingAt ? window.SESSION.readingAt() : null;
+      if (k) PUSH.lastAt = k;
       return k ? '&at=' + encodeURIComponent(k) : '';
     };
     const CONN = { fails: 0, cause: null, down: false, observer: null };
+    // **Push** (Scaling Stage 4, issue #162): the page's half of
+    // `GET /api/d/:slug/events`, below `api`. `open` the stream is live,
+    // `last` when the page last asked for a view, `lastAt` the reading block
+    // it last reported, `inflight`/`pending` the one refresh an event asks for
+    const PUSH = { es: null, open: false, seen: 0, last: 0, lastAt: null, inflight: null, pending: false, wait: null, again: null, timers: false, slug: null, since: 0 };
     // what a press can send: every commit wears `.btn-approve` or
     // `.btn-propose` (✓ ✏️ ✒️ 🏛️ 🍾, OK, the grants' *Accept*, the
     // composers' commits), the holds start on `[data-confirm]` /
@@ -373,6 +379,7 @@ window.LIVE = (function () {
         return this.chain.then(() => answer);
       },
       refresh() {
+        PUSH.last = Date.now();
         // the poll says what it has seen (document seq . engine seq); a
         // quiet server answers with the seqs alone and builds no view
         // …and what it holds of the three heavy, slow-moving parts (the slim
@@ -544,6 +551,130 @@ window.LIVE = (function () {
           .catch((e) => console.warn('[live] view', e && e.message));
       },
     };
+    // ---- push (Scaling Stage 4; design/spec-pass/plan-scaling.md) -----------
+    // **An event is a reason to poll now, and nothing more.** The stream says
+    // only that the document's two lengths moved (`doc`), or that something
+    // the short answer carries did (`nudge`: the pause, the stall flag, the
+    // build, a member's reading place); what moved is still learned the one
+    // way it always was, `refresh()`, whose slim view asks only for what
+    // moved. So nothing downstream of the poll knows push exists.
+    //
+    // **Nothing rebuilds under a press** — an event is deferred exactly as
+    // the poll's tick is: while `pressInFlight()` or `__pollPaused` holds,
+    // it is kept and asked again shortly, never dropped, and one refresh in
+    // flight absorbs every event that lands during it.
+    //
+    // **The poll stays, as a backstop** (plan-scaling Stage 4): 30 s while
+    // the stream is open and nothing else is waiting; the old 4 s whenever it
+    // is not — refused, erroring, switched off (`DRAFT_PUSH=off`), or while
+    // the announced pause stands or a deploy's reload waits for the member
+    // (#12 promises it lands within 4 s of their being done). So a page whose
+    // push is blocked is today's page exactly.
+    //
+    // **C17 hears the line from the stream at once**: a stream that drops
+    // asks for a view straight away, and the view's own reach decides — a
+    // host that answers (Render's planned cut, a reconnect) raises nothing,
+    // one that does not counts toward the bar's two misses, at 4 s.
+    const BACKSTOP_MS = (typeof window !== 'undefined' && window.__backstopMs) || 30000;
+    const PUSH_SILENT_MS = (typeof window !== 'undefined' && window.__pushSilentMs) || 20000;
+    const pushFast = () => !PUSH.open || !!HOST.paused || !!HOST.newBuild;
+    const lengthsMoved = (d) => !env.cs || !env.cs.v || !d ||
+      d.seq !== env.cs.v.seq || (d.eseq || 0) !== (env.cs.v.eseq || 0);
+    function pushWant() {
+      if (pressInFlight() || (typeof window !== 'undefined' && window.__pollPaused)) {
+        PUSH.pending = true;
+        if (!PUSH.wait) PUSH.wait = setTimeout(() => { PUSH.wait = null; if (PUSH.pending) pushWant(); }, 300);
+        return;
+      }
+      if (PUSH.inflight) { PUSH.pending = true; return; }
+      PUSH.pending = false;
+      PUSH.inflight = Promise.resolve(api.refresh()).catch(() => {}).then(() => {
+        PUSH.inflight = null;
+        if (PUSH.pending) pushWant();
+      });
+    }
+    function pushOpen(slug) {
+      if (typeof EventSource !== 'function' || PUSH.es ||
+        (typeof window !== 'undefined' && window.__noPush)) return;
+      const es = new EventSource('/api/d/' + slug + '/events');
+      PUSH.es = es; PUSH.slug = slug; PUSH.since = Date.now();
+      const data = (e) => { try { return JSON.parse(e.data); } catch (_) { return null; } };
+      // a stream the page has let go of says nothing more
+      const mine = () => PUSH.es === es;
+      es.addEventListener('hello', (e) => {
+        if (!mine()) return;
+        const d = data(e);
+        PUSH.open = true;
+        PUSH.seen = Date.now();
+        // the build this stream's host is serving, which the page cannot read
+        // off an EventSource's headers: the reload's own rule decides
+        if (d && d.build) noteBuild(d.build);
+        // a page that reconnects after missing nothing asks for nothing
+        if (lengthsMoved(d)) pushWant();
+      });
+      es.addEventListener('doc', (e) => { if (!mine()) return; PUSH.seen = Date.now(); if (lengthsMoved(data(e))) pushWant(); });
+      es.addEventListener('nudge', () => { if (!mine()) return; PUSH.seen = Date.now(); pushWant(); });
+      es.addEventListener('ping', () => { if (mine()) PUSH.seen = Date.now(); });
+      es.onerror = () => {
+        if (!mine()) return;
+        const was = PUSH.open;
+        PUSH.open = false;
+        PUSH.since = Date.now();
+        // refused (a cap, the switch, a 404): the browser will not retry, so
+        // the page polls at 4 s and tries the stream again in a minute
+        if (es.readyState === 2) {
+          PUSH.es = null;
+          if (!PUSH.again) PUSH.again = setTimeout(() => { PUSH.again = null; pushOpen(slug); }, 60000);
+        }
+        if (was) pushWant();
+      };
+      // **a line gone quiet is a line lost** (C17): the host pings every
+      // 15 s, and an `EventSource` on a half-open connection never errors, so
+      // 20 s of silence closes it, asks a view at once and polls at 4 s — the
+      // bar's own two misses then decide — while a fresh stream is opened.
+      // A stream still connecting after as long is let go the same way
+      if (PUSH.timers) return;
+      PUSH.timers = true;
+      setInterval(() => {
+        if (!PUSH.es) return;
+        const quiet = Date.now() - (PUSH.open ? PUSH.seen : PUSH.since);
+        if (quiet >= PUSH_SILENT_MS) pushDrop();
+      }, 1000);
+      // **where this reader is** (PRESENCE.md §1.1) used to ride every 4 s
+      // poll; a member's page now asks once when its settled block changes,
+      // and never while it rests
+      setInterval(() => {
+        if (!PUSH.open || typeof env.S.viewer !== 'number') return;
+        const k = window.SESSION && window.SESSION.readingAt ? window.SESSION.readingAt() : null;
+        if (k && k !== PUSH.lastAt) pushWant();
+      }, 1000);
+    }
+    /** Let the stream go and open another: what a lost line does, on purpose. */
+    function pushDrop() {
+      const es = PUSH.es;
+      if (!es) return;
+      const was = PUSH.open;
+      PUSH.open = false; PUSH.es = null;
+      es.close();
+      if (was) pushWant();
+      pushOpen(PUSH.slug);
+    }
+    /** The poll's tick: the backstop's cadence, the press's deferral. */
+    function pollTick() {
+      if (pressInFlight() || (typeof window !== 'undefined' && window.__pollPaused)) return;
+      if (!pushFast() && Date.now() - PUSH.last < BACKSTOP_MS) return;
+      api.refresh();
+    }
+    api.pushOpen = pushOpen;
+    api.pollTick = pollTick;
+    if (typeof window !== 'undefined') {
+      // the walks' reading of the line: is the stream open, and when did the
+      // page last ask for a view (`push-walk`)
+      window.__push = () => ({ open: PUSH.open, last: PUSH.last });
+      // …and a walk's lost line (`reconnecting`): the host failing takes the
+      // stream down with the view, which routing the view alone cannot do
+      window.__pushDrop = pushDrop;
+    }
     // **A walk's poll** (`render-hold-walk`, redesign stage 9): the 4s tick's
     // own body, deferral included, on demand — `window.__pollPaused` stops the
     // tick so a walk decides when a poll lands, and `force` re-renders as a
@@ -1177,6 +1308,7 @@ window.LIVE = (function () {
           if (data.demoJoin && new URLSearchParams(location.search).get('try') === '1') S.open = 'strtry';
           render();
           opened();
+          api.pushOpen(LIVESLUG);
           setInterval(() => {
           // **Nothing rebuilds under a press.** A pen hold is a gesture in
           // progress — the glyph is in the air and the button is under the
@@ -1186,9 +1318,9 @@ window.LIVE = (function () {
           // The poll simply waits for the next tick.
           // a pen hold here, a propose hold in the charter, a slider drag on an
           // answer card — either way a press is in progress and the surface
-          // must not move under it
-          if (pressInFlight() || window.__pollPaused) return;
-          api.refresh();
+          // must not move under it — `pollTick` asks `pressInFlight()` itself,
+          // and keeps the backstop's cadence while the push stream is open
+          api.pollTick();
         }, 4000);
           return;
         }
@@ -1206,10 +1338,8 @@ window.LIVE = (function () {
           hydrateS();
           render();
           opened();
-          setInterval(() => {
-            if (pressInFlight() || window.__pollPaused) return;
-            api.refresh();
-          }, 4000);
+          api.pushOpen(LIVESLUG);
+          setInterval(() => api.pollTick(), 4000);
           return;
         }
         env.cs = remoteCS(data);
@@ -1236,6 +1366,7 @@ window.LIVE = (function () {
         else if (data.provisionalText) setProse(data.provisionalText);
         render();
         opened();
+        api.pushOpen(LIVESLUG);
         setInterval(() => {
           // **Nothing rebuilds under a press.** A pen hold is a gesture in
           // progress — the glyph is in the air and the button is under the
@@ -1245,9 +1376,9 @@ window.LIVE = (function () {
           // The poll simply waits for the next tick.
           // a pen hold here, a propose hold in the charter, a slider drag on an
           // answer card — either way a press is in progress and the surface
-          // must not move under it
-          if (pressInFlight() || window.__pollPaused) return;
-          api.refresh();
+          // must not move under it — `pollTick` asks `pressInFlight()` itself,
+          // and keeps the backstop's cadence while the push stream is open
+          api.pollTick();
         }, 4000);
         // **✒️ is the only save** (Ed, 2026-08-30, QA on the text card). Until
         // the first confirm the founder's draft rides the stash (§9.7a v0.55),

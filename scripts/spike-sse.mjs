@@ -5,11 +5,13 @@
  *
  * **It measured the spike's `/api/spike/*` rows, removed unshipped** after
  * Ed's (b) of 2026-10-02 (git history at `7c3f8f93` holds them); Stage 4's
- * build points it at `/api/d/:slug/events` to measure the real stream.
+ * build points it at `/api/d/:slug/events` with `--doc=<slug>` to measure
+ * the real stream's opening, cost and herd (no poke there; `push-walk`
+ * measures the latency on the page).
  *
  *   node scripts/spike-sse.mjs <base> [--n=100] [--every=5000] [--hb=15000]
  *     [--duration=120] [--pokes=20] [--retry=3000] [--jitter=0]
- *     [--stats=5000] [--json=<file>]
+ *     [--stats=5000] [--json=<file>] [--doc=<slug>]
  *
  * Against a server with `DRAFT_SPIKE_SSE=1`, it opens `--n` streams on
  * `/api/spike/sse` and holds them for `--duration` seconds, answering the
@@ -40,6 +42,11 @@ const POKES = Number(args.pokes ?? 20);
 const RETRY = Number(args.retry ?? 3000);
 const JITTER = Number(args.jitter ?? 0);
 const STATS_MS = Number(args.stats ?? 5000);
+// **the real stream** (Scaling Stage 4): `--doc=<slug>` reads
+// `/api/d/<slug>/events` at the door, which carries no counter and takes no
+// poke — so it measures the opening, the cost and the herd, and push-walk
+// measures the latency on the page
+const DOC = args.doc ?? null;
 
 const t0 = Date.now();
 const rel = () => (Date.now() - t0) / 1000;
@@ -69,7 +76,8 @@ async function stream(k) {
     let lastN = null;
     let why = 'ended';
     try {
-      const url = `${base}/api/spike/sse?every=${EVERY}&hb=${HB}&retry=${RETRY}&jitter=${JITTER}`;
+      const url = DOC !== null ? `${base}/api/d/${DOC}/events`
+        : `${base}/api/spike/sse?every=${EVERY}&hb=${HB}&retry=${RETRY}&jitter=${JITTER}`;
       const res = await fetch(url, { signal: ac.signal, headers: { accept: 'text/event-stream' } });
       if (res.status !== 200) { why = `status ${res.status}`; throw new Error(why); }
       const reader = res.body.getReader();
@@ -79,7 +87,7 @@ async function stream(k) {
       let pokesLeft = POKES;
       let id = null;
       const pokeOnce = async () => {
-        if (stopping || id === null || pokesLeft <= 0) return;
+        if (stopping || id === null || pokesLeft <= 0 || DOC !== null) return;
         pokesLeft -= 1;
         await fetch(`${base}/api/spike/poke?id=${id}&t=${Date.now()}`, { method: 'POST' }).catch(() => {});
       };
@@ -104,7 +112,7 @@ async function stream(k) {
             const now = Date.now();
             const d = JSON.parse(data);
             if (event === 'hello') {
-              openedMs = now; id = d.id;
+              openedMs = now; id = d.id ?? null;
               opens.push(now - startedMs);
               if (cutAt !== null) { reopens.push({ at: rel(), delay: now - cutAt }); cutAt = null; }
             } else if (event === 'poke') {
@@ -120,8 +128,10 @@ async function stream(k) {
       if (why === 'ended') why = e?.cause?.code ?? e?.name ?? String(e);
     }
     if (stopping) return;
-    cutAt = Date.now();
-    closes.push({ at: rel(), age: openedMs === null ? null : (cutAt - openedMs) / 1000, why, k });
+    // a cut is timed from the first failure, not from each retry that met a
+    // host still coming up
+    if (cutAt === null) cutAt = Date.now();
+    closes.push({ at: rel(), age: openedMs === null ? null : (Date.now() - openedMs) / 1000, why, k });
     // EventSource's own rule: wait the server's retry, then reopen
     await new Promise((r) => setTimeout(r, retry));
   }
@@ -129,7 +139,8 @@ async function stream(k) {
 
 async function sample() {
   try {
-    const s = await (await fetch(`${base}/api/spike/stats`)).json();
+    const s = DOC === null ? await (await fetch(`${base}/api/spike/stats`)).json()
+      : { streams: (await (await fetch(`${base}/healthz`)).json()).streams?.open };
     statsLog.push({ at: rel(), ...s });
     process.stdout.write(`[${rel().toFixed(0)}s] streams=${s.streams} rss=${s.rssMb}MB heap=${s.heapUsedMb}MB `
       + `fds=${s.fds} lag p99=${s.lagMs?.p99}ms max=${s.lagMs?.max}ms closes=${closes.length} reopens=${reopens.length}\n`);
