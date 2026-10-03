@@ -13,7 +13,8 @@
  *             address loses `?try=1`, and the grants are already accepted (the ✏️ wallet is
  *             drawn, no ⚖️ 💡 🏛️ card asks for an OK).
  *   vote      the visitor votes on a pair dealt to them, and the ✓ goes out and lands.
- *   propose   the visitor opens 📝, writes on a clause and proposes; the proposal lands.
+ *   propose   the visitor taps 📝, taps a clause, which becomes their lane (MOBILE.md §6a),
+ *             types into it and taps ✏️; the proposal lands. Every press is a touch.
  *   rejoin    the same phone scanning again is home in the same seat — no second member.
  *   second    a second phone joins: a different seat, a different name.
  *   qr        Ed's browser, set once by `?demokey=`, opens ▦ QR: a code filling most of the
@@ -150,37 +151,50 @@ if (dealt.length) {
 }
 
 // ---- propose -----------------------------------------------------------------
+// A phone proposes the way a person on one does (MOBILE.md §6a, #209; issue
+// #221): 📝, a tap on a clause makes it its lane, the words are typed into that
+// lane, and one tap on the row's ✏️ sends it. Every press is a touch. The lane
+// is the only editable on a coarse pointer — the column never takes a caret —
+// so a caret put on the clause itself writes nowhere, and ✏️ with nothing
+// changed only leaves edit mode (#195).
 await a.evaluate(() => { const S = window.SESSION; if (S.openId) try { S.toggle(S.openId, false); } catch { /* closed */ } });
 await sleep(600);
+// the ladder's ⏭ bar is the stagehand's (dev only, never on docs.vote) and
+// stands over the window's foot, where the visitor's row is: out of the way
+await a.addStyleTag({ content: '#ladderbar, .ladderbar { display: none !important; }' });
+const tapAt = async (box) => { await a.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2); };
 const doorBtn = a.locator('#editdoor [data-act="edit-door"]');
-if (await doorBtn.first().isVisible().catch(() => false)) { await doorBtn.first().click().catch(() => {}); await sleep(900); }
-const clause = a.locator('#charter [data-key]').filter({ hasText: /\S.{40,}/ }).nth(3);
+if (await doorBtn.first().isVisible().catch(() => false)) {
+  const b = await doorBtn.first().boundingBox().catch(() => null);
+  if (b) { await tapAt(b); await sleep(900); }
+}
+const clause = a.locator('#charter .prose .editable[data-key]').filter({ hasText: /\S.{40,}/ }).nth(3);
 if (await clause.count()) {
   await clause.scrollIntoViewIfNeeded().catch(() => {});
-  await clause.click().catch(() => {});
-  await clause.evaluate((el) => {
-    const r = document.createRange(); r.selectNodeContents(el); r.collapse(false);
-    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+  const key = await clause.getAttribute('data-key');
+  // the tap lands on the clause's last word, so the lane's caret is at its end
+  const pt = await clause.evaluate((el) => {
+    const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let n, last = null;
+    for (n = w.nextNode(); n; n = w.nextNode()) if (n.nodeValue.trim() && !n.parentElement.closest('.chipcol, .nocaret')) last = n;
+    if (!last) return null;
+    const r = document.createRange(); r.setStart(last, last.nodeValue.length - 1); r.setEnd(last, last.nodeValue.length);
+    const c = r.getClientRects()[0];
+    return { x: c.right - 1, y: c.top + c.height / 2 };
   });
+  if (pt) await a.touchscreen.tap(pt.x, pt.y);
+  await sleep(1200);
+  const lane = await a.evaluate((k) => {
+    const l = document.querySelector('[data-lane="' + k + '"]');
+    return { lane: !!l, focused: !!l && document.activeElement === l };
+  }, key);
+  check('propose · a tap on a clause makes it the visitor\'s lane', lane.lane && lane.focused, JSON.stringify({ key, ...lane }));
+  await a.keyboard.press('End');
   await a.keyboard.type(' With extra basil.', { delay: 15 });
   await sleep(900);
-  // the floating row where the window draws one, else the editing card's own ✏️
-  // (at 390 the row is not drawn, and the card carries the commit)
-  let btn = a.locator('#charter [data-proposalrow] [data-act="row-commit"]:not([data-pen]):not([disabled]):visible').first();
-  if (!(await btn.count())) btn = a.locator('[data-act="draft-propose"]:not([data-pen]):not([disabled]):visible').first();
-  // centred, so the stagehand's bar at the foot of a dev page is not what is pressed
-  await btn.evaluate((el) => el.scrollIntoView({ block: 'center' })).catch(() => {});
-  await sleep(500);
+  const btn = a.locator('#charter [data-proposalrow] [data-act="row-commit"]:not([data-pen]):not([disabled]):visible').first();
   const box = await btn.boundingBox({ timeout: 4000 }).catch(() => null);
-  if (box) {
-    // the button says which gesture it wants (*Hold to propose this…*)
-    const hold = /^Hold/.test((await btn.getAttribute('title')) || '') ||
-      await a.evaluate(() => window.SESSION.gesture === 'hold');
-    await a.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-    if (hold) { await a.mouse.down(); await sleep(1600); await a.mouse.up(); }
-    else await a.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
-    await sleep(3000);
-  }
+  if (box) { await tapAt(box); await sleep(3000); }
   const put = sentA.filter((c) => c.cmd === 'propose-text');
   check('propose · the visitor\'s proposal lands', put.length === 1 && put[0].status === 200, JSON.stringify(put) + ' · commit ' + !!box);
 } else {
