@@ -36,10 +36,12 @@
  * 2 on a set-up that never got there.
  */
 import { chromium } from 'playwright';
-import { post as postTo, followLink, sleep, say } from './lib/walk.mjs';
+import { post as postTo, followLink, sleep, say, arg } from './lib/walk.mjs';
 import { assertServerBuild, walkBase } from './lib/assert-server.mjs';
 
 const BASE = walkBase(process.argv, process.env, 'http://127.0.0.1:8181');
+// `--shots=<dir>`: each sealed record's card, its fold open, at 1600 and 390
+const SHOTS = arg('shots');
 const die = (m) => { say(`SET-UP · ${m}`); process.exit(2); };
 await assertServerBuild(BASE, 'revealed-votes-walk');
 const health = await (await fetch(`${BASE}/healthz`)).json();
@@ -108,8 +110,8 @@ async function room(tag, rung) {
 /* ---- the pages ------------------------------------------------------------ */
 const browser = await chromium.launch();
 const errors = [];
-async function seat(slug, cookie, label) {
-  const ctx = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
+async function seat(slug, cookie, label, viewport = { width: 1600, height: 1000 }) {
+  const ctx = await browser.newContext({ viewport, ...(viewport.width < 900 ? { isMobile: true, hasTouch: true } : {}) });
   if (cookie) {
     const [name, ...rest] = cookie.split('=');
     await ctx.addCookies([{ name, value: rest.join('='), url: BASE }]);
@@ -136,8 +138,10 @@ const readRecord = (page, raceId) => page.evaluate(async (id) => {
   const S = window.SESSION;
   S.smoothScrollBy = (dy, done) => { window.scrollBy(0, dy); if (done) done(); };
   if (!S.SUGGS.some((g) => g.id === id)) return { missing: S.SUGGS.filter((g) => g.state === 'sealed').map((g) => g.id) };
-  S.toggle(id, true);
-  await new Promise((ok) => setTimeout(ok, 1400));
+  if (!document.querySelector('.sugg[data-card="' + CSS.escape(id) + '"]')) {
+    S.toggle(id, true);
+    await new Promise((ok) => setTimeout(ok, 1400));
+  }
   const card = document.querySelector('.sugg[data-card="' + CSS.escape(id) + '"]');
   if (!card) return { missing: 'no card drawn' };
   const line = (el, kind) => { const v = el.querySelector('.votes[data-votes="' + kind + '"]'); return v ? [...v.querySelectorAll('.vname')].map((n) => n.textContent) : []; };
@@ -230,6 +234,23 @@ check('2 · Friday: the fold reads Votes between the proposals (2)', !!r2.fold &
 const want = ['Cy preferred ‘Thursday’ to ‘Friday’', 'Bo preferred ‘Friday’ to ‘Thursday’'];
 check('2 · one line per vote, each wording named by the words it puts in', !!r2.fold && same(r2.fold.lines, want), JSON.stringify(r2.fold && r2.fold.lines));
 check('1 · Thursday\'s record carries no fold once Friday seals either', (await readRecord(pa, 'rec:' + recX.raceId)).fold === null);
+
+if (SHOTS) {
+  const { mkdirSync } = await import('node:fs');
+  mkdirSync(SHOTS, { recursive: true });
+  const narrow = await seat(D.slug, D.S.A, 'Ana at 390', { width: 390, height: 844 });
+  for (const [pg, w] of [[pa, 1600], [narrow, 390]]) {
+    for (const [rec, name] of [[recX, 'thursday'], [recY, 'friday']]) {
+      await readRecord(pg, 'rec:' + rec.raceId);
+      await pg.evaluate(() => document.querySelectorAll('.votefold').forEach((d) => { d.open = true; }));
+      await sleep(400);
+      const card = pg.locator('.sugg[data-card="rec:' + rec.raceId + '"]');
+      await card.scrollIntoViewIfNeeded().catch(() => {});
+      await card.screenshot({ path: `${SHOTS}/record-${name}-${w}.png` }).catch((e) => say('shot: ' + e.message));
+    }
+  }
+  say(`shots in ${SHOTS}`);
+}
 
 /* ---- the door -------------------------------------------------------------- */
 const door = await (await fetch(`${BASE}/api/d/${D.slug}/view`)).json();
