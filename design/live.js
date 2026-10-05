@@ -2068,7 +2068,7 @@ window.LIVE = (function () {
         const replaced = (o.displaced || []).filter((l) => l.trim()).join('\n') || undefined;
         const slate = field.length > 1
           ? { slate: field.map((f) => ({ text: textOfF(f), src: f.hunks.flatMap((h) => h.lines).join('\n'),
-              rationale: f.rationale, by: byName(f),
+              rationale: f.rationale, by: byName(f), cid: f.candidateId,
               // the reader's own wording, *Proposed by you* on the record
               // (answers.md Part 4 .9) — the view's own ids, as `mineIn`
               mine: mineIds.has(f.candidateId),
@@ -2142,6 +2142,12 @@ window.LIVE = (function () {
           refusal: reasonOf(winner),
           verdict: o.judgedByMe ? 'voted on this' : undefined,
           ...(mineIn.length ? { mineIn } : {}),
+          // **the revealed votes** (Q996, issue #225): carried as the host
+          // served them, only where 👁️ reveals this record; the wording each
+          // names is the field's own candidate id (`cid`), `null` the text
+          // that stood
+          cid: winner.candidateId,
+          ...(o.revealed && o.revealed.length ? { revealed: o.revealed } : {}),
           unread: !undecided, ...slate });
       }
       // ✒️ on the Text (R-058, SURFACE E35, Q1034; Ed 2026-08-29, decision

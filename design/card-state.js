@@ -195,6 +195,41 @@ window.CARD_STATE = (function () {
    * - **the participation line** (answers Part 6.3), and the cap line
    *   (R-051) joined to it — one fact line.
    */
+  /**
+   * **The revealed votes, sorted onto the blocks they were cast on** (Q996,
+   * issue #225, Ed 2026-10-05, layout (a)): each judge's latest vote on each
+   * pair — the host serves only standing ones, and this keeps the last of any
+   * pair twice — a vote against the text that stood filed under the wording
+   * it preferred (`preferred[cid]`) or under *Kept by* (`kept`), an
+   * indifferent one under the wording it was cast on (`indifferent[cid]`),
+   * and a vote between two wordings in `between`, in the order cast. A judge
+   * is a person as served (`{ id, name, picture, erased }`). Null where
+   * nothing is revealed — the host serves `revealed` only where 👁️ allows.
+   */
+  function votesOf(revealed) {
+    if (!revealed || !revealed.length) return null;
+    const latest = new Map();
+    for (const v of revealed.slice().sort((x, y) => (x.t || 0) - (y.t || 0))) {
+      const pair = [v.a == null ? '' : v.a, v.b == null ? '' : v.b].sort().join('\u0000');
+      const k = (v.judge && v.judge.id) + '\u0000' + pair;
+      latest.delete(k);
+      latest.set(k, v);
+    }
+    const preferred = {}, indifferent = {}, kept = [], between = [];
+    const put = (m, cid, j) => { const l = (m[cid] = m[cid] || []); if (!l.some((x) => x.id === j.id)) l.push(j); };
+    for (const v of latest.values()) {
+      const j = v.judge || {};
+      const tie = v.outcome !== 'a' && v.outcome !== 'b';
+      if (v.a != null && v.b != null) { between.push({ judge: j, a: v.a, b: v.b, tie, won: tie ? null : v.outcome === 'a' ? v.a : v.b }); continue; }
+      const cid = v.a != null ? v.a : v.b;
+      if (cid == null) continue;
+      if (tie) put(indifferent, cid, j);
+      else if ((v.outcome === 'a' ? v.a : v.b) == null) { if (!kept.some((x) => x.id === j.id)) kept.push(j); }
+      else put(preferred, cid, j);
+    }
+    return { preferred, indifferent, kept, between };
+  }
+
   function outcomeOf(key) {
     const src = sourceOf(key);
     if (!src || typeof src.record !== 'function') return null;
@@ -246,15 +281,16 @@ window.CARD_STATE = (function () {
     const fact = [counts, r.capped || null].filter(Boolean).join(W.sep || ' · ') || null;
     return {
       outcome, label, green: outcome === 'passed', since,
+      votes: votesOf(r.revealed),
       head: top ? { text: top.text, mark: since ? null : markOf(top), passed: !since && passedOf(top),
-        incumbent: !!top.incumbent,
+        incumbent: !!top.incumbent, cid: top.incumbent ? null : (top.cid || null),
         speaker: top.incumbent ? null : { why: top.why, by: top.by || null, underNote: top.underNote || null, refusal: top.refusal || null } } : null,
       fact,
       field: rest.map((c) => ({
         role: c.incumbent ? 'previous' : 'proposed',
         label: blockLabel(c),
         author: !c.incumbent && !!c.by,
-        text: c.text, mark: markOf(c), passed: passedOf(c),
+        text: c.text, mark: markOf(c), passed: passedOf(c), cid: c.incumbent ? null : (c.cid || null),
         speaker: c.incumbent ? null : { why: c.why, by: c.by || null, underNote: c.underNote || null, refusal: c.refusal || null },
       })),
     };
@@ -306,6 +342,6 @@ window.CARD_STATE = (function () {
     return src && typeof src.present === 'function' ? Object.assign(base, src.present(key, base, hints || {}) || {}) : base;
   }
 
-  return { register, stateOf, readerOf, phaseOf, provenanceOf, placeOf, powersOf, actsOf, alternativesOf, outcomeOf, lineageOf,
+  return { register, stateOf, readerOf, phaseOf, provenanceOf, placeOf, powersOf, actsOf, alternativesOf, outcomeOf, lineageOf, votesOf,
     get surfaces() { return SURFACES.map((s) => s.name); } };
 })();

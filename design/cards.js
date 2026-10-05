@@ -1786,7 +1786,7 @@ window.CARDS = (function () {
     // `mine` — the reader's own wording, which a record labels *Proposed by
     // you* (answers.md Part 4 .9): the page's own join of its candidate ids
     // against the field's, never a disclosure (Q1451's `mineIn`)
-    if (s.slate) return s.slate.map((c) => ({ label: '', text: c.text, why: c.rationale, p: c.p, won: !!c.won, by: c.by || null, underNote: c.underNote || null, refusal: c.refusal || null, mine: !!c.mine }));
+    if (s.slate) return s.slate.map((c) => ({ label: '', text: c.text, why: c.rationale, p: c.p, won: !!c.won, by: c.by || null, underNote: c.underNote || null, refusal: c.refusal || null, mine: !!c.mine, cid: c.cid || null }));
     if (s.kind === 'race') return [
       { label: '', text: s.race.a.text, why: s.race.a.rationale, p: s.race.a.p, won: s.won === 'a', by: s.race.a.by || null, mine: !!s.race.a.mine },
       { label: '', text: s.race.b.text, why: s.race.b.rationale, p: s.race.b.p, won: s.won === 'b', by: s.race.b.by || null, mine: !!s.race.b.mine },
@@ -1794,7 +1794,7 @@ window.CARDS = (function () {
     // no label: the band above already says "what was proposed", and printing
     // it again on the only thing in the band said it twice
     return [{ label: '', text: s.optionB, why: s.rationale, p: (s.decided || {}).p, won: s.won === 'b', by: s.by || null, underNote: s.underNote || null, refusal: s.refusal || null,
-      mine: !!(s.mineIn && s.mineIn.length) }];
+      mine: !!(s.mineIn && s.mineIn.length), cid: s.cid || null }];
   }
 
   const groundNote = (s) => (!s.shifted || !s.wasGround ? ''
