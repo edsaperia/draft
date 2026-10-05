@@ -237,3 +237,45 @@ describe('card-state.js over every sealed record of the Hollow Oak fixture', () 
     });
   }
 });
+
+/* ---- the revealed votes, sorted onto their blocks (issue #225, Q996) ------- */
+describe('votesOf: the revealed votes onto the blocks they were cast on', () => {
+  const CS = page().CARD_STATE;
+  const p = (id: string, name: string | null, erased = false) => ({ id, name, picture: null, erased });
+  const ana = p('a', 'Ana'), bo = p('b', 'Bo'), cy = p('c', 'Cy'), dee = p('d', null), eli = p('e', 'Eli', true);
+  const v = (judge: Win, a: string | null, b: string | null, outcome: string, t: number) => ({ judge, a, b, outcome, t });
+
+  it('nothing revealed is nothing to draw', () => {
+    expect(CS.votesOf(undefined)).toBeNull();
+    expect(CS.votesOf([])).toBeNull();
+  });
+
+  it('files each vote under the block it chose, the text that stood as Kept by', () => {
+    const r = CS.votesOf([
+      v(ana, 'x', null, 'a', 1),          // the author: a vote for x
+      v(bo, 'x', null, 'b', 2),           // Bo kept the text against x
+      v(bo, 'y', null, 'b', 3),           // …and against y: once in Kept by
+      v(cy, null, 'x', 'b', 4),           // the text on the left, x preferred
+      v(dee, 'x', null, 'tie', 5),        // indifferent, on x
+      v(eli, 'x', 'y', 'b', 6),           // between the two: y preferred
+      v(cy, 'y', 'x', 'tie', 7),          // between the two, indifferent
+    ]);
+    expect(r.preferred.x.map((j: Win) => j.id)).toEqual(['a', 'c']);
+    expect(r.preferred.y).toBeUndefined();
+    expect(r.kept.map((j: Win) => j.id)).toEqual(['b']);
+    expect(r.indifferent.x.map((j: Win) => j.id)).toEqual(['d']);
+    expect(r.between.map((x: Win) => [x.judge.id, x.won, x.tie])).toEqual([['e', 'y', false], ['c', null, true]]);
+  });
+
+  it('keeps each judge\'s latest vote on a pair, whichever way round it was put', () => {
+    const r = CS.votesOf([
+      v(bo, 'x', null, 'a', 1),
+      v(bo, null, 'x', 'a', 2),           // the same pair, revised: the text kept
+      v(cy, 'x', 'y', 'a', 3),
+      v(cy, 'y', 'x', 'a', 4),            // revised: y over x
+    ]);
+    expect(r.preferred.x).toBeUndefined();
+    expect(r.kept.map((j: Win) => j.id)).toEqual(['b']);
+    expect(r.between.map((x: Win) => [x.judge.id, x.won])).toEqual([['c', 'y']]);
+  });
+});

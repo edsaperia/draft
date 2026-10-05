@@ -270,7 +270,10 @@ window.CARD_STATE = (function () {
     // Part 6.10 — *Proposed by ‹name› · Ran out of time*)
     const blockLabel = (c) => {
       if (c.incumbent) return W.previousText;
-      const who = c.mine ? W.proposedByYou : c.by ? W.proposedBy(c.by) : W.proposed;
+      // the live path's `by` is a person (`{ n, pic }`, `authorBy`), the
+      // fixture's a name: the label is the name either way (#225's walk)
+      const name = c.by && typeof c.by === 'object' ? c.by.n : c.by;
+      const who = c.mine ? W.proposedByYou : name ? W.proposedBy(name) : W.proposed;
       if (und) return who + W.sep + W.outcome.ranOut;
       const s = share(c.p);
       return who + (s ? W.sep + s : '');

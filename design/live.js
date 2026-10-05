@@ -2032,6 +2032,17 @@ window.LIVE = (function () {
       // early ✖ taken on one of them (Q1451 part 3) is the acknowledgement of
       // that proposal and `isUnread` has to know which.
       const mineIds = new Set((v.mine || []).map((m) => m.id));
+      // every sealed wording's text by its id (issue #225): a vote between
+      // two proposals is revealed on the record of the later to seal, which
+      // need not hold the other — a rival that stayed in its race after the
+      // winner was adopted (R-141) seals into a record of its own
+      const sealedWords = new Map((v.records || []).flatMap((o) => (o.field || [])
+        .map((f) => [f.candidateId, (f.hunks || []).flatMap((h) => h.lines).join('\n')])));
+      const voteWordsOf = (rev) => {
+        const out = {};
+        for (const j of rev) for (const id of [j.a, j.b]) if (id != null && sealedWords.has(id)) out[id] = sealedWords.get(id);
+        return out;
+      };
       for (const o of v.records || []) {
         const field = o.field || [];
         const mineIn = field.map((f) => f.candidateId).filter((id) => mineIds.has(id));
@@ -2147,7 +2158,7 @@ window.LIVE = (function () {
           // names is the field's own candidate id (`cid`), `null` the text
           // that stood
           cid: winner.candidateId,
-          ...(o.revealed && o.revealed.length ? { revealed: o.revealed } : {}),
+          ...(o.revealed && o.revealed.length ? { revealed: o.revealed, voteWords: voteWordsOf(o.revealed) } : {}),
           unread: !undecided, ...slate });
       }
       // ✒️ on the Text (R-058, SURFACE E35, Q1034; Ed 2026-08-29, decision
