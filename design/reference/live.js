@@ -2032,6 +2032,19 @@ window.LIVE = (function () {
       // early ✖ taken on one of them (Q1451 part 3) is the acknowledgement of
       // that proposal and `isUnread` has to know which.
       const mineIds = new Set((v.mine || []).map((m) => m.id));
+      // every sealed wording by its id, and the text its record replaced
+      // (issue #225): a vote between two proposals is revealed on the record
+      // of the later to seal, which need not hold the other — a rival that
+      // stayed in its race after the winner was adopted (R-141) seals into a
+      // record of its own — and each is named by what it puts in there
+      const sealedWords = new Map((v.records || []).flatMap((o) => (o.field || [])
+        .map((f) => [f.candidateId, { text: (f.hunks || []).flatMap((h) => h.lines).join('\n'),
+          was: (o.displaced || []).filter((l) => l.trim()).join('\n') }])));
+      const voteWordsOf = (rev) => {
+        const out = {};
+        for (const j of rev) for (const id of [j.a, j.b]) if (id != null && sealedWords.has(id)) out[id] = sealedWords.get(id);
+        return out;
+      };
       for (const o of v.records || []) {
         const field = o.field || [];
         const mineIn = field.map((f) => f.candidateId).filter((id) => mineIds.has(id));
@@ -2068,7 +2081,7 @@ window.LIVE = (function () {
         const replaced = (o.displaced || []).filter((l) => l.trim()).join('\n') || undefined;
         const slate = field.length > 1
           ? { slate: field.map((f) => ({ text: textOfF(f), src: f.hunks.flatMap((h) => h.lines).join('\n'),
-              rationale: f.rationale, by: byName(f),
+              rationale: f.rationale, by: byName(f), cid: f.candidateId,
               // the reader's own wording, *Proposed by you* on the record
               // (answers.md Part 4 .9) — the view's own ids, as `mineIn`
               mine: mineIds.has(f.candidateId),
@@ -2142,6 +2155,12 @@ window.LIVE = (function () {
           refusal: reasonOf(winner),
           verdict: o.judgedByMe ? 'voted on this' : undefined,
           ...(mineIn.length ? { mineIn } : {}),
+          // **the revealed votes** (Q996, issue #225): carried as the host
+          // served them, only where 👁️ reveals this record; the wording each
+          // names is the field's own candidate id (`cid`), `null` the text
+          // that stood
+          cid: winner.candidateId,
+          ...(o.revealed && o.revealed.length ? { revealed: o.revealed, voteWords: voteWordsOf(o.revealed) } : {}),
           unread: !undecided, ...slate });
       }
       // ✒️ on the Text (R-058, SURFACE E35, Q1034; Ed 2026-08-29, decision

@@ -856,28 +856,50 @@ window.FIXTURE_SESSION = (function () {
       decided: { outcome: 'adopted', at: at(29, 20, 15), p: 0.86, judges: 7 },
       // the text the winner displaced — the document no longer holds it
       replaced: 'A claim is made by writing in the book on the landing. A claim more than a month ahead may be displaced by a member with a nearer need, on notice and with apologies.',
+      // **the revealed votes** (issue #225, Q996): 👁️ *per decision*, so this
+      // record carries who voted, between which two wordings, which they
+      // preferred — as the host serves them (`revealed`, views.ts), `null` the
+      // text that stood — and the author's own vote for their wording. An
+      // unnamed member reads *Anonymous*, an erased one *[redacted]*
+      revealed: [
+        { judge: { id: 'fx-v-hollis', name: 'Hollis Vane', picture: 'e🧑‍🦳', erased: false }, a: 'c-claims-tell', b: null, outcome: 'a', t: 1 },
+        { judge: { id: 'fx-v-rosa', name: 'Rosa Quint', picture: 'e👩‍🦰', erased: false }, a: 'c-claims-tell', b: null, outcome: 'a', t: 2 },
+        { judge: { id: 'fx-v-tomasz', name: 'Tomasz Bielak', picture: '', erased: false }, a: null, b: 'c-claims-tell', outcome: 'b', t: 3 },
+        { judge: { id: 'fx-v-ines', name: 'Ines Marr', picture: '', erased: false }, a: 'c-claims-first', b: null, outcome: 'a', t: 4 },
+        { judge: { id: 'fx-v-odile', name: 'Odile Fenn', picture: '', erased: false }, a: 'c-claims-tell', b: null, outcome: 'b', t: 5 },
+        { judge: { id: 'fx-v-gone', name: null, picture: null, erased: true }, a: 'c-claims-steward', b: null, outcome: 'b', t: 6 },
+        { judge: { id: 'fx-v-anon', name: null, picture: null, erased: false }, a: 'c-claims-tell', b: null, outcome: 'tie', t: 7 },
+        { judge: { id: 'fx-v-rosa', name: 'Rosa Quint', picture: 'e👩‍🦰', erased: false }, a: 'c-claims-tell', b: 'c-claims-first', outcome: 'a', t: 8 },
+        { judge: { id: 'fx-v-tomasz', name: 'Tomasz Bielak', picture: '', erased: false }, a: 'c-claims-steward', b: 'c-claims-tell', outcome: 'b', t: 9 },
+        { judge: { id: 'fx-v-ines', name: 'Ines Marr', picture: '', erased: false }, a: 'c-claims-tell', b: 'c-claims-first', outcome: 'b', t: 10 },
+      ],
       slate: [
         {
+          cid: 'c-claims-first',
           text: 'A claim is made by writing in the book on the landing. Claims are taken in the order they are written and are not displaced for any reason.',
           rationale: 'A rule with an exception in it is a rule people argue about at ten at night. First come, first served is the only version nobody can lawyer.',
           p: 0.58
         },
         {
+          cid: 'c-claims-tell',
           text: 'A claim is made by writing in the book on the landing. A claim more than a month ahead may be displaced by a member with a nearer need, who tells the displaced member within a day and offers them the next free week.',
           rationale: 'Displacement is fine — it is being displaced silently that stings. Say it to their face within a day and hand them something back, and the rule stops being a way to lose your mother’s visit.',
           p: 0.86, won: true
         },
         {
+          cid: 'c-claims-steward',
           text: 'A claim is made by writing in the book on the landing. A claim may be displaced by a member with a nearer need, at the Steward’s discretion.',
           rationale: 'Somebody has to weigh a wedding against a fortnight of decorating. That is what we have a Steward for, and they can see the whole book.',
           p: 0.49
         },
         {
+          cid: 'c-claims-calendar',
           text: 'The Guest Bedroom is booked by asking the Steward, who keeps the calendar and settles clashes.',
           rationale: 'The book on the landing is lost twice a year. One person with one calendar is how every other house in the world does this.',
           p: 0.21
         },
         {
+          cid: 'c-claims-cap',
           text: 'A claim is made by writing in the book on the landing. No member may hold more than two claims at once, and none more than a season ahead.',
           rationale: 'The problem is not displacement, it is the two of us who book out the whole summer in February. Cap the hoarding and the clashes mostly go away.',
           p: 0.35

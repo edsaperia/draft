@@ -1445,6 +1445,19 @@ window.COPY = (function () {
     sinceReplaced: 'since replaced',
     // .11 — what a change replaced
     previousText: 'Previous text',
+    // **the revealed votes on a record** (Q996, issue #225, Ed 2026-10-05,
+    // layout (a)): who preferred each wording to the text that stood, who
+    // kept that text, who was indifferent, each line followed by their faces
+    // and names; the votes between two proposals in a fold under the record,
+    // one line each, a wording named by the words it puts in (`railChange`)
+    votes: {
+      preferredBy: 'Preferred to the current text by',
+      keptBy: 'Kept by',
+      indifferent: 'Indifferent:',
+      between: (n) => 'Votes between the proposals (' + n + ')',
+      preferred: (name, x, y) => name + ' preferred ' + x + ' to ' + y,
+      tied: (name, x, y) => name + ' was indifferent between ' + x + ' and ' + y,
+    },
     // .8, .9, .12 — a wording on a record: the live label, then its share
     proposed: 'Proposed',
     proposedBy: (name) => 'Proposed by ' + name,

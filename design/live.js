@@ -2032,12 +2032,14 @@ window.LIVE = (function () {
       // early ✖ taken on one of them (Q1451 part 3) is the acknowledgement of
       // that proposal and `isUnread` has to know which.
       const mineIds = new Set((v.mine || []).map((m) => m.id));
-      // every sealed wording's text by its id (issue #225): a vote between
-      // two proposals is revealed on the record of the later to seal, which
-      // need not hold the other — a rival that stayed in its race after the
-      // winner was adopted (R-141) seals into a record of its own
+      // every sealed wording by its id, and the text its record replaced
+      // (issue #225): a vote between two proposals is revealed on the record
+      // of the later to seal, which need not hold the other — a rival that
+      // stayed in its race after the winner was adopted (R-141) seals into a
+      // record of its own — and each is named by what it puts in there
       const sealedWords = new Map((v.records || []).flatMap((o) => (o.field || [])
-        .map((f) => [f.candidateId, (f.hunks || []).flatMap((h) => h.lines).join('\n')])));
+        .map((f) => [f.candidateId, { text: (f.hunks || []).flatMap((h) => h.lines).join('\n'),
+          was: (o.displaced || []).filter((l) => l.trim()).join('\n') }])));
       const voteWordsOf = (rev) => {
         const out = {};
         for (const j of rev) for (const id of [j.a, j.b]) if (id != null && sealedWords.has(id)) out[id] = sealedWords.get(id);

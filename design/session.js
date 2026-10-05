@@ -2705,7 +2705,7 @@
     const who = (j) => esc(j.erased ? window.COPY.page.synth.redacted : (j.name || window.COPY.grammar.speaker.anonymous));
     const lines = v.between.map((x) => {
       const [p, q] = x.tie ? [x.a, x.b] : [x.won, x.won === x.a ? x.b : x.a];
-      return '<li data-voter="' + esc(x.judge.id || '') + '">' + (x.tie ? W.tied : W.preferred)(who(x.judge), nameOf(p, q), nameOf(q, p)) + '</li>';
+      return '<li data-voter="' + esc(x.judge.id || '') + '">' + (x.tie ? W.tied : W.preferred)(who(x.judge), nameOf(p), nameOf(q)) + '</li>';
     });
     return { html: '<details class="votefold" data-votes="between"><summary>' + esc(W.between(lines.length)) + '</summary>' +
       '<ul class="votelist">' + lines.join('') + '</ul></details>' };
@@ -3108,11 +3108,12 @@
       const fold = foldOf(s);
       // the revealed votes (issue #225): under each block, and the fold
       const votes = rec.votes;
-      // a wording in the fold is named by the words it puts in against the
-      // other side of its vote (`railChange`), which is what tells the two apart
+      // a wording in the fold is named by the words it puts in (`railChange`,
+      // the rail's own title): this record's against what it replaced, one
+      // sealed into another record against what that one replaced
       const words = Object.assign({}, s.voteWords || {});
-      for (const c of [h].concat(rec.field)) if (c && c.cid && c.text != null) words[c.cid] = c.text;
-      const nameOf = (cid, other) => railTitleHtml(railChange(words[other] ?? '', words[cid] ?? '', s.qLabel || ''));
+      for (const c of [h].concat(rec.field)) if (c && c.cid && c.text != null) words[c.cid] = { text: c.text, was: base ?? '' };
+      const nameOf = (cid) => { const w = words[cid] || { text: '', was: '' }; return railTitleHtml(railChange(w.was, w.text, s.qLabel || '')); };
       return {
         kind: owesOk(s) ? 'record-owed' : 'record-filed',
         frame: { cls: 'sugg sealed-open' + (h && h.passed ? ' recpass' : ''),
