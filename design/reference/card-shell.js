@@ -62,7 +62,7 @@ window.CARD_SHELL = (function () {
     head: (st) => !!(st.head && st.head.html),
     fact: (st) => !!st.fact,
     body: (st) => !!(st.body && st.body.html),
-    blocks: (st) => !!(st.blocks && st.blocks.length) || !!(st.options && st.options.html),
+    blocks: (st) => !!(st.blocks && st.blocks.length) || !!(st.options && st.options.html) || !!(st.tail && st.tail.html),
     input: (st) => !!(st.input && st.input.html),
     row: (st) => rowShape(st) !== 'absent',
   };
@@ -113,9 +113,13 @@ window.CARD_SHELL = (function () {
    *  labelled block each — or **a settings card's options**, handed over
    *  already drawn (`st.options`), since each is a rung whose radio's own
    *  words are its label (CP1, CP2) and whose controls are the page's */
+  // …and **what stands under the blocks** (`st.tail`, issue #225): a sealed
+  // record's fold of the votes cast between two of its wordings, handed over
+  // drawn, after the last block
   const blocksSlot = (st) => (PRESENT.blocks(st)
     ? '<div class="gblocks" data-slot="blocks">' +
-      ((st.blocks || []).map(blockHtml).join('') + (st.options && st.options.html ? st.options.html : '')) + '</div>' : '');
+      ((st.blocks || []).map(blockHtml).join('') + (st.options && st.options.html ? st.options.html : '') +
+        (st.tail && st.tail.html ? st.tail.html : '')) + '</div>' : '');
 
   const inputSlot = (st) => (PRESENT.input(st)
     ? '<div class="ginput" data-slot="input">' + st.input.html + '</div>' : '');

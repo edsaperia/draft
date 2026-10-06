@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.147
+# Group Drafting Engine — Specification v0.148
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -437,7 +437,6 @@ Steps 1, 2 and 4 are built; of step 3 only the dedup gate's equivalence oracle a
 | 2.2 | Gate 2, semantic composition — both authors confirm a joint realization | nothing; the oracle (`packages/engine-core/src/oracle.ts`) has `checkEquivalence` and `describeRace` only |
 | 2.5 | Surgery — carving a contested instance into its own race, and normalising partial-overlap rivals | comments only (`text/patch.ts`, `text/rebase.ts`) |
 | 3.3a | Withdrawal reopens the race — the comparisons frozen as a record, fresh pairs served on the smaller field | nothing; the remaining standings stand and the leader may change unasked (issue #14, R-122) |
-| 3.5a | The revealed votes drawn on the sealed record — who voted, between which two wordings, which they preferred | the host serves them on each record a rung reveals (`revealed`, `packages/server/src/views.ts`); the page draws nothing yet — owed after redesign stage 10 (issue #138) |
 | 4.2, 9.2 | The chime and the gazette — adoptions land with a chime; the chamber view is ambient | nothing (SURFACE.md E28–E30, Q465) |
 | 5.1 | Embeddings in the submission gate, and the *differentiate* choice | `dedup-gate.ts` has edit distance plus the oracle's equivalence, co-sign and insist |
 | 5.2 | Behavioural probes of flagged-similar pairs, and the auto-merge | nothing |

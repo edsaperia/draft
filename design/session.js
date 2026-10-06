@@ -2656,6 +2656,8 @@
       currentText: skey ? currentTextFor(skey) : null,
       replaced: s.replaced, optionA: s.optionA,
       base: recordBaseOf(s, carried),
+      // the revealed votes as the host served them (Q996, issue #225)
+      revealed: s.revealed || null,
       when: longText(d),
       counts: T.record.counts(d.judges ?? 0, ROSTER, d.floor ?? FLOOR,
         yours ? T.record.youSaid(yours) : T.record.youNever,
@@ -2671,6 +2673,43 @@
       (p.underNote ? '<span class="rsub">' + esc(p.underNote) + '</span>' : '') +
       (p.refusal ? '<span class="rsub">' + esc(p.refusal) + '</span>' : '')
     : '');
+  // ---- the revealed votes (Q996, issue #225, Ed 2026-10-05, layout (a)) ---
+  // Where 👁️ reveals a record's votes (the host serves `revealed` there
+  // alone, SPEC §3.5a), each block says who chose it: under a wording, who
+  // preferred it to the text that stood, its author among them; under the
+  // text that stood, who kept it; under a wording, who was indifferent
+  // between it and the text that stood, and nothing where nobody was. A
+  // person as served: their face and name, *Anonymous* where they chose it,
+  // *[redacted]* where their row was erased (STYLE T49).
+  const voterHtml = (j) => {
+    const name = j.erased ? window.COPY.page.synth.redacted : (j.name || window.COPY.grammar.speaker.anonymous);
+    return '<span class="voter" data-voter="' + esc(j.id || '') + '">' +
+      window.CARDS.avHtml({ n: j.erased ? null : j.name, pic: j.erased ? '' : j.picture, erased: !!j.erased }, 'vface') +
+      '<span class="vname">' + esc(name) + '</span></span>';
+  };
+  const voteLine = (kind, label, people) => (!people || !people.length ? ''
+    : '<div class="votes" data-votes="' + kind + '"><span class="vlab">' + esc(label) + '</span> ' +
+      people.map(voterHtml).join(' ') + '</div>');
+  /** the lines under one block: `cid` the wording's id, null the text that stood */
+  const votesUnder = (v, cid) => {
+    if (!v) return '';
+    const W = window.COPY.shell.votes;
+    return cid == null ? voteLine('kept', W.keptBy, v.kept)
+      : voteLine('preferred', W.preferredBy, v.preferred[cid]) + voteLine('indifferent', W.indifferent, v.indifferent[cid]);
+  };
+  /** the fold under the record: every vote between two of its wordings, one
+   *  line each, a wording named by the words it puts in (`railChange`) */
+  const votesFold = (v, nameOf) => {
+    if (!v || !v.between.length) return null;
+    const W = window.COPY.shell.votes;
+    const who = (j) => esc(j.erased ? window.COPY.page.synth.redacted : (j.name || window.COPY.grammar.speaker.anonymous));
+    const lines = v.between.map((x) => {
+      const [p, q] = x.tie ? [x.a, x.b] : [x.won, x.won === x.a ? x.b : x.a];
+      return '<li data-voter="' + esc(x.judge.id || '') + '">' + (x.tie ? W.tied : W.preferred)(who(x.judge), nameOf(p), nameOf(q)) + '</li>';
+    });
+    return { html: '<details class="votefold" data-votes="between"><summary>' + esc(W.between(lines.length)) + '</summary>' +
+      '<ul class="votelist">' + lines.join('') + '</ul></details>' };
+  };
   // ---- the charter's judgment cards on the one shell (Q1541 stage 6) -----
   // **A judgment card is built from `CardState`** like the records before it:
   // *Current text* above the clause, which stands where its paragraph stood
@@ -3067,18 +3106,27 @@
         ? [{ role: 'previous', label: window.COPY.shell.previousText, text: '', passed: false, speaker: null }] : []);
       const blockHtml = (c) => (c.role === 'previous' && !String(c.text ?? '').trim() ? noTextHtml() : marked(c));
       const fold = foldOf(s);
+      // the revealed votes (issue #225): under each block, and the fold
+      const votes = rec.votes;
+      // a wording in the fold is named by the words it puts in (`railChange`,
+      // the rail's own title): this record's against what it replaced, one
+      // sealed into another record against what that one replaced
+      const words = Object.assign({}, s.voteWords || {});
+      for (const c of [h].concat(rec.field)) if (c && c.cid && c.text != null) words[c.cid] = { text: c.text, was: base ?? '' };
+      const nameOf = (cid) => { const w = words[cid] || { text: '', was: '' }; return railTitleHtml(railChange(w.was, w.text, s.qLabel || '')); };
       return {
         kind: owesOk(s) ? 'record-owed' : 'record-filed',
         frame: { cls: 'sugg sealed-open' + (h && h.passed ? ' recpass' : ''),
           attrs: ' data-card="' + esc(id) + '"' + (skey ? ' data-site="' + esc(skey) + '"' : '') },
         label: { text: rec.label, tone: rec.green ? 'ok' : null, fact: 'outcome' },
         head: { html: clauseHeadHtml(s, Object.assign(o, { key: skey, chips: chipsFor(skey, id), label: null, fact: 'place' })) +
-          (h && !rec.since ? recSpeaker(h.speaker) : '') },
+          (h && !rec.since ? recSpeaker(h.speaker) : '') + (h ? votesUnder(votes, h.incumbent ? null : h.cid) : '') },
         fact: rec.fact,
         blocks: field.map((c) => ({
           cls: 'ranked' + (c.role === 'previous' ? ' wasthere' : '') + (c.passed ? ' passed' : ''),
           label: c.label, fact: c.role === 'previous' ? 'previous' : c.author ? 'author' : null,
-          html: blockHtml(c), speaker: recSpeaker(c.speaker) })),
+          html: blockHtml(c), speaker: recSpeaker(c.speaker) + votesUnder(votes, c.role === 'previous' ? null : c.cid) })),
+        tail: votesFold(votes, nameOf),
         // OK only while owed (Q1522 (6)); **a record's own tab shows just
         // that record, and its OK acknowledges that record only** (Q1561, Ed
         // 2026-09-26) — one of a clause's several included, the fold going on

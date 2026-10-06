@@ -403,6 +403,15 @@ case "$GROUP" in
     # before 🍾, after it with and without ✒️, and a member, untouched and
     # typed back — every press leaves, posts nothing and spends nothing
     walk "edit-unchanged" node scripts/repro/edit-unchanged.mjs "$BASE"
+    # **the revealed votes drawn on the sealed record** (issue #225, Q996, Ed
+    # 2026-10-05, layout (a)): two rooms of six; under 👁️ *decision* a race
+    # of two wordings seals — the faces under the right blocks, *Preferred to
+    # the current text by* · *Kept by* · *Indifferent:*, the fold of the votes
+    # between the two wordings with its count, held back while the rival
+    # still runs — and nothing drawn on a running race, under *never*, or at
+    # the stranger's door. Sprint tier from its first day (Q1547). About a
+    # minute
+    walk "revealed-votes-walk" npm run revealed-votes-walk -- "$BASE"
     # **Load on demand, unload when idle** (Scaling Stage 2, issue #219), on a
     # server of its own whose idle period is three seconds and whose clocks
     # are driven every second: a document whose clock falls due while it is

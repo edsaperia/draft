@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 734
+  "entries": 740
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -733,6 +733,12 @@
   "shell.sep": " · ",
   "shell.sinceReplaced": "since replaced",
   "shell.voiceOut": "You can only make one constitutional proposal 🏛️ at a time.",
+  "shell.votes.between": "ƒ (n) => 'Votes between the proposals (' + n + ')'",
+  "shell.votes.indifferent": "Indifferent:",
+  "shell.votes.keptBy": "Kept by",
+  "shell.votes.preferred": "ƒ (name, x, y) => name + ' preferred ' + x + ' to ' + y",
+  "shell.votes.preferredBy": "Preferred to the current text by",
+  "shell.votes.tied": "ƒ (name, x, y) => name + ' was indifferent between ' + x + ' and ' + y",
   "shell.waitingFor": "ƒ (n) => 'Waiting for ' + n + (n === 1 ? ' member' : ' members') + ' to answer questions.'",
   "shell.withdrawConstitutional": "Withdraw it — your 🏛️ comes back whole",
   "shell.withdrawOrdinary": "Withdraw it — the ✏️ comes back in full",

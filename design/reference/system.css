@@ -2753,6 +2753,25 @@
   }
   .speaker.comment .said.none { color: var(--comment-muted); font-style: italic; }
 
+  /* ---- the revealed votes on a record (Q996, issue #225, layout (a)) ------
+     Under a block, one line per kind — *Preferred to the current text by*,
+     *Kept by*, *Indifferent:* — its people after it, each a face at the
+     comment byline's 18px and a name, wrapping as words wrap; and under the
+     blocks, the fold of the votes between two proposals, one line each.
+     The chrome's own face and size: these are about the room, not the text. */
+  .votes {
+    display: flex; flex-wrap: wrap; align-items: center; column-gap: var(--s2); row-gap: var(--s1);
+    margin-top: var(--s2); font-family: var(--font-ui); font-size: var(--t-small); color: var(--muted);
+  }
+  .votes .vlab { color: var(--muted); }
+  .votes .voter { display: inline-flex; align-items: center; gap: var(--s1); color: var(--fg); min-width: 0; overflow-wrap: anywhere; }
+  .votes .voter .av { width: 18px; height: 18px; }
+  .votes .voter .emojiface { font-size: var(--t-body); line-height: 1; }
+  .votefold { margin-top: var(--s3); font-family: var(--font-ui); font-size: var(--t-small); color: var(--muted); }
+  .votefold summary { cursor: pointer; color: var(--primary); }
+  .votefold .votelist { margin: var(--s2) 0 0; padding-left: var(--s4); color: var(--fg); }
+  .votefold .votelist li { margin-top: var(--s1); overflow-wrap: anywhere; }
+
   /* ---- a link in a reason (Q1533, Ed 2026-09-24) ----------------------
      A reason may carry links, `reasonHtml` in cards.js. One that leaves
      docs.vote says so: the ↗ after its words, drawn here so it is never a
