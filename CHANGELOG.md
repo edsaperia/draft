@@ -2,9 +2,22 @@
 
 **[docs.vote](https://docs.vote)** is a place for a group to write a document together. Anybody may propose a change; rival wordings of the same passage race each other; the membership votes on them in blind pairs (*which of these two wordings?*, no names attached, no scores shown), and the wording that comes out on top is adopted once enough of the membership has voted. The document's own rules are decided the same way, inside the document.
 
-docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first, back to the project's first commit on 2026-08-13. The mechanism's full rules are in [`SPEC.md`](SPEC.md) (v0.147 today), and what the page shows a member is in [`SURFACE.md`](SURFACE.md).
+docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first, back to the project's first commit on 2026-08-13. The mechanism's full rules are in [`SPEC.md`](SPEC.md) (v0.148 today), and what the page shows a member is in [`SURFACE.md`](SURFACE.md).
 
 ---
+
+## 2026-10-06: who voted, on the sealed record
+
+### New
+- **A sealed record shows how the membership voted**, wherever 👁️ *Vote Reveal* allows it: on each decision as it is made, or on every record once the document closes. Under each wording, *Preferred to the current text by* lists the faces and names of those who chose it, its author among them. Under the text that stood, *Kept by* lists those who kept it. *Indifferent:* lists those who said neither. Votes between two proposals sit in a fold under the record, one line each. Nothing is shown on a proposal still being voted on, under *never*, or to anybody who is not a member.
+
+### Fixed
+- A record's other wordings no longer read *Proposed by [object Object]* where proposals are signed.
+
+### For contributors
+- **SPEC v0.148**: §13's 3.5a ledger row is gone. **SURFACE §9**'s sealed-record row states the drawing (issue #225, Q996, Ed's layout (a)).
+- `card-state.js`'s `votesOf` sorts the host's `revealed[]` onto the blocks it was cast on. `session.js` draws it on the one shell (`votesUnder`, `votesFold`), and the fold rides the shell's new `tail`. `live.js` carries each sealed wording's text and the text its record replaced (`voteWords`), because a rival that stayed in its race after the winner's adoption (R-141) seals into a record of its own. The six new strings are under `shell.votes` in `design/copy.js`.
+- Guard: `npm run revealed-votes-walk`, in the sprint tier's `sprint-motions`. The fixture's `race-claims` carries revealed votes, so card-audit and the probes measure the drawing. The session-probe reference and both copy goldens are re-frozen for `race-claims` alone.
 
 ## 2026-10-03: the Rules, re-laid
 
