@@ -170,6 +170,7 @@ const ask = async (page, email) => {
   return { said, status: res ? res.status() : 0 };
 };
 const known = await ask(ps, EVE);
+if (SHOTS) await ps.screenshot({ path: `${SHOTS}/docs-menu-sent-1600.png` });
 await ps.keyboard.press('Escape');
 await openMenu(ps);
 const unknown = await ask(ps, NOBODY);
