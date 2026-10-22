@@ -236,6 +236,17 @@ const MIGRATIONS: ReadonlyArray<{ version: number; sql: string }> = [
       );
     `,
   },
+  {
+    // **An address finds its documents without loading one** (issue #227,
+    // Q1603): the 🪶 menu's *Email me a link to each* asks which documents
+    // hold a person row with this address, case-blind as the login door is,
+    // and at a thousand documents that must be an index read, never a scan
+    // of every log.
+    version: 10,
+    sql: `
+      CREATE INDEX people_email ON people (lower(email));
+    `,
+  },
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.version;
@@ -413,6 +424,13 @@ export class PgPersistence implements MaintainablePersistence {
     const { rowCount } = await this.pool.query(
       'DELETE FROM people WHERE document_id = $1 AND person_id = $2', [id, personId]);
     return (rowCount ?? 0) > 0;
+  }
+
+  async documentsWithEmail(email: string): Promise<string[]> {
+    const { rows } = await this.pool.query<{ document_id: string }>(
+      'SELECT DISTINCT document_id FROM people WHERE lower(email) = $1 ORDER BY document_id',
+      [email.toLowerCase()]);
+    return rows.map((r) => r.document_id);
   }
 
   async readProvisional(id: string): Promise<string | null> {
