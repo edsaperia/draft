@@ -3704,7 +3704,7 @@
      document** and *Email me a link to each*. Rows are the rail's ink and the
      one accent on hover; open is said by depth (the bubble's own shadow). */
   .walletsay.docsmenu { display: block; max-width: none; padding: var(--s2) 0; font-family: var(--font-ui); }
-  .docsmenu .dmsay { display: flex; gap: 9px; align-items: flex-start; margin: 0; padding: var(--s1) var(--s3) var(--s2);
+  .docsmenu .dmsay { display: flex; gap: var(--s2); align-items: flex-start; margin: 0; padding: var(--s1) var(--s3) var(--s2);
     border-bottom: var(--hair); margin-bottom: var(--s2); }
   .docsmenu .dmhead { padding: var(--s1) var(--s3); color: var(--muted); }
   .docsmenu .dmlist { list-style: none; margin: 0 0 var(--s2); padding: 0; max-height: min(50vh, 22rem); overflow-y: auto;
@@ -3720,7 +3720,7 @@
   .docsmenu .dmclosed { flex: none; color: var(--muted); font-size: var(--t-cap); font-weight: 400; }
   .docsmenu .dmform { display: flex; gap: var(--s2); padding: var(--s1) var(--s3) var(--s2); }
   .docsmenu .dmform[hidden], .docsmenu .dmsent[hidden] { display: none; }
-  .docsmenu .dminput { flex: 1; min-width: 0; font: inherit; font-size: var(--t-ui); padding: 0.375rem 0.5rem;
+  .docsmenu .dminput { flex: 1; min-width: 0; font: inherit; font-size: var(--t-ui); padding: var(--s1) var(--s2);
     border: 1px solid var(--border); border-radius: var(--r-md); color: var(--fg); background: var(--bg); }
   .docsmenu .dminput:focus { outline: 2px solid var(--primary); outline-offset: -1px; border-color: var(--primary); }
   .docsmenu .dmsend { flex: none; background: var(--primary); border-color: var(--primary); color: #fff; }
