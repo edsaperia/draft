@@ -273,6 +273,26 @@ export const MAILS = {
     link,
   }),
   /**
+   * **A link to each** (issue #227, Q1603): the 🪶 menu's mail, one login
+   * link for every document whose membership holds the address, in one mail.
+   * The subject names the document where there is one, and counts them where
+   * there are more; each link stands under its title and the document's own
+   * address, as `ownAddress` says it on a single login.
+   */
+  links: (docs: ReadonlyArray<{ title: string; slug: string; link: string }>): Omit<Mail, 'to'> => ({
+    subject: docs.length === 1 ? `Log in to “${docs[0]!.title}”`
+      : `Log in to your ${docs.length} documents on docs.vote`,
+    text: (docs.length === 1 ? 'Here is your login link for the document you are a member of. '
+      : 'Here is a login link for each of the documents you are a member of. ') +
+      'Each link works once.\n\n' +
+      docs.map((d) => {
+        let host = 'docs.vote';
+        try { host = new URL(d.link).host; } catch { /* the default */ }
+        return `“${d.title}” (${host}/d/${d.slug})\n${d.link}`;
+      }).join('\n\n'),
+    link: docs[0]!.link,
+  }),
+  /**
    * Each of the three warnings names its own lead (R-097): a week, a day,
    * an hour before the lapse. A member gets all three that fit their spell.
    */
