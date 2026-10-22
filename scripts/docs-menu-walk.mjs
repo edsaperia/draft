@@ -22,8 +22,8 @@
  *      not move when it opens.
  *
  * Needs a dev server (no RESEND_API_KEY: the outbox is read for the links).
- * Red on the page before #227 at 1 (the 🪶 opened no menu). Joins the sprint
- * tier from its first day (Q1547). Exit 0 when every check passes, 1 on a
+ * Red before #227 at its first check: there was no `/api/mine`, and the 🪶
+ * opened no menu. Joins the sprint tier from its first day (Q1547). Exit 0 when every check passes, 1 on a
  * defect, 2 on a set-up that never got there.
  */
 import { chromium } from 'playwright';
