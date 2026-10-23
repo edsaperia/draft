@@ -5216,7 +5216,11 @@
       text: '',
       body: (H) => H.para(card('begin')) +
         ['ending', 'closing'].map(card).filter((c) => c && visible(c))
-          .map((c) => H.para(c) + H.tasks(c)).join(''),
+          .map((c) => H.para(c) + H.tasks(c)).join('') +
+        // 🥂's clause at the door, its task never (Q464, #230): the closing
+        // line is the record's summary, read wherever the Rules are, and a
+        // stranger has nothing to sign
+        (isStranger() && cs && cs.closed ? H.para(card('closing')) : ''),
       keys: ['begin', 'ending', 'closing'],
       extraKeys: () => releaseKeys() },
     // rail-only: the title is the heading, the link leads the constitution,
