@@ -4221,7 +4221,7 @@
       const at = cs && cs.closedAt != null ? new Date(cs.closedAt) : null;
       const p2 = (x) => String(x).padStart(2, '0');
       return at ? C.closed(p2(at.getHours()) + ':' + p2(at.getMinutes()),
-        dayWords(at), closeSignatures().length) : '';
+        dayWords(at), closeTally()) : '';
     }
     if (c.k === 'grant-voice') return C.constitutional;
     if (c.k === 'grant-pen') return founderPowerClause('u');
@@ -7802,6 +7802,11 @@
   const signedClose = () => !!(cs && cs.closed && (!viewerIsMember() || mySignature() !== null));
   const closeSignatures = () => (!cs || !cs.closed ? []
     : cs.isRemote ? ((cs.v.view.closed && cs.v.view.closed.signatures) || []) : cs.closingSignatures());
+  // the closing line's counts (Q464): live, what the host counted at the close
+  // (`closeTally`, the door's too where it may read the closed page); the
+  // fixture, its own closed session's (`closeFixture`). Null says nothing.
+  const closeTally = () => (!cs || !cs.closed ? null
+    : cs.isRemote ? ((cs.v.view.closed && cs.v.view.closed.tally) || null) : ((FIX && FIX.CLOSED && FIX.CLOSED.tally) || null));
   const news = (c) => (c.mailgiveup ? !S.okd.has(c.k) // E34: owed is the whole of it
     : c.departure ? !S.okd.has(c.k) // E31/E32/E40: owed is the whole of it
     : c.held ? !S.okd.has(c.k)      // E41: owed is the whole of it (Q1447)
@@ -11238,6 +11243,18 @@
     try { cs.close(now()); } catch (e) { console.warn('[fixture close]', e && e.message); }
     try { if (who[0]) cs.acknowledgeClose(now(), who[0].mid, 'I still think the garden clause goes too far — but it was fairly decided.'); } catch (e) {}
     try { if (who[1]) cs.acknowledgeClose(now(), who[1].mid, ''); } catch (e) {}
+    // the closing line's counts (Q464), read off the fixture's own records:
+    // each sealed wording by how it ended, every undecided one still open
+    const tally = { members: S.roster.filter((r) => r.mid).length, proposals: 0, passed: 0, failed: 0, withdrawn: 0, open: 0 };
+    for (const g of FIX.SUGGS) {
+      const out = g.state === 'sealed' && g.decided ? String(g.decided.outcome) : '';
+      const n = g.slate && g.slate.length ? g.slate.length : 1;
+      if (out.startsWith('adopted')) { tally.passed += 1; tally.failed += n - 1; }
+      else if (out.startsWith('retired')) tally.failed += n;
+    }
+    tally.open = und.reduce((s, o) => s + o.field.length, 0);
+    tally.proposals = tally.passed + tally.failed + tally.withdrawn + tally.open;
+    FIX.CLOSED.tally = tally;
   }
   // the fixture's DOC as the text the document would store
   const fixtureText = (DOC) => DOC.filter((l) => l.t !== 'title')
