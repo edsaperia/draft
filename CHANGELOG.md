@@ -6,6 +6,17 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-10-30: find your documents from the quill menu
+
+### New
+- The quill at the top left opens a menu of documents this browser is signed into, with your face and a Closed label where appropriate. New document starts another document. Email me a link to each sends one email containing the login links for documents belonging to that address. The response does not reveal whether the address belongs to any document.
+
+### Fixed
+- Every login link in that email is tracked by the durable mail queue and revoked if queueing or delivery permanently fails. Existing single-link emails remain compatible.
+
+### For contributors
+- The original #228 implementation and its email-safety correction ship together in #239. PostgreSQL migration 10 indexes email lookup; migration 11 stores the hashes belonging to a multi-link email. Menu, outbox, failed-enqueue, reconnect and PostgreSQL tests cover the path. The menu shares Login and Apply's existing email allowance.
+
 ## 2026-10-30: safer email limits and reliable saving
 
 ### Fixed

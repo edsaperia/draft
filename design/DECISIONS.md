@@ -8325,3 +8325,11 @@ PR #237 fixes #28 by committing engine-log entries and changed bridge state in o
 ## Q1604: reserve a proposed document address while the proposal is open (2026-10-30)
 
 Ed selected the reservation option in the Codex chat. The coordinator had recommended ending a proposal as unavailable with a refund if another document took the address before settlement; Ed did not choose that alternative. The selected behavior holds the requested address while its proposal remains open, preventing another document from taking it during the vote. An unused reservation is released when its proposal ends; an adopted address retains permanent current/historical ownership. Implementation and lifecycle/race regressions are assigned to Codex builder PR #240. This is a decision record, not a claim that the feature is deployed.
+
+## Q1603: documents menu, original feature and review correction (PRs #228 and #239, 2026-10-30)
+
+Ed chose the quill menu and Email me a link to each on 2026-10-22. The original implementation lists only memberships verified by this browser's signed cookies; the email lookup reads the stored people index, then confirms membership. The public answer is sent before lookup and is identical for known and unknown addresses. Existing rate limits apply before lookup.
+
+Codex review found that the original multi-link email bypassed the outbox's token bookkeeping. Permanent failure therefore left its links valid. The correction enqueues one durable row with all token hashes, revokes all on failed enqueue or terminal delivery failure, deduplicates legacy and multi-token hashes, and clears metadata after sending. Two regressions failed before the fix; route and persistence regressions cover both stores and restart behavior. No wording was changed by this correction.
+
+PR #239 includes the original feature's commits and author history, and was retargeted to main after its saving dependency #237 landed, so the feature and correction release together. No intermediate unsafe menu version was deployed. Q1603 is complete once this release's exact build is verified live.
