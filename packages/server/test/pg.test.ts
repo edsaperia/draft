@@ -24,6 +24,10 @@ import { main as tools } from '../src/tools.js';
 import { errorLogContract } from './error-store.js';
 import { ConstitutionSession, InMemoryPeople } from '../../constitution/src/index.js';
 import type { LogEntry } from '../../constitution/src/index.js';
+import { EngineBridge } from '../../constitution/src/engine-bridge.js';
+import type { BridgeState } from '../../constitution/src/engine-bridge.js';
+import type { LogEntry as EngineLogEntry } from '../../engine-core/src/types.js';
+import { buildConstituted } from '../../constitution/test/helpers.js';
 
 const URL = process.env.DRAFT_TEST_DATABASE_URL ?? null;
 if (URL === null) {
@@ -123,6 +127,67 @@ d('PgPersistence contract', () => {
     await p.appendEngineLog('d1', [{ seq: 0, hash: 'h', prevHash: '', event: ev }]);
     const [back] = await p.readEngineLog('d1') as Array<{ event: unknown }>;
     expect(JSON.stringify(back!.event)).toBe(JSON.stringify(ev));
+  });
+
+  it('an engine append carries its bridge state in one transaction (issue #28)', async () => {
+    const p = await open();
+    await p.createDoc('d1');
+    const e0 = { seq: 0, hash: 'h0', prevHash: '', event: { t: 1 } };
+    const append = p.appendEngineLog.bind(p);
+    await append('d1', [e0], 'S1');
+    expect(await p.readBridgeState('d1')).toBe('S1');
+    await expect(append('d1', [e0], 'S2')).rejects.toThrow();
+    expect(await p.readEngineLog('d1')).toEqual([e0]);
+    expect(await p.readBridgeState('d1')).toBe('S1');
+    // A failed batch leaves the connection and the document usable.
+    const e1 = { seq: 1, hash: 'h1', prevHash: 'h0', event: { t: 2 } };
+    await append('d1', [e1], 'S2');
+    const reopened = await reopen(p);
+    try {
+      expect(await reopened.readEngineLog('d1')).toEqual([e0, e1]);
+      expect(await reopened.readBridgeState('d1')).toBe('S2');
+    } finally { await reopened.close(); }
+  });
+
+  it('a rejected bridge-state write rolls back the appended engine entries (issue #28)', async () => {
+    const p = await open();
+    await p.createDoc('d1');
+    const append = p.appendEngineLog.bind(p);
+    const e0 = { seq: 0, hash: 'h0', prevHash: '', event: { t: 1 } };
+    await append('d1', [e0], 'S1');
+    // Postgres text rejects a NUL. The log insert is valid, the state is not.
+    const e1 = { seq: 1, hash: 'h1', prevHash: 'h0', event: { t: 2 } };
+    await expect(append('d1', [e1], 'bad\u0000state')).rejects.toThrow();
+    const reopened = await reopen(p);
+    try {
+      expect(await reopened.readEngineLog('d1')).toEqual([e0]);
+      expect(await reopened.readBridgeState('d1')).toBe('S1');
+    } finally { await reopened.close(); }
+    await append('d1', [e1], 'S2');
+    expect(await p.readEngineLog('d1')).toEqual([e0, e1]);
+    expect(await p.readBridgeState('d1')).toBe('S2');
+  });
+
+  it('a reopened engine can finish the motion whose state accompanied its append (issue #28)', async () => {
+    const p = await open();
+    await p.createDoc('d1');
+    const { s, bo, cy } = buildConstituted();
+    const bridge = new EngineBridge(s, { t: 3, rngSeed: 'atomic-save' });
+    await p.appendEngineLog('d1', bridge.engine.log, JSON.stringify(bridge.state()));
+    const persisted = bridge.engine.log.length;
+    const { motion, candidate } = bridge.openSetMotion(10, bo, 'ending', { endsAtMs: 2_000_000 });
+    await p.appendEngineLog('d1', bridge.engine.log.slice(persisted), JSON.stringify(bridge.state()));
+    const reopened = await reopen(p);
+    try {
+      const resumed = new EngineBridge(s, { t: 10, rngSeed: 'atomic-save', resume: {
+        log: await reopened.readEngineLog('d1') as EngineLogEntry[],
+        ...JSON.parse((await reopened.readBridgeState('d1'))!) as BridgeState,
+      } });
+      const race = resumed.engine.races().find((r) => r.settingId === 'ending')!;
+      resumed.judge(20, cy, candidate!, race.incumbentId, 'a');
+      expect(s.motionRecords().get(motion)!.status).toBe('carried');
+      expect(s.settingState('ending').value).toEqual({ endsAtMs: 2_000_000 });
+    } finally { await reopened.close(); }
   });
 
   it('provisional and bridge state are rows: set, overwrite, clear', async () => {

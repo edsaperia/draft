@@ -251,6 +251,16 @@ export async function persistEngine(persistence: Persistence, doc: LoadedDoc): P
   const log = d.bridge.engine.log as unknown as EngineLogEntry[];
   const fresh = log.slice(d.enginePersisted);
   const state = JSON.stringify(d.bridge.state());
+  // Postgres commits both together (issue #28), including the first save.
+  // Neither in-memory cursor moves until the transaction has committed.
+  // The file store must keep the separate writes below: if its append
+  // succeeds and the state rename fails, the appended cursor is still real.
+  if (fresh.length > 0 && persistence.engineLogAndStateAtomic === true) {
+    await persistence.appendEngineLog(d.id, fresh, state === d.bridgeSerialized ? undefined : state);
+    d.enginePersisted += fresh.length;
+    d.bridgeSerialized = state;
+    return;
+  }
   // first persist writes the state BEFORE the log (review #1, finding 5):
   // a crash between the two then leaves state-without-log, which resume
   // treats as nothing (fresh birth overwrites it) — where log-without-

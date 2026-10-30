@@ -241,8 +241,11 @@ export interface Persistence {
   writeProvisional(id: string, text: string | null): Promise<void>;
 
   /* -- the engine beside it: its own log, plus the bridge state --------- */
+  /** True only when appendEngineLog commits entries and state atomically.
+   *  Other stores retain the host's separate writes and durable cursors. */
+  readonly engineLogAndStateAtomic?: true;
   readEngineLog(id: string): Promise<unknown[]>;
-  appendEngineLog(id: string, entries: readonly unknown[]): Promise<void>;
+  appendEngineLog(id: string, entries: readonly unknown[], bridgeState?: string): Promise<void>;
   /** The serialized bridge state, or null if the engine never ran. */
   readBridgeState(id: string): Promise<string | null>;
   writeBridgeState(id: string, serialized: string): Promise<void>;
@@ -459,8 +462,9 @@ export class FilePersistence implements MaintainablePersistence {
     return readJsonl<unknown>(join(this.docsDir, id, 'engine.jsonl'));
   }
 
-  async appendEngineLog(id: string, entries: readonly unknown[]): Promise<void> {
+  async appendEngineLog(id: string, entries: readonly unknown[], bridgeState?: string): Promise<void> {
     appendJsonl(join(this.docsDir, id, 'engine.jsonl'), entries);
+    if (bridgeState !== undefined) await this.writeBridgeState(id, bridgeState);
   }
 
   async readBridgeState(id: string): Promise<string | null> {
