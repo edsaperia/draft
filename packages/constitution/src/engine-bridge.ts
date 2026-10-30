@@ -67,6 +67,16 @@ const UNRACED: ReadonlySet<string> = new Set(['admission', 'startingText']);
  * pairing (which lives in no log — the engine does not know motions and
  * the constitution does not know candidates).
  */
+/** The Rules' closing line's counts (Q464): `passed + failed + withdrawn + open === proposals`. */
+export interface CloseTally {
+  members: number;
+  proposals: number;
+  passed: number;
+  failed: number;
+  withdrawn: number;
+  open: number;
+}
+
 export interface BridgeState {
   cursor: number;
   motionCandidates: Record<string, string>;
@@ -587,6 +597,33 @@ export class EngineBridge {
       carriedButUnassented,
       signatures: this.cs.closingSignatures(),
     };
+  }
+
+  /**
+   * The counts the Rules' closing line states (Q464, issue #230): the
+   * membership at the close — the seats the 🥂 card is served to, so an
+   * invitee who never arrived and a member who left are not counted — and
+   * every **text proposal** the document was made, by how it ended. A
+   * proposal is a `candidate-submitted` with a patch: a rules motion shares
+   * the engine's candidate store with no patch, and a ✒️ decree enters it
+   * by `text-decreed`, so neither is counted. A proposal its author
+   * co-signed away (`merged`) was withdrawn by them; whatever the close did
+   * not decide is still open. The four outcomes always add up to the whole.
+   */
+  closeTally(): CloseTally {
+    const members = [...this.cs.memberRecords().values()]
+      .filter((m) => !m.removed && m.arrivedAtT !== null).length;
+    const out: CloseTally = { members, proposals: 0, passed: 0, failed: 0, withdrawn: 0, open: 0 };
+    for (const e of this.engine.log) {
+      if (e.event.type !== 'candidate-submitted' || !e.event.patch) continue;
+      out.proposals++;
+      const state = this.engine.getCandidate(e.event.id).state;
+      if (state === 'adopted') out.passed++;
+      else if (state === 'retired') out.failed++;
+      else if (state === 'withdrawn' || state === 'merged') out.withdrawn++;
+      else out.open++;
+    }
+    return out;
   }
 
   /** What to persist beside the engine log (see BridgeState). */
