@@ -393,6 +393,93 @@ async function founderCookie(base: string, slug: string, email: string): Promise
   return (seated.headers.get('set-cookie') ?? '').split(';')[0]!;
 }
 
+describe('login and application mail share one address budget (issue #93)', () => {
+  const apply = (base: string, slug: string, email: string, headers: Record<string, string> = {}) =>
+    post(base, `/api/d/${slug}/apply`, { email }, headers);
+
+  async function openDoor(base: string, slug: string, founder: string): Promise<void> {
+    const cookie = await founderCookie(base, slug, founder);
+    const r = await post(base, `/api/d/${slug}/cmd`,
+      { cmd: 'set-setting', args: { setting: 'applications', value: { apply: true } } }, { cookie });
+    expect(r.status, await r.text()).toBe(200);
+  }
+
+  it('caps mixed login and application requests across documents, clients and address case', async () => {
+    const { base, persistence } = await boot(true);
+    const email = 'shared.member@example.org';
+    const first = await found(base, 'Shared first', email);
+    const second = await found(base, 'Shared second', email);
+    await openDoor(base, first, email);
+    await openDoor(base, second, email); // two logins spent preparing the seats
+    for (let i = 2; i < LOGIN_MAILS; i++) {
+      const r = i % 2 === 0
+        ? await login(base, first, email, client())
+        : await apply(base, second, email.toUpperCase(), client());
+      expect(r.status).toBe(200);
+      expect(new URL(((await r.json()) as { devLink: string }).devLink).pathname).toBe('/auth/login');
+    }
+    const tokens = await persistence.dumpTokens();
+    const mails = await persistence.dumpOutbox();
+    for (const slug of [first, second]) {
+      for (const send of [login, apply]) {
+        const r = await send(base, slug, email.toUpperCase(), client());
+        expect(r.status).toBe(429);
+        expect(await r.json()).toEqual({ error: 'too many requests — try again shortly' });
+      }
+    }
+    expect(await persistence.dumpTokens()).toEqual(tokens);
+    expect((await persistence.dumpOutbox()).map((m) => m.id)).toEqual(mails.map((m) => m.id));
+  });
+
+  it('applies the same limit to new and verified applicants before any membership lookup', async () => {
+    const { base, persistence } = await boot(true);
+    const founder = 'shared.applicants.founder@example.org';
+    const slug = await found(base, 'Shared applicants', founder);
+    await openDoor(base, slug, founder);
+    for (const verified of [false, true]) {
+      const email = `shared.applicant.${verified}@example.org`;
+      const first = await apply(base, slug, email, client());
+      expect(first.status).toBe(200);
+      const u = new URL(((await first.json()) as { devLink: string }).devLink);
+      if (verified) {
+        const r = await fetch(u.origin + u.pathname + u.search, {
+          method: 'POST', redirect: 'manual',
+          headers: { 'content-type': 'application/x-www-form-urlencoded', origin: base },
+          body: new URLSearchParams({ token: u.searchParams.get('token') ?? '' }).toString(),
+        });
+        expect(r.status).toBe(302);
+      }
+      for (let i = 1; i < LOGIN_MAILS; i++) {
+        const r = await apply(base, slug, email, client());
+        expect(r.status).toBe(200);
+        expect(new URL(((await r.json()) as { devLink: string }).devLink).pathname).toBe('/auth/apply');
+      }
+      const tokens = await persistence.dumpTokens();
+      const mailIds = (await persistence.dumpOutbox()).map((m) => m.id);
+      for (const send of [apply, login]) {
+        const r = await send(base, slug, email.toUpperCase(), client());
+        expect(r.status).toBe(429);
+        expect(await r.json()).toEqual({ error: 'too many requests — try again shortly' });
+      }
+      expect(await persistence.dumpTokens()).toEqual(tokens);
+      expect((await persistence.dumpOutbox()).map((m) => m.id)).toEqual(mailIds);
+    }
+  });
+
+  it('does not spend the mail budget when applications are shut', async () => {
+    const { base } = await boot(true);
+    const slug = await found(base, 'Shut applications', 'shared.shut.founder@example.org');
+    const email = 'shared.shut.stranger@example.org';
+    for (let i = 0; i <= LOGIN_MAILS; i++) {
+      expect((await apply(base, slug, email, client())).status).toBe(400);
+    }
+    for (let i = 0; i < LOGIN_MAILS; i++) {
+      expect((await login(base, slug, email, client())).status).toBe(200);
+    }
+    expect((await login(base, slug, email, client())).status).toBe(429);
+  });
+});
+
 /**
  * **A magic link waits for a person** (issue #67). The interstitial made the
  * GET prefetch-safe and then spent the token itself — `forms[0].submit()` —
