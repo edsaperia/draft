@@ -8307,3 +8307,11 @@ Released 2026-10-30 as 92112b4 after Codex review; the deployed build was verifi
 ## Backlog reconciliation and beta preparation (2026-10-30)
 
 Issue #234 reconciled 23 completed issues with their merged implementations. Six partial issues remain open with their real residual scope: #10, #67, #211, #206, #143 and #144. Tracker #25 now points to queue #236 and retains its old snapshot as history. Issue #235 holds the supervised sitting script; no sitting or invitation is claimed. The existing matrix coverage and two-clean-sittings criterion remains unchanged.
+
+## Q464: closed by the closing summary (PR #231, 2026-10-30)
+
+The reviewed implementation is live at 92112b4. Ed's October rulings and the implemented counts are recorded under Issue #230 above. Lifted from QUESTIONS.md verbatim:
+
+| 464 | The record is undesigned, and it is what the machine produces | 2026-08-20 | parked by Ed 2026-09-14 (the walk) behind Q996, the per-decision reveal setting, as he ordered it on 2026-08-29: (c) — what a stranger may read of the graveyard and the minority map — is answered after the reveal setting lands, since it may publish most of it; (a) and (b) spent | `closedBlocks`; SPEC §3.4 |
+
+464. **The record is undesigned, and it is what the machine produces** (raised 2026-08-20). `record-builder` has been in the glossary since the start — *final text plus the record: rankings, camps, graveyard, care map, minority map, backlog, audit log* — and no surface has ever been drawn for it. The per-decision `sealed record` card exists and is good, but that is one clause's history; the **document-level** artifact, the thing a convention hands to the people who were not there, does not exist as a design.
