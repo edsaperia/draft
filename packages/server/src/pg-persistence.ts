@@ -247,6 +247,10 @@ const MIGRATIONS: ReadonlyArray<{ version: number; sql: string }> = [
       CREATE INDEX people_email ON people (lower(email));
     `,
   },
+  {
+    version: 11,
+    sql: `ALTER TABLE outbox ADD COLUMN token_hashes jsonb;`,
+  },
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.version;
@@ -279,6 +283,7 @@ interface OutboxDbRow {
   body: string;
   link: string | null;
   token_hash: string | null;
+  token_hashes: string[] | null;
   created_ms: string;
   attempts: number;
   last_attempt_ms: string | null;
@@ -296,6 +301,7 @@ const outboxOf = (r: OutboxDbRow): OutboxRow => ({
   body: r.body,
   ...(r.link === null ? {} : { link: r.link }),
   ...(r.token_hash === null ? {} : { tokenHash: r.token_hash }),
+  ...(r.token_hashes == null ? {} : { tokenHashes: r.token_hashes }),
   createdMs: Number(r.created_ms),
   attempts: Number(r.attempts),
   lastAttemptMs: r.last_attempt_ms === null ? null : Number(r.last_attempt_ms),
@@ -596,22 +602,24 @@ export class PgPersistence implements MaintainablePersistence {
     if (rows.length === 0) return;
     await this.pool.query(
       `INSERT INTO outbox (id, document_id, addressee, subject, body, link, token_hash,
-                           created_ms, attempts, last_attempt_ms, last_error, sent_ms)
+                           created_ms, attempts, last_attempt_ms, last_error, sent_ms, token_hashes)
         SELECT * FROM unnest($1::text[], $2::text[], $3::text[], $4::text[], $5::text[],
                              $6::text[], $7::text[], $8::bigint[], $9::int[], $10::bigint[],
-                             $11::text[], $12::bigint[])
+                             $11::text[], $12::bigint[], $13::jsonb[])
         ON CONFLICT (id) DO UPDATE SET
           document_id = EXCLUDED.document_id, addressee = EXCLUDED.addressee,
           subject = EXCLUDED.subject, body = EXCLUDED.body, link = EXCLUDED.link,
           token_hash = EXCLUDED.token_hash, created_ms = EXCLUDED.created_ms,
           attempts = EXCLUDED.attempts, last_attempt_ms = EXCLUDED.last_attempt_ms,
-          last_error = EXCLUDED.last_error, sent_ms = EXCLUDED.sent_ms`,
+          last_error = EXCLUDED.last_error, sent_ms = EXCLUDED.sent_ms,
+          token_hashes = EXCLUDED.token_hashes`,
       [
         rows.map((r) => r.id), rows.map((r) => r.documentId), rows.map((r) => r.to),
         rows.map((r) => r.subject), rows.map((r) => r.body), rows.map((r) => r.link ?? null),
         rows.map((r) => r.tokenHash ?? null), rows.map((r) => r.createdMs),
         rows.map((r) => r.attempts), rows.map((r) => r.lastAttemptMs),
         rows.map((r) => r.lastError), rows.map((r) => r.sentMs),
+        rows.map((r) => r.tokenHashes === undefined ? null : JSON.stringify(r.tokenHashes)),
       ]);
   }
 
@@ -628,7 +636,7 @@ export class PgPersistence implements MaintainablePersistence {
     // what `outboxDue` does with the same row and is how a pass running at
     // an earlier instant than the last attempt would re-offer a mail.
     const { rows } = await this.pool.query<OutboxDbRow>(
-      `SELECT id, document_id, addressee, subject, body, link, token_hash, created_ms,
+      `SELECT id, document_id, addressee, subject, body, link, token_hash, token_hashes, created_ms,
               attempts, last_attempt_ms, last_error, sent_ms
          FROM outbox
         WHERE sent_ms IS NULL AND attempts < $2
@@ -646,7 +654,7 @@ export class PgPersistence implements MaintainablePersistence {
 
   async listOutboxFor(documentId: string, to: string): Promise<OutboxRow[]> {
     const { rows } = await this.pool.query<OutboxDbRow>(
-      `SELECT id, document_id, addressee, subject, body, link, token_hash, created_ms,
+      `SELECT id, document_id, addressee, subject, body, link, token_hash, token_hashes, created_ms,
               attempts, last_attempt_ms, last_error, sent_ms
          FROM outbox
         WHERE document_id = $1 AND lower(addressee) = lower($2)
@@ -658,7 +666,7 @@ export class PgPersistence implements MaintainablePersistence {
     // the link and its token hash leave with the send: a delivered row is a
     // receipt, not a credential store
     await this.pool.query(
-      `UPDATE outbox SET sent_ms = $2, last_error = NULL, link = NULL, token_hash = NULL
+      `UPDATE outbox SET sent_ms = $2, last_error = NULL, link = NULL, token_hash = NULL, token_hashes = NULL
         WHERE id = $1`, [id, sentMs]);
   }
 
@@ -713,7 +721,7 @@ export class PgPersistence implements MaintainablePersistence {
 
   async dumpOutbox(): Promise<OutboxRow[]> {
     const { rows } = await this.pool.query<OutboxDbRow>(
-      `SELECT id, document_id, addressee, subject, body, link, token_hash, created_ms,
+      `SELECT id, document_id, addressee, subject, body, link, token_hash, token_hashes, created_ms,
               attempts, last_attempt_ms, last_error, sent_ms
          FROM outbox ORDER BY id`);
     return rows.map(outboxOf);

@@ -41,6 +41,8 @@ export interface QueuedMail extends Mail {
   documentId: string | null;
   /** sha256 of the token in the link, where there is one. */
   tokenHash?: string;
+  /** Hashes of all links in a multi-document email. */
+  tokenHashes?: string[];
 }
 
 /** How long a delivered row is kept before it is swept. Long enough to
@@ -124,6 +126,7 @@ export class MailOutbox {
       body: m.text,
       ...(m.link === undefined ? {} : { link: m.link }),
       ...(m.tokenHash === undefined ? {} : { tokenHash: m.tokenHash }),
+      ...(m.tokenHashes === undefined ? {} : { tokenHashes: m.tokenHashes }),
       createdMs: nowMs,
       attempts: 0,
       lastAttemptMs: null,
@@ -263,10 +266,13 @@ export class MailOutbox {
   /** A link nobody received must not stay live for the week its expiry
    *  promised — this is the credential half of giving up. */
   private async dropToken(row: OutboxRow): Promise<void> {
-    if (row.tokenHash === undefined) return;
-    await this.deps.revoke(row.tokenHash).catch((e: unknown) => {
-      console.error('revoking the undelivered link failed:', e);
-    });
+    const hashes = new Set([...(row.tokenHashes ?? []),
+      ...(row.tokenHash === undefined ? [] : [row.tokenHash])]);
+    for (const hash of hashes) {
+      await this.deps.revoke(hash).catch((e: unknown) => {
+        console.error('revoking the undelivered link failed:', e);
+      });
+    }
   }
 
   /** Run a pass without waiting for it — the immediate kick after a commit,

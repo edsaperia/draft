@@ -281,6 +281,20 @@ d('PgPersistence contract', () => {
    * this the two could drift silently and a mail would be re-offered at the
    * wrong minute on one store only.
    */
+  it('preserves every email token across reconnect and clears metadata after sending', async () => {
+    const p = await open();
+    await p.putOutbox([{ id: 'multi-link', documentId: null, to: 'reader@example.org',
+      subject: 'Links', body: 'Two links', createdMs: 1000, attempts: 0,
+      lastAttemptMs: null, lastError: null, sentMs: null, tokenHashes: ['first', 'second'] }]);
+    const again = await reopen(p);
+    try {
+      expect((await again.listPendingOutbox(1000, 10))[0]?.tokenHashes).toEqual(['first', 'second']);
+      expect((await again.dumpOutbox())[0]?.tokenHashes).toEqual(['first', 'second']);
+      await again.markOutboxSent('multi-link', 2000);
+      expect((await again.dumpOutbox())[0]?.tokenHashes).toBeUndefined();
+    } finally { await again.close(); }
+  });
+
   it('the sender loop sees the same rows on both stores, at every attempt count', async () => {
     const p = await open();
     const file = new FilePersistence(tmp());

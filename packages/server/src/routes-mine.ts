@@ -20,6 +20,7 @@
  * since it is the same mail.
  */
 import { magicLink } from './auth.js';
+import { sha256Hex } from '../../constitution/src/index.js';
 import { emailOk } from './commands.js';
 import { MAILS } from './mailer.js';
 import { memberIdByEmail } from './routes-auth.js';
@@ -91,7 +92,7 @@ async function mine(ctx: RouteContext, cookieHeader: string, nowMs: number): Pro
  * one login link each, in one mail. Nothing at all where nothing matched.
  */
 async function mailLinks(ctx: RouteContext, email: string, nowMs: number): Promise<void> {
-  const { cfg, store, auth, writes } = ctx;
+  const { cfg, store, auth } = ctx;
   const found: Array<{ title: string; slug: string; link: string; token: string }> = [];
   for (const id of await ctx.persistence.documentsWithEmail(email)) {
     const doc = await store.open(id);
@@ -103,16 +104,18 @@ async function mailLinks(ctx: RouteContext, email: string, nowMs: number): Promi
       link: magicLink(cfg.baseUrl, 'login', token, doc.cs.slug), token });
   }
   if (found.length === 0) return;
-  await auth.flush(nowMs);
   const mail = { to: email, ...MAILS.links(found) };
-  // the mail belongs to no one document, so it is sent as the creation mail
-  // is, and queued on a refusal rather than thrown: nobody is waiting on it
+  const tokenHashes = found.map((d) => sha256Hex(d.token));
+  // One durable outbox row carries every link. A terminal failure revokes
+  // them all; a failed enqueue leaves no orphan credentials behind.
   try {
-    await writes.sendNow(mail, null);
+    await auth.flush(nowMs);
+    await ctx.outbox.enqueue([{ ...mail, documentId: null, tokenHashes }], nowMs);
   } catch {
-    await ctx.outbox.enqueue([{ ...mail, documentId: null }], nowMs);
-    ctx.outbox.kick(nowMs);
+    await Promise.all(tokenHashes.map((hash) => auth.revoke(hash)));
+    throw new Error('documents email could not be queued');
   }
+  ctx.outbox.kick(nowMs);
 }
 
 export const mineTable: Route[] = [

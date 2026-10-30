@@ -8,8 +8,8 @@ import { mkdtempSync, readFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { AddressInfo } from 'node:net';
-import { afterAll, describe, expect, it } from 'vitest';
-import { FilePersistence } from '../src/persistence.js';
+import { afterAll, describe, expect, it, vi } from 'vitest';
+import { FilePersistence, OUTBOX_MAX_ATTEMPTS } from '../src/persistence.js';
 import { createDraftServer } from '../src/server.js';
 import type { DraftServer } from '../src/server.js';
 
@@ -17,7 +17,7 @@ const tmp = () => mkdtempSync(join(tmpdir(), 'draft-mine-'));
 const booted: DraftServer[] = [];
 afterAll(async () => { for (const d of booted) await d.close(); });
 
-async function boot(): Promise<{ base: string; dataDir: string; p: FilePersistence }> {
+async function boot() {
   const dataDir = tmp();
   const cfg = {
     port: 0, dataDir, baseUrl: 'http://127.0.0.1',
@@ -31,7 +31,7 @@ async function boot(): Promise<{ base: string; dataDir: string; p: FilePersisten
   await new Promise<void>((r) => draft.server.listen(0, '127.0.0.1', r));
   cfg.baseUrl = `http://127.0.0.1:${(draft.server.address() as AddressInfo).port}`;
   booted.push(draft);
-  return { base: cfg.baseUrl, dataDir, p };
+  return { base: cfg.baseUrl, dataDir, p, cfg, draft };
 }
 
 const post = (base: string, path: string, body: unknown, cookie?: string) =>
@@ -63,6 +63,40 @@ async function found(base: string, dataDir: string, title: string, email: string
 const settle = () => new Promise((r) => setTimeout(r, 150));
 
 describe('the 🪶 documents menu', () => {
+  it('keeps every queued link revocable when delivery permanently fails', async () => {
+    const { base, dataDir, p, cfg, draft } = await boot();
+    await found(base, dataDir, 'First Charter', 'queued@example.org');
+    await found(base, dataDir, 'Second Charter', 'queued@example.org');
+    cfg.mailOff = true;
+    await post(base, '/api/mine/links', { email: 'queued@example.org' });
+    await vi.waitFor(async () => {
+      expect((await p.dumpOutbox()).find((row) => row.tokenHashes?.length === 2)).toBeDefined();
+    });
+    const row = (await p.dumpOutbox()).find((entry) => entry.tokenHashes?.length === 2)!;
+    const hashes = row.tokenHashes!;
+    expect((await p.dumpTokens()).filter(([hash]) => hashes.includes(hash))).toHaveLength(2);
+    vi.spyOn(draft.mailer, 'send').mockRejectedValue(new Error('delivery refused'));
+    cfg.mailOff = false;
+    for (let i = 0; i < OUTBOX_MAX_ATTEMPTS; i++) {
+      await draft.outbox.run(row.createdMs + i * 3_600_001);
+    }
+    expect((await p.dumpTokens()).filter(([hash]) => hashes.includes(hash))).toEqual([]);
+  });
+
+  it('revokes newly minted links if their email cannot be queued', async () => {
+    const { base, dataDir, p } = await boot();
+    await found(base, dataDir, 'First Charter', 'queue-failure@example.org');
+    await found(base, dataDir, 'Second Charter', 'queue-failure@example.org');
+    const before = await p.dumpTokens();
+    const enqueue = vi.spyOn(p, 'putOutbox').mockRejectedValue(new Error('store unavailable'));
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      expect((await post(base, '/api/mine/links', { email: 'queue-failure@example.org' })).status).toBe(200);
+      await vi.waitFor(() => expect(enqueue).toHaveBeenCalled());
+      await vi.waitFor(async () => expect(await p.dumpTokens()).toEqual(before));
+    } finally { enqueue.mockRestore(); errors.mockRestore(); }
+  });
+
   it('lists what the cookies sign into, and nothing a cookie cannot open', async () => {
     const { base, dataDir } = await boot();
     const a = await found(base, dataDir, 'First Charter', 'ada@example.org');

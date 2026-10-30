@@ -144,6 +144,8 @@ export interface OutboxRow {
    * received must not stay live for the week its expiry promised.
    */
   tokenHash?: string;
+  /** Every token in a multi-document login email, revoked together. */
+  tokenHashes?: string[];
   createdMs: number;
   attempts: number;
   lastAttemptMs: number | null;
@@ -664,6 +666,7 @@ export class FilePersistence implements MaintainablePersistence {
     const rest = { ...row };
     delete rest.link;
     delete rest.tokenHash;
+    delete rest.tokenHashes;
     this.outbox.set(id, { ...rest, sentMs, lastError: null });
     this.saveOutbox();
   }
