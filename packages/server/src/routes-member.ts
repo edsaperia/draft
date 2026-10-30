@@ -24,7 +24,7 @@ import { LIMITS, cap } from './commands.js';
 import { PAGE_ERRORS_PER_MINUTE, logError, pageErrorOf } from './error-log.js';
 import { asEngineDoc } from './engine-host.js';
 import type { LoadedDoc } from './store.js';
-import { raceView, strangerView } from './views.js';
+import { raceView, strangerView, withCloseTally } from './views.js';
 import { applyCommand } from './apply-command.js';
 import { cookieSession, expectString, ipOf, json, pathOf, rateLimited, readJson } from './routes.js';
 import type { Route } from './routes.js';
@@ -293,7 +293,7 @@ export const memberTable: Route[] = [
               delete out.text; slim.push('text');
             }
             if (pageSeq !== null && pageSeq === seq) slim.push('view');
-            else out.view = view(doc.cs, memberId);
+            else out.view = withCloseTally(doc, view(doc.cs, memberId));
             out.slim = slim;
             return out;
           })(),

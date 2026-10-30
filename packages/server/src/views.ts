@@ -841,6 +841,17 @@ export const raceView = (doc: LoadedDoc, memberId: string, nowMs: number,
  */
 /** The seat a stranger's records are read for: no member's id, no author's. */
 const NOBODY = '\u0000stranger';
+/**
+ * **The Rules' closing line's counts** (Q464, issue #230): the membership at
+ * the close and its text proposals by how they ended, public facts like the
+ * records the tabs already show. A member's `view.closed` carries them; the
+ * door's `closed` does wherever 🌍 lets a stranger read the closed page.
+ */
+export const withCloseTally = <V extends { closed: object | null }>(doc: LoadedDoc, v: V): V => {
+  const ed = asEngineDoc(doc);
+  if (v.closed === null || ed.bridge === null) return v;
+  return { ...v, closed: { ...v.closed, tally: ed.bridge.closeTally() } };
+};
 export const strangerView = (doc: LoadedDoc, nowMs: number,
   paused: { at: number; expectedMs: number; elapsedMs: number } | null,
   session: { memberId: string; applicantId: string | null } | null = null,
@@ -924,7 +935,8 @@ export const strangerView = (doc: LoadedDoc, nowMs: number,
     title: cs.titleOf,
     slug: cs.slug,
     constitutedAtT: cs.constitutedAtT,
-    closed: cs.closed ? { at: cs.closedAt, ...(signatures !== null ? { signatures } : {}) } : null,
+    closed: cs.closed ? { at: cs.closedAt, ...(signatures !== null ? { signatures } : {}),
+      ...(readClosed && ed.bridge !== null ? { tally: ed.bridge.closeTally() } : {}) } : null,
     ...(amendmentRecords !== null ? { amendmentRecords } : {}),
     serverNowMs: nowMs,
     paused,
