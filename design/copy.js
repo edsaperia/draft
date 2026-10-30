@@ -1163,9 +1163,27 @@ window.COPY = (function () {
       begun: (time, day) => 'Members started making proposals at ' + time + ' on ' + day + '.',
       endingAfter: (when) => 'Proposals may be made until ' + when + '.',
       endingNever: 'Proposals may be made indefinitely.',
-      // *[N] members have signed* — the verb agrees with one (*1 member has*)
-      closed: (time, day, n) => 'Proposals closed at ' + time + ' on ' + day + '. ' +
-        n + (n === 1 ? ' member has signed.' : ' members have signed.'),
+      // **The record is the closed document, and this line** (Q464, Ed
+      // 2026-10-22/23, issue #230): *9 members made 31 proposals: 14 passed,
+      // 12 didn’t, 3 were withdrawn and 2 were still open.* A group of none
+      // is left out, one takes the singular, and a document nobody proposed
+      // on says so. *N members have signed* went: the signatures say it.
+      closed: (time, day, t) => {
+        const head = 'Proposals closed at ' + time + ' on ' + day + '.';
+        if (!t) return head;
+        if (!t.proposals) return head + ' No proposals were made.';
+        const one = (n, s, p) => n + (n === 1 ? s : p);
+        const groups = [
+          t.passed && t.passed + ' passed',
+          t.failed && t.failed + ' didn’t',
+          t.withdrawn && one(t.withdrawn, ' was withdrawn', ' were withdrawn'),
+          t.open && one(t.open, ' was still open', ' were still open'),
+        ].filter(Boolean);
+        const list = groups.length < 2 ? groups.join('')
+          : groups.slice(0, -1).join(', ') + ' and ' + groups[groups.length - 1];
+        return head + ' ' + one(t.members, ' member', ' members') + ' made ' +
+          one(t.proposals, ' proposal', ' proposals') + ': ' + list + '.';
+      },
     },
     // 👥's rule, in Ed's own words (Q1439, ruling t, 2026-09-18: *A proposal
     // cannot pass until it is preferred by at least 50% of the membership

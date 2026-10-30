@@ -259,7 +259,7 @@
   "page.cards.title.t": "Name the Document",
   "page.clause.beginWaiting": "The members are waiting on the Founder to begin.",
   "page.clause.begun": "ƒ (time, day) => 'Members started making proposals at ' + time + ' on ' + day + '.'",
-  "page.clause.closed": "ƒ (time, day, n) => 'Proposals closed at ' + time + ' on ' + day + '. ' +\n        n + (n === 1 ? ' member has signed.' : ' members have signed.')",
+  "page.clause.closed": "ƒ (time, day, t) => {\n        const head = 'Proposals closed at ' + time + ' on ' + day + '.';\n        if (!t) return head;\n        if (!t.proposals) return head + ' No proposals were made.';\n        const one = (n, s, p) => n + (n === 1 ? s : p);\n        const groups = [\n          t.passed && t.passed + ' passed',\n          t.failed && t.failed + ' didn’t',\n          t.withdrawn && one(t.withdrawn, ' was withdrawn', ' were withdrawn'),\n          t.open && one(t.open, ' was still open', ' were still open'),\n        ].filter(Boolean);\n        const list = groups.length < 2 ? groups.join('')\n          : groups.slice(0, -1).join(', ') + ' and ' + groups[groups.length - 1];\n        return head + ' ' + one(t.members, ' member', ' members') + ' made ' +\n          one(t.proposals, ' proposal', ' proposals') + ': ' + list + '.';\n      }",
   "page.clause.constitutional": "A 🏛️ proposal passes only when all members agree to it.",
   "page.clause.endingAfter": "ƒ (when) => 'Proposals may be made until ' + when + '.'",
   "page.clause.endingNever": "Proposals may be made indefinitely.",

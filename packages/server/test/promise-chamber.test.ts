@@ -463,8 +463,13 @@ describe('🌍 the third epoch: the close, and the document that never has one',
       .signatures[0]!;
     expect(door.body.stranger).toBe(true);
     expect(door.body.canRead).toBe(true);
+    // …and the Rules' closing line's counts (Q464, issue #230): public facts
+    // like the records, and the member's own
     expect(door.body.closed).toEqual({ at: ends, signatures: [
-      { name: sig.name, erased: false, comment: 'a good harvest', t: ends } ] });
+      { name: sig.name, erased: false, comment: 'a good harvest', t: ends } ],
+      tally: { members: 2, proposals: 0, passed: 0, failed: 0, withdrawn: 0, open: 0 } });
+    expect((mine.body.view as unknown as { closed: { tally: unknown } }).closed.tally)
+      .toEqual({ members: 2, proposals: 0, passed: 0, failed: 0, withdrawn: 0, open: 0 });
     expect(door.body.record).toBeUndefined();
     expect(door.body.text).toContain('apples');
     expect(door.raw).not.toContain(sig.member);

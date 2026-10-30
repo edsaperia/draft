@@ -405,6 +405,11 @@ case "$GROUP" in
     # last; no refusal, no page error, no error-log row, and nothing owed
     # after the signature (1541.7 (a))
     walk "closed-press-walk" npm run closed-press-walk -- "$BASE"
+    # **the Rules' closing line carries the counts** (Q464, issue #230): the
+    # ladder closes a document; the served tally adds up and agrees with its
+    # records, and a member and a stranger read *N members made M
+    # proposals: …* as the copy states it
+    walk "closing-line" node scripts/repro/closing-line.mjs "$BASE"
     # **edit mode with nothing changed** (#193, Ed 2026-10-02: *clicking on
     # either 🗑️ or ✏️ should leave edit mode with no action*): the Founder
     # before 🍾, after it with and without ✒️, and a member, untouched and
