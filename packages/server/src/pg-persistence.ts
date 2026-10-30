@@ -433,12 +433,15 @@ export class PgPersistence implements MaintainablePersistence {
 
   /* -- the engine --------------------------------------------------------- */
 
+  readonly engineLogAndStateAtomic = true;
+
   async readEngineLog(id: string): Promise<unknown[]> {
     return this.readChain('engine_log', id);
   }
 
-  async appendEngineLog(id: string, entries: readonly unknown[]): Promise<void> {
-    await this.appendChain('engine_log', id, entries as readonly ChainedEntry[]);
+  async appendEngineLog(id: string, entries: readonly unknown[], bridgeState?: string): Promise<void> {
+    await this.appendChain('engine_log', id, entries as readonly ChainedEntry[], [],
+      bridgeState === undefined ? {} : { bridgeState });
   }
 
   async readBridgeState(id: string): Promise<string | null> {
@@ -801,8 +804,9 @@ export class PgPersistence implements MaintainablePersistence {
   }
 
   private async appendChain(table: 'document_log' | 'engine_log', id: string,
-    entries: readonly ChainedEntry[], people: readonly PersonRow[] = []): Promise<void> {
-    if (entries.length === 0 && people.length === 0) return;
+    entries: readonly ChainedEntry[], people: readonly PersonRow[] = [],
+    options: { bridgeState?: string } = {}): Promise<void> {
+    if (entries.length === 0 && people.length === 0 && options.bridgeState === undefined) return;
     const c = await this.pool.connect();
     try {
       await c.query('BEGIN');
@@ -831,6 +835,11 @@ export class PgPersistence implements MaintainablePersistence {
             entries.map((e) => JSON.stringify(e.event)),
             entries.map((e) => e.schemaVersion ?? null),
           ]);
+      }
+      if (options.bridgeState !== undefined) {
+        await c.query(
+          `INSERT INTO bridge_state (document_id, state) VALUES ($1, $2)
+            ON CONFLICT (document_id) DO UPDATE SET state = EXCLUDED.state`, [id, options.bridgeState]);
       }
       await c.query('COMMIT');
     } catch (e) {
