@@ -178,6 +178,7 @@ export class DocStore {
    * folded and its engine resumed before `/healthz` answers.
    */
   async loadAll(): Promise<void> {
+    await this.loadUnresolvedClaims();
     for (const id of await this.persistence.listDocIds()) {
       this.registry.set(id, null);
       await this.loadOne(id, 'boot');
@@ -200,6 +201,7 @@ export class DocStore {
    */
   async loadRegistry(nowMs: number = Date.now(),
     warm?: { codeVersion: string; minTail: number }): Promise<string[]> {
+    await this.loadUnresolvedClaims();
     // one after another, never in parallel: four reads at once opened four
     // pool connections per host where boot had always used one, and a test
     // file holding dozens of hosts ran Postgres out of connections
@@ -555,6 +557,13 @@ export class DocStore {
 
   private readonly pendingSlugs = new Map<string, string>();
   private readonly reservationIndex = new Map<string, string>();
+
+  private async loadUnresolvedClaims(): Promise<void> {
+    for (const { slug, documentId } of await this.persistence.unresolvedSlugClaims()) {
+      this.assertSlugsAvailable(documentId, [slug]);
+      this.reservationIndex.set(slug, documentId);
+    }
+  }
 
   assertSlugsAvailable(id: string, slugs: readonly string[]): void {
     for (const slug of slugs) {

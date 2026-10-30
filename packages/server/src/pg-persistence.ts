@@ -456,6 +456,8 @@ export class PgPersistence implements MaintainablePersistence {
     } finally { c.release(); }
   }
 
+  async unresolvedSlugClaims(): Promise<SlugOwner[]> { return []; }
+
   private async claimSlugsWith(c: pg.PoolClient, owners: readonly SlugOwner[], fromStash?: string): Promise<void> {
     if (owners.length === 0) return;
     // Stable order prevents two overlapping batches from taking locks in

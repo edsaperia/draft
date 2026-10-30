@@ -248,6 +248,8 @@ export interface Persistence {
   /** Reconcile durable address ownership and reservations from verified logs. */
   claimSlugs(owners: readonly import('./slug-ownership.js').SlugOwner[],
     sources?: readonly import('./slug-ownership.js').SlugSource[]): Promise<void>;
+  /** Recorded file transfers with unreadable logs hold their address until repair. */
+  unresolvedSlugClaims(): Promise<import('./slug-ownership.js').SlugOwner[]>;
   /** Every person row the document holds, in no particular order. */
   readPeople(id: string): Promise<PersonRow[]>;
   /** Erasure: drop one row. Returns whether one was there. */
@@ -441,6 +443,11 @@ export class FilePersistence implements MaintainablePersistence {
   // The file backend has one host. DocStore reserves synchronously before
   // any write; its verified log histories rebuild ownership at boot.
   private readonly slugOwners = new Map<string, string>();
+  private readonly unresolvedClaims = new Map<string, string>();
+
+  async unresolvedSlugClaims(): Promise<import('./slug-ownership.js').SlugOwner[]> {
+    return [...this.unresolvedClaims].map(([slug, documentId]) => ({ slug, documentId }));
+  }
 
   private checkSlugs(id: string, slugs: readonly string[], fromStash?: string): void {
     for (const slug of slugs) {
@@ -849,6 +856,7 @@ export class FilePersistence implements MaintainablePersistence {
     this.tokens.clear();
     this.stashes.clear();
     this.slugOwners.clear();
+    this.unresolvedClaims.clear();
     this.outbox.clear();
     return ids.length;
   }
@@ -865,6 +873,7 @@ export class FilePersistence implements MaintainablePersistence {
     if (!existsSync(dir)) return false;
     rmSync(dir, { recursive: true, force: true });
     for (const [slug, owner] of this.slugOwners) if (owner === id) this.slugOwners.delete(slug);
+    for (const [slug, owner] of this.unresolvedClaims) if (owner === id) this.unresolvedClaims.delete(slug);
     return true;
   }
 
@@ -899,6 +908,13 @@ export class FilePersistence implements MaintainablePersistence {
         // An unreadable birth is not evidence of either outcome. Preserve
         // its transfer and bytes for repair; normal loading quarantines the
         // document without preventing healthy documents from starting.
+        if (rec.before.slug !== undefined) {
+          const owner = this.unresolvedClaims.get(rec.before.slug);
+          if (owner !== undefined && owner !== id) throw new Error(
+            `Address ownership conflict: '${rec.before.slug}' has unresolved transfers for '${owner}' and '${id}'; review before restarting.`);
+          this.unresolvedClaims.set(rec.before.slug, id);
+          this.slugOwners.set(rec.before.slug, id);
+        }
         continue;
       }
       const committed = log.some((entry) => entry.seq === rec.seq && entry.hash === rec.hash);

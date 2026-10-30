@@ -41,6 +41,12 @@ describe('open proposals reserve their requested address (Q1604)', () => {
     await cold.loadAll();
     expect(cold.quarantined()).toEqual(['torn']);
     expect(cold.byId('torn')).toBeNull();
+    expect(cold.slugTaken('torn')).toBe(true);
+    expect(cold.servesSlug('torn')).toBeNull();
+    await expect(cold.create('competitor', { title: 'Competitor', slug: 'torn',
+      convenor: { id: 'f', email: 'b@example.org', isMember: true } }, Date.now())).rejects.toThrow('that address is taken');
+    await expect(recovered.putStash('competitor', { slug: 'torn', text: '', expMs: Date.now() + 60_000 }))
+      .rejects.toThrow('that address is taken');
     expect(cold.servesSlug('healthy')).toEqual({ id: 'healthy' });
     expect(await recovered.getStash('pending')).toEqual({ ...pending, docId: 'torn' });
     expect(readFileSync(logPath, 'utf8')).toBe(bytes);
