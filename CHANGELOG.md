@@ -2,9 +2,18 @@
 
 **[docs.vote](https://docs.vote)** is a place for a group to write a document together. Anybody may propose a change; rival wordings of the same passage race each other; the membership votes on them in blind pairs (*which of these two wordings?*, no names attached, no scores shown), and the wording that comes out on top is adopted once enough of the membership has voted. The document's own rules are decided the same way, inside the document.
 
-docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first, back to the project's first commit on 2026-08-13. The mechanism's full rules are in [`SPEC.md`](SPEC.md) (v0.149 today), and what the page shows a member is in [`SURFACE.md`](SURFACE.md).
+docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first, back to the project's first commit on 2026-08-13. The mechanism's full rules are in [`SPEC.md`](SPEC.md) (v0.150 today), and what the page shows a member is in [`SURFACE.md`](SURFACE.md).
 
 ---
+
+## 2026-10-30: hold an address while its proposal is open
+
+### Fixed
+- An open proposal to change a document's address now reserves that address. Another document cannot take it while the proposal is being decided. Adoption keeps ownership; an unsuccessful proposal releases an unused reservation.
+- Starting a document, changing an address directly and proposing an address all respect the same claims. Previous addresses continue to belong to their original document.
+
+### For contributors
+- SPEC v0.150 records the reservation policy chosen in Q1604 (R-149). PostgreSQL migration 12 makes address ownership durable and checks competing claims within the saving transaction. File-store recovery preserves interrupted creation claims and quarantines damaged records without discarding their evidence or blocking healthy documents. Existing ambiguous ownership is reported rather than silently reassigned. No member-facing wording changed.
 
 ## 2026-10-30: find your documents from the quill menu
 

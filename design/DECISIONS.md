@@ -8333,3 +8333,13 @@ Ed chose the quill menu and Email me a link to each on 2026-10-22. The original 
 Codex review found that the original multi-link email bypassed the outbox's token bookkeeping. Permanent failure therefore left its links valid. The correction enqueues one durable row with all token hashes, revokes all on failed enqueue or terminal delivery failure, deduplicates legacy and multi-token hashes, and clears metadata after sending. Two regressions failed before the fix; route and persistence regressions cover both stores and restart behavior. No wording was changed by this correction.
 
 PR #239 includes the original feature's commits and author history, and was retargeted to main after its saving dependency #237 landed, so the feature and correction release together. No intermediate unsafe menu version was deployed. Q1603 is complete once this release's exact build is verified live.
+
+## Q1604 delivered: durable address reservations (PR #240, 2026-10-30)
+
+Ed chose to reserve an address while its proposal is open. The implementation follows that ruling rather than the proposed unavailable/refund outcome. Running and awaiting-crown address proposals reserve their target without publishing a route. Adoption makes ownership permanent; terminal outcomes release a reservation only when no other open proposal or historical ownership retains it.
+
+Creation and direct renames use the same namespace. The pending-creation protection preserves R-035/Q462b's existing promise. PostgreSQL migration 12 stores ownership and reservation metadata. Genesis and its pending-creation claim commit atomically; stash updates compare the current value under lock, recheck the founder email, and cannot overwrite an already claimed creation. Startup reconciliation checks the source log under the document lock before changing claims.
+
+The file store uses an atomic pending-state publication and recoverable creation journal. A torn recorded genesis remains quarantined with its bytes and intended address held until repair; unrelated healthy documents continue to start. No owner is silently selected when historical ownership conflicts.
+
+Coordinator and independent Codex review approved exact head 4a2345f175989a872d2ca86898b216095052aea0. The focused local suite passed 65 tests and all seven non-test gates passed. The full local Windows test command stalled and was stopped, not counted as passing. Exact-head Linux CI supplies the full-suite and real PostgreSQL evidence. The release record on PR #240 carries the final CI and live-build verification.
