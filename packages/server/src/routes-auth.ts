@@ -425,6 +425,15 @@ export const authTable: Route[] = [
         json(res, 400, { error: 'this document is invitation-only (§9.7½)' });
         return true;
       }
+      // Apply can send the same login mail as Login (issue #93), so both
+      // doors spend the same ten-per-address budget, across documents and
+      // clients. Count every eligible address before looking up its seat:
+      // a limit applied only to members would disclose membership. A shut
+      // or ephemeral document above sends no mail and spends no budget.
+      if (rateLimited(`login-email:${email}`, nowMs, 10)) {
+        json(res, 429, { error: 'too many requests — try again shortly' });
+        return true;
+      }
       // the door must not be a membership oracle (review #1, finding 8):
       // the login route deliberately tells an unknown address nothing, so
       // this route must not tell a stranger who is a member. A member's

@@ -2,9 +2,20 @@
 
 **[docs.vote](https://docs.vote)** is a place for a group to write a document together. Anybody may propose a change; rival wordings of the same passage race each other; the membership votes on them in blind pairs (*which of these two wordings?*, no names attached, no scores shown), and the wording that comes out on top is adopted once enough of the membership has voted. The document's own rules are decided the same way, inside the document.
 
-docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first, back to the project's first commit on 2026-08-13. The mechanism's full rules are in [`SPEC.md`](SPEC.md) (v0.148 today), and what the page shows a member is in [`SURFACE.md`](SURFACE.md).
+docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first, back to the project's first commit on 2026-08-13. The mechanism's full rules are in [`SPEC.md`](SPEC.md) (v0.149 today), and what the page shows a member is in [`SURFACE.md`](SURFACE.md).
 
 ---
+
+## 2026-10-30: the closing line counts the document
+
+### Changed
+- **A closed document's Rules end with its summary**: *Proposals closed at 18:00 on 14 November. 9 members made 31 proposals: 14 passed, 12 didn’t, 3 were withdrawn and 2 were still open.* It counts the members at the close and every proposal to the text by how it ended. A proposal that ran out of time is still open. Changes to the rules and changes the Founder made directly are not counted. A group of none is left out, and a document nobody proposed on says *No proposals were made.* The line no longer says how many members have signed, since the signatures beneath say it.
+- **Anybody who can read a closed document reads the line**, not only its members.
+
+### For contributors
+- **SPEC v0.149**: §2's record is the closed document itself plus the Rules' closing line (R-148; issue #230, Q464). **SURFACE** E24 and the 🥂 row say so.
+- `EngineBridge.closeTally()` counts the membership at the close and the text proposals by state. The member's `view.closed` and the door's `closed` carry it as `tally`. `COPY.page.clause.closed(time, day, tally)` writes the line, and the door's Schedule draws 🥂's clause without its task.
+- Guards: `closing-line.test.ts` (the copy's cases), `close-tally.test.ts` (the counts, and that the four outcomes add up), and `scripts/repro/closing-line.mjs` in the sprint tier's `sprint-motions`.
 
 ## 2026-10-06: who voted, on the sealed record
 

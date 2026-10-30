@@ -188,17 +188,15 @@ window.WALLETS = (function () {
     };
     let sayEl = null, sayFor = null;
     function showSay(el) {
-      if (!sayEl) { sayEl = document.createElement('div'); sayEl.className = 'walletsay'; document.body.appendChild(sayEl); }
+      if (!sayEl) { sayEl = document.createElement('div'); document.body.appendChild(sayEl); }
+      sayEl.className = 'walletsay';
+      sayEl.removeAttribute('id');
+      sayEl.style.width = '';
       sayFor = el;
-      // the quill is also the logo, and its link is the one capability a bubble
-      // over it would swallow — so the navigation moves *inside* the bubble
-      // rather than being lost. It is safer there anyway: a founder mid-birth
-      // who clicked the mark used to be navigated away from their own document.
       const s = SAY(el);
       // the symbol, bigger than it is in the socket — in the wallet it is a
       // token in a row and here it is the subject of the sentence beside it
-      sayEl.innerHTML = '<span class="saysym">' + glyphHtml(s.g) + '</span><span class="saytxt">' + glyphify(esc(s.t)) +
-        (el.id === 'quill' ? '<br><a class="doclink" href="/">' + esc(W.startNew) + '</a>' : '') + '</span>';
+      sayEl.innerHTML = '<span class="saysym">' + glyphHtml(s.g) + '</span><span class="saytxt">' + glyphify(esc(s.t)) + '</span>';
       const r = el.getBoundingClientRect();
       // clamped to the window, with the nib following the socket rather than the
       // box — a bubble pushed off a right-hand wallet must still point at it
@@ -209,25 +207,145 @@ window.WALLETS = (function () {
       sayEl.style.setProperty('--nib', Math.max(8, Math.min(r.left + r.width / 2 - left - 5, w - 18)) + 'px');
       requestAnimationFrame(() => sayEl && sayEl.classList.add('in'));
     }
-    function hideSay() {
+    function hideSay(now) {
+      if (sayFor && sayFor.id === 'quill') sayFor.setAttribute('aria-expanded', 'false');
       sayFor = null;
       if (!sayEl) return;
       const el = sayEl; sayEl = null;
       el.classList.remove('in');
-      setTimeout(() => el.remove(), 180);
+      if (now === true) el.remove(); else setTimeout(() => el.remove(), 180);
+    }
+    // ---- the 🪶 documents menu (issue #227, Q1603, Ed 2026-10-22) ----------
+    // The quill is also the logo, and was a link to a new document; a press
+    // on it opened its bubble with that link inside. It opens the documents
+    // this browser is signed into instead — the server's list, since every
+    // document's cookie is HttpOnly (`GET /api/mine`) — with **+ New
+    // document** at their foot and *Email me a link to each* beneath. At the
+    // birth, while feathers are still being spent, the bubble's own sentence
+    // heads it, since the feathers are what the quill is there. The bubble's
+    // chrome, its nib and its dismissal are the wallets' own.
+    const DM = window.COPY.page.docsMenu;
+    const VISITED = 'draft:visited';
+    const visited = () => { try { return JSON.parse(localStorage.getItem(VISITED) || '{}') || {}; } catch (e) { return {}; } };
+    // **most recently used first** (Q1603): the last time this browser opened
+    // each document, kept here, else when it signed in there (the server's)
+    if (LIVESLUG) {
+      try { const v = visited(); v[LIVESLUG] = Date.now(); localStorage.setItem(VISITED, JSON.stringify(v)); } catch (e) { /* none */ }
+    }
+    let mineRows = null, mineAsk = null;
+    function fetchMine() {
+      if (mineAsk) return mineAsk;
+      mineAsk = fetch('/api/mine', { credentials: 'same-origin' })
+        .then((r) => (r.ok ? r.json() : { docs: [] }))
+        .then((j) => { mineRows = Array.isArray(j.docs) ? j.docs : []; })
+        .catch(() => { mineRows = mineRows || []; })
+        .then(() => { mineAsk = null; if (sayEl && sayEl.classList.contains('docsmenu')) drawMenuRows(); });
+      return mineAsk;
+    }
+    function menuRowsHtml() {
+      const seen = visited();
+      const at = (d) => Math.max(seen[d.slug] || 0, d.signedMs || 0);
+      const rows = (mineRows || []).slice().sort((a, b) => at(b) - at(a));
+      if (!rows.length) return '';
+      return '<div class="eyebrow dmhead">' + esc(DM.head) + '</div><ul class="dmlist">' +
+        rows.map((d) => '<li><a class="dmrow dmdoc" href="/d/' + encodeURIComponent(d.slug) + '"' +
+          (d.slug === LIVESLUG ? ' aria-current="page"' : '') + ' data-slug="' + esc(d.slug) + '">' +
+          window.CARDS.avHtml({ n: d.name, pic: d.picture }) +
+          '<span class="dmtitle">' + esc(d.title || '') + '</span>' +
+          (d.closed ? '<span class="dmclosed">' + esc(DM.closed) + '</span>' : '') + '</a></li>').join('') +
+        '</ul>';
+    }
+    function drawMenuRows() {
+      const box = sayEl && sayEl.querySelector('.dmrows');
+      if (box) window.PATCH.set(box, menuRowsHtml());
+    }
+    function showMenu(el) {
+      if (!sayEl) { sayEl = document.createElement('div'); document.body.appendChild(sayEl); }
+      sayEl.className = 'walletsay docsmenu';
+      sayEl.id = 'docsmenu';
+      sayFor = el;
+      el.setAttribute('aria-expanded', 'true');
+      const s = SAY(el);
+      const birth = !env.cs && s.t === W.quillSpending;
+      sayEl.innerHTML =
+        (birth ? '<p class="dmsay"><span class="saysym">' + glyphHtml(s.g) + '</span><span class="saytxt">' + glyphify(esc(s.t)) + '</span></p>' : '') +
+        '<div class="dmrows">' + menuRowsHtml() + '</div>' +
+        '<a class="dmrow dmnew" href="/">' + esc(DM.newDoc) + '</a>' +
+        '<button class="dmrow dmmail" type="button" aria-expanded="false">' + esc(DM.mailMe) + '</button>' +
+        '<form class="dmform" hidden><input class="dminput" type="email" required autocomplete="email" placeholder="' + esc(DM.address) + '" aria-label="' + esc(DM.address) + '">' +
+        '<button class="btn btn-primary dmsend" type="submit">' + esc(DM.send) + '</button></form>' +
+        '<p class="dmsent" role="status" hidden></p>';
+      fetchMine();
+      const r = el.getBoundingClientRect();
+      const w = Math.min(320, window.innerWidth - 16);
+      const left = Math.max(8, Math.min(r.left, window.innerWidth - w - 8));
+      sayEl.style.left = left + 'px';
+      sayEl.style.top = (r.bottom + 9) + 'px';
+      sayEl.style.width = w + 'px';
+      sayEl.style.setProperty('--nib', Math.max(8, Math.min(r.left + r.width / 2 - left - 5, w - 18)) + 'px');
+      requestAnimationFrame(() => sayEl && sayEl.classList.add('in'));
+    }
+    function mailOpen() {
+      const form = sayEl && sayEl.querySelector('.dmform');
+      if (!form) return;
+      form.hidden = false;
+      sayEl.querySelector('.dmmail').setAttribute('aria-expanded', 'true');
+      const box = form.querySelector('.dminput');
+      if (!box.value && S.myemail) box.value = S.myemail;
+      box.focus();
+    }
+    function mailSend(form) {
+      const box = form.querySelector('.dminput');
+      const email = box.value.trim();
+      if (!email) { box.focus(); return; }
+      const said = sayEl.querySelector('.dmsent');
+      const btn = form.querySelector('.dmsend');
+      btn.disabled = true;
+      fetch('/api/mine/links', { method: 'POST', credentials: 'same-origin',
+        headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email }) })
+        .then((r) => r.ok)
+        .catch(() => false)
+        .then((ok) => {
+          btn.disabled = false;
+          if (!said) return;
+          said.textContent = ok ? DM.sent : DM.refused;
+          said.hidden = false;
+          if (ok) form.hidden = true;
+        });
+    }
+    const quillEl = document.getElementById('quill');
+    if (quillEl) {
+      quillEl.title = DM.title;
+      quillEl.setAttribute('aria-haspopup', 'true');
+      quillEl.setAttribute('aria-controls', 'docsmenu');
+      quillEl.setAttribute('aria-expanded', 'false');
+      // asked ahead of the press where a pointer or a focus says one is coming
+      for (const t of ['pointerenter', 'focus', 'touchstart']) quillEl.addEventListener(t, () => { if (mineRows === null) fetchMine(); }, { passive: true });
     }
     document.addEventListener('click', (ev) => {
       const w = ev.target.closest && ev.target.closest('.navbar .wallet, .navbar .quill');
       if (w) {
-        // the quill's own navigation lives in the bubble now
+        // the quill's own navigation lives in its menu (Q1603)
         if (w.id === 'quill') ev.preventDefault();
-        if (sayFor === w) hideSay(); else showSay(w);
+        if (sayFor === w) hideSay(); else if (w.id === 'quill') { hideSay(true); showMenu(w); } else { hideSay(true); showSay(w); }
         return;
       }
+      if (sayEl && ev.target.closest('.dmmail')) { mailOpen(); return; }
       if (sayEl && !ev.target.closest('.walletsay')) hideSay();
     });
-    document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && sayEl) hideSay(); });
-    window.addEventListener('resize', hideSay);
+    document.addEventListener('submit', (ev) => {
+      const form = ev.target.closest && ev.target.closest('.docsmenu .dmform');
+      if (!form) return;
+      ev.preventDefault();
+      mailSend(form);
+    });
+    document.addEventListener('keydown', (ev) => {
+      if (ev.key !== 'Escape' || !sayEl) return;
+      const back = sayFor && sayFor.id === 'quill' ? sayFor : null;
+      hideSay();
+      if (back) back.focus();
+    });
+    window.addEventListener('resize', () => { if (!(sayEl && sayEl.contains(document.activeElement))) hideSay(); });
     // `?slash=muted` — the same toolbar with the strike in the surface's own
     // muted ink rather than red, so the two can be looked at side by side. The
     // same shape as the stranger's door's `?bars=black`: an experiment you can

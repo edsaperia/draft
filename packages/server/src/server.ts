@@ -43,6 +43,7 @@ import { devLadderTable, devMailTable } from './routes-dev.js';
 import { healthTable, operatorTable } from './routes-admin.js';
 import { authTable } from './routes-auth.js';
 import { memberTable } from './routes-member.js';
+import { mineTable } from './routes-mine.js';
 import { feedTable } from './routes-feed.js';
 import { surfaceTable } from './routes-surface.js';
 import { Demo } from './demo.js';
@@ -79,6 +80,9 @@ const ROUTES: Route[] = [
   ...devLadderTable,
   ...authTable,
   ...memberTable,
+  // the 🪶 menu (Q1603): `/api/mine` and `/api/mine/links`, claimed by no
+  // other row
+  ...mineTable,
   // the spectator feed (Q1466): its paths are one segment longer than any row
   // below claims, so where it stands among them is free — beside the member
   // read it is the sibling of
