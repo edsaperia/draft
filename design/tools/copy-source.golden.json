@@ -1,6 +1,6 @@
 {
  "meta": {
-  "entries": 740
+  "entries": 748
  },
  "entries": {
   "RULES.admission.assembly": "Any member may propose to invite someone to join the membership, but all members must agree 🏛️.",
@@ -314,6 +314,15 @@
   "page.departed.lineSelf": "ƒ (who, day) => who + ' left on ' + day + '.'",
   "page.departed.someone": "a member",
   "page.discardMotion": "Discard this motion",
+  "page.docsMenu.address": "Your email address",
+  "page.docsMenu.closed": "Closed",
+  "page.docsMenu.head": "Your documents",
+  "page.docsMenu.mailMe": "Email me a link to each",
+  "page.docsMenu.newDoc": "+ New document",
+  "page.docsMenu.refused": "That did not send. Try again in a few minutes.",
+  "page.docsMenu.send": "Send",
+  "page.docsMenu.sent": "Check your inbox. If that address belongs to a member of any document, there is a login link for each.",
+  "page.docsMenu.title": "Your documents",
   "page.door.anonymous": "Anonymous",
   "page.door.choose": "Choose somebody to remove…",
   "page.door.invitedNotHere": " — invited, not yet here",
@@ -551,7 +560,6 @@
   "page.wallet.quillSpent": "You can start a new document.",
   "page.wallet.shieldHeld": "ƒ (n) => 'You can refuse a change the membership passes on ' + n +\n        (n === 1 ? ' setting' : ' settings') + '. Nothing changes there until you accept it.'",
   "page.wallet.shieldNot": "The Founder can refuse a change the membership passes, where they have kept the Founder Veto.",
-  "page.wallet.startNew": "Start a new document",
   "page.wallet.voiceHeld": "You can ask all members to agree to a constitutional change. One question at a time.",
   "page.wallet.voiceNot": "Any member can propose a constitutional change 🏛️; all members must agree for it to pass.",
   "page.wallet.voiceOut": "You are asking all members to agree to a constitutional change. This comes back when that question settles, or when you withdraw it.",

@@ -924,9 +924,6 @@ window.COPY = (function () {
     wallet: {
       quillSpending: 'You can name this document, choose its address and verify your email. Each one spends a feather. The last feather stays, and starts a new document.',
       quillSpent: 'You can start a new document.',
-      // the one capability the bubble would swallow, so the navigation moves
-      // inside it: the link under the 🪶 sentence
-      startNew: 'Start a new document',
       proposeHeld: 'You can propose changes to the text. A ✏️ comes back if the membership passes yours, and more arrive as the document runs.',
       proposeNot: 'Members can propose changes to the text, once the document has begun.',
       // the count is the settings this founder's own hand still reaches
@@ -939,6 +936,22 @@ window.COPY = (function () {
       voiceNot: 'Any member can propose a constitutional change 🏛️; all members must agree for it to pass.',
       voiceOut: 'You are asking all members to agree to a constitutional change. This comes back when that question settles, or when you withdraw it.',
       voiceHeld: 'You can ask all members to agree to a constitutional change. One question at a time.',
+    },
+    // **The 🪶 documents menu** (issue #227, Q1603, Ed 2026-10-22): the 🪶
+    // opens the documents this browser is signed into, **+ New document** at
+    // their foot and *Email me a link to each* beneath. The two foot rows are
+    // Ed's words. The answer to the mail is the same whatever the address is
+    // on, so it promises only what is true of both.
+    docsMenu: {
+      title: 'Your documents',
+      head: 'Your documents',
+      closed: 'Closed',
+      newDoc: '+ New document',
+      mailMe: 'Email me a link to each',
+      address: 'Your email address',
+      send: 'Send',
+      sent: 'Check your inbox. If that address belongs to a member of any document, there is a login link for each.',
+      refused: 'That did not send. Try again in a few minutes.',
     },
     // the power tabs' titles (T6–T9) and the synthetic cards' titles
     pwTitle: {
