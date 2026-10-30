@@ -89,7 +89,10 @@ export class Auth {
     return `${body}.${this.sign(body)}`;
   }
 
-  verifyCookie(value: string, nowMs: number): { docId: string; memberId: string } | null {
+  /** `signedMs` is when the cookie was minted — its expiry less its life —
+   *  which is how the 🪶 menu orders the documents a browser is in (Q1603). */
+  verifyCookie(value: string, nowMs: number):
+    { docId: string; memberId: string; signedMs: number } | null {
     const parts = value.split('.');
     if (parts.length !== 4) return null;
     const body = parts.slice(0, 3).join('.');
@@ -99,7 +102,8 @@ export class Auth {
     if (expected.length !== given.length || !timingSafeEqual(expected, given)) return null;
     if (Number(parts[2]) < nowMs) return null;
     try {
-      return { docId: unb64(parts[0]!), memberId: unb64(parts[1]!) };
+      return { docId: unb64(parts[0]!), memberId: unb64(parts[1]!),
+        signedMs: Number(parts[2]) - COOKIE_TTL_MS };
     } catch {
       return null;
     }

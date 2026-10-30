@@ -330,6 +330,13 @@ case "$GROUP" in
     # ⏱️ 👥 (Q1365, Q1372)
     walk "member-questions-walk" npm run member-questions-walk -- "$BASE"
     walk "slug-walk" npm run slug-walk -- "$BASE" test-charter
+    # **the 🪶 documents menu** (issue #227, Q1603, Ed 2026-10-22): one
+    # address seated in two documents and resigned from a third — the menu
+    # lists the two, + New document goes to /, a stranger sees the foot rows
+    # alone, *Email me a link to each* answers alike for a known and an
+    # unknown address and mails one login link per membership; at 390 the
+    # menu stands in the window. Sprint tier from its first day (Q1547)
+    walk "docs-menu-walk" npm run docs-menu-walk -- "$BASE"
     # **the demo's bots** (design/DEMO.md Stage 4, Q1535) on their own server:
     # the stub model, so CI never calls Claude, the walk's demo key, and a
     # ten-second heartbeat lapse — ▶️, ⏸️, the lapse, the run clock and the cap

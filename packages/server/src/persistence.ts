@@ -144,6 +144,8 @@ export interface OutboxRow {
    * received must not stay live for the week its expiry promised.
    */
   tokenHash?: string;
+  /** Every token in a multi-document login email, revoked together. */
+  tokenHashes?: string[];
   createdMs: number;
   attempts: number;
   lastAttemptMs: number | null;
@@ -237,6 +239,14 @@ export interface Persistence {
   readPeople(id: string): Promise<PersonRow[]>;
   /** Erasure: drop one row. Returns whether one was there. */
   deletePerson(id: string, personId: PersonId): Promise<boolean>;
+  /**
+   * **Which documents hold a person row with this address** (issue #227,
+   * Q1603), case-blind as the login door is: the stored rows alone, so the
+   * 🪶 menu's *Email me a link to each* finds an address without loading a
+   * single document (plan-scaling Stage 2). Postgres asks an index on
+   * `lower(email)`; the file store reads each `people.json`, never a log.
+   */
+  documentsWithEmail(email: string): Promise<string[]>;
   readProvisional(id: string): Promise<string | null>;
   writeProvisional(id: string, text: string | null): Promise<void>;
 
@@ -442,6 +452,14 @@ export class FilePersistence implements MaintainablePersistence {
     if (!rows.delete(personId)) return false;
     writePeopleFile(path, rows);
     return true;
+  }
+
+  async documentsWithEmail(email: string): Promise<string[]> {
+    const want = email.toLowerCase();
+    if (!existsSync(this.docsDir)) return [];
+    return readdirSync(this.docsDir).filter((id) =>
+      [...readPeopleFile(join(this.docsDir, id, 'people.json')).values()]
+        .some((r) => r.email.toLowerCase() === want));
   }
 
   async readProvisional(id: string): Promise<string | null> {
@@ -652,6 +670,7 @@ export class FilePersistence implements MaintainablePersistence {
     const rest = { ...row };
     delete rest.link;
     delete rest.tokenHash;
+    delete rest.tokenHashes;
     this.outbox.set(id, { ...rest, sentMs, lastError: null });
     this.saveOutbox();
   }

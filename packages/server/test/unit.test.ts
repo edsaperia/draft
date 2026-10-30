@@ -148,7 +148,7 @@ describe('Auth over the seam', () => {
   it('cookies verify, and a tampered signature or foreign secret does not', () => {
     const auth = new Auth('secret', new FilePersistence(tmp()));
     const cookie = auth.cookieFor('d-1', 'founder', 1000);
-    expect(auth.verifyCookie(cookie, 2000)).toEqual({ docId: 'd-1', memberId: 'founder' });
+    expect(auth.verifyCookie(cookie, 2000)).toEqual({ docId: 'd-1', memberId: 'founder', signedMs: 1000 });
     expect(auth.verifyCookie(cookie + 'x', 2000)).toBeNull();
     const forged = new Auth('other-secret', new FilePersistence(tmp()));
     expect(forged.verifyCookie(cookie, 2000)).toBeNull();
