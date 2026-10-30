@@ -236,7 +236,9 @@ One reversal to expect if approval is built: it produces the **more legible reco
 
 ## Spent numbers
 
-**The next free number is 1604** — claim by writing the block here, then commit it alone.
+**The next free number is 1605** — claim by writing the block here, then commit it alone.
+
+**1604 is the late address-collision outcome (issue #232, PR #240), raised 2026-10-30, awaiting Ed.** A requested address can be free when proposed but claimed by another document before the vote settles. Recommendation: end that proposal as unavailable, preserve the current address, refund its proposer credit, and record why. Alternative: reserve the requested address while the proposal is open, which may hold unused addresses indefinitely. Direct/current/historical collision protection is implemented, but the PR must not merge until the settlement outcome is decided and guarded against blocking later commands or ticks. Asked in the active Codex chat; no answer inferred.
 
 **1603 is the 🪶 documents menu** (claimed 2026-10-22 by the cloud coordinator; a user asked Ed how to see every document they are a member of; Ed 2026-10-22 on his page: *How about the 🪶 in the top left opens a dropdown with their existing documents and "+ new document" at the bottom*, then *Include* for 'Email me a link to each'). **Ruled by Ed:** the 🪶, a link to docs.vote/ today, opens a dropdown on every page: the documents this browser is signed into (title, your face in it, *Closed* where closed, documents you have left not listed), **+ New document** at its foot, and *Email me a link to each* beneath, one mail with a sign-in link per document, the same answer whether or not the address is on anything, rate-limited like the sign-in mail. `me` and Q1351 are untouched. **Open until built.**
 
