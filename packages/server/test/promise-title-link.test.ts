@@ -18,27 +18,9 @@
  *   whatever `cs.slug` says **now**. A link mailed before a rename lands on
  *   the new address, which is stronger than the promise asks.
  *
- * ## The one gap — promise 2a, *and a change never takes an address that is
- * somebody else's*
- *
- * At the birth an address is uniquified (`uniqueSlug` over
- * `store.slugTaken`) and `POST /api/docs` answers 409 *that address is taken*
- * with a suggestion. **A live change is checked by nobody**: `setSetting`
- * validates `SlugValue`'s regex, `commands.ts` adds `founderOnly` and a cap,
- * and `DocStore.persist` then does `slugIndex.set(slug, doc.id)` —
- * last writer wins, silently. The page does not catch it either: `slugKnown()`
- * is `!BIRTH || …` and `BIRTH` is `location.pathname === '/'`, so on a live
- * document the ✒️ is never held dark, and `checkSlug`'s `!BIRTH` arm answers
- * from the mockup's hard-coded `TAKEN` set instead of asking
- * `/api/slug/:slug`.
- *
- * So one document can take another's address and inherit every link to it —
- * the one way *the link is never broken* can fail, and it fails for the
- * document that did nothing. The last `describe` locks the behaviour **as it
- * stands**, so the day a guard lands the lock says so; the finding is in the
- * run report.
- *
- * **This file fixes nothing.**
+ * The address-ownership tests (issue #232) refuse a live change onto another
+ * document's current or historical address. Ownership is enforced at the
+ * command door and again at persistence, including concurrent writes.
  */
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -229,7 +211,7 @@ describe('📍 — the invitation link never held a slug to break', () => {
   });
 });
 
-describe('📍 — the gap: a live change may take an address that is somebody else’s', () => {
+describe('📍 — a change cannot take another document’s address', () => {
   it('creation refuses a taken address, and a taken *history* counts', async () => {
     const b = await boot();
     const d = await found(b, 'Hollow Oak Club Charter', 'hollow-oak');
@@ -245,30 +227,63 @@ describe('📍 — the gap: a live change may take an address that is somebody e
     }
   });
 
-  it('**but a pen change is not** — and the taker inherits every link to the taken', async () => {
+  it('a pen change cannot take another document’s address', async () => {
     const b = await boot();
     const a = await found(b, 'The Orchard Charter', 'the-orchard', 'ada@example.org');
     const c = await found(b, 'The Pond Charter', 'the-pond', 'cy@example.org');
     expect((await doorAt(b.base, 'the-orchard')).body.title).toBe('The Orchard Charter');
 
-    // Cy renames their document onto Ada's live address. Nothing refuses it:
-    // not `setSetting` (shape only), not `commands.ts` (`founderOnly` and a
-    // cap), not `DocStore.persist` (`slugIndex.set`, last writer wins)
-    await c.cmd('set-setting', { setting: 'link', value: { slug: 'the-orchard' } });
+    // Cy cannot rename their document onto Ada's live address.
+    const refused = await post(b.base, `/api/d/${c.slug}/cmd`,
+      { cmd: 'set-setting', args: { setting: 'link', value: { slug: 'the-orchard' } } }, c.ada);
+    expect(refused.status).toBe(400);
 
-    // the address now belongs to the document that took it, and Ada's — whose
-    // only address this was — is reachable at no address at all
+    // Both documents still answer their own addresses.
     const stolen = await doorAt(b.base, 'the-orchard');
     expect(stolen.status).toBe(200);
-    expect(stolen.body.title).toBe('The Pond Charter');
+    expect(stolen.body.title).toBe('The Orchard Charter');
     expect((await doorAt(b.base, 'the-pond')).body.title).toBe('The Pond Charter');
     expect(a.slug).toBe('the-orchard'); // …and Ada never moved
 
-    // the shape of the finding, pinned: the module took it without a word
+    // The refusal leaves no claimed alias in the durable history.
     const cold = new DocStore(new FilePersistence(b.dataDir));
     await cold.loadAll();
     const docs = [...cold.all()];
     expect(docs).toHaveLength(2);
-    expect(docs.filter((x) => [...x.cs.slugs].includes('the-orchard'))).toHaveLength(2);
+    expect(docs.filter((x) => [...x.cs.slugs].includes('the-orchard'))).toHaveLength(1);
+  });
+
+  it('protects historical aliases, while allowing a document to return to its own', async () => {
+    const b = await boot();
+    const a = await found(b, 'Orchard', 'old-orchard');
+    const c = await found(b, 'Pond', 'pond', 'cy@example.org');
+    await a.cmd('set-setting', { setting: 'link', value: { slug: 'new-orchard' } });
+    const r = await post(b.base, '/api/d/pond/cmd',
+      { cmd: 'set-setting', args: { setting: 'link', value: { slug: 'old-orchard' } } }, c.ada);
+    expect(r.status).toBe(400);
+    expect((await r.json() as { error: string }).error).toBe('that address is taken');
+    await a.cmd('set-setting', { setting: 'link', value: { slug: 'old-orchard' } });
+    expect((await doorAt(b.base, 'new-orchard')).body.title).toBe('Orchard');
+    expect((await doorAt(b.base, 'old-orchard')).body.title).toBe('Orchard');
+    // A refusal does not stall unrelated changes.
+    await c.cmd('set-setting', { setting: 'title', value: { text: 'Pond updated' } });
+    expect((await doorAt(b.base, 'pond')).body.title).toBe('Pond updated');
+  });
+
+  it('allows only one of two concurrent changes onto a free address', async () => {
+    const b = await boot();
+    const a = await found(b, 'Orchard', 'orchard');
+    const c = await found(b, 'Pond', 'pond', 'cy@example.org');
+    const change = (slug: string, cookie: string) => post(b.base, `/api/d/${slug}/cmd`,
+      { cmd: 'set-setting', args: { setting: 'link', value: { slug: 'shared-address' } } }, cookie);
+    const results = await Promise.all([change(a.slug, a.ada), change(c.slug, c.ada)]);
+    expect(results.map((r) => r.status).sort()).toEqual([200, 400]);
+    const cold = new DocStore(new FilePersistence(b.dataDir));
+    await cold.loadRegistry();
+    expect(cold.slugTaken('shared-address')).toBe(true);
+    const owner = await cold.openSlug('shared-address');
+    expect(owner).not.toBeNull();
+    const histories = await Promise.all(['orchard', 'pond'].map((s) => cold.openSlug(s)));
+    expect(histories.filter((d) => d!.cs.slugs.includes('shared-address'))).toHaveLength(1);
   });
 });

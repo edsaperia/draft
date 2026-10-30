@@ -123,6 +123,14 @@ export async function applyCommand(host: CommandHost, doc: LoadedDoc, seat: Comm
   if (me?.lapsed) doc.cs.memberReturn(t, memberId); // any act revives
   let result: unknown;
   try {
+    const payload = cmd === 'set-setting' ? args
+      : cmd === 'open-motion' ? args.payload : null;
+    if (payload !== null && typeof payload === 'object' &&
+        'setting' in payload && payload.setting === 'link' && 'value' in payload &&
+        payload.value !== null && typeof payload.value === 'object' && 'slug' in payload.value &&
+        typeof payload.value.slug === 'string') {
+      store.assertSlugsAvailable(doc.id, [payload.value.slug]);
+    }
     result = runCommand(doc.cs, { memberId, isFounder, applicantId },
       t, cmd, args, asEngineDoc(doc).bridge);
   } catch (e) {

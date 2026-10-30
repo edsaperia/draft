@@ -232,7 +232,9 @@ export interface Persistence {
    * list may be empty.
    */
   appendDocLog(id: string, entries: readonly LogEntry[],
-    people?: readonly PersonRow[]): Promise<void>;
+    people?: readonly PersonRow[], slugs?: readonly string[]): Promise<void>;
+  /** Reconcile durable address ownership from the loaded, verified histories. */
+  claimSlugs(owners: readonly import('./slug-ownership.js').SlugOwner[]): Promise<void>;
   /** Every person row the document holds, in no particular order. */
   readPeople(id: string): Promise<PersonRow[]>;
   /** Erasure: drop one row. Returns whether one was there. */
@@ -410,6 +412,10 @@ export class FilePersistence implements MaintainablePersistence {
   async createDoc(id: string): Promise<void> {
     mkdirSync(join(this.docsDir, id), { recursive: true });
   }
+
+  // The file backend has one host. DocStore reserves synchronously before
+  // any write; its verified log histories rebuild ownership at boot.
+  async claimSlugs(_owners: readonly import('./slug-ownership.js').SlugOwner[]): Promise<void> {}
 
   async readDocLog(id: string): Promise<LogEntry[]> {
     return readJsonl<LogEntry>(join(this.docsDir, id, 'log.jsonl'));

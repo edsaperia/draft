@@ -18,6 +18,7 @@ import type { LogEntry, PersonFields, PersonId } from '../../constitution/src/in
 import type { OpenInput } from '../../constitution/src/index.js';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import type { Persistence, PersonRow, RegistryRow } from './persistence.js';
+import { SlugTakenError } from './slug-ownership.js';
 
 /**
  * The module's `People` port over the store (decision 1253): the rows a
@@ -180,6 +181,7 @@ export class DocStore {
       this.registry.set(id, null);
       await this.loadOne(id, 'boot');
     }
+    await this.persistSlugOwners();
   }
 
   /**
@@ -224,7 +226,7 @@ export class DocStore {
       const len = lengths.get(id);
       if (row !== undefined && len !== undefined && row.seq === len.seq && row.eseq === len.eseq) {
         this.registry.set(id, row);
-        for (const slug of row.slugs) this.slugIndex.set(slug, id);
+        this.indexSlugs(id, row.slugs);
         continue;
       }
       try {
@@ -244,7 +246,7 @@ export class DocStore {
           dueT: cs.constitutedAtT === null || cs.closed ? null : cs.nextClockT(), lastT: log.length > 0 ? log[log.length - 1]!.event.t : 0, clockVersion: '',
           seq: log.length, eseq: len?.eseq ?? 0, writtenMs: nowMs };
         this.registry.set(id, fresh);
-        for (const slug of fresh.slugs) this.slugIndex.set(slug, id);
+        this.indexSlugs(id, fresh.slugs);
         this.loadStats.rebuilt += 1;
         await this.persistence.writeRegistry(id, fresh);
       } catch (e) {
@@ -252,6 +254,7 @@ export class DocStore {
         this.quarantine.push(id);
       }
     }
+    await this.persistSlugOwners();
     return warmIds.filter((id) => this.registry.has(id) && !this.quarantine.includes(id));
   }
 
@@ -451,7 +454,16 @@ export class DocStore {
     const cs = ConstitutionSession.open(input, t, people);
     const doc: LoadedDoc = { id, cs, people, persisted: 0, relayed: 0, provisional: null };
     this.register(doc);
-    await this.persist(doc);
+    try {
+      await this.persist(doc);
+    } catch (e) {
+      // A failed genesis owns no route, including when another host won
+      // the durable claim after this process's availability check.
+      this.docs.delete(id);
+      this.registry.delete(id);
+      for (const [slug, owner] of this.slugIndex) if (owner === id) this.slugIndex.delete(slug);
+      throw e;
+    }
     // the birth's own entries relay nothing — they are the document coming
     // into existence, and the founder's creation mail is `sendNow`'s, sent
     // before this. Without this line the first commit after the save would
@@ -527,7 +539,25 @@ export class DocStore {
   }
 
   slugTaken(slug: string): boolean {
-    return this.slugIndex.has(slug);
+    return this.slugIndex.has(slug) || this.pendingSlugs.has(slug);
+  }
+
+  private readonly pendingSlugs = new Map<string, string>();
+
+  assertSlugsAvailable(id: string, slugs: readonly string[]): void {
+    for (const slug of slugs) {
+      const owner = this.slugIndex.get(slug) ?? this.pendingSlugs.get(slug);
+      if (owner !== undefined && owner !== id) throw new SlugTakenError(slug);
+    }
+  }
+
+  private indexSlugs(id: string, slugs: readonly string[]): void {
+    this.assertSlugsAvailable(id, slugs);
+    for (const slug of slugs) this.slugIndex.set(slug, id);
+  }
+
+  private persistSlugOwners(): Promise<void> {
+    return this.persistence.claimSlugs([...this.slugIndex].map(([slug, documentId]) => ({ slug, documentId })));
   }
 
   /** The documents **in memory** (Stage 2): not every document this host knows. */
@@ -540,23 +570,30 @@ export class DocStore {
   async persist(doc: LoadedDoc): Promise<LogEntry[]> {
     const log = doc.cs.logEntries();
     const fresh = log.slice(doc.persisted);
+    const slugs = [...doc.cs.slugs];
+    this.assertSlugsAvailable(doc.id, slugs);
     const rows = doc.people.takeDirty();
     if (doc.ephemeral === true) {
       // nothing reaches the store (design/DEMO.md D1): the cursor moves as if
       // it had, so everything downstream of `persisted` reads alike
       doc.persisted += fresh.length;
-      for (const slug of doc.cs.slugs) this.slugIndex.set(slug, doc.id);
+      this.indexSlugs(doc.id, slugs);
       return [...fresh];
     }
     if (fresh.length > 0 || rows.length > 0) {
+      // Reserve synchronously: another document cannot race the await.
+      const held = slugs.filter((slug) => !this.slugIndex.has(slug));
+      for (const slug of held) this.pendingSlugs.set(slug, doc.id);
       try {
-        await this.persistence.appendDocLog(doc.id, fresh, rows);
+        await this.persistence.appendDocLog(doc.id, fresh, rows, slugs);
       } catch (e) {
         // the rows go back in the dirty set, or a failed append loses them
         // for ever (issue #7): see `restoreDirty`. The entries need no such
         // care — the cursor below is what carries them, and it has not moved
         doc.people.restoreDirty(rows);
         throw e;
+      } finally {
+        for (const slug of held) this.pendingSlugs.delete(slug);
       }
       // **Advance by what was written, never to the log's length** (Q1322,
       // docs.vote 2026-09-11): `logEntries()` is the live array, and a
@@ -567,7 +604,7 @@ export class DocStore {
       // was quarantined at the next boot. Guard: unit.test.ts, *a command
       // applied during a slow append is still persisted*.
       doc.persisted += fresh.length;
-      for (const slug of doc.cs.slugs) this.slugIndex.set(slug, doc.id);
+      this.indexSlugs(doc.id, slugs);
     }
     return [...fresh];
   }
@@ -596,13 +633,14 @@ export class DocStore {
   }
 
   private register(doc: LoadedDoc): void {
+    this.assertSlugsAvailable(doc.id, doc.cs.slugs);
     this.docs.set(doc.id, doc);
     if (!this.registry.has(doc.id)) this.registry.set(doc.id, null);
     // **used from the moment it is in memory** (Stage 2): a birth or a load
     // is held by the request that made it and fresh on the idle clock, so no
     // tick can unload it under the hands still holding its object
     this.use(doc);
-    for (const slug of doc.cs.slugs) this.slugIndex.set(slug, doc.id);
+    this.indexSlugs(doc.id, doc.cs.slugs);
   }
 }
 

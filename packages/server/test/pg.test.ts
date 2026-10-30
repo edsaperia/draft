@@ -79,6 +79,51 @@ async function seedDisk(dataDir: string, n = 3): Promise<string[]> {
 const lastHash = (log: readonly LogEntry[]) => log[log.length - 1]!.hash;
 
 d('PgPersistence contract', () => {
+  it('address ownership and the document log commit together, across connections', async () => {
+    const p = await open();
+    const other = await reopen(p);
+    try {
+      await p.createDoc('a');
+      await p.createDoc('b');
+      const a = ConstitutionSession.open({ title: 'A', slug: 'a',
+        convenor: { id: 'f', email: 'a@example.org', isMember: true } }, 1);
+      const b = ConstitutionSession.open({ title: 'B', slug: 'b',
+        convenor: { id: 'f', email: 'b@example.org', isMember: true } }, 1);
+      const results = await Promise.allSettled([
+        p.appendDocLog('a', a.logEntries(), [], ['a', 'shared']),
+        other.appendDocLog('b', b.logEntries(), [], ['b', 'shared']),
+      ]);
+      expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+      const winner = results[0]!.status === 'fulfilled' ? 'a' : 'b';
+      const loser = winner === 'a' ? 'b' : 'a';
+      expect(await p.readDocLog(loser)).toEqual([]);
+      // The failed transaction also rolled back its uncontested alias.
+      await p.claimSlugs([{ slug: loser, documentId: winner }]);
+      // A replayed duplicate-log failure cannot acquire a new alias either.
+      const log = await p.readDocLog(winner);
+      await expect(p.appendDocLog(winner, log, [], ['rolled-back'])).rejects.toThrow();
+      await other.claimSlugs([{ slug: 'rolled-back', documentId: loser }]);
+      await expect(other.claimSlugs([{ slug: 'shared', documentId: loser }])).rejects.toThrow('that address is taken');
+      await p.claimSlugs([{ slug: 'shared', documentId: winner }]);
+    } finally { await other.close(); }
+  });
+
+  it('rebuilds durable claims for existing document histories at boot', async () => {
+    const p = await open();
+    const s = ConstitutionSession.open({ title: 'Old document', slug: 'old-address',
+      convenor: { id: 'f', email: 'a@example.org', isMember: true } }, 1, new InMemoryPeople());
+    s.setSetting(2, 'link', { slug: 'new-address' });
+    await p.createDoc('old');
+    // Existing logs predate the ownership table and have no claims yet.
+    await p.appendDocLog('old', s.logEntries());
+    const store = new DocStore(p);
+    await store.loadRegistry();
+    await p.createDoc('other');
+    for (const slug of ['old-address', 'new-address']) {
+      await expect(p.claimSlugs([{ slug, documentId: 'other' }])).rejects.toThrow('that address is taken');
+    }
+  });
+
   it('migrates once, idempotently, and records the version', async () => {
     const p = await open();
     const again = await reopen(p); // a second open on the same schema

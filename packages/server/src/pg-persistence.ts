@@ -29,6 +29,8 @@
  * one has moved past.
  */
 import pg from 'pg';
+import { SlugTakenError } from './slug-ownership.js';
+import type { SlugOwner } from './slug-ownership.js';
 import type { LogEntry, PersonId } from '../../constitution/src/index.js';
 import { OUTBOX_MAX_ATTEMPTS, outboxBackoffMs } from './persistence.js';
 import type { ErrorLine, MaintainablePersistence, OutboxRow, PersonRow, RegistryRow, SnapshotRow, StashRecord,
@@ -236,6 +238,16 @@ const MIGRATIONS: ReadonlyArray<{ version: number; sql: string }> = [
       );
     `,
   },
+  {
+    // Versions 10 and 11 belong to the documents-menu changes (PR #228).
+    version: 12,
+    sql: `
+      CREATE TABLE slug_owners (
+        slug        text PRIMARY KEY,
+        document_id text NOT NULL REFERENCES documents(id) ON DELETE CASCADE
+      );
+    `,
+  },
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.version;
@@ -397,8 +409,37 @@ export class PgPersistence implements MaintainablePersistence {
   }
 
   async appendDocLog(id: string, entries: readonly LogEntry[],
-    people: readonly PersonRow[] = []): Promise<void> {
-    await this.appendChain('document_log', id, entries, people);
+    people: readonly PersonRow[] = [], slugs: readonly string[] = []): Promise<void> {
+    await this.appendChain('document_log', id, entries, people, { slugs });
+  }
+
+  async claimSlugs(owners: readonly SlugOwner[]): Promise<void> {
+    if (owners.length === 0) return;
+    const c = await this.pool.connect();
+    try {
+      await c.query('BEGIN');
+      await this.claimSlugsWith(c, owners);
+      await c.query('COMMIT');
+    } catch (e) {
+      await c.query('ROLLBACK').catch(() => undefined);
+      throw e;
+    } finally { c.release(); }
+  }
+
+  private async claimSlugsWith(c: pg.PoolClient, owners: readonly SlugOwner[]): Promise<void> {
+    if (owners.length === 0) return;
+    // Stable order prevents two overlapping batches from taking locks in
+    // opposite orders. A conflict only succeeds for the existing owner.
+    const sorted = [...owners].sort((a, b) => a.slug.localeCompare(b.slug));
+    const result = await c.query<{ slug: string }>(
+      `INSERT INTO slug_owners (slug, document_id)
+        SELECT * FROM unnest($1::text[], $2::text[])
+        ON CONFLICT (slug) DO UPDATE SET slug = EXCLUDED.slug
+          WHERE slug_owners.document_id = EXCLUDED.document_id RETURNING slug`,
+      [sorted.map((o) => o.slug), sorted.map((o) => o.documentId)]);
+    const claimed = new Set(result.rows.map((row) => row.slug));
+    const conflict = sorted.find((owner) => !claimed.has(owner.slug));
+    if (conflict !== undefined) throw new SlugTakenError(conflict.slug);
   }
 
   async readPeople(id: string): Promise<PersonRow[]> {
@@ -732,7 +773,7 @@ export class PgPersistence implements MaintainablePersistence {
   async wipe(): Promise<number> {
     const ids = await this.listDocIds();
     await this.pool.query(
-      'TRUNCATE people, document_log, engine_log, provisional, bridge_state, snapshots, doc_registry, ' +
+      'TRUNCATE slug_owners, people, document_log, engine_log, provisional, bridge_state, snapshots, doc_registry, ' +
       'documents, tokens, stashes, outbox, errors');
     return ids.length;
   }
@@ -801,14 +842,16 @@ export class PgPersistence implements MaintainablePersistence {
   }
 
   private async appendChain(table: 'document_log' | 'engine_log', id: string,
-    entries: readonly ChainedEntry[], people: readonly PersonRow[] = []): Promise<void> {
-    if (entries.length === 0 && people.length === 0) return;
+    entries: readonly ChainedEntry[], people: readonly PersonRow[] = [],
+    options: { slugs?: readonly string[] } = {}): Promise<void> {
+    if (entries.length === 0 && people.length === 0 && !options.slugs?.length) return;
     const c = await this.pool.connect();
     try {
       await c.query('BEGIN');
       // one writer per document per batch; the primary key catches the
       // writer that slipped in between
       await c.query('SELECT pg_advisory_xact_lock(1, hashtext($1))', [id]);
+      await this.claimSlugsWith(c, (options.slugs ?? []).map((slug) => ({ slug, documentId: id })));
       // the rows the entries name, in the same transaction (decision 1253)
       if (people.length > 0) {
         await c.query(
