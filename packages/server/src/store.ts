@@ -226,7 +226,7 @@ export class DocStore {
       const len = lengths.get(id);
       if (row !== undefined && len !== undefined && row.seq === len.seq && row.eseq === len.eseq) {
         this.registry.set(id, row);
-        this.indexSlugs(id, row.slugs);
+        this.indexLoadedSlugs(id, row.slugs);
         continue;
       }
       try {
@@ -250,6 +250,7 @@ export class DocStore {
         this.loadStats.rebuilt += 1;
         await this.persistence.writeRegistry(id, fresh);
       } catch (e) {
+        if (e instanceof SlugTakenError) throw this.loadedSlugConflict(id, e);
         console.error(`document '${id}' failed to load — quarantined:`, e);
         this.quarantine.push(id);
       }
@@ -291,6 +292,7 @@ export class DocStore {
       this.noteLoad({ ms: Math.round(performance.now() - t0), atMs: Date.now(), why });
       return doc;
     } catch (e) {
+      if (e instanceof SlugTakenError) throw this.loadedSlugConflict(id, e);
       // one corrupt log must not stop every other document serving
       // (review #1, finding 11): quarantine loudly — the document 404s
       // until its log is repaired, and nothing here ever rewrites it
@@ -556,8 +558,26 @@ export class DocStore {
     for (const slug of slugs) this.slugIndex.set(slug, id);
   }
 
-  private persistSlugOwners(): Promise<void> {
-    return this.persistence.claimSlugs([...this.slugIndex].map(([slug, documentId]) => ({ slug, documentId })));
+  private loadedSlugConflict(id: string, error: SlugTakenError): Error {
+    return new Error(`Address ownership conflict: '${error.slug}' appears in documents '${this.slugIndex.get(error.slug)}' and '${id}'. Startup refused; review the conflicting histories before restarting.`, { cause: error });
+  }
+
+  private indexLoadedSlugs(id: string, slugs: readonly string[]): void {
+    try {
+      this.indexSlugs(id, slugs);
+    } catch (e) {
+      if (e instanceof SlugTakenError) throw this.loadedSlugConflict(id, e);
+      throw e;
+    }
+  }
+
+  private async persistSlugOwners(): Promise<void> {
+    try {
+      await this.persistence.claimSlugs([...this.slugIndex].map(([slug, documentId]) => ({ slug, documentId })));
+    } catch (e) {
+      if (e instanceof SlugTakenError) throw new Error(`Address ownership conflict: '${e.slug}' disagrees with the persisted owner. Startup refused; review its document histories and ownership row before restarting.`, { cause: e });
+      throw e;
+    }
   }
 
   /** The documents **in memory** (Stage 2): not every document this host knows. */
