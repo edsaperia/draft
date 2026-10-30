@@ -29,10 +29,10 @@
  * one has moved past.
  */
 import pg from 'pg';
-import { SlugTakenError } from './slug-ownership.js';
-import type { SlugOwner } from './slug-ownership.js';
+import { CreationChangedError, SlugTakenError } from './slug-ownership.js';
+import type { CreationClaim, SlugOwner } from './slug-ownership.js';
 import type { LogEntry, PersonId } from '../../constitution/src/index.js';
-import { OUTBOX_MAX_ATTEMPTS, outboxBackoffMs } from './persistence.js';
+import { OUTBOX_MAX_ATTEMPTS, outboxBackoffMs, sameStash } from './persistence.js';
 import type { ErrorLine, MaintainablePersistence, OutboxRow, PersonRow, RegistryRow, SnapshotRow, StashRecord,
   TokenRecord } from './persistence.js';
 
@@ -260,6 +260,7 @@ const MIGRATIONS: ReadonlyArray<{ version: number; sql: string }> = [
         slug        text PRIMARY KEY,
         document_id text NOT NULL REFERENCES documents(id) ON DELETE CASCADE
       );
+      ALTER TABLE doc_registry ADD COLUMN reserved_slugs jsonb;
     `,
   },
 ];
@@ -425,8 +426,9 @@ export class PgPersistence implements MaintainablePersistence {
   }
 
   async appendDocLog(id: string, entries: readonly LogEntry[],
-    people: readonly PersonRow[] = [], slugs: readonly string[] = []): Promise<void> {
-    await this.appendChain('document_log', id, entries, people, { slugs });
+    people: readonly PersonRow[] = [], slugs?: readonly string[], fromStash?: CreationClaim): Promise<void> {
+    await this.appendChain('document_log', id, entries, people, {
+      ...(slugs === undefined ? {} : { slugs }), ...(fromStash === undefined ? {} : { fromStash }) });
   }
 
   async claimSlugs(owners: readonly SlugOwner[]): Promise<void> {
@@ -442,11 +444,20 @@ export class PgPersistence implements MaintainablePersistence {
     } finally { c.release(); }
   }
 
-  private async claimSlugsWith(c: pg.PoolClient, owners: readonly SlugOwner[]): Promise<void> {
+  private async claimSlugsWith(c: pg.PoolClient, owners: readonly SlugOwner[], fromStash?: string): Promise<void> {
     if (owners.length === 0) return;
     // Stable order prevents two overlapping batches from taking locks in
     // opposite orders. A conflict only succeeds for the existing owner.
     const sorted = [...owners].sort((a, b) => a.slug.localeCompare(b.slug));
+    for (const { slug } of sorted) {
+      // The same namespace lock protects pending creation and document
+      // claims. Neither can pass a read-check while the other commits.
+      await c.query('SELECT pg_advisory_xact_lock(2, hashtext($1))', [slug]);
+      const held = await c.query<{ key: string }>(
+        'SELECT key FROM stashes WHERE slug = $1 AND doc_id IS NULL AND exp_ms >= $2 AND key IS DISTINCT FROM $3 LIMIT 1',
+        [slug, Date.now(), fromStash ?? null]);
+      if (held.rows.length > 0) throw new SlugTakenError(slug);
+    }
     const result = await c.query<{ slug: string }>(
       `INSERT INTO slug_owners (slug, document_id)
         SELECT * FROM unnest($1::text[], $2::text[])
@@ -542,11 +553,12 @@ export class PgPersistence implements MaintainablePersistence {
   /* -- the registry ------------------------------------------------------ */
 
   async readRegistry(): Promise<Map<string, RegistryRow>> {
-    const { rows } = await this.pool.query<{ document_id: string; slugs: string[]; phase: string;
+    const { rows } = await this.pool.query<{ document_id: string; slugs: string[]; reserved_slugs: string[] | null; phase: string;
       due_t: number | null; last_t: number; clock_version: string; seq: number; eseq: number;
       written_ms: string }>(
-      'SELECT document_id, slugs, phase, due_t, last_t, clock_version, seq, eseq, written_ms FROM doc_registry');
+      'SELECT document_id, slugs, reserved_slugs, phase, due_t, last_t, clock_version, seq, eseq, written_ms FROM doc_registry');
     return new Map(rows.map((r) => [r.document_id, { slugs: r.slugs,
+      ...(r.reserved_slugs === null ? {} : { reservedSlugs: r.reserved_slugs }),
       phase: r.phase as RegistryRow['phase'], dueT: r.due_t === null ? null : Number(r.due_t),
       lastT: Number(r.last_t), clockVersion: r.clock_version, seq: r.seq, eseq: r.eseq,
       writtenMs: Number(r.written_ms) }]));
@@ -569,13 +581,13 @@ export class PgPersistence implements MaintainablePersistence {
 
   async writeRegistry(id: string, row: RegistryRow): Promise<void> {
     await this.pool.query(
-      `INSERT INTO doc_registry (document_id, slugs, phase, due_t, last_t, clock_version, seq, eseq, written_ms)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `INSERT INTO doc_registry (document_id, slugs, phase, due_t, last_t, clock_version, seq, eseq, written_ms, reserved_slugs)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         ON CONFLICT (document_id) DO UPDATE SET slugs = EXCLUDED.slugs, phase = EXCLUDED.phase,
           due_t = EXCLUDED.due_t, last_t = EXCLUDED.last_t, clock_version = EXCLUDED.clock_version,
-          seq = EXCLUDED.seq, eseq = EXCLUDED.eseq, written_ms = EXCLUDED.written_ms`,
+          seq = EXCLUDED.seq, eseq = EXCLUDED.eseq, written_ms = EXCLUDED.written_ms, reserved_slugs = EXCLUDED.reserved_slugs`,
       [id, JSON.stringify(row.slugs), row.phase, row.dueT, row.lastT, row.clockVersion, row.seq,
-        row.eseq, row.writtenMs]);
+        row.eseq, row.writtenMs, row.reservedSlugs === undefined ? null : JSON.stringify(row.reservedSlugs)]);
   }
 
   /* -- tokens -------------------------------------------------------------- */
@@ -605,18 +617,46 @@ export class PgPersistence implements MaintainablePersistence {
 
   /* -- stashes -------------------------------------------------------------- */
 
-  async putStash(key: string, rec: StashRecord): Promise<void> {
-    await this.pool.query(
+  async putStash(key: string, rec: StashRecord, expected?: StashRecord): Promise<boolean> {
+    const c = await this.pool.connect();
+    try {
+      await c.query('BEGIN');
+      await c.query('SELECT pg_advisory_xact_lock(3, hashtext($1))', [key]);
+      const old = await this.getStashWith(c, key, true);
+      if (expected !== undefined && !sameStash(old ?? undefined, expected)) {
+        await c.query('ROLLBACK');
+        return false;
+      }
+      if (old?.docId !== undefined && old.docId !== rec.docId) throw new SlugTakenError(old.slug ?? '');
+      if (rec.slug !== undefined && rec.docId === undefined && rec.expMs >= Date.now()) {
+        await c.query('SELECT pg_advisory_xact_lock(2, hashtext($1))', [rec.slug]);
+        const taken = await c.query(
+          `SELECT slug FROM slug_owners WHERE slug = $1 UNION ALL
+           SELECT slug FROM stashes WHERE slug = $1 AND key <> $2 AND doc_id IS NULL AND exp_ms >= $3 LIMIT 1`,
+          [rec.slug, key, Date.now()]);
+        if (taken.rows.length > 0) throw new SlugTakenError(rec.slug);
+      }
+      await c.query(
       `INSERT INTO stashes (key, text, exp_ms, slug, doc_id, email) VALUES ($1, $2, $3, $4, $5, $6)
         ON CONFLICT (key) DO UPDATE SET text = EXCLUDED.text, exp_ms = EXCLUDED.exp_ms,
           slug = EXCLUDED.slug, doc_id = EXCLUDED.doc_id, email = EXCLUDED.email`,
       [key, rec.text, rec.expMs, rec.slug ?? null, rec.docId ?? null, rec.email ?? null]);
+      await c.query('COMMIT');
+      return true;
+    } catch (e) {
+      await c.query('ROLLBACK').catch(() => undefined);
+      throw e;
+    } finally { c.release(); }
   }
 
   async getStash(key: string): Promise<StashRecord | null> {
-    const { rows } = await this.pool.query<{ text: string; exp_ms: string; slug: string | null;
+    return this.getStashWith(this.pool, key);
+  }
+
+  private async getStashWith(c: pg.Pool | pg.PoolClient, key: string, lock = false): Promise<StashRecord | null> {
+    const { rows } = await c.query<{ text: string; exp_ms: string; slug: string | null;
       doc_id: string | null; email: string | null }>(
-      'SELECT text, exp_ms, slug, doc_id, email FROM stashes WHERE key = $1', [key]);
+      'SELECT text, exp_ms, slug, doc_id, email FROM stashes WHERE key = $1' + (lock ? ' FOR UPDATE' : ''), [key]);
     if (rows.length === 0) return null;
     const r = rows[0]!;
     return { text: r.text, expMs: Number(r.exp_ms),
@@ -633,9 +673,9 @@ export class PgPersistence implements MaintainablePersistence {
     await this.pool.query('DELETE FROM stashes WHERE exp_ms < $1', [nowMs]);
   }
 
-  async findStashBySlug(slug: string): Promise<string | null> {
+  async findStashBySlug(slug: string, nowMs: number): Promise<string | null> {
     const { rows } = await this.pool.query<{ key: string }>(
-      'SELECT key FROM stashes WHERE slug = $1 LIMIT 1', [slug]);
+      'SELECT key FROM stashes WHERE slug = $1 AND doc_id IS NULL AND exp_ms >= $2 LIMIT 1', [slug, nowMs]);
     return rows.length === 0 ? null : rows[0]!.key;
   }
 
@@ -871,15 +911,32 @@ export class PgPersistence implements MaintainablePersistence {
 
   private async appendChain(table: 'document_log' | 'engine_log', id: string,
     entries: readonly ChainedEntry[], people: readonly PersonRow[] = [],
-    options: { slugs?: readonly string[]; bridgeState?: string } = {}): Promise<void> {
-    if (entries.length === 0 && people.length === 0 && !options.slugs?.length && options.bridgeState === undefined) return;
+    options: { slugs?: readonly string[]; bridgeState?: string; fromStash?: CreationClaim } = {}): Promise<void> {
+    if (entries.length === 0 && people.length === 0 && options.slugs === undefined && options.bridgeState === undefined) return;
     const c = await this.pool.connect();
     try {
       await c.query('BEGIN');
       // one writer per document per batch; the primary key catches the
       // writer that slipped in between
       await c.query('SELECT pg_advisory_xact_lock(1, hashtext($1))', [id]);
-      await this.claimSlugsWith(c, (options.slugs ?? []).map((slug) => ({ slug, documentId: id })));
+      if (options.fromStash !== undefined) {
+        await c.query('SELECT pg_advisory_xact_lock(3, hashtext($1))', [options.fromStash.key]);
+        const stash = await this.getStashWith(c, options.fromStash.key, true);
+        if (stash === null || stash.expMs < Date.now() ||
+            (stash.docId !== undefined && stash.docId !== id) ||
+            (stash.slug !== undefined && !options.slugs?.includes(stash.slug)) ||
+            (stash.email !== undefined && stash.email.toLowerCase() !== options.fromStash.email.toLowerCase())) {
+          throw new CreationChangedError();
+        }
+      }
+      await this.claimSlugsWith(c, (options.slugs ?? []).map((slug) => ({ slug, documentId: id })), options.fromStash?.key);
+      // The snapshot contains all historical addresses plus every open
+      // proposal. Releasing one proposal cannot release another's claim.
+      if (options.slugs !== undefined) await c.query(
+        'DELETE FROM slug_owners WHERE document_id = $1 AND NOT (slug = ANY($2::text[]))',
+        [id, options.slugs]);
+      if (options.fromStash !== undefined) await c.query(
+        'UPDATE stashes SET doc_id = $2 WHERE key = $1', [options.fromStash.key, id]);
       // the rows the entries name, in the same transaction (decision 1253)
       if (people.length > 0) {
         await c.query(

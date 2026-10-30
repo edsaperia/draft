@@ -150,6 +150,8 @@ The card lifecycle, as the rows of the matrix a single card passes through — p
 
 ## 4. Page keys
 
+**Link availability (Q1604).** An address reserved by another document's open link proposal is taken, just like a current or historical address or a live pending creation. Refusal uses the existing taken-address response. The proposed address routes nowhere until adopted; the document continues to answer at its current and historical addresses. Reservation and release follow SPEC §9.7a. A second valid creation link forwards to the same document, including when both links are followed together.
+
 The page speaks its own keys; the spec speaks the catalogue's ids. This table is the map (`MID` in `session-view.html` carries the non-identical pairs), and the checker asserts it.
 
 🪪 and 🤝 are `admission` and `applications` on both sides, so `MID` carries neither; a log written under their old ids, or carrying 🤝's old `holder` / `joinPolicy` keys, is refused at replay and quarantined at boot, never folded (Q1329). The page's word `'roster'` is the delegation sentinel — *the membership holds this setting* — not a key. → why: DECISIONS.md, *SURFACE.md, pruned* (Q903).

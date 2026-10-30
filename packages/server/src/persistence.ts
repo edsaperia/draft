@@ -23,6 +23,8 @@ import {
 } from 'node:fs';
 import { join } from 'node:path';
 import type { LogEntry, PersonId } from '../../constitution/src/index.js';
+import { CreationChangedError, SlugTakenError } from './slug-ownership.js';
+import type { CreationClaim } from './slug-ownership.js';
 import { outboxTail } from './mailer.js';
 
 /**
@@ -64,6 +66,8 @@ export interface SnapshotRow {
 export interface RegistryRow {
   /** every slug the document has worn, oldest first (§9.7: no link breaks) */
   slugs: string[];
+  /** Open proposals' reserved addresses (Q1604). Absent in pre-migration rows. */
+  reservedSlugs?: string[];
   /** `founding` before 🍾, `live` from it, `closed` once the clock closed it */
   phase: 'founding' | 'live' | 'closed';
   /** the next time the minute's tick has anything to do, on the document's own clock; null for never */
@@ -114,6 +118,12 @@ export interface StashRecord {
    *  forward to it rather than founding a twin. Set at the save, so a stash
    *  carrying it is spent; swept with the rest at expiry. */
   docId?: string;
+}
+
+/** Compare the whole pending-creation revision, including its claim. */
+export function sameStash(a: StashRecord | undefined, b: StashRecord): boolean {
+  return a !== undefined && a.text === b.text && a.expMs === b.expMs &&
+    a.slug === b.slug && a.email === b.email && a.docId === b.docId;
 }
 
 /**
@@ -234,8 +244,8 @@ export interface Persistence {
    * list may be empty.
    */
   appendDocLog(id: string, entries: readonly LogEntry[],
-    people?: readonly PersonRow[], slugs?: readonly string[]): Promise<void>;
-  /** Reconcile durable address ownership from the loaded, verified histories. */
+    people?: readonly PersonRow[], slugs?: readonly string[], fromStash?: CreationClaim): Promise<void>;
+  /** Reconcile durable address ownership and reservations from verified logs. */
   claimSlugs(owners: readonly import('./slug-ownership.js').SlugOwner[]): Promise<void>;
   /** Every person row the document holds, in no particular order. */
   readPeople(id: string): Promise<PersonRow[]>;
@@ -301,12 +311,12 @@ export interface Persistence {
   sweepTokens(nowMs: number): Promise<void>;
 
   /* -- the pre-save text stash (§9.7a v0.55) ----------------------------- */
-  putStash(key: string, rec: StashRecord): Promise<void>;
+  putStash(key: string, rec: StashRecord, expected?: StashRecord): Promise<boolean>;
   getStash(key: string): Promise<StashRecord | null>;
   deleteStash(key: string): Promise<void>;
   sweepStashes(nowMs: number): Promise<void>;
   /** The key of the live stash holding this slug, or null (Q462b). */
-  findStashBySlug(slug: string): Promise<string | null>;
+  findStashBySlug(slug: string, nowMs: number): Promise<string | null>;
 
   /* -- the mail outbox (finding 15) -------------------------------------- */
   /** Durably enqueue; the caller's promise resolving means the mail cannot
@@ -428,14 +438,39 @@ export class FilePersistence implements MaintainablePersistence {
 
   // The file backend has one host. DocStore reserves synchronously before
   // any write; its verified log histories rebuild ownership at boot.
-  async claimSlugs(_owners: readonly import('./slug-ownership.js').SlugOwner[]): Promise<void> {}
+  private readonly slugOwners = new Map<string, string>();
+
+  private checkSlugs(id: string, slugs: readonly string[], fromStash?: string): void {
+    for (const slug of slugs) {
+      const owner = this.slugOwners.get(slug);
+      if (owner !== undefined && owner !== id) throw new SlugTakenError(slug);
+      for (const [key, rec] of this.stashes) {
+        if (rec.slug === slug && rec.docId === undefined && rec.expMs >= Date.now() && key !== fromStash) {
+          throw new SlugTakenError(slug);
+        }
+      }
+    }
+  }
+
+  async claimSlugs(owners: readonly import('./slug-ownership.js').SlugOwner[]): Promise<void> {
+    for (const { slug, documentId } of owners) this.checkSlugs(documentId, [slug]);
+    for (const { slug, documentId } of owners) this.slugOwners.set(slug, documentId);
+  }
 
   async readDocLog(id: string): Promise<LogEntry[]> {
     return readJsonl<LogEntry>(join(this.docsDir, id, 'log.jsonl'));
   }
 
   async appendDocLog(id: string, entries: readonly LogEntry[],
-    people: readonly PersonRow[] = []): Promise<void> {
+    people: readonly PersonRow[] = [], slugs?: readonly string[], fromStash?: CreationClaim): Promise<void> {
+    const stash = fromStash === undefined ? undefined : this.stashes.get(fromStash.key);
+    if (fromStash !== undefined && (stash === undefined || stash.expMs < Date.now() ||
+        (stash.docId !== undefined && stash.docId !== id) ||
+        (stash.slug !== undefined && !slugs?.includes(stash.slug)) ||
+        (stash.email !== undefined && stash.email.toLowerCase() !== fromStash.email.toLowerCase()))) {
+      throw new CreationChangedError();
+    }
+    if (slugs !== undefined) this.checkSlugs(id, slugs, fromStash?.key);
     // rows first (decision 1253): a crash after this and before the append
     // leaves a row nothing names, which is harmless; the other order leaves
     // an event naming a row that is not there
@@ -446,6 +481,14 @@ export class FilePersistence implements MaintainablePersistence {
       writePeopleFile(path, rows);
     }
     appendJsonl(join(this.docsDir, id, 'log.jsonl'), entries);
+    if (slugs !== undefined) {
+      for (const [slug, owner] of this.slugOwners) if (owner === id && !slugs.includes(slug)) this.slugOwners.delete(slug);
+      for (const slug of slugs) this.slugOwners.set(slug, id);
+    }
+    if (stash !== undefined && fromStash !== undefined) {
+      this.stashes.set(fromStash.key, { ...stash, docId: id });
+      this.saveStashes();
+    }
   }
 
   async readPeople(id: string): Promise<PersonRow[]> {
@@ -607,9 +650,21 @@ export class FilePersistence implements MaintainablePersistence {
 
   /* -- stashes -------------------------------------------------------------- */
 
-  async putStash(key: string, rec: StashRecord): Promise<void> {
+  async putStash(key: string, rec: StashRecord, expected?: StashRecord): Promise<boolean> {
+    const old = this.stashes.get(key);
+    if (expected !== undefined && !sameStash(old, expected)) return false;
+    if (old?.docId !== undefined && old.docId !== rec.docId) throw new SlugTakenError(old.slug ?? '');
+    if (rec.slug !== undefined && rec.docId === undefined && rec.expMs >= Date.now()) {
+      if (this.slugOwners.has(rec.slug)) throw new SlugTakenError(rec.slug);
+      for (const [otherKey, other] of this.stashes) {
+        if (otherKey !== key && other.slug === rec.slug && other.docId === undefined && other.expMs >= Date.now()) {
+          throw new SlugTakenError(rec.slug);
+        }
+      }
+    }
     this.stashes.set(key, rec);
     this.saveStashes();
+    return true;
   }
 
   async getStash(key: string): Promise<StashRecord | null> {
@@ -620,8 +675,8 @@ export class FilePersistence implements MaintainablePersistence {
     if (this.stashes.delete(key)) this.saveStashes();
   }
 
-  async findStashBySlug(slug: string): Promise<string | null> {
-    for (const [key, rec] of this.stashes) if (rec.slug === slug) return key;
+  async findStashBySlug(slug: string, nowMs: number): Promise<string | null> {
+    for (const [key, rec] of this.stashes) if (rec.slug === slug && rec.docId === undefined && rec.expMs >= nowMs) return key;
     return null;
   }
 
@@ -761,6 +816,7 @@ export class FilePersistence implements MaintainablePersistence {
     }
     this.tokens.clear();
     this.stashes.clear();
+    this.slugOwners.clear();
     this.outbox.clear();
     return ids.length;
   }
@@ -776,6 +832,7 @@ export class FilePersistence implements MaintainablePersistence {
     const dir = join(this.docsDir, id);
     if (!existsSync(dir)) return false;
     rmSync(dir, { recursive: true, force: true });
+    for (const [slug, owner] of this.slugOwners) if (owner === id) this.slugOwners.delete(slug);
     return true;
   }
 

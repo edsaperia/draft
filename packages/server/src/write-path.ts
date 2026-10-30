@@ -37,7 +37,7 @@ import { asEngineDoc, clockDueT, devNow, driveBridge, foldTime, persistEngine, r
 import type { SnapshotCounts } from './snapshots.js';
 import type { RegistryRow } from './persistence.js';
 import { clockVersion } from './code-version.js';
-import { SlugTakenError } from './slug-ownership.js';
+import { reservedSlugs, SlugTakenError } from './slug-ownership.js';
 
 /**
  * **A command the store could not write, said as what it is** (issue #79).
@@ -173,6 +173,7 @@ export class WritePath {
     const due = this.dueT(doc);
     return {
       slugs: [...doc.cs.slugs],
+      reservedSlugs: reservedSlugs(doc.cs),
       phase: doc.cs.closed ? 'closed' : doc.cs.constitutedAtT === null ? 'founding' : 'live',
       dueT: due === -Infinity ? lastT : due,
       lastT,

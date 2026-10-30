@@ -28,6 +28,7 @@ import { EngineBridge } from '../../constitution/src/engine-bridge.js';
 import type { BridgeState } from '../../constitution/src/engine-bridge.js';
 import type { LogEntry as EngineLogEntry } from '../../engine-core/src/types.js';
 import { buildConstituted } from '../../constitution/test/helpers.js';
+import { creationClaimContract } from './address-claim-contract.js';
 
 const URL = process.env.DRAFT_TEST_DATABASE_URL ?? null;
 if (URL === null) {
@@ -83,6 +84,90 @@ async function seedDisk(dataDir: string, n = 3): Promise<string[]> {
 const lastHash = (log: readonly LogEntry[]) => log[log.length - 1]!.hash;
 
 d('PgPersistence contract', () => {
+  it('shares namespace safety with pending creation, expiry and claim transfer', async () => {
+    await creationClaimContract(await open());
+  });
+
+  it('serializes pending creation against document claims across connections', async () => {
+    const p = await open();
+    const other = await reopen(p);
+    try {
+      await p.createDoc('a');
+      const s = ConstitutionSession.open({ title: 'A', slug: 'raced',
+        convenor: { id: 'f', email: 'a@example.org', isMember: true } }, Date.now());
+      const results = await Promise.allSettled([
+        p.putStash('pending', { slug: 'raced', text: '', expMs: Date.now() + 60_000 }),
+        other.appendDocLog('a', s.logEntries(), [], ['raced']),
+      ]);
+      expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+      expect((await p.readDocLog('a')).length > 0).toBe(results[1]!.status === 'fulfilled');
+      expect(await p.getStash('pending')).toEqual(results[0]!.status === 'fulfilled'
+        ? expect.objectContaining({ slug: 'raced' }) : null);
+      const pending = await Promise.allSettled([
+        p.putStash('one', { slug: 'both-pending', text: '', expMs: Date.now() + 60_000 }),
+        other.putStash('two', { slug: 'both-pending', text: '', expMs: Date.now() + 60_000 }),
+      ]);
+      expect(pending.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+    } finally { await other.close(); }
+  });
+
+  it('rolls back a pending-creation transfer if genesis cannot append', async () => {
+    const p = await open();
+    await p.createDoc('a');
+    const s = ConstitutionSession.open({ title: 'A', slug: 'a',
+      convenor: { id: 'f', email: 'a@example.org', isMember: true } }, Date.now());
+    await p.appendDocLog('a', s.logEntries(), [], ['a']);
+    const rec = { slug: 'reserved', text: 'draft', email: 'a@example.org', expMs: Date.now() + 60_000 };
+    await p.putStash('pending', rec);
+    await expect(p.appendDocLog('a', s.logEntries(), [], ['a', 'reserved'],
+      { key: 'pending', email: rec.email })).rejects.toThrow();
+    expect(await p.getStash('pending')).toEqual(rec);
+    await p.deleteStash('pending');
+    await p.createDoc('b');
+    await p.claimSlugs([{ slug: 'reserved', documentId: 'b' }]);
+  });
+  it('reserves open proposals atomically across connections and releases only on a saved terminal outcome', async () => {
+    const p = await open();
+    const other = await reopen(p);
+    try {
+      for (const id of ['a', 'b']) {
+        const { s } = buildConstituted({ slug: id });
+        await p.createDoc(id);
+        await p.appendDocLog(id, s.logEntries());
+      }
+      const first = new DocStore(p), second = new DocStore(other);
+      await first.loadAll();
+      await second.loadAll();
+      const a = first.byId('a')!, b = second.byId('b')!;
+      const proposer = [...a.cs.memberRecords().keys()].find((id) => id !== 'ada')!;
+      const ma = a.cs.openMotion(3, proposer, { kind: 'set', setting: 'link', value: { slug: 'reserved' } });
+      const mb = b.cs.openMotion(3, proposer, { kind: 'set', setting: 'link', value: { slug: 'reserved' } });
+      const results = await Promise.allSettled([first.persist(a), second.persist(b)]);
+      expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+      const [winner, winnerStore, motion, loser, loserStore] = results[0]!.status === 'fulfilled'
+        ? [a, first, ma, b, second] as const : [b, second, mb, a, first] as const;
+      loserStore.rewind(loser);
+      expect(loser.cs.motionRecords().size).toBe(0);
+      loser.cs.setSetting(4, 'title', { text: 'Not stalled' });
+      await loserStore.persist(loser);
+      const cold = new DocStore(p);
+      await cold.loadRegistry();
+      expect(cold.slugTaken('reserved')).toBe(true);
+      expect(cold.servesSlug('reserved')).toBeNull();
+      const fresh = new DocStore(other);
+      await fresh.loadRegistry(); // valid registry carries reservations too
+      expect(fresh.slugTaken('reserved')).toBe(true);
+      // A transaction that fails after its release restores the reservation.
+      const durable = await p.readDocLog(winner.id);
+      await expect(p.appendDocLog(winner.id, durable, [], [winner.id])).rejects.toThrow();
+      await expect(other.claimSlugs([{ slug: 'reserved', documentId: loser.id }])).rejects.toThrow('that address is taken');
+      winner.cs.withdrawMotion(5, proposer, motion);
+      await winnerStore.persist(winner);
+      await other.claimSlugs([{ slug: 'reserved', documentId: loser.id }]);
+      // The winner's original permanent address was not released.
+      await expect(other.claimSlugs([{ slug: winner.id, documentId: loser.id }])).rejects.toThrow('that address is taken');
+    } finally { await other.close(); }
+  });
   it('address ownership and the document log commit together, across connections', async () => {
     const p = await open();
     const other = await reopen(p);

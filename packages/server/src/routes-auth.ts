@@ -19,6 +19,8 @@ import { LIMITS, cap, emailOk } from './commands.js';
 import { logError } from './error-log.js';
 import { MAILS } from './mailer.js';
 import { slugify, uniqueSlug } from './store.js';
+import type { LoadedDoc } from './store.js';
+import { CreationChangedError } from './slug-ownership.js';
 import { admissionPrice } from './views.js';
 import { expectString, html, json, rateLimited, readJson, readTokenBody, redirect, setCookie } from './routes.js';
 import type { Req, RouteContext, Route } from './routes.js';
@@ -270,7 +272,7 @@ export const authTable: Route[] = [
          moved in between, because the claim is on the creation rather than
          on a name. */
       const pend = p.stashKey === undefined ? null : await stash.pendingOf(p.stashKey, nowMs);
-      const made = pend?.docId === undefined ? null : await store.open(pend.docId);
+      const made = pend?.docId === undefined ? null : await store.openClaimed(pend.docId);
       if (made) {
         // **…to the founder it names** (issue #38 F1): a link minted to a
         // mistyped 📧 and followed after the corrected one founded the
@@ -313,16 +315,42 @@ export const authTable: Route[] = [
         redirect(res, `/d/${want}`);
         return true;
       }
-      const slug = store.slugTaken(want)
+      let slug = store.slugTaken(want)
         ? uniqueSlug(p.title, (s) => store.slugTaken(s)) : want;
       const id = `d-${randomBytes(5).toString('hex')}`;
       // on the chain (review #1, finding 9): the birth's persist must not
       // interleave with a first command's commit
-      const doc = await commits.run(id, () => store.create(id, {
-        title: p.title,
-        slug,
-        convenor: { id: 'founder', email: p.email, isMember: p.isMember },
-      }, nowMs));
+      let doc: LoadedDoc;
+      for (;;) {
+        try {
+          doc = await commits.run(p.stashKey === undefined ? id : `creation:${p.stashKey}`, () => store.create(id, {
+            title: p.title, slug,
+            convenor: { id: 'founder', email: p.email, isMember: p.isMember },
+          }, nowMs, p.stashKey));
+          break;
+        } catch (e) {
+          if (!(e instanceof CreationChangedError) || p.stashKey === undefined) throw e;
+          // A resend or another verified link won between our read and
+          // genesis. Re-read the claim: never resurrect its old address or
+          // email, and never turn a second valid link into a second document.
+          const latest = await stash.pendingOf(p.stashKey, Date.now());
+          if (latest === null) { await spentPage(ctx, r, PAGE.used, 'create'); return true; }
+          if (latest.email !== undefined && latest.email.toLowerCase() !== p.email.toLowerCase()) {
+            await spentPage(ctx, r, PAGE.changed, 'create'); return true;
+          }
+          if (latest.docId !== undefined) {
+            const claimed = await store.openClaimed(latest.docId);
+            if (claimed === null) { await spentPage(ctx, r, PAGE.used, 'create'); return true; }
+            if (claimed.cs.convenorRecord().email?.toLowerCase() !== p.email.toLowerCase()) {
+              await spentPage(ctx, r, PAGE.changed, 'create'); return true;
+            }
+            setCookie(res, claimed.id, auth.cookieFor(claimed.id, claimed.cs.convenorRecord().id, nowMs), ctx.httpsOn);
+            redirect(res, `/d/${claimed.cs.slug}`);
+            return true;
+          }
+          slug = latest.slug ?? p.slug;
+        }
+      }
       // the pasted text is waiting in the saved document (§9.7a v0.55) —
       // waiting, not decided: confirming the starting text stays its own act
       if (p.stashKey !== undefined) {

@@ -34,7 +34,7 @@ import { FilePersistence } from '../src/persistence.js';
 
 const DESIGN_DIR = join(import.meta.dirname, '..', '..', '..', 'design');
 
-interface Booted { base: string; draft: DraftServer; dataDir: string }
+interface Booted { base: string; draft: DraftServer; dataDir: string; persistence: FilePersistence }
 const booted: Booted[] = [];
 
 async function boot(): Promise<Booted> {
@@ -46,10 +46,11 @@ async function boot(): Promise<Booted> {
     trustProxy: false, buildSha: null, notifyEmail: null,
     engineTuning: { cooldownMs: 0 },
   };
-  const draft = await createDraftServer(cfg, new FilePersistence(dataDir));
+  const persistence = new FilePersistence(dataDir);
+  const draft = await createDraftServer(cfg, persistence);
   await new Promise<void>((r) => draft.server.listen(0, '127.0.0.1', r));
   cfg.baseUrl = `http://127.0.0.1:${(draft.server.address() as AddressInfo).port}`;
-  const b = { base: cfg.baseUrl, draft, dataDir };
+  const b = { base: cfg.baseUrl, draft, dataDir, persistence };
   booted.push(b);
   return b;
 }
@@ -212,6 +213,48 @@ describe('📍 — the invitation link never held a slug to break', () => {
 });
 
 describe('📍 — a change cannot take another document’s address', () => {
+  it('two valid creation links followed together create one document and both forward to it', async () => {
+    const b = await boot();
+    const input = { title: 'One creation', slug: 'one-creation', email: 'ada@example.org', isMember: true };
+    const first = await (await post(b.base, '/api/docs', input)).json() as { pendingId: string; devLink: string };
+    const second = await (await post(b.base, '/api/docs', { ...input, pendingId: first.pendingId })).json() as { devLink: string };
+    const results = await Promise.all([consume(first.devLink), consume(second.devLink)]);
+    expect(results.map((r) => r.status)).toEqual([302, 302]);
+    expect(results.map((r) => r.headers.get('location'))).toEqual(['/d/one-creation', '/d/one-creation']);
+    expect([...b.draft.store.all()].filter((d) => !d.ephemeral)).toHaveLength(1);
+  });
+
+  it.each(['email', 'slug'] as const)('revalidates a concurrent pending-creation %s correction at genesis', async (field) => {
+    const b = await boot();
+    const input = { title: 'Pending', slug: 'before', email: 'old@example.org', isMember: true };
+    const first = await (await post(b.base, '/api/docs', input)).json() as { pendingId: string; devLink: string };
+    let entered!: () => void, release!: () => void;
+    const reached = new Promise<void>((r) => { entered = r; });
+    const gate = new Promise<void>((r) => { release = r; });
+    const append = b.persistence.appendDocLog.bind(b.persistence);
+    let blocked = false;
+    b.persistence.appendDocLog = async (...args) => {
+      if (args[4] !== undefined && !blocked) { blocked = true; entered(); await gate; }
+      return append(...args);
+    };
+    const followed = consume(first.devLink);
+    await reached;
+    let fresh: { devLink: string };
+    try {
+      fresh = await (await post(b.base, '/api/docs', { ...input, pendingId: first.pendingId,
+        ...(field === 'email' ? { email: 'correct@example.org' } : { slug: 'after' }) })).json() as { devLink: string };
+    } finally { release(); }
+    const old = await followed;
+    expect(old.status).toBe(field === 'email' ? 410 : 302);
+    if (field === 'email') expect(await old.text()).toContain('Founder has since changed');
+    else expect(old.headers.get('location')).toBe('/d/after');
+    expect((await consume(fresh.devLink)).status).toBe(302);
+    const docs = [...b.draft.store.all()].filter((d) => !d.ephemeral);
+    expect(docs).toHaveLength(1);
+    expect(docs[0]!.cs.slug).toBe(field === 'slug' ? 'after' : 'before');
+    expect(docs[0]!.cs.convenorRecord().email).toBe(field === 'email' ? 'correct@example.org' : input.email);
+  });
+
   it('creation refuses a taken address, and a taken *history* counts', async () => {
     const b = await boot();
     const d = await found(b, 'Hollow Oak Club Charter', 'hollow-oak');

@@ -193,15 +193,16 @@ describe('Stash over the seam', () => {
 
 describe('DocStore', () => {
   it.each(['eager', 'rebuilt registry', 'fresh registry'])('refuses ambiguous historical ownership on %s boot', async (mode) => {
-    const p = new FilePersistence(tmp());
+    const dir = tmp();
+    const p = new FilePersistence(dir);
     // Two separate old hosts could previously persist the same address.
     for (const id of ['d-1', 'd-2']) {
-      const doc = await new DocStore(p).create(id, {
+      const doc = await new DocStore(new FilePersistence(dir)).create(id, {
         title: id, slug: 'shared',
         convenor: { id: 'founder', email: 'a@x.org', isMember: true },
       }, 1000);
       if (mode === 'fresh registry') await p.writeRegistry(id, {
-        slugs: ['shared'], phase: 'founding', dueT: null, lastT: 1000,
+        slugs: ['shared'], reservedSlugs: [], phase: 'founding', dueT: null, lastT: 1000,
         clockVersion: '', seq: doc.persisted, eseq: 0, writtenMs: 1000,
       });
     }

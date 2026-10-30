@@ -34,10 +34,11 @@ export class Stash {
    *  the one this send goes to is the founder's, whatever the last said. */
   async renew(key: string, expMs: number, slug: string, nowMs: number,
     email?: string): Promise<boolean> {
-    const rec = await this.persistence.getStash(key);
-    if (rec === null || rec.expMs < nowMs || rec.docId !== undefined) return false;
-    await this.persistence.putStash(key, { ...rec, expMs, slug, ...(email === undefined ? {} : { email }) });
-    return true;
+    for (;;) {
+      const rec = await this.persistence.getStash(key);
+      if (rec === null || rec.expMs < nowMs || rec.docId !== undefined) return false;
+      if (await this.persistence.putStash(key, { ...rec, expMs, slug, ...(email === undefined ? {} : { email }) }, rec)) return true;
+    }
   }
 
   /** The stash key holding a live reservation on this slug, or null. A
@@ -45,7 +46,7 @@ export class Stash {
    *  address, and a reservation that outlived it would let the creation that
    *  made it walk past the taken-address check. */
   async reservedBy(slug: string, nowMs: number): Promise<string | null> {
-    const key = await this.persistence.findStashBySlug(slug);
+    const key = await this.persistence.findStashBySlug(slug, nowMs);
     if (key === null) return null;
     const rec = await this.persistence.getStash(key);
     return rec !== null && rec.expMs >= nowMs && rec.docId === undefined ? key : null;
@@ -54,10 +55,11 @@ export class Stash {
   /** Update an open stash; false if it never existed, has expired, or has
    *  already become a document — past the save the text lives there. */
   async update(key: string, text: string, nowMs: number): Promise<boolean> {
-    const rec = await this.persistence.getStash(key);
-    if (rec === null || rec.expMs < nowMs || rec.docId !== undefined) return false;
-    await this.persistence.putStash(key, { ...rec, text });
-    return true;
+    for (;;) {
+      const rec = await this.persistence.getStash(key);
+      if (rec === null || rec.expMs < nowMs || rec.docId !== undefined) return false;
+      if (await this.persistence.putStash(key, { ...rec, text }, rec)) return true;
+    }
   }
 
   /** Take the text and claim the stash for the document it became (Q519).
@@ -67,11 +69,13 @@ export class Stash {
    *  the document — so what is left is the claim alone, and the address stays
    *  reserved by a stash whose document now holds it. Expiry sweeps it. */
   async take(key: string, nowMs: number, docId: string): Promise<string> {
-    const rec = await this.persistence.getStash(key);
-    if (rec === null) return '';
-    await this.persistence.putStash(key, { ...rec, text: '', docId });
-    await this.persistence.sweepStashes(nowMs);
-    return rec.expMs >= nowMs ? rec.text : '';
+    for (;;) {
+      const rec = await this.persistence.getStash(key);
+      if (rec === null) return '';
+      if (!await this.persistence.putStash(key, { ...rec, text: '', docId }, rec)) continue;
+      await this.persistence.sweepStashes(nowMs);
+      return rec.expMs >= nowMs ? rec.text : '';
+    }
   }
 
   /**
