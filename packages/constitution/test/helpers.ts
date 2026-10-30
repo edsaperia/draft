@@ -9,6 +9,7 @@ import type { LapseValue, ApplicationsValue } from '../src/values.js';
  * text confirmed, judging open at t=2.
  */
 export function buildConstituted(opts: {
+  slug?: string;
   clerk?: boolean;
   lapse?: LapseValue;
   applications?: ApplicationsValue;
@@ -41,7 +42,7 @@ export function buildConstituted(opts: {
 } = {}) {
   const s = ConstitutionSession.open({
     title: 'Hollow Oak Club Charter',
-    slug: 'hollow-oak',
+    slug: opts.slug ?? 'hollow-oak',
     convenor: { id: 'ada', email: 'ada@example.org', isMember: !opts.clerk },
   }, 0);
   const bo = s.invite(1, 'bo@example.org');

@@ -192,10 +192,57 @@ describe('Stash over the seam', () => {
 });
 
 describe('DocStore', () => {
+  it.each(['eager', 'rebuilt registry', 'fresh registry'])('refuses ambiguous historical ownership on %s boot', async (mode) => {
+    const dir = tmp();
+    const p = new FilePersistence(dir);
+    // Two separate old hosts could previously persist the same address.
+    for (const id of ['d-1', 'd-2']) {
+      const doc = await new DocStore(new FilePersistence(dir)).create(id, {
+        title: id, slug: 'shared',
+        convenor: { id: 'founder', email: 'a@x.org', isMember: true },
+      }, 1000);
+      if (mode === 'fresh registry') await p.writeRegistry(id, {
+        slugs: ['shared'], reservedSlugs: [], phase: 'founding', dueT: null, lastT: 1000,
+        clockVersion: '', seq: doc.persisted, eseq: 0, writtenMs: 1000,
+      });
+    }
+    const before = await Promise.all(['d-1', 'd-2'].map((id) => p.readDocLog(id)));
+    const cold = new DocStore(p);
+    await expect(mode === 'eager' ? cold.loadAll() : cold.loadRegistry()).rejects.toThrow(
+      /Address ownership conflict: 'shared' appears in documents 'd-1' and 'd-2'. Startup refused/);
+    expect(await Promise.all(['d-1', 'd-2'].map((id) => p.readDocLog(id)))).toEqual(before);
+  });
+
   it('a slug collision takes a short suffix', () => {
     const taken = new Set(['charter', 'charter-2']);
     expect(uniqueSlug('Charter', (s) => taken.has(s))).toBe('charter-3');
     expect(uniqueSlug('Fresh Title', (s) => taken.has(s))).toBe('fresh-title');
+  });
+
+  it('holds an address during a slow append and releases it after a failed append', async () => {
+    const p = new FilePersistence(tmp());
+    const store = new DocStore(p);
+    const docs = await Promise.all(['one', 'two'].map((id) => store.create(id, {
+      title: id, slug: id, convenor: { id: 'founder', email: 'a@x.org', isMember: true },
+    }, 1000)));
+    let release: () => void = () => {};
+    const gate = new Promise<void>((r) => { release = r; });
+    const append = p.appendDocLog.bind(p);
+    p.appendDocLog = async (id, entries, people) => {
+      if (id === 'one') { await gate; throw new Error('append failed'); }
+      return append(id, entries, people);
+    };
+    docs[0]!.cs.setSetting(1001, 'link', { slug: 'shared' });
+    const first = store.persist(docs[0]!);
+    expect(store.slugTaken('shared')).toBe(true);
+    expect(store.servesSlug('shared')).toBeNull();
+    docs[1]!.cs.setSetting(1001, 'link', { slug: 'shared' });
+    await expect(store.persist(docs[1]!)).rejects.toThrow('that address is taken');
+    release();
+    await expect(first).rejects.toThrow('append failed');
+    expect(store.slugTaken('shared')).toBe(false);
+    await store.persist(docs[1]!);
+    expect(store.servesSlug('shared')).toEqual({ id: 'two' });
   });
 
   it('creates, persists and reloads to an identical rolling hash', async () => {

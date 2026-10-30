@@ -28,6 +28,7 @@ import { EngineBridge } from '../../constitution/src/engine-bridge.js';
 import type { BridgeState } from '../../constitution/src/engine-bridge.js';
 import type { LogEntry as EngineLogEntry } from '../../engine-core/src/types.js';
 import { buildConstituted } from '../../constitution/test/helpers.js';
+import { creationClaimContract } from './address-claim-contract.js';
 
 const URL = process.env.DRAFT_TEST_DATABASE_URL ?? null;
 if (URL === null) {
@@ -83,6 +84,163 @@ async function seedDisk(dataDir: string, n = 3): Promise<string[]> {
 const lastHash = (log: readonly LogEntry[]) => log[log.length - 1]!.hash;
 
 d('PgPersistence contract', () => {
+  it('a boot snapshot cannot revive a reservation released after its read', async () => {
+    const p = await open();
+    const { s, bo } = buildConstituted();
+    await p.createDoc('a');
+    await p.appendDocLog('a', s.logEntries());
+    const active = new DocStore(p);
+    await active.loadAll();
+    const doc = active.byId('a')!;
+    const motion = doc.cs.openMotion(3, bo, { kind: 'set', setting: 'link', value: { slug: 'released' } });
+    await active.persist(doc);
+    const other = await reopen(p);
+    try {
+      const reconcile = other.claimSlugs.bind(other);
+      other.claimSlugs = async (...args) => {
+        doc.cs.withdrawMotion(4, bo, motion);
+        await active.persist(doc);
+        return reconcile(...args);
+      };
+      await expect(new DocStore(other).loadRegistry()).rejects.toThrow('Address ownership snapshot changed');
+      other.claimSlugs = reconcile;
+      const fresh = new DocStore(other);
+      await fresh.loadRegistry();
+      expect(fresh.slugTaken('released')).toBe(false);
+      await other.createDoc('b');
+      await other.claimSlugs([{ slug: 'released', documentId: 'b' }]);
+    } finally { await other.close(); }
+  });
+
+  it('shares namespace safety with pending creation, expiry and claim transfer', async () => {
+    await creationClaimContract(await open());
+  });
+
+  it('serializes pending creation against document claims across connections', async () => {
+    const p = await open();
+    const other = await reopen(p);
+    try {
+      await p.createDoc('a');
+      const s = ConstitutionSession.open({ title: 'A', slug: 'raced',
+        convenor: { id: 'f', email: 'a@example.org', isMember: true } }, Date.now());
+      const results = await Promise.allSettled([
+        p.putStash('pending', { slug: 'raced', text: '', expMs: Date.now() + 60_000 }),
+        other.appendDocLog('a', s.logEntries(), [], ['raced']),
+      ]);
+      expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+      expect((await p.readDocLog('a')).length > 0).toBe(results[1]!.status === 'fulfilled');
+      expect(await p.getStash('pending')).toEqual(results[0]!.status === 'fulfilled'
+        ? expect.objectContaining({ slug: 'raced' }) : null);
+      const pending = await Promise.allSettled([
+        p.putStash('one', { slug: 'both-pending', text: '', expMs: Date.now() + 60_000 }),
+        other.putStash('two', { slug: 'both-pending', text: '', expMs: Date.now() + 60_000 }),
+      ]);
+      expect(pending.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+    } finally { await other.close(); }
+  });
+
+  it('rolls back a pending-creation transfer if genesis cannot append', async () => {
+    const p = await open();
+    await p.createDoc('a');
+    const s = ConstitutionSession.open({ title: 'A', slug: 'a',
+      convenor: { id: 'f', email: 'a@example.org', isMember: true } }, Date.now());
+    await p.appendDocLog('a', s.logEntries(), [], ['a']);
+    const rec = { slug: 'reserved', text: 'draft', email: 'a@example.org', expMs: Date.now() + 60_000 };
+    await p.putStash('pending', rec);
+    await expect(p.appendDocLog('a', s.logEntries(), [], ['a', 'reserved'],
+      { key: 'pending', email: rec.email })).rejects.toThrow();
+    expect(await p.getStash('pending')).toEqual(rec);
+    await p.deleteStash('pending');
+    await p.createDoc('b');
+    await p.claimSlugs([{ slug: 'reserved', documentId: 'b' }]);
+  });
+  it('reserves open proposals atomically across connections and releases only on a saved terminal outcome', async () => {
+    const p = await open();
+    const other = await reopen(p);
+    try {
+      for (const id of ['a', 'b']) {
+        const { s } = buildConstituted({ slug: id });
+        await p.createDoc(id);
+        await p.appendDocLog(id, s.logEntries());
+      }
+      const first = new DocStore(p), second = new DocStore(other);
+      await first.loadAll();
+      await second.loadAll();
+      const a = first.byId('a')!, b = second.byId('b')!;
+      const proposer = [...a.cs.memberRecords().keys()].find((id) => id !== 'ada')!;
+      const ma = a.cs.openMotion(3, proposer, { kind: 'set', setting: 'link', value: { slug: 'reserved' } });
+      const mb = b.cs.openMotion(3, proposer, { kind: 'set', setting: 'link', value: { slug: 'reserved' } });
+      const results = await Promise.allSettled([first.persist(a), second.persist(b)]);
+      expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+      const [winner, winnerStore, motion, loser, loserStore] = results[0]!.status === 'fulfilled'
+        ? [a, first, ma, b, second] as const : [b, second, mb, a, first] as const;
+      loserStore.rewind(loser);
+      expect(loser.cs.motionRecords().size).toBe(0);
+      loser.cs.setSetting(4, 'title', { text: 'Not stalled' });
+      await loserStore.persist(loser);
+      const cold = new DocStore(p);
+      await cold.loadRegistry();
+      expect(cold.slugTaken('reserved')).toBe(true);
+      expect(cold.servesSlug('reserved')).toBeNull();
+      const fresh = new DocStore(other);
+      await fresh.loadRegistry(); // valid registry carries reservations too
+      expect(fresh.slugTaken('reserved')).toBe(true);
+      // A transaction that fails after its release restores the reservation.
+      const durable = await p.readDocLog(winner.id);
+      await expect(p.appendDocLog(winner.id, durable, [], [winner.id])).rejects.toThrow();
+      await expect(other.claimSlugs([{ slug: 'reserved', documentId: loser.id }])).rejects.toThrow('that address is taken');
+      winner.cs.withdrawMotion(5, proposer, motion);
+      await winnerStore.persist(winner);
+      await other.claimSlugs([{ slug: 'reserved', documentId: loser.id }]);
+      // The winner's original permanent address was not released.
+      await expect(other.claimSlugs([{ slug: winner.id, documentId: loser.id }])).rejects.toThrow('that address is taken');
+    } finally { await other.close(); }
+  });
+  it('address ownership and the document log commit together, across connections', async () => {
+    const p = await open();
+    const other = await reopen(p);
+    try {
+      await p.createDoc('a');
+      await p.createDoc('b');
+      const a = ConstitutionSession.open({ title: 'A', slug: 'a',
+        convenor: { id: 'f', email: 'a@example.org', isMember: true } }, 1);
+      const b = ConstitutionSession.open({ title: 'B', slug: 'b',
+        convenor: { id: 'f', email: 'b@example.org', isMember: true } }, 1);
+      const results = await Promise.allSettled([
+        p.appendDocLog('a', a.logEntries(), [], ['a', 'shared']),
+        other.appendDocLog('b', b.logEntries(), [], ['b', 'shared']),
+      ]);
+      expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+      const winner = results[0]!.status === 'fulfilled' ? 'a' : 'b';
+      const loser = winner === 'a' ? 'b' : 'a';
+      expect(await p.readDocLog(loser)).toEqual([]);
+      // The failed transaction also rolled back its uncontested alias.
+      await p.claimSlugs([{ slug: loser, documentId: winner }]);
+      // A replayed duplicate-log failure cannot acquire a new alias either.
+      const log = await p.readDocLog(winner);
+      await expect(p.appendDocLog(winner, log, [], ['rolled-back'])).rejects.toThrow();
+      await other.claimSlugs([{ slug: 'rolled-back', documentId: loser }]);
+      await expect(other.claimSlugs([{ slug: 'shared', documentId: loser }])).rejects.toThrow('that address is taken');
+      await p.claimSlugs([{ slug: 'shared', documentId: winner }]);
+    } finally { await other.close(); }
+  });
+
+  it('rebuilds durable claims for existing document histories at boot', async () => {
+    const p = await open();
+    const s = ConstitutionSession.open({ title: 'Old document', slug: 'old-address',
+      convenor: { id: 'f', email: 'a@example.org', isMember: true } }, 1, new InMemoryPeople());
+    s.setSetting(2, 'link', { slug: 'new-address' });
+    await p.createDoc('old');
+    // Existing logs predate the ownership table and have no claims yet.
+    await p.appendDocLog('old', s.logEntries());
+    const store = new DocStore(p);
+    await store.loadRegistry();
+    await p.createDoc('other');
+    for (const slug of ['old-address', 'new-address']) {
+      await expect(p.claimSlugs([{ slug, documentId: 'other' }])).rejects.toThrow('that address is taken');
+    }
+  });
+
   it('migrates once, idempotently, and records the version', async () => {
     const p = await open();
     const again = await reopen(p); // a second open on the same schema

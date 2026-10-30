@@ -37,6 +37,7 @@ import { asEngineDoc, clockDueT, devNow, driveBridge, foldTime, persistEngine, r
 import type { SnapshotCounts } from './snapshots.js';
 import type { RegistryRow } from './persistence.js';
 import { clockVersion } from './code-version.js';
+import { reservedSlugs, SlugTakenError } from './slug-ownership.js';
 
 /**
  * **A command the store could not write, said as what it is** (issue #79).
@@ -172,6 +173,7 @@ export class WritePath {
     const due = this.dueT(doc);
     return {
       slugs: [...doc.cs.slugs],
+      reservedSlugs: reservedSlugs(doc.cs),
       phase: doc.cs.closed ? 'closed' : doc.cs.constitutedAtT === null ? 'founding' : 'live',
       dueT: due === -Infinity ? lastT : due,
       lastT,
@@ -578,11 +580,12 @@ export class WritePath {
         // reset connection, #71's 23503 all mean *this document's saves are
         // not landing*, and a save that lands clears the flag one line
         // below, so a transient blip heals itself as the split does
-        doc.stalled = nowMs;
+        if (!(e instanceof SlugTakenError)) doc.stalled = nowMs;
         // …and the command does not stand: memory goes back to what the
         // store holds, so the refusal and every other seat agree
         store.rewind(doc);
         rewindEngine(doc, cfg.engineTuning);
+        if (e instanceof SlugTakenError) throw e;
         throw new NotSavedError(e);
       }
       doc.stalled = null;

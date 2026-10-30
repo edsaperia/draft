@@ -18,6 +18,8 @@ import type { LogEntry, PersonFields, PersonId } from '../../constitution/src/in
 import type { OpenInput } from '../../constitution/src/index.js';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import type { Persistence, PersonRow, RegistryRow } from './persistence.js';
+import { reservedSlugs, SlugTakenError } from './slug-ownership.js';
+import type { CreationClaim } from './slug-ownership.js';
 
 /**
  * The module's `People` port over the store (decision 1253): the rows a
@@ -176,10 +178,12 @@ export class DocStore {
    * folded and its engine resumed before `/healthz` answers.
    */
   async loadAll(): Promise<void> {
+    await this.loadUnresolvedClaims();
     for (const id of await this.persistence.listDocIds()) {
       this.registry.set(id, null);
       await this.loadOne(id, 'boot');
     }
+    await this.persistSlugOwners();
   }
 
   /**
@@ -197,6 +201,7 @@ export class DocStore {
    */
   async loadRegistry(nowMs: number = Date.now(),
     warm?: { codeVersion: string; minTail: number }): Promise<string[]> {
+    await this.loadUnresolvedClaims();
     // one after another, never in parallel: four reads at once opened four
     // pool connections per host where boot had always used one, and a test
     // file holding dozens of hosts ran Postgres out of connections
@@ -222,9 +227,9 @@ export class DocStore {
     for (const id of ids) {
       const row = rows.get(id);
       const len = lengths.get(id);
-      if (row !== undefined && len !== undefined && row.seq === len.seq && row.eseq === len.eseq) {
+      if (row !== undefined && row.reservedSlugs !== undefined && len !== undefined && row.seq === len.seq && row.eseq === len.eseq) {
         this.registry.set(id, row);
-        for (const slug of row.slugs) this.slugIndex.set(slug, id);
+        this.indexLoadedSlugs(id, row.slugs, row.reservedSlugs);
         continue;
       }
       try {
@@ -236,7 +241,7 @@ export class DocStore {
         }
         const people = new StorePeople(await this.persistence.readPeople(id));
         const cs = ConstitutionSession.replay(log, people);
-        const fresh: RegistryRow = { slugs: [...cs.slugs],
+        const fresh: RegistryRow = { slugs: [...cs.slugs], reservedSlugs: reservedSlugs(cs),
           phase: cs.closed ? 'closed' : cs.constitutedAtT === null ? 'founding' : 'live',
           // no due time this code vouches for (`clockVersion` empty), so the
           // tick loads it; the constitution's own next clock rides as the
@@ -244,14 +249,16 @@ export class DocStore {
           dueT: cs.constitutedAtT === null || cs.closed ? null : cs.nextClockT(), lastT: log.length > 0 ? log[log.length - 1]!.event.t : 0, clockVersion: '',
           seq: log.length, eseq: len?.eseq ?? 0, writtenMs: nowMs };
         this.registry.set(id, fresh);
-        for (const slug of fresh.slugs) this.slugIndex.set(slug, id);
+        this.indexSlugs(id, fresh.slugs, fresh.reservedSlugs);
         this.loadStats.rebuilt += 1;
         await this.persistence.writeRegistry(id, fresh);
       } catch (e) {
+        if (e instanceof SlugTakenError) throw this.loadedSlugConflict(id, e);
         console.error(`document '${id}' failed to load — quarantined:`, e);
         this.quarantine.push(id);
       }
     }
+    await this.persistSlugOwners();
     return warmIds.filter((id) => this.registry.has(id) && !this.quarantine.includes(id));
   }
 
@@ -288,6 +295,7 @@ export class DocStore {
       this.noteLoad({ ms: Math.round(performance.now() - t0), atMs: Date.now(), why });
       return doc;
     } catch (e) {
+      if (e instanceof SlugTakenError) throw this.loadedSlugConflict(id, e);
       // one corrupt log must not stop every other document serving
       // (review #1, finding 11): quarantine loudly — the document 404s
       // until its log is repaired, and nothing here ever rewrites it
@@ -338,6 +346,13 @@ export class DocStore {
     }
     this.use(doc);
     return doc;
+  }
+
+  /** A verified creation claim may name a birth committed by another host
+   * since this host loaded its registry. The id comes only from that claim. */
+  async openClaimed(id: string): Promise<LoadedDoc | null> {
+    if (!this.registry.has(id)) this.registry.set(id, null);
+    return this.open(id);
   }
 
   /** `open` by any slug the document has worn. */
@@ -444,14 +459,23 @@ export class DocStore {
     return this.preShape;
   }
 
-  async create(id: string, input: OpenInput, t: number): Promise<LoadedDoc> {
+  async create(id: string, input: OpenInput, t: number, fromStash?: string): Promise<LoadedDoc> {
     if (this.docs.has(id) || this.registry.has(id)) throw new Error(`document '${id}' already exists`);
     await this.persistence.createDoc(id);
     const people = new StorePeople();
     const cs = ConstitutionSession.open(input, t, people);
     const doc: LoadedDoc = { id, cs, people, persisted: 0, relayed: 0, provisional: null };
-    this.register(doc);
-    await this.persist(doc);
+    try {
+      await this.persist(doc, fromStash === undefined ? undefined : { key: fromStash, email: input.convenor.email });
+      this.register(doc);
+    } catch (e) {
+      // A failed genesis owns no route, including when another host won
+      // the durable claim after this process's availability check.
+      this.docs.delete(id);
+      this.registry.delete(id);
+      for (const [slug, owner] of this.slugIndex) if (owner === id) this.slugIndex.delete(slug);
+      throw e;
+    }
     // the birth's own entries relay nothing — they are the document coming
     // into existence, and the founder's creation mail is `sendNow`'s, sent
     // before this. Without this line the first commit after the save would
@@ -494,6 +518,7 @@ export class DocStore {
     this.docs.delete(id);
     this.registry.delete(id);
     for (const [slug, owner] of this.slugIndex) if (owner === id) this.slugIndex.delete(slug);
+    for (const [slug, owner] of this.reservationIndex) if (owner === id) this.reservationIndex.delete(slug);
   }
 
   /** Set or clear the provisional starting text (§9.7a v0.55). */
@@ -527,7 +552,59 @@ export class DocStore {
   }
 
   slugTaken(slug: string): boolean {
-    return this.slugIndex.has(slug);
+    return this.slugIndex.has(slug) || this.reservationIndex.has(slug) || this.pendingSlugs.has(slug);
+  }
+
+  private readonly pendingSlugs = new Map<string, string>();
+  private readonly reservationIndex = new Map<string, string>();
+
+  private async loadUnresolvedClaims(): Promise<void> {
+    for (const { slug, documentId } of await this.persistence.unresolvedSlugClaims()) {
+      this.assertSlugsAvailable(documentId, [slug]);
+      this.reservationIndex.set(slug, documentId);
+    }
+  }
+
+  assertSlugsAvailable(id: string, slugs: readonly string[]): void {
+    for (const slug of slugs) {
+      const owner = this.slugIndex.get(slug) ?? this.reservationIndex.get(slug) ?? this.pendingSlugs.get(slug);
+      if (owner !== undefined && owner !== id) throw new SlugTakenError(slug);
+    }
+  }
+
+  private indexSlugs(id: string, slugs: readonly string[], reservations: readonly string[] = []): void {
+    this.assertSlugsAvailable(id, [...slugs, ...reservations]);
+    for (const slug of slugs) this.slugIndex.set(slug, id);
+    for (const [slug, owner] of this.reservationIndex) if (owner === id) this.reservationIndex.delete(slug);
+    for (const slug of reservations) this.reservationIndex.set(slug, id);
+  }
+
+  private loadedSlugConflict(id: string, error: SlugTakenError): Error {
+    return new Error(`Address ownership conflict: '${error.slug}' appears in documents '${this.slugIndex.get(error.slug) ?? this.reservationIndex.get(error.slug)}' and '${id}'. Startup refused; review the conflicting histories before restarting.`, { cause: error });
+  }
+
+  private indexLoadedSlugs(id: string, slugs: readonly string[], reservations: readonly string[]): void {
+    try {
+      this.indexSlugs(id, slugs, reservations);
+    } catch (e) {
+      if (e instanceof SlugTakenError) throw this.loadedSlugConflict(id, e);
+      throw e;
+    }
+  }
+
+  private async persistSlugOwners(): Promise<void> {
+    try {
+      const claims = new Map([...this.slugIndex, ...this.reservationIndex]);
+      const sources = [...this.registry].flatMap(([documentId, row]) => {
+        if (this.quarantine.includes(documentId)) return [];
+        const seq = this.docs.get(documentId)?.persisted ?? row?.seq;
+        return seq === undefined ? [] : [{ documentId, seq }];
+      });
+      await this.persistence.claimSlugs([...claims].map(([slug, documentId]) => ({ slug, documentId })), sources);
+    } catch (e) {
+      if (e instanceof SlugTakenError) throw new Error(`Address ownership conflict: '${e.slug}' disagrees with the persisted owner. Startup refused; review its document histories and ownership row before restarting.`, { cause: e });
+      throw e;
+    }
   }
 
   /** The documents **in memory** (Stage 2): not every document this host knows. */
@@ -537,26 +614,35 @@ export class DocStore {
 
   /** Append everything emitted since the last persist, with the person rows
    *  those entries were written beside (decision 1253); re-index slugs. */
-  async persist(doc: LoadedDoc): Promise<LogEntry[]> {
+  async persist(doc: LoadedDoc, fromStash?: CreationClaim): Promise<LogEntry[]> {
     const log = doc.cs.logEntries();
     const fresh = log.slice(doc.persisted);
+    const slugs = [...doc.cs.slugs];
+    const reservations = reservedSlugs(doc.cs);
+    const claims = [...new Set([...slugs, ...reservations])];
+    this.assertSlugsAvailable(doc.id, claims);
     const rows = doc.people.takeDirty();
     if (doc.ephemeral === true) {
       // nothing reaches the store (design/DEMO.md D1): the cursor moves as if
       // it had, so everything downstream of `persisted` reads alike
       doc.persisted += fresh.length;
-      for (const slug of doc.cs.slugs) this.slugIndex.set(slug, doc.id);
+      this.indexSlugs(doc.id, slugs, reservations);
       return [...fresh];
     }
     if (fresh.length > 0 || rows.length > 0) {
+      // Reserve synchronously: another document cannot race the await.
+      const held = claims.filter((slug) => !this.slugIndex.has(slug) && !this.reservationIndex.has(slug));
+      for (const slug of held) this.pendingSlugs.set(slug, doc.id);
       try {
-        await this.persistence.appendDocLog(doc.id, fresh, rows);
+        await this.persistence.appendDocLog(doc.id, fresh, rows, claims, fromStash);
       } catch (e) {
         // the rows go back in the dirty set, or a failed append loses them
         // for ever (issue #7): see `restoreDirty`. The entries need no such
         // care — the cursor below is what carries them, and it has not moved
         doc.people.restoreDirty(rows);
         throw e;
+      } finally {
+        for (const slug of held) this.pendingSlugs.delete(slug);
       }
       // **Advance by what was written, never to the log's length** (Q1322,
       // docs.vote 2026-09-11): `logEntries()` is the live array, and a
@@ -567,7 +653,7 @@ export class DocStore {
       // was quarantined at the next boot. Guard: unit.test.ts, *a command
       // applied during a slow append is still persisted*.
       doc.persisted += fresh.length;
-      for (const slug of doc.cs.slugs) this.slugIndex.set(slug, doc.id);
+      this.indexSlugs(doc.id, slugs, reservations);
     }
     return [...fresh];
   }
@@ -596,13 +682,15 @@ export class DocStore {
   }
 
   private register(doc: LoadedDoc): void {
+    const reservations = reservedSlugs(doc.cs);
+    this.assertSlugsAvailable(doc.id, [...doc.cs.slugs, ...reservations]);
     this.docs.set(doc.id, doc);
     if (!this.registry.has(doc.id)) this.registry.set(doc.id, null);
     // **used from the moment it is in memory** (Stage 2): a birth or a load
     // is held by the request that made it and fresh on the idle clock, so no
     // tick can unload it under the hands still holding its object
     this.use(doc);
-    for (const slug of doc.cs.slugs) this.slugIndex.set(slug, doc.id);
+    this.indexSlugs(doc.id, doc.cs.slugs, reservations);
   }
 }
 
