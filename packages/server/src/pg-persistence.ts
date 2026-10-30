@@ -30,7 +30,7 @@
  */
 import pg from 'pg';
 import { CreationChangedError, SlugTakenError } from './slug-ownership.js';
-import type { CreationClaim, SlugOwner } from './slug-ownership.js';
+import type { CreationClaim, SlugOwner, SlugSource } from './slug-ownership.js';
 import type { LogEntry, PersonId } from '../../constitution/src/index.js';
 import { OUTBOX_MAX_ATTEMPTS, outboxBackoffMs, sameStash } from './persistence.js';
 import type { ErrorLine, MaintainablePersistence, OutboxRow, PersonRow, RegistryRow, SnapshotRow, StashRecord,
@@ -431,12 +431,24 @@ export class PgPersistence implements MaintainablePersistence {
       ...(slugs === undefined ? {} : { slugs }), ...(fromStash === undefined ? {} : { fromStash }) });
   }
 
-  async claimSlugs(owners: readonly SlugOwner[]): Promise<void> {
-    if (owners.length === 0) return;
+  async claimSlugs(owners: readonly SlugOwner[], sources?: readonly SlugSource[]): Promise<void> {
+    if (owners.length === 0 && !sources?.length) return;
     const c = await this.pool.connect();
     try {
       await c.query('BEGIN');
+      // Startup may race a writer after reading the registry. Never revive
+      // a reservation from a snapshot whose document has since changed.
+      for (const source of [...(sources ?? [])].sort((a, b) => a.documentId.localeCompare(b.documentId))) {
+        await c.query('SELECT pg_advisory_xact_lock(1, hashtext($1))', [source.documentId]);
+        const count = await c.query<{ n: string }>('SELECT count(*) AS n FROM document_log WHERE document_id = $1', [source.documentId]);
+        if (Number(count.rows[0]!.n) !== source.seq) {
+          throw new Error(`Address ownership snapshot changed for document '${source.documentId}'; retry startup.`);
+        }
+      }
       await this.claimSlugsWith(c, owners);
+      for (const { documentId } of sources ?? []) await c.query(
+        'DELETE FROM slug_owners WHERE document_id = $1 AND NOT (slug = ANY($2::text[]))',
+        [documentId, owners.filter((o) => o.documentId === documentId).map((o) => o.slug)]);
       await c.query('COMMIT');
     } catch (e) {
       await c.query('ROLLBACK').catch(() => undefined);

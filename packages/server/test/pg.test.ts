@@ -84,6 +84,34 @@ async function seedDisk(dataDir: string, n = 3): Promise<string[]> {
 const lastHash = (log: readonly LogEntry[]) => log[log.length - 1]!.hash;
 
 d('PgPersistence contract', () => {
+  it('a boot snapshot cannot revive a reservation released after its read', async () => {
+    const p = await open();
+    const { s, bo } = buildConstituted();
+    await p.createDoc('a');
+    await p.appendDocLog('a', s.logEntries());
+    const active = new DocStore(p);
+    await active.loadAll();
+    const doc = active.byId('a')!;
+    const motion = doc.cs.openMotion(3, bo, { kind: 'set', setting: 'link', value: { slug: 'released' } });
+    await active.persist(doc);
+    const other = await reopen(p);
+    try {
+      const reconcile = other.claimSlugs.bind(other);
+      other.claimSlugs = async (...args) => {
+        doc.cs.withdrawMotion(4, bo, motion);
+        await active.persist(doc);
+        return reconcile(...args);
+      };
+      await expect(new DocStore(other).loadRegistry()).rejects.toThrow('Address ownership snapshot changed');
+      other.claimSlugs = reconcile;
+      const fresh = new DocStore(other);
+      await fresh.loadRegistry();
+      expect(fresh.slugTaken('released')).toBe(false);
+      await other.createDoc('b');
+      await other.claimSlugs([{ slug: 'released', documentId: 'b' }]);
+    } finally { await other.close(); }
+  });
+
   it('shares namespace safety with pending creation, expiry and claim transfer', async () => {
     await creationClaimContract(await open());
   });

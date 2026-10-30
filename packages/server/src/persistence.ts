@@ -246,7 +246,8 @@ export interface Persistence {
   appendDocLog(id: string, entries: readonly LogEntry[],
     people?: readonly PersonRow[], slugs?: readonly string[], fromStash?: CreationClaim): Promise<void>;
   /** Reconcile durable address ownership and reservations from verified logs. */
-  claimSlugs(owners: readonly import('./slug-ownership.js').SlugOwner[]): Promise<void>;
+  claimSlugs(owners: readonly import('./slug-ownership.js').SlugOwner[],
+    sources?: readonly import('./slug-ownership.js').SlugSource[]): Promise<void>;
   /** Every person row the document holds, in no particular order. */
   readPeople(id: string): Promise<PersonRow[]>;
   /** Erasure: drop one row. Returns whether one was there. */
@@ -423,6 +424,7 @@ export class FilePersistence implements MaintainablePersistence {
     this.tokens = loadJsonMap<TokenRecord>(this.tokensPath);
     this.stashes = loadJsonMap<StashRecord>(this.stashPath);
     this.outbox = loadJsonMap<OutboxRow>(this.outboxPath);
+    this.recoverCreations();
   }
 
   /* -- documents ---------------------------------------------------------- */
@@ -452,8 +454,18 @@ export class FilePersistence implements MaintainablePersistence {
     }
   }
 
-  async claimSlugs(owners: readonly import('./slug-ownership.js').SlugOwner[]): Promise<void> {
+  async claimSlugs(owners: readonly import('./slug-ownership.js').SlugOwner[],
+    sources?: readonly import('./slug-ownership.js').SlugSource[]): Promise<void> {
+    for (const source of sources ?? []) {
+      if (readJsonl<LogEntry>(join(this.docsDir, source.documentId, 'log.jsonl')).length !== source.seq) {
+        throw new Error(`Address ownership snapshot changed for document '${source.documentId}'; retry startup.`);
+      }
+    }
     for (const { slug, documentId } of owners) this.checkSlugs(documentId, [slug]);
+    for (const { documentId } of sources ?? []) {
+      const wanted = new Set(owners.filter((o) => o.documentId === documentId).map((o) => o.slug));
+      for (const [slug, id] of this.slugOwners) if (id === documentId && !wanted.has(slug)) this.slugOwners.delete(slug);
+    }
     for (const { slug, documentId } of owners) this.slugOwners.set(slug, documentId);
   }
 
@@ -471,24 +483,44 @@ export class FilePersistence implements MaintainablePersistence {
       throw new CreationChangedError();
     }
     if (slugs !== undefined) this.checkSlugs(id, slugs, fromStash?.key);
-    // rows first (decision 1253): a crash after this and before the append
-    // leaves a row nothing names, which is harmless; the other order leaves
-    // an event naming a row that is not there
-    if (people.length > 0) {
-      const path = join(this.docsDir, id, 'people.json');
-      const rows = readPeopleFile(path);
-      for (const row of people) rows.set(row.personId, row);
-      writePeopleFile(path, rows);
+    const journal = stash === undefined || fromStash === undefined ? null : join(this.docsDir, id, 'creation-claim.json');
+    if (journal !== null && fromStash !== undefined && stash !== undefined) {
+      const last = entries[entries.length - 1];
+      if (last === undefined) throw new Error('a creation claim needs its genesis log');
+      writeFileSync(journal + '.next', JSON.stringify({ key: fromStash.key, before: stash, seq: last.seq, hash: last.hash }), 'utf8');
+      renameSync(journal + '.next', journal);
+      this.stashes.set(fromStash.key, { ...stash, docId: id });
+      try { this.saveStashes(); }
+      catch (e) {
+        this.stashes.set(fromStash.key, stash);
+        try { rmSync(journal); } catch { /* recovery sees the unchanged stash */ }
+        throw e;
+      }
     }
-    appendJsonl(join(this.docsDir, id, 'log.jsonl'), entries);
+    try {
+      // rows first (decision 1253): a crash after this and before the append
+      // leaves a row nothing names, which is harmless; the other order leaves
+      // an event naming a row that is not there
+      if (people.length > 0) {
+        const path = join(this.docsDir, id, 'people.json');
+        const rows = readPeopleFile(path);
+        for (const row of people) rows.set(row.personId, row);
+        writePeopleFile(path, rows);
+      }
+      appendJsonl(join(this.docsDir, id, 'log.jsonl'), entries);
+    } catch (e) {
+      if (journal !== null && fromStash !== undefined && stash !== undefined) {
+        this.stashes.set(fromStash.key, stash);
+        this.saveStashes(); // if rollback fails, the journal repairs it at boot
+        try { rmSync(journal); } catch { /* recovery is idempotent */ }
+      }
+      throw e;
+    }
     if (slugs !== undefined) {
       for (const [slug, owner] of this.slugOwners) if (owner === id && !slugs.includes(slug)) this.slugOwners.delete(slug);
       for (const slug of slugs) this.slugOwners.set(slug, id);
     }
-    if (stash !== undefined && fromStash !== undefined) {
-      this.stashes.set(fromStash.key, { ...stash, docId: id });
-      this.saveStashes();
-    }
+    if (journal !== null) try { rmSync(journal); } catch { /* already committed; recovered at boot */ }
   }
 
   async readPeople(id: string): Promise<PersonRow[]> {
@@ -847,8 +879,28 @@ export class FilePersistence implements MaintainablePersistence {
   }
 
   private saveStashes(): void {
-    writeFileSync(this.stashPath,
+    const next = this.stashPath + '.next';
+    writeFileSync(next,
       JSON.stringify(Object.fromEntries(this.stashes), null, 2), 'utf8');
+    renameSync(next, this.stashPath);
+  }
+
+  /** Only a recorded in-flight creation can be repaired automatically. Its
+   * intended final entry distinguishes a committed birth from a pre-log
+   * crash; unrelated histories and later stash updates are never rewritten. */
+  private recoverCreations(): void {
+    for (const id of readdirSync(this.docsDir)) {
+      const path = join(this.docsDir, id, 'creation-claim.json');
+      if (!existsSync(path)) continue;
+      const rec = JSON.parse(readFileSync(path, 'utf8')) as { key: string; before: StashRecord; seq: number; hash: string };
+      const log = readJsonl<LogEntry>(join(this.docsDir, id, 'log.jsonl'));
+      const committed = log.some((entry) => entry.seq === rec.seq && entry.hash === rec.hash);
+      const current = this.stashes.get(rec.key);
+      if (!committed && current?.docId === id) this.stashes.set(rec.key, rec.before);
+      else if (committed && sameStash(current, rec.before)) this.stashes.set(rec.key, { ...rec.before, docId: id });
+      this.saveStashes();
+      rmSync(path);
+    }
   }
 }
 

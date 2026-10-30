@@ -586,7 +586,12 @@ export class DocStore {
   private async persistSlugOwners(): Promise<void> {
     try {
       const claims = new Map([...this.slugIndex, ...this.reservationIndex]);
-      await this.persistence.claimSlugs([...claims].map(([slug, documentId]) => ({ slug, documentId })));
+      const sources = [...this.registry].flatMap(([documentId, row]) => {
+        if (this.quarantine.includes(documentId)) return [];
+        const seq = this.docs.get(documentId)?.persisted ?? row?.seq;
+        return seq === undefined ? [] : [{ documentId, seq }];
+      });
+      await this.persistence.claimSlugs([...claims].map(([slug, documentId]) => ({ slug, documentId })), sources);
     } catch (e) {
       if (e instanceof SlugTakenError) throw new Error(`Address ownership conflict: '${e.slug}' disagrees with the persisted owner. Startup refused; review its document histories and ownership row before restarting.`, { cause: e });
       throw e;

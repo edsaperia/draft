@@ -1,10 +1,11 @@
-import { mkdtempSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, rmdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { AddressInfo } from 'node:net';
 import { describe, expect, it } from 'vitest';
 import { buildConstituted } from '../../constitution/test/helpers.js';
 import { chainHash } from '../../constitution/src/hash.js';
+import { ConstitutionSession } from '../../constitution/src/index.js';
 import { FilePersistence } from '../src/persistence.js';
 import { DocStore, uniqueSlug } from '../src/store.js';
 import { createDraftServer } from '../src/server.js';
@@ -22,6 +23,53 @@ async function room() {
 }
 
 describe('open proposals reserve their requested address (Q1604)', () => {
+  it('ignores a journal interrupted before atomic publication', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'draft-journal-publish-'));
+    const p = new FilePersistence(dir);
+    const pending = { text: 'draft', slug: 'promised', expMs: Date.now() + 60_000 };
+    await p.putStash('pending', pending);
+    await p.createDoc('a');
+    writeFileSync(join(dir, 'docs', 'a', 'creation-claim.json.next'), '{"key":');
+    expect(await new FilePersistence(dir).getStash('pending')).toEqual(pending);
+  });
+
+  it('a failed pending-file replacement writes no genesis and leaves the reservation usable', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'draft-creation-fail-'));
+    const p = new FilePersistence(dir);
+    const pending = { text: 'draft', slug: 'promised', email: 'a@example.org', expMs: Date.now() + 60_000 };
+    await p.putStash('pending', pending);
+    mkdirSync(join(dir, 'pending.json.next'));
+    const store = new DocStore(p);
+    const input = { title: 'A', slug: 'promised', convenor: { id: 'f', email: pending.email, isMember: true } };
+    await expect(store.create('a', input, Date.now(), 'pending')).rejects.toThrow();
+    expect(await p.readDocLog('a')).toEqual([]);
+    expect(await p.getStash('pending')).toEqual(pending);
+    expect(store.servesSlug('promised')).toBeNull();
+    rmdirSync(join(dir, 'pending.json.next'));
+    await store.create('a', input, Date.now(), 'pending');
+    expect(store.servesSlug('promised')).toEqual({ id: 'a' });
+  });
+
+  it.each([false, true])('recovers an interrupted file creation with durable genesis=%s', async (committed) => {
+    const dir = mkdtempSync(join(tmpdir(), 'draft-creation-recover-'));
+    const p = new FilePersistence(dir);
+    const pending = { text: 'draft', slug: 'promised', email: 'a@example.org', expMs: Date.now() + 60_000 };
+    await p.createDoc('a');
+    const s = ConstitutionSession.open({ title: 'A', slug: 'promised',
+      convenor: { id: 'f', email: pending.email, isMember: true } }, Date.now());
+    const last = s.logEntries().at(-1)!;
+    const journal = join(dir, 'docs', 'a', 'creation-claim.json');
+    writeFileSync(journal, JSON.stringify({ key: 'pending', before: pending, seq: last.seq, hash: last.hash }));
+    await p.putStash('pending', { ...pending, docId: 'a' });
+    if (committed) await p.appendDocLog('a', s.logEntries());
+    const recovered = new FilePersistence(dir);
+    expect(await recovered.getStash('pending')).toEqual(committed ? { ...pending, docId: 'a' } : pending);
+    expect(existsSync(journal)).toBe(false);
+    const cold = new DocStore(recovered);
+    await cold.loadAll();
+    expect(cold.servesSlug('promised')).toEqual(committed ? { id: 'a' } : null);
+  });
+
   it('shares namespace safety with pending creation, expiry and claim transfer', async () => {
     await creationClaimContract(new FilePersistence(mkdtempSync(join(tmpdir(), 'draft-claims-'))));
   });

@@ -6,6 +6,7 @@ export class SlugTakenError extends Error {
 }
 
 export interface SlugOwner { slug: string; documentId: string }
+export interface SlugSource { documentId: string; seq: number }
 
 export interface CreationClaim { key: string; email: string }
 
