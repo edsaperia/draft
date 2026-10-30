@@ -893,7 +893,14 @@ export class FilePersistence implements MaintainablePersistence {
       const path = join(this.docsDir, id, 'creation-claim.json');
       if (!existsSync(path)) continue;
       const rec = JSON.parse(readFileSync(path, 'utf8')) as { key: string; before: StashRecord; seq: number; hash: string };
-      const log = readJsonl<LogEntry>(join(this.docsDir, id, 'log.jsonl'));
+      let log: LogEntry[];
+      try { log = readJsonl<LogEntry>(join(this.docsDir, id, 'log.jsonl')); }
+      catch {
+        // An unreadable birth is not evidence of either outcome. Preserve
+        // its transfer and bytes for repair; normal loading quarantines the
+        // document without preventing healthy documents from starting.
+        continue;
+      }
       const committed = log.some((entry) => entry.seq === rec.seq && entry.hash === rec.hash);
       const current = this.stashes.get(rec.key);
       if (!committed && current?.docId === id) this.stashes.set(rec.key, rec.before);

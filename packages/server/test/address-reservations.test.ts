@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, rmdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { AddressInfo } from 'node:net';
@@ -23,6 +23,30 @@ async function room() {
 }
 
 describe('open proposals reserve their requested address (Q1604)', () => {
+  it('leaves a torn recorded birth for quarantine while healthy documents boot', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'draft-torn-birth-'));
+    const p = new FilePersistence(dir);
+    await new DocStore(p).create('healthy', { title: 'Healthy', slug: 'healthy',
+      convenor: { id: 'f', email: 'a@example.org', isMember: true } }, Date.now());
+    await p.createDoc('torn');
+    const pending = { text: 'draft', slug: 'torn', expMs: Date.now() + 60_000 };
+    await p.putStash('pending', { ...pending, docId: 'torn' });
+    const journal = join(dir, 'docs', 'torn', 'creation-claim.json');
+    writeFileSync(journal, JSON.stringify({ key: 'pending', before: pending, seq: 0, hash: 'not-written' }));
+    const logPath = join(dir, 'docs', 'torn', 'log.jsonl');
+    const bytes = '{"seq":0,"event":';
+    writeFileSync(logPath, bytes);
+    const recovered = new FilePersistence(dir);
+    const cold = new DocStore(recovered);
+    await cold.loadAll();
+    expect(cold.quarantined()).toEqual(['torn']);
+    expect(cold.byId('torn')).toBeNull();
+    expect(cold.servesSlug('healthy')).toEqual({ id: 'healthy' });
+    expect(await recovered.getStash('pending')).toEqual({ ...pending, docId: 'torn' });
+    expect(readFileSync(logPath, 'utf8')).toBe(bytes);
+    expect(existsSync(journal)).toBe(true);
+  });
+
   it('ignores a journal interrupted before atomic publication', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'draft-journal-publish-'));
     const p = new FilePersistence(dir);
