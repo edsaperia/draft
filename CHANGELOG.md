@@ -6,6 +6,15 @@ docs.vote has been live, in alpha, since 2026-08-20. This file runs newest first
 
 ---
 
+## 2026-10-30: safer email limits and reliable saving
+
+### Fixed
+- Applying to join a document now shares Login's existing per-address email allowance. Switching between those doors cannot bypass the limit, and the response does not disclose whether the address belongs to a member. (#238; #93 finding 1)
+- PostgreSQL saves the proposal engine's new log entries and changed resume state in one transaction, so a failed save cannot leave the two out of step. The file store retains its existing recovery behavior. (#237; #28)
+
+### For contributors
+- Fault regressions cover transaction rollback, retries, reconnect and resuming a real motion. The PostgreSQL path updates its in-memory cursors only after commit and avoids rewriting unchanged bridge state. No database migration or member-facing wording changed.
+
 ## 2026-10-30: the closing line counts the document
 
 ### Changed
