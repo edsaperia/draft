@@ -1,4 +1,4 @@
-# Group Drafting Engine — Specification v0.148
+# Group Drafting Engine — Specification v0.149
 ### Working name deferred (direction: "draft")
 
 A compiler for group agreement. Input: a starting text, a roster, a constitution file. Output: the most-agreed text, plus a record of every disagreement, ranked and mapped. Institutional acts — provenance, adoption, ratification — belong to the convening context. The tool measures agreement; it does not confer legitimacy.
@@ -13,7 +13,7 @@ A compiler for group agreement. Input: a starting text, a roster, a constitution
 
 **Outputs.**
 1. **The text**: each race rendered to its posterior leader.
-2. **The record**: machine- and human-readable. Per race: candidates (text, author, rationale), the fitted ranking with confidence and comparison counts, camp structure with reason digests, the graveyard with causes of death, certification at close. Globally: the care map; the minority map (clusters whose preferences ran together and lost; persistent redrafters); the salience ranking; per-person participation statistics; the audit log and RNG seed; and the **backlog** — every unresolved or carried position, ranked by closeness × salience, stake-waived for re-entry next session.
+2. **The record is the closed document itself** (→ why: R-148): the text, every clause's sealed record on its tabs — what passed, what lost with its shares and reasons, the votes where 👁️ reveals them — the backlog the close left undecided, the signatures, and the Rules' closing line, which counts the membership at the close and its text proposals by how they ended: passed, did not pass, withdrawn, still open. Nothing the tabs already show is said twice. Machine-readable, it is the log and its RNG seed.
 
 The record is co-equal with the text: it is where outvoted currents remain visible, and it seeds the next session.
 
@@ -152,7 +152,7 @@ Judgments are living while their question is: while a race is open and its groun
 | an ordinary motion unresolved | resolves as **held** by the clock — what stands stands, its ✏️ is not returned (§7), and its mover is owed nothing (§9.6a) | held at the close | §9.6a, → why: R-135 |
 | a 👑 assent question pending | **fails closed**: the carried change is not applied, and the crown-lapse auto-pass does not fire — lapse is absence, and the close is everybody's deadline | carried-but-unassented, into the backlog | §9.7 rule 6, X17 |
 | a draft in composition | never destroyed: it can no longer be proposed, and its author keeps the prose | — | — |
-| a race unresolved | the incumbent stands — but not as *kept*: the minority map and the backlog's stake-waived re-entry both live on the difference | *undecided*, a **third outcome** distinct from *kept* | §2.6 |
+| a race unresolved | the incumbent stands — but not as *kept*: the backlog's stake-waived re-entry lives on the difference | *undecided*, a **third outcome** distinct from *kept* | §2.6 |
 | a proposal stranded by a text change (*rebase-pending*) | files like a race caught running — the same stake waiver — carrying its last wording and reason into the backlog, beside the clause its patch now descends to | *undecided* | §2.4, §2.6, → why: R-113 |
 | an invitation outstanding | expires: there is nothing left to join, only to read | — | X14 |
 | sealed authorship | reveals | the record | §3.5a |
