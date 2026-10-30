@@ -75,4 +75,13 @@ describe('engine saves and their bridge state (issue #28)', () => {
     expect(f.appendEngineLog).not.toHaveBeenCalled();
     expect(f.writeBridgeState).toHaveBeenCalledWith('d1', JSON.stringify(f.state));
   });
+
+  it('an engine-only change does not rewrite an unchanged bridge state', async () => {
+    const f = fixture(true);
+    f.doc.bridgeSerialized = JSON.stringify(f.state);
+    await persistEngine(f.persistence, f.doc);
+    expect(f.appendEngineLog).toHaveBeenCalledWith('d1', [f.log[1]], undefined);
+    expect(f.writeBridgeState).not.toHaveBeenCalled();
+    expect(f.doc.enginePersisted).toBe(2);
+  });
 });

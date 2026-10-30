@@ -256,7 +256,7 @@ export async function persistEngine(persistence: Persistence, doc: LoadedDoc): P
   // The file store must keep the separate writes below: if its append
   // succeeds and the state rename fails, the appended cursor is still real.
   if (fresh.length > 0 && persistence.engineLogAndStateAtomic === true) {
-    await persistence.appendEngineLog(d.id, fresh, state);
+    await persistence.appendEngineLog(d.id, fresh, state === d.bridgeSerialized ? undefined : state);
     d.enginePersisted += fresh.length;
     d.bridgeSerialized = state;
     return;
